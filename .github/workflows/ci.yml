@@ -62,3 +62,6 @@ jobs:
       # part.
       - name: Build
         run: npm run build
+
+      - name: Le livrable
+        run: npm run verifier:dist

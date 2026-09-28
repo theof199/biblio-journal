@@ -1,0 +1,55 @@
+/* Les quatre couleurs de `biblio-android/docs/design.md` : le Journal reprend
+   l'identité, il ne la redéfinit pas. */
+:root {
+  --fond: #151009;
+  --papier: #f2e8d5;
+  --or: #e6b94a;
+  --corail: #ff6b57;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--fond);
+  color: var(--papier);
+  font-family:
+    'Manrope',
+    system-ui,
+    sans-serif;
+  /* La barre d'état est translucide sur iOS (voir index.html) : le contenu ne
+     doit pas passer dessous. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+h1,
+h2,
+h3 {
+  font-family:
+    'Fraunces',
+    Georgia,
+    serif;
+  font-weight: 600;
+}
+
+/* Réservée aux célébrations (le Voyage) : jamais pour un titre courant. */
+.celebration {
+  font-family: 'Limelight', cursive;
+}
+
+button {
+  min-height: 44px;
+  min-width: 44px;
+  font-family: inherit;
+}
+
+input {
+  min-height: 44px;
+  font-family: inherit;
+}

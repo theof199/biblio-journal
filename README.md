@@ -39,3 +39,26 @@ en est engendré par `openapi-typescript` : ni l'un ni l'autre ne se modifie à 
 La CI (`npm run types:check`) refuse une dérive entre les deux, et `livrer.yml` (dans
 `biblio-back`) refuse un tag si `contract/openapi.json` n'est pas identique au contrat commité du
 back : la copie se refait à la main après chaque tag.
+
+## La PWA
+
+Le Journal s'installe comme une app, sous la portée `/journal/` (`vite-plugin-pwa`, plugin
+`VitePWA` dans `vite.config.ts`). Le service worker est **coupé en dev** (`devOptions` n'est pas
+posé) : `npm run dev` ne l'enregistre jamais, seul `dist/` le fait. Il précache l'enveloppe de
+l'app (JS, CSS, HTML, polices, icônes) et rien d'autre : `/api/` et `/covers/` ne sont jamais mis
+en cache, une requête réseau les sert toujours. Une navigation profonde sans réseau retombe sur
+`index.html`.
+
+Une nouvelle version en ligne pendant l'usage **ne recharge jamais de force** : `<MiseAJour />`
+(`src/pwa/MiseAJour.tsx`, monté dans `main.tsx`) affiche le bandeau `BandeauMiseAJour` avec un
+bouton « Recharger », qui n'agit qu'à la demande.
+
+`npm run verifier:dist` (après `npm run build`, lancé par la CI et par `livrer.yml` de
+`biblio-back`) constate que le livrable est conforme : le manifeste porte sa portée, ses icônes et
+sa langue ; tout chemin absolu d'`index.html` reste sous `/journal/` ; `sw.js` n'a qu'une route (la
+navigation) et précache les polices ; aucun fichier du livrable ne contient `dev-login`, l'outil de
+connexion réservé au développement.
+
+Un service worker exige HTTPS hors de `localhost` : depuis le téléphone, `http://<poste>:5174/journal/`
+montre l'app mais ne l'installe pas ; l'installation s'éprouve en ligne, sur
+`https://mini-mediatheque.fr/journal/`.
