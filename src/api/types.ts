@@ -4719,7 +4719,7 @@ export interface paths {
      *
      * `court` est vrai pour un film de 1 à 40 minutes chez TMDB (`discover/movie` filtré par réalisateur, mémorisé 30 jours par personne) — toujours faux sur une série, et faux aussi pour un film dont TMDB ignore la durée. Une panne de `discover` ne fait pas tomber la page : elle rend alors `court: false` partout, avec un `warn` dans le log.
      *
-     * Chaque film ou série porte aussi `sur_le_plex`, `demande` et `plex_url` (lus comme `GET /me/voyage`, sur le Plex du propriétaire), `annee_ouverte` (`year` non nul et inférieur ou égal à mon année en cours dans le Voyage, 1895 par défaut), et `voyage` — la ligne `voyage_films` la plus ancienne où il figure parmi mes salles, `null` sinon.
+     * Chaque film ou série porte aussi `sur_le_plex`, `demande` et `plex_url` (lus comme `GET /me/voyage`, sur le Plex du propriétaire), `annee_ouverte` (`year` non nul et inférieur ou égal à mon année en cours dans le Voyage, 1895 par défaut), et `voyage` — la ligne `voyage_films` la plus ancienne où il figure dans les salles du compte IA, bornées à mes années lisibles pour un membre hors IA (les miennes, sans borne, pour le compte IA) ; `null` s’il n’y figure pas.
      *
      * `404` si `tmdbId` est une personne que TMDB ne connaît pas. `503` si `TMDB_API_KEY` n’est pas renseignée sur ce serveur.
      */
@@ -8222,7 +8222,7 @@ export interface paths {
      * Le carton d’un film
      * @description Le plus souvent écrit après coup : journaliser un film (`POST /me/journal`) enfile son carton — mais n’importe quel `tmdb_id` peut être demandé ici directement, et sera enfilé de la même façon s’il manque.
      *
-     * Trois formes : `200` prêt, `202` en préparation (enfilé), `{ configure: false }` sans clé Anthropic. Global : ce carton ne dépend d’aucun membre.
+     * Trois formes : `200` prêt, identique pour tout membre une fois écrit. `202` en préparation (enfilé), au compte IA seulement. `{ configure: false }` sans clé Anthropic pour le compte IA, ou pour un membre hors IA quel que soit l’état de la clé — rien ne s’enfile jamais de son fait.
      *
      * Centré sur le film et son réalisateur (brief du 24 septembre 2026, version 2) : la réalisation, les intentions du réalisateur, la réception et les innovations. Un carton resté à l’ancien format (« Et pendant ce temps… », version 1) est traité comme absent et régénéré, toujours en version 2.
      */
@@ -8293,6 +8293,8 @@ export interface paths {
      * `tampons` porte le passeport : une ligne par décennie bouclée (`decennie` croissant, `boucle_le`), où chacune de ses années a un `ours` et où le ticket de la première année de la décennie suivante est `utilise_le`.
      *
      * `seance_prise` porte la dernière séance que j’ai prise (`POST /me/voyage/seances/{id}/prendre`), tant que son long n’est pas encore vu — `null` dès qu’il l’est, ou si aucune séance n’est prise.
+     *
+     * `ia` dit si le chroniqueur écrit pour moi : le compte marqué du Voyage, avec une clé posée. `source` porte ce compte quand ce n’est pas moi (`id`, `pseudo`), `null` pour lui. Les salles, films et ouvertures des années portées ici sont alors lus chez `source`, jamais chez moi, et bornés à mes années lisibles (celles qu’il a déjà ouvertes, jusqu’à la mienne) — au-delà, `visitee` reste faux même si `source` a continué.
      *
      * Réponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium et toute écriture sur une séance.
      */
@@ -8365,6 +8367,14 @@ export interface paths {
                   title: string;
                 } | null;
               }) | null;
+              /** @description Le chroniqueur écrit pour moi : clé posée et compte IA du Voyage */
+              ia: boolean;
+              /** @description Le Voyage que je suis, sans IA — nul pour le compte IA */
+              source: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+              } | null;
             };
           };
         };
@@ -8380,19 +8390,23 @@ export interface paths {
   "/me/voyage/annees/{annee}": {
     /**
      * Une année du Voyage — salles et films
-     * @description `prete` (`200`) si l’ouverture existe déjà pour ce membre : ses salles, dans l’ordre, avec chaque film (état et note calculés à la lecture). `en_preparation` (`202`) à la première visite d’une année ouverte ou en cours — la demande enfile l’ouverture, à redemander dans quelques secondes. `verrouillee` (`200`) après mon année en cours : rien ne s’enfile, même en visitant. `{ configure: false }` (`200`) si `ANTHROPIC_API_KEY` manque et que l’année n’a pas encore d’ouverture.
+     * @description `prete` (`200`) si l’ouverture existe déjà pour ce membre : ses salles, dans l’ordre, avec chaque film (état et note calculés à la lecture). `en_preparation` (`202`) à la première visite d’une année ouverte ou en cours — la demande enfile l’ouverture, à redemander dans quelques secondes ; jamais pour un membre hors IA, qui n’ouvre jamais lui-même une année. `verrouillee` (`200`) après mon année en cours : rien ne s’enfile, même en visitant. `{ configure: false }` (`200`) si `ANTHROPIC_API_KEY` manque et que l’année n’a pas encore d’ouverture, pour le compte IA seulement.
+     *
+     * Pour un membre hors IA, une quatrième forme existe : `en_attente` (`200`), pour une année dans mes années lisibles (celles déjà ouvertes par le compte IA, plus la sienne en cours — voir `GET /me/voyage`) que le compte IA n’a pas encore ouverte ; rien ne s’enfile, `prete` dès qu’il l’ouvre. Une année hors de mes années lisibles répond `verrouillee`, qu’elle soit ouverte chez le compte IA ou non.
      *
      * `etat` d’un film vaut `vu`, `sur_le_plex`, `demande`, `a_demander` ou `introuvable`. Pour un programme, `etat` ne vaut `vu` que quand **toutes** ses bobines le sont — chaque bobine porte le sien.
      *
      * `podium` porte les trois marches (`PUT`/`DELETE /me/voyage/annees/{annee}/podium/{place}`), `null` pour une place vide — présent sur `prete` et `verrouillee` (toujours vide sur cette dernière, le podium ne se posant que sur une année non verrouillée).
      *
-     * `maturite` (`prete` seulement) porte le dernier jugement du chroniqueur sur cette année — `null` tant qu’aucun film de l’année n’a encore été noté. `ticket` (`prete` seulement) porte le ticket vers `annee + 1`, s’il a été gagné — `null` sinon.
+     * `maturite` (`prete` seulement) porte le dernier jugement du chroniqueur sur cette année — `null` tant qu’aucun film de l’année n’a encore été noté, et toujours nul pour un membre hors IA : ce jugement n’appartient qu’au compte IA. `ticket` (`prete` seulement) porte le ticket vers `annee + 1`, s’il a été gagné — `null` sinon.
      *
      * `recompense` et `progression` (`prete` seulement) : la récompense de cette année (voir `GET /me/voyage`) et de quoi dessiner sa barre — `essentiels_vus`/`essentiels_total` (strictement vus, un introuvable n’y compte pas), `salles_completes`/`salles_autres` (salles hors essentiels, à au moins un film, entièrement vues ou introuvables).
      *
-     * `seances` (`prete` seulement, brief du 21 septembre 2026, « la séance ») porte mes séances composées, par rang décroissant — la plus récente d’abord —, chacune un `long` jamais vu et un `court` facultatif (`POST /me/voyage/annees/{annee}/seances`). `seance_en_cours` dit si une composition vient d’être demandée et s’écrit encore.
+     * `seances` (`prete` seulement, brief du 21 septembre 2026, « la séance ») porte mes séances composées, par rang décroissant — la plus récente d’abord —, chacune un `long` jamais vu et un `court` facultatif (`POST /me/voyage/annees/{annee}/seances`). `seance_en_cours` dit si une composition vient d’être demandée et s’écrit encore. Pour un membre hors IA, toujours vide et faux : ce geste n’appartient qu’au compte IA.
      *
-     * `pistes` (`prete` seulement, brief du 22 septembre 2026) : des salles que le chroniqueur propose sans jamais en ouvrir une lui-même — vide possible, renouvelée trois à la fois par `POST /me/voyage/annees/{annee}/pistes`. Une piste utilisée pour ouvrir une salle (`POST /me/voyage/annees/{annee}/salles`, corps `piste`) en disparaît.
+     * `pistes` (`prete` seulement, brief du 22 septembre 2026) : des salles que le chroniqueur propose sans jamais en ouvrir une lui-même — vide possible, renouvelée trois à la fois par `POST /me/voyage/annees/{annee}/pistes`. Une piste utilisée pour ouvrir une salle (`POST /me/voyage/annees/{annee}/salles`, corps `piste`) en disparaît. Pour un membre hors IA, toujours vide : lui seul, jamais moi, en reçoit. `demande_salle` toujours nulle pour lui, au même titre.
+     *
+     * `generique` (`prete` seulement) : nul tant qu’il n’a pas été demandé (`POST .../generique`). Pour le compte IA, le texte écrit une fois par le chroniqueur, rendu tel quel ensuite. Pour un membre hors IA, composé à la lecture à partir de mon propre journal — jamais celui du compte IA —, dès que j’ai gagné mon ticket vers `annee + 1` ; jamais stocké, jamais d’appel au chroniqueur.
      */
     get: {
       parameters: {
@@ -8596,6 +8610,23 @@ export interface paths {
                   /** @description Image de fond TMDB (w1280) — résolue depuis la fiche du `tmdb_id`, nulle sur un `programme_id` ou si TMDB n’en a pas */
                   backdrop_url: string | null;
                 }) | null)[];
+            }) | ({
+              /** @enum {boolean} */
+              configure: true;
+              /** @enum {string} */
+              statut: "en_attente";
+              annee: number;
+              profondeur: number;
+              /** @description Les trois marches, dans l’ordre */
+              podium: (({
+                  place: number;
+                  tmdb_id: number | null;
+                  programme_id: string | null;
+                  title: string;
+                  cover_url: string | null;
+                  /** @description Image de fond TMDB (w1280) — résolue depuis la fiche du `tmdb_id`, nulle sur un `programme_id` ou si TMDB n’en a pas */
+                  backdrop_url: string | null;
+                }) | null)[];
             }) | {
               /** @enum {boolean} */
               configure: false;
@@ -8632,7 +8663,7 @@ export interface paths {
   "/me/voyage/annees/{annee}/podium/{place}": {
     /**
      * Poser un film ou un programme sur une marche du podium
-     * @description Corps `{ tmdb_id }` **ou** `{ programme_id }`, exactement l’un des deux. `tmdb_id` doit être dans mon journal avec cette année de sortie, sinon `400 VALIDATION`. `programme_id` doit être une ligne de mes salles de cette année (film ou programme) entièrement vue — même calcul d’état que `GET /me/voyage/annees/{annee}` — sinon `400 VALIDATION` ; d’un autre membre, d’une autre année, ou inconnue → `404`.
+     * @description Corps `{ tmdb_id }` **ou** `{ programme_id }`, exactement l’un des deux. `tmdb_id` doit être dans mon journal avec cette année de sortie, sinon `400 VALIDATION`. `programme_id` doit être une ligne du Voyage lu de cette année (film ou programme) entièrement vue — même calcul d’état que `GET /me/voyage/annees/{annee}` — sinon `400 VALIDATION` ; d’un autre membre, d’une autre année, ou inconnue → `404`.
      *
      * Le podium se pose sur toute année **non verrouillée** (≤ mon année en cours), visitée ou non : `404` au-delà. Poser sur une marche déjà occupée remplace l’occupant ; poser un film ou un programme déjà présent sur une autre marche l’y **déplace** (l’ancienne marche se vide) — jamais de `409`.
      *
@@ -8733,7 +8764,7 @@ export interface paths {
      * « En voir plus » dans une salle
      * @description Enfile une fournée (`chroniques:file`) : trois à cinq films de plus dans cette salle, écrits par le chroniqueur — `202 { statut: "en_preparation" }`, qu’une fournée soit tout juste enfilée ou déjà en cours (le verrou Redis rend la même réponse dans les deux cas, sans réenfiler).
      *
-     * `200 { statut: "epuisee" }` sans rien enfiler si la salle est déjà connue comme épuisée — la dernière fournée n’a rien ajouté, ou le chroniqueur l’a dit. `404` si cette salle n’est pas la mienne. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur : rien ne s’enfile alors.
+     * `200 { statut: "epuisee" }` sans rien enfiler si la salle est déjà connue comme épuisée — la dernière fournée n’a rien ajouté, ou le chroniqueur l’a dit. `404` si cette salle n’est pas la mienne. `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur : rien ne s’enfile alors.
      */
     post: {
       parameters: {
@@ -8773,6 +8804,12 @@ export interface paths {
           };
         };
         /** @description Default Response */
+        403: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
         404: {
           content: {
             "application/json": components["schemas"]["ApiError"];
@@ -8792,7 +8829,7 @@ export interface paths {
      * Le contexte d’une salle
      * @description Appel **synchrone** au chroniqueur (modèle `CHRONIQUES_MODEL`), sur le modèle exact de la route des pistes. Si la colonne est déjà remplie, la rend telle quelle, sans appel. Sinon, génère un paragraphe de 5 à 10 phrases — ce que la salle raconte de l’année, ses films et ce qui les relie, le mouvement ou la tendance, sans reprendre l’ouverture de l’année —, l’écrit et le rend.
      *
-     * `404` si cette salle n’existe pas, n’est pas la mienne, ou n’est pas celle de l’année demandée. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur et que le contexte n’a pas déjà été écrit. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
+     * `404` si cette salle n’existe pas, n’est pas la mienne, ou n’est pas celle de l’année demandée. Pour un membre hors IA : la salle du compte IA, dans mes années lisibles ; `403 FORBIDDEN` quand le contexte n’a pas déjà été écrit — jamais généré pour moi ; déjà écrit, je le lis comme toute autre donnée du compte IA, `200`. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur et que le contexte n’a pas déjà été écrit. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
      *
      * Le coût de l’appel se journalise dans `appels_ia` (type `contexte_salle`), comme les autres appels au chroniqueur.
      */
@@ -8826,6 +8863,12 @@ export interface paths {
           };
         };
         /** @description Default Response */
+        403: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
         404: {
           content: {
             "application/json": components["schemas"]["ApiError"];
@@ -8843,7 +8886,7 @@ export interface paths {
   "/me/voyage/annees/{annee}/salles": {
     /**
      * « Ouvrir une nouvelle salle » sur une phrase
-     * @description Corps `{ demande, piste? }` : `demande` est une phrase de 1 à 200 caractères (« la comédie italienne cette année-là ») ; `piste` reprend, si j’en ai suivi une, le `nom` d’une piste de l’année (`GET /me/voyage/annees/{annee}`) — que `demande` la reprenne mot pour mot ou non. Année verrouillée ou sans ouverture → `404`. Une demande `en_cours` existe déjà pour cette année → `409 CONFLICT`.
+     * @description Corps `{ demande, piste? }` : `demande` est une phrase de 1 à 200 caractères (« la comédie italienne cette année-là ») ; `piste` reprend, si j’en ai suivi une, le `nom` d’une piste de l’année (`GET /me/voyage/annees/{annee}`) — que `demande` la reprenne mot pour mot ou non. Année verrouillée ou sans ouverture → `404`. Une demande `en_cours` existe déjà pour cette année → `409 CONFLICT`. `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA.
      *
      * `piste` fournie et connue : retirée de la liste des pistes de l’année tout de suite, avant même que le chroniqueur ait répondu — une piste inconnue est ignorée, sans erreur.
      *
@@ -8893,6 +8936,12 @@ export interface paths {
           };
         };
         /** @description Default Response */
+        403: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
         404: {
           content: {
             "application/json": components["schemas"]["ApiError"];
@@ -8914,7 +8963,7 @@ export interface paths {
      *
      * Les trois pistes rendues **remplacent** la liste précédente de l’année — `pistes` sur `GET /me/voyage/annees/{annee}` (prête). Utiliser une piste pour ouvrir une salle la retire de cette liste (`POST /me/voyage/annees/{annee}/salles`, corps `piste`), jamais cette route.
      *
-     * `404` si cette année n’a pas encore d’ouverture pour moi, ou si elle est verrouillée. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
+     * `404` si cette année n’a pas encore d’ouverture pour moi, ou si elle est verrouillée. `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
      *
      * Le coût de l’appel se journalise dans `appels_ia` (type `pistes`), comme les autres appels au chroniqueur — voir `GET /me/voyage/depenses`.
      */
@@ -8947,6 +8996,12 @@ export interface paths {
         };
         /** @description Default Response */
         401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        403: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };
@@ -9010,7 +9065,7 @@ export interface paths {
      *
      * On ne compose une séance que dans mon année en cours : `404` sur toute autre année, ou si elle n’a pas encore été ouverte. `400 VALIDATION` si tous les films de mes salles de cette année sont déjà vus ou introuvables — il n’y a alors plus rien de neuf à proposer.
      *
-     * La composition choisit un long jamais vu (sur mon Plex d’abord, sinon à demander), et en ouverture un court, un programme ou une de ses bobines quand l’année en a — jamais si un titre rendu par le chroniqueur ne se résout sur aucun film ou bobine connus, ou si le long rendu est déjà vu : la génération échoue alors sans rien écrire, et le verrou se libère pour qu’une prochaine demande retente.
+     * La composition choisit un long jamais vu (sur mon Plex d’abord, sinon à demander), et en ouverture un court, un programme ou une de ses bobines quand l’année en a — jamais si un titre rendu par le chroniqueur ne se résout sur aucun film ou bobine connus, ou si le long rendu est déjà vu : la génération échoue alors sans rien écrire, et le verrou se libère pour qu’une prochaine demande retente. `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA.
      */
     post: {
       parameters: {
@@ -9036,6 +9091,12 @@ export interface paths {
         };
         /** @description Default Response */
         401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        403: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };
@@ -9570,9 +9631,11 @@ export interface paths {
      *
      * Sert aux années déjà bouclées avant ce brief, et au cas où la génération en arrière-plan (déclenchée à l’octroi du ticket) aurait échoué.
      *
-     * `404` si cette année n’a pas encore d’ouverture pour moi. `409 CONFLICT` si elle n’a pas encore son ticket (le jugement de maturité ne l’a pas encore accordé). `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur et que le générique n’a pas déjà été écrit. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
+     * Pour un membre hors IA : jamais d’appel au chroniqueur, jamais `503` — un texte composé à la lecture, à partir de mon propre journal (jamais celui du compte IA), de mes salles bouclées et de ma récompense. `404` si cette année n’est pas dans mes années lisibles, ou si le compte IA n’a pas encore d’ouverture pour elle ; `409 CONFLICT` sans mon ticket vers l’année suivante.
      *
-     * Le coût de l’appel se journalise dans `appels_ia` (type `generique`), comme les autres appels au chroniqueur.
+     * Pour le compte IA : `404` si cette année n’a pas encore d’ouverture pour moi. `409 CONFLICT` si elle n’a pas encore son ticket (le jugement de maturité ne l’a pas encore accordé, ou le Lion). `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur et que le générique n’a pas déjà été écrit. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
+     *
+     * Le coût de l’appel se journalise dans `appels_ia` (type `generique`), comme les autres appels au chroniqueur — rien pour un membre hors IA.
      */
     post: {
       parameters: {
