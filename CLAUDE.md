@@ -28,6 +28,11 @@ en est engendré : ni l'un ni l'autre ne se modifie à la main. `npm run contrac
 deux d'un geste. Une donnée qui manque au contrat demande un changement du back, jamais un
 contournement ici.
 
+**Un contrat en retard bloque le tag de l'API, pas seulement la CI d'ici.** Le Journal se livre
+dans l'image du front au tag de `bibliotheque-back` (`README.md`, « La livraison ») ; `livrer.yml`
+y compare `contract/openapi.json` à `docs/openapi.json` et refuse le tag si `main` de ce dépôt a
+pris du retard — même quand rien d'autre n'a changé côté API.
+
 ## Les tests
 
 Vitest et Testing Library, `fetch` toujours doublé : aucun test n'appelle l'API réelle, aucun ne

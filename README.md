@@ -64,3 +64,22 @@ celui d'`autoUpdate` qui rechargerait la page dès qu'une version s'active.
 Un service worker exige HTTPS hors de `localhost` : depuis le téléphone, `http://<poste>:5174/journal/`
 montre l'app mais ne l'installe pas ; l'installation s'éprouve en ligne, sur
 `https://mini-mediatheque.fr/journal/`.
+
+## La livraison
+
+Le Journal n'a pas de tag ni d'image à lui : il se livre au tag de `bibliotheque-back`. Au moment
+d'un tag `vX.Y.Z`, `livrer.yml` (dans `biblio-back`) épingle
+`theof199/biblio-journal@main`, construit ce commit (`npm run build` puis `npm run verifier:dist`)
+et glisse le `dist/` produit dans l'image du front comme contexte Docker nommé `journal` — l'étage
+`FROM scratch AS journal` de `Dockerfile.nas` (`Aceep/Library`). Le Journal n'a pas d'image propre :
+il est servi sous `/journal/` par l'image `mediatheque-front`. Le corps de la Release porte
+`journal_source=theof199/biblio-journal@<sha>`, écrite pour un humain, pas lue par `deployer.py`.
+
+Avant de construire, `livrer.yml` compare `contract/openapi.json` (ce dépôt) à `docs/openapi.json`
+(le back) : s'ils diffèrent, le tag est refusé avec le message
+`le contrat du Journal a pris du retard sur l'API`. Remède : `npm run contract:pull` ici, une PR,
+puis reposer le tag.
+
+**Conséquence assumée : un correctif du Journal seul attend un tag de l'API.** Fusionner une PR sur
+`main` ne le met pas en service ; il faut ensuite un tag `vX.Y.Z` de `bibliotheque-back`, même sans
+changement côté API.
