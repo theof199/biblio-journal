@@ -12,9 +12,12 @@ Le journal des films du propriétaire, en application web installable, servie so
 
 `http://localhost:5174/journal/`, par-dessus l'instance locale de l'API (`http://localhost:3000`),
 lancée dans `../biblio-back` par `bin/dev`. Une autre cible se fixe par `VITE_API_TARGET`, en
-variable de shell ou dans un `.env.local` (`VITE_API_TARGET=https://mini-mediatheque.fr` par
-exemple) : `vite.config.ts` la lit par `loadEnv`, et son proxy relaie `/api` et `/covers` vers elle,
-pour que le cookie de session reparte sur la même origine (`SameSite=Lax`).
+variable de shell ou dans un `.env.local` : `vite.config.ts` la lit par `loadEnv`, et son proxy
+relaie `/api` (préfixe retiré) et `/covers` vers elle, pour que le cookie de session reparte sur la
+même origine (`SameSite=Lax`). L'instance en ligne se vise **avec** son `/api`
+(`VITE_API_TARGET=https://mini-mediatheque.fr/api`) : le proxy retire le préfixe, la cible le
+remet. L'origine nue enverrait `/api/auth/me` sur `/auth/me`, que le nginx du front sert par son
+`index.html` : l'app répondrait `MALFORMED` partout.
 
 ## Commandes
 
