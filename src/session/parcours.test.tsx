@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
 import { createQueryClient } from '../api/queryClient'
+import { cles } from '../api/cles'
 
 const ALICE = {
   user: {
@@ -28,9 +29,9 @@ function servir(routes: Record<string, (init: RequestInit) => Response>) {
   })
 }
 
-function monter(chemin: string) {
+function monter(chemin: string, client = createQueryClient()) {
   return render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[chemin]}>
         <App />
       </MemoryRouter>
@@ -120,6 +121,37 @@ describe('la garde et la connexion', () => {
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument()
     expect(ferme).toBe(true)
+  })
+
+  /**
+   * Vider tout le cache (`clear()`, ou `removeQueries()` sans filtre) après
+   * avoir posé `null` retire aussi la requête de session : la garde repasse
+   * par « Chargement… » et relit `/auth/me`, et une API injoignable à cet
+   * instant montrerait la panne au lieu de la connexion.
+   */
+  it('se déconnecter vide le cache du membre sans relire la session', async () => {
+    const requetes: string[] = []
+    let ferme = false
+    const client = createQueryClient()
+    client.setQueryData(['journal'], [{ id: 'une-entree' }])
+    servir({
+      'GET /api/auth/me': () => {
+        requetes.push('GET /api/auth/me')
+        return ferme ? json(NON_CONNECTE, 401) : json(ALICE)
+      },
+      'POST /api/auth/logout': () => {
+        requetes.push('POST /api/auth/logout')
+        ferme = true
+        return new Response(null, { status: 204 })
+      },
+    })
+    monter('/', client)
+    fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }))
+    await screen.findByRole('heading', { name: 'Connexion' })
+
+    expect(requetes).toEqual(['GET /api/auth/me', 'POST /api/auth/logout'])
+    expect(client.getQueryData(cles.session)).toBeNull()
+    expect(client.getQueryData(['journal'])).toBeUndefined()
   })
 
   it('API injoignable au lancement : une panne, pas l’écran de connexion', async () => {
