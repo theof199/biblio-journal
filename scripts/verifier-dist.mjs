@@ -43,6 +43,19 @@ const fichiers = (d) =>
 for (const f of fichiers(dist).filter((f) => /\.(js|html)$/.test(f)))
   exiger(!readFileSync(f, 'utf8').includes('dev-login'), `${f} : dev-login dans le livrable`)
 
+// 5. Jamais de rechargement forcé : `sw.js` est le même en `registerType: 'prompt'`
+// et en `'autoUpdate'`, la différence vit dans le code client du plugin. En
+// `autoUpdate`, il recharge la page dès qu'une version s'active (écouteur
+// `activated`) ; en `prompt`, il n'écoute `controlling` qu'une fois le bandeau
+// montré ; sans cet écouteur, rien n'enregistre le service worker. Constaté au
+// build, vite-plugin-pwa 1.3.0.
+const client = fichiers(join(dist, 'assets'))
+  .filter((f) => f.endsWith('.js'))
+  .map((f) => readFileSync(f, 'utf8'))
+  .join('\n')
+exiger(client.includes('addEventListener("controlling"'), 'client : aucun enregistrement en mode prompt (MiseAJour non monté ?)')
+exiger(!client.includes('addEventListener("activated"'), 'client : rechargement automatique (autoUpdate)')
+
 if (echecs.length) {
   console.error(echecs.map((e) => `ECHEC ${e}`).join('\n'))
   process.exit(1)
