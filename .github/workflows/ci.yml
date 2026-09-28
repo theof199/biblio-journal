@@ -1,0 +1,64 @@
+name: CI
+
+# Sur main et sur les propositions de fusion. Les branches de travail sont
+# couvertes par leur pull request : les vérifier deux fois ne dirait rien de
+# plus et doublerait l'attente.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verifier:
+    name: Contrat, lint, tests et build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # La version vient de `.nvmrc`, qui fait autorité — et elle est dictée par
+      # jsdom, la dépendance la plus exigeante : `^22.22.2 || ^24.15.0 ||
+      # >=26.0.0`. Sous Node 20, son undici plante au chargement et **aucun**
+      # test ne démarre. `engines` dans `package.json` recopie cette contrainte.
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # `npm ci` plutôt que `npm install` : il installe exactement le lockfile
+      # et échoue s'il diverge de package.json, au lieu de le réécrire en
+      # silence.
+      #
+      # `--engine-strict` ferme la brèche qui a rendu `main` rouge : sans lui,
+      # un Node trop ancien ne produit qu'un avertissement à l'installation, et
+      # la casse n'arrive qu'à l'exécution, loin de sa cause.
+      - name: Installer les dépendances
+        run: npm ci --engine-strict
+
+      # Le garde-fou du contrat.
+      #
+      # `src/api/types.ts` est **engendré** depuis `contract/openapi.json`, et
+      # commité pour que le dépôt compile sans le back sous la main. Deux
+      # dérives sont possibles, cette étape ferme les deux : quelqu'un édite
+      # `types.ts` à la main, ou quelqu'un met à jour le contrat sans
+      # régénérer. Dans les deux cas, `diff` affiche exactement ce qui manque.
+      #
+      # Ce qu'elle ne peut pas voir : que `contract/openapi.json` a pris du
+      # retard sur le back, qui est un dépôt privé et séparé. C'est
+      # `npm run contract:pull` qui met les deux à jour d'un geste, et la revue
+      # de la PR qui lit ce que le contrat a changé.
+      - name: Contrat et types engendrés
+        run: npm run types:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      # `npm run build` enchaîne `tsc --noEmit` puis `vite build` : la
+      # compilation des types est donc couverte ici, pas besoin d'une étape à
+      # part.
+      - name: Build
+        run: npm run build

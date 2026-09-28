@@ -1,0 +1,43 @@
+{
+  "name": "biblio-journal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "^22.22.2 || ^24.15.0 || >=26.0.0" },
+  "allowScripts": { "esbuild": false },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 5174",
+    "contract:pull": "cp \"${BACK_REPO:-../biblio-back}/docs/openapi.json\" contract/openapi.json && npm run types",
+    "types": "openapi-typescript contract/openapi.json -o src/api/types.ts",
+    "types:check": "openapi-typescript contract/openapi.json -o .types.check.ts && diff -u src/api/types.ts .types.check.ts",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.28.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "jsdom": "^30.0.1",
+    "openapi-typescript": "^6.7.6",
+    "typescript": "^5.2.0",
+    "vite": "^5.0.0",
+    "vitest": "^2.1.9"
+  }
+}

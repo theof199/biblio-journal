@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dev-dist/
+build/
+*.log
+
+# Environnement local
+.env
+.env.local
+.env.*.local
+
+# Artefacts d'outillage
+.vite/
+.DS_Store
+
+# Sortie temporaire de `npm run types:check`.
+.types.check.ts

@@ -1,0 +1,7 @@
+node_modules
+dist
+dev-dist
+*.log
+
+# Généré par `npm run types` — jamais édité à la main
+src/api/types.ts
