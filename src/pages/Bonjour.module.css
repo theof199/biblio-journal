@@ -1,0 +1,17 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  min-height: 100vh;
+}
+
+.bouton {
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  font-size: 1rem;
+}

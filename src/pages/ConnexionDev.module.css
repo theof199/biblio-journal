@@ -1,0 +1,38 @@
+.bloc {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed currentColor;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.titre {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ligne {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.champ {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  font-size: 1rem;
+}
+
+.bouton {
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  font-size: 1rem;
+}
