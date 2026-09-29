@@ -1,0 +1,224 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  max-width: var(--largeur-contenu);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--espace-4) var(--espace-6);
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.titre {
+  margin: 0;
+  flex: 1;
+}
+
+.compte {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+  white-space: nowrap;
+}
+
+.recherche {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+}
+
+.champRecherche {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: var(--taille-m);
+  color: inherit;
+}
+
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.puce {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-1);
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-surface);
+  font-size: var(--taille-s);
+  cursor: pointer;
+}
+
+.puceActive {
+  border-color: var(--couleur-accent);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.panneau {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  padding: var(--espace-4);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+}
+
+.panneauLibelle {
+  margin: 0;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-moyenne);
+  color: var(--couleur-texte-doux);
+}
+
+.pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.pastille {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--taille-pastille-note);
+  height: var(--taille-pastille-note);
+  border: none;
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-surface-2);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}
+
+.pastilleActive {
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.effacerPanneau {
+  align-self: flex-end;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-2);
+  border: none;
+  background: none;
+  color: var(--couleur-accent);
+  font-size: var(--taille-s);
+  cursor: pointer;
+}
+
+.chargement {
+  margin: 0;
+  text-align: center;
+  color: var(--couleur-texte-doux);
+  padding: var(--espace-3) 0;
+}
+
+.erreur {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-3);
+  padding: var(--espace-3);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface-2);
+}
+
+.erreurTexte {
+  margin: 0;
+  color: var(--couleur-danger);
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+}
+
+.ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-3) 0;
+  border-bottom: var(--trait) solid var(--couleur-bordure);
+  text-decoration: none;
+  color: inherit;
+}
+
+.infosLigne {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.titreLigne {
+  margin: 0;
+  font-weight: var(--graisse-moyenne);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sousTitreLigne {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.dateLigne {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-1);
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.iconeTicket {
+  width: var(--taille-icone-inline);
+  height: var(--taille-icone-inline);
+  flex-shrink: 0;
+}
+
+.reactionsLigne {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-xs);
+}
+
+.vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-6) 0;
+  text-align: center;
+  color: var(--couleur-texte-doux);
+}
+
+.bouton {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  border: var(--trait) solid var(--couleur-bordure);
+  background: var(--couleur-surface);
+  font-size: var(--taille-m);
+  cursor: pointer;
+}

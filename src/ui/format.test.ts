@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { jourLocal, sousTitre } from './format'
+import { formatDateVisionnage, jourLocal, normaliser, sousTitre } from './format'
 
 describe('sousTitre', () => {
   it('joint le réalisateur et l’année', () => {
@@ -29,5 +29,34 @@ describe('jourLocal', () => {
 
   it('complète le mois et le jour sur deux chiffres', () => {
     expect(jourLocal(new Date(2026, 0, 5, 12))).toBe('2026-01-05')
+  })
+})
+
+describe('formatDateVisionnage', () => {
+  it('écrit le jour, le mois en toutes lettres et l’année', () => {
+    expect(formatDateVisionnage('2026-07-12')).toBe('12 juillet 2026')
+  })
+
+  it('ordinalise le premier du mois', () => {
+    expect(formatDateVisionnage('2026-10-01')).toBe('1er octobre 2026')
+  })
+})
+
+describe('normaliser', () => {
+  it('met en minuscules', () => {
+    expect(normaliser('MIYAZAKI')).toBe('miyazaki')
+  })
+
+  it('retire les accents', () => {
+    expect(normaliser('Amélie')).toBe('amelie')
+  })
+
+  it('rogne les espaces aux extrémités', () => {
+    expect(normaliser('  Miyazaki  ')).toBe('miyazaki')
+  })
+
+  // Mutation : sans `.toLowerCase()` après `.replace`, « CAFÉ » et « café » resteraient distincts.
+  it('« miya » retrouve « Hayao Miyazaki »', () => {
+    expect(normaliser('Hayao Miyazaki').includes(normaliser('miya'))).toBe(true)
   })
 })

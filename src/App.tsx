@@ -6,6 +6,7 @@ import Accueil from './pages/Accueil'
 import Recherche from './pages/Recherche'
 import Formulaire from './pages/Formulaire'
 import Fiche from './pages/Fiche'
+import MesFilms from './pages/MesFilms'
 import Voyage from './pages/Voyage'
 import Suivis from './pages/Suivis'
 import AuCine from './pages/AuCine'
@@ -29,6 +30,9 @@ export default function App() {
           <Route path="suivis" element={<Suivis />} />
           <Route path="au-cine" element={<AuCine />} />
           <Route path="profil" element={<Profil />} />
+          {/* Sous-page du profil (README, « La coque à onglets ») : l'onglet Profil reste marqué,
+              comme sur l'appli Android où « Mes films » ne se pousse que depuis lui. */}
+          <Route path="profil/mes-films" element={<MesFilms />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
