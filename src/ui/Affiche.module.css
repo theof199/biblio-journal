@@ -1,0 +1,40 @@
+/* Aucune valeur en dur : tout vient de `theme.css`. */
+
+.cadre {
+  position: relative;
+  aspect-ratio: var(--ratio-affiche);
+  overflow: hidden;
+  border-radius: var(--rayon-s);
+  background: var(--couleur-surface-2);
+  flex-shrink: 0;
+}
+
+.grande {
+  width: 100%;
+}
+
+.ligne {
+  width: var(--largeur-affiche-ligne);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.note {
+  position: absolute;
+  right: var(--espace-1);
+  bottom: var(--espace-1);
+  min-width: var(--espace-5);
+  padding: 0 var(--espace-1);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-align: center;
+  line-height: var(--espace-5);
+}

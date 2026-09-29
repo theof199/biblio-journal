@@ -12,7 +12,7 @@ type Contrat = {
 const contrat = JSON.parse(brut) as Contrat
 
 /** Une copie profonde de l'exemple « Réponse type » : le test peut la modifier sans toucher aux autres. */
-export function exemple<T>(chemin: string, methode: 'get' | 'post', statut: number): T {
+export function exemple<T>(chemin: string, methode: 'get' | 'post' | 'patch' | 'delete', statut: number): T {
   const valeur = contrat.paths[chemin]?.[methode]?.responses[String(statut)]?.content?.['application/json']?.examples?.['Réponse type']?.value
   if (valeur === undefined) throw new Error(`pas d'exemple pour ${methode.toUpperCase()} ${chemin} ${statut}`)
   return structuredClone(valeur) as T

@@ -11,6 +11,8 @@ export type Voyage = Json<paths['/me/voyage']['get']['responses'][200]>
 export type AnneeCarte = Voyage['annees'][number]
 export type Progression = NonNullable<AnneeCarte['progression']>
 export type Recompense = NonNullable<AnneeCarte['recompense']>
+/** La séance prise, tant que son long n'est pas encore vu — nulle sinon (`GET /me/voyage`, pour la carte « Ce soir » de l'accueil). */
+export type SeancePrise = NonNullable<Voyage['seance_prise']>
 export type Tickets = Json<paths['/me/voyage/tickets']['get']['responses'][200]>
 export type Ticket = Tickets['tickets'][number]
 export type TicketUtilise = Json<paths['/me/voyage/tickets/{annee}/utiliser']['post']['responses'][200]>

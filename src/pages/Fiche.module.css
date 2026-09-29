@@ -1,0 +1,82 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  max-width: var(--largeur-contenu);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--espace-4) var(--espace-6);
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.film {
+  display: flex;
+  gap: var(--espace-4);
+}
+
+.affiche {
+  width: var(--largeur-affiche-fiche);
+}
+
+.infos {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
+.titre {
+  margin: 0;
+  font-size: var(--taille-xl);
+}
+
+.sousTitre {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.note {
+  margin: 0;
+  color: var(--couleur-accent);
+  font-weight: var(--graisse-forte);
+}
+
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.puce {
+  min-height: var(--espace-5);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--espace-3);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-surface-2);
+  font-size: var(--taille-s);
+}
+
+.bouton {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  border: none;
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -82,6 +82,14 @@
   --barre-onglets-icone: 24px;
   --barre-onglets-icone-trait: 1.75; /* l'épaisseur du trait des icônes */
   --largeur-panneau: 24rem; /* la carte de connexion */
+  --ratio-affiche: 2 / 3; /* la jaquette d'un film */
+  --grille-affiches-colonnes: repeat(2, 1fr); /* la grille du journal, deux colonnes */
+  --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, « Ensuite », « Ce soir ») */
+  --taille-bouton-rond: 3.5rem; /* le bouton d'ajout flottant */
+  --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */
+  --largeur-vitrine-vide: 40%; /* le cadre d'affiche vide, avant le premier film */
+  --hauteur-remarque: 6rem; /* la remarque privée du carnet, dans le formulaire */
+  --largeur-affiche-fiche: 7rem; /* la jaquette de la fiche d'un visionnage */
   /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));
 

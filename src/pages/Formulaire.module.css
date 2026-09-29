@@ -1,0 +1,213 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  max-width: var(--largeur-contenu);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--espace-4) var(--espace-6);
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.film {
+  display: flex;
+  gap: var(--espace-4);
+}
+
+.infosFilm {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
+.titreFilm {
+  margin: 0;
+  font-size: var(--taille-l);
+}
+
+.sousTitreFilm {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-moyenne);
+}
+
+.saisie {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border-radius: var(--rayon-m);
+  border: var(--trait) solid var(--couleur-bordure);
+  background: var(--couleur-surface);
+  font-size: var(--taille-m);
+}
+
+.libelle {
+  margin: 0 0 var(--espace-2);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-moyenne);
+  color: var(--couleur-texte-doux);
+}
+
+.notes {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espace-1);
+}
+
+.pastille {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-tactile);
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.rond {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--taille-pastille-note);
+  height: var(--taille-pastille-note);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-surface-2);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+}
+
+.rondActif {
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.puce {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-surface);
+  font-size: var(--taille-s);
+  cursor: pointer;
+}
+
+.puceActive {
+  border-color: var(--couleur-accent);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.remarque {
+  min-height: var(--hauteur-remarque);
+  padding: var(--espace-3);
+  border-radius: var(--rayon-m);
+  border: var(--trait) solid var(--couleur-bordure);
+  background: var(--couleur-surface);
+  font-family: inherit;
+  font-size: var(--taille-m);
+  resize: vertical;
+}
+
+.aide {
+  margin: var(--espace-1) 0 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-xs);
+}
+
+.erreur {
+  margin: 0;
+  color: var(--couleur-danger);
+}
+
+.contexteErreur {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.bouton {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  border: none;
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}
+
+.bouton:disabled {
+  opacity: var(--opacite-inactif);
+  cursor: default;
+}
+
+.boutonSupprimer {
+  align-self: center;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: none;
+  background: none;
+  color: var(--couleur-danger);
+  font-size: var(--taille-s);
+  cursor: pointer;
+}
+
+.confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  padding: var(--espace-4);
+  border: var(--trait) solid var(--couleur-danger);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+}
+
+.confirmationActions {
+  display: flex;
+  gap: var(--espace-2);
+  justify-content: flex-end;
+}
+
+.boutonDanger {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  border: none;
+  background: var(--couleur-danger);
+  color: var(--couleur-sur-accent);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}
+
+.boutonSecondaire {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  border: var(--trait) solid var(--couleur-bordure);
+  background: var(--couleur-surface);
+  font-size: var(--taille-m);
+  cursor: pointer;
+}

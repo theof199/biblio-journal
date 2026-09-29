@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
 import { createQueryClient } from '../api/queryClient'
 import { cles } from '../api/cles'
+import { ROUTES_ACCUEIL } from '../test/routesAccueil'
 
 const ALICE = {
   user: {
@@ -61,21 +62,21 @@ describe('la garde et la connexion', () => {
     expect(screen.queryByText(/Bonjour/)).not.toBeInTheDocument()
   })
 
-  it('avec une session, l’accueil salue le membre par son pseudo', async () => {
-    servir({ 'GET /api/auth/me': () => json(ALICE) })
+  it('avec une session, l’accueil du journal s’affiche', async () => {
+    servir({ 'GET /api/auth/me': () => json(ALICE), ...ROUTES_ACCUEIL })
     monter('/')
 
-    expect(await screen.findByRole('heading', { name: 'Bonjour alice' })).toBeInTheDocument()
+    expect(await screen.findByText('La vitrine attend sa première affiche.')).toBeInTheDocument()
   })
 
   it('une session ouverte ne revoit pas la connexion', async () => {
-    servir({ 'GET /api/auth/me': () => json(ALICE) })
+    servir({ 'GET /api/auth/me': () => json(ALICE), ...ROUTES_ACCUEIL })
     monter('/connexion')
 
-    expect(await screen.findByRole('heading', { name: 'Bonjour alice' })).toBeInTheDocument()
+    expect(await screen.findByText('La vitrine attend sa première affiche.')).toBeInTheDocument()
   })
 
-  it('se connecter envoie pseudo et mot de passe, puis salue', async () => {
+  it('se connecter envoie pseudo et mot de passe, puis mène à l’accueil', async () => {
     const envoye: unknown[] = []
     servir({
       'GET /api/auth/me': () => json(NON_CONNECTE, 401),
@@ -83,12 +84,13 @@ describe('la garde et la connexion', () => {
         envoye.push(JSON.parse(String(init.body)))
         return json(ALICE)
       },
+      ...ROUTES_ACCUEIL,
     })
     monter('/')
     await screen.findByRole('heading', { name: 'Connexion' })
     saisir('alice', 'secret')
 
-    expect(await screen.findByRole('heading', { name: 'Bonjour alice' })).toBeInTheDocument()
+    expect(await screen.findByText('La vitrine attend sa première affiche.')).toBeInTheDocument()
     expect(envoye).toEqual([{ pseudo: 'alice', password: 'secret' }])
   })
 

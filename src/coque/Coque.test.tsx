@@ -7,16 +7,18 @@ import Coque from './Coque'
 import { createQueryClient } from '../api/queryClient'
 import { exemple } from '../test/contrat'
 import { json, servir } from '../test/serveur'
+import { ROUTES_ACCUEIL } from '../test/routesAccueil'
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 const NON_CONNECTE = { code: 'UNAUTHENTICATED', message: 'Tu dois être connecté pour faire ça.', retryable: false }
 
 /**
  * Les onglets de l'appli Android (`Navigation.kt`, `BottomTab`), leur chemin, l'icône Tabler
- * choisie par le propriétaire, et le titre de la page qu'ils ouvrent.
+ * choisie par le propriétaire, et le titre de la page qu'ils ouvrent. Le fronton de l'accueil porte
+ * le jour du calendrier (`formatJour`, `accueil/fronton.ts`) : un motif plutôt qu'un texte fixe.
  */
 const ATTENDUS = [
-  { libelle: 'Accueil', chemin: '/', icone: 'building-pavilion', titre: `Bonjour ${SESSION.user.pseudo}` },
+  { libelle: 'Accueil', chemin: '/', icone: 'building-pavilion', titre: /^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche) /u },
   { libelle: 'Voyage', chemin: '/voyage', icone: 'route', titre: 'Voyage' },
   { libelle: 'Suivis', chemin: '/suivis', icone: 'chair-director', titre: 'Suivis' },
   { libelle: 'Au ciné', chemin: '/au-cine', icone: 'ticket', titre: 'Au ciné' },
@@ -51,7 +53,7 @@ describe('la coque à onglets', () => {
   })
 
   it.each(ATTENDUS)('sur $chemin, la barre montre les cinq onglets et marque $libelle seul', async (courant) => {
-    servir({ 'GET /api/auth/me': () => json(SESSION) })
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL })
     monter(courant.chemin)
 
     expect(await screen.findByRole('heading', { level: 1, name: courant.titre })).toBeInTheDocument()
@@ -69,7 +71,7 @@ describe('la coque à onglets', () => {
   it.each(ATTENDUS)('un clic sur $libelle mène à sa page', async (cible) => {
     // Depuis un autre onglet : un clic sur l'onglet déjà ouvert ne prouverait rien.
     const depart = cible.chemin === '/profil' ? '/suivis' : '/profil'
-    servir({ 'GET /api/auth/me': () => json(SESSION) })
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL })
     monter(depart)
     await within(await screen.findByRole('navigation', { name: 'Onglets' })).findAllByRole('link')
 
@@ -101,7 +103,7 @@ describe('la coque à onglets', () => {
   })
 
   it.each(['/nulle-part', '/voyage/1898', '/profil/reglages'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {
-    servir({ 'GET /api/auth/me': () => json(SESSION) })
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL })
     monter(inconnue)
 
     expect(await screen.findByRole('heading', { level: 1, name: ATTENDUS[0].titre })).toBeInTheDocument()

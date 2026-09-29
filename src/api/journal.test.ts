@@ -1,0 +1,94 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  corrigerVisionnage,
+  creerVisionnage,
+  curseurSuivant,
+  dejaAuJournal,
+  lireJournal,
+  supprimerVisionnage,
+} from './journal'
+import { exemple } from '../test/contrat'
+import type { AddMediaResponse, JournalItem, JournalPage } from './journal'
+
+describe('curseurSuivant', () => {
+  it('rend le curseur de la page suivante', () => {
+    expect(curseurSuivant({ items: [], next_cursor: 'abc' })).toBe('abc')
+  })
+
+  it('rend `undefined` — jamais `null` — sur la dernière page, pour que React Query s’arrête', () => {
+    expect(curseurSuivant({ items: [], next_cursor: null })).toBeUndefined()
+  })
+})
+
+describe('dejaAuJournal', () => {
+  it('associe le tmdb_id de chaque film déjà vu à sa note', () => {
+    const page = exemple<JournalPage>('/me/journal', 'get', 200)
+    const table = dejaAuJournal([page])
+    const item = page.items[0]!
+    expect(table.get(item.media.external_id)).toBe(item.entry.rating)
+  })
+
+  it('garde la première rencontre — la plus récente, l’ordre du journal — plutôt que la dernière', () => {
+    const item = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
+    const ancien = { ...item, entry: { ...item.entry, id: 'autre', rating: 3 } }
+    expect(dejaAuJournal([{ items: [item, ancien], next_cursor: null }]).get(item.media.external_id)).toBe(
+      item.entry.rating,
+    )
+  })
+
+  it('ne connaît pas un film jamais vu', () => {
+    expect(dejaAuJournal([{ items: [], next_cursor: null }]).has('27205')).toBe(false)
+  })
+})
+
+describe('le client du journal', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('lit une page de mon journal', async () => {
+    const page = exemple<JournalPage>('/me/journal', 'get', 200)
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(page), { status: 200 }))
+    await expect(lireJournal({ limit: 20 })).resolves.toEqual(page)
+    expect(fetch).toHaveBeenCalledWith('/api/me/journal?limit=20', expect.objectContaining({ method: 'GET' }))
+  })
+
+  it('crée un visionnage en deux appels, dans l’ordre : le média puis le journal', async () => {
+    const media = exemple<AddMediaResponse>('/media', 'post', 201)
+    const entree = exemple<JournalItem>('/me/journal', 'post', 201)
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify(media), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(entree), { status: 201 }))
+
+    await creerVisionnage(
+      { source: 'tmdb', external_id: '27205', type: 'movie' },
+      { finished_at: '2026-09-29' },
+    )
+
+    const appels = vi.mocked(fetch).mock.calls.map(([url, init]) => `${(init as RequestInit).method} ${String(url)}`)
+    expect(appels).toEqual(['POST /api/media', 'POST /api/me/journal'])
+
+    // Mutation : le second corps doit porter l'identifiant du média que le premier appel a rendu.
+    const [, secondInit] = vi.mocked(fetch).mock.calls[1]!
+    const corps = JSON.parse(String((secondInit as RequestInit).body)) as { media_id: string }
+    expect(corps.media_id).toBe(media.media.id)
+  })
+
+  it('corrige un visionnage par son identifiant', async () => {
+    const entree = exemple<JournalItem>('/me/journal/{id}', 'patch', 200)
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(entree), { status: 200 }))
+    await corrigerVisionnage('e0000000-0000-4000-8000-000000000002', { rating: 8 })
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/me/journal/e0000000-0000-4000-8000-000000000002',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
+  })
+
+  it('supprime un visionnage par son identifiant', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }))
+    await supprimerVisionnage('e0000000-0000-4000-8000-000000000002')
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/me/journal/e0000000-0000-4000-8000-000000000002',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+})

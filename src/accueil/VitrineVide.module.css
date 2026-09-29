@@ -1,0 +1,33 @@
+/* Aucune valeur en dur : tout vient de `theme.css`. */
+
+.vitrine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-4);
+  padding: var(--espace-6) var(--espace-4);
+  text-align: center;
+}
+
+.cadre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--largeur-vitrine-vide);
+  aspect-ratio: var(--ratio-affiche);
+  border: var(--trait) dashed var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: none;
+  color: var(--couleur-accent);
+  cursor: pointer;
+}
+
+.icone {
+  width: var(--barre-onglets-icone);
+  height: var(--barre-onglets-icone);
+}
+
+.texte {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}

@@ -1,0 +1,112 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  max-width: var(--largeur-contenu);
+  margin: 0 auto;
+  padding-bottom: var(--espace-6);
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  padding: var(--espace-2) var(--espace-3);
+}
+
+.champ {
+  flex: 1;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  font-size: var(--taille-m);
+}
+
+.corps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-5);
+  padding: 0 var(--espace-4);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.enteteSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.titreSection {
+  margin: 0;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  color: var(--couleur-texte-doux);
+}
+
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.puce {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-surface);
+  font-size: var(--taille-s);
+  cursor: pointer;
+}
+
+.resultats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.resultat {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.infosResultat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.titreResultat {
+  margin: 0;
+  font-weight: var(--graisse-moyenne);
+}
+
+.sousTitreResultat {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.vuResultat {
+  flex-shrink: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.vide {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  text-align: center;
+  padding: var(--espace-5) 0;
+}

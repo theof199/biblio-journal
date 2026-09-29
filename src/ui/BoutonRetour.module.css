@@ -1,0 +1,23 @@
+/* Aucune valeur en dur : tout vient de `theme.css`. */
+
+.bouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cible-tactile);
+  height: var(--cible-tactile);
+  border: none;
+  border-radius: var(--rayon-plein);
+  background: transparent;
+  color: var(--couleur-texte);
+  cursor: pointer;
+}
+
+.bouton:hover {
+  background: var(--couleur-surface-2);
+}
+
+.icone {
+  width: var(--barre-onglets-icone);
+  height: var(--barre-onglets-icone);
+}
