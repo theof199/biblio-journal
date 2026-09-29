@@ -2,6 +2,7 @@ import type { Rgb } from '../carte/outils'
 import type { Rampe } from '../carte/rampe'
 import type { Trace } from './trace'
 import type { EtatCase } from '../voyage/regles'
+import type { Recompense } from '../api/voyage'
 
 /**
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
@@ -176,4 +177,114 @@ export interface Monde {
   dessinerAdieu: (v: VueMonde) => void
   /** Un toucher sur une zone du décor : `data` est celle de la zone, `ou` son centre à l'écran (d'où partent confettis et étincelles). */
   reagir: (id: string, data: number | null, v: VueMonde, ou: { x: number; y: number }) => void
+  /** Les pages du Voyage de ce monde : la fiche d'une année, la fiche d'un film, le billet, la feuille (plan 2b). */
+  pages: HabillagePages
+}
+
+/**
+ * Les variables CSS des pages du Voyage. Un monde les pose toutes sur la racine de chaque page ; une
+ * feuille de `src/voyage/` ou `src/pages/Voyage*.module.css` ne lit aucune couleur ni police
+ * ailleurs (`src/voyage/habillage.test.ts`). Une couleur de maquette qui n'y trouve pas sa place
+ * s'ajoute ici, et dans chaque monde.
+ */
+export const JETONS_DE_PAGE = [
+  '--m-fond',
+  '--m-tel',
+  '--m-papier',
+  '--m-papier2',
+  '--m-carton',
+  '--m-encre',
+  '--m-encre2',
+  '--m-or',
+  '--m-or2',
+  '--m-rouge',
+  '--m-velours',
+  '--m-doux',
+  '--m-pale',
+  '--m-filet',
+  '--m-ombre',
+  '--m-f-titre',
+  '--m-f-affiche',
+  '--m-f-texte',
+  '--m-f-capitales',
+  '--m-f-corps',
+] as const
+
+export type JetonDePage = (typeof JETONS_DE_PAGE)[number]
+
+/** Les mots des pages : une rubrique change de nom avec le monde (maquette 1890 : « La parade », « Ce soir à la baraque »). */
+export interface MotsDesPages {
+  /** L'annonce du fronton, selon l'année : en cours, bouclée, fermée, en attente du Voyage suivi. */
+  annonce: { enCours: string; bouclee: string; fermee: string; attente: string }
+  boniment: string
+  lireOuverture: string
+  echos: string
+  programme: { sur: string; titre: string }
+  parade: { titre: string; sous: string }
+  seance: { titre: string; sous: string }
+  nouvelleSalle: string
+  jury: string
+  /** Le mot d'un film introuvable sous son affiche (« perdu » en 1890). */
+  introuvable: string
+  fermee: { pancarte: string; dejaVus: string; enAvance: string }
+  /** La phrase d'ambiance de l'intertitre d'une année fermée, avant le titre du passeport. */
+  intertitre: string
+  feuille: { tete: string; titre: string; sous: string; pied: string; imprimeur: string }
+  billet: { tete: string; titre: string; valider: string; validerSous: string }
+}
+
+/** Ce que la page passe au monde pour le bandeau d'une fiche d'année (maquette 1890 : `dessinBandeau`). */
+export interface VueBandeau {
+  ctx: CanvasRenderingContext2D
+  /** La toile en unités logiques : 390 de large, comme la maquette ; la page la met à l'échelle. */
+  W: number
+  H: number
+  t: number
+  vivant: boolean
+  /** La nuit de l'heure du visiteur, de 0 à 1 (`ambianceDeLHeure`). */
+  nuit: number
+  mode: 'encours' | 'bouclee' | 'fermee' | 'attente'
+  annee: number
+  recompense: Recompense | null
+  /** Les années de ce monde telles que la carte les voit : de quoi remplir la foire et allumer le fronton. */
+  cases: readonly Pick<CaseVue, 'annee' | 'etat' | 'profondeur'>[]
+  /** Le passeport porte-t-il la décennie ? */
+  bouclee: boolean
+  /** En attente : le Voyage suivi, dont la roulotte arrive ; nulle sinon. */
+  roulotte: { pseudo: string; annee: number } | null
+  /** Le dernier toucher du bandeau, en secondes de `t` ; -9 : jamais. */
+  touche: number
+}
+
+/** La scène de la fiche d'un film (maquette 1890 : `dessinTheatre`) : l'image du film projetée, et le public. */
+export interface VueScene {
+  ctx: CanvasRenderingContext2D
+  W: number
+  H: number
+  t: number
+  vivant: boolean
+  /** L'image du film (fond TMDB, sinon l'affiche), nulle tant qu'elle charge ou sans image : l'écran reste blanc de lumière. */
+  image: CanvasImageSource | null
+  touche: number
+}
+
+/** L'estrade du chroniqueur, au-dessus de la feuille (maquette 1890 : `dessinEstrade`). */
+export interface VueEstrade {
+  ctx: CanvasRenderingContext2D
+  W: number
+  H: number
+  t: number
+  vivant: boolean
+  /** Le chroniqueur se tait, tape (l'attente) ou parle (le texte se compose). */
+  parle: 'non' | 'tape' | 'parle'
+}
+
+export interface HabillagePages {
+  jetons: Readonly<Record<JetonDePage, string>>
+  mots: MotsDesPages
+  /** Les hauteurs logiques des trois toiles (la maquette : 250, 300, 190). */
+  hauteurs: { bandeau: number; scene: number; estrade: number }
+  dessinerBandeau: (v: VueBandeau) => void
+  dessinerScene: (v: VueScene) => void
+  dessinerEstrade: (v: VueEstrade) => void
 }

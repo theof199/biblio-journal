@@ -10,6 +10,7 @@ import { reagir } from './reactions'
 import { dessinerAdieu } from './adieu'
 import { DATES } from './dates'
 import { c, RAMPE } from './couleur'
+import { PAGES_1890 } from './pages'
 
 /** Les origines : la baraque foraine en sépia, avec la roulotte (choix du propriétaire, 29 septembre 2026). */
 export function creerMonde1890(): Monde {
@@ -49,5 +50,6 @@ export function creerMonde1890(): Monde {
     siteDuChantier: (annee) => ELEMENTS.find((e) => e.annee === annee)?.site[1] ?? null,
     dessinerAdieu,
     reagir,
+    pages: PAGES_1890,
   }
 }

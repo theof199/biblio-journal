@@ -1,0 +1,5 @@
+.toile {
+  display: block;
+  width: 100%;
+  touch-action: pan-y;
+}

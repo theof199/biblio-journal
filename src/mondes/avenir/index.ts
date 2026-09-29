@@ -2,6 +2,7 @@ import type { Monde, Palette } from '../types'
 import { traceAVenir } from '../trace'
 import { dessinerPorte } from '../../carte/dessin/porte'
 import { creerRampe } from '../../carte/rampe'
+import { PAGES_A_VENIR } from './pages'
 
 const ROMAINS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV']
 
@@ -51,5 +52,6 @@ export function mondeAVenir(decennie: number): Monde {
     siteDuChantier: () => null,
     dessinerAdieu: () => undefined,
     reagir: () => undefined,
+    pages: PAGES_A_VENIR,
   }
 }
