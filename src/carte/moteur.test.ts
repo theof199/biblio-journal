@@ -56,6 +56,8 @@ function monter(
     chantier1898?: number | null
     /** Le monde demande des étincelles, des confettis et de la fumée en dessinant ses plans proches. */
     particules?: boolean
+    /** Le ciel du monde d'essai n'écrit son horloge que s'il est vivant : l'image ne dépend plus que du dessin commun. */
+    cielSage?: boolean
   } = {},
 ) {
   vus.length = 0
@@ -65,8 +67,11 @@ function monter(
   const deps: Dependances = {
     creerToile: (w, h) => {
       const f = contexteFactice()
+      // Numérotée par ordre de création : dans la suite des appels, deux toiles (les trois motifs
+      // du grain, deux tuiles) ne se confondent pas.
+      const toile = { width: w, height: h, numero: toiles.length, getContext: () => f.ctx }
       toiles.push(f.appels)
-      return { width: w, height: h, getContext: () => f.ctx }
+      return toile
     },
     image: () => ({}) as CanvasImageSource,
     demanderImage: () => 1,
@@ -78,6 +83,7 @@ function monter(
       return {
         ...m,
         palette: options.sansColonne ? { ...m.palette, colonne: null } : m.palette,
+        dessinerCiel: options.cielSage ? (v) => (v.vivant ? m.dessinerCiel(v) : void vus.push(v)) : m.dessinerCiel,
         siteDuChantier: (annee) => (chantier1898 !== undefined && annee === 1898 ? chantier1898 : m.siteDuChantier(annee)),
         dessinerProche: (v) => {
           if (!particules) return
@@ -147,6 +153,27 @@ describe('le moteur de la carte', () => {
     moteur.image(2600)
     expect(JSON.stringify(appels)).toBe(premiere)
     expect(vus.every((v) => !v.vivant)).toBe(true)
+  })
+
+  // Mutation : une dépendance à `t` quand `vivant` est faux dans un dessin porté (le pouls ou les
+  // perforations d'une case, la roue ou les chevaux de la roulotte, la fumée, le faisceau, la
+  // brume, le pointillé du parcouru). Le test d'à côté pose le calme avant la première image, à
+  // `t` = 0 : il ne voit rien. Ici, l'horloge a tourné avant le calme, et l'image figée doit être
+  // celle qu'aurait posée un calme demandé dès l'ouverture.
+  it('fige la même image, à quelque instant que le visiteur demande moins d’animations', () => {
+    const roulotte = { pseudo: 'theo', annee: 1896 }
+    // Défilée de 300 px : la brume de 1898 (775) entre à l'écran, avec les cases qu'elle couvre.
+    const tot = monter({ calme: true, roulotte, cielSage: true, affiches: true })
+    tot.moteur.defiler(300)
+    tot.moteur.image(1000)
+    const tard = monter({ roulotte, cielSage: true, affiches: true })
+    tard.moteur.defiler(300)
+    for (let i = 0; i <= 40; i++) tard.moteur.image(1000 + i * 37)
+    tard.moteur.reglerCalme(true)
+    tard.appels.length = 0
+    tard.moteur.image(9000)
+    expect(tard.appels.length).toBeGreaterThan(100)
+    expect(JSON.stringify(tard.appels)).toBe(JSON.stringify(tot.appels))
   })
 
   // Mutation : `getImageData` pour virer les affiches au sépia (la toile teintée lèverait en ligne).

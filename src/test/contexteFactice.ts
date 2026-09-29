@@ -12,9 +12,11 @@ export interface Appel {
   strokeStyle: unknown
   alpha: number
   composite: string
+  /** Le décalage du pointillé : le chemin parcouru coule d'après lui. */
+  dash: number
 }
 
-type Etat = { fillStyle: unknown; strokeStyle: unknown; globalAlpha: number; globalCompositeOperation: string; m: number[] }
+type Etat = { fillStyle: unknown; strokeStyle: unknown; globalAlpha: number; globalCompositeOperation: string; lineDashOffset: number; m: number[] }
 const IDENTITE = [1, 0, 0, 1, 0, 0]
 const multiplier = (m: number[], n: number[]) => [
   m[0]! * n[0]! + m[2]! * n[1]!,
@@ -27,11 +29,16 @@ const multiplier = (m: number[], n: number[]) => [
 
 export function contexteFactice(): { ctx: CanvasRenderingContext2D; appels: Appel[] } {
   const appels: Appel[] = []
-  let etat: Etat = { fillStyle: '#000', strokeStyle: '#000', globalAlpha: 1, globalCompositeOperation: 'source-over', m: IDENTITE }
+  let etat: Etat = { fillStyle: '#000', strokeStyle: '#000', globalAlpha: 1, globalCompositeOperation: 'source-over', lineDashOffset: 0, m: IDENTITE }
   const pile: Etat[] = []
-  const degrade = () => ({ addColorStop: () => undefined })
+  // Un dégradé garde ses arrêts : une couleur qui palpite (le faisceau, la brume) se lit dans le
+  // `fillStyle` noté, pas seulement dans l'appel qui le pose.
+  const degrade = () => {
+    const arrets: Array<[number, string]> = []
+    return { arrets, addColorStop: (o: number, c: string) => void arrets.push([o, c]) }
+  }
   const noter = (nom: string, args: unknown[]) =>
-    appels.push({ nom, args, fillStyle: etat.fillStyle, strokeStyle: etat.strokeStyle, alpha: etat.globalAlpha, composite: etat.globalCompositeOperation })
+    appels.push({ nom, args, fillStyle: etat.fillStyle, strokeStyle: etat.strokeStyle, alpha: etat.globalAlpha, composite: etat.globalCompositeOperation, dash: etat.lineDashOffset })
   const special: Record<string, (...a: number[]) => unknown> = {
     save: () => void pile.push({ ...etat }),
     restore: () => void (etat = pile.pop() ?? etat),
