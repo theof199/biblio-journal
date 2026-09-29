@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { contexteFactice } from '../../test/contexteFactice'
 import { dessinerBandeau } from './bandeau'
 import { dessinerScene } from './scene'
 import { dessinerEstrade } from './estrade'
 import { bonimenteur } from './moyen'
 import { vuePage } from './vuePage'
+import { c } from './couleur'
 import type { VueBandeau, VueEstrade, VueScene } from '../types'
 
 const CASES = [1895, 1896, 1897, 1898, 1899].map((annee, i) => ({
@@ -85,6 +86,50 @@ describe('le bandeau d’une année', () => {
     expect(planches(bandeau({ mode: 'encours' }))).toBe(0)
   })
 
+  // Mutation : le rideau qui s'ouvre sur une baraque fermée (la maquette, `rideauOuverture`, le tient
+  // tiré en `verrou` comme en `attente`) : le train passerait derrière les planches ou sous l'échelle.
+  it.each(['fermee', 'attente'] as const)('%s, le rideau reste tiré et rien ne se projette', (mode) => {
+    // L'écran de la baraque (262, 150, 76 × 46) et la moitié gauche du rideau, en repère de la baraque.
+    const ecran = (appels: ReturnType<typeof bandeau>) => appels.filter((a) => a.nom === 'rect' && a.args.join() === '262,150,76,46').length
+    const rideauTire = (appels: ReturnType<typeof bandeau>) => appels.some((a) => a.nom === 'fillRect' && a.args.join() === '262,150,38,46')
+    for (const o of [{}, { vivant: true, t: 4 }, { vivant: true, t: 10, touche: 8 }]) {
+      const appels = bandeau({ mode, roulotte: THEO, ...o })
+      expect(ecran(appels)).toBe(0)
+      expect(rideauTire(appels)).toBe(true)
+    }
+    expect(ecran(bandeau({ mode: 'encours' }))).toBe(1)
+  })
+
+  // Mutations : l'angle du manège sans le terme du toucher ; la vue de la page sans `touche` (le
+  // rideau ne se rouvrirait plus).
+  it('un toucher emballe le manège et rouvre le rideau', () => {
+    const vivant = { vivant: true, t: 10 }
+    // Le manège : de sa première ellipse (52, 214) jusqu'à la baraque (`translate(-92, 6)`).
+    const manege = (appels: ReturnType<typeof bandeau>) => {
+      const debut = appels.findIndex((a) => a.nom === 'ellipse' && a.args.slice(0, 4).join() === '52,214,38,11')
+      const fin = appels.findIndex((a) => a.nom === 'translate' && a.args.join() === '-92,6')
+      expect(debut).toBeGreaterThan(-1)
+      expect(fin).toBeGreaterThan(debut)
+      return JSON.stringify(appels.slice(debut, fin).map((a) => [a.nom, a.args]))
+    }
+    expect(manege(bandeau({ ...vivant, touche: 9 }))).not.toBe(manege(bandeau({ ...vivant, touche: -9 })))
+    // La moitié gauche du rideau : entrouverte au fil du cycle, presque tirée juste après un toucher (le cycle repart).
+    const moitie = (appels: ReturnType<typeof bandeau>) =>
+      appels.find((a) => a.nom === 'fillRect' && a.args[0] === 262 && a.args[1] === 150 && a.fillStyle === c('#8a2a20'))!.args[2] as number
+    expect(moitie(bandeau({ ...vivant, touche: -9 }))).toBeLessThan(10)
+    expect(moitie(bandeau({ ...vivant, touche: 9.9 }))).toBeGreaterThan(30)
+  })
+
+  // Mutations : le prédicat des années quittées qui compte l'année en cours ou les verrouillées ;
+  // le tampon de la décennie oublié.
+  it('allume une ampoule du fronton par année quittée, toutes avec le tampon', () => {
+    // Les cinq ampoules (270 + 15 i, 142), allumées : leur lueur de rayon 7 en composition `lighter`.
+    const allumees = (appels: ReturnType<typeof bandeau>) =>
+      appels.filter((a) => a.nom === 'arc' && a.composite === 'lighter' && a.args[1] === 142 && a.args[2] === 7 && [270, 285, 300, 315, 330].includes(a.args[0] as number)).length
+    expect(allumees(bandeau({}))).toBe(2)
+    expect(allumees(bandeau({ bouclee: true }))).toBe(5)
+  })
+
   // Mutations : une palme par défaut quand l'année n'a pas de récompense ; la médaille hors d'une année bouclée.
   it('bouclée, porte sa médaille, et seulement si elle en a une', () => {
     expect(medailles(bandeau({ mode: 'bouclee', recompense: 'lion' }))).toBe(1)
@@ -107,6 +152,29 @@ describe('la vue d’une page', () => {
     expect(vue(3).age('carrousel')).toBe(2)
     expect(vue(3).age('chantier:1896:toit')).toBe(99)
     expect(vue(-9).age('rideau')).toBe(99)
+  })
+
+  // Mutation : le cache des images rangé dans la vue, qui se refait à chaque image de la toile :
+  // chaque image repartirait de zéro, et la planche ne finirait jamais de charger.
+  it('ne charge une image qu’une fois, d’une vue à l’autre', () => {
+    let crees = 0
+    class ImageFactice {
+      src = ''
+      complete = false
+      naturalWidth = 0
+      constructor() {
+        crees++
+      }
+    }
+    vi.stubGlobal('Image', ImageFactice)
+    try {
+      const url = '/assets/essai-du-cache.webp'
+      expect(vue(-9).image(url)).toBeNull()
+      expect(vue(-9).image(url)).toBeNull()
+      expect(crees).toBe(1)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 
@@ -154,6 +222,23 @@ describe('la scène d’un film', () => {
     expect(pose).toBeGreaterThan(clip)
     expect(noms.slice(clip, pose)).not.toContain('restore')
     expect(appels.slice(0, clip).filter((a) => a.nom === 'rect').pop()?.args).toEqual([74, 60, 242, 146])
+  })
+
+  // Mutation : le `save`/`restore` de la projection oubliés : le clip de l'écran survivrait, et le
+  // cadre, les rideaux, les lampions et le public ne se verraient plus que dans l'écran.
+  it.each([['avec', true], ['sans', false]] as const)('lève le clip de l’écran après la projection (%s image)', (_, avecImage) => {
+    const appels = scene({ image: avecImage ? image : null })
+    let niveau = 0
+    let auClip = -1
+    let auCadre = -1
+    for (const a of appels) {
+      if (a.nom === 'save') niveau++
+      else if (a.nom === 'restore') niveau--
+      else if (a.nom === 'clip' && auClip < 0) auClip = niveau
+      else if (a.nom === 'strokeRect' && auCadre < 0) auCadre = niveau
+    }
+    expect(auClip).toBeGreaterThan(0)
+    expect(auCadre).toBeLessThan(auClip)
   })
 
   // Mutation : la composition `color` retirée : l'image TMDB passerait en couleur dans un monde sépia.

@@ -374,7 +374,7 @@ function projectionTrain(g: CanvasRenderingContext2D, v: VueMonde, sx: number, s
  * La façade de la baraque (maquette : `baraqueFacade`). Ouverte sur la carte, qui n'appelle jamais
  * avec `ferme` ; sur le bandeau d'une année (plan 2b), ses deux états fermés : `verrou` (les
  * planches clouées sur l'écran, le cadenas, les ampoules qui vacillent) et `attente` (l'échelle,
- * le monteur qui fait signe, la barre du montage), les lampions éteints dans les deux.
+ * le monteur qui fait signe, la barre du montage), le rideau tiré et les lampions éteints dans les deux.
  */
 export function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { ampoules: readonly boolean[]; file: number; lampes: number; sansBoni: boolean; ferme?: 'verrou' | 'attente' }): void {
   const x0 = B_X0, x1 = B_X1, cx = B_CX, top = B_TOP, s0 = B_SOL
@@ -415,7 +415,8 @@ export function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { 
     else { g.fillStyle = c('#F2E8D5', 0.16); cercle(g, bx, by, 2) }
   }
   const sx = 262, sy = top + 54, sw = 76, sh = 46
-  const o = rideauOuverture(v)
+  // Fermée, la baraque ne projette rien : le rideau reste tiré (maquette : `rideauOuverture`).
+  const o = opts.ferme ? 0 : rideauOuverture(v)
   g.fillStyle = c('#0b0806'); g.fillRect(sx - 3, sy - 3, sw + 6, sh + 6)
   if (o > 0) {
     g.save(); g.beginPath(); g.rect(sx, sy, sw, sh); g.clip()

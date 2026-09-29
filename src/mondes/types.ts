@@ -250,7 +250,11 @@ export interface VueBandeau {
   cases: readonly Pick<CaseVue, 'annee' | 'etat' | 'profondeur'>[]
   /** Le passeport porte-t-il la décennie ? */
   bouclee: boolean
-  /** En attente : le Voyage suivi, dont la roulotte arrive ; nulle sinon. */
+  /**
+   * Le Voyage suivi, dans tous les modes dès que le membre en suit un : sa roulotte arrive en
+   * attente (et dit où il en est), traverse sinon, jamais une année fermée ; nulle sans Voyage
+   * suivi et pour le compte IA.
+   */
   roulotte: { pseudo: string; annee: number } | null
   /** Le dernier toucher du bandeau, en secondes de `t` ; -9 : jamais. */
   touche: number
