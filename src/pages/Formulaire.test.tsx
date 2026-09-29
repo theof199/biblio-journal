@@ -314,8 +314,16 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
   const avecSeances = () => {
     const client = createQueryClient()
     client.setQueryData(cles.seances, { pages: [{ items: [ITEM], next_cursor: null }], pageParams: [undefined] })
+    // Jumeaux de « Tes séances » : les filmographies et sagas suivies portent aussi le « vu ».
+    client.setQueryData(cles.pageRealisateur(525), { films: [] })
+    client.setQueryData(cles.filmsSaga(8091), { films: [] })
     expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(false)
     return client
+  }
+  /** Mutation : retirer `cles.realisateurs` ou `cles.sagas` d'`apresEcriture` casse ces trois tests. */
+  const suivisPerimes = (client: ReturnType<typeof createQueryClient>) => {
+    expect(client.getQueryState(cles.pageRealisateur(525))?.isInvalidated).toBe(true)
+    expect(client.getQueryState(cles.filmsSaga(8091))?.isInvalidated).toBe(true)
   }
 
   it('après une création', async () => {
@@ -332,6 +340,7 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
 
     await screen.findByText('Accueil')
     expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
+    suivisPerimes(client)
   })
 
   it('après une correction', async () => {
@@ -349,6 +358,7 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
 
     await screen.findByText('Accueil')
     expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
+    suivisPerimes(client)
   })
 
   it('après une suppression', async () => {
@@ -365,5 +375,6 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
 
     await screen.findByText('Accueil')
     expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
+    suivisPerimes(client)
   })
 })

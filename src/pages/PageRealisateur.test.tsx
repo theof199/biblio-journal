@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import PageRealisateur from './PageRealisateur'
 import { createQueryClient } from '../api/queryClient'
+import { cles } from '../api/cles'
 import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import type { RealisateurPage } from '../api/realisateurs'
@@ -12,9 +13,9 @@ const PAGE_SUIVI = exemple<RealisateurPage>('/me/realisateurs/{tmdbId}/page', 'g
 const PAGE_NON_SUIVI: RealisateurPage = { ...PAGE_SUIVI, suivi: false }
 const PAGE_SANS_FILMS: RealisateurPage = { ...PAGE_SUIVI, films: [] }
 
-function monter(tmdbId = 525) {
+function monter(tmdbId = 525, client = createQueryClient()) {
   return render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[`/suivis/realisateurs/${tmdbId}`]}>
         <Routes>
           <Route path="/suivis/realisateurs/:tmdbId" element={<PageRealisateur />} />
@@ -64,7 +65,9 @@ describe('la page d’un réalisateur', () => {
       },
       'DELETE /api/me/realisateurs/525': () => new Response(null, { status: 204 }),
     })
-    monter()
+    const client = createQueryClient()
+    client.setQueryData(cles.realisateurs, [])
+    monter(525, client)
 
     const bouton = await screen.findByRole('button', { name: 'Suivi' })
     fireEvent.click(bouton)
@@ -73,6 +76,8 @@ describe('la page d’un réalisateur', () => {
     // sur « Suivi » malgré le `DELETE` réussi.
     expect(await screen.findByRole('button', { name: 'Suivre' })).toBeInTheDocument()
     expect(requetes.filter((r) => r.includes('/me/realisateurs/525/page'))).toHaveLength(2)
+    // Mutation : n'invalider que `cles.pageRealisateur(525)` laisserait l'onglet Suivis le lister.
+    expect(client.getQueryState(cles.realisateurs)?.isInvalidated).toBe(true)
   })
 
   it('suivre depuis une page pas encore suivie invalide le cache : la page relue montre « Suivi »', async () => {

@@ -1,9 +1,11 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { curseurSuivant, itemAuJournal, lireJournal } from '../api/journal'
 import { lireRealisateursDuFilm } from '../api/personnes'
 import { lireReactions } from '../api/reactions'
+import { demanderFilm, marquerIntrouvable, retirerIntrouvable } from '../api/realisateurs'
 import { candidatDepuisFilmSuivi } from '../formulaire/candidat'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
@@ -25,6 +27,9 @@ interface FilmPourFiche {
   vu: { entry_id: string; rating: number | null; finished_at: string } | null
   introuvable: boolean
   plex_url?: string | null
+  /** Propres à une filmographie de réalisateur (pas à une saga) : ce qui décide de « Demander sur Sir ». */
+  sur_le_plex?: boolean
+  demande?: boolean
 }
 
 /** Le réalisateur connu d'avance (page d'où la fiche s'est ouverte), ou nul quand il reste à résoudre (saga). */
@@ -53,13 +58,18 @@ interface EtatFiche {
  * cache du journal **du membre courant seulement** (`itemAuJournal`, `api/journal.ts`) : jamais un
  * appel réseau pour le carnet d'un autre membre, jamais la moindre trace de lui ici — la route qui
  * pourrait un jour servir le film d'un autre membre (`GET /media/:id/log`) n'est pas appelée par
- * cette fiche. Sans l'entrée en cache (journal pas encore chargé), la fiche se prive de « Corriger »
- * et des réactions plutôt que de deviner — même dégradation que sur l'appli.
+ * cette fiche. L'entrée se retrouve par `vu.entry_id`, page après page du journal tant qu'elle
+ * manque ; sans elle (journal en panne), la fiche se prive de « Corriger » et des réactions plutôt
+ * que de deviner — même dégradation que sur l'appli.
+ *
+ * Comme `FicheFilmScreen.kt` : « Introuvable » sur un film pas encore vu, « Le remettre à voir » sur
+ * un film marqué, et « Demander sur Sir » sur un film de filmographie absent du Plex.
  */
 export default function FicheFilm() {
   const { tmdbId } = useParams<{ tmdbId: string }>()
   const location = useLocation()
   const naviguer = useNavigate()
+  const client = useQueryClient()
   const etat = (location.state as EtatFiche | null) ?? null
 
   const realisateursDuFilm = useQuery({
@@ -82,6 +92,52 @@ export default function FicheFilm() {
     enabled: etat != null && etat.film.vu != null,
   })
 
+  const entryId = etat?.film.vu?.entry_id
+  const item = entryId ? itemAuJournal(journal.data?.pages ?? [], entryId) : undefined
+
+  // L'entrée d'un film vu il y a longtemps n'est pas dans la première page : on lit la suivante
+  // tant qu'elle manque (Android relit le journal complet, `chargerEntrees`). Jamais sur erreur —
+  // `isFetchNextPageError` arrête la course, la fiche se prive alors de « Corriger » et des
+  // réactions — et jamais au-delà du dernier curseur.
+  const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = journal
+  const aChercher = entryId != null && item == null
+  useEffect(() => {
+    if (aChercher && hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage()
+  }, [aChercher, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
+
+  // Les marques posées ici se voient aussitôt, sans attendre que la ligne d'origine soit relue : la
+  // fiche vit de l'état de navigation, figé à l'ouverture.
+  const [introuvableIci, setIntrouvableIci] = useState<boolean | null>(null)
+  const [demandeIci, setDemandeIci] = useState(false)
+
+  // Une marque « introuvable » change le prochain à voir de toutes les filmographies et sagas, et
+  // peut compléter une salle du Voyage (contrat de `PUT /me/introuvables/{tmdbId}`).
+  const perimerLesSuivis = () => {
+    void client.invalidateQueries({ queryKey: cles.realisateurs })
+    void client.invalidateQueries({ queryKey: cles.sagas })
+    void client.invalidateQueries({ queryKey: cles.voyage })
+  }
+  const introuvable = useMutation({
+    mutationFn: async (marquer: boolean): Promise<boolean> => {
+      const tmdb = Number(tmdbId)
+      if (marquer) await marquerIntrouvable(tmdb)
+      else await retirerIntrouvable(tmdb)
+      return marquer
+    },
+    onSuccess: (marque) => {
+      setIntrouvableIci(marque)
+      perimerLesSuivis()
+    },
+  })
+  const demande = useMutation({
+    mutationFn: () => demanderFilm(Number(tmdbId)),
+    onSuccess: () => {
+      setDemandeIci(true)
+      void client.invalidateQueries({ queryKey: cles.realisateurs })
+      void client.invalidateQueries({ queryKey: cles.plex })
+    },
+  })
+
   if (!etat) {
     return (
       <div className={styles.page}>
@@ -96,7 +152,11 @@ export default function FicheFilm() {
 
   const { film } = etat
   const realisateurs = etat.realisateur ? [etat.realisateur] : (realisateursDuFilm.data?.realisateurs ?? [])
-  const item = film.vu ? itemAuJournal(journal.data?.pages ?? [], String(film.tmdb_id)) : undefined
+  const estIntrouvable = introuvableIci ?? film.introuvable
+  const estDemande = demandeIci || film.demande === true
+  // « Demander sur Sir » : un film de filmographie ni vu, ni introuvable, ni sur le Plex, ni déjà
+  // demandé (`etatFilmographie`, Android). Une saga ne porte pas ces champs : jamais proposé.
+  const demandable = film.vu == null && !estIntrouvable && film.sur_le_plex === false && !estDemande
   const phrase = (cle: string) => reactions.data?.reactions.find((r) => r.cle === cle)?.phrase ?? cle
   const emoji = (cle: string) => reactions.data?.reactions.find((r) => r.cle === cle)?.emoji ?? ''
 
@@ -160,13 +220,49 @@ export default function FicheFilm() {
         </Link>
       ) : null}
 
-      {film.introuvable ? <p className={styles.introuvable}>Marqué introuvable</p> : null}
+      {estIntrouvable ? <p className={styles.introuvable}>Marqué introuvable</p> : null}
 
       {film.plex_url ? (
         <a href={film.plex_url} target="_blank" rel="noreferrer" className={styles.boutonSecondaire}>
           Voir sur le Plex
         </a>
       ) : null}
+
+      {demandable ? (
+        <button
+          type="button"
+          className={styles.boutonSecondaire}
+          onClick={() => demande.mutate()}
+          disabled={demande.isPending}
+        >
+          Demander sur Sir
+        </button>
+      ) : null}
+      {estDemande && film.vu == null ? <p className={styles.introuvable}>Demandé</p> : null}
+      {demande.error ? <p role="alert">{demande.error.message}</p> : null}
+
+      {/* Un film vu n'a pas de marque à poser (`boutonsFicheFilm`, Android) ; un film marqué se
+          remet à voir, qu'on l'ait vu depuis ou non. */}
+      {estIntrouvable ? (
+        <button
+          type="button"
+          className={styles.boutonSecondaire}
+          onClick={() => introuvable.mutate(false)}
+          disabled={introuvable.isPending}
+        >
+          Le remettre à voir
+        </button>
+      ) : film.vu == null ? (
+        <button
+          type="button"
+          className={styles.boutonSecondaire}
+          onClick={() => introuvable.mutate(true)}
+          disabled={introuvable.isPending}
+        >
+          Introuvable
+        </button>
+      ) : null}
+      {introuvable.error ? <p role="alert">{introuvable.error.message}</p> : null}
     </div>
   )
 }

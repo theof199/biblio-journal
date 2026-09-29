@@ -73,17 +73,18 @@ export function dejaAuJournal(pages: JournalPage[]): Map<string, number | null> 
 }
 
 /**
- * L'entrée complète (carnet compris) d'un film déjà au journal, retrouvée par son `tmdb_id` —
- * pour la fiche d'un film ouverte depuis un réalisateur ou une saga suivis, qui ne connaît que
- * `vu.entry_id` et pas le reste de l'entrée. Cherche dans les pages déjà chargées du journal **de
- * l'utilisateur de la session** : jamais un appel réseau, jamais le journal d'un autre membre — il
- * n'existe pas de `GET /me/journal/{id}`. `undefined` si l'entrée n'est pas dans les pages déjà lues
- * (journal pas encore chargé, ou entrée plus ancienne qu'une page non atteinte) : la fiche se prive
- * alors de « Corriger » et des réactions plutôt que de deviner.
+ * L'entrée complète (carnet compris) d'un film déjà au journal, retrouvée par l'identifiant
+ * d'entrée que porte sa ligne de filmographie ou de saga (`vu.entry_id`) — pour la fiche d'un film
+ * ouverte depuis un réalisateur ou une saga suivis, qui ne connaît que cet identifiant et pas le
+ * reste de l'entrée (reprise de `SuivisUi.entrees`, Android, indexé sur `entry.id`). Jamais par
+ * `media.external_id` : un identifiant TMDB n'est unique qu'avec sa source, et `vu` désigne un
+ * visionnage précis, pas n'importe quelle entrée du même film. Cherche dans les pages déjà chargées
+ * du journal **de l'utilisateur de la session** : jamais le journal d'un autre membre — il
+ * n'existe pas de `GET /me/journal/{id}`. `undefined` si l'entrée n'est pas dans ces pages.
  */
-export function itemAuJournal(pages: JournalPage[], externalId: string): JournalItem | undefined {
+export function itemAuJournal(pages: JournalPage[], entryId: string): JournalItem | undefined {
   for (const page of pages) {
-    const item = page.items.find((i) => i.media.external_id === externalId)
+    const item = page.items.find((i) => i.entry.id === entryId)
     if (item) return item
   }
   return undefined

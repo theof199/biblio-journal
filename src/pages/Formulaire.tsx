@@ -52,6 +52,10 @@ export default function Formulaire() {
     void client.invalidateQueries({ queryKey: cles.journal })
     void client.invalidateQueries({ queryKey: cles.stats })
     void client.invalidateQueries({ queryKey: cles.voyage })
+    // Un visionnage change le « vu » des filmographies et sagas suivies : sans ça, le carrousel
+    // « Ensuite » reproposerait le film qu'on vient de journaliser.
+    void client.invalidateQueries({ queryKey: cles.realisateurs })
+    void client.invalidateQueries({ queryKey: cles.sagas })
     naviguer('/', { replace: true })
   }
 

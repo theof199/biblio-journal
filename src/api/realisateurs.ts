@@ -32,3 +32,16 @@ export const neplusSuivreRealisateur = (tmdbId: number) => api.delete<void>(`/me
  */
 export const lirePageRealisateur = (tmdbId: number, signal?: AbortSignal) =>
   api.get<RealisateurPage>(`/me/realisateurs/${tmdbId}/page`, undefined, signal)
+
+/**
+ * Marquer un **film** introuvable (`tmdbId` d'un film, pas d'une personne) : il sort du « prochain
+ * à voir » de toutes mes filmographies et sagas. Idempotent, `204`. La marque est à moi seul.
+ */
+export const marquerIntrouvable = (filmTmdbId: number) => api.put<void>(`/me/introuvables/${filmTmdbId}`)
+
+/** « Le remettre à voir » : retire la marque, `204` dans tous les cas. */
+export const retirerIntrouvable = (filmTmdbId: number) => api.delete<void>(`/me/introuvables/${filmTmdbId}`)
+
+/** « Demander sur Sir » : relaie la demande à Seerr — rien ne s'écrit au journal. `201`, ou `200` si déjà demandé. */
+export const demanderFilm = (filmTmdbId: number) =>
+  api.post<{ demande: true }>(`/me/voyage/demander/${filmTmdbId}`)

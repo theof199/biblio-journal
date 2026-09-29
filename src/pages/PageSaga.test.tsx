@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import PageSaga from './PageSaga'
 import { createQueryClient } from '../api/queryClient'
+import { cles } from '../api/cles'
 import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import type { Saga, FilmsSaga } from '../api/sagas'
@@ -16,9 +17,9 @@ function Ou() {
   return <output data-testid="chemin">{useLocation().pathname}</output>
 }
 
-function monter(tmdbId = 8091) {
+function monter(tmdbId = 8091, client = createQueryClient()) {
   return render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[`/suivis/sagas/${tmdbId}`]}>
         <Routes>
           <Route path="/suivis/sagas/:tmdbId" element={<PageSaga />} />
@@ -77,7 +78,8 @@ describe('la page d’une saga', () => {
       'GET /api/me/sagas/8091/films': () => json(FILMS),
       'DELETE /api/me/sagas/8091': () => new Response(null, { status: 204 }),
     })
-    monter()
+    const client = createQueryClient()
+    monter(8091, client)
 
     const bouton = await screen.findByRole('button', { name: 'Ne plus suivre' })
     fireEvent.click(bouton)
@@ -88,6 +90,8 @@ describe('la page d’une saga', () => {
     // `/suivis/sagas/8091` (la page de départ) contient déjà « /suivis ».
     await vi.waitFor(() => expect(screen.getByTestId('chemin').textContent).toBe('/suivis'))
     expect(requetes).toContain('DELETE /api/me/sagas/8091')
+    // La liste n'a plus d'observateur une fois la page quittée : c'est sa marque qui compte.
+    expect(client.getQueryState(cles.sagas)?.isInvalidated).toBe(true)
   })
 
   it('une panne sur ses films affiche l’erreur de l’API telle quelle', async () => {
