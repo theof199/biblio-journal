@@ -5,6 +5,7 @@ import coque from '../coque/Coque.module.css?raw'
 import affiche from './Affiche.module.css?raw'
 import auCine from '../pages/AuCine.module.css?raw'
 import accueil from '../pages/Accueil.module.css?raw'
+import suivis from '../pages/Suivis.module.css?raw'
 
 /** Tous les `*.module.css` de l'app, par chemin (`/src/…`). */
 const MODULES = import.meta.glob<string>('/src/**/*.module.css', { query: '?raw', import: 'default', eager: true })
@@ -81,14 +82,15 @@ describe('la zone sûre du téléphone', () => {
 
   it('le contenu laisse libre la barre et la zone sûre', () => {
     expect(regle(theme, ':root')).toMatch(/--coque-bas:[^;]*env\(safe-area-inset-bottom\)/)
-    expect(regle(coque, '.contenu')).toMatch(/height:\s*calc\(100% - var\(--coque-bas\)\)/)
+    // Ancrée : `min-height` passerait sinon, et la zone, grandie avec sa page, ne défilerait plus.
+    expect(regle(coque, '.contenu')).toMatch(/(^|[\s;])height:\s*calc\(100% - var\(--coque-bas\)\)/)
   })
 })
 
 describe('le défilement', () => {
   it('seule la zone de contenu de la coque défile, bornée au-dessus de la barre', () => {
     expect(regle(coque, '.coque')).toMatch(/position:\s*fixed/)
-    expect(regle(coque, '.coque')).toMatch(/bottom:\s*0/)
+    expect(regle(coque, '.coque')).toMatch(/(^|[\s;])bottom:\s*0;/)
     expect(regle(coque, '.contenu')).toMatch(/overflow-y:\s*auto/)
     expect(regle(coque, '.contenu')).toMatch(/overflow-x:\s*hidden/)
   })
@@ -123,10 +125,19 @@ describe('les grilles', () => {
     expect(fautes).toEqual([])
   })
 
-  it.each([
-    ['AuCine', auCine, '.tuile'],
-    ['Accueil', accueil, '.entree'],
-  ])('l’élément de grille de %s peut rétrécir sous son contenu', (_nom, css, selecteur) => {
+  /** Chaque grille de l'app et la classe de ses éléments, qui doivent pouvoir rétrécir sous leur contenu. */
+  const ELEMENTS_DE_GRILLE = [
+    ['/src/pages/AuCine.module.css', auCine, '.tuile'],
+    ['/src/pages/Accueil.module.css', accueil, '.entree'],
+    ['/src/pages/Suivis.module.css', suivis, '.case'],
+  ] as const
+
+  it('chaque feuille qui pose une grille d’affiches a son élément dans la table', () => {
+    const grilles = HORS_VOYAGE.filter(([, css]) => /var\(--grille-[a-z-]+-colonnes\)/.test(sansCommentaires(css))).map(([chemin]) => chemin)
+    expect(grilles.sort()).toEqual(ELEMENTS_DE_GRILLE.map(([chemin]) => chemin).sort())
+  })
+
+  it.each(ELEMENTS_DE_GRILLE)('l’élément de grille de %s peut rétrécir sous son contenu', (_chemin, css, selecteur) => {
     expect(regle(css, selecteur)).toMatch(/min-width:\s*0/)
   })
 })
@@ -135,6 +146,8 @@ describe('l’affiche', () => {
   it('le cadre tient son ratio, image ou non', () => {
     expect(regle(affiche, '.cadre')).toMatch(/aspect-ratio:\s*var\(--ratio-affiche\)/)
     expect(regle(affiche, '.cadre')).toMatch(/overflow:\s*hidden/)
+    // Le repère de l'image posée en absolu : sans lui, elle prendrait la taille du premier ancêtre positionné.
+    expect(regle(affiche, '.cadre')).toMatch(/(^|[\s;])position:\s*relative/)
   })
 
   it('l’image remplit le cadre sans le dimensionner', () => {
