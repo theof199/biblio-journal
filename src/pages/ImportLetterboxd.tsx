@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { importerLetterboxd } from '../api/letterboxd'
@@ -24,28 +23,31 @@ export default function ImportLetterboxd() {
   const fichier = (location.state as { fichier?: unknown } | null)?.fichier
   const fichierValide = fichier instanceof File ? fichier : null
 
-  const importer = useMutation({
-    mutationFn: async (f: File) => {
-      const csv = await csvDepuisFichier(new Uint8Array(await f.arrayBuffer()))
+  // Une requête plutôt qu'une mutation, rangée sous la clé de cette entrée d'historique : revenir
+  // ici (retour depuis le formulaire d'un candidat, depuis le profil) retrouve le rapport, ou
+  // l'import encore en cours, au lieu de renvoyer tout le fichier. Même sous StrictMode, une seule
+  // requête part : le second montage rejoint celle qui court.
+  const importer = useQuery({
+    queryKey: ['import-letterboxd', location.key],
+    queryFn: async () => {
+      const csv = await csvDepuisFichier(new Uint8Array(await fichierValide!.arrayBuffer()))
       const lignes = lireLignesDiary(csv)
-      return { rapport: await importerLetterboxd(csv), lignes }
-    },
-    onSuccess: () => {
+      const rapport = await importerLetterboxd(csv)
+      // Un import écrit comme le formulaire : les mêmes clés que `apresEcriture` (Formulaire.tsx).
       void client.invalidateQueries({ queryKey: cles.journal })
       void client.invalidateQueries({ queryKey: cles.stats })
       void client.invalidateQueries({ queryKey: cles.voyage })
+      void client.invalidateQueries({ queryKey: cles.realisateurs })
+      void client.invalidateQueries({ queryKey: cles.sagas })
+      return { rapport, lignes }
     },
+    enabled: fichierValide !== null,
+    // Une erreur reste affichée au retour, elle ne relance rien : on repart d'un autre fichier.
+    retry: false,
+    retryOnMount: false,
+    staleTime: Infinity,
+    gcTime: Infinity,
   })
-
-  // Une seule fois, même sous StrictMode : un second envoi refairait deux minutes de recherches.
-  const lance = useRef(false)
-  useEffect(() => {
-    if (fichierValide && !lance.current) {
-      lance.current = true
-      importer.mutate(fichierValide)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const entete = (
     <div className={styles.entete}>

@@ -1,7 +1,8 @@
 import { StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
+import type { NavigateFunction } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
 import { cles } from '../api/cles'
@@ -47,11 +48,19 @@ const fichier = (contenu: BlobPart, nom = 'diary.csv') => new File([contenu], no
 
 const erreurApi = (message: string, status = 400) => json({ code: 'VALIDATION_ERROR', message, retryable: false }, status)
 
+/** Le geste « retour » du navigateur (ou du téléphone), que la page ne dessine pas. */
+let historique!: NavigateFunction
+function Historique() {
+  historique = useNavigate()
+  return null
+}
+
 function monter(chemin = '/profil', strict = false) {
   const client = createQueryClient()
   const arbre = (
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[chemin]}>
+        <Historique />
         <App />
       </MemoryRouter>
     </QueryClientProvider>
@@ -291,13 +300,20 @@ describe('l’import Letterboxd', () => {
 
   it('un fichier que l’API refuse : son message s’affiche tel quel', async () => {
     const message = 'Ce fichier n’est pas le journal de Letterboxd : il manque des colonnes.'
-    base({ [IMPORT]: () => erreurApi(message) })
+    const requetes = base({ [IMPORT]: () => erreurApi(message) })
     monter()
     await screen.findByText(/Importer Letterboxd/)
     choisir(fichier('Date,Name\n2026-01-01,X\n', 'watched.csv'))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(screen.queryByText(/importés ·/)).not.toBeInTheDocument()
+
+    // Parti au profil puis revenu par l'historique : la même erreur, rien de renvoyé.
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+    await screen.findByText(/Importer Letterboxd/)
+    act(() => historique(-1))
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(requetes.filter((r) => r === IMPORT)).toHaveLength(1)
   })
 
   it('une seule requête même sous StrictMode', async () => {
@@ -356,6 +372,30 @@ describe('l’import Letterboxd', () => {
     expect(screen.getByRole('radio', { name: 'Note 9 sur 10' })).toHaveAttribute('aria-checked', 'true')
   })
 
+  it('revenir au rapport depuis le formulaire d’un candidat le retrouve tel quel, sans renvoyer le fichier', async () => {
+    const requetes = base({
+      [IMPORT]: () =>
+        json({
+          importes: 4,
+          deja_presents: 0,
+          non_reconnus: [{ ligne: 2, name: 'Alien', year: 1979, candidats: [{ tmdb_id: '348', title: 'Alien, le huitième passager', year: 1979 }] }],
+          erreurs: [],
+        }),
+      'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+    fireEvent.click(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' }))
+    await screen.findByLabelText(/Vu le/)
+
+    act(() => historique(-1))
+
+    expect(await screen.findByText('4 importés · 0 déjà présents')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Alien, le huitième passager (1979)' })).toBeInTheDocument()
+    expect(requetes.filter((r) => r === IMPORT)).toHaveLength(1)
+  })
+
   it('après un import réussi, le journal, les chiffres et le bilan sont périmés', async () => {
     base({ [IMPORT]: () => json(RAPPORT) })
     const client = monter()
@@ -368,6 +408,9 @@ describe('l’import Letterboxd', () => {
     // restent donc marquées périmées (et sont relues au retour) au lieu d'être refaites en douce.
     expect(client.getQueryState(cles.journalComplet)?.isInvalidated).toBe(true)
     expect(client.getQueryState(cles.stats)?.isInvalidated).toBe(true)
+    // Comme après le formulaire : un film importé peut terminer une filmographie suivie.
+    expect(client.getQueryState(cles.realisateurs)?.isInvalidated).toBe(true)
+    expect(client.getQueryState(cles.sagas)?.isInvalidated).toBe(true)
   })
 
   it('sans fichier (accès direct, rechargement) : on repart du profil, sans appel', async () => {

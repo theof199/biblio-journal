@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DiaryCsvMissingError,
   FichierIllisibleError,
+  NavigateurSansZipError,
   csvDepuisFichier,
   dateLetterboxd,
   extraireDiaryCsv,
@@ -114,6 +115,25 @@ describe('le fichier d’export', () => {
     expect(await extraireDiaryCsv(zip)).toBe(csv)
   })
 
+  it('un ZIP d’archiveur réel : extras de tailles différentes, commentaire, tailles locales à zéro', async () => {
+    const zip = await fabriquerZip([
+      { nom: 'ratings.csv', contenu: 'Date,Name\n', methode: 'deflate', reel: true },
+      { nom: 'diary.csv', contenu: CSV, methode: 'deflate', reel: true },
+    ])
+    expect(await extraireDiaryCsv(zip)).toBe(CSV)
+    const stocke = await fabriquerZip([{ nom: 'diary.csv', contenu: CSV, reel: true }])
+    expect(await extraireDiaryCsv(stocke)).toBe(CSV)
+  })
+
+  it('le diary.csv de la racine l’emporte sur un homonyme de sous-dossier, même rangé avant lui', async () => {
+    const zip = await fabriquerZip([
+      { nom: 'deleted/diary.csv', contenu: 'pas celui-ci', methode: 'deflate' },
+      { nom: 'diary.csv', contenu: CSV, methode: 'deflate' },
+      { nom: 'orphaned/diary.csv', contenu: 'ni celui-ci' },
+    ])
+    expect(await extraireDiaryCsv(zip)).toBe(CSV)
+  })
+
   it('un ZIP sans diary.csv : l’erreur qui le dit, avant tout réseau', async () => {
     const zip = await fabriquerZip([
       { nom: 'watched.csv', contenu: 'x' },
@@ -131,5 +151,26 @@ describe('le fichier d’export', () => {
     const abime = zip.slice()
     abime.fill(0xff, 30 + 'diary.csv'.length, 34 + 'diary.csv'.length) // le début du flux déflaté
     await expect(extraireDiaryCsv(abime)).rejects.toBeInstanceOf(FichierIllisibleError)
+  })
+
+  describe('un navigateur sans DecompressionStream', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('un ZIP déflaté : le message qui dit d’envoyer diary.csv, pas « illisible »', async () => {
+      const zip = await fabriquerZip([{ nom: 'diary.csv', contenu: CSV, methode: 'deflate' }])
+      vi.stubGlobal('DecompressionStream', undefined)
+      const erreur = await extraireDiaryCsv(zip).catch((e: unknown) => e)
+      expect(erreur).toBeInstanceOf(NavigateurSansZipError)
+      expect((erreur as Error).message).toBe(
+        'Ce navigateur ne sait pas ouvrir un ZIP : choisis plutôt le fichier diary.csv, extrait de l’export.',
+      )
+    })
+
+    it('un ZIP stocké se lit toujours, et diary.csv seul aussi', async () => {
+      const zip = await fabriquerZip([{ nom: 'diary.csv', contenu: CSV }])
+      vi.stubGlobal('DecompressionStream', undefined)
+      expect(await extraireDiaryCsv(zip)).toBe(CSV)
+      expect(await csvDepuisFichier(enc(CSV))).toBe(CSV)
+    })
   })
 })

@@ -7,6 +7,12 @@ export interface EntreeZip {
   contenu: string
   /** `deflate` compresse pour de vrai, comme un export Letterboxd. */
   methode?: 'stocke' | 'deflate'
+  /**
+   * Comme les archiveurs réels : un champ extra de tailles différentes dans l'en-tête local et
+   * dans le répertoire central, un commentaire de fichier, et des tailles locales laissées à zéro
+   * (bit 3, descripteur de données après le contenu).
+   */
+  reel?: boolean
 }
 
 async function deflater(donnees: Uint8Array): Promise<Uint8Array> {
@@ -25,32 +31,58 @@ export async function fabriquerZip(entrees: EntreeZip[]): Promise<Uint8Array> {
     const deflate = e.methode === 'deflate'
     const donnees = deflate ? await deflater(brut) : brut
     const nom = enc.encode(e.nom)
+    const extraLocal = e.reel ? 28 : 0
+    const extraCentral = e.reel ? 24 : 0
+    const commentaire = e.reel ? enc.encode('commentaire') : new Uint8Array(0)
 
-    const locale = new Uint8Array(30 + nom.length)
+    const locale = new Uint8Array(30 + nom.length + extraLocal)
     const lv = new DataView(locale.buffer)
     lv.setUint32(0, 0x04034b50, true)
     lv.setUint16(4, 20, true)
+    lv.setUint16(6, e.reel ? 0x08 : 0, true)
     lv.setUint16(8, deflate ? 8 : 0, true)
-    lv.setUint32(18, donnees.length, true)
-    lv.setUint32(22, brut.length, true)
+    lv.setUint32(18, e.reel ? 0 : donnees.length, true)
+    lv.setUint32(22, e.reel ? 0 : brut.length, true)
     lv.setUint16(26, nom.length, true)
+    lv.setUint16(28, extraLocal, true)
     locale.set(nom, 30)
+    // Un extra de bourrage (identifiant 0xcafe) : son contenu n'est pas lu, sa longueur si.
+    if (extraLocal > 0) {
+      lv.setUint16(30 + nom.length, 0xcafe, true)
+      lv.setUint16(32 + nom.length, extraLocal - 4, true)
+    }
 
-    const c = new Uint8Array(46 + nom.length)
+    const descripteur = new Uint8Array(e.reel ? 16 : 0)
+    if (e.reel) {
+      const dv = new DataView(descripteur.buffer)
+      dv.setUint32(0, 0x08074b50, true)
+      dv.setUint32(8, donnees.length, true)
+      dv.setUint32(12, brut.length, true)
+    }
+
+    const c = new Uint8Array(46 + nom.length + extraCentral + commentaire.length)
     const cv = new DataView(c.buffer)
     cv.setUint32(0, 0x02014b50, true)
     cv.setUint16(4, 20, true)
     cv.setUint16(6, 20, true)
+    cv.setUint16(8, e.reel ? 0x08 : 0, true)
     cv.setUint16(10, deflate ? 8 : 0, true)
     cv.setUint32(20, donnees.length, true)
     cv.setUint32(24, brut.length, true)
     cv.setUint16(28, nom.length, true)
+    cv.setUint16(30, extraCentral, true)
+    cv.setUint16(32, commentaire.length, true)
     cv.setUint32(42, decalage, true)
     c.set(nom, 46)
+    if (extraCentral > 0) {
+      cv.setUint16(46 + nom.length, 0xcafe, true)
+      cv.setUint16(48 + nom.length, extraCentral - 4, true)
+    }
+    c.set(commentaire, 46 + nom.length + extraCentral)
 
-    morceaux.push(locale, donnees)
+    morceaux.push(locale, donnees, descripteur)
     centrale.push(c)
-    decalage += locale.length + donnees.length
+    decalage += locale.length + donnees.length + descripteur.length
   }
 
   const tailleCentrale = centrale.reduce((n, c) => n + c.length, 0)

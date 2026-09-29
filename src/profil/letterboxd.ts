@@ -22,6 +22,17 @@ export class FichierIllisibleError extends Error {
   }
 }
 
+/**
+ * Le navigateur n'a pas `DecompressionStream` (avant Chrome 103, Safari 16.4, Firefox 113) : le
+ * ZIP n'est pas en cause, le `diary.csv` extrait à la main passe toujours.
+ */
+export class NavigateurSansZipError extends Error {
+  constructor() {
+    super('Ce navigateur ne sait pas ouvrir un ZIP : choisis plutôt le fichier diary.csv, extrait de l’export.')
+    this.name = 'NavigateurSansZipError'
+  }
+}
+
 /** « PK\x03\x04 » : l'en-tête d'une entrée locale de ZIP. */
 export function ressembleAUnZip(octets: Uint8Array): boolean {
   return octets.length >= 4 && octets[0] === 0x50 && octets[1] === 0x4b && octets[2] === 0x03 && octets[3] === 0x04
@@ -32,14 +43,17 @@ const SIG_CENTRALE = 0x02014b50
 const SIG_LOCALE = 0x04034b50
 
 async function decompresser(donnees: Uint8Array): Promise<Uint8Array> {
+  if (typeof DecompressionStream === 'undefined') throw new NavigateurSansZipError()
   const flux = new Response(donnees as BodyInit).body!.pipeThrough(new DecompressionStream('deflate-raw'))
   return new Uint8Array(await new Response(flux).arrayBuffer())
 }
 
 /**
- * `diary.csv`, où qu'il vive dans l'arborescence du ZIP. Lu par le répertoire central (les tailles
- * y sont toujours justes, même quand l'en-tête local les laisse à zéro). Stocké ou déflaté : les
- * deux seules méthodes qu'un export produit.
+ * `diary.csv`, où qu'il vive dans l'arborescence du ZIP : celui de la racine d'abord, sinon le
+ * premier rencontré dans un sous-dossier — un homonyme rangé plus bas ne passe jamais devant celui
+ * de la racine, quel que soit l'ordre des entrées. Lu par le répertoire central (les tailles y sont
+ * toujours justes, même quand l'en-tête local les laisse à zéro). Stocké ou déflaté : les deux
+ * seules méthodes qu'un export produit.
  */
 export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
   const vue = new DataView(zip.buffer, zip.byteOffset, zip.byteLength)
@@ -56,6 +70,7 @@ export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
 
   const nombre = vue.getUint16(fin + 10, true)
   let position = vue.getUint32(fin + 16, true)
+  let choisie: { methode: number; tailleCompressee: number; decalageLocal: number } | null = null
   for (let n = 0; n < nombre; n++) {
     if (position + 46 > zip.length || vue.getUint32(position, true) !== SIG_CENTRALE) throw new FichierIllisibleError()
     const methode = vue.getUint16(position + 10, true)
@@ -68,20 +83,28 @@ export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
     position += 46 + longueurNom + longueurExtra + longueurCommentaire
 
     if (nom.endsWith('/') || nom.slice(nom.lastIndexOf('/') + 1) !== 'diary.csv') continue
-
-    if (decalageLocal + 30 > zip.length || vue.getUint32(decalageLocal, true) !== SIG_LOCALE) throw new FichierIllisibleError()
-    const debut = decalageLocal + 30 + vue.getUint16(decalageLocal + 26, true) + vue.getUint16(decalageLocal + 28, true)
-    const donnees = zip.subarray(debut, debut + tailleCompressee)
-    if (donnees.length !== tailleCompressee) throw new FichierIllisibleError()
-    if (methode === 0) return texte.decode(donnees)
-    if (methode !== 8) throw new FichierIllisibleError()
-    try {
-      return texte.decode(await decompresser(donnees))
-    } catch {
-      throw new FichierIllisibleError()
+    if (nom === 'diary.csv') {
+      choisie = { methode, tailleCompressee, decalageLocal }
+      break
     }
+    choisie ??= { methode, tailleCompressee, decalageLocal }
   }
-  throw new DiaryCsvMissingError()
+  if (!choisie) throw new DiaryCsvMissingError()
+
+  const locale = choisie.decalageLocal
+  if (locale + 30 > zip.length || vue.getUint32(locale, true) !== SIG_LOCALE) throw new FichierIllisibleError()
+  // Les longueurs du nom et de l'extra se relisent dans l'en-tête local : son extra n'a pas
+  // forcément la taille de celui du répertoire central.
+  const debut = locale + 30 + vue.getUint16(locale + 26, true) + vue.getUint16(locale + 28, true)
+  const donnees = zip.subarray(debut, debut + choisie.tailleCompressee)
+  if (donnees.length !== choisie.tailleCompressee) throw new FichierIllisibleError()
+  if (choisie.methode === 0) return texte.decode(donnees)
+  if (choisie.methode !== 8) throw new FichierIllisibleError()
+  try {
+    return texte.decode(await decompresser(donnees))
+  } catch (e) {
+    throw e instanceof NavigateurSansZipError ? e : new FichierIllisibleError()
+  }
 }
 
 /** Le CSV à envoyer : extrait du ZIP si c'en est un (signature `PK`), lu tel quel sinon. */
