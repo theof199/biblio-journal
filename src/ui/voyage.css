@@ -1,0 +1,16 @@
+/*
+ * L'habillage du Voyage, hors du thème général (`theme.css`) : les quatre couleurs de
+ * `biblio-android/docs/design.md` et la police des célébrations. Le Voyage les lit ; le reste de
+ * l'app ne les lit jamais, et se redessine sans toucher à ce fichier.
+ */
+:root {
+  --fond: #151009;
+  --papier: #f2e8d5;
+  --or: #e6b94a;
+  --corail: #ff6b57;
+}
+
+/* Réservée aux célébrations (le Voyage) : jamais pour un titre courant. */
+.celebration {
+  font-family: 'Limelight', cursive;
+}

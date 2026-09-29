@@ -6,8 +6,11 @@ comment on y travaille à deux.
 
 ## L'identité vient d'ailleurs
 
-`../biblio-android/docs/design.md` fait foi pour l'identité (papier et pellicule, couleurs,
-polices, mondes du Voyage) : on ne la redéfinit pas ici, on la reprend. La spec du socle
+`../biblio-android/docs/design.md` fait foi pour l'identité du Voyage (papier et pellicule,
+couleurs, polices, mondes) : on ne la redéfinit pas ici, on la reprend (`src/ui/voyage.css`).
+**Le reste de l'app suit un design général** (décision du propriétaire, 29 septembre 2026), qui
+vit en variables dans `src/ui/theme.css` : aucune valeur en dur dans un `*.module.css` hors du
+Voyage, et jamais de palette du Voyage hors de lui (README, « Le thème »). La spec du socle
 (`../biblio-back/docs/superpowers/specs/2026-09-28-journal-web-design.md`) fait foi pour
 l'architecture de cette app-ci ; en cas de conflit avec un plan, la spec l'emporte.
 

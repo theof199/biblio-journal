@@ -1,38 +1,42 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
 .bloc {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px dashed currentColor;
+  margin-top: var(--espace-5);
+  padding-top: var(--espace-5);
+  border-top: var(--trait) dashed var(--couleur-bordure);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--espace-2);
 }
 
 .titre {
-  font-size: 0.85rem;
+  font-size: var(--taille-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  color: var(--couleur-texte-doux);
 }
 
 .ligne {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--espace-2);
 }
 
 .champ {
   flex: 1;
-  min-height: 44px;
-  padding: 0 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid currentColor;
-  background: transparent;
-  font-size: 1rem;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border-radius: var(--rayon-m);
+  border: var(--trait) solid var(--couleur-bordure);
+  background: var(--couleur-fond);
+  font-size: var(--taille-m);
 }
 
 .bouton {
-  min-height: 44px;
-  padding: 0 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid currentColor;
-  background: transparent;
-  font-size: 1rem;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  border: var(--trait) solid var(--couleur-bordure);
+  background: var(--couleur-surface);
+  font-size: var(--taille-m);
+  cursor: pointer;
 }

@@ -48,7 +48,11 @@ export default function Connexion() {
             />
           </label>
 
-          {connexion.error ? <p role="alert">{connexion.error.message}</p> : null}
+          {connexion.error ? (
+            <p role="alert" className={styles.erreur}>
+              {connexion.error.message}
+            </p>
+          ) : null}
 
           <button type="submit" className={styles.bouton} disabled={connexion.isPending}>
             Se connecter

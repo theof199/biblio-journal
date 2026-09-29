@@ -7,6 +7,7 @@ import { createQueryClient } from './api/queryClient'
 import MiseAJour from './pwa/MiseAJour'
 import './ui/polices'
 import './ui/theme.css'
+import './ui/voyage.css'
 
 // Créé une fois, hors du rendu : un `createQueryClient()` par rendu viderait
 // le cache (et donc la session) à chaque remontage.

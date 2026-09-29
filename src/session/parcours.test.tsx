@@ -107,7 +107,7 @@ describe('la garde et la connexion', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(corps.message)
   })
 
-  it('se déconnecter ferme la session côté API et ramène à la connexion', async () => {
+  it('se déconnecter depuis le profil ferme la session côté API et ramène à la connexion', async () => {
     let ferme = false
     servir({
       'GET /api/auth/me': () => (ferme ? json(NON_CONNECTE, 401) : json(ALICE)),
@@ -116,7 +116,7 @@ describe('la garde et la connexion', () => {
         return new Response(null, { status: 204 })
       },
     })
-    monter('/')
+    monter('/profil')
     fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }))
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument()
@@ -145,7 +145,7 @@ describe('la garde et la connexion', () => {
         return new Response(null, { status: 204 })
       },
     })
-    monter('/', client)
+    monter('/profil', client)
     fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }))
     await screen.findByRole('heading', { name: 'Connexion' })
 

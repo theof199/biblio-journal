@@ -1,0 +1,68 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.coque {
+  min-height: calc(100dvh - env(safe-area-inset-top));
+}
+
+/* Le contenu d'un onglet. `position: relative` en fait le repère d'une page qui veut occuper
+   toute la place au-dessus de la barre (`position: absolute; inset: 0`). */
+.contenu {
+  position: relative;
+  min-height: calc(100dvh - env(safe-area-inset-top) - var(--coque-bas));
+  margin-bottom: var(--coque-bas);
+}
+
+.barre {
+  position: fixed;
+  z-index: var(--z-barre-onglets);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--couleur-surface);
+  box-shadow: var(--ombre-barre);
+}
+
+.liste {
+  display: flex;
+  height: var(--barre-onglets-hauteur);
+  margin: 0 auto;
+  padding: 0;
+  max-width: var(--largeur-contenu);
+  list-style: none;
+}
+
+.element {
+  flex: 1;
+  display: flex;
+}
+
+.onglet {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-1);
+  min-width: var(--cible-tactile);
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-moyenne);
+  text-decoration: none;
+  transition: color var(--duree);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.onglet[aria-current='page'] {
+  color: var(--couleur-accent);
+  font-weight: var(--graisse-forte);
+}
+
+.icone {
+  width: var(--barre-onglets-icone);
+  height: var(--barre-onglets-icone);
+}
+
+.libelle {
+  line-height: 1;
+}

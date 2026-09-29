@@ -28,6 +28,48 @@ remet. L'origine nue enverrait `/api/auth/me` sur `/auth/me`, que le nginx du fr
     npm test                 # vitest, une fois
     npm run types:check      # le contrat régénère-t-il les mêmes types ?
 
+## La coque à onglets
+
+Une fois connecté, tout passe par la coque, `Coque` (`src/coque/Coque.tsx`, export par défaut) :
+la page de l'onglet courant au-dessus, la barre de cinq onglets en bas (`ONGLETS`, même fichier,
+dans l'ordre de l'appli Android). Elle est montée dans `App.tsx` sous `RouteProtegee` : sans
+session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
+
+| Onglet | Chemin | Icône Tabler | Page |
+|---|---|---|---|
+| Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` (provisoire : il salue) |
+| Voyage | `/voyage` | `route` | `pages/Voyage.tsx` (attente : « La carte arrive ») |
+| Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` (attente) |
+| Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` (attente) |
+| Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, « Se déconnecter » |
+
+**Brancher une page** : la déclarer en route enfant de `<Route element={<Coque />}>` dans
+`App.tsx`, avec un chemin relatif. La page d'un onglet remplace l'élément de sa route
+(`<Route path="voyage" element={<Carte />} />`) ; ses sous-pages vivent sous son préfixe
+(`<Route path="voyage/:annee" element={…} />`) et gardent l'onglet marqué, puisqu'un onglet reste
+actif sur tout ce qui commence par son chemin. Une route hors de ce bloc n'a ni barre ni garde.
+
+La page s'affiche dans le `<main>` de la coque, qui est `position: relative` et remplit la hauteur
+au-dessus de la barre : une page plein écran s'y pose en `position: absolute; inset: 0`. Un
+élément en `position: fixed` doit laisser libre le bas de l'écran, `var(--coque-bas)` (la barre et
+la zone sûre du téléphone) ; la barre est au-dessus de tout le reste (`--z-barre-onglets`, 20).
+
+Les icônes viennent de `@tabler/icons-react`, importées une à une par leur nom : le build n'en
+garde que celles-là.
+
+## Le thème
+
+`src/ui/theme.css` porte tout l'habillage de l'app hors du Voyage, en variables CSS : couleurs,
+polices, tailles de texte, espacements, rayons, ombres, gabarits. Une base neutre, en clair et en
+sombre (le réglage du téléphone ; `data-theme="clair"` ou `"sombre"` sur `<html>` force l'un ou
+l'autre). Les `*.module.css` des composants ne portent aucune valeur en dur : redessiner l'app,
+c'est changer ces variables, puis au besoin les styles des composants, sans toucher au code.
+Seuls `theme-color` (`index.html`) et les couleurs du manifeste (`vite.config.ts`) restent à
+accorder à la main.
+
+Le Voyage a son habillage à lui, par décennie : `src/ui/voyage.css` (les quatre couleurs de
+`../biblio-android/docs/design.md`, la classe `.celebration`). Le thème général ne les lit pas.
+
 ## Le contrat
 
 `contract/openapi.json` est une copie de `../biblio-back/docs/openapi.json`, et `src/api/types.ts`

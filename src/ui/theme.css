@@ -1,14 +1,119 @@
-/* Les quatre couleurs de `biblio-android/docs/design.md` : le Journal reprend
-   l'identité, il ne la redéfinit pas. */
-:root {
-  --fond: #151009;
-  --papier: #f2e8d5;
-  --or: #e6b94a;
-  --corail: #ff6b57;
+/*
+ * Le thème général du Journal : tout l'habillage de l'app, hors le Voyage.
+ *
+ * Une base neutre et sobre, posée pour être redessinée. Pour changer l'apparence, on touche à ce
+ * fichier (les variables ci-dessous et les quelques styles de base qui les lisent) et aux
+ * `*.module.css` des composants, qui ne portent aucune valeur en dur : ils lisent ces variables.
+ * Rien ici n'a d'effet sur le fonctionnement.
+ *
+ * Le Voyage a son propre habillage, par décennie (`voyage.css` pour sa palette et ses polices) :
+ * il ne lit pas ces variables, et ce fichier ne lit pas les siennes.
+ *
+ * Hors de ce fichier, deux couleurs restent à accorder à la main quand le fond change :
+ * `theme-color` dans `index.html` (la barre du navigateur) et `theme_color` / `background_color`
+ * du manifeste dans `vite.config.ts` (l'écran de lancement de l'app installée).
+ */
 
-  color-scheme: dark;
+/* ------------------------------------------------------------------ Clair (par défaut) */
+:root {
+  color-scheme: light dark;
+
+  /* Couleurs */
+  --couleur-fond: #f6f6f4; /* le fond de page */
+  --couleur-surface: #ffffff; /* cartes, barre d'onglets, champs */
+  --couleur-surface-2: #ececea; /* survol, zones en retrait */
+  --couleur-texte: #1d1d1f;
+  --couleur-texte-doux: #6b6b70; /* légendes, onglets inactifs */
+  --couleur-bordure: #dcdcd8;
+  --couleur-accent: #2f5bd3; /* onglet actif, liens, focus */
+  --couleur-sur-accent: #ffffff; /* texte posé sur l'accent */
+  --couleur-danger: #b3261e; /* erreurs */
+
+  /* Polices : celles de `polices.ts`, chargées hors ligne. */
+  --police-texte: 'Manrope', system-ui, sans-serif;
+  --police-titre: 'Manrope', system-ui, sans-serif;
+  --graisse-normale: 400;
+  --graisse-moyenne: 500;
+  --graisse-forte: 700;
+  --interligne: 1.5;
+
+  /* Tailles de texte */
+  --taille-xs: 0.75rem; /* libellés de la barre d'onglets */
+  --taille-s: 0.875rem;
+  --taille-m: 1rem; /* le corps */
+  --taille-l: 1.25rem;
+  --taille-xl: 1.75rem; /* titres de page */
+
+  /* Espacements */
+  --espace-1: 0.25rem;
+  --espace-2: 0.5rem;
+  --espace-3: 0.75rem;
+  --espace-4: 1rem;
+  --espace-5: 1.5rem;
+  --espace-6: 2.5rem;
+
+  /* Rayons */
+  --rayon-s: 0.375rem;
+  --rayon-m: 0.75rem;
+  --rayon-l: 1.25rem;
+  --rayon-plein: 999px;
+
+  /* Traits */
+  --trait: 1px; /* l'épaisseur des bordures */
+
+  /* Ombres */
+  --ombre-s: 0 1px 2px rgb(0 0 0 / 0.08);
+  --ombre-m: 0 4px 16px rgb(0 0 0 / 0.1);
+  --ombre-barre: 0 -1px 0 var(--couleur-bordure);
+
+  /* Mouvement */
+  --duree: 150ms;
+
+  /* Gabarits : ils touchent à l'ergonomie, à garder raisonnables. */
+  --cible-tactile: 44px; /* la plus petite zone touchable */
+  --largeur-contenu: 40rem; /* la largeur maximale d'une page */
+  --barre-onglets-hauteur: 3.75rem; /* sans la zone sûre, ajoutée par la coque */
+  --barre-onglets-icone: 24px;
+  /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
+  --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));
+
+  /* Empilement */
+  --z-barre-onglets: 20;
 }
 
+/* ------------------------------------------------------------------ Sombre */
+/* Suit le réglage du téléphone ; `data-theme` sur <html> force l'un ou l'autre. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) {
+    --couleur-fond: #121214;
+    --couleur-surface: #1c1c1f;
+    --couleur-surface-2: #29292d;
+    --couleur-texte: #ececee;
+    --couleur-texte-doux: #9a9aa2;
+    --couleur-bordure: #323237;
+    --couleur-accent: #8aa9ff;
+    --couleur-sur-accent: #10131c;
+    --couleur-danger: #f2b8b5;
+    --ombre-s: 0 1px 2px rgb(0 0 0 / 0.4);
+    --ombre-m: 0 4px 16px rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-theme='sombre'] {
+  --couleur-fond: #121214;
+  --couleur-surface: #1c1c1f;
+  --couleur-surface-2: #29292d;
+  --couleur-texte: #ececee;
+  --couleur-texte-doux: #9a9aa2;
+  --couleur-bordure: #323237;
+  --couleur-accent: #8aa9ff;
+  --couleur-sur-accent: #10131c;
+  --couleur-danger: #f2b8b5;
+  --ombre-s: 0 1px 2px rgb(0 0 0 / 0.4);
+  --ombre-m: 0 4px 16px rgb(0 0 0 / 0.5);
+}
+
+/* ------------------------------------------------------------------ Styles de base */
 * {
   box-sizing: border-box;
 }
@@ -16,40 +121,59 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--fond);
-  color: var(--papier);
-  font-family:
-    'Manrope',
-    system-ui,
-    sans-serif;
-  /* La barre d'état est translucide sur iOS (voir index.html) : le contenu ne
-     doit pas passer dessous. */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
+  background: var(--couleur-fond);
+  color: var(--couleur-texte);
+  font-family: var(--police-texte);
+  font-size: var(--taille-m);
+  line-height: var(--interligne);
+  /* La barre d'état est translucide sur iOS (voir index.html) : le contenu ne passe pas dessous.
+     Le bas est laissé à la coque, dont la barre d'onglets porte la zone sûre. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
 h1,
 h2,
 h3 {
-  font-family:
-    'Fraunces',
-    Georgia,
-    serif;
-  font-weight: 600;
+  font-family: var(--police-titre);
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
 }
 
-/* Réservée aux célébrations (le Voyage) : jamais pour un titre courant. */
-.celebration {
-  font-family: 'Limelight', cursive;
+h1 {
+  font-size: var(--taille-xl);
+}
+
+a {
+  color: var(--couleur-accent);
 }
 
 button {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: var(--cible-tactile);
+  min-width: var(--cible-tactile);
   font-family: inherit;
+  color: inherit;
 }
 
 input {
-  min-height: 44px;
+  min-height: var(--cible-tactile);
   font-family: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--couleur-accent);
+  outline-offset: 2px;
+}
+
+/* Lu par les lecteurs d'écran, invisible à l'œil. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }

@@ -1,42 +1,63 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
 .page {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 1.5rem 1rem;
+  min-height: calc(100dvh - env(safe-area-inset-top));
+  padding: var(--espace-5) var(--espace-4) calc(var(--espace-5) + env(safe-area-inset-bottom));
 }
 
 .panneau {
   width: 100%;
   max-width: 24rem;
+  padding: var(--espace-5);
+  border-radius: var(--rayon-l);
+  background: var(--couleur-surface);
+  box-shadow: var(--ombre-m);
 }
 
 .formulaire {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--espace-4);
 }
 
 .champ {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--espace-1);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-moyenne);
 }
 
 .saisie {
-  min-height: 44px;
-  padding: 0 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid currentColor;
-  background: transparent;
-  font-size: 1rem;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border-radius: var(--rayon-m);
+  border: var(--trait) solid var(--couleur-bordure);
+  background: var(--couleur-fond);
+  font-size: var(--taille-m);
+}
+
+.erreur {
+  margin: 0;
+  color: var(--couleur-danger);
 }
 
 .bouton {
-  min-height: 44px;
-  padding: 0 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid currentColor;
-  background: transparent;
-  font-size: 1rem;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  border: none;
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}
+
+.bouton:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
