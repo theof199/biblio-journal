@@ -91,6 +91,8 @@
   --largeur-vitrine-vide: 40%; /* le cadre d'affiche vide, avant le premier film */
   --hauteur-remarque: 6rem; /* la remarque privée du carnet, dans le formulaire */
   --largeur-affiche-fiche: 7rem; /* la jaquette de la fiche d'un visionnage */
+  --largeur-logo-tmdb: 6rem; /* le logo TMDB de la mention */
+  --hauteur-graphique: 3rem; /* un histogramme du profil */
   --taille-icone-inline: 1rem; /* une icône posée au fil du texte, à côté d'une ligne de « Mes films » */
   /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));

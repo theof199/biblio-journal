@@ -41,7 +41,7 @@ session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
 | Voyage | `/voyage` | `route` | `pages/Voyage.tsx` (attente : « La carte arrive ») |
 | Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` (attente) |
 | Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` (attente) |
-| Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, « Se déconnecter » |
+| Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, les chiffres de `/stats`, le bilan et les graphiques (`profil/`), « Mes films », l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), « Se déconnecter », la mention TMDB |
 
 **Brancher une page** : la déclarer en route enfant de `<Route element={<Coque />}>` dans
 `App.tsx`, avec un chemin relatif. La page d'un onglet remplace l'élément de sa route

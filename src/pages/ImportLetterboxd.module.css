@@ -1,0 +1,62 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  max-width: var(--largeur-contenu);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--espace-4) var(--espace-6);
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.titre {
+  margin: 0;
+}
+
+.section {
+  margin: 0;
+  font-size: var(--taille-l);
+}
+
+.doux {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.erreur {
+  color: var(--couleur-danger);
+}
+
+.candidat {
+  display: block;
+  width: 100%;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  text-align: left;
+  font-size: var(--taille-m);
+  cursor: pointer;
+}
+
+.candidat:hover {
+  background: var(--couleur-surface-2);
+}
+
+.bouton {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+  font-size: var(--taille-m);
+  cursor: pointer;
+}

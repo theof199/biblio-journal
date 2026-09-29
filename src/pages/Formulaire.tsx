@@ -39,7 +39,7 @@ export default function Formulaire() {
   const item = etatCorrection?.item
   const candidat = !correction ? (location.state as EtatCreation | null)?.candidat : undefined
 
-  const [brouillon, setBrouillon] = useState(() => brouillonInitial(item))
+  const [brouillon, setBrouillon] = useState(() => brouillonInitial(item, candidat))
   const [confirmerSuppression, setConfirmerSuppression] = useState(false)
 
   const reactions = useQuery({ queryKey: cles.reactions, queryFn: ({ signal }) => lireReactions(signal) })

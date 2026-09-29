@@ -1,0 +1,61 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+  padding: var(--espace-4);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+}
+
+.titre {
+  margin: 0;
+  font-size: var(--taille-l);
+}
+
+.ligne {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.sousTitre {
+  margin: 0;
+  font-size: var(--taille-s);
+  color: var(--couleur-texte-doux);
+}
+
+.graphique {
+  display: block;
+  width: 100%;
+  height: var(--hauteur-graphique);
+}
+
+.fondBarre {
+  fill: var(--couleur-surface-2);
+}
+
+.barre {
+  fill: var(--couleur-accent);
+}
+
+.grille {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case {
+  width: var(--taille-icone-inline);
+  height: var(--taille-icone-inline);
+  border-radius: var(--rayon-s);
+  background: var(--couleur-surface-2);
+}
+
+.caseCouverte {
+  background: var(--couleur-accent);
+}

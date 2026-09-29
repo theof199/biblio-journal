@@ -106,6 +106,8 @@ interface RequestOptions {
   body?: unknown
   query?: Record<string, string | number | boolean | null | undefined>
   signal?: AbortSignal
+  /** Remplace le délai de garde par défaut (lecture 20 s, écriture 45 s) : l'import Letterboxd attend des minutes. */
+  timeoutMs?: number
 }
 
 const buildUrl = (path: string, query?: RequestOptions['query']) => {
@@ -119,11 +121,11 @@ const buildUrl = (path: string, query?: RequestOptions['query']) => {
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, query, signal } = options
+  const { method = 'GET', body, query, signal, timeoutMs } = options
 
   // Deux signaux distincts, et il faut savoir lequel a tranché : une navigation
   // annule la requête, et une annulation n'est pas une panne à montrer.
-  const garde = AbortSignal.timeout(method === 'GET' ? DELAI_LECTURE : DELAI_ECRITURE)
+  const garde = AbortSignal.timeout(timeoutMs ?? (method === 'GET' ? DELAI_LECTURE : DELAI_ECRITURE))
   const combine = signal ? AbortSignal.any([signal, garde]) : garde
 
   let response: Response
@@ -190,7 +192,8 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 export const api = {
   get: <T>(path: string, query?: RequestOptions['query'], signal?: AbortSignal) =>
     request<T>(path, { method: 'GET', query, signal }),
-  post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
+  post: <T>(path: string, body?: unknown, timeoutMs?: number) =>
+    request<T>(path, { method: 'POST', body, timeoutMs }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),

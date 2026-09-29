@@ -36,6 +36,25 @@ export const REACTION_EN_SALLE = 'en_salle'
 export const lireSeances = (params: { limit?: number; cursor?: string } = {}, signal?: AbortSignal) =>
   api.get<JournalPage>('/me/journal', { ...params, reaction: REACTION_EN_SALLE }, signal)
 
+/** La taille de page maximale de l'API (`limit`, 100) : le journal entier en le moins d'appels possible. */
+const PAGE_MAX = 100
+
+/**
+ * Tout le journal, page après page, dans l'ordre de l'API — de quoi calculer le bilan et les
+ * graphiques du profil (jumeau de `journalComplet()`, Android). La première page qui échoue fait
+ * échouer l'ensemble : un bilan sur un journal tronqué mentirait.
+ */
+export async function journalComplet(signal?: AbortSignal): Promise<JournalItem[]> {
+  const items: JournalItem[] = []
+  let cursor: string | undefined
+  do {
+    const page = await lireJournal({ limit: PAGE_MAX, cursor }, signal)
+    items.push(...page.items)
+    cursor = curseurSuivant(page)
+  } while (cursor)
+  return items
+}
+
 /** `next_cursor` nul, c'est la fin : le seul signal (voir `CLAUDE.md`, « Pagination »). */
 export const curseurSuivant = (page: JournalPage): string | undefined => page.next_cursor ?? undefined
 

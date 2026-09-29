@@ -185,6 +185,32 @@ describe('request — chaque panne sous son vrai nom', () => {
   })
 })
 
+describe('request — un délai propre à l’appel', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  it('`timeoutMs` remplace le délai d’écriture : rien à 60 s, `TIMEOUT` à l’échéance donnée', async () => {
+    vi.useFakeTimers()
+    vi.mocked(fetch).mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('AbortError')))
+        }),
+    )
+    const issue = request('/x', { method: 'POST', body: {}, timeoutMs: 120_000 }).catch((e: unknown) => e)
+
+    await vi.advanceTimersByTimeAsync(60_000)
+    const temoin = Symbol('en cours')
+    expect(await Promise.race([issue, Promise.resolve(temoin)])).toBe(temoin)
+
+    await vi.advanceTimersByTimeAsync(61_000)
+    expect(await issue).toMatchObject({ code: 'TIMEOUT' })
+  })
+})
+
 describe('request — ce que le Journal envoie et accepte', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())

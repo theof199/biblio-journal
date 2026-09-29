@@ -4,6 +4,7 @@ import {
   creerVisionnage,
   curseurSuivant,
   dejaAuJournal,
+  journalComplet,
   lireJournal,
   supprimerVisionnage,
 } from './journal'
@@ -92,5 +93,37 @@ describe('le client du journal', () => {
       '/api/me/journal/e0000000-0000-4000-8000-000000000002',
       expect.objectContaining({ method: 'DELETE' }),
     )
+  })
+})
+
+describe('journalComplet', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const item = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
+  const page = (id: string, next: string | null): Response =>
+    new Response(JSON.stringify({ items: [{ ...item, entry: { ...item.entry, id } }], next_cursor: next }), { status: 200 })
+
+  it('suit les curseurs jusqu’au bout, par pages de 100, dans l’ordre', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(page('a', 'c2'))
+      .mockResolvedValueOnce(page('b', 'c3'))
+      .mockResolvedValueOnce(page('c', null))
+    const tout = await journalComplet()
+    expect(tout.map((i) => i.entry.id)).toEqual(['a', 'b', 'c'])
+    expect(vi.mocked(fetch).mock.calls.map((c) => c[0])).toEqual([
+      '/api/me/journal?limit=100',
+      '/api/me/journal?limit=100&cursor=c2',
+      '/api/me/journal?limit=100&cursor=c3',
+    ])
+  })
+
+  it('une page en échec fait échouer le tout : un bilan sur un journal tronqué mentirait', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(page('a', 'c2'))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 'INTERNAL', message: 'Le journal n’a pas pu être lu.', retryable: false }), { status: 500 }),
+      )
+    await expect(journalComplet()).rejects.toMatchObject({ message: 'Le journal n’a pas pu être lu.' })
   })
 })

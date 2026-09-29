@@ -18,4 +18,10 @@ export const cles = {
   pageRealisateur: (tmdbId: number) => ['realisateurs', tmdbId, 'page'] as const,
   sagas: ['sagas'] as const,
   filmsSaga: (tmdbId: number) => ['sagas', tmdbId, 'films'] as const,
+
+  /**
+   * Le journal entier, à plat (bilan et graphiques du profil) : sous le préfixe `journal`, pour
+   * que l'invalidation qui suit une écriture le périme aussi.
+   */
+  journalComplet: ['journal', 'complet'] as const,
 }
