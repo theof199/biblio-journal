@@ -4,7 +4,10 @@ import { Link, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { lirePageRealisateur, neplusSuivreRealisateur, suivreRealisateur } from '../api/realisateurs'
 import { filmsSansSeries, filmsVus } from '../suivis/prochain'
+import { IconAward } from '@tabler/icons-react'
 import Affiche from '../ui/Affiche'
+import Sceau from '../ui/Sceau'
+import { filmographieTerminee } from '../profil/bilan'
 import BoutonRetour from '../ui/BoutonRetour'
 import Panne from '../ui/Panne'
 import styles from './PageRealisateur.module.css'
@@ -89,7 +92,14 @@ export default function PageRealisateur() {
       </div>
 
       <div className={styles.fiche}>
-        <Affiche src={fiche.photo_url} titre={fiche.name} taille="ligne" className={styles.photo} />
+        <span className={styles.portrait}>
+          <Affiche src={fiche.photo_url} titre={fiche.name} taille="ligne" className={styles.photo} />
+          {/* Le sceau de la rétrospective complète (`retrospectiveComplete`, Android) : tout vu ou
+              introuvable — vide aussi, rien n'y reste à voir. Jumeau de celui des cartes des Suivis. */}
+          {filmographieTerminee(films) ? (
+            <Sceau icone={IconAward} libelle="Rétrospective complète" className={styles.sceau} />
+          ) : null}
+        </span>
         <div className={styles.infos}>
           <h1 className={styles.nom}>{fiche.name}</h1>
           {dates ? <p className={styles.dates}>{dates}</p> : null}

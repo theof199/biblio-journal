@@ -5,13 +5,23 @@ import { cles } from '../api/cles'
 import { lireRealisateurs, suivreRealisateur, type Realisateur } from '../api/realisateurs'
 import { lireSagas, suivreSaga, type Saga } from '../api/sagas'
 import { chercherRealisateurs, chercherSagas } from '../api/personnes'
-import { compteCarte, dernierVisionnage, LIBELLES_SUIVI, repartirSuivis, sousLigneCarte } from '../suivis/liste'
-import type { EtatFilmographie, SourceSuivi } from '../suivis/liste'
+import {
+  casesBande,
+  compteCarte,
+  compteSuivis,
+  dernierVisionnage,
+  LIBELLES_SUIVI,
+  repartirSuivis,
+  sousLigneCarte,
+} from '../suivis/liste'
+import type { EtatBande, EtatFilmographie, FilmCarte, SourceSuivi } from '../suivis/liste'
 import { useMasquerIntrouvables } from '../suivis/masquer'
 import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
-import type { FilmSuivi } from '../suivis/prochain'
+import { prochainAVoir } from '../suivis/prochain'
 import { jourLocal } from '../ui/format'
+import { IconAward, IconCheck } from '@tabler/icons-react'
 import Affiche from '../ui/Affiche'
+import Sceau from '../ui/Sceau'
 import Panne from '../ui/Panne'
 import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
 import styles from './Suivis.module.css'
@@ -40,7 +50,7 @@ type Suivie = { tmdb_id: number; name: string; ajoute_le: string }
 interface Props<E extends Suivie> {
   source: SourceSuivi
   /** Leurs films, chargés l'un après l'autre (`useFilmographies`) : la ligne sous chaque nom, l'ordre et les « complets » en dépendent. */
-  filmographies: ReadonlyMap<number, EtatFilmographie<FilmSuivi>>
+  filmographies: ReadonlyMap<number, EtatFilmographie<FilmCarte>>
   masquerIntrouvables: boolean
   /** Le jour d'aujourd'hui (`AAAA-MM-JJ`), lu une fois : « vu il y a 3 jours » ne se recalcule pas à minuit. */
   aujourdHui: string
@@ -104,26 +114,20 @@ function SectionSuivis<E extends Suivie>({
     [entites, filmographies],
   )
 
-  const ligne = (entite: E, bouclee: boolean) => {
-    const etat = filmographies.get(entite.tmdb_id)
-    let sousLigne = '…'
-    if (etat?.statut === 'indisponible') sousLigne = 'indisponible'
-    else if (etat?.statut === 'pret') {
-      const { vus, total } = compteCarte(source, etat.films, masquerIntrouvables)
-      sousLigne = sousLigneCarte(source, vus, total, dernierVisionnage(etat.films), entite.ajoute_le, aujourdHui, bouclee)
-    }
-    return (
-      <li key={entite.tmdb_id}>
-        <Link to={lienDetail(entite.tmdb_id)} className={styles.entite}>
-          <Affiche src={image(entite)} titre={entite.name} taille="ligne" />
-          <span className={styles.texteEntite}>
-            <span className={styles.nomEntite}>{entite.name}</span>
-            <span className={styles.sousLigne}>{sousLigne}</span>
-          </span>
-        </Link>
-      </li>
-    )
-  }
+  const ligne = (entite: E, bouclee: boolean) => (
+    <CarteSuivi
+      key={entite.tmdb_id}
+      source={source}
+      nom={entite.name}
+      image={image(entite)}
+      ajouteLe={entite.ajoute_le}
+      lien={lienDetail(entite.tmdb_id)}
+      etat={filmographies.get(entite.tmdb_id)}
+      masquerIntrouvables={masquerIntrouvables}
+      aujourdHui={aujourdHui}
+      bouclee={bouclee}
+    />
+  )
 
   return (
     <section className={styles.section}>
@@ -213,7 +217,13 @@ export default function Suivis() {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.titre}>Suivis</h1>
+      <div className={styles.entete}>
+        <h1 className={styles.titre}>Suivis</h1>
+        {/* Absent tant qu'une des deux listes n'a pas répondu : pas de « 0 rétrospective » qui grimperait sous les yeux. */}
+        {realisateurs.data && sagas.data ? (
+          <p className={styles.compteSuivis}>{compteSuivis(realisateurs.data.length, sagas.data.length)}</p>
+        ) : null}
+      </div>
 
       <SectionSuivis<Realisateur>
         source="realisateurs"
@@ -253,5 +263,115 @@ export default function Suivis() {
         clesListe={cles.sagas}
       />
     </div>
+  )
+}
+
+const DESCRIPTION_CASE: Record<EtatBande, string> = {
+  vu: 'vu',
+  prochain: 'prochain à voir',
+  'pas-encore': 'pas encore',
+  introuvable: 'introuvable',
+}
+
+/**
+ * Une carte par rétrospective ou par cycle (reprise de `CarteSuivi`, `SuivisScreen.kt`) :
+ * - le portrait (une rétrospective bouclée y porte le sceau « Rétrospective complète » ; un cycle
+ *   bouclé n'en a pas, sa bande toute cochée le dit), le nom, la ligne sous le nom, « 4/12 » à
+ *   droite — accentué une fois bouclée ;
+ * - la bande de ses films pour un cycle (`casesBande`), en rangées de six ;
+ * - « Ensuite » et le prochain film à voir, sauf une fois bouclée.
+ * Filmographie en attente ou en panne : le nom, puis « … » ou « indisponible », rien d'autre.
+ *
+ * Toute la carte ouvre la page de l'entité (le lien s'étend sur elle), mais seul l'en-tête nomme ce
+ * lien : la bande se lit case par case, pas en un seul nom de lien interminable.
+ */
+function CarteSuivi({
+  source,
+  nom,
+  image,
+  ajouteLe,
+  lien,
+  etat,
+  masquerIntrouvables,
+  aujourdHui,
+  bouclee,
+}: {
+  source: SourceSuivi
+  nom: string
+  image: string | null
+  ajouteLe: string
+  lien: string
+  etat: EtatFilmographie<FilmCarte> | undefined
+  masquerIntrouvables: boolean
+  aujourdHui: string
+  bouclee: boolean
+}) {
+  const films = etat?.statut === 'pret' ? etat.films : null
+  const cycle = source === 'sagas'
+  const { vus, total } = films ? compteCarte(source, films, masquerIntrouvables) : { vus: 0, total: 0 }
+  const prochain = films && !bouclee ? prochainAVoir(films) : undefined
+
+  return (
+    <li className={bouclee ? `${styles.carte} ${styles.carteBouclee}` : styles.carte}>
+      <Link to={lien} className={styles.entite}>
+        <span className={styles.portrait}>
+          <Affiche src={image} titre={nom} taille="ligne" />
+          {bouclee && !cycle ? <Sceau icone={IconAward} libelle="Rétrospective complète" className={styles.sceau} /> : null}
+        </span>
+        <span className={styles.texteEntite}>
+          <span className={styles.nomEntite}>{nom}</span>
+          <span className={styles.sousLigne}>
+            {films
+              ? sousLigneCarte(source, vus, total, dernierVisionnage(films), ajouteLe, aujourdHui, bouclee)
+              : etat?.statut === 'indisponible'
+                ? 'indisponible'
+                : '…'}
+          </span>
+        </span>
+        {films ? (
+          <span role="img" aria-label={`${vus} sur ${total}`} className={bouclee ? `${styles.compte} ${styles.compteBoucle}` : styles.compte}>
+            {vus}
+            <span className={styles.denominateur}>/{total}</span>
+          </span>
+        ) : null}
+      </Link>
+
+      {films && cycle ? (
+        <ul className={styles.bande} aria-label={`Les films de ${nom}`}>
+          {casesBande(films, masquerIntrouvables).map(({ film, etat: etatCase }) => (
+            <li key={film.tmdb_id} aria-label={`${film.title}, ${DESCRIPTION_CASE[etatCase]}`} data-etat={etatCase} className={styles.case}>
+              <span className={styles.afficheCase}>
+                <Affiche src={film.cover_url} titre={film.title} />
+                {etatCase === 'vu' ? (
+                  <span className={styles.coche} aria-hidden="true">
+                    <IconCheck className={styles.iconeCoche} />
+                  </span>
+                ) : null}
+                {etatCase === 'introuvable' ? (
+                  <span className={styles.perdu} aria-hidden="true">
+                    Perdu
+                  </span>
+                ) : null}
+              </span>
+              <span className={styles.anneeCase} aria-hidden="true">
+                {film.year ?? '—'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {prochain ? (
+        <p className={styles.ensuite}>
+          <Affiche src={prochain.cover_url} titre={prochain.title} taille="ligne" />
+          <span className={styles.texteEntite}>
+            <span className={styles.etiquetteEnsuite}>Ensuite</span>
+            <span className={styles.titreEnsuite}>
+              {prochain.year != null ? `${prochain.title} (${prochain.year})` : prochain.title}
+            </span>
+          </span>
+        </p>
+      ) : null}
+    </li>
   )
 }

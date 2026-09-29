@@ -1,5 +1,5 @@
 import { formatDateVisionnage } from '../ui/format'
-import { filmsVus, type FilmSuivi } from './prochain'
+import { filmsVus, prochainAVoir, type FilmSuivi } from './prochain'
 
 /**
  * Les règles pures de la liste des Suivis (reprise de `SuivisEtats.kt` et `BandeEtats.kt`, appli
@@ -24,6 +24,13 @@ export type SourceSuivi = 'realisateurs' | 'sagas'
 export const LIBELLES_SUIVI: Record<SourceSuivi, { titreComplets: string; participeBoucle: string }> = {
   realisateurs: { titreComplets: 'Rétrospectives complètes', participeBoucle: 'bouclée' },
   sagas: { titreComplets: 'Cycles complets', participeBoucle: 'bouclé' },
+}
+
+/** Un film tel qu'une carte le montre : sa bande (un cycle) et sa ligne « Ensuite ». */
+export interface FilmCarte extends FilmSuivi {
+  title: string
+  year: number | null
+  cover_url: string | null
 }
 
 /** Une entité suivie, réduite à ce que ces règles lisent. */
@@ -62,7 +69,8 @@ export function trierParActivite<E extends EntiteSuiviListe, F extends FilmSuivi
   filmographies: ReadonlyMap<number, EtatFilmographie<F>>,
 ): E[] {
   const jour = (entite: E) => derniereActivite(entite.ajoute_le, filmsPrets(filmographies.get(entite.tmdb_id)))
-  return [...entites].sort((a, b) => {    const ja = jour(a)
+  return [...entites].sort((a, b) => {
+    const ja = jour(a)
     const jb = jour(b)
     return ja < jb ? 1 : ja > jb ? -1 : 0
   })
@@ -94,7 +102,10 @@ export function repartirSuivis<E extends EntiteSuiviListe, F extends FilmSuivi>(
 }
 
 const JOUR_MS = 86_400_000
-const parties = (jour: string) => jour.slice(0, 10).split('-').map(Number) as [number, number, number]
+function parties(jour: string): [number, number, number] {
+  const [annee, mois, quantieme] = jour.slice(0, 10).split('-').map(Number)
+  return [annee!, mois!, quantieme!]
+}
 
 /**
  * Le temps écoulé depuis `iso` jusqu'à `aujourdHui` (`AAAA-MM-JJ`), en mots : « aujourd’hui »,
@@ -149,13 +160,50 @@ export function sousLigneCarte(
 }
 
 /**
- * Le compte d'une carte de cycle, (vus, total), **tel que la bande le dessinait sur Android** : les
- * cases visibles et les cases cochées. Avec « Masquer les introuvables », le total les exclut ;
- * sinon il les compte, sans jamais les compter vus (la marque prime sur le visionnage).
+ * Ce qu'une case de la bande d'un cycle montre de son film (reprise de `EtatBande`, Android) : vu
+ * (coché), le prochain à voir (liseré d'accent), pas encore (atténué), introuvable (atténué, marqué
+ * « Perdu ») — ce dernier seulement quand « Masquer les introuvables » est coupé.
+ */
+export type EtatBande = 'vu' | 'prochain' | 'pas-encore' | 'introuvable'
+
+/**
+ * La bande d'un cycle (reprise de `disposerBande`, Android), dans l'ordre du back — de la plus
+ * ancienne sortie à la plus récente. Les rangées de six sont l'affaire de la grille
+ * (`--grille-bande-colonnes`), pas de ce découpage.
+ *
+ * - `masquerIntrouvables` : les introuvables quittent la bande ; sinon ils y restent, `introuvable`
+ *   — la marque prime sur le visionnage.
+ * - `prochain` : le film de `prochainAVoir`, qui saute déjà les introuvables — une case au plus,
+ *   aucune quand tout est vu.
+ */
+export function casesBande<F extends FilmSuivi>(
+  films: readonly F[],
+  masquerIntrouvables: boolean,
+): { film: F; etat: EtatBande }[] {
+  const prochain = prochainAVoir(films)
+  return films
+    .filter((film) => !(masquerIntrouvables && film.introuvable))
+    .map((film) => ({
+      film,
+      etat: film.introuvable ? 'introuvable' : film.vu != null ? 'vu' : film === prochain ? 'prochain' : 'pas-encore',
+    }))
+}
+
+/**
+ * Le compte d'une carte de cycle, (vus, total), **tel que la bande le dessine** (`compteBande`,
+ * Android) : les cases visibles et les cases cochées. Avec « Masquer les introuvables », le total
+ * les exclut ; sinon il les compte, sans jamais les compter vus (la marque prime sur le visionnage).
  */
 export function compteBande(films: readonly FilmSuivi[], masquerIntrouvables: boolean): { vus: number; total: number } {
-  const visibles = masquerIntrouvables ? films.filter((film) => !film.introuvable) : films
-  return { vus: visibles.filter((film) => !film.introuvable && film.vu != null).length, total: visibles.length }
+  const cases = casesBande(films, masquerIntrouvables)
+  return { vus: cases.filter((c) => c.etat === 'vu').length, total: cases.length }
+}
+
+/** « 5 rétrospectives · 2 cycles », accordé : « 1 rétrospective · 0 cycle » (`compteSuivis`, Android). */
+export function compteSuivis(nRetrospectives: number, nCycles: number): string {
+  const r = nRetrospectives > 1 ? 'rétrospectives' : 'rétrospective'
+  const c = nCycles > 1 ? 'cycles' : 'cycle'
+  return `${nRetrospectives} ${r} · ${nCycles} ${c}`
 }
 
 /** Le compte d'une carte : les vus sur tous les films pour un réalisateur, `compteBande` pour une saga. */

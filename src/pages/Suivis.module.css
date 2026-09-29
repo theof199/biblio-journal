@@ -42,6 +42,7 @@
 }
 
 .texteEntite {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--espace-1);
@@ -109,4 +110,163 @@
 .vide {
   margin: 0;
   color: var(--couleur-texte-doux);
+}
+
+.entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-3);
+}
+
+.compteSuivis {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+/* Une carte : toute sa surface ouvre la page de l'entité (le lien s'étend par `::after`). */
+.carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  padding: var(--espace-3);
+  border-radius: var(--rayon-l);
+  background: var(--couleur-surface);
+}
+
+.carteBouclee {
+  opacity: var(--opacite-bouclee);
+}
+
+.entite::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rayon-l);
+}
+
+.portrait {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sceau {
+  right: 0;
+  bottom: 0;
+}
+
+.compte {
+  flex-shrink: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.compteBoucle {
+  color: var(--couleur-accent);
+}
+
+.denominateur {
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-normale);
+}
+
+/* La bande d'un cycle : six affiches par rangée, la dernière rangée plus courte, alignée à gauche. */
+.bande {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: var(--grille-bande-colonnes);
+  gap: var(--espace-2);
+}
+
+.case {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
+.afficheCase {
+  position: relative;
+  display: block;
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-s);
+}
+
+.case[data-etat='prochain'] .afficheCase {
+  border-color: var(--couleur-accent);
+  outline: var(--trait) solid var(--couleur-accent);
+}
+
+/* Atténuée, l'affiche seule : le tampon « Perdu » reste lisible par-dessus. */
+.case[data-etat='pas-encore'] .afficheCase > :first-child,
+.case[data-etat='introuvable'] .afficheCase > :first-child {
+  opacity: var(--opacite-attenue);
+  filter: grayscale(100%);
+}
+
+.coche {
+  position: absolute;
+  top: var(--espace-1);
+  right: var(--espace-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.iconeCoche {
+  width: var(--taille-icone-inline);
+  height: var(--taille-icone-inline);
+}
+
+.perdu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--couleur-danger);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--interlettre-capitales);
+  text-transform: uppercase;
+}
+
+.anneeCase {
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.case[data-etat='prochain'] .anneeCase {
+  color: var(--couleur-accent);
+  font-weight: var(--graisse-forte);
+}
+
+.ensuite {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+}
+
+.etiquetteEnsuite {
+  color: var(--couleur-accent);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--interlettre-capitales);
+  text-transform: uppercase;
+}
+
+.titreEnsuite {
+  font-weight: var(--graisse-moyenne);
 }

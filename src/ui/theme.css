@@ -71,6 +71,8 @@
 
   /* États */
   --opacite-inactif: 0.6; /* un bouton désactivé */
+  --opacite-attenue: 0.45; /* une case de la bande d'un cycle, pas encore vue ou introuvable */
+  --opacite-bouclee: 0.85; /* une carte de Suivis bouclée, rangée sous « complets » */
 
   /* Mouvement */
   --duree: 150ms;
@@ -85,6 +87,7 @@
   --ratio-affiche: 2 / 3; /* la jaquette d'un film */
   --grille-affiches-colonnes: repeat(2, 1fr); /* la grille du journal, deux colonnes */
   --grille-sorties-colonnes: repeat(3, 1fr); /* les grilles de sorties d'Au ciné, trois colonnes */
+  --grille-bande-colonnes: repeat(6, 1fr); /* la bande d'un cycle, six affiches par rangée */
   --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, « Ensuite », « Ce soir ») */
   --taille-bouton-rond: 3.5rem; /* le bouton d'ajout flottant */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */

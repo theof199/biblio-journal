@@ -73,6 +73,25 @@ describe('la page d’un réalisateur', () => {
     expect(await screen.findByRole('switch', { name: 'Masquer les introuvables' })).toBeChecked()
   })
 
+  it('le sceau « Rétrospective complète » quand tout est vu ou introuvable, pas avant', async () => {
+    const A_VOIR = { ...PAGE_SUIVI.films[0]!, tmdb_id: 998, title: 'Film à voir', year: 2002, vu: null, introuvable: false }
+    servir({
+      // Inception vu, et un introuvable jamais vu.
+      'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_PERDU),
+      'GET /api/me/realisateurs/526/page': () => json({ ...PAGE_AVEC_PERDU, tmdb_id: 526, films: [...PAGE_AVEC_PERDU.films, A_VOIR] }),
+    })
+    const { unmount } = monter()
+
+    // Mutation : exiger un visionnage de chaque film, l'introuvable compris, retirerait ce sceau.
+    expect(await screen.findByRole('img', { name: 'Rétrospective complète' })).toBeInTheDocument()
+    unmount()
+
+    monter(526)
+    await screen.findByText('Film à voir (2002)')
+    // Mutation : un sceau posé sans condition resterait ici.
+    expect(screen.queryByRole('img', { name: 'Rétrospective complète' })).not.toBeInTheDocument()
+  })
+
   it('sans aucun film, le dit plutôt que de montrer une liste vide', async () => {
     servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_SANS_FILMS) })
     monter()

@@ -27,6 +27,7 @@ import {
 import { useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useChargementInfini } from '../accueil/useChargementInfini'
 import Affiche from '../ui/Affiche'
+import Sceau from '../ui/Sceau'
 import Panne from '../ui/Panne'
 import { formatDateVisionnage, sousTitre } from '../ui/format'
 import styles from './AuCine.module.css'
@@ -226,13 +227,11 @@ function Tuile({
           </span>
         ) : null}
         {marque ? (
-          <span className={styles.sceau} aria-label={marque === 'realisateur' ? 'Réalisateur suivi' : 'Saga suivie'}>
-            {marque === 'realisateur' ? (
-              <IconUser aria-hidden="true" className={styles.iconeSceau} />
-            ) : (
-              <IconMovie aria-hidden="true" className={styles.iconeSceau} />
-            )}
-          </span>
+          <Sceau
+            icone={marque === 'realisateur' ? IconUser : IconMovie}
+            libelle={marque === 'realisateur' ? 'Réalisateur suivi' : 'Saga suivie'}
+            className={styles.sceau}
+          />
         ) : null}
       </div>
       <p className={styles.titreTuile}>{title}</p>

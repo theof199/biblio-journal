@@ -189,6 +189,22 @@ describe('la page d’une saga', () => {
     expect(requetes).toContain('DELETE /api/me/sagas/8091/films/70981')
   })
 
+  it('un retrait qui échoue le dit sans détail, et le film reste', async () => {
+    servir({
+      'GET /api/me/sagas': () => json([ALIEN]),
+      'GET /api/me/sagas/8091/films': () => json(FILMS),
+      'DELETE /api/me/sagas/8091/films/70981': () => json({ code: 'INTERNAL', message: 'Erreur interne.', retryable: true }, 500),
+    })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer Prometheus de la saga' }))
+
+    // Mutation : le jumeau de l'ajout sans son `onError` se tairait.
+    expect(await screen.findByText('Impossible pour l’instant')).toBeInTheDocument()
+    expect(screen.queryByText('Retiré de la saga')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retirer Prometheus de la saga' })).toBeInTheDocument()
+  })
+
   it('un film ajouté et déjà vu reste retirable', async () => {
     const films = { films: FILMS.films.map((f) => (f.tmdb_id === 70981 ? { ...f, vu: { entry_id: 'e-1', rating: 7, finished_at: '2026-09-01' } } : f)) }
     servir({ 'GET /api/me/sagas': () => json([ALIEN]), 'GET /api/me/sagas/8091/films': () => json(films) })
@@ -221,6 +237,22 @@ describe('la page d’une saga', () => {
     expect(screen.queryByLabelText('Chercher un film à ajouter')).not.toBeInTheDocument()
     await waitFor(() => expect(appels).toBe(2))
     expect(INCEPTION.external_id).toBe('27205')
+  })
+
+  it('un résultat sans identifiant TMDB entier ne se propose pas à l’ajout', async () => {
+    const bancal = { ...INCEPTION, external_id: 'tt1375666', title: 'Inception bis' }
+    servir({
+      'GET /api/me/sagas': () => json([ALIEN]),
+      'GET /api/me/sagas/8091/films': () => json(FILMS),
+      'GET /api/search?type=movie&q=inception': () => json({ ...RECHERCHE, items: [INCEPTION, bancal] }),
+    })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ajouter un film' }))
+    fireEvent.change(screen.getByLabelText('Chercher un film à ajouter'), { target: { value: 'inception' } })
+    await screen.findByRole('button', { name: 'Ajouter Inception à la saga' }, { timeout: 2000 })
+    // Mutation : sans le garde, « Ajouter » partirait vers `PUT …/films/NaN`.
+    expect(screen.queryByRole('button', { name: 'Ajouter Inception bis à la saga' })).not.toBeInTheDocument()
   })
 
   it('un ajout qui échoue le dit sans détail, et garde le panneau ouvert', async () => {

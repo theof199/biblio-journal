@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  casesBande,
   compteBande,
+  compteSuivis,
   compteCarte,
   derniereActivite,
   entiteBouclee,
@@ -132,5 +134,52 @@ describe('compteBande et compteCarte', () => {
     expect(derniereActivite('2026-09-01T00:00:00.000Z', [film(1, { vu: '2026-09-05' }), film(2, { vu: '2026-09-09' })])).toBe('2026-09-09')
     expect(derniereActivite('2026-09-01T00:00:00.000Z', [film(1)])).toBe('2026-09-01')
     expect(derniereActivite('2026-09-01T00:00:00.000Z', null)).toBe('2026-09-01')
+  })
+})
+
+describe('compteSuivis', () => {
+  it('accorde chaque nom à son nombre', () => {
+    expect(compteSuivis(5, 2)).toBe('5 rétrospectives · 2 cycles')
+    // Mutation : accorder dès 1 (`>= 1`) écrirait « 1 rétrospectives » ; ne jamais accorder, « 2 cycle ».
+    expect(compteSuivis(1, 0)).toBe('1 rétrospective · 0 cycle')
+    expect(compteSuivis(0, 1)).toBe('0 rétrospective · 1 cycle')
+  })
+})
+
+describe('casesBande', () => {
+  const etats = (films: FilmSuivi[], masquer: boolean) => casesBande(films, masquer).map((c) => [c.film.tmdb_id, c.etat])
+
+  it('vu, un seul prochain (le premier ni vu ni introuvable), puis pas encore, dans l’ordre du back', () => {
+    // Mutation : marquer « prochain » tout film non vu en donnerait deux.
+    expect(etats([film(1, { vu: '2026-09-01' }), film(2), film(3)], true)).toEqual([
+      [1, 'vu'],
+      [2, 'prochain'],
+      [3, 'pas-encore'],
+    ])
+  })
+
+  it('masqués, les introuvables quittent la bande, et le prochain saute par-dessus', () => {
+    expect(etats([film(1, { vu: '2026-09-01' }), film(2, { introuvable: true }), film(3)], true)).toEqual([
+      [1, 'vu'],
+      [3, 'prochain'],
+    ])
+  })
+
+  it('montrés, les introuvables gardent leur place, jamais prochains, la marque primant sur le visionnage', () => {
+    const films = [film(1, { introuvable: true }), film(2), film(3, { vu: '2026-09-01' }), film(4, { vu: '2026-09-02', introuvable: true })]
+    // Mutation : tester `vu` avant `introuvable` rendrait « vu » au film 4, vu puis marqué perdu.
+    expect(etats(films, false)).toEqual([
+      [1, 'introuvable'],
+      [2, 'prochain'],
+      [3, 'vu'],
+      [4, 'introuvable'],
+    ])
+  })
+
+  it('aucun prochain quand tout est vu', () => {
+    expect(etats([film(1, { vu: '2026-09-01' }), film(2, { vu: '2026-09-02' })], true)).toEqual([
+      [1, 'vu'],
+      [2, 'vu'],
+    ])
   })
 })

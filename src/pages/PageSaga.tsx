@@ -30,7 +30,10 @@ function AjouterFilm({ onChoisir, desactive }: { onChoisir: (filmId: number) => 
     queryFn: ({ signal }) => chercherFilms(requete, signal),
     enabled: requete.length > 0,
   })
-  const resultats = (recherche.data?.items ?? []).filter((r): r is MovieSearchResult => r.type === 'movie')
+  // Seul un identifiant TMDB entier s'ajoute (`toIntOrNull`, Android) : jamais un `PUT …/films/NaN`.
+  const resultats = (recherche.data?.items ?? []).filter(
+    (r): r is MovieSearchResult => r.type === 'movie' && /^\d+$/.test(r.external_id),
+  )
 
   return (
     <div className={styles.ajout}>

@@ -1,0 +1,19 @@
+/* Aucune valeur en dur : tout vient de `theme.css`. */
+
+.sceau {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--espace-5);
+  height: var(--espace-5);
+  border: var(--trait) solid var(--couleur-fond);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.icone {
+  width: var(--taille-icone-inline);
+  height: var(--taille-icone-inline);
+}

@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import Suivis from './Suivis'
 import { createQueryClient } from '../api/queryClient'
+import { cles } from '../api/cles'
 import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import type { Realisateur } from '../api/realisateurs'
@@ -21,9 +22,9 @@ const RESULTATS_PERSONNES = { results: [{ tmdb_id: NOLAN.tmdb_id, name: NOLAN.na
 // ici, jamais accéléré : `findBy*` l'attend simplement, avec une marge au-dessus de son délai.
 const DELAI_RECHERCHE = { timeout: 2000 }
 
-function monter() {
+function monter(client = createQueryClient()) {
   return render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter>
         <Suivis />
       </MemoryRouter>
@@ -271,5 +272,196 @@ describe('l’onglet Suivis', () => {
       // Mutation : une boucle qui s'arrêterait à la première erreur ne chargerait jamais la seconde.
       expect(await screen.findByText('1 sur 1 · bouclée le 27 septembre 2026')).toBeInTheDocument()
     })
+  })
+})
+
+describe('les cartes des Suivis', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-29T12:00:00'))
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+    reinitialiserMasquerIntrouvables()
+  })
+
+  const realisateur = (id: number): Realisateur => ({ ...NOLAN, tmdb_id: id, name: `Réalisateur ${id}`, ajoute_le: `2026-09-0${id}T10:00:00.000Z` })
+  const film = (id: number, vu: string | null) => ({
+    ...PAGE_NOLAN.films[0]!,
+    tmdb_id: id,
+    title: `Film ${id}`,
+    year: 1990 + id,
+    vu: vu ? { entry_id: `e-${id}`, rating: null, finished_at: vu } : null,
+    introuvable: false,
+  })
+  const page = (id: number, films: ReturnType<typeof film>[]): RealisateurPage => ({ ...PAGE_NOLAN, tmdb_id: id, films })
+  /** La carte (l'élément de liste) qui porte ce nom. */
+  const carte = async (nom: string) => (await screen.findByRole('link', { name: (n) => n.includes(nom) })).closest('li')!
+
+  it('l’en-tête compte les rétrospectives et les cycles, une fois les deux listes arrivées', async () => {
+    let repondreSagas: (r: Response) => void = () => undefined
+    servir({
+      'GET /api/me/realisateurs': () => json([realisateur(1), realisateur(2)]),
+      'GET /api/me/sagas': () => new Promise<Response>((resolve) => (repondreSagas = resolve)),
+      'GET /api/me/realisateurs/1/page': () => json(page(1, [])),
+      'GET /api/me/realisateurs/2/page': () => json(page(2, [])),
+    })
+    monter()
+
+    await screen.findByRole('link', { name: (n) => n.includes('Réalisateur 2') })
+    // Mutation : sans l'attente des deux listes, « 2 rétrospectives · 0 cycle » s'afficherait déjà, faux.
+    expect(screen.queryByText(/rétrospectives? ·/)).not.toBeInTheDocument()
+
+    repondreSagas(json([ALIEN]))
+    expect(await screen.findByText('2 rétrospectives · 1 cycle')).toBeInTheDocument()
+  })
+
+  it('« 4/12 » à droite de chaque carte arrivée, rien tant que sa filmographie manque', async () => {
+    servir({
+      'GET /api/me/realisateurs': () => json([realisateur(1), realisateur(2)]),
+      'GET /api/me/sagas': () => json([]),
+      'GET /api/me/realisateurs/1/page': () => json(page(1, [film(10, '2026-09-20'), film(11, null), film(12, null)])),
+      'GET /api/me/realisateurs/2/page': () => json({ code: 'SERVICE_UNCONFIGURED', message: 'TMDB est en panne.', retryable: false }, 503),
+    })
+    monter()
+
+    // Mutation : sans le compte, cette image n'existe pas.
+    expect(within(await carte('Réalisateur 1')).getByRole('img', { name: '1 sur 3' })).toHaveTextContent('1/3')
+    await within(await carte('Réalisateur 2')).findByText('indisponible')
+    expect(within(await carte('Réalisateur 2')).queryByRole('img', { name: / sur / })).not.toBeInTheDocument()
+  })
+
+  it('une rétrospective bouclée porte le sceau « Rétrospective complète » ; en cours, non', async () => {
+    servir({
+      'GET /api/me/realisateurs': () => json([realisateur(1), realisateur(2)]),
+      'GET /api/me/sagas': () => json([]),
+      'GET /api/me/realisateurs/1/page': () => json(page(1, [film(10, '2026-09-27')])),
+      'GET /api/me/realisateurs/2/page': () => json(page(2, [film(20, '2026-09-20'), film(21, null)])),
+    })
+    monter()
+
+    // La carte change de liste en passant sous « complets » : on la relit une fois rangée.
+    await screen.findByText('1 sur 1 · bouclée le 27 septembre 2026')
+    // Mutation : sans le sceau, ou posé sur toutes les cartes, l'une des deux assertions tombe.
+    expect(within(await carte('Réalisateur 1')).getByRole('img', { name: 'Rétrospective complète' })).toBeInTheDocument()
+    await within(await carte('Réalisateur 2')).findByText('1 sur 2 · vu il y a 1 semaine')
+    expect(within(await carte('Réalisateur 2')).queryByRole('img', { name: 'Rétrospective complète' })).not.toBeInTheDocument()
+  })
+
+  it('une filmographie de réalisateur ne compte pas ses séries', async () => {
+    // L'exemple de Nolan : Inception (vu) et une série jamais vue. Sans la série, tout est vu.
+    servir({
+      'GET /api/me/realisateurs': () => json([NOLAN]),
+      'GET /api/me/sagas': () => json([]),
+      'GET /api/me/realisateurs/525/page': () => json(PAGE_NOLAN),
+    })
+    monter()
+
+    // Mutation : une filmographie qui garderait la série dirait « 1 sur 2 » et resterait en cours.
+    expect(await screen.findByText('1 sur 1 · bouclée le 12 juillet 2026')).toBeInTheDocument()
+  })
+
+  it('« Ensuite » et le prochain film sous une carte en cours ; rien sous une bouclée', async () => {
+    servir({
+      'GET /api/me/realisateurs': () => json([realisateur(1), realisateur(2)]),
+      'GET /api/me/sagas': () => json([]),
+      'GET /api/me/realisateurs/1/page': () => json(page(1, [film(10, '2026-09-27')])),
+      'GET /api/me/realisateurs/2/page': () => json(page(2, [film(20, '2026-09-20'), film(21, null), film(22, null)])),
+    })
+    monter()
+
+    const enCours = await carte('Réalisateur 2')
+    // Le premier non vu, pas le dernier. Mutation : prendre un autre film que `prochainAVoir` rendrait « Film 22 ».
+    expect(await within(enCours).findByText('Film 21 (2011)')).toBeInTheDocument()
+    expect(within(enCours).getByText('Ensuite')).toBeInTheDocument()
+    await within(await carte('Réalisateur 1')).findByText(/bouclée le/)
+    expect(within(await carte('Réalisateur 1')).queryByText('Ensuite')).not.toBeInTheDocument()
+  })
+
+  it('la bande d’un cycle : vu, prochain, pas encore — les introuvables masqués par défaut', async () => {
+    servir({
+      'GET /api/me/realisateurs': () => json([]),
+      'GET /api/me/sagas': () => json([ALIEN]),
+      'GET /api/me/sagas/8091/films': () => json(FILMS_ALIEN),
+    })
+    monter()
+
+    const bande = await screen.findByRole('list', { name: 'Les films de Alien (Saga)' })
+    // Mutation : une bande qui garderait l'introuvable masqué, ou qui ne marquerait pas le prochain, change cette liste.
+    expect(within(bande).getAllByRole('listitem').map((c) => c.getAttribute('aria-label'))).toEqual([
+      'Alien, le huitième passager, vu',
+      'Aliens, le retour, prochain à voir',
+      'Prometheus, pas encore',
+    ])
+    expect(within(bande).getByText('1979')).toBeInTheDocument()
+  })
+
+  it('la bande garde les introuvables à leur place quand l’interrupteur est coupé', async () => {
+    basculerMasquerIntrouvables()
+    servir({
+      'GET /api/me/realisateurs': () => json([]),
+      'GET /api/me/sagas': () => json([ALIEN]),
+      'GET /api/me/sagas/8091/films': () => json(FILMS_ALIEN),
+    })
+    monter()
+
+    const bande = await screen.findByRole('list', { name: 'Les films de Alien (Saga)' })
+    expect(within(bande).getAllByRole('listitem')[2]).toHaveAccessibleName('Alien 3 (montage de travail), introuvable')
+    expect(within(bande).getByText('Perdu')).toBeInTheDocument()
+  })
+
+  it('une rétrospective n’a pas de bande, un cycle bouclé n’a pas de sceau', async () => {
+    const tousVus = { films: FILMS_ALIEN.films.map((f) => ({ ...f, vu: f.vu ?? { entry_id: `e-${f.tmdb_id}`, rating: null, finished_at: '2026-09-01' } })) }
+    servir({
+      'GET /api/me/realisateurs': () => json([realisateur(1)]),
+      'GET /api/me/sagas': () => json([ALIEN]),
+      'GET /api/me/realisateurs/1/page': () => json(page(1, [film(10, '2026-09-27')])),
+      'GET /api/me/sagas/8091/films': () => json(tousVus),
+    })
+    monter()
+
+    await screen.findByRole('heading', { name: 'Cycles complets' })
+    const cycle = await carte('Alien (Saga)')
+    // Mutation : un sceau posé sans regarder la source en mettrait un sur ce cycle bouclé.
+    expect(within(cycle).queryByRole('img', { name: 'Rétrospective complète' })).not.toBeInTheDocument()
+    await within(await carte('Réalisateur 1')).findByRole('img', { name: 'Rétrospective complète' })
+    // Mutation : une bande posée sans regarder la source en dessinerait une sous le réalisateur.
+    expect(screen.queryByRole('list', { name: 'Les films de Réalisateur 1' })).not.toBeInTheDocument()
+  })
+
+  it('une filmographie déjà fraîche en cache (l’accueil l’a lue) n’est pas redemandée', async () => {
+    const client = createQueryClient()
+    client.setQueryData(cles.pageRealisateur(1), page(1, [film(10, null)]))
+    const requetes = servir({
+      'GET /api/me/realisateurs': () => json([realisateur(1), realisateur(2)]),
+      'GET /api/me/sagas': () => json([]),
+      'GET /api/me/realisateurs/1/page': () => json(page(1, [film(10, null)])),
+      'GET /api/me/realisateurs/2/page': () => json(page(2, [film(20, null)])),
+    })
+    monter(client)
+
+    await waitFor(() => expect(requetes).toContain('GET /api/me/realisateurs/2/page'))
+    // Mutation : un `fetchQuery` qui forcerait la fraîcheur (`staleTime: 0`) redemanderait la première.
+    expect(requetes).not.toContain('GET /api/me/realisateurs/1/page')
+  })
+
+  it('quitter l’onglet arrête la chaîne : la filmographie suivante n’est jamais demandée', async () => {
+    let repondre: (r: Response) => void = () => undefined
+    const requetes = servir({
+      'GET /api/me/realisateurs': () => json([realisateur(1), realisateur(2)]),
+      'GET /api/me/sagas': () => json([]),
+      'GET /api/me/realisateurs/1/page': () => new Promise<Response>((resolve) => (repondre = resolve)),
+      'GET /api/me/realisateurs/2/page': () => json(page(2, [])),
+    })
+    const { unmount } = monter()
+
+    await waitFor(() => expect(requetes).toContain('GET /api/me/realisateurs/1/page'))
+    unmount()
+    repondre(json(page(1, [])))
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    // Mutation : sans le drapeau d'annulation, la boucle continuerait après le démontage.
+    expect(requetes).not.toContain('GET /api/me/realisateurs/2/page')
   })
 })

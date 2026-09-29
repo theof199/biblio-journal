@@ -113,3 +113,13 @@
   min-height: var(--cible-tactile);
   font-size: var(--taille-s);
 }
+
+.portrait {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sceau {
+  right: 0;
+  bottom: 0;
+}
