@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ApiError } from '../api/client'
 import { cles } from '../api/cles'
 import { INTERVALLE_SUIVI, lancerImport, lireImport } from '../api/letterboxd'
 import { candidatDepuisImport } from '../formulaire/candidat'
@@ -66,8 +67,16 @@ export default function ImportLetterboxd() {
       return tache
     },
     enabled: id !== undefined,
-    // Relue tant qu'elle tourne, plus jamais ensuite : le rapport fini se garde tel quel.
-    refetchInterval: (requete) => (requete.state.data?.etat === 'en_cours' ? INTERVALLE_SUIVI : false),
+    // Relue tant qu'elle tourne, plus jamais ensuite : le rapport fini se garde tel quel. Une
+    // erreur définitive (tâche introuvable, session perdue) arrête aussi la relecture : la dernière
+    // donnée reçue dit encore `en_cours`, et l'intervalle continuerait derrière le message. Une
+    // erreur passagère (réseau, API qui redémarre) la laisse courir : la relecture suivante
+    // retrouve la tâche, ou la dit interrompue.
+    refetchInterval: (requete) => {
+      const { data, error } = requete.state
+      if (error && !(error instanceof ApiError && error.retryable)) return false
+      return data?.etat === 'en_cours' ? INTERVALLE_SUIVI : false
+    },
     staleTime: Infinity,
     gcTime: Infinity,
   })

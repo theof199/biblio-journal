@@ -11,6 +11,7 @@ import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import { visionnage as v } from '../test/journal'
 import { fabriquerZip } from '../test/zip'
+import { INTERVALLE_SUIVI } from '../api/letterboxd'
 import type { RapportImport, TacheImport } from '../api/letterboxd'
 import type { Doublons } from '../api/doublons'
 
@@ -347,7 +348,11 @@ describe('l’import Letterboxd', () => {
     expect(await screen.findByText('2 importés · 1 déjà présents', undefined, { timeout: 4_000 })).toBeInTheDocument()
     expect(requetes.filter((r) => r === IMPORT)).toHaveLength(1)
     expect(requetes.filter((r) => r === SUIVI)).toHaveLength(2)
-  })
+    // Finie, elle n'est plus relue : plus d'un intervalle plus tard, toujours deux lectures. Une
+    // attente réelle, parce que c'est l'absence d'appel qu'on mesure.
+    await new Promise((r) => setTimeout(r, INTERVALLE_SUIVI + 500))
+    expect(requetes.filter((r) => r === SUIVI)).toHaveLength(2)
+  }, 10_000)
 
   it('une tâche interrompue : son message, et ce qu’elle avait fait', async () => {
     const message = 'L’import s’est arrêté avant la fin : le serveur a redémarré.'
@@ -363,6 +368,32 @@ describe('l’import Letterboxd', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(screen.getByText('7 importés · 0 déjà présents')).toBeInTheDocument()
   })
+
+  it('une erreur définitive en plein suivi arrête la relecture, sans boucler derrière le message', async () => {
+    // Relue une fois en cours, puis introuvable (expirée, ou la session d'un autre) : la dernière
+    // donnée reçue dit encore `en_cours`, et c'est elle que l'intervalle lisait.
+    const message = 'Cet import est introuvable : il a expiré, ou il n’est pas le tien.'
+    let suivis = 0
+    const requetes = base({
+      [IMPORT]: lancee,
+      [SUIVI]: () => {
+        suivis += 1
+        return suivis === 1
+          ? json({ ...LANCEE, lignes_total: 480, lignes_traitees: 120 })
+          : json({ code: 'NOT_FOUND', message, retryable: false }, 404)
+      },
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+
+    expect(await screen.findByRole('alert', undefined, { timeout: 4_000 })).toHaveTextContent(message)
+    expect(requetes.filter((r) => r === SUIVI)).toHaveLength(2)
+    // Plus d'un intervalle de suivi plus tard, aucune relecture de plus. Une attente réelle : c'est
+    // l'absence d'appel qu'on mesure, et l'intervalle est celui de l'appli.
+    await new Promise((r) => setTimeout(r, INTERVALLE_SUIVI + 500))
+    expect(requetes.filter((r) => r === SUIVI)).toHaveLength(2)
+  }, 10_000)
 
   it('une tâche introuvable au suivi : le message de l’API', async () => {
     const message = 'Cet import est introuvable : il a expiré, ou il n’est pas le tien.'
