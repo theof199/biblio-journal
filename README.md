@@ -37,11 +37,14 @@ session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
 
 | Onglet | Chemin | Icône Tabler | Page |
 |---|---|---|---|
-| Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` (provisoire : il salue) |
-| Voyage | `/voyage` | `route` | `pages/Voyage.tsx` (attente : « La carte arrive ») |
-| Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` (attente) |
-| Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` (attente) |
-| Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, les chiffres de `/stats`, le bilan (dont les réalisateurs et sagas suivis) et les graphiques (`profil/`), « Mes films », l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), « Se déconnecter », la mention TMDB |
+| Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` : le fronton, « Ce soir », « Ensuite », la grille du journal |
+| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; la fiche d'une année, `/voyage/:annee`, est encore `pages/AnneeProvisoire.tsx` |
+| Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` : réalisateurs et sagas suivis ; sous-pages `suivis/realisateurs/:tmdbId`, `suivis/sagas/:tmdbId`, `suivis/films/:tmdbId` |
+| Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` : mes séances et les sorties en salle |
+| Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, les chiffres de `/stats`, le bilan (dont les réalisateurs et sagas suivis) et les graphiques (`profil/`), « Mes films » (`pages/MesFilms.tsx`, sous `/profil/mes-films`), l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), « Se déconnecter », la mention TMDB |
+
+Hors des onglets, la barre restant visible : `recherche`, `journal/nouveau`, `journal/:id` et
+`journal/:id/corriger` (`Recherche`, `Formulaire`, `Fiche`).
 
 **Brancher une page** : la déclarer en route enfant de `<Route element={<Coque />}>` dans
 `App.tsx`, avec un chemin relatif. La page d'un onglet remplace l'élément de sa route
@@ -56,6 +59,54 @@ la zone sûre du téléphone) ; la barre est au-dessus de tout le reste (`--z-ba
 
 Les icônes viennent de `@tabler/icons-react`, importées une à une par leur nom : le build n'en
 garde que celles-là.
+
+## La carte de `src/`
+
+| Dossier | Rôle |
+|---|---|
+| `api/` | Le client (`client.ts`), les clés de cache (`cles.ts`) et un fichier par famille de routes ; `types.ts` est engendré du contrat. |
+| `session/`, `coque/`, `pwa/`, `ui/` | La session et sa route gardée, la coque à onglets, le bandeau de mise à jour, le thème et les petits composants communs. |
+| `pages/` | Une page par route (`App.tsx` les branche). |
+| `accueil/`, `cinema/`, `formulaire/`, `mesFilms/`, `profil/`, `recherche/`, `suivis/` | Les règles pures et les morceaux de chaque onglet, testés sans réseau ni rendu. |
+| `voyage/`, `carte/`, `mondes/` | Le Voyage : les règles, le moteur de la carte, un dossier par monde (plus bas). |
+| `test/` | Les doublures et les gabarits des tests (le contexte de dessin factice, le moteur factice, le faux serveur). |
+
+## La carte du Voyage
+
+L'onglet Voyage (`/voyage`, dans la coque) montre `pages/Carte.tsx` : la carte du Voyage du membre,
+lue sur `GET /me/voyage`, avec son ticket, sa marche d'une année à l'autre, la roulotte du Voyage
+suivi et l'adieu d'un monde. Où vit quoi :
+
+- `src/voyage/regles.ts` : les règles côté client (l'état d'une case, la jauge, le prochain pas,
+  la frontière d'une avancée), sans dessin.
+- `src/carte/` : le moteur (`moteur.ts`, sur un `<canvas>`, monté par `CarteCanvas.tsx`), la
+  géométrie, le toucher, la mise en scène d'une avancée (`avancee.ts`) et le dessin commun à tous
+  les mondes (`dessin/`).
+- `src/mondes/` : l'interface d'un monde (`types.ts`), le registre (`index.ts`), un dossier par
+  décennie (`1890/`) et le monde « à venir » (`avenir/`) des décennies sans chantier.
+
+**Voir la carte sans API de dev.** Le proxy peut viser l'instance en ligne :
+`VITE_API_TARGET=https://mini-mediatheque.fr/api npm run dev`, puis se connecter avec le pseudo et
+le mot de passe du propriétaire (formulaire de `/connexion`). Sans elle, la carte n'a que les
+données de l'API locale.
+
+**« Moins d'animations »** (`prefers-reduced-motion`, lu par `ui/mouvement.ts`) met le moteur au
+calme : l'horloge du décor s'arrête (image figée, sans particules), la marche et l'adieu finissent
+d'un coup, la roulotte se gare, et une foire qui se bâtit est posée déjà bâtie ; si le réglage
+change pendant un chantier, il s'achève.
+
+**Quand la foire se bâtit.** À l'ouverture d'une année, au bout de la marche de l'avatar, la
+caméra allant chercher le chantier s'il est hors de l'écran ; la séance de 1895, elle, à la toute
+première visite d'un membre (aucune année vue, l'avatar au départ du Voyage). Jamais au
+rechargement ni au retour sur la carte : l'appareil garde la dernière année montrée, par membre
+(`journal.carte.annee-vue.<membre>`, `carte/memoire.ts`).
+
+**Les images.** Chaque dossier `assets/` (`src/carte/assets/` pour les images communes,
+`src/mondes/<décennie>/assets/`) a son `CREDITS.md`, où chaque fichier porte son œuvre, sa source,
+sa licence et son traitement (`src/test/credits.test.ts` l'exige). `mondes/1890/assets/virer.sh`
+cuit la rampe sépia dans une image ou une extraction vidéo. `npm run verifier:dist` constate sur
+`dist/` que chaque `.webp` ou `.png` est précaché et sous son plafond (384 Kio), qu'aucune
+`.webm` ne l'est (plafond 600 Kio), et que les images tiennent ensemble dans 1,5 Mio.
 
 ## Le thème
 

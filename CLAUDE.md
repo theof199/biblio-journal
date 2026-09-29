@@ -24,6 +24,26 @@ l'architecture de cette app-ci ; en cas de conflit avec un plan, la spec l'empor
 - **Toute commande git qui écrit porte `git -C /var/www/project/perso/biblio-journal` en clair.**
 - Le tag de l'API, le NAS, les données et les secrets restent au propriétaire.
 
+## Un monde, un dossier
+
+Chaque décennie du Voyage est un monde : un objet qui remplit l'interface `Monde`
+(`src/mondes/types.ts`) — sa palette, son traitement d'image, ses plans de décor, ses dates, sa
+cinématique d'adieu — et que le registre (`src/mondes/index.ts`, `creerRegistre`) sert au moteur
+(`src/carte/`), qui ne connaît que l'interface. Toute décennie sans ligne au registre prend le monde
+« à venir » (`src/mondes/avenir/`).
+
+**Ajouter une décennie ne touche que `src/mondes/<décennie>/` et une ligne du registre.**
+`src/mondes/isolation.test.ts` l'inventorie : hors de `src/mondes/`, aucun fichier n'importe un
+monde précis (seuls `mondes/types`, `mondes/trace` et le registre s'importent). Si l'interface ne
+suffit pas au monde qu'on écrit, **elle s'étend d'abord, dans une tâche à part, avec le monde « à
+venir »** (que la signature oblige à suivre) : jamais un contournement dans le moteur ou la page.
+
+**Les images.** Un fichier d'un dossier `assets/` n'entre qu'avec son entrée dans le `CREDITS.md` du
+même dossier : œuvre, source (la page du fichier), licence et sa raison, traitement
+(`src/test/credits.test.ts`). Jamais une restauration récente (Lobster, Institut Lumière) : le scan
+peut porter ses propres droits. Jamais une vidéo au précache (`verifier:dist` la refuse, comme une
+image au-dessus de son plafond ou hors du budget).
+
 ## Le contrat de l'API
 
 `contract/openapi.json` est une copie de `../biblio-back/docs/openapi.json`, et `src/api/types.ts`
