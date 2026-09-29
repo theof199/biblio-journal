@@ -150,6 +150,16 @@ describe('la feuille du chroniqueur', () => {
     expect(screen.getByRole('status', { name: 'Le chroniqueur écrit…' })).toBeInTheDocument()
   })
 
+  // Le jumeau : la phrase tapée elle-même. Mutation : son `aria-hidden` retiré : la région vivante
+  // annoncerait chaque lettre tapée, puis effacée.
+  it('tait aux lecteurs d’écran les lettres tapées', () => {
+    calme(false)
+    monter({ type: 'attente' })
+    const enfants = [...screen.getByRole('status').children]
+    expect(enfants.length).toBeGreaterThan(0)
+    for (const enfant of enfants) expect(enfant).toHaveAttribute('aria-hidden', 'true')
+  })
+
   // Mutations : au calme, la phrase tapée comme ailleurs (elle resterait vide ou coupée) ; hors du
   // calme, la phrase posée d'un coup (rien ne se tape).
   it('tape la phrase d’attente, sauf au calme où elle est entière et immobile', () => {
@@ -163,6 +173,30 @@ describe('la feuille du chroniqueur', () => {
     // Une lettre d'emblée, puis une toutes les 65 ms.
     act(() => void vi.advanceTimersByTime(65 * 3))
     expect(screen.getByRole('status')).toHaveTextContent(/^Le c$/)
+  })
+
+  // Mutations : la phrase qui reste tapée (aucun effacement) ; qui ne recommence pas une fois effacée.
+  it('efface la phrase d’attente après une pause, puis la recommence', () => {
+    calme(false)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    monter({ type: 'attente' })
+    const tape = () => screen.getByRole('status').textContent
+    // 21 lettres : la première d'emblée, la dernière à 20 × 65 ms ; 1,1 s de pause ; 26 ms la lettre effacée.
+    act(() => void vi.advanceTimersByTime(20 * 65))
+    expect(tape()).toBe('Le chroniqueur écrit…')
+    act(() => void vi.advanceTimersByTime(1100 + 2 * 26))
+    expect(tape()).toBe('Le chroniqueur écr')
+    act(() => void vi.advanceTimersByTime(18 * 26 + 26))
+    expect(tape()).toBe('L')
+  })
+
+  // Mutation : le corps sans `aria-live` : le texte, puis l'erreur, arriveraient en silence.
+  it('annonce le texte venu, comme l’erreur, sans voler la parole', () => {
+    calme(true)
+    const { rerender, onFermer, onReessayer } = monter({ type: 'texte', texte: TEXTE })
+    expect(screen.getByText('Un second paragraphe.').closest('[aria-live="polite"]')).not.toBeNull()
+    rerender(<Feuille monde={monde} quoi="ouverture" esp="Ouverture" titre="1897" sous="" etat={{ type: 'erreur', message: 'Non.' }} onFermer={onFermer} onReessayer={onReessayer} />)
+    expect(screen.getByText('Non.').closest('[aria-live="polite"]')).not.toBeNull()
   })
 
   // Mutation : un message réécrit à la place de celui de l'API.
@@ -218,9 +252,14 @@ describe('la feuille du chroniqueur', () => {
     const { container } = render(
       <Feuille monde={avenir} quoi="salle" esp="Salle" titre="Le monde en vues" sous="1906" etat={{ type: 'attente' }} onFermer={vi.fn()} onReessayer={vi.fn()} />,
     )
-    expect(container).toHaveTextContent(avenir.pages.mots.feuille.imprimeur)
     expect(container).toHaveTextContent('Feuille n° 2')
-    expect(container).not.toHaveTextContent(monde.pages.mots.feuille.imprimeur)
+    // Chaque mot de la feuille vient du monde : aucun de ceux de 1890 ne reste sur une feuille de 1906.
+    for (const cle of ['tete', 'titre', 'sous', 'pied', 'imprimeur'] as const) {
+      const mot = avenir.pages.mots.feuille[cle]
+      expect(container).toHaveTextContent(mot)
+      const de1890 = monde.pages.mots.feuille[cle]
+      if (de1890 !== mot) expect(container).not.toHaveTextContent(de1890)
+    }
   })
 
   // Le jumeau du feuillet. Mutations : « Fermer » ou « Réessayer » sous la cible tactile.
@@ -245,18 +284,21 @@ describe('la feuille du chroniqueur', () => {
   it('fait taper le chroniqueur pendant l’attente, parler pendant la composition, se taire ensuite', () => {
     calme(false)
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] })
+    // React ne rend qu'à la sortie d'`act` : une image de plus, ensuite, peint ce qu'il a rendu.
+    const attendre = (ms: number) => {
+      act(() => void vi.advanceTimersByTime(ms))
+      act(() => void vi.advanceTimersByTime(20))
+    }
     const { parle, remonter } = monterEpiee({ type: 'attente' })
-    act(() => void vi.advanceTimersByTime(20))
+    attendre(0)
     expect(parle()).toBe('tape')
     remonter({ type: 'texte', texte: LONG })
-    act(() => void vi.advanceTimersByTime(20))
+    attendre(0)
     expect(parle()).toBe('parle')
     // Il parle jusqu'au dernier paragraphe venu (la suite, puis le second), pas au-delà.
-    act(() => void vi.advanceTimersByTime(PREMIERE_SUITE + 2 * 420 - 40))
+    attendre(PREMIERE_SUITE + 2 * 420 - 60)
     expect(parle()).toBe('parle')
-    // La fin (React rend à la sortie d'`act`), puis une image pour la peindre.
-    act(() => void vi.advanceTimersByTime(40))
-    act(() => void vi.advanceTimersByTime(20))
+    attendre(40)
     expect(parle()).toBe('non')
   })
 
