@@ -72,6 +72,17 @@ export default function Toile({ hauteur, dessiner, libelle, onToucher, className
     }
   }, [calme])
 
+  // Au calme, l'image ne se repeint qu'au rendu : une police du monde qui finit de charger après
+  // elle (IM Fell, Limelight : chargées à leur premier usage, celui de la toile compris) la
+  // laisserait en police de repli. Elle se repeint à chaque fin de chargement des polices.
+  useEffect(() => {
+    if (!calme || !('fonts' in document)) return
+    const polices = document.fonts
+    const repeindre = () => peindre.current?.(0, false)
+    polices.addEventListener('loadingdone', repeindre)
+    return () => polices.removeEventListener('loadingdone', repeindre)
+  }, [calme])
+
   // Au calme, une image posée à chaque rendu, jamais une boucle.
   useEffect(() => {
     if (calme) peindre.current?.(0, false)

@@ -42,6 +42,13 @@ describe('un feuillet', () => {
     expect(onFermer).toHaveBeenCalledOnce()
   })
 
+  // Le jumeau d'Échap, le geste du téléphone. Mutation : le bouton « Fermer » sans son `onClick`.
+  it('se ferme d’un toucher sur « Fermer »', () => {
+    const { onFermer } = monter()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    expect(onFermer).toHaveBeenCalledOnce()
+  })
+
   // Mutation : le focus non rendu à la fermeture.
   it('rend le focus, à la fermeture, à l’élément qui l’avait', () => {
     const vue = (ouvert: boolean) => (

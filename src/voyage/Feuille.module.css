@@ -226,10 +226,10 @@
   padding: 10px 18px;
   border: 0;
   border-radius: 3px;
-  background: linear-gradient(var(--m-or2), var(--m-or));
+  background: linear-gradient(var(--m-or2), var(--m-or3));
   color: var(--m-encre);
   font: 400 15px var(--m-f-affiche);
-  box-shadow: 0 3px 0 var(--m-encre2);
+  box-shadow: 0 3px 0 var(--m-bois);
   cursor: pointer;
 }
 

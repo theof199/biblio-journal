@@ -72,6 +72,31 @@ describe('la toile d’une page', () => {
     expect(second).toHaveBeenCalledWith(expect.anything(), 0, false)
   })
 
+  // Mutations : l'écoute des polices retirée (au calme, une police du monde qui finit de charger
+  // après la première image, IM Fell ou Limelight, laisserait le dessin en police de repli) ; son
+  // retrait oublié au démontage.
+  it('au calme, repeint quand une police finit de charger, et lâche l’écoute démontée', () => {
+    calme(true)
+    const polices = new EventTarget()
+    const ecouter = vi.spyOn(polices, 'addEventListener')
+    const lacher = vi.spyOn(polices, 'removeEventListener')
+    Object.defineProperty(document, 'fonts', { value: polices, configurable: true })
+    try {
+      const dessiner = vi.fn<Dessin>()
+      const { unmount } = monter(dessiner)
+      expect(dessiner).toHaveBeenCalledTimes(1)
+      polices.dispatchEvent(new Event('loadingdone'))
+      expect(dessiner).toHaveBeenCalledTimes(2)
+      expect(dessiner).toHaveBeenLastCalledWith(expect.anything(), 0, false)
+      unmount()
+      const ecoute = ecouter.mock.calls.find(([type]) => type === 'loadingdone')?.[1]
+      expect(ecoute).toBeDefined()
+      expect(lacher).toHaveBeenCalledWith('loadingdone', ecoute)
+    } finally {
+      Reflect.deleteProperty(document, 'fonts')
+    }
+  })
+
   // Mutation : `cancelAnimationFrame` retiré du nettoyage : la boucle survivrait à la page.
   it('anime tant qu’elle est montée, plus rien après', () => {
     calme(false)

@@ -69,6 +69,18 @@ describe('la feuille du chroniqueur', () => {
     expect(screen.getByText(SUITE)).toBeVisible()
   })
 
+  // « Au calme, tout est posé d'un coup, sans minuterie » (plan 2b, tâche 6), l'attente comprise.
+  // Mutation : la garde `if (calme) return` de l'effet retirée (la page, posée d'un coup, ne le
+  // montrerait pas ; les minuteries tourneraient pour rien).
+  it('au calme, ne pose aucune minuterie, ni pour un texte ni pour l’attente', () => {
+    calme(true)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { rerender, onFermer, onReessayer } = monter({ type: 'texte', texte: LONG })
+    expect(vi.getTimerCount()).toBe(0)
+    rerender(<Feuille monde={monde} quoi="ouverture" esp="Ouverture" titre="1897" sous="" etat={{ type: 'attente' }} onFermer={onFermer} onReessayer={onReessayer} />)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   // Mutations : aucun fondu (tout posé d'emblée hors du calme) ; la suite qui n'attend pas ses mots
   // (`k × 75` oublié) ; le second paragraphe qui arrive avec le premier (`i × 420` oublié).
   it('hors du calme, fait venir la suite après les mots, puis chaque paragraphe à son tour', () => {
@@ -212,6 +224,13 @@ describe('la feuille du chroniqueur', () => {
     const { onFermer } = monter({ type: 'texte', texte: TEXTE })
     expect(screen.getByRole('button', { name: 'Fermer' })).toHaveFocus()
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onFermer).toHaveBeenCalledOnce()
+  })
+
+  // Le jumeau d'Échap, le geste du téléphone. Mutation : le bouton « Fermer » sans son `onClick`.
+  it('se ferme d’un toucher sur « Fermer »', () => {
+    const { onFermer } = monter({ type: 'texte', texte: TEXTE })
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
     expect(onFermer).toHaveBeenCalledOnce()
   })
 

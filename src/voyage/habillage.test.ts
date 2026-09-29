@@ -56,6 +56,19 @@ describe('l’habillage des pages du Voyage', () => {
     expect(etage('--z-calque')).toBeLessThan(etage('--z-barre-onglets'))
   })
 
+  // Le jumeau : l'étage ne vaut que si les calques le lisent, et s'arrêtent au-dessus de la barre.
+  // Mutations : `z-index: 30` en dur, ou `bottom: 0`, sur le `.calque` de la feuille ou du feuillet
+  // (le calque couvrirait la barre d'onglets, ou son bas passerait dessous).
+  it.each(['/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css'])('%s pose son calque à l’étage des calques, au-dessus de la barre', (chemin) => {
+    const css = sansCommentaires(FEUILLES[chemin as keyof typeof FEUILLES] ?? '')
+    const debut = css.indexOf('.calque {')
+    expect(debut).toBeGreaterThanOrEqual(0)
+    const regle = css.slice(debut, css.indexOf('}', debut))
+    expect(regle).toMatch(/position:\s*fixed/)
+    expect(regle).toMatch(/z-index:\s*var\(--z-calque\)/)
+    expect(regle).toMatch(/bottom:\s*var\(--coque-bas\)/)
+  })
+
   // Mutation : retirer un jeton d'un monde (le monde « à venir » d'abord : on l'oublie).
   it.each([1890, 1900, 1950])('le monde de %i pose tous les jetons des pages, et rien d’autre', (decennie) => {
     const { jetons } = creerRegistre()(decennie).pages

@@ -205,6 +205,10 @@ export const JETONS_DE_PAGE = [
   '--m-ombre',
   /** Le grain du papier : les points d'encre semés sur un prospectus (maquette 1890 : `.prospectus`). */
   '--m-grain',
+  /** Le bas du dégradé d'un bouton doré (maquette 1890 : `.bouton-or`, `#b8904f`). */
+  '--m-or3',
+  /** Le bois : l'ombre portée d'un bouton doré, les cadres (maquette 1890 : `#6b4a2a`). */
+  '--m-bois',
   '--m-f-titre',
   '--m-f-affiche',
   '--m-f-texte',
