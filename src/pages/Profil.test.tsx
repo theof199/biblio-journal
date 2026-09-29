@@ -11,10 +11,20 @@ import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import { visionnage as v } from '../test/journal'
 import { fabriquerZip } from '../test/zip'
-import type { RapportImport } from '../api/letterboxd'
+import type { RapportImport, TacheImport } from '../api/letterboxd'
+import type { Doublons } from '../api/doublons'
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
-const RAPPORT = exemple<RapportImport>('/me/journal/import/letterboxd', 'post', 200)
+/** La tâche telle que le `POST` la rend (en cours), puis telle que le suivi la rend (finie). */
+const LANCEE = exemple<TacheImport>('/me/journal/import/letterboxd', 'post', 202)
+const FINIE = exemple<TacheImport>('/me/journal/import/letterboxd/{id}', 'get', 200)
+const RAPPORT = FINIE.rapport
+const SUIVI = `GET /api/me/journal/import/letterboxd/${LANCEE.id}`
+const lancee = () => json(LANCEE, 202)
+const finie = (rapport: RapportImport = RAPPORT) => json({ ...FINIE, rapport })
+const DOUBLONS = exemple<Doublons>('/me/journal/doublons', 'get', 200)
+const APERCU = 'GET /api/me/journal/doublons'
+const RETRAIT = 'DELETE /api/me/journal/doublons'
 const JOURNAL = 'GET /api/me/journal?limit=100'
 const REALISATEURS = 'GET /api/me/realisateurs'
 const SAGAS = 'GET /api/me/sagas'
@@ -306,13 +316,21 @@ describe('l’import Letterboxd', () => {
       ...extra,
     })
 
-  it('envoie le CSV choisi en JSON, montre l’attente puis « N importés · M déjà présents »', async () => {
+  it('envoie le CSV choisi en JSON, suit l’avancement de la tâche puis montre « N importés · M déjà présents »', async () => {
     let liberer!: (r: Response) => void
     let corps = ''
+    let suivis = 0
     const requetes = base({
       [IMPORT]: (init) => {
         corps = String(init.body)
         return new Promise<Response>((r) => (liberer = r))
+      },
+      // La première relecture la trouve à mi-chemin, la suivante finie.
+      [SUIVI]: () => {
+        suivis += 1
+        return suivis === 1
+          ? json({ ...LANCEE, lignes_total: 480, lignes_traitees: 120 })
+          : finie({ importes: 2, deja_presents: 1, non_reconnus: [], erreurs: [] })
       },
     })
     monter()
@@ -323,9 +341,37 @@ describe('l’import Letterboxd', () => {
     await waitFor(() => expect(corps).not.toBe(''))
     expect(JSON.parse(corps)).toEqual({ csv: CSV })
 
-    liberer(json({ importes: 2, deja_presents: 1, non_reconnus: [], erreurs: [] }))
-    expect(await screen.findByText('2 importés · 1 déjà présents')).toBeInTheDocument()
+    liberer(lancee())
+    expect(await screen.findByText('Import en cours… 120 / 480 lignes')).toBeInTheDocument()
+    // Relue toutes les deux secondes, sans rien renvoyer.
+    expect(await screen.findByText('2 importés · 1 déjà présents', undefined, { timeout: 4_000 })).toBeInTheDocument()
     expect(requetes.filter((r) => r === IMPORT)).toHaveLength(1)
+    expect(requetes.filter((r) => r === SUIVI)).toHaveLength(2)
+  })
+
+  it('une tâche interrompue : son message, et ce qu’elle avait fait', async () => {
+    const message = 'L’import s’est arrêté avant la fin : le serveur a redémarré.'
+    base({
+      [IMPORT]: lancee,
+      [SUIVI]: () =>
+        json({ ...FINIE, etat: 'echoue', message, rapport: { importes: 7, deja_presents: 0, non_reconnus: [], erreurs: [] } }),
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.getByText('7 importés · 0 déjà présents')).toBeInTheDocument()
+  })
+
+  it('une tâche introuvable au suivi : le message de l’API', async () => {
+    const message = 'Cet import est introuvable : il a expiré, ou il n’est pas le tien.'
+    base({ [IMPORT]: lancee, [SUIVI]: () => json({ code: 'NOT_FOUND', message, retryable: false }, 404) })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 
   it('un ZIP de l’export : diary.csv en est extrait avant l’envoi', async () => {
@@ -333,8 +379,9 @@ describe('l’import Letterboxd', () => {
     base({
       [IMPORT]: (init) => {
         corps = String(init.body)
-        return json(RAPPORT)
+        return lancee()
       },
+      [SUIVI]: () => finie(),
     })
     monter()
     await screen.findByText(/Importer Letterboxd/)
@@ -378,7 +425,7 @@ describe('l’import Letterboxd', () => {
   })
 
   it('une seule requête même sous StrictMode', async () => {
-    const requetes = base({ [IMPORT]: () => json(RAPPORT) })
+    const requetes = base({ [IMPORT]: lancee, [SUIVI]: () => finie() })
     monter('/profil', true)
     await screen.findByText(/Importer Letterboxd/)
     choisir(fichier(CSV))
@@ -387,14 +434,25 @@ describe('l’import Letterboxd', () => {
     expect(requetes.filter((r) => r === IMPORT)).toHaveLength(1)
   })
 
-  it('le rapport liste les non reconnus avec leurs candidats, et les erreurs par ligne', async () => {
+  const AFFICHE_ALIEN = 'https://image.tmdb.org/t/p/w500/alien.jpg'
+  const ALIEN = {
+    tmdb_id: '348',
+    title: 'Alien, le huitième passager',
+    original_title: 'Alien',
+    year: 1979,
+    cover_url: AFFICHE_ALIEN,
+  }
+  const AWAKENING = { tmdb_id: '999501', title: 'Alien: Awakening', original_title: 'Alien: Awakening', year: 1979, cover_url: null }
+
+  it('le rapport liste les non reconnus avec leurs candidats, vignette comprise, et les erreurs par ligne', async () => {
     base({
-      [IMPORT]: () =>
-        json({
+      [IMPORT]: lancee,
+      [SUIVI]: () =>
+        finie({
           importes: 0,
           deja_presents: 3,
           non_reconnus: [
-            { ligne: 2, name: 'Alien', year: 1979, candidats: [{ tmdb_id: '348', title: 'Alien, le huitième passager', year: 1979 }] },
+            { ligne: 2, name: 'Alien', year: 1979, candidats: [ALIEN, AWAKENING] },
             { ligne: 3, name: 'Film inconnu', year: null, candidats: [] },
           ],
           erreurs: [{ ligne: 4, message: 'Date illisible.' }],
@@ -406,19 +464,26 @@ describe('l’import Letterboxd', () => {
 
     expect(await screen.findByText('0 importés · 3 déjà présents')).toBeInTheDocument()
     expect(screen.getByText('Alien (1979)')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Alien, le huitième passager (1979)' })).toBeInTheDocument()
+    // L'affiche dans le bouton du candidat, et son titre original quand il diffère : de quoi
+    // trancher à l'œil. Sans affiche chez TMDB, pas d'image inventée.
+    const alien = screen.getByRole('button', { name: 'Alien, le huitième passager (1979)' })
+    expect(within(alien).getByRole('img')).toHaveAttribute('src', AFFICHE_ALIEN)
+    expect(within(alien).getByText('Alien')).toBeInTheDocument()
+    const awakening = screen.getByRole('button', { name: 'Alien: Awakening (1979)' })
+    expect(within(awakening).queryByRole('img')).not.toBeInTheDocument()
     expect(screen.getByText('Film inconnu')).toBeInTheDocument()
     expect(screen.getByText('Aucun candidat')).toBeInTheDocument()
     expect(screen.getByText('Ligne 4 : Date illisible.')).toBeInTheDocument()
   })
 
-  it('un candidat choisi ouvre le formulaire déjà rempli de la date et de la note de sa ligne', async () => {
+  it('un candidat choisi ouvre le formulaire déjà rempli de la date et de la note de sa ligne, avec son affiche', async () => {
     base({
-      [IMPORT]: () =>
-        json({
+      [IMPORT]: lancee,
+      [SUIVI]: () =>
+        finie({
           importes: 0,
           deja_presents: 0,
-          non_reconnus: [{ ligne: 2, name: 'Alien', year: 1979, candidats: [{ tmdb_id: '348', title: 'Alien, le huitième passager', year: 1979 }] }],
+          non_reconnus: [{ ligne: 2, name: 'Alien', year: 1979, candidats: [ALIEN] }],
           erreurs: [],
         }),
       'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
@@ -431,15 +496,17 @@ describe('l’import Letterboxd', () => {
 
     expect(await screen.findByLabelText(/Vu le/)).toHaveValue('2026-09-01') // « Watched Date », pas « Date »
     expect(screen.getByRole('radio', { name: 'Note 9 sur 10' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('img', { name: 'Alien, le huitième passager' })).toHaveAttribute('src', AFFICHE_ALIEN)
   })
 
   it('revenir au rapport depuis le formulaire d’un candidat le retrouve tel quel, sans renvoyer le fichier', async () => {
     const requetes = base({
-      [IMPORT]: () =>
-        json({
+      [IMPORT]: lancee,
+      [SUIVI]: () =>
+        finie({
           importes: 4,
           deja_presents: 0,
-          non_reconnus: [{ ligne: 2, name: 'Alien', year: 1979, candidats: [{ tmdb_id: '348', title: 'Alien, le huitième passager', year: 1979 }] }],
+          non_reconnus: [{ ligne: 2, name: 'Alien', year: 1979, candidats: [ALIEN] }],
           erreurs: [],
         }),
       'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
@@ -458,11 +525,16 @@ describe('l’import Letterboxd', () => {
   })
 
   it('après un import réussi, le journal, les chiffres et le bilan sont périmés', async () => {
-    base({ [IMPORT]: () => json(RAPPORT) })
+    let finir!: (r: Response) => void
+    base({ [IMPORT]: lancee, [SUIVI]: () => new Promise<Response>((r) => (finir = r)) })
     const client = monter()
     await screen.findByText(/Importer Letterboxd/)
     await waitFor(() => expect(client.getQueryState(cles.journalComplet)?.status).toBe('success'))
     choisir(fichier(CSV))
+    // Tant que la tâche tourne, rien n'est périmé ; c'est sa fin qui périme.
+    await waitFor(() => expect(finir).toBeDefined())
+    expect(client.getQueryState(cles.stats)?.isInvalidated).toBe(false)
+    finir(finie())
     await screen.findByText(/importés ·/)
 
     // La page d'import ne montre plus le profil : ses requêtes n'ont plus d'observateur, elles
@@ -483,12 +555,86 @@ describe('l’import Letterboxd', () => {
   })
 
   it('« Terminé » ramène au profil', async () => {
-    base({ [IMPORT]: () => json(RAPPORT) })
+    base({ [IMPORT]: lancee, [SUIVI]: () => finie() })
     monter()
     await screen.findByText(/Importer Letterboxd/)
     choisir(fichier(CSV))
 
     fireEvent.click(await screen.findByRole('button', { name: 'Terminé' }))
     expect(await screen.findByRole('heading', { level: 1, name: SESSION.user.pseudo })).toBeInTheDocument()
+  })
+})
+
+describe('retirer les doublons', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    // Jamais la boîte du navigateur : la confirmation se fait dans la page.
+    vi.stubGlobal('confirm', vi.fn(() => true))
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const TROIS: Doublons = { total: 3, doublons: [0, 1, 2].map((i) => ({ ...DOUBLONS.doublons[0]!, id: `d${i}` })) }
+
+  const base = (extra: Record<string, (init: RequestInit) => Response | Promise<Response>> = {}) =>
+    servir({
+      ...VIDES,
+      'GET /api/auth/me': () => json(SESSION),
+      'GET /api/stats': () => json(stats(0, 0)),
+      [JOURNAL]: () => json({ items: [], next_cursor: null }),
+      ...extra,
+    })
+
+  it('montre l’aperçu, ne retire rien sans confirmation dans la page, puis retire', async () => {
+    const requetes = base({ [APERCU]: () => json(TROIS), [RETRAIT]: () => json(TROIS) })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Retirer les doublons/ }))
+    expect(await screen.findByText('3 doublons trouvés')).toBeInTheDocument()
+    expect(requetes).toContain(APERCU)
+    expect(requetes).not.toContain(RETRAIT)
+    expect(confirm).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer les 3 doublons' }))
+    expect(await screen.findByText('3 doublons retirés.')).toBeInTheDocument()
+    expect(requetes.filter((r) => r === RETRAIT)).toHaveLength(1)
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('« Annuler » ne retire rien et rend le bouton', async () => {
+    const requetes = base({ [APERCU]: () => json(TROIS), [RETRAIT]: () => json(TROIS) })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Retirer les doublons/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Annuler' }))
+
+    expect(await screen.findByRole('button', { name: /Retirer les doublons/ })).toBeInTheDocument()
+    expect(requetes).not.toContain(RETRAIT)
+  })
+
+  it('aucun doublon : il le dit, sans rien proposer de retirer', async () => {
+    base({ [APERCU]: () => json({ total: 0, doublons: [] }) })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Retirer les doublons/ }))
+    expect(await screen.findByText('Aucun doublon dans ton journal.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Retirer (le|les) / })).not.toBeInTheDocument()
+  })
+
+  it('après le retrait, le journal, les chiffres, le Voyage, les réalisateurs et les sagas sont périmés', async () => {
+    base({ [APERCU]: () => json(TROIS), [RETRAIT]: () => json(TROIS) })
+    const client = monter()
+    client.setQueryData(cles.voyage, {})
+    await waitFor(() => expect(client.getQueryState(cles.journalComplet)?.status).toBe('success'))
+    await waitFor(() => expect(client.getQueryState(cles.stats)?.status).toBe('success'))
+
+    fireEvent.click(await screen.findByRole('button', { name: /Retirer les doublons/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer les 3 doublons' }))
+    await screen.findByText('3 doublons retirés.')
+
+    for (const cle of [cles.journalComplet, cles.stats, cles.voyage, cles.realisateurs, cles.sagas]) {
+      const etat = client.getQueryState(cle)
+      // Une requête observée (le profil est à l'écran) est relue aussitôt : périmée, ou déjà relue.
+      expect([cle, etat?.isInvalidated || (etat?.dataUpdateCount ?? 0) > 1]).toEqual([cle, true])
+    }
   })
 })

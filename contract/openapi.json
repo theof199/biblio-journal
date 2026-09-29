@@ -28502,11 +28502,11 @@
     },
     "/me/journal/import/letterboxd": {
       "post": {
-        "summary": "Importer le journal Letterboxd (`diary.csv`)",
+        "summary": "Lancer l’import du journal Letterboxd (`diary.csv`)",
         "tags": [
           "carnet"
         ],
-        "description": "Letterboxd est fermé (Cloudflare, API sur invitation) : pas de synchronisation possible. Le seul chemin est l’export personnel du membre (Réglages → Import & Export → « Export your data » sur Letterboxd), un ZIP dont l’appli extrait `diary.csv` avant de l’envoyer ici — **en JSON**, `{ \"csv\": \"...\" }`, jamais en `text/csv`.\n\nPour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés.\n\n**Aucun candidat net en français ? La recherche est refaite en anglais** (brief du 16 septembre 2026) — Letterboxd donne parfois le titre anglais d’un film étranger, que ni le titre français ni l’original ne rapprochent. Un seul candidat net dans l’un ou l’autre importe ; plusieurs, dans l’une ou l’autre langue, partent dans `non_reconnus` avec l’union des deux recherches.\n\nLa date de l’entrée est `Watched Date`, ou `Date` si elle est vide. La note est `Rating × 2` arrondie à l’entier (une note Letterboxd vide n’écrit pas de note). **Une ligne déjà présente — même film TMDB, même date, chez ce membre — est ignorée** (`deja_presents`), sans créer de doublon.\n\nFilms seulement, comme le reste du carnet : l’œuvre entre dans la bibliothèque si elle n’y était pas, exactement comme `POST /media/:id/log`, sans toucher au statut de suivi.\n\n**La réponse n’arrive qu’une fois le fichier entièrement traité.** Les recherches TMDB passent une par une, à 250 ms d’écart, par la file sortante commune — un fichier de 500 lignes prend donc environ deux minutes. La résolution d’un titre et d’une année se mémorise 30 jours en Redis : rejouer le même fichier ne rappelle pas TMDB pour les lignes déjà résolues. **Prévoir un délai client d’au moins cinq minutes pour cet appel.**\n\nUn CSV sans les en-têtes de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`) répond `400`. `watched.csv` et `ratings.csv`, qui n’en portent qu’un sous-ensemble, ne sont donc pas acceptés tels quels.",
+        "description": "Letterboxd est fermé (Cloudflare, API sur invitation) : pas de synchronisation possible. Le seul chemin est l’export personnel du membre (Réglages → Import & Export → « Export your data » sur Letterboxd), un ZIP dont l’appli extrait `diary.csv` avant de l’envoyer ici — **en JSON**, `{ \"csv\": \"...\" }`, jamais en `text/csv`.\n\n**Une tâche suivie, pas une réponse longue** (correctif du 29 septembre 2026). La route vérifie l’en-tête, lance le traitement et répond `202` aussitôt, avec la tâche `en_cours` ; `GET /me/journal/import/letterboxd/{id}` en donne l’avancement puis le rapport. Elle rendait le rapport à la fin, et un journal réel dépassait les 75 s du relais du NAS : `504` pendant que l’import continuait.\n\nPour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés, chacun avec son affiche TMDB.\n\n**Aucun candidat net en français ? La recherche est refaite en anglais** (brief du 16 septembre 2026) — Letterboxd donne parfois le titre anglais d’un film étranger, que ni le titre français ni l’original ne rapprochent. Un seul candidat net dans l’un ou l’autre importe ; plusieurs, dans l’une ou l’autre langue, partent dans `non_reconnus` avec l’union des deux recherches.\n\nLa date de l’entrée est `Watched Date`, ou `Date` si elle est vide. La note est `Rating × 2` arrondie à l’entier (une note Letterboxd vide n’écrit pas de note). **Une ligne déjà présente — même film TMDB, même date, chez ce membre — est ignorée** (`deja_presents`), sans créer de doublon : relancer le même fichier ne duplique rien. Une ligne en échec part dans `erreurs` sans arrêter les autres.\n\nFilms seulement, comme le reste du carnet : l’œuvre entre dans la bibliothèque si elle n’y était pas, exactement comme `POST /media/:id/log`, sans toucher au statut de suivi.\n\nLes recherches TMDB passent une par une, à 250 ms d’écart, par la file sortante commune : compter une demi-seconde à une seconde par film nouveau. La résolution d’un titre et d’une année se mémorise 30 jours en Redis : rejouer le même fichier ne rappelle pas TMDB pour les lignes déjà résolues.\n\n**Un import à la fois par membre.** Renvoyer le même fichier pendant qu’il tourne rend la tâche en cours (même `id`), sans en lancer une seconde ; un autre fichier répond `409` jusqu’à la fin de la première.\n\nUn CSV sans les en-têtes de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`) répond `400`, sans tâche. `watched.csv` et `ratings.csv`, qui n’en portent qu’un sous-ensemble, ne sont donc pas acceptés tels quels.",
         "requestBody": {
           "required": true,
           "content": {
@@ -28532,159 +28532,220 @@
           "description": "Le CSV `diary.csv` de l’export Letterboxd"
         },
         "responses": {
-          "200": {
-            "description": "Le bilan de l’import — la réponse arrive une fois le fichier entièrement traité",
+          "202": {
+            "description": "Un import Letterboxd suivi : son avancement, puis son rapport",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "importes": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "Identifiant de la tâche, à redonner à `GET /me/journal/import/letterboxd/{id}`"
+                    },
+                    "etat": {
+                      "type": "string",
+                      "enum": [
+                        "en_cours",
+                        "termine",
+                        "echoue"
+                      ],
+                      "description": "`en_cours` : la tâche avance, redemander plus tard. `termine` : `rapport` est complet. `echoue` : la tâche s’est arrêtée avant la fin (redémarrage du serveur, panne) ; `rapport` dit ce qui a été fait, et relancer le même fichier reprend sans doublon."
+                    },
+                    "lignes_total": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Visionnages importés — un par ligne reconnue et pas déjà présente"
+                      "description": "Lignes de données du fichier, en-tête exclu"
                     },
-                    "deja_presents": {
+                    "lignes_traitees": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date"
+                      "description": "Lignes déjà traitées — égal à `lignes_total` une fois `termine`"
                     },
-                    "non_reconnus": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "ligne": {
-                            "type": "integer",
-                            "minimum": -9007199254740991,
-                            "maximum": 9007199254740991,
-                            "description": "Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "year": {
-                            "anyOf": [
-                              {
+                    "rapport": {
+                      "type": "object",
+                      "properties": {
+                        "importes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Visionnages importés — un par ligne reconnue et pas déjà présente"
+                        },
+                        "deja_presents": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date"
+                        },
+                        "non_reconnus": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ligne": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "year": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "candidats": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "tmdb_id": {
+                                      "type": "string",
+                                      "description": "Identifiant TMDB du candidat"
+                                    },
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "original_title": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "Titre original, nul quand TMDB ne le donne pas"
+                                    },
+                                    "year": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "cover_url": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "L’affiche TMDB, dans la même forme que `cover_url` d’un résultat de `GET /search` (URL absolue de `image.tmdb.org`) ; nulle quand TMDB n’en a pas. Le réalisateur n’y est pas : la recherche TMDB ne le donne pas, et le demander coûterait un appel par candidat."
+                                    }
+                                  },
+                                  "required": [
+                                    "tmdb_id",
+                                    "title",
+                                    "original_title",
+                                    "year",
+                                    "cover_url"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Un candidat TMDB parmi lesquels la ligne n’a pas pu être tranchée"
+                                },
+                                "description": "Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu"
+                              }
+                            },
+                            "required": [
+                              "ligne",
+                              "name",
+                              "year",
+                              "candidats"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Une ligne non importée, faute d’un candidat net"
+                          }
+                        },
+                        "erreurs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ligne": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
                               },
-                              {
-                                "type": "null"
+                              "message": {
+                                "type": "string"
                               }
-                            ]
-                          },
-                          "candidats": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "tmdb_id": {
-                                  "type": "string",
-                                  "description": "Identifiant TMDB du candidat"
-                                },
-                                "title": {
-                                  "type": "string"
-                                },
-                                "year": {
-                                  "anyOf": [
-                                    {
-                                      "type": "integer",
-                                      "minimum": -9007199254740991,
-                                      "maximum": 9007199254740991
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "tmdb_id",
-                                "title",
-                                "year"
-                              ],
-                              "additionalProperties": false,
-                              "description": "Un candidat TMDB parmi lesquels la ligne n’a pas pu être tranchée"
                             },
-                            "description": "Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu"
+                            "required": [
+                              "ligne",
+                              "message"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Une ligne dont le traitement a échoué"
                           }
-                        },
-                        "required": [
-                          "ligne",
-                          "name",
-                          "year",
-                          "candidats"
-                        ],
-                        "additionalProperties": false,
-                        "description": "Une ligne non importée, faute d’un candidat net"
-                      }
+                        }
+                      },
+                      "required": [
+                        "importes",
+                        "deja_presents",
+                        "non_reconnus",
+                        "erreurs"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le bilan de l’import, lignes traitées jusqu’ici — complet une fois la tâche `termine`"
                     },
-                    "erreurs": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "ligne": {
-                            "type": "integer",
-                            "minimum": -9007199254740991,
-                            "maximum": 9007199254740991
-                          },
-                          "message": {
-                            "type": "string"
-                          }
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
                         },
-                        "required": [
-                          "ligne",
-                          "message"
-                        ],
-                        "additionalProperties": false,
-                        "description": "Une ligne dont le traitement a échoué"
-                      }
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Pourquoi la tâche s’est arrêtée, à afficher tel quel ; nul sauf quand `etat` vaut `echoue`"
                     }
                   },
                   "required": [
-                    "importes",
-                    "deja_presents",
-                    "non_reconnus",
-                    "erreurs"
+                    "id",
+                    "etat",
+                    "lignes_total",
+                    "lignes_traitees",
+                    "rapport",
+                    "message"
                   ],
                   "additionalProperties": false,
-                  "description": "Le bilan de l’import — la réponse arrive une fois le fichier entièrement traité"
+                  "description": "Un import Letterboxd suivi : son avancement, puis son rapport"
                 },
                 "examples": {
                   "Réponse type": {
                     "value": {
-                      "importes": 2,
-                      "deja_presents": 1,
-                      "non_reconnus": [
-                        {
-                          "ligne": 5,
-                          "name": "Alien",
-                          "year": 1979,
-                          "candidats": [
-                            {
-                              "tmdb_id": "348",
-                              "title": "Alien, le huitième passager",
-                              "year": 1979
-                            },
-                            {
-                              "tmdb_id": "999501",
-                              "title": "Alien: Awakening",
-                              "year": 1979
-                            }
-                          ]
-                        }
-                      ],
-                      "erreurs": [
-                        {
-                          "ligne": 12,
-                          "message": "Date invalide."
-                        }
-                      ]
+                      "id": "5b0f3c2e-8d4a-4f6b-9c1e-2a7d9e4b6f10",
+                      "etat": "en_cours",
+                      "lignes_total": 5,
+                      "lignes_traitees": 0,
+                      "rapport": {
+                        "importes": 0,
+                        "deja_presents": 0,
+                        "non_reconnus": [],
+                        "erreurs": []
+                      },
+                      "message": null
                     }
                   }
                 }
@@ -28711,7 +28772,318 @@
               }
             }
           },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/journal/import/letterboxd/{id}": {
+      "get": {
+        "summary": "Suivre un import Letterboxd : avancement, puis rapport",
+        "tags": [
+          "carnet"
+        ],
+        "description": "La tâche lancée par `POST /me/journal/import/letterboxd`. Tant que `etat` vaut `en_cours`, `lignes_traitees` avance sur `lignes_total` et `rapport` compte ce qui est déjà fait ; à `termine`, `rapport` est complet. Redemander toutes les deux secondes environ suffit.\n\n`echoue` : la tâche s’est arrêtée avant la fin — le serveur a redémarré, ou une panne l’a coupée. `message` le dit, à afficher tel quel ; `rapport` garde ce qui a été fait. Relancer le même fichier reprend sans doublon.\n\nLa tâche se relit **24 heures** après sa dernière écriture, puis `404`. **Seulement par celui qui l’a lancée** : la tâche d’un autre membre répond `404`, comme une tâche inconnue.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Identifiant rendu par `POST /me/journal/import/letterboxd`"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Un import Letterboxd suivi : son avancement, puis son rapport",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "Identifiant de la tâche, à redonner à `GET /me/journal/import/letterboxd/{id}`"
+                    },
+                    "etat": {
+                      "type": "string",
+                      "enum": [
+                        "en_cours",
+                        "termine",
+                        "echoue"
+                      ],
+                      "description": "`en_cours` : la tâche avance, redemander plus tard. `termine` : `rapport` est complet. `echoue` : la tâche s’est arrêtée avant la fin (redémarrage du serveur, panne) ; `rapport` dit ce qui a été fait, et relancer le même fichier reprend sans doublon."
+                    },
+                    "lignes_total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Lignes de données du fichier, en-tête exclu"
+                    },
+                    "lignes_traitees": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Lignes déjà traitées — égal à `lignes_total` une fois `termine`"
+                    },
+                    "rapport": {
+                      "type": "object",
+                      "properties": {
+                        "importes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Visionnages importés — un par ligne reconnue et pas déjà présente"
+                        },
+                        "deja_presents": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date"
+                        },
+                        "non_reconnus": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ligne": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "year": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "candidats": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "tmdb_id": {
+                                      "type": "string",
+                                      "description": "Identifiant TMDB du candidat"
+                                    },
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "original_title": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "Titre original, nul quand TMDB ne le donne pas"
+                                    },
+                                    "year": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "cover_url": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "L’affiche TMDB, dans la même forme que `cover_url` d’un résultat de `GET /search` (URL absolue de `image.tmdb.org`) ; nulle quand TMDB n’en a pas. Le réalisateur n’y est pas : la recherche TMDB ne le donne pas, et le demander coûterait un appel par candidat."
+                                    }
+                                  },
+                                  "required": [
+                                    "tmdb_id",
+                                    "title",
+                                    "original_title",
+                                    "year",
+                                    "cover_url"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Un candidat TMDB parmi lesquels la ligne n’a pas pu être tranchée"
+                                },
+                                "description": "Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu"
+                              }
+                            },
+                            "required": [
+                              "ligne",
+                              "name",
+                              "year",
+                              "candidats"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Une ligne non importée, faute d’un candidat net"
+                          }
+                        },
+                        "erreurs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ligne": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "ligne",
+                              "message"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Une ligne dont le traitement a échoué"
+                          }
+                        }
+                      },
+                      "required": [
+                        "importes",
+                        "deja_presents",
+                        "non_reconnus",
+                        "erreurs"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le bilan de l’import, lignes traitées jusqu’ici — complet une fois la tâche `termine`"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Pourquoi la tâche s’est arrêtée, à afficher tel quel ; nul sauf quand `etat` vaut `echoue`"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "etat",
+                    "lignes_total",
+                    "lignes_traitees",
+                    "rapport",
+                    "message"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Un import Letterboxd suivi : son avancement, puis son rapport"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "5b0f3c2e-8d4a-4f6b-9c1e-2a7d9e4b6f10",
+                      "etat": "termine",
+                      "lignes_total": 5,
+                      "lignes_traitees": 5,
+                      "rapport": {
+                        "importes": 2,
+                        "deja_presents": 1,
+                        "non_reconnus": [
+                          {
+                            "ligne": 5,
+                            "name": "Alien",
+                            "year": 1979,
+                            "candidats": [
+                              {
+                                "tmdb_id": "348",
+                                "title": "Alien, le huitième passager",
+                                "original_title": "Alien",
+                                "year": 1979,
+                                "cover_url": "https://image.tmdb.org/t/p/w500/vfrQk5IPloGg1v9Rzbh2Eg3VGyM.jpg"
+                              },
+                              {
+                                "tmdb_id": "999501",
+                                "title": "Alien: Awakening",
+                                "original_title": "Alien: Awakening",
+                                "year": 1979,
+                                "cover_url": null
+                              }
+                            ]
+                          }
+                        ],
+                        "erreurs": [
+                          {
+                            "ligne": 12,
+                            "message": "Date invalide."
+                          }
+                        ]
+                      },
+                      "message": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -29156,6 +29528,440 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/journal/doublons": {
+      "get": {
+        "summary": "Aperçu des doublons de mon journal",
+        "tags": [
+          "carnet"
+        ],
+        "description": "Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).\n\n**Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.\n\nDeux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.\n\nNe retire rien : dit combien, et lesquels, avant `DELETE /me/journal/doublons`.",
+        "responses": {
+          "200": {
+            "description": "Les doublons de mon journal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Nombre d’entrées en double — trouvées dans l’aperçu, retirées par le `DELETE`"
+                    },
+                    "doublons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée retirée — ou à retirer, dans l’aperçu"
+                          },
+                          "garde_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée gardée à sa place : la plus ancienne de ce film à cette date"
+                          },
+                          "finished_at": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "rating": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10,
+                                "description": "Note sur 10"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "media": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "book",
+                                  "comic_series",
+                                  "movie",
+                                  "tv",
+                                  "game",
+                                  "music"
+                                ],
+                                "description": "Type d'œuvre"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "openlibrary",
+                                  "googlebooks",
+                                  "anilist",
+                                  "tmdb",
+                                  "igdb",
+                                  "musicbrainz"
+                                ],
+                                "description": "Source d'origine de la fiche"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "cover_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "year": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "director": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "`metadata.director` de la fiche"
+                              },
+                              "external_id": {
+                                "type": "string",
+                                "description": "Identifiant chez la source — le `tmdb_id` du film"
+                              },
+                              "backdrop_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "source",
+                              "title",
+                              "cover_url",
+                              "year",
+                              "director",
+                              "external_id",
+                              "backdrop_url"
+                            ],
+                            "additionalProperties": false,
+                            "description": "L’œuvre, réduite à ce que le journal affiche"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "garde_id",
+                          "finished_at",
+                          "rating",
+                          "media"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un visionnage en double"
+                      }
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "doublons"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Les doublons de mon journal"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "total": 1,
+                      "doublons": [
+                        {
+                          "id": "0d6f7a52-3c1b-4e8a-9f20-6b5d4c3a2e19",
+                          "garde_id": "e0000000-0000-4000-8000-000000000002",
+                          "finished_at": "2026-07-12",
+                          "rating": 9,
+                          "media": {
+                            "id": "d0000000-0000-4000-8000-000000000013",
+                            "type": "movie",
+                            "source": "tmdb",
+                            "external_id": "27205",
+                            "title": "Inception",
+                            "cover_url": "https://image.tmdb.org/t/p/w500/9gk7adZmeSSuQfZBtWWLIcVcSY.jpg",
+                            "backdrop_url": "https://image.tmdb.org/t/p/w1280/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
+                            "year": 2010,
+                            "director": "Christopher Nolan"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Retirer les doublons de mon journal",
+        "tags": [
+          "carnet"
+        ],
+        "description": "Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).\n\n**Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.\n\nDeux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.\n\nRetire, en une transaction, les doublons trouvés **au moment de l’appel** — pas ceux d’un aperçu plus ancien — et rend ceux qu’il a retirés. Chaque retrait suit la suppression d’un visionnage (`DELETE /me/journal/:id`) : le carnet part avec l’entrée, le cache du Voyage est invalidé, et ni le suivi ni les quêtes ne se recalculent. Un second appel ne retire rien (`total: 0`).\n\nChez soi seulement : aucun paramètre ne vise un autre membre.",
+        "responses": {
+          "200": {
+            "description": "Les doublons de mon journal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Nombre d’entrées en double — trouvées dans l’aperçu, retirées par le `DELETE`"
+                    },
+                    "doublons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée retirée — ou à retirer, dans l’aperçu"
+                          },
+                          "garde_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée gardée à sa place : la plus ancienne de ce film à cette date"
+                          },
+                          "finished_at": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "rating": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10,
+                                "description": "Note sur 10"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "media": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "book",
+                                  "comic_series",
+                                  "movie",
+                                  "tv",
+                                  "game",
+                                  "music"
+                                ],
+                                "description": "Type d'œuvre"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "openlibrary",
+                                  "googlebooks",
+                                  "anilist",
+                                  "tmdb",
+                                  "igdb",
+                                  "musicbrainz"
+                                ],
+                                "description": "Source d'origine de la fiche"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "cover_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "year": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "director": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "`metadata.director` de la fiche"
+                              },
+                              "external_id": {
+                                "type": "string",
+                                "description": "Identifiant chez la source — le `tmdb_id` du film"
+                              },
+                              "backdrop_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "source",
+                              "title",
+                              "cover_url",
+                              "year",
+                              "director",
+                              "external_id",
+                              "backdrop_url"
+                            ],
+                            "additionalProperties": false,
+                            "description": "L’œuvre, réduite à ce que le journal affiche"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "garde_id",
+                          "finished_at",
+                          "rating",
+                          "media"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un visionnage en double"
+                      }
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "doublons"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Les doublons de mon journal"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "total": 1,
+                      "doublons": [
+                        {
+                          "id": "0d6f7a52-3c1b-4e8a-9f20-6b5d4c3a2e19",
+                          "garde_id": "e0000000-0000-4000-8000-000000000002",
+                          "finished_at": "2026-07-12",
+                          "rating": 9,
+                          "media": {
+                            "id": "d0000000-0000-4000-8000-000000000013",
+                            "type": "movie",
+                            "source": "tmdb",
+                            "external_id": "27205",
+                            "title": "Inception",
+                            "cover_url": "https://image.tmdb.org/t/p/w500/9gk7adZmeSSuQfZBtWWLIcVcSY.jpg",
+                            "backdrop_url": "https://image.tmdb.org/t/p/w1280/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
+                            "year": 2010,
+                            "director": "Christopher Nolan"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
             "description": "Default Response",
             "content": {
               "application/json": {

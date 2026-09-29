@@ -4098,20 +4098,24 @@ export interface paths {
   };
   "/me/journal/import/letterboxd": {
     /**
-     * Importer le journal Letterboxd (`diary.csv`)
+     * Lancer l’import du journal Letterboxd (`diary.csv`)
      * @description Letterboxd est fermé (Cloudflare, API sur invitation) : pas de synchronisation possible. Le seul chemin est l’export personnel du membre (Réglages → Import & Export → « Export your data » sur Letterboxd), un ZIP dont l’appli extrait `diary.csv` avant de l’envoyer ici — **en JSON**, `{ "csv": "..." }`, jamais en `text/csv`.
      *
-     * Pour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés.
+     * **Une tâche suivie, pas une réponse longue** (correctif du 29 septembre 2026). La route vérifie l’en-tête, lance le traitement et répond `202` aussitôt, avec la tâche `en_cours` ; `GET /me/journal/import/letterboxd/{id}` en donne l’avancement puis le rapport. Elle rendait le rapport à la fin, et un journal réel dépassait les 75 s du relais du NAS : `504` pendant que l’import continuait.
+     *
+     * Pour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés, chacun avec son affiche TMDB.
      *
      * **Aucun candidat net en français ? La recherche est refaite en anglais** (brief du 16 septembre 2026) — Letterboxd donne parfois le titre anglais d’un film étranger, que ni le titre français ni l’original ne rapprochent. Un seul candidat net dans l’un ou l’autre importe ; plusieurs, dans l’une ou l’autre langue, partent dans `non_reconnus` avec l’union des deux recherches.
      *
-     * La date de l’entrée est `Watched Date`, ou `Date` si elle est vide. La note est `Rating × 2` arrondie à l’entier (une note Letterboxd vide n’écrit pas de note). **Une ligne déjà présente — même film TMDB, même date, chez ce membre — est ignorée** (`deja_presents`), sans créer de doublon.
+     * La date de l’entrée est `Watched Date`, ou `Date` si elle est vide. La note est `Rating × 2` arrondie à l’entier (une note Letterboxd vide n’écrit pas de note). **Une ligne déjà présente — même film TMDB, même date, chez ce membre — est ignorée** (`deja_presents`), sans créer de doublon : relancer le même fichier ne duplique rien. Une ligne en échec part dans `erreurs` sans arrêter les autres.
      *
      * Films seulement, comme le reste du carnet : l’œuvre entre dans la bibliothèque si elle n’y était pas, exactement comme `POST /media/:id/log`, sans toucher au statut de suivi.
      *
-     * **La réponse n’arrive qu’une fois le fichier entièrement traité.** Les recherches TMDB passent une par une, à 250 ms d’écart, par la file sortante commune — un fichier de 500 lignes prend donc environ deux minutes. La résolution d’un titre et d’une année se mémorise 30 jours en Redis : rejouer le même fichier ne rappelle pas TMDB pour les lignes déjà résolues. **Prévoir un délai client d’au moins cinq minutes pour cet appel.**
+     * Les recherches TMDB passent une par une, à 250 ms d’écart, par la file sortante commune : compter une demi-seconde à une seconde par film nouveau. La résolution d’un titre et d’une année se mémorise 30 jours en Redis : rejouer le même fichier ne rappelle pas TMDB pour les lignes déjà résolues.
      *
-     * Un CSV sans les en-têtes de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`) répond `400`. `watched.csv` et `ratings.csv`, qui n’en portent qu’un sous-ensemble, ne sont donc pas acceptés tels quels.
+     * **Un import à la fois par membre.** Renvoyer le même fichier pendant qu’il tourne rend la tâche en cours (même `id`), sans en lancer une seconde ; un autre fichier répond `409` jusqu’à la fin de la première.
+     *
+     * Un CSV sans les en-têtes de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`) répond `400`, sans tâche. `watched.csv` et `ratings.csv`, qui n’en portent qu’un sous-ensemble, ne sont donc pas acceptés tels quels.
      */
     post: {
       /** @description Le CSV `diary.csv` de l’export Letterboxd */
@@ -4124,31 +4128,54 @@ export interface paths {
         };
       };
       responses: {
-        /** @description Le bilan de l’import — la réponse arrive une fois le fichier entièrement traité */
-        200: {
+        /** @description Un import Letterboxd suivi : son avancement, puis son rapport */
+        202: {
           content: {
             "application/json": {
-              /** @description Visionnages importés — un par ligne reconnue et pas déjà présente */
-              importes: number;
-              /** @description Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date */
-              deja_presents: number;
-              non_reconnus: ({
-                  /** @description Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données */
-                  ligne: number;
-                  name: string;
-                  year: number | null;
-                  /** @description Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu */
-                  candidats: ({
-                      /** @description Identifiant TMDB du candidat */
-                      tmdb_id: string;
-                      title: string;
-                      year: number | null;
-                    })[];
-                })[];
-              erreurs: {
-                  ligne: number;
-                  message: string;
-                }[];
+              /**
+               * Format: uuid
+               * @description Identifiant de la tâche, à redonner à `GET /me/journal/import/letterboxd/{id}`
+               */
+              id: string;
+              /**
+               * @description `en_cours` : la tâche avance, redemander plus tard. `termine` : `rapport` est complet. `echoue` : la tâche s’est arrêtée avant la fin (redémarrage du serveur, panne) ; `rapport` dit ce qui a été fait, et relancer le même fichier reprend sans doublon.
+               * @enum {string}
+               */
+              etat: "en_cours" | "termine" | "echoue";
+              /** @description Lignes de données du fichier, en-tête exclu */
+              lignes_total: number;
+              /** @description Lignes déjà traitées — égal à `lignes_total` une fois `termine` */
+              lignes_traitees: number;
+              /** @description Le bilan de l’import, lignes traitées jusqu’ici — complet une fois la tâche `termine` */
+              rapport: {
+                /** @description Visionnages importés — un par ligne reconnue et pas déjà présente */
+                importes: number;
+                /** @description Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date */
+                deja_presents: number;
+                non_reconnus: ({
+                    /** @description Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données */
+                    ligne: number;
+                    name: string;
+                    year: number | null;
+                    /** @description Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu */
+                    candidats: ({
+                        /** @description Identifiant TMDB du candidat */
+                        tmdb_id: string;
+                        title: string;
+                        /** @description Titre original, nul quand TMDB ne le donne pas */
+                        original_title: string | null;
+                        year: number | null;
+                        /** @description L’affiche TMDB, dans la même forme que `cover_url` d’un résultat de `GET /search` (URL absolue de `image.tmdb.org`) ; nulle quand TMDB n’en a pas. Le réalisateur n’y est pas : la recherche TMDB ne le donne pas, et le demander coûterait un appel par candidat. */
+                        cover_url: string | null;
+                      })[];
+                  })[];
+                erreurs: {
+                    ligne: number;
+                    message: string;
+                  }[];
+              };
+              /** @description Pourquoi la tâche s’est arrêtée, à afficher tel quel ; nul sauf quand `etat` vaut `echoue` */
+              message: string | null;
             };
           };
         };
@@ -4165,7 +4192,102 @@ export interface paths {
           };
         };
         /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
         503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/journal/import/letterboxd/{id}": {
+    /**
+     * Suivre un import Letterboxd : avancement, puis rapport
+     * @description La tâche lancée par `POST /me/journal/import/letterboxd`. Tant que `etat` vaut `en_cours`, `lignes_traitees` avance sur `lignes_total` et `rapport` compte ce qui est déjà fait ; à `termine`, `rapport` est complet. Redemander toutes les deux secondes environ suffit.
+     *
+     * `echoue` : la tâche s’est arrêtée avant la fin — le serveur a redémarré, ou une panne l’a coupée. `message` le dit, à afficher tel quel ; `rapport` garde ce qui a été fait. Relancer le même fichier reprend sans doublon.
+     *
+     * La tâche se relit **24 heures** après sa dernière écriture, puis `404`. **Seulement par celui qui l’a lancée** : la tâche d’un autre membre répond `404`, comme une tâche inconnue.
+     */
+    get: {
+      parameters: {
+        path: {
+          /** @description Identifiant rendu par `POST /me/journal/import/letterboxd` */
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Un import Letterboxd suivi : son avancement, puis son rapport */
+        200: {
+          content: {
+            "application/json": {
+              /**
+               * Format: uuid
+               * @description Identifiant de la tâche, à redonner à `GET /me/journal/import/letterboxd/{id}`
+               */
+              id: string;
+              /**
+               * @description `en_cours` : la tâche avance, redemander plus tard. `termine` : `rapport` est complet. `echoue` : la tâche s’est arrêtée avant la fin (redémarrage du serveur, panne) ; `rapport` dit ce qui a été fait, et relancer le même fichier reprend sans doublon.
+               * @enum {string}
+               */
+              etat: "en_cours" | "termine" | "echoue";
+              /** @description Lignes de données du fichier, en-tête exclu */
+              lignes_total: number;
+              /** @description Lignes déjà traitées — égal à `lignes_total` une fois `termine` */
+              lignes_traitees: number;
+              /** @description Le bilan de l’import, lignes traitées jusqu’ici — complet une fois la tâche `termine` */
+              rapport: {
+                /** @description Visionnages importés — un par ligne reconnue et pas déjà présente */
+                importes: number;
+                /** @description Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date */
+                deja_presents: number;
+                non_reconnus: ({
+                    /** @description Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données */
+                    ligne: number;
+                    name: string;
+                    year: number | null;
+                    /** @description Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu */
+                    candidats: ({
+                        /** @description Identifiant TMDB du candidat */
+                        tmdb_id: string;
+                        title: string;
+                        /** @description Titre original, nul quand TMDB ne le donne pas */
+                        original_title: string | null;
+                        year: number | null;
+                        /** @description L’affiche TMDB, dans la même forme que `cover_url` d’un résultat de `GET /search` (URL absolue de `image.tmdb.org`) ; nulle quand TMDB n’en a pas. Le réalisateur n’y est pas : la recherche TMDB ne le donne pas, et le demander coûterait un appel par candidat. */
+                        cover_url: string | null;
+                      })[];
+                  })[];
+                erreurs: {
+                    ligne: number;
+                    message: string;
+                  }[];
+              };
+              /** @description Pourquoi la tâche s’est arrêtée, à afficher tel quel ; nul sauf quand `etat` vaut `echoue` */
+              message: string | null;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };
@@ -4327,6 +4449,146 @@ export interface paths {
         };
         /** @description Default Response */
         404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/journal/doublons": {
+    /**
+     * Aperçu des doublons de mon journal
+     * @description Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).
+     *
+     * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.
+     *
+     * Deux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.
+     *
+     * Ne retire rien : dit combien, et lesquels, avant `DELETE /me/journal/doublons`.
+     */
+    get: {
+      responses: {
+        /** @description Les doublons de mon journal */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Nombre d’entrées en double — trouvées dans l’aperçu, retirées par le `DELETE` */
+              total: number;
+              doublons: ({
+                  /**
+                   * Format: uuid
+                   * @description L’entrée retirée — ou à retirer, dans l’aperçu
+                   */
+                  id: string;
+                  /**
+                   * Format: uuid
+                   * @description L’entrée gardée à sa place : la plus ancienne de ce film à cette date
+                   */
+                  garde_id: string;
+                  /** Format: date */
+                  finished_at: string;
+                  rating: number | null;
+                  /** @description L’œuvre, réduite à ce que le journal affiche */
+                  media: {
+                    /** Format: uuid */
+                    id: string;
+                    /**
+                     * @description Type d'œuvre
+                     * @enum {string}
+                     */
+                    type: "book" | "comic_series" | "movie" | "tv" | "game" | "music";
+                    /**
+                     * @description Source d'origine de la fiche
+                     * @enum {string}
+                     */
+                    source: "openlibrary" | "googlebooks" | "anilist" | "tmdb" | "igdb" | "musicbrainz";
+                    title: string;
+                    cover_url: string | null;
+                    year: number | null;
+                    /** @description `metadata.director` de la fiche */
+                    director: string | null;
+                    /** @description Identifiant chez la source — le `tmdb_id` du film */
+                    external_id: string;
+                    /** @description Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas */
+                    backdrop_url: string | null;
+                  };
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    /**
+     * Retirer les doublons de mon journal
+     * @description Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).
+     *
+     * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.
+     *
+     * Deux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.
+     *
+     * Retire, en une transaction, les doublons trouvés **au moment de l’appel** — pas ceux d’un aperçu plus ancien — et rend ceux qu’il a retirés. Chaque retrait suit la suppression d’un visionnage (`DELETE /me/journal/:id`) : le carnet part avec l’entrée, le cache du Voyage est invalidé, et ni le suivi ni les quêtes ne se recalculent. Un second appel ne retire rien (`total: 0`).
+     *
+     * Chez soi seulement : aucun paramètre ne vise un autre membre.
+     */
+    delete: {
+      responses: {
+        /** @description Les doublons de mon journal */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Nombre d’entrées en double — trouvées dans l’aperçu, retirées par le `DELETE` */
+              total: number;
+              doublons: ({
+                  /**
+                   * Format: uuid
+                   * @description L’entrée retirée — ou à retirer, dans l’aperçu
+                   */
+                  id: string;
+                  /**
+                   * Format: uuid
+                   * @description L’entrée gardée à sa place : la plus ancienne de ce film à cette date
+                   */
+                  garde_id: string;
+                  /** Format: date */
+                  finished_at: string;
+                  rating: number | null;
+                  /** @description L’œuvre, réduite à ce que le journal affiche */
+                  media: {
+                    /** Format: uuid */
+                    id: string;
+                    /**
+                     * @description Type d'œuvre
+                     * @enum {string}
+                     */
+                    type: "book" | "comic_series" | "movie" | "tv" | "game" | "music";
+                    /**
+                     * @description Source d'origine de la fiche
+                     * @enum {string}
+                     */
+                    source: "openlibrary" | "googlebooks" | "anilist" | "tmdb" | "igdb" | "musicbrainz";
+                    title: string;
+                    cover_url: string | null;
+                    year: number | null;
+                    /** @description `metadata.director` de la fiche */
+                    director: string | null;
+                    /** @description Identifiant chez la source — le `tmdb_id` du film */
+                    external_id: string;
+                    /** @description Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas */
+                    backdrop_url: string | null;
+                  };
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };

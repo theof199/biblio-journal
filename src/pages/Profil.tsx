@@ -8,6 +8,7 @@ import { lireSagas } from '../api/sagas'
 import { lireStats } from '../api/stats'
 import { bilanSuivi, type BilanSuivi } from '../profil/bilan'
 import { BilanCarte, GraphiquesCarte } from '../profil/Cartes'
+import Doublons from '../profil/Doublons'
 import type { EtatFilmographie } from '../suivis/liste'
 import type { FilmSuivi } from '../suivis/prochain'
 import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
@@ -39,7 +40,7 @@ function bilanDe(
 /**
  * Le profil (reprise de `ProfileScreen.kt`) : le pseudo, les deux chiffres de `GET /stats`, le
  * bilan et les graphiques calculés depuis le journal entier, « Mes films », l'import Letterboxd,
- * la déconnexion et la mention TMDB. Le Passeport, le Portefeuille et les Coulisses (dépenses,
+ * le retrait des doublons, la déconnexion et la mention TMDB. Le Passeport, le Portefeuille et les Coulisses (dépenses,
  * crédits des images) sont ceux du Voyage : ils viendront avec lui. SensCritique n'est pas repris.
  */
 export default function Profil() {
@@ -102,6 +103,8 @@ export default function Profil() {
           }}
         />
       </label>
+
+      <Doublons />
 
       <button type="button" className={cartes.bouton} onClick={() => void deconnecter()}>
         Se déconnecter

@@ -33,11 +33,26 @@
   color: var(--couleur-danger);
 }
 
+.progression {
+  width: 100%;
+  accent-color: var(--couleur-accent);
+}
+
+.ligne {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+/* La vignette à gauche, le titre à droite : on tranche une ambiguïté à l'œil. */
 .candidat {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
   width: 100%;
   min-height: var(--cible-tactile);
-  padding: 0 var(--espace-4);
+  padding: var(--espace-2) var(--espace-4);
+  color: var(--couleur-texte);
   border: var(--trait) solid var(--couleur-bordure);
   border-radius: var(--rayon-m);
   background: var(--couleur-surface);
@@ -48,6 +63,13 @@
 
 .candidat:hover {
   background: var(--couleur-surface-2);
+}
+
+.candidatTexte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  min-width: 0;
 }
 
 .bouton {

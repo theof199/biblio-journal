@@ -101,8 +101,9 @@ export const candidatDepuisFilmSuivi = (
 })
 
 /**
- * Un candidat du rapport d'import Letterboxd (le back ne donne ni jaquette ni réalisateur), avec
- * la date et la note que la ligne du CSV portait : le formulaire s'ouvre déjà rempli.
+ * Un candidat du rapport d'import Letterboxd — son affiche TMDB depuis le correctif du
+ * 29 septembre 2026, pas de réalisateur (la recherche TMDB ne le donne pas) — avec la date et la
+ * note que la ligne du CSV portait : le formulaire s'ouvre déjà rempli.
  */
 export const candidatDepuisImport = (
   candidat: CandidatImport,
@@ -112,7 +113,7 @@ export const candidatDepuisImport = (
   external_id: candidat.tmdb_id,
   title: candidat.title,
   year: candidat.year,
-  cover_url: null,
+  cover_url: candidat.cover_url,
   director: null,
   ...(ligne?.date ? { finished_at: ligne.date } : {}),
   ...(ligne?.rating != null ? { rating: ligne.rating } : {}),

@@ -1,0 +1,65 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.bloc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+/* La même entrée que « Mes films » et l'import, au profil. */
+.entree {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: var(--cible-tactile);
+  padding: var(--espace-2) var(--espace-4);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.entree:hover {
+  background: var(--couleur-surface-2);
+}
+
+.entreeTitre {
+  font-weight: var(--graisse-moyenne);
+}
+
+.aide {
+  margin: 0;
+  font-size: var(--taille-s);
+  color: var(--couleur-texte-doux);
+}
+
+.liste {
+  margin: 0;
+  padding-left: var(--espace-4);
+  font-size: var(--taille-s);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.secondaire {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: none;
+  background: none;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-m);
+  cursor: pointer;
+}
+
+.erreur {
+  margin: 0;
+  color: var(--couleur-danger);
+}
