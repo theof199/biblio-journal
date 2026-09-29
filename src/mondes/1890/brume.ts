@@ -2,7 +2,7 @@ import type { VueMonde } from '../types'
 import { c } from './couleur'
 import { ELEMENTS, chantier, avancement } from './chantier'
 import { remplissage } from './foire'
-import { guichetEtat, plaque } from './moyen'
+import { guichetEtat, LARGEUR, plaque } from './moyen'
 import { guirlandesLampions } from './proches'
 import { clamp, lisse } from '../../carte/outils'
 
@@ -23,7 +23,7 @@ export function dessinerSurLaBrume(v: VueMonde): void {
     const r = remplissage(v.cases, v.bouclee)
     g.save(); g.globalAlpha = 0.72
     guichetEtat(g, v, avancement(etat1897))
-    guirlandesLampions(g, v, avancement(etat1897), r, true, 1)
+    guirlandesLampions(g, v, avancement(etat1897), r, true)
     g.restore()
   }
   const e = ELEMENTS.find((el) => el.annee === v.ouverte.annee)
@@ -34,7 +34,7 @@ export function dessinerSurLaBrume(v: VueMonde): void {
     if (a > 0.01) {
       g.font = "600 11.5px 'Fraunces', Georgia, serif"
       const w = g.measureText(e.ecriteau).width + 16
-      const x = clamp(e.site[0], w / 2 + 8, v.W - w / 2 - 8)
+      const x = clamp(e.site[0], w / 2 + 8, LARGEUR - w / 2 - 8)
       g.save(); g.globalAlpha = a
       plaque(g, x, e.ecriteauY, e.ecriteau, c('#F2E8D5'), c('#151009'))
       g.restore()

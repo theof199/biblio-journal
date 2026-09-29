@@ -10,7 +10,7 @@ const COULEURS_CONFETTIS: readonly string[] = [c('#A8452F'), c('#E6B94A'), c('#F
 const tri = (u: number): number => 1 - Math.abs((((u % 1) + 1) % 1) * 2 - 1)
 
 /** Les guirlandes de lampions de 1897, tendues de proche en proche puis allumées (maquette : `guirlandesLampions`). */
-export function guirlandesLampions(g: CanvasRenderingContext2D, v: VueMonde, k97: number, r: number, seule: boolean, extinction: number): void {
+export function guirlandesLampions(g: CanvasRenderingContext2D, v: VueMonde, k97: number, r: number, seule: boolean): void {
   if (k97 <= 0) return
   const tend = lisse(0.5, 0.8, k97)
   const on = lisse(0.8, 0.92, k97)
@@ -18,9 +18,9 @@ export function guirlandesLampions(g: CanvasRenderingContext2D, v: VueMonde, k97
   if (!seule && r > 0.35) G.push([214, 436, 384, 428, 14, Math.round(r * 7)])
   if (!seule && r > 0.7) G.push([140, 652, 270, 642, 16, Math.round(r * 6)])
   for (const [x0, y0, x1, y1, cr, n] of G) {
-    if (tend >= 1) { guirlande(g, v, x0, y0, x1, y1, cr, n, 'lampion', on, extinction); continue }
+    if (tend >= 1) { guirlande(g, v, x0, y0, x1, y1, cr, n, 'lampion', on); continue }
     g.save(); g.beginPath(); g.rect(x0 - 4, y0 - 20, (x1 - x0 + 8) * tend, 60); g.clip()
-    guirlande(g, v, x0, y0, x1, y1, cr, n, 'lampion', on, extinction)
+    guirlande(g, v, x0, y0, x1, y1, cr, n, 'lampion', on)
     g.restore()
   }
 }
@@ -58,7 +58,8 @@ function artifice(g: CanvasRenderingContext2D, v: VueMonde, cx: number, cy: numb
  * section, en écran, comme la case et l'ampoule qu'il relie.
  */
 function recompense(g: CanvasRenderingContext2D, v: VueMonde): void {
-  if (v.bati.nouvelle === null) return
+  // En « moins d'animations », le billet est déjà arrivé : l'horloge figée le laisserait en l'air.
+  if (!v.vivant || v.bati.nouvelle === null) return
   const u = v.t - v.bati.t0
   if (u < 0.65 || u >= 2.05) return
   const caseQuittee = v.cases[v.bati.nouvelle]
@@ -96,9 +97,8 @@ export function dessinerProche(v: VueMonde): void {
   const g = v.ctx
   const k97 = avancement(chantier(1897, v.ouverte, v.t, v.vivant))
   const r = remplissage(v.cases, v.bouclee)
-  const extinction = v.adieu < 0 ? 1 : 1 - lisse(0, 1.6, v.adieu)
   g.save(); g.translate(0, v.ecranY(0, 1)); g.scale(v.k, 1)
-  guirlandesLampions(g, v, k97, r, false, extinction)
+  guirlandesLampions(g, v, k97, r, false)
   const u2 = v.vivant ? (v.t / 18) % 1 : 0.3
   silhouette(g, v, -24 + 206 * tri(u2), 640, 15, 'ombrelle', v.t * 5.2, v.vivant, u2 < 0.5 ? 1 : -1)
   // Idée 2 : le feu d'artifice part avec le tampon de la décennie, jamais d'un compte de films, jamais pendant l'adieu.

@@ -6,6 +6,8 @@ import { DATES } from './dates'
 import { vueFactice } from '../../test/vueFactice'
 import { SCINTILLEMENT_MAX } from '../../carte/traitement'
 import type { CaseVue, VueMonde } from '../types'
+import { c } from './couleur'
+import type { Appel } from '../../test/contexteFactice'
 
 const cases = (etats: CaseVue['etat'][], profondeur = 0): CaseVue[] =>
   etats.map((etat, i) => ({ annee: 1895 + i, etat, profondeur, x: 100, y: 100, pop: -9 }))
@@ -280,5 +282,131 @@ describe('la foire qui se bâtit', () => {
     expect(m.siteDuChantier(1898)).toBe(300)
     expect(m.siteDuChantier(1897)).toBe(530)
     expect(m.siteDuChantier(1900)).toBeNull()
+  })
+})
+
+/**
+ * La relecture de la tâche 7 (29 septembre 2026) : ce que le décor porté faisait autrement que la
+ * maquette, et les jumeaux que les tests du plan ne gardaient pas.
+ */
+describe('le décor porté, tel que la maquette le montre', () => {
+  const monde = creerMonde1890()
+  /** Les lueurs des lampions : un disque en `lighter` d'une couleur pleine (les halos sont des dégradés). */
+  const lueurs = (appels: Appel[], y?: number) =>
+    appels.filter((a) => a.nom === 'arc' && a.composite === 'lighter' && typeof a.fillStyle === 'string' && (y === undefined || a.args[1] === y)).length
+  const moyen = (surcharge: Partial<VueMonde>) => {
+    const { vue, appels } = vueFactice(surcharge)
+    monde.dessinerMoyen(vue)
+    return appels
+  }
+
+  // Mutations : `const k96 = 1` (la baraque dès 1895, la séance jamais) ; `if (k96 < 1)` retiré devant la séance.
+  it('tend le drap de la séance en 1895 et ne monte la baraque qu’en 1896', () => {
+    const drap = (appels: Appel[]) => appels.some((a) => a.nom === 'fillRect' && JSON.stringify(a.args) === '[262,147,76,52]')
+    const a1895 = moyen({ ouverte: { annee: 1895, t0: -9 } })
+    expect(textes(a1895)).not.toContain('CINÉMATOGRAPHE')
+    expect(drap(a1895)).toBe(true)
+    const a1896 = moyen({ ouverte: { annee: 1896, t0: -9 } })
+    expect(textes(a1896)).toContain('CINÉMATOGRAPHE')
+    expect(drap(a1896)).toBe(false)
+  })
+
+  // Mutation : l'emballement lu sans regarder le chantier de 1898 (le `D.carrV = 0` de la maquette oublié).
+  it('ne fait s’emballer le manège qu’une fois monté : un toucher d’avant est perdu', () => {
+    const manege = (age: number) =>
+      JSON.stringify(moyen({ ouverte: { annee: 1898, t0: 0 }, t: 10, age: (cle) => (cle === 'carrousel' ? age : 99) }).map((a) => [a.nom, a.args]))
+    const jamais = manege(99)
+    expect(manege(7), 'touché en 3 s, le manège à 0,6').toBe(jamais)
+    expect(manege(2), 'touché en 8 s, le manège monté').not.toBe(jamais)
+  })
+
+  // Mutations : `extinction(v)` retiré de `lampion` (la baraque, ses ampoules et le manège restent
+  // allumés, seules les guirlandes s'éteignent) ; retiré de `lanterneMagique`.
+  it('éteint toutes les lumières de la foire pendant l’adieu, baraque, manège et lanterne compris', () => {
+    const avant = moyen({ nuit: 1, adieu: -1 })
+    expect(lueurs(avant)).toBeGreaterThan(0)
+    const pendant = moyen({ nuit: 1, adieu: 1.7 })
+    expect(lueurs(pendant)).toBe(0)
+    const lampe = (appels: Appel[]) => appels.find((a) => a.nom === 'arc' && a.args[0] === 334 && a.args[1] === 468)?.fillStyle
+    expect(lampe(avant)).not.toBe(c('#FADEA0', 0))
+    expect(lampe(pendant)).toBe(c('#FADEA0', 0))
+  })
+
+  // Mutation : le plancher de nuit des ampoules retiré (`nuitMin` ignoré) : en plein jour, une année
+  // quittée ne se verrait plus au fronton.
+  it('fait briller une ampoule par année quittée, même en plein jour', () => {
+    expect(lueurs(moyen({ nuit: 0, bati: { n: 3, nouvelle: null, t0: -9 } }), 142)).toBe(3)
+    expect(lueurs(moyen({ nuit: 0, bati: { n: 1, nouvelle: null, t0: -9 } }), 142)).toBe(1)
+  })
+
+  // Mutations : le toit qui se pose avec ses lampions allumés (`lampes: 1`) ; les ampoules du
+  // chantier sans attendre 0,8.
+  it('n’allume la baraque en chantier qu’à la fin de sa construction', () => {
+    const baraque = (k: number) => moyen({ nuit: 1, ouverte: { annee: 1896, t0: 0 }, t: k * 4.6 })
+    expect(lueurs(baraque(0.6))).toBe(0)
+    expect(lueurs(baraque(0.95))).toBeGreaterThan(0)
+  })
+
+  // Mutation : `Math.max(0, …)` retiré de l'âge d'une affichette : l'horloge du décor retarde sur
+  // celle qui date le `pop`, et l'affichette neuve se montrerait en entier une image avant de se coller.
+  it('ne montre une affichette neuve qu’en la collant, même quand l’horloge du décor retarde', () => {
+    const affichette = (pop: number) => {
+      const { vue, appels } = vueFactice({ t: 3.2, cases: [{ annee: 1895, etat: 'encours', profondeur: 0, x: 100, y: 100, pop }] })
+      monde.dessinerSol(vue, { x: 195, y: 820 })
+      return textes(appels).includes('22 mars')
+    }
+    expect(affichette(3.24)).toBe(false)
+    expect(affichette(3.2)).toBe(false)
+    expect(affichette(2.9)).toBe(true)
+    expect(affichette(-9)).toBe(true)
+  })
+
+  // Mutations : la fenêtre de 0,65 à 2,05 s retirée (le billet resterait posé sur son ampoule) ; le
+  // billet dessiné en « moins d'animations » (l'horloge figée le laisserait en l'air).
+  it('fait voler le billet de la case quittée vers son ampoule, le temps du vol seulement', () => {
+    const billet = (bati: VueMonde['bati'], vivant = true) => {
+      const { vue, appels } = vueFactice({ cases: cases(['passee', 'encours', 'verrou', 'verrou', 'verrou']), bati, vivant })
+      monde.dessinerProche(vue)
+      return textes(appels).includes('1895')
+    }
+    expect(billet({ n: 1, nouvelle: 0, t0: 3.2 - 1 })).toBe(true)
+    expect(billet({ n: 1, nouvelle: 0, t0: 3.2 - 0.3 })).toBe(false)
+    expect(billet({ n: 1, nouvelle: 0, t0: 3.2 - 2.5 })).toBe(false)
+    expect(billet({ n: 1, nouvelle: 0, t0: 3.2 - 1 }, false)).toBe(false)
+    expect(billet({ n: 1, nouvelle: null, t0: 3.2 - 1 })).toBe(false)
+  })
+
+  // Mutations : `v.W` à la place de la largeur de la section (390) pour borner l'écriteau, et pour
+  // semer la poussière du sol : sur un écran étroit, tout se tasserait à gauche.
+  it('pose le décor sur toute la largeur de la section, quelle que soit celle de l’écran', () => {
+    const W = 300
+    const brume = vueFactice({ W, k: W / 390, ouverte: { annee: 1899, t0: 0 }, t: 2 })
+    monde.dessinerSurLaBrume(brume.vue)
+    expect(brume.appels.find((a) => a.nom === 'fillText' && a.args[0] === 'Une grande baraque en chantier')?.args[1]).toBe(322)
+    const ciel = vueFactice({ W, k: W / 390 })
+    monde.dessinerCiel(ciel.vue)
+    const traits = ciel.appels.filter((a) => a.nom === 'fillRect' && a.fillStyle === c('#000000', 0.16)).map((a) => a.args[0] as number)
+    expect(traits).toHaveLength(70)
+    expect(Math.max(...traits)).toBeGreaterThan(W)
+  })
+
+  // Mutations : une date hors de la section (`y`) ; une date rangée sous une autre année que la sienne.
+  it('range chaque date vraie dans la section et sous son année', () => {
+    for (const d of DATES) {
+      expect(d.y, d.titre).toBeGreaterThanOrEqual(0)
+      expect(d.y, d.titre).toBeLessThanOrEqual(1240)
+      expect(d.jour, d.titre).toContain(String(d.an))
+    }
+  })
+
+  // Mutation : `k` qui n'est plus borné à 0 : l'horloge du décor retarde d'au plus 1/16 s sur celle
+  // qui date l'arrivée de l'avatar.
+  it('tient un chantier à son premier coup de marteau tant que l’horloge du décor n’a pas rattrapé l’arrivée', () => {
+    expect(chantier(1898, { annee: 1898, t0: 10 }, 9.95, true)).toEqual({ etat: 'chantier', k: 0 })
+  })
+
+  // Mutation : `DEMI_PALIER` changé : la vitesse de la montée que le propriétaire jugera à l'œil.
+  it('mène l’année en cours à mi-palier au quatrième film', () => {
+    expect(remplissage(cases(['passee', 'ours', 'encours', 'verrou', 'verrou'], 4), false)).toBe(2.5 / PALIERS)
   })
 })

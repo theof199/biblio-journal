@@ -1,5 +1,6 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
+import { LARGEUR } from './moyen'
 import { hash, TAU } from '../../carte/outils'
 
 /** La hauteur de la section 1890 (`trace1890`) : le dégradé du ciel la couvre en entier. */
@@ -72,21 +73,21 @@ export function dessinerCiel(v: VueMonde): void {
     gr.addColorStop(1, c(cols[2]))
     g.globalAlpha = a
     g.fillStyle = gr
-    g.fillRect(-8, -8, v.W + 16, HAUTEUR + 16)
+    g.fillRect(-8, -8, LARGEUR + 16, HAUTEUR + 16)
   }
   g.globalAlpha = 1
   if (v.nuit > 0.05) {
     for (const e of ETOILES) {
       g.globalAlpha = v.nuit * (1 - e.y) * 0.6 * (v.vivant ? 0.55 + 0.45 * Math.sin(v.t * e.v + e.p) : 0.8)
       g.fillStyle = c('#F2E8D5')
-      g.fillRect(e.x * v.W, e.y * 150, e.r, e.r)
+      g.fillRect(e.x * LARGEUR, e.y * 150, e.r, e.r)
     }
   }
   g.globalAlpha = 1
   // Les soixante-dix traits de poussière du sol (maquette : `dessinCarte`).
   g.fillStyle = c('#000000', 0.16)
   for (let i = 0; i < 70; i++) {
-    const x = hash(i * 9.1 + 3) * v.W
+    const x = hash(i * 9.1 + 3) * LARGEUR
     const y = 200 + hash(i * 4.3 + 3) * (HAUTEUR - 200)
     g.fillRect(x, y, 3 + hash(i) * 5, 1.2)
   }

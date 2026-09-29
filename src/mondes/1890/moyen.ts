@@ -1,12 +1,24 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
 import { clamp, ease, hash, lisse, TAU } from '../../carte/outils'
-import { chantier, avancement } from './chantier'
+import { chantier, avancement, ELEMENTS } from './chantier'
 import { quantites, remplissage, ampoules as ampoulesDe } from './foire'
 import { imageDu1890 } from './images'
 
 const F_A = "Limelight, Didot, Georgia, serif"
 const LUM = 1.15
+/**
+ * La largeur de la section en coordonnées locales. Le moteur pose `x × k` avec `k = W / 390` :
+ * la maquette, qui faisait 390 de large, écrivait `W` pour elle ; ici, `v.W` est l'écran.
+ */
+export const LARGEUR = 390
+/**
+ * Pendant l'adieu, tout ce qui s'allume s'éteint (maquette : `EXTINCTION`, lue par `lampion` et
+ * `lanterneMagique`) : les guirlandes, la baraque, ses ampoules, le manège, la lanterne magique.
+ */
+export const extinction = (v: VueMonde): number => (v.adieu < 0 ? 1 : 1 - lisse(0, 1.6, v.adieu))
+/** Le moment où le manège de 1898 est assez monté pour s'emballer (maquette : `D.carrV = 0` tant que `k98` < 0,93). */
+const MANEGE_PRET = 0.93 * (ELEMENTS.find((e) => e.annee === 1898)?.duree ?? 0)
 const LAMPIONS: readonly string[] = ['#E6B94A', '#DE7A45', '#F2E8D5']
 const FANIONS: readonly string[] = ['#A8452F', '#D9B382', '#E6B94A', '#3E5360']
 const TYPES: readonly string[] = ['homme', 'femme', 'enfant', 'homme', 'ombrelle', 'femme', 'homme']
@@ -160,7 +172,7 @@ export function foule(g: CanvasRenderingContext2D, v: VueMonde, n: number, x0: n
 }
 
 /** Une guirlande de fanions ou de lampions (maquette : `guirlande`). */
-export function guirlande(g: CanvasRenderingContext2D, v: VueMonde, x0: number, y0: number, x1: number, y1: number, creux: number, n: number, type: 'fanion' | 'lampion', on: number, extinction: number): void {
+export function guirlande(g: CanvasRenderingContext2D, v: VueMonde, x0: number, y0: number, x1: number, y1: number, creux: number, n: number, type: 'fanion' | 'lampion', on: number): void {
   const mx = (x0 + x1) / 2
   const my = (y0 + y1) / 2 + creux
   const q = (u: number): [number, number] => [
@@ -181,14 +193,18 @@ export function guirlande(g: CanvasRenderingContext2D, v: VueMonde, x0: number, 
     } else {
       g.fillStyle = c('#0a0806')
       g.fillRect(px - 0.5, py, 1, 3)
-      lampion(g, v, px, py + 6, 3, i, null, on, extinction)
+      lampion(g, v, px, py + 6, 3, i, null, on)
     }
   }
 }
 
-/** Un lampion (maquette : `lampion`) : sa lueur chaude la nuit, éteinte pendant l'adieu (`extinction`). */
-export function lampion(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: number, r: number, i: number, pal: readonly string[] | null, on: number, extinction: number): void {
-  const L = v.nuit * on * extinction
+/**
+ * Un lampion (maquette : `lampion`) : sa lueur chaude la nuit, éteinte pendant l'adieu
+ * (`extinction`). `nuitMin` : une ampoule de la baraque brille même le jour (maquette :
+ * `NK = Math.max(NK, .55)`).
+ */
+export function lampion(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: number, r: number, i: number, pal: readonly string[] | null, on: number, nuitMin = 0): void {
+  const L = Math.max(v.nuit, nuitMin) * on * extinction(v)
   const tw = v.vivant ? 0.55 + 0.45 * Math.sin(v.t * 2.6 + i * 1.9) : 0.85
   const col = (pal ?? LAMPIONS)[i % 3]!
   const ba = g.globalAlpha
@@ -380,7 +396,7 @@ function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { ampoule
     const by = top + 46
     g.fillStyle = c('#20150d')
     cercle(g, bx, by, 3.6)
-    if (opts.ampoules[i]) lampion(g, v, bx, by, 2.5, 0, ['#F6D98A'], 1, 1)
+    if (opts.ampoules[i]) lampion(g, v, bx, by, 2.5, 0, ['#F6D98A'], 1, 0.55)
     else { g.fillStyle = c('#F2E8D5', 0.16); cercle(g, bx, by, 2) }
   }
   const sx = 262, sy = top + 54, sw = 76, sh = 46
@@ -405,7 +421,7 @@ function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { ampoule
   g.fillStyle = c('#2e2014'); g.fillRect(x0 - 4, s0 - 18, x1 - x0 + 8, 3)
   g.fillStyle = c('#3a2819')
   for (let k = 0; k < 3; k++) g.fillRect(x0 - 16 + k * 4, s0 - 6 * (k + 1), 14, 6)
-  for (let i = 0; i <= 9; i++) lampion(g, v, x0 - 10 + i * wd, top + 9, 2, i, null, clamp(opts.lampes * 10 - i, 0, 1), 1)
+  for (let i = 0; i <= 9; i++) lampion(g, v, x0 - 10 + i * wd, top + 9, 2, i, null, clamp(opts.lampes * 10 - i, 0, 1))
   if (!opts.sansBoni) bonimenteur(g, v, 240, s0 - 18)
   for (let j = 0; j < opts.file; j++) {
     const bx = 228 + (j % 6) * 12 + (j >= 6 ? 6 : 0)
@@ -616,7 +632,10 @@ function baraqueChantier(g: CanvasRenderingContext2D, v: VueMonde, k: number, op
   const toit = lisse(0.55, 0.7, k)
   const rangs = Math.floor(murs * 9 + 1e-6)
   const hMur = ((bas - lim) * rangs) / 9
-  if (hMur > 0) { g.save(); g.beginPath(); g.rect(x0 - 40, bas - hMur, x1 - x0 + 60, hMur); g.clip(); baraqueFacade(g, v, { ampoules: opts.ampoules, file: k < 0.74 ? 0 : Math.round(opts.file * lisse(0.74, 0.95, k)), lampes: lisse(0.76, 0.9, k), sansBoni: k < 0.74 }); g.restore() }
+  // Les murs comme le toit qui se pose : la façade du chantier, ses lampions allumés à la fin
+  // seulement, ses ampoules passé 0,8 (maquette : `D.lampes`, `D.ampoules`, posés pour les deux).
+  const facade = { ampoules: k < 0.8 ? [] : opts.ampoules, file: k < 0.74 ? 0 : Math.round(opts.file * lisse(0.74, 0.95, k)), lampes: lisse(0.76, 0.9, k), sansBoni: k < 0.74 }
+  if (hMur > 0) { g.save(); g.beginPath(); g.rect(x0 - 40, bas - hMur, x1 - x0 + 60, hMur); g.clip(); baraqueFacade(g, v, facade); g.restore() }
   if (murs > 0 && murs < 1) {
     const u = murs * 9 - rangs
     const yy = bas - hMur - 9
@@ -628,8 +647,8 @@ function baraqueChantier(g: CanvasRenderingContext2D, v: VueMonde, k: number, op
   }
   if (toit > 0) {
     if (toit >= 0.7 && v.age(`chantier:1896:toit`) === 99) { v.marquer('chantier:1896:toit'); v.fumee(B_CX * v.k, v.ecranY(top + 34, 1), 8, 150) }
-    g.save(); g.translate(0, posee(toit) * 150); g.beginPath(); g.rect(-8, -80, v.W + 16, lim + 80); g.clip()
-    baraqueFacade(g, v, { ampoules: opts.ampoules, file: opts.file, lampes: 1, sansBoni: false })
+    g.save(); g.translate(0, posee(toit) * 150); g.beginPath(); g.rect(-8, -80, LARGEUR + 16, lim + 80); g.clip()
+    baraqueFacade(g, v, facade)
     g.restore()
   }
   echafaudage(g, x0 - 6, x1 + 6, top - 8, s0, lisse(0, 0.14, k) * (1 - lisse(0.86, 0.98, k)))
@@ -779,7 +798,7 @@ function carrousel(g: CanvasRenderingContext2D, v: VueMonde, cx: number, base: n
   g.beginPath(); g.moveTo(cx, top); g.lineTo(cx, top - 12); g.stroke()
   const w = v.vivant ? Math.sin(v.t * 5 + 1) * 2 : 0
   g.fillStyle = c('#E6B94A'); poly(g, [[cx, top - 12], [cx + 11, top - 9 + w], [cx, top - 6]]); g.fill()
-  for (let i = 0; i < 8; i++) { const b = a + (i * TAU) / 8; if (Math.sin(b) < -0.2) continue; lampion(g, v, cx + Math.cos(b) * (R + 10), eave + Math.sin(b) * 6 + 3, 2, i, null, enAllume, 1) }
+  for (let i = 0; i < 8; i++) { const b = a + (i * TAU) / 8; if (Math.sin(b) < -0.2) continue; lampion(g, v, cx + Math.cos(b) * (R + 10), eave + Math.sin(b) * 6 + 3, 2, i, null, enAllume) }
 }
 
 function vueFondante(g: CanvasRenderingContext2D, v: VueMonde, m: number, cx: number, cy: number): void {
@@ -808,7 +827,7 @@ function lanterneMagique(g: CanvasRenderingContext2D, v: VueMonde): void {
   g.strokeStyle = c('#2b1c14'); g.lineWidth = 2.5
   g.beginPath(); g.moveTo(sx - 3, sy - 6); g.lineTo(sx - 3, sy + sh + 24); g.moveTo(sx + sw + 3, sy - 6); g.lineTo(sx + sw + 3, sy + sh + 24); g.stroke()
   ombre(g, sx - 2, sy + sh + 25, 6, 2); ombre(g, sx + sw + 4, sy + sh + 25, 6, 2)
-  const f = v.vivant ? 0.82 + 0.18 * Math.sin(v.t * 9) * Math.sin(v.t * 3.1) : 0.9
+  const f = (v.vivant ? 0.82 + 0.18 * Math.sin(v.t * 9) * Math.sin(v.t * 3.1) : 0.9) * extinction(v)
   g.fillStyle = c('#DCCFB4'); g.fillRect(sx, sy, sw, sh)
   const cyc = v.vivant ? v.t / 5 : 0.3
   const k = cyc % 1
@@ -924,19 +943,21 @@ export function dessinerMoyen(v: VueMonde): void {
   const k98 = avancement(chantier(1898, v.ouverte, v.t, v.vivant))
   const k99 = avancement(chantier(1899, v.ouverte, v.t, v.vivant))
   const k1 = v.adieu < 0 ? 0 : lisse(0.3, 2.6, v.adieu)
-  const extinction = v.adieu < 0 ? 1 : 1 - lisse(0, 1.6, v.adieu)
   if (v.adieu > 0.8 && v.age('adieu:fumee1') === 99) { v.marquer('adieu:fumee1'); v.fumee(300 * v.k, v.ecranY(200, 1), 10, 120) }
   if (v.adieu > 1.8 && v.age('adieu:fumee2') === 99) { v.marquer('adieu:fumee2'); v.fumee(300 * v.k, v.ecranY(214, 1), 12, 150); v.fumee(78 * v.k, v.ecranY(330, 1), 6, 60) }
   // L'angle du manège : la vitesse 5 de la maquette, retombée vers 1 au taux 0,5 par seconde, intégrée (idée 2).
+  // Un toucher d'avant que le manège soit monté est perdu (maquette : `D.carrV = 0` tant que `k98` < 0,93).
   const ageCarrousel = v.age('carrousel')
-  const angleManege = ageCarrousel < 99 ? 0.8 * v.t + 6.4 * (1 - Math.exp(-0.5 * ageCarrousel)) : 0.8 * v.t
+  const manegePret = v.ouverte.annee === 1898 && v.ouverte.t0 >= 0 ? v.ouverte.t0 + MANEGE_PRET : -Infinity
+  const emballe = ageCarrousel < 99 && v.t - ageCarrousel >= manegePret
+  const angleManege = emballe ? 0.8 * v.t + 6.4 * (1 - Math.exp(-0.5 * ageCarrousel)) : 0.8 * v.t
 
   g.save(); g.translate(0, v.ecranY(0, 1)); g.scale(v.k, 1)
   if (k96 > 0.66) {
     const f = lisse(0.66, 0.8, k96)
     g.save(); g.globalAlpha = 1 - k1
     g.beginPath(); g.rect(300 - 320 * f, 0, 320 * f + 12, 160); g.clip()
-    guirlande(g, v, 300, 38, -8, 82, 26 + k1 * 140, 4 + Math.round(r * 6), 'fanion', 1, extinction)
+    guirlande(g, v, 300, 38, -8, 82, 26 + k1 * 140, 4 + Math.round(r * 6), 'fanion', 1)
     g.restore()
   }
   if (k96 < 1) seancePleinAir(g, v, k95, k96, qte.file)

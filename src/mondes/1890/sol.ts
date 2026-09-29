@@ -16,7 +16,9 @@ const COULEURS_CONFETTIS: readonly string[] = [c('#A8452F'), c('#E6B94A'), c('#F
  * jamais été lue (`v.age('date:i')`, marqué par `reagir`).
  */
 function affichette(g: CanvasRenderingContext2D, v: VueMonde, d: DateVraie, i: number, caseAnnee: CaseVue | undefined): void {
-  const age = caseAnnee ? v.t - caseAnnee.pop : 99
+  // `v.t` avance par images entières et retarde d'au plus 1/16 s sur l'horloge qui date le `pop` :
+  // sans la borne, une affichette neuve se montrerait en entier une image avant de se coller.
+  const age = caseAnnee ? Math.max(0, v.t - caseAnnee.pop) : 99
   let sc = 1
   if (v.vivant && age >= 0 && age < 1) sc = ease(Math.min(1, age / 0.5)) * (1 + Math.sin((age / 1) * Math.PI) * 0.25)
   if (sc <= 0.01) return
