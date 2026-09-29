@@ -1,0 +1,50 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.bloc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.entree {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  min-height: var(--cible-tactile);
+  padding: var(--espace-2) var(--espace-4);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
+  cursor: pointer;
+}
+
+.entree:hover {
+  background: var(--couleur-surface-2);
+}
+
+.interrupteur {
+  flex: none;
+  width: var(--espace-5);
+  height: var(--espace-5);
+  accent-color: var(--couleur-accent);
+}
+
+.texte {
+  display: flex;
+  flex-direction: column;
+}
+
+.titre {
+  font-weight: var(--graisse-moyenne);
+}
+
+.aide {
+  font-size: var(--taille-s);
+  color: var(--couleur-texte-doux);
+}
+
+.erreur {
+  margin: 0;
+  color: var(--couleur-danger);
+}

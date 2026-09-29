@@ -42815,7 +42815,11 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Mon année en cours — avant elle, tout est « ouverte » ; après, « verrouillee »"
+                      "description": "Mon année en cours — avant elle, tout est « ouverte » ; après, « verrouillee ». Avec `rattrape_la_source`, c’est le plus grand de mon année propre et de celle du Voyage suivi"
+                    },
+                    "rattrape_la_source": {
+                      "type": "boolean",
+                      "description": "Vrai si j’ai ouvert toutes les années jusqu’à celle du Voyage suivi (`PATCH /me/voyage/reglages`) — toujours faux pour le compte IA"
                     },
                     "annees": {
                       "type": "array",
@@ -43122,6 +43126,7 @@
                     "configure",
                     "depart",
                     "annee_en_cours",
+                    "rattrape_la_source",
                     "annees",
                     "ticket_a_montrer",
                     "tampons",
@@ -43138,6 +43143,7 @@
                       "configure": true,
                       "depart": 1895,
                       "annee_en_cours": 1941,
+                      "rattrape_la_source": false,
                       "annees": [
                         {
                           "annee": 1895,
@@ -43209,6 +43215,105 @@
             }
           },
           "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/reglages": {
+      "patch": {
+        "summary": "Rattraper le Voyage que je suis",
+        "tags": [
+          "voyage"
+        ],
+        "description": "`rattrape_la_source: true` ouvre pour moi toutes les années jusqu’à celle du Voyage suivi (`source.annee_en_cours`) : mon `annee_en_cours` devient le plus grand de mon année propre et de la sienne, sans jamais la dépasser — une année qu’il n’a pas faite reste fermée. Fiches, salles et contenu déjà écrit s’y lisent, et la carte les compte comme franchies.\n\nRien d’autre ne bouge : mes films vus, ma profondeur et mes récompenses se lisent toujours sur mon journal (une année rattrapée n’affiche comme vu que ce que j’ai vu), mes tickets restent les miens (celui d’une année déjà ouverte ne s’affiche plus tant que le réglage est posé), le passeport ne tamponne toujours que les décennies que j’ai réellement bouclées, et aucune génération du chroniqueur n’est déclenchée.\n\n`false` rend ma progression propre, que le réglage n’a jamais effacée. Réservé à mon propre compte ; `409` pour le compte IA du Voyage, ou s’il n’y a aucun Voyage à suivre. Invalide le cache de `GET /me/voyage`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rattrape_la_source": {
+                    "type": "boolean",
+                    "description": "Ouvrir toutes les années jusqu’à celle du Voyage suivi — `false` rend ma progression propre"
+                  }
+                },
+                "required": [
+                  "rattrape_la_source"
+                ],
+                "additionalProperties": false,
+                "description": "Le réglage du Voyage suivi"
+              }
+            }
+          },
+          "description": "Le réglage du Voyage suivi"
+        },
+        "responses": {
+          "200": {
+            "description": "Le réglage est posé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rattrape_la_source": {
+                      "type": "boolean",
+                      "description": "Le réglage, tel qu’il est désormais"
+                    },
+                    "annee_en_cours": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Mon année en cours après le changement (voir `GET /me/voyage`)"
+                    }
+                  },
+                  "required": [
+                    "rattrape_la_source",
+                    "annee_en_cours"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Le réglage est posé"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "rattrape_la_source": true,
+                      "annee_en_cours": 1958
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {

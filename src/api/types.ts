@@ -8572,8 +8572,10 @@ export interface paths {
               configure: boolean;
               /** @enum {number} */
               depart: 1895;
-              /** @description Mon année en cours — avant elle, tout est « ouverte » ; après, « verrouillee » */
+              /** @description Mon année en cours — avant elle, tout est « ouverte » ; après, « verrouillee ». Avec `rattrape_la_source`, c’est le plus grand de mon année propre et de celle du Voyage suivi */
               annee_en_cours: number;
+              /** @description Vrai si j’ai ouvert toutes les années jusqu’à celle du Voyage suivi (`PATCH /me/voyage/reglages`) — toujours faux pour le compte IA */
+              rattrape_la_source: boolean;
               /** @description De 1895 à l’année courante */
               annees: ({
                   annee: number;
@@ -8646,6 +8648,58 @@ export interface paths {
         };
         /** @description Default Response */
         401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/reglages": {
+    /**
+     * Rattraper le Voyage que je suis
+     * @description `rattrape_la_source: true` ouvre pour moi toutes les années jusqu’à celle du Voyage suivi (`source.annee_en_cours`) : mon `annee_en_cours` devient le plus grand de mon année propre et de la sienne, sans jamais la dépasser — une année qu’il n’a pas faite reste fermée. Fiches, salles et contenu déjà écrit s’y lisent, et la carte les compte comme franchies.
+     *
+     * Rien d’autre ne bouge : mes films vus, ma profondeur et mes récompenses se lisent toujours sur mon journal (une année rattrapée n’affiche comme vu que ce que j’ai vu), mes tickets restent les miens (celui d’une année déjà ouverte ne s’affiche plus tant que le réglage est posé), le passeport ne tamponne toujours que les décennies que j’ai réellement bouclées, et aucune génération du chroniqueur n’est déclenchée.
+     *
+     * `false` rend ma progression propre, que le réglage n’a jamais effacée. Réservé à mon propre compte ; `409` pour le compte IA du Voyage, ou s’il n’y a aucun Voyage à suivre. Invalide le cache de `GET /me/voyage`.
+     */
+    patch: {
+      /** @description Le réglage du Voyage suivi */
+      requestBody: {
+        content: {
+          "application/json": {
+            /** @description Ouvrir toutes les années jusqu’à celle du Voyage suivi — `false` rend ma progression propre */
+            rattrape_la_source: boolean;
+          };
+        };
+      };
+      responses: {
+        /** @description Le réglage est posé */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Le réglage, tel qu’il est désormais */
+              rattrape_la_source: boolean;
+              /** @description Mon année en cours après le changement (voir `GET /me/voyage`) */
+              annee_en_cours: number;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };

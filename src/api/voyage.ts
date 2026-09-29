@@ -15,6 +15,8 @@ export type Recompense = NonNullable<AnneeCarte['recompense']>
 export type SeancePrise = NonNullable<Voyage['seance_prise']>
 export type Tickets = Json<paths['/me/voyage/tickets']['get']['responses'][200]>
 export type Ticket = Tickets['tickets'][number]
+/** « Rattraper le Voyage suivi » : ouvre toutes les années jusqu'à celle de la source, jamais au-delà. Réversible. */
+export type Reglages = Json<paths['/me/voyage/reglages']['patch']['responses'][200]>
 export type TicketUtilise = Json<paths['/me/voyage/tickets/{annee}/utiliser']['post']['responses'][200]>
 
 /** Les quatre formes du `200` et celle du `202` (« en préparation »), distinguées par `statut`. */
@@ -35,6 +37,9 @@ export const lireAnnee = (annee: number, signal?: AbortSignal) =>
   api.get<FicheAnnee>(`/me/voyage/annees/${annee}`, undefined, signal)
 
 export const utiliserTicket = (annee: number) => api.post<TicketUtilise>(`/me/voyage/tickets/${annee}/utiliser`)
+
+export const regler = (rattrapeLaSource: boolean) =>
+  api.patch<Reglages>('/me/voyage/reglages', { rattrape_la_source: rattrapeLaSource })
 
 /** `{ configure: false }` n'a pas de `statut` : la seule façon sûre de reconnaître une fiche prête. */
 export const estPrete = (f: FicheAnnee | undefined): f is FichePrete => !!f && 'statut' in f && f.statut === 'prete'

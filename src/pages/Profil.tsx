@@ -9,6 +9,7 @@ import { lireStats } from '../api/stats'
 import { bilanSuivi, type BilanSuivi } from '../profil/bilan'
 import { BilanCarte, GraphiquesCarte } from '../profil/Cartes'
 import Doublons from '../profil/Doublons'
+import Rattrapage from '../profil/Rattrapage'
 import type { EtatFilmographie } from '../suivis/liste'
 import type { FilmSuivi } from '../suivis/prochain'
 import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
@@ -103,6 +104,8 @@ export default function Profil() {
           }}
         />
       </label>
+
+      <Rattrapage />
 
       <Doublons />
 
