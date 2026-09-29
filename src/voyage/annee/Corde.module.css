@@ -1,0 +1,101 @@
+/* Les billets suspendus (maquette 1890 : `.corde`, `.billet`, lignes 118 à 131). */
+.corde {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 22px 10px 6px;
+  list-style: none;
+}
+
+.corde::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 10px;
+  left: 10px;
+  height: 26px;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--m-or) 55%, transparent);
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+}
+
+.billet {
+  position: relative;
+  flex: 0 1 104px;
+  min-width: 0;
+  padding: 14px 8px 10px;
+  border-radius: 3px;
+  background: var(--m-papier2);
+  color: var(--m-encre);
+  text-align: center;
+  transform-origin: 50% -14px;
+  -webkit-mask:
+    radial-gradient(circle 6px at 0 58%, transparent 97%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 6px at 100% 58%, transparent 97%, var(--m-encre)) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 6px at 0 58%, transparent 97%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 6px at 100% 58%, transparent 97%, var(--m-encre)) right / 51% 100% no-repeat;
+  animation: balance 3.4s ease-in-out infinite alternate;
+}
+
+.billet:nth-child(2) {
+  animation-duration: 3.9s;
+  animation-delay: -1.1s;
+}
+
+.billet:nth-child(3) {
+  animation-duration: 3.1s;
+  animation-delay: -2s;
+}
+
+/* La pince qui tient le billet à la corde. */
+.billet::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 8px;
+  height: 13px;
+  margin-left: -4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--m-bois), var(--m-or3));
+}
+
+.num {
+  display: block;
+  font: 10px var(--m-f-capitales);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-bois);
+}
+
+.billet b {
+  display: block;
+  font: 400 30px/1.05 var(--m-f-affiche);
+}
+
+.billet small {
+  font-size: 16px;
+}
+
+.libelle {
+  display: block;
+  font: 13px/1.15 var(--m-f-texte);
+}
+
+@keyframes balance {
+  from {
+    transform: rotate(-2.6deg);
+  }
+  to {
+    transform: rotate(2.6deg);
+  }
+}
+
+/* Au calme, la corde est immobile. */
+@media (prefers-reduced-motion: reduce) {
+  .billet {
+    animation: none;
+  }
+}

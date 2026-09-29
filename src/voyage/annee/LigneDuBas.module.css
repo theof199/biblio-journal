@@ -1,0 +1,167 @@
+/* Le bas de la fiche prête : le ticket et « Utiliser », le grand billet (maquette 1890 : lignes 235 à
+   247), le jury (lignes 201 à 203). */
+.ticket {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 26px 14px 28px;
+  text-align: center;
+  font: italic 17px var(--m-f-texte);
+  color: var(--m-papier);
+}
+
+.ticket p {
+  margin: 0;
+}
+
+/* « Utiliser » : un geste du joueur, le seul corail de la ligne. */
+.utiliser {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--corail);
+  color: var(--m-encre);
+  font: 700 16px var(--m-f-corps);
+  cursor: pointer;
+}
+
+.utiliser:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.erreur {
+  font: 15px/1.4 var(--m-f-corps);
+  font-style: normal;
+  color: var(--m-papier);
+}
+
+.grandBillet {
+  position: relative;
+  display: grid;
+  width: calc(100% - 28px);
+  min-height: 118px;
+  margin: 26px 14px 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--m-encre);
+  text-align: left;
+  perspective: 800px;
+  cursor: pointer;
+}
+
+.face {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: 1fr 74px;
+  border-radius: 4px;
+  background: var(--m-papier2);
+  box-shadow: 0 8px 18px var(--m-ombre);
+  transition: transform 0.7s;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.dos {
+  display: block;
+  padding: 14px 16px;
+  font: italic 14px/1.4 var(--m-f-texte);
+  transform: rotateY(180deg);
+}
+
+.retourne .recto {
+  transform: rotateY(-180deg);
+}
+
+.retourne .dos {
+  transform: rotateY(0);
+}
+
+.corps {
+  padding: 12px 14px;
+  border-right: 2px dashed color-mix(in srgb, var(--m-encre2) 50%, transparent);
+}
+
+.corps small {
+  font: 12px var(--m-f-capitales);
+  letter-spacing: 0.2em;
+  color: var(--m-rouge);
+}
+
+.corps b {
+  display: block;
+  font: 400 28px/1.05 var(--m-f-affiche);
+}
+
+.corps span {
+  font: italic 14px var(--m-f-texte);
+}
+
+.talon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  font: 400 13px/1.1 var(--m-f-affiche);
+  color: var(--m-encre2);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.talon::after {
+  content: '';
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: var(--m-tel);
+  box-shadow: inset 0 1px 3px var(--m-ombre);
+}
+
+.jury {
+  position: relative;
+  margin: 26px 14px 28px;
+  padding: 14px 16px 14px 64px;
+  border-radius: 2px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  font: 15px/1.4 var(--m-f-texte);
+  box-shadow: 0 8px 18px var(--m-ombre);
+}
+
+.jury b {
+  display: block;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  color: var(--m-rouge);
+}
+
+.cachet {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--m-rouge), var(--m-velours) 70%);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--m-velours) 50%, transparent),
+    0 2px 5px var(--m-ombre);
+  color: var(--m-or2);
+  font: 400 13px var(--m-f-affiche);
+}
+
+/* Au calme, le billet se retourne d'un coup. */
+@media (prefers-reduced-motion: reduce) {
+  .face {
+    transition: none;
+  }
+}

@@ -1,0 +1,103 @@
+/* Le fronton d'une fiche d'année (maquette 1890 : `.fronton`, lignes 97 à 107). Les couleurs et les
+   polices viennent des jetons du monde, posés sur la racine de la page. */
+.fronton {
+  position: relative;
+  padding: 6px 16px 4px;
+  text-align: center;
+}
+
+.annonce {
+  margin: 0;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.28em;
+  color: var(--m-or);
+}
+
+.annonce::before,
+.annonce::after {
+  content: ' ✦ ';
+  color: var(--m-pale);
+}
+
+.millesime {
+  margin: 2px 0 0;
+  font: 400 84px/0.92 var(--m-f-affiche);
+  letter-spacing: 0.02em;
+}
+
+/* L'année en cours : la maquette la peint en corail ; le corail ne signale que ce que le joueur
+   déclenche, jamais un titre (spec du Journal web, « Le rendu et les principes ») : l'or du monde. */
+.encours {
+  color: var(--m-or2);
+  text-shadow:
+    3px 3px 0 var(--m-velours),
+    5px 5px 0 var(--m-ombre);
+}
+
+.bouclee {
+  color: var(--m-papier2);
+  text-shadow:
+    3px 3px 0 var(--m-velours),
+    5px 5px 0 var(--m-ombre);
+}
+
+/* Fermée : le millésime tracé, vide. */
+.fermee {
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--m-papier) 60%, transparent);
+}
+
+/* En montage : le millésime qui se peint, de gauche à droite, et revient. */
+.attente {
+  background: linear-gradient(90deg, var(--m-papier2) 50%, transparent 51%);
+  background-size: 200% 100%;
+  background-position: 60% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 1.2px color-mix(in srgb, var(--m-papier) 55%, transparent);
+  animation: peint 16s ease-in-out infinite alternate;
+}
+
+@keyframes peint {
+  from {
+    background-position: 82% 0;
+  }
+  to {
+    background-position: 30% 0;
+  }
+}
+
+.monde {
+  margin: 4px 0 0;
+  font: italic 17px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.fleuron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 24px 0;
+  color: var(--m-or);
+  font-size: 15px;
+}
+
+.fleuron::before,
+.fleuron::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--m-or));
+}
+
+.fleuron::after {
+  background: linear-gradient(90deg, var(--m-or), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attente {
+    animation: none;
+  }
+}

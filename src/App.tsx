@@ -8,7 +8,7 @@ import Formulaire from './pages/Formulaire'
 import Fiche from './pages/Fiche'
 import MesFilms from './pages/MesFilms'
 import Carte from './pages/Carte'
-import AnneeProvisoire from './pages/AnneeProvisoire'
+import VoyageAnnee from './pages/VoyageAnnee'
 import Suivis from './pages/Suivis'
 import PageRealisateur from './pages/PageRealisateur'
 import PageSaga from './pages/PageSaga'
@@ -32,7 +32,7 @@ export default function App() {
           <Route path="journal/:id" element={<Fiche />} />
           <Route path="journal/:id/corriger" element={<Formulaire />} />
           <Route path="voyage" element={<Carte />} />
-          <Route path="voyage/:annee" element={<AnneeProvisoire />} />
+          <Route path="voyage/:annee" element={<VoyageAnnee />} />
           <Route path="suivis" element={<Suivis />} />
           <Route path="suivis/realisateurs/:tmdbId" element={<PageRealisateur />} />
           <Route path="suivis/sagas/:tmdbId" element={<PageSaga />} />

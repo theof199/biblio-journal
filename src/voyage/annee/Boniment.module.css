@@ -1,0 +1,100 @@
+/* Le boniment d'ouverture et les échos (maquette 1890 : `.papier`, lignes 111 à 113 et 133 à 145). */
+.papier {
+  position: relative;
+  margin: 14px 14px 0;
+  padding: 18px 18px 16px;
+  border-radius: 2px;
+  background-color: var(--m-papier);
+  background-image: radial-gradient(var(--m-grain) 1px, transparent 1.6px), radial-gradient(var(--m-grain) 1px, transparent 1.4px);
+  background-position:
+    0 0,
+    3px 5px;
+  background-size:
+    7px 7px,
+    11px 11px;
+  color: var(--m-encre);
+  box-shadow: 0 10px 24px var(--m-ombre);
+}
+
+.papier::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 3px double color-mix(in srgb, var(--m-encre2) 45%, transparent);
+  pointer-events: none;
+}
+
+.tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-encre2);
+}
+
+.ouverture {
+  margin: 0 0 10px;
+  font: 16px/1.5 var(--m-f-texte);
+}
+
+.ouverture::first-letter {
+  float: left;
+  margin: 4px 7px 0 0;
+  font: 400 50px/0.8 var(--m-f-affiche);
+  color: var(--m-rouge);
+}
+
+.liens {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+}
+
+/* Le lien de la maquette (`.lien`), porté à la cible tactile. */
+.lien {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  color: var(--m-rouge);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.echos {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 3px double color-mix(in srgb, var(--m-encre2) 50%, transparent);
+}
+
+.echos h2 {
+  margin: 0 0 6px;
+  font: 400 15px var(--m-f-capitales);
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+
+.echos ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.echos li {
+  padding: 6px 0;
+  border-top: 1px solid color-mix(in srgb, var(--m-encre2) 22%, transparent);
+  font: 14.5px/1.4 var(--m-f-texte);
+}
+
+.echos li::before {
+  content: '— ';
+  color: var(--m-rouge);
+}

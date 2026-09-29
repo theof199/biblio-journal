@@ -1,0 +1,51 @@
+import type { Progression } from '../../api/voyage'
+import type { Monde } from '../../mondes/types'
+import styles from './Programme.module.css'
+
+/** Des trous de poinçon : `total` en tout, les `perces` premiers percés. */
+function Trous({ total, perces }: { total: number; perces: number }) {
+  return (
+    <span className={styles.trous} role="img" aria-label={`${Math.min(perces, total)} percés sur ${total}`}>
+      {Array.from({ length: total }, (_, i) => {
+        // Une seule valeur pour le trou peint et pour ce que le test lit.
+        const perce = i < perces
+        return <i key={i} className={perce ? styles.perce : undefined} data-perce={perce} />
+      })}
+    </span>
+  )
+}
+
+/**
+ * « Au programme ce soir » (maquette 1890 : `programme`, `.programme`, lignes 147 à 158), l'année en
+ * cours seulement : une ligne ☞ par pas qui reste (`prochainPas`). La ligne du Lion porte les trous
+ * des essentiels, celle de la Palme ses deux salles.
+ */
+export default function Programme({ monde, etapes, progression }: { monde: Monde; etapes: readonly string[]; progression: Progression }) {
+  const m = monde.pages.mots.programme
+  if (etapes.length === 0) return null
+  return (
+    <section className={styles.programme} aria-label={m.titre}>
+      <h2>
+        <small>{m.sur}</small>
+        {m.titre}
+      </h2>
+      <ol>
+        {etapes.map((e) => (
+          <li key={e}>
+            <span className={styles.main} aria-hidden="true">
+              ☞
+            </span>
+            <span>{e}</span>
+            {e.startsWith('Lion') ? (
+              <Trous total={progression.essentiels_total} perces={progression.essentiels_vus} />
+            ) : e.startsWith('Palme') ? (
+              <Trous total={2} perces={progression.salles_completes} />
+            ) : (
+              <span />
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}

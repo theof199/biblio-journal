@@ -1,0 +1,6 @@
+/* La médaille d'une récompense (maquette 1890 : `.embleme`). */
+.embleme {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+}

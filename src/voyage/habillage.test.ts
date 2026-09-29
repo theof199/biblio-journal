@@ -36,7 +36,19 @@ describe('l’habillage des pages du Voyage', () => {
     // Sans ce plancher, un glob qui ne trouverait plus rien rendrait les gardes suivantes muettes.
     // Chaque tâche qui ajoute une feuille l'ajoute ici.
     expect(Object.keys(FEUILLES)).toEqual(
-      expect.arrayContaining(['/src/voyage/Toile.module.css', '/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css']),
+      expect.arrayContaining([
+        '/src/voyage/Toile.module.css',
+        '/src/voyage/Feuille.module.css',
+        '/src/voyage/Feuillet.module.css',
+        '/src/pages/VoyageAnnee.module.css',
+        '/src/voyage/annee/AnneeFermee.module.css',
+        '/src/voyage/annee/Boniment.module.css',
+        '/src/voyage/annee/Corde.module.css',
+        '/src/voyage/annee/Embleme.module.css',
+        '/src/voyage/annee/Fronton.module.css',
+        '/src/voyage/annee/LigneDuBas.module.css',
+        '/src/voyage/annee/Programme.module.css',
+      ]),
     )
   })
 

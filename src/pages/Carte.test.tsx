@@ -91,7 +91,7 @@ describe('la carte', () => {
   // Mutations (coque) : le lien d'une année vers `/annee/…` (la route n'existe plus : la coque
   // renvoie ailleurs) ; « Retour à la carte » vers `/` (l'Accueil de la coque, pas la carte).
   it('chaque année est un lien vers sa fiche, pour qui ne voit pas le canvas, et la fiche ramène à la carte', async () => {
-    monter()
+    monter(VOYAGE, { 'GET /api/me/voyage/annees/1897': () => json(fichePrete({ annee: 1897 })) })
     fireEvent.click(await screen.findByRole('link', { name: '1897, Ours' }))
     expect(await screen.findByRole('heading', { name: '1897' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
@@ -102,7 +102,7 @@ describe('la carte', () => {
   // dans `App.tsx` au lieu de dedans (la barre disparaîtrait) ; la fiche en `annee/:annee` sous
   // `<Coque />` (la barre resterait, l'onglet Voyage ne serait plus marqué).
   it('garde la barre d’onglets, l’onglet Voyage marqué, sur la carte et sur la fiche d’une année', async () => {
-    const { rappels, etats } = monter()
+    const { rappels, etats } = monter(VOYAGE, { 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896 })) })
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
     const voyage = () => within(screen.getByRole('navigation', { name: 'Onglets' })).getByRole('link', { name: 'Voyage' })
     expect(voyage()).toHaveAttribute('aria-current', 'page')
@@ -112,7 +112,7 @@ describe('la carte', () => {
   })
 
   it('toucher une case ouvre la fiche de son année', async () => {
-    const { rappels, etats } = monter()
+    const { rappels, etats } = monter(VOYAGE, { 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896 })) })
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
     act(() => rappels().toucherAnnee(1896))
     expect(await screen.findByRole('heading', { name: '1896' })).toBeInTheDocument()

@@ -1,0 +1,67 @@
+/* « Au programme ce soir » (maquette 1890 : `.programme`, lignes 147 à 158). */
+.programme {
+  position: relative;
+  margin: 14px 14px 0;
+  padding: 14px 16px 12px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 40%, transparent);
+  background: color-mix(in srgb, var(--m-velours) 22%, var(--m-tel));
+  box-shadow:
+    inset 0 0 0 4px var(--m-tel),
+    inset 0 0 0 5px color-mix(in srgb, var(--m-or) 25%, transparent);
+  color: var(--m-papier);
+}
+
+.programme h2 {
+  margin: 0 0 8px;
+  text-align: center;
+  font: 400 19px var(--m-f-affiche);
+  color: var(--m-or2);
+}
+
+.programme h2 small {
+  display: block;
+  font: 12px var(--m-f-capitales);
+  letter-spacing: 0.2em;
+  color: var(--m-pale);
+}
+
+.programme ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.programme li {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font: 15px/1.3 var(--m-f-texte);
+}
+
+.main {
+  font-size: 18px;
+  color: var(--m-or);
+}
+
+.trous {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.trous i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid color-mix(in srgb, var(--m-papier) 40%, transparent);
+  border-radius: 50%;
+}
+
+/* Un trou percé : l'avancée du joueur, comme la jauge de la carte. */
+.trous i.perce {
+  border-color: var(--corail);
+  background: var(--corail);
+}
