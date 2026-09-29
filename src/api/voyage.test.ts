@@ -116,4 +116,35 @@ describe('le client de la fiche d’une année', () => {
     await lireCarton(15)
     expect(parti()).toEqual({ url: '/api/reference/chroniques/films/15', methode: 'GET', corps: undefined })
   })
+
+  // Les jumeaux des deux tests d'en haut : le test des délais ne lit pas les chemins, celui des
+  // chemins ne lit pas les corps. Mutations : `…/plus` pour le contexte, `…/pistes` pour le
+  // générique, un corps réécrit pour la salle nouvelle ou pour le remplacement.
+  it('lit le contexte et le générique par leurs chemins, et envoie tels quels les corps d’une salle et d’un remplacement', async () => {
+    await lireContexte(1897, 's1')
+    await lireGenerique(1897)
+    await ouvrirUneSalle(1897, { demande: 'Les fantômes', piste: 'Les fantômes' })
+    await remplacerDansLaSeance('x', { morceau: 'court', film_id: 'f', bobine_tmdb_id: 3 })
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({
+      url,
+      corps: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
+    }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/annees/1897/salles/s1/contexte', corps: undefined },
+      { url: '/api/me/voyage/annees/1897/generique', corps: undefined },
+      { url: '/api/me/voyage/annees/1897/salles', corps: { demande: 'Les fantômes', piste: 'Les fantômes' } },
+      { url: '/api/me/voyage/seances/x/remplacer', corps: { morceau: 'court', film_id: 'f', bobine_tmdb_id: 3 } },
+    ])
+  })
+
+  // Mutation : le signal de l'appelant perdu en route : quitter la fiche n'annulerait plus la lecture.
+  it('annule la lecture du carton avec l’appelant', async () => {
+    const appelant = new AbortController()
+    appelant.abort()
+    vi.mocked(fetch).mockImplementation(async (_url, init) => {
+      if (init?.signal?.aborted) throw new DOMException('annulée', 'AbortError')
+      return new Response('{}', { status: 200 })
+    })
+    await expect(lireCarton(15, appelant.signal)).rejects.toThrow()
+  })
 })
