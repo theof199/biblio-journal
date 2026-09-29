@@ -168,6 +168,15 @@ describe('appliquerFiltres — tri', () => {
       ['c', 'a', 'b'],
     )
   })
+
+  it('note_desc : deux films sans note restent rangés par date, récents d’abord', () => {
+    // Servis anciens d'abord : un comparateur qui rendrait 0 entre deux films sans note les
+    // laisserait dans cet ordre d'arrivée.
+    const sansNoteAncien = film({ id: 'd', finished_at: '2026-01-15', rating: null })
+    expect(
+      appliquerFiltres([sansNoteAncien, milieu, recent], { ...FILTRES_INITIAUX, tri: 'note_desc' }).map((i) => i.entry.id),
+    ).toEqual(['c', 'b', 'd'])
+  })
 })
 
 describe('basculerOrdreDate', () => {
@@ -279,6 +288,11 @@ describe('compteEnTete', () => {
 
   it('accorde au pluriel au-delà, sans année', () => {
     expect(compteEnTete(87, null)).toBe('87 films')
+  })
+
+  // La borne elle-même : `total > 2` écrirait « 2 film ».
+  it('accorde au pluriel dès deux films', () => {
+    expect(compteEnTete(2, null)).toBe('2 films')
   })
 
   it('ajoute l’année quand elle est connue', () => {

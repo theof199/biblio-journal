@@ -12,7 +12,10 @@ const MOIS = new Intl.DateTimeFormat('fr-FR', { month: 'long' })
  * Date(iso)`, qui la lirait à minuit UTC — un jour différent selon le fuseau du lecteur.
  */
 export function formatDateVisionnage(iso: string): string {
-  const [annee, mois, jour] = iso.split('-').map(Number) as [number, number, number]
+  const parties = iso.split('-').map(Number)
+  const annee = parties[0]!
+  const mois = parties[1]!
+  const jour = parties[2]!
   const date = new Date(annee, mois - 1, jour)
   const jourTexte = jour === 1 ? '1er' : String(jour)
   return `${jourTexte} ${MOIS.format(date)} ${annee}`

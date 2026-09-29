@@ -17,6 +17,8 @@ interface EtatCreation {
 }
 interface EtatCorrection {
   item: JournalItem
+  /** La page qui avait ouvert la fiche, rendue à la fiche au retour (`Fiche.tsx`). */
+  depuis?: string
 }
 
 /**
@@ -33,7 +35,8 @@ export default function Formulaire() {
   const client = useQueryClient()
 
   const correction = Boolean(id)
-  const item = correction ? (location.state as EtatCorrection | null)?.item : undefined
+  const etatCorrection = correction ? (location.state as EtatCorrection | null) : null
+  const item = etatCorrection?.item
   const candidat = !correction ? (location.state as EtatCreation | null)?.candidat : undefined
 
   const [brouillon, setBrouillon] = useState(() => brouillonInitial(item))
@@ -114,7 +117,11 @@ export default function Formulaire() {
   return (
     <div className={styles.page}>
       <div className={styles.entete}>
-        <BoutonRetour vers={correction ? `/journal/${id}` : '/recherche'} />
+        {/* La fiche vit de son état de navigation : sans l'entrée, elle répondrait « plus disponible ». */}
+        <BoutonRetour
+          vers={correction ? `/journal/${id}` : '/recherche'}
+          etat={correction ? { item, depuis: etatCorrection?.depuis } : undefined}
+        />
       </div>
 
       <div className={styles.film}>

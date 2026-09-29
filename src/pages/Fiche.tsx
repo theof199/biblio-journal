@@ -18,7 +18,11 @@ import type { JournalItem } from '../api/journal'
 export default function Fiche() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
-  const item = (location.state as { item?: JournalItem } | null)?.item
+  const etat = location.state as { item?: JournalItem; depuis?: string } | null
+  const item = etat?.item
+  // La page qui a ouvert la fiche (« Mes films » la pose) ; l'accueil sinon, par défaut. Transmise à
+  // « Corriger », pour que le retour du formulaire puis celui de la fiche y ramènent encore.
+  const depuis = etat?.depuis ?? '/'
 
   const reactions = useQuery({ queryKey: cles.reactions, queryFn: ({ signal }) => lireReactions(signal) })
   const phrase = (cle: string) => reactions.data?.reactions.find((r) => r.cle === cle)?.phrase ?? cle
@@ -39,7 +43,7 @@ export default function Fiche() {
   return (
     <div className={styles.page}>
       <div className={styles.entete}>
-        <BoutonRetour vers="/" />
+        <BoutonRetour vers={depuis} />
       </div>
 
       <div className={styles.film}>
@@ -61,7 +65,7 @@ export default function Fiche() {
         </div>
       ) : null}
 
-      <Link to={`/journal/${id}/corriger`} state={{ item }} className={styles.bouton}>
+      <Link to={`/journal/${id}/corriger`} state={{ item, depuis }} className={styles.bouton}>
         Corriger
       </Link>
     </div>

@@ -25,10 +25,13 @@ import {
   libellePuceNote,
   libellePuceReaction,
   motsReactions,
-  type FiltresMesFilms,
 } from '../mesFilms/filtres'
+import { useFiltresMemorises } from '../mesFilms/useFiltresMemorises'
 import styles from './MesFilms.module.css'
 import type { JournalItem } from '../api/journal'
+
+/** Où la fiche d'un film ramène (`Fiche.tsx`, `depuis`) : ici, et non à l'accueil. */
+const CHEMIN_MES_FILMS = '/profil/mes-films'
 
 /** Même taille de page que l'accueil (`Accueil.tsx`) : les deux partagent la clé `cles.journal`. */
 const LIMITE = 20
@@ -48,7 +51,7 @@ type Panneau = 'note' | 'reaction' | null
  */
 export default function MesFilms() {
   const naviguer = useNavigate()
-  const [filtres, setFiltres] = useState<FiltresMesFilms>(FILTRES_INITIAUX)
+  const [filtres, setFiltres] = useFiltresMemorises()
   const [panneau, setPanneau] = useState<Panneau>(null)
 
   const journal = useInfiniteQuery({
@@ -62,19 +65,23 @@ export default function MesFilms() {
   const catalogue = reactions.data?.reactions ?? []
 
   const actifs = filtresActifs(filtres)
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = journal
+  const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = journal
 
   // Un filtre, un tri ou une recherche ne peut rien affirmer sur des pages pas encore chargées : le
-  // journal se charge alors en entier, jumeau de `chargerTout()` (`FilmsViewModel.kt`).
+  // journal se charge alors en entier, jumeau de `chargerTout()` (`FilmsViewModel.kt`). Une erreur
+  // arrête la boucle, comme sur Android : sans `isFetchNextPageError`, l'échec d'une page faisait
+  // retomber `isFetchingNextPage` à faux, l'effet se rejouait et redemandait la même page, sans
+  // fin. « Réessayer » relance à la main ; un succès efface l'erreur et la boucle reprend.
   useEffect(() => {
-    if (actifs && hasNextPage && !isFetchingNextPage) void fetchNextPage()
-  }, [actifs, hasNextPage, isFetchingNextPage, fetchNextPage])
+    if (actifs && hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage()
+  }, [actifs, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
 
   // Sans filtre, la pagination habituelle : la suite se charge quand la sentinelle entre dans
-  // l'écran (jumeau de `Accueil.tsx`).
+  // l'écran (jumeau de `Accueil.tsx`). Même arrêt sur erreur : l'observateur se recrée à chaque
+  // changement de ce rappel, et un observateur neuf signale aussitôt une sentinelle déjà visible.
   const chargerLaSuite = useCallback(() => {
-    if (!actifs && hasNextPage && !isFetchingNextPage) void fetchNextPage()
-  }, [actifs, hasNextPage, isFetchingNextPage, fetchNextPage])
+    if (!actifs && hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage()
+  }, [actifs, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
   const sentinelle = useChargementInfini(chargerLaSuite, !actifs && !!hasNextPage)
 
   const items = useMemo(() => journal.data?.pages.flatMap((page) => page.items) ?? [], [journal.data])
@@ -213,7 +220,7 @@ export default function MesFilms() {
         </div>
       ) : null}
 
-      {actifs && !chargementComplet ? <p role="status" className={styles.chargement}>Chargement…</p> : null}
+      {actifs && !chargementComplet && !isFetchNextPageError ? <p role="status" className={styles.chargement}>Chargement…</p> : null}
 
       {journal.error ? (
         <div className={styles.erreur} role="alert">
@@ -258,7 +265,7 @@ export default function MesFilms() {
 function LigneFilm({ item, catalogue }: { item: JournalItem; catalogue: Reaction[] }) {
   const mots = motsReactions(item.carnet.reactions, catalogue)
   return (
-    <Link to={`/journal/${item.entry.id}`} state={{ item }} className={styles.ligne}>
+    <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: CHEMIN_MES_FILMS }} className={styles.ligne}>
       <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} taille="ligne" />
       <div className={styles.infosLigne}>
         <p className={styles.titreLigne}>{item.media.title}</p>
