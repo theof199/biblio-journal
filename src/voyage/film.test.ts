@@ -72,6 +72,12 @@ describe('mon dernier visionnage d’un film', () => {
     expect(derniereEntree([page([serie])], 12)).toBeUndefined()
     expect(derniereEntree([page([serie, vu('e2', '12'), vu('e1', '12')])], 12)!.entry.id).toBe('e2')
   })
+
+  // Mutation : ne plus comparer l'identifiant (le premier film TMDB du journal passerait pour celui-ci).
+  it('ne prend pas un autre film TMDB vu plus récemment', () => {
+    expect(derniereEntree([page([vu('e3', '13'), vu('e2', '12')])], 12)!.entry.id).toBe('e2')
+    expect(derniereEntree([page([vu('e3', '13')])], 12)).toBeUndefined()
+  })
 })
 
 describe('le billet', () => {

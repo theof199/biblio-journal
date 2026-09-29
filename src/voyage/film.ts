@@ -39,8 +39,9 @@ export function boutonsDuFilm(etat: EtatFilm, plexUrl: string | null, entreeConn
 /**
  * Mon dernier visionnage d'un film TMDB, dans les pages déjà chargées de **mon** journal. Jamais par
  * le seul `external_id` : un identifiant n'est unique qu'avec sa source (`itemAuJournal`,
- * `api/journal.ts`). Le journal arrive du plus récent au plus ancien : la première trouvée est la
- * dernière vue. `undefined` si elle n'est pas dans ces pages.
+ * `api/journal.ts`), et TMDB numérote à part films et séries — une série au même numéro n'est pas
+ * ce film, et son entrée ne se corrige pas depuis le billet. Le journal arrive du plus récent au
+ * plus ancien : la première trouvée est la dernière vue. `undefined` si elle n'est pas dans ces pages.
  */
 export function derniereEntree(pages: readonly JournalPage[], tmdbId: number): JournalItem | undefined {
   const id = String(tmdbId)
