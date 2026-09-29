@@ -5,6 +5,8 @@ import { hash, TAU } from '../../carte/outils'
 
 /** La hauteur de la section 1890 (`trace1890`) : le dégradé du ciel la couvre en entier. */
 const HAUTEUR = 1240
+/** Jusqu'où le ciel monte au-dessus de sa section : plus que le vide que la carte laisse en haut (`MARGE_HAUT`). */
+const VIDE_DU_HAUT = 400
 
 const CIEL_N: readonly [string, string, string] = ['#1b1116', '#3a2a1e', '#2e2117']
 const CIEL_J: readonly [string, string, string] = ['#b9a27e', '#a58a64', '#6e5a40']
@@ -73,7 +75,8 @@ export function dessinerCiel(v: VueMonde): void {
     gr.addColorStop(1, c(cols[2]))
     g.globalAlpha = a
     g.fillStyle = gr
-    g.fillRect(-8, -8, LARGEUR + 16, HAUTEUR + 16)
+    // Le dégradé déborde au-dessus de la section : la carte laisse un vide en haut du Voyage, que le ciel remplit (son premier arrêt se prolonge).
+    g.fillRect(-8, -VIDE_DU_HAUT, LARGEUR + 16, HAUTEUR + VIDE_DU_HAUT + 8)
   }
   g.globalAlpha = 1
   if (v.nuit > 0.05) {

@@ -74,6 +74,7 @@ export default function CarteCanvas({ etat, calme, rappels, surMoteur }: Props) 
       ensemble: (o) => rappelsRef.current.ensemble(o),
       date: (d) => rappelsRef.current.date(d),
       roulotte: () => rappelsRef.current.roulotte(),
+      avatarVisible: (v) => rappelsRef.current.avatarVisible(v),
       defilerVers: (y) => {
         vue.scrollTop = y
       },

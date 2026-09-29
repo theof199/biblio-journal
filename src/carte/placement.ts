@@ -25,6 +25,14 @@ export interface PlanCarte {
 }
 
 /**
+ * Le vide au-dessus de la première section : la caméra ne défile pas sous 0, et la première case des
+ * années 1890 tient à 150 px du haut de son monde, donc au ras de l'écran, sous le bandeau, à
+ * l'ouverture du Voyage. Avec ce vide, le défilement 0 la montre vers le milieu de l'écran
+ * (0,52 de 650 px, la hauteur d'un téléphone moins sa barre d'onglets, moins 150 de case).
+ */
+export const MARGE_HAUT = 190
+
+/**
  * Pose les années sur la carte, une section par décennie, empilées de haut en bas. Chaque
  * décennie demande son tracé à son monde (`traceDe`) : la carte ne sait rien d'un monde.
  */
@@ -34,7 +42,7 @@ export function placerCarte(annees: readonly number[], traceDe: (decennie: numbe
     const d = Math.floor(a / 10) * 10
     parDecennie.set(d, [...(parDecennie.get(d) ?? []), a])
   }
-  const plan: PlanCarte = { points: [], cases: [], sections: [], hauteur: 0 }
+  const plan: PlanCarte = { points: [], cases: [], sections: [], hauteur: MARGE_HAUT }
   for (const [decennie, liste] of parDecennie) {
     const trace = traceDe(decennie, liste)
     if (trace.cases.length !== liste.length) throw new Error(`le tracé de ${decennie} a ${trace.cases.length} cases pour ${liste.length} années`)

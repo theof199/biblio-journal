@@ -59,7 +59,13 @@ export interface Rappels {
   date: (d: DateVraie) => void
   /** La roulotte garée touchée : la page dit où en est le Voyage suivi. */
   roulotte: () => void
+  /** L'avatar entre dans l'écran, ou en sort : la page ne propose « Tu es ici » que tant qu'il est hors de vue. */
+  avatarVisible: (visible: boolean) => void
 }
+/** Sous cette hauteur d'écran, l'avatar est sous le bandeau du haut (le HUD de la page) : il n'est pas vu. */
+export const HAUT_MASQUE = 110
+/** Au-dessus de ce vide, au bas de l'écran, il est déjà collé au bord. */
+export const BAS_MASQUE = 30
 export interface Toile {
   width: number
   height: number
@@ -117,6 +123,8 @@ export class MoteurCarte {
   private readonly particules = new Particules()
   private readonly avatar: { d: number; marche: Marche | null; claque: number } = { d: 0, marche: null, claque: -9 }
   private suivre = false
+  /** Ce que la page sait de l'avatar ; nul tant qu'on ne le lui a pas dit. */
+  private avatarVu: boolean | null = null
   private ens = { q: 0, cible: 0 }
   private fogY = 0
   private fogCible = 0
@@ -337,6 +345,7 @@ export class MoteurCarte {
     this.dernier = maintenant
     if (!this.calme) this.t += dt
     this.maj(dt)
+    this.signalerAvatar()
     this.dessiner()
   }
 
@@ -350,6 +359,15 @@ export class MoteurCarte {
     this.route.pts.forEach((p, i) => (i ? this.chemin?.lineTo(p.x, p.y) : this.chemin?.moveTo(p.x, p.y)))
     this.tuiles.clear()
     if (!this.avatar.marche) this.poserAvatar(this.etat.anneeAvatar)
+  }
+
+  /** Dit à la page si l'avatar est à l'écran, quand cela change seulement. */
+  private signalerAvatar(): void {
+    const y = pointA(this.route, this.avatar.d).y - this.camY
+    const vu = y >= HAUT_MASQUE && y <= this.H - BAS_MASQUE
+    if (vu === this.avatarVu) return
+    this.avatarVu = vu
+    this.rappels.avatarVisible(vu)
   }
 
   /**

@@ -201,21 +201,47 @@ describe('la carte', () => {
     expect(moteur.reglerCalme).toHaveBeenLastCalledWith(true)
   })
 
-  // Relecture de la tâche 9. Mutations : « Tu es ici » qui n'appelle rien ; « Vue d’ensemble »
-  // qui ne bascule rien ; le relais `ensemble` de `CarteCanvas` retiré (le bouton ne saurait
-  // jamais que la vue a changé).
-  it('« Tu es ici » et « Vue d’ensemble » commandent le moteur, et suivent la vue qu’il annonce', async () => {
+  // Mutations : le bouton d'ensemble sans `aria-label` (une icône sans nom) ; `aria-label` qui ne
+  // suit pas la vue ; `aria-pressed` retiré ; le relais `ensemble` de `CarteCanvas` retiré (le
+  // bouton ne saurait jamais que la vue a changé).
+  it('« Vue d’ensemble » est une icône nommée, qui commande le moteur et suit la vue qu’il annonce', async () => {
     const { moteur, rappels, etats } = monter()
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
-    fireEvent.click(screen.getByRole('button', { name: 'Tu es ici' }))
-    expect(moteur.allerIci).toHaveBeenLastCalledWith()
-    fireEvent.click(screen.getByRole('button', { name: 'Vue d’ensemble' }))
+    const ensemble = screen.getByRole('button', { name: 'Vue d’ensemble' })
+    expect(ensemble).toHaveAttribute('aria-label', 'Vue d’ensemble')
+    expect(ensemble).toHaveAttribute('title', 'Vue d’ensemble')
+    expect(ensemble).toHaveTextContent('')
+    fireEvent.click(ensemble)
     expect(moteur.basculerEnsemble).toHaveBeenLastCalledWith(true)
     act(() => rappels().ensemble(true))
     const revenir = screen.getByRole('button', { name: 'Revenir à la carte' })
+    expect(revenir).toHaveAttribute('aria-label', 'Revenir à la carte')
     expect(revenir).toHaveAttribute('aria-pressed', 'true')
+    expect(revenir).toHaveTextContent('')
     fireEvent.click(revenir)
     expect(moteur.basculerEnsemble).toHaveBeenLastCalledWith(false)
+  })
+
+  // Mutations : « Tu es ici » toujours affiché ; jamais affiché ; le relais `avatarVisible` de
+  // `CarteCanvas` retiré ; le bouton qui n'appelle rien ; la garde `!ensemble` retirée (l'avatar est
+  // « hors de l'écran » de la carte détaillée, que la vue d'ensemble a recouverte).
+  it('« Tu es ici » est une icône nommée, offerte seulement quand l’avatar est hors de l’écran', async () => {
+    const { moteur, rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(screen.queryByRole('button', { name: 'Tu es ici' })).not.toBeInTheDocument()
+    act(() => rappels().avatarVisible(false))
+    const ici = screen.getByRole('button', { name: 'Tu es ici' })
+    expect(ici).toHaveAttribute('aria-label', 'Tu es ici')
+    expect(ici).toHaveAttribute('title', 'Tu es ici')
+    expect(ici).toHaveTextContent('')
+    fireEvent.click(ici)
+    expect(moteur.allerIci).toHaveBeenLastCalledWith()
+    act(() => rappels().ensemble(true))
+    expect(screen.queryByRole('button', { name: 'Tu es ici' })).not.toBeInTheDocument()
+    act(() => rappels().ensemble(false))
+    expect(screen.getByRole('button', { name: 'Tu es ici' })).toBeInTheDocument()
+    act(() => rappels().avatarVisible(true))
+    expect(screen.queryByRole('button', { name: 'Tu es ici' })).not.toBeInTheDocument()
   })
 })
 

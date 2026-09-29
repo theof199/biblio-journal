@@ -102,6 +102,13 @@ calme : l'horloge du décor s'arrête (image figée, sans particules), la marche
 d'un coup, la roulotte se gare, et une foire qui se bâtit est posée déjà bâtie ; si le réglage
 change pendant un chantier, il s'achève.
 
+**L'ouverture et les deux pastilles.** La caméra ne défile pas sous 0 : sans vide, la première case de
+1895 (à 150 px du haut de son monde) tombait sous le bandeau. `placement.ts` laisse donc `MARGE_HAUT`
+au-dessus de la première section, que le ciel du monde remplit ; la caméra, à l'ouverture, met
+l'avatar vers le milieu de l'écran quelle que soit l'année (`carte/depart.test.ts`). En bas à droite,
+deux pastilles rondes à icône (nom dans `aria-label`) : la vue d'ensemble, et « Tu es ici », qui ne
+s'offre que quand le moteur dit l'avatar hors de l'écran (rappel `avatarVisible`).
+
 **Quand la foire se bâtit.** À l'ouverture d'une année, au bout de la marche de l'avatar, la
 caméra allant chercher le chantier s'il est hors de l'écran ; la séance de 1895, elle, à la toute
 première visite d'un membre (aucune année vue, l'avatar au départ du Voyage). Jamais au

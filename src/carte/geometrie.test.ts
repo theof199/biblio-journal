@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { construireRoute, pointA } from './route'
-import { placerCarte } from './placement'
+import { MARGE_HAUT, placerCarte } from './placement'
 import { cibleCamera, poidsSections } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { geoEnsemble } from './ensemble'
@@ -38,9 +38,9 @@ describe('le placement', () => {
   // Mutation : oublier le décalage `y0` empile toutes les décennies au sommet de la carte.
   it('pose les années 1890 aux coordonnées de la maquette, puis chaque décennie sous la précédente', () => {
     expect(plan.cases.slice(0, 5).map((c) => [c.annee, c.x, c.y])).toEqual([
-      [1895, 105, 150], [1896, 290, 285], [1897, 120, 420], [1898, 280, 560], [1899, 130, 695],
+      [1895, 105, MARGE_HAUT + 150], [1896, 290, MARGE_HAUT + 285], [1897, 120, MARGE_HAUT + 420], [1898, 280, MARGE_HAUT + 560], [1899, 130, MARGE_HAUT + 695],
     ])
-    expect(plan.cases[5]).toMatchObject({ annee: 1900, y: 1240 + 170 })
+    expect(plan.cases[5]).toMatchObject({ annee: 1900, y: MARGE_HAUT + 1240 + 170 })
     for (let i = 1; i < plan.cases.length; i++) expect(plan.cases[i]!.y).toBeGreaterThan(plan.cases[i - 1]!.y)
   })
 
@@ -61,8 +61,8 @@ describe('le placement', () => {
   // Mutation : `porte: trace.porte` sans `base` pose toutes les portes dans la première section ;
   // `section` figée à 0 donne à chaque case le monde des années 1890.
   it('rapporte chaque porte et chaque case à sa section, dans le repère de la carte', () => {
-    expect(plan.points[plan.sections[0]!.porte]).toEqual([210, 820])
-    expect(plan.points[plan.sections[1]!.porte]).toEqual([195, 1240 + 170 + 10 * 170 + 40])
+    expect(plan.points[plan.sections[0]!.porte]).toEqual([210, MARGE_HAUT + 820])
+    expect(plan.points[plan.sections[1]!.porte]).toEqual([195, MARGE_HAUT + 1240 + 170 + 10 * 170 + 40])
     expect(plan.cases.map((c) => plan.sections[c.section]!.decennie)).toEqual(plan.cases.map((c) => Math.floor(c.annee / 10) * 10))
   })
 
@@ -146,7 +146,8 @@ describe('la vue d’ensemble', () => {
 
   // Mutation : inverser `u` dans l'une des deux fonctions.
   it('ramène un toucher à l’endroit touché', () => {
-    for (let y = 0; y < plan.hauteur; y += 97) expect(geo.versMonde(geo.versEcran(y))).toBeCloseTo(y, 6)
+    // Le vide au-dessus de la première section n'a pas de bande : il se ramène à son bord.
+    for (let y = MARGE_HAUT; y < plan.hauteur; y += 97) expect(geo.versMonde(geo.versEcran(y))).toBeCloseTo(y, 6)
     expect(geo.versEcran(plan.cases[3]!.y)).toBeLessThan(geo.versEcran(plan.cases[40]!.y))
   })
 })

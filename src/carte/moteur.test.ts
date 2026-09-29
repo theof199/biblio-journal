@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CORAIL, MAX_TUILES, MoteurCarte, type CaseCarte, type Dependances, type EtatCarte, type Rappels } from './moteur'
 import { contexteFactice, type Appel } from '../test/contexteFactice'
+import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
 import type { DateVraie, Monde, VueMonde } from '../mondes/types'
 
@@ -94,7 +95,7 @@ function monter(
       }
     },
   }
-  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn() }
+  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn() }
   const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(options.calme ?? false)
@@ -299,7 +300,8 @@ describe('le moteur de la carte', () => {
   // demande moins d'animations.
   it('un toucher sur une affichette ouvre sa date, même quand le visiteur demande moins d’animations', () => {
     const { moteur, rappels } = monter({ calme: true })
-    moteur.defiler(0)
+    // La caméra au bord de la section 1890 : un `y` d'écran est un `y` de la section.
+    moteur.defiler(MARGE_HAUT)
     moteur.image(1000)
     moteur.pointeur('bas', DATE.x, DATE.y, false)
     moteur.pointeur('haut', DATE.x, DATE.y, false)
@@ -312,7 +314,7 @@ describe('le moteur de la carte', () => {
     const { moteur, rappels } = monter()
     let fini = false
     const adieu = moteur.direAdieu(1890).then(() => void (fini = true))
-    expect(rappels.defilerVers).toHaveBeenLastCalledWith(0)
+    expect(rappels.defilerVers).toHaveBeenLastCalledWith(MARGE_HAUT)
     for (let i = 0; i < 30; i++) moteur.image(1000 + i * 50)
     expect(vus[vus.length - 1]!.adieu).toBeGreaterThan(1)
     await Promise.resolve()
@@ -385,9 +387,9 @@ describe('le moteur de la carte', () => {
   // Idée 8. Mutations : `brume: this.fogY`, sans le `- s.y0` de la section ; `brume: 0`.
   it('donne à chaque monde le haut de la brume, dans son repère', () => {
     const { moteur } = monter()
-    moteur.defiler(0)
+    moteur.defiler(MARGE_HAUT)
     moteur.image(1000)
-    // Au haut de la carte, la caméra est à 0 : un `y` d'écran est un `y` de la carte.
+    // La caméra au bord de la section 1890 : un `y` d'écran est un `y` de la carte, moins le vide du haut.
     const y1898 = moteur.ecranDeLAnnee(1898).y
     const y1900 = moteur.ecranDeLAnnee(1900).y
     expect(vus.find((v) => v.cases.some((c) => c.annee === 1898))!.brume).toBeCloseTo(y1898 + 95, 0)
@@ -466,7 +468,7 @@ describe('le moteur de la carte', () => {
     expect(vers().length).toBeGreaterThan(0)
     expect(vers()[vers().length - 1]!).toBeLessThan(y1899 - 350)
     // La cible : le site au milieu de l'écran, bornée au haut de la carte.
-    const cible = Math.max(0, SITE_1899 - H / 2)
+    const cible = Math.max(0, MARGE_HAUT + SITE_1899 - H / 2)
     moteur.reglerCalme(true)
     expect(rappels.defilerVers).toHaveBeenLastCalledWith(cible)
     const n = vers().length
@@ -485,7 +487,8 @@ describe('le moteur de la carte', () => {
     moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
     for (let i = 1; i <= 60; i++) moteur.image(1000 + i * 50)
     const vers = vi.mocked(rappels.defilerVers).mock.calls.map(([y]) => y)
-    expect(vers[vers.length - 1]!).toBeLessThan(2)
+    // Le site de 1899 (haut de sa section) au milieu de l'écran, et non la case de 1899, 850 px plus bas.
+    expect(vers[vers.length - 1]!).toBeLessThan(MARGE_HAUT + SITE_1899 - H / 2 + 2)
   })
 
   // Idée 8, relecture du 29 au soir. Mutations : la garde des 60 px retirée (la
@@ -513,7 +516,8 @@ describe('le moteur de la carte', () => {
   it('va chercher le chantier ouvert sous les yeux à moins de 60 px d’un bord, en haut comme en bas, jamais pour un monde qui ne bâtit rien', () => {
     const camera = 100
     const bouge = (site: number | null) => {
-      const { moteur, rappels } = monter({ chantier1898: site })
+      // `site` est un `y` de la carte ; le monde d'essai le compte depuis le haut de sa section.
+      const { moteur, rappels } = monter({ chantier1898: site === null ? null : site - MARGE_HAUT })
       moteur.defiler(camera)
       moteur.image(1000)
       vi.mocked(rappels.defilerVers).mockClear()
@@ -543,7 +547,7 @@ describe('le moteur de la carte', () => {
   it('ne fait pas réagir le décor quand le visiteur demande moins d’animations', () => {
     const toucherLeManege = (calme: boolean) => {
       const { moteur } = monter({ calme })
-      moteur.defiler(0)
+      moteur.defiler(MARGE_HAUT)
       moteur.image(1000)
       moteur.pointeur('bas', MANEGE.x, MANEGE.y, false)
       moteur.pointeur('haut', MANEGE.x, MANEGE.y, false)

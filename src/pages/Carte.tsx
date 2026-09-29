@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { IconCurrentLocation, IconMap2 } from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
@@ -60,6 +61,8 @@ export default function Carte() {
   const [moteur, setMoteur] = useState<Moteur | null>(null)
   const [apercu, setApercu] = useState<{ annee: number; ancre: { x: number; y: number } } | null>(null)
   const [ensemble, setEnsemble] = useState(false)
+  /** Vrai tant que le moteur n'a pas dit le contraire : « Tu es ici » ne s'offre qu'à l'avatar perdu de vue. */
+  const [avatarVu, setAvatarVu] = useState(true)
   /** L'année à bâtir sous les yeux dès que le moteur est là : la toute première visite, au départ du Voyage (idée 8). */
   const [chantierDuDepart, setChantierDuDepart] = useState<number | null>(null)
   const [date, setDate] = useState<DateVraie | null>(null)
@@ -207,6 +210,7 @@ export default function Carte() {
             ensemble: setEnsemble,
             date: setDate,
             roulotte: () => setRoulotteDite(true),
+            avatarVisible: setAvatarVu,
           }}
         />
       ) : null}
@@ -239,11 +243,19 @@ export default function Carte() {
       </nav>
 
       <div className={styles.boutons}>
-        <button type="button" onClick={() => moteur?.allerIci()}>
-          Tu es ici
-        </button>
-        <button type="button" aria-pressed={ensemble} onClick={() => moteur?.basculerEnsemble(!ensemble)}>
-          {ensemble ? 'Revenir à la carte' : 'Vue d’ensemble'}
+        {!avatarVu && !ensemble ? (
+          <button type="button" aria-label="Tu es ici" title="Tu es ici" onClick={() => moteur?.allerIci()}>
+            <IconCurrentLocation size={20} aria-hidden="true" />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          aria-label={ensemble ? 'Revenir à la carte' : 'Vue d’ensemble'}
+          title={ensemble ? 'Revenir à la carte' : 'Vue d’ensemble'}
+          aria-pressed={ensemble}
+          onClick={() => moteur?.basculerEnsemble(!ensemble)}
+        >
+          <IconMap2 size={20} aria-hidden="true" />
         </button>
       </div>
 
