@@ -17,6 +17,10 @@ const vus: VueMonde[] = []
 const DATE: DateVraie = { an: 1895, x: 60, y: 90, court: '22 mars', lieu: 'Paris', titre: 'La première projection', jour: 'Vendredi 22 mars 1895', texte: 'Un texte.', image: null }
 /** Idée 8 : où se bâtit 1899 dans le monde d'essai, en `y` de la section 1890 (qui commence à 0). */
 const SITE_1899 = 200
+/** Un manège du monde d'essai, loin des cases et de l'affichette : un toucher le fait réagir. */
+const MANEGE = { x: 300, y: 90 }
+/** Les réactions demandées au monde d'essai, par zone touchée. */
+const reactions: string[] = []
 function mondeDEssai(decennie: number): Monde {
   const base = mondeAVenir(decennie)
   return {
@@ -31,16 +35,31 @@ function mondeDEssai(decennie: number): Monde {
     dessinerSol: (v, porte) => {
       base.dessinerSol(v, porte)
       if (decennie === 1890) v.zone('date', DATE.x * v.k, v.ecranY(DATE.y, 1), 20, 0)
+      if (decennie === 1890) v.zone('manege', MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 20)
     },
+    reagir: (id) => void reactions.push(id),
     // Idée 8 : un repère dans la suite des appels, pour lire où le moteur place ce plan.
     dessinerSurLaBrume: (v) => v.ctx.fillText('sur la brume', 0, 0),
-    // Idée 8 : 1899 se bâtit en haut de la section, loin de sa case (695).
+    // Idée 8 : 1899 se bâtit en haut de la section, loin de sa case (850).
     siteDuChantier: (annee) => (decennie === 1890 && annee === 1899 ? SITE_1899 : null),
   }
 }
 
-function monter(options: { calme?: boolean; affiches?: boolean; heure?: number; roulotte?: EtatCarte['roulotte']; sansColonne?: boolean } = {}) {
+function monter(
+  options: {
+    calme?: boolean
+    affiches?: boolean
+    heure?: number
+    roulotte?: EtatCarte['roulotte']
+    sansColonne?: boolean
+    /** Où se bâtit 1898 (le monde d'essai n'en dit rien sans elle). */
+    chantier1898?: number | null
+    /** Le monde demande des étincelles, des confettis et de la fumée en dessinant ses plans proches. */
+    particules?: boolean
+  } = {},
+) {
   vus.length = 0
+  reactions.length = 0
   const principal = contexteFactice()
   const toiles: Appel[][] = []
   const deps: Dependances = {
@@ -51,11 +70,22 @@ function monter(options: { calme?: boolean; affiches?: boolean; heure?: number; 
     },
     image: () => ({}) as CanvasImageSource,
     demanderImage: () => 1,
-    annulerImage: () => undefined,
+    annulerImage: vi.fn(),
     heure: () => options.heure ?? 12,
     mondeDe: (d) => {
       const m = mondeDEssai(d)
-      return options.sansColonne ? { ...m, palette: { ...m.palette, colonne: null } } : m
+      const { chantier1898, particules } = options
+      return {
+        ...m,
+        palette: options.sansColonne ? { ...m.palette, colonne: null } : m.palette,
+        siteDuChantier: (annee) => (chantier1898 !== undefined && annee === 1898 ? chantier1898 : m.siteDuChantier(annee)),
+        dessinerProche: (v) => {
+          if (!particules) return
+          v.etincelles(10, 10, 1, '#abcdef')
+          v.confettis(10, 10, ['#abcdef'])
+          v.fumee(10, 10, 1, 4)
+        },
+      }
     },
   }
   const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn() }
@@ -75,7 +105,7 @@ function monter(options: { calme?: boolean; affiches?: boolean; heure?: number; 
   })
   const roulotte = options.roulotte ?? null
   moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], roulotte })
-  return { moteur, appels: principal.appels, toiles, rappels, cases, roulotte }
+  return { moteur, appels: principal.appels, toiles, rappels, deps, cases, roulotte }
 }
 
 const pleinEcran = (a: Appel) => (a.nom === 'fillRect' || a.nom === 'drawImage') && a.args.slice(-2).join() === `${W},${H}`
@@ -447,5 +477,150 @@ describe('le moteur de la carte', () => {
     calme.moteur.majEtat({ cases: calme.cases, anneeAvatar: 1899, tampons: [], roulotte: null })
     for (let i = 1; i <= 8; i++) calme.moteur.image(1000 + i * 50)
     expect(calme.rappels.defilerVers).not.toHaveBeenCalled()
+  })
+
+  // Relecture de la tâche 5 : les jumeaux de l'idée 8. Mutations : `montrerChantier` retiré
+  // d'`ouvrirSousLesYeux` (le jumeau de celui de `majEtat`) ; la marge de 60 px ramenée à 0 ou
+  // portée à 100 ; la moitié basse de la garde retirée (un chantier sous l'écran) ; `site === null`
+  // retiré de la garde (un monde qui ne bâtit rien enverrait la caméra en haut de sa section).
+  it('va chercher le chantier ouvert sous les yeux à moins de 60 px d’un bord, en haut comme en bas, jamais pour un monde qui ne bâtit rien', () => {
+    const camera = 100
+    const bouge = (site: number | null) => {
+      const { moteur, rappels } = monter({ chantier1898: site })
+      moteur.defiler(camera)
+      moteur.image(1000)
+      vi.mocked(rappels.defilerVers).mockClear()
+      moteur.ouvrirSousLesYeux(1898)
+      for (let i = 1; i <= 3; i++) moteur.image(1000 + i * 50)
+      return vi.mocked(rappels.defilerVers).mock.calls.length > 0
+    }
+    expect(bouge(camera + 30)).toBe(true)
+    expect(bouge(camera + 90)).toBe(false)
+    expect(bouge(camera + H - 90)).toBe(false)
+    expect(bouge(camera + H - 30)).toBe(true)
+    expect(bouge(null)).toBe(false)
+  })
+
+  // Relecture de la tâche 5. Mutation : `duree <= 0` retiré de la garde de `direAdieu` : la caméra
+  // remonterait en haut d'une section dont le monde n'a aucune cinématique à montrer.
+  it('ne remonte pas la caméra pour un monde qui n’a pas d’adieu', async () => {
+    const { moteur, rappels } = monter()
+    const adieu = moteur.direAdieu(1900)
+    expect(rappels.defilerVers).not.toHaveBeenCalled()
+    moteur.image(1000)
+    await expect(adieu).resolves.toBeUndefined()
+  })
+
+  // Relecture de la tâche 5. Mutation : `if (this.calme) return` retiré de `toucher` : le monde
+  // réagirait sous une horloge figée, et sa réaction resterait à son premier instant.
+  it('ne fait pas réagir le décor quand le visiteur demande moins d’animations', () => {
+    const toucherLeManege = (calme: boolean) => {
+      const { moteur } = monter({ calme })
+      moteur.defiler(0)
+      moteur.image(1000)
+      moteur.pointeur('bas', MANEGE.x, MANEGE.y, false)
+      moteur.pointeur('haut', MANEGE.x, MANEGE.y, false)
+      return [...reactions]
+    }
+    expect(toucherLeManege(false)).toEqual(['manege'])
+    expect(toucherLeManege(true)).toEqual([])
+  })
+
+  // Relecture de la tâche 5. Mutations : la garde `this.calme` retirée d'`etincelles`, de
+  // `confettis` ou de `fumee` dans `vueMonde` : sous l'horloge figée, les particules demandées à
+  // chaque image s'entasseraient, immobiles.
+  it('ne lance aucune particule quand le visiteur demande moins d’animations, même si le monde en demande', () => {
+    const { moteur, appels } = monter({ calme: true, particules: true })
+    moteur.image(1000)
+    const premiere = JSON.stringify(appels)
+    appels.length = 0
+    moteur.image(2600)
+    expect(JSON.stringify(appels)).toBe(premiere)
+  })
+
+  // Relecture de la tâche 5. Mutations : `if (this.calme) this.ens.q = 1` retiré
+  // d'`entrerEnsemble`, ou `= 0` de `quitterEnsemble` : la vue d'ensemble glisserait.
+  it('ouvre et ferme la vue d’ensemble d’un coup quand le visiteur demande moins d’animations', () => {
+    const { moteur } = monter({ calme: true })
+    moteur.image(1000)
+    moteur.basculerEnsemble(true)
+    vus.length = 0
+    moteur.image(1001)
+    // La vue d'ensemble ouverte en entier, la scène des mondes n'est plus dessinée.
+    expect(vus).toEqual([])
+    moteur.basculerEnsemble(false)
+    moteur.image(1002)
+    expect(vus.length).toBeGreaterThan(0)
+  })
+
+  // Relecture de la tâche 5. Mutation : `|| this.calme` retiré d'`allerIci` : la caméra glisserait vers l'avatar.
+  it('ramène la caméra sur l’avatar d’un coup quand le visiteur demande moins d’animations', () => {
+    const { moteur, rappels } = monter({ calme: true })
+    moteur.defiler(5000)
+    moteur.allerIci()
+    expect(rappels.defilerVers).toHaveBeenCalledTimes(1)
+    for (let i = 1; i <= 5; i++) moteur.image(1000 + i * 50)
+    expect(rappels.defilerVers).toHaveBeenCalledTimes(1)
+  })
+
+  // Relecture de la tâche 5. Mutations : `this.calme ? 1 :` retiré de `roulotteGaree` (une descente
+  // en cours resterait en chemin sous l'horloge figée) ; `roulotteT0` daté de `this.t` au lieu
+  // d'`instant()` (garée en « moins d'animations », elle redescendrait au retour des animations).
+  it('gare d’un coup la roulotte quand le visiteur demande moins d’animations, et l’y laisse quand elles reviennent', () => {
+    const roulotte = { pseudo: 'theo', annee: 1896 }
+    const garee = (moteur: MoteurCarte) => {
+      const r = moteur.ecranDeLaRoulotte()!
+      const c = moteur.ecranDeLAnnee(1896)
+      return Math.hypot(r.x - c.x, r.y - c.y) < 60
+    }
+    const enChemin = monter({ roulotte }).moteur
+    enChemin.defiler(0)
+    enChemin.image(1000)
+    expect(garee(enChemin)).toBe(false)
+    enChemin.reglerCalme(true)
+    enChemin.image(1050)
+    expect(garee(enChemin)).toBe(true)
+    const deja = monter({ calme: true, roulotte }).moteur
+    deja.defiler(0)
+    deja.image(1000)
+    deja.reglerCalme(false)
+    deja.image(1050)
+    expect(garee(deja)).toBe(true)
+  })
+
+  // Relecture de la tâche 5. Mutation : `this.fogY = this.fogCible` retiré d'`achever` (le jumeau
+  // de la marche sans animation) : la brume, arrêtée en chemin, ne se lèverait plus jusqu'à l'année atteinte.
+  it('lève la brume jusqu’à l’année atteinte quand la marche s’achève en chemin', async () => {
+    const { moteur } = monter()
+    const marche = moteur.marcher(1899)
+    moteur.image(1000)
+    moteur.reglerCalme(true)
+    await marche
+    moteur.image(1050)
+    const lesVues = vus.filter((x) => x.cases.some((c) => c.annee === 1899))
+    const v = lesVues[lesVues.length - 1]!
+    const case1899 = v.cases.find((c) => c.annee === 1899)!
+    // `ecranY(0, 1)` est le haut de la section à l'écran : la case, dans le repère de la section.
+    expect(v.brume).toBeCloseTo(case1899.y - v.ecranY(0, 1) + 95, 0)
+  })
+
+  // Relecture de la tâche 5. Mutation : `else this.tuiles.clear()` retiré de `majEtat` : une carte
+  // relue garderait le sol d'avant, dont les photogrammes allumés dépendent des profondeurs.
+  it('redessine le sol quand la carte relue change, même sans nouvelle année', () => {
+    const { moteur, toiles, cases } = monter()
+    moteur.image(1000)
+    const avant = toiles.length
+    const relues = cases.map((c) => (c.annee === 1898 ? { ...c, profondeur: 5 } : c))
+    moteur.majEtat({ cases: relues, anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.image(1100)
+    expect(toiles.length).toBeGreaterThan(avant)
+  })
+
+  // Relecture de la tâche 5. Mutation : `detruire` sans `annulerImage` : la boucle d'une carte
+  // démontée continuerait de tourner.
+  it('arrête sa boucle quand la carte est démontée', () => {
+    const { moteur, deps } = monter()
+    moteur.detruire()
+    expect(deps.annulerImage).toHaveBeenCalledWith(1)
   })
 })
