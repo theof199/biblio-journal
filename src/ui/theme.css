@@ -101,6 +101,7 @@
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));
 
   /* Empilement */
+  --z-bandeau: 10; /* le bandeau « Nouvelle version » : au-dessus de la carte, sous la barre d'onglets */
   --z-barre-onglets: 20;
 }
 

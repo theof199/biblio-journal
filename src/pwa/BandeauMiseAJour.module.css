@@ -1,0 +1,21 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Au-dessus de la carte, en haut de l'écran, loin de la barre d'onglets : sans cela, le bandeau
+   passe dessous et la nouvelle version n'est jamais proposée. */
+.bandeau {
+  position: fixed;
+  z-index: var(--z-bandeau);
+  top: calc(var(--espace-2) + env(safe-area-inset-top));
+  left: var(--espace-4);
+  right: var(--espace-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-3);
+  padding: var(--espace-1) var(--espace-1) var(--espace-1) var(--espace-3);
+  border: var(--trait) solid var(--couleur-accent);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
+  box-shadow: var(--ombre-m);
+}

@@ -1,3 +1,5 @@
+import styles from './BandeauMiseAJour.module.css'
+
 interface Props {
   visible: boolean
   onRecharger: () => void
@@ -12,7 +14,7 @@ export default function BandeauMiseAJour({ visible, onRecharger }: Props) {
   if (!visible) return null
 
   return (
-    <div role="status">
+    <div role="status" className={styles.bandeau}>
       <span>Nouvelle version</span>
       <button type="button" onClick={onRecharger}>
         Recharger
