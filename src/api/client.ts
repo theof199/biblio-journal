@@ -138,7 +138,10 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       // sera réellement en ligne.
       credentials: 'include',
       headers: {
-        'content-type': 'application/json',
+        // Seulement quand un corps part : un `DELETE` sans corps annoncé en
+        // JSON était refusé par l'API avant la route (corps JSON vide, 400) —
+        // c'était « l'erreur à l'envoi » du retrait des doublons.
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
         // Sans effet en mode proxy (SameSite=Lax), exigé sur les écritures dès
         // que l'API passe en SameSite=None. Le poser toujours coûte une ligne.
         'X-Mediatheque-Client': 'mediatheque-journal',

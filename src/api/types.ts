@@ -4098,12 +4098,14 @@ export interface paths {
   };
   "/me/journal/import/letterboxd": {
     /**
-     * Lancer l’import du journal Letterboxd (`diary.csv`)
-     * @description Letterboxd est fermé (Cloudflare, API sur invitation) : pas de synchronisation possible. Le seul chemin est l’export personnel du membre (Réglages → Import & Export → « Export your data » sur Letterboxd), un ZIP dont l’appli extrait `diary.csv` avant de l’envoyer ici — **en JSON**, `{ "csv": "..." }`, jamais en `text/csv`.
+     * Lancer l’import du journal Letterboxd (`diary.csv`, `watched.csv`, `ratings.csv`)
+     * @description Letterboxd est fermé (Cloudflare, API sur invitation) : pas de synchronisation possible. Le seul chemin est l’export personnel du membre (Réglages → Import & Export → « Export your data » sur Letterboxd), un ZIP dont l’appli extrait `diary.csv`, `watched.csv` et `ratings.csv` avant de les envoyer ici — **en JSON**, `{ "csv": "...", "watched_csv": "...", "ratings_csv": "..." }`, jamais en `text/csv`. 3 Mo en tout.
+     *
+     * **Les films vus sans date** (correctif du 30 septembre 2026). `diary.csv` ne porte que les visionnages datés ; un film seulement marqué « vu » n’est que dans `watched.csv`. Les films de `watched.csv` absents de `diary.csv` (même titre normalisé, même année : les deux fichiers n’ont pas d’identifiant commun) sont traités après les lignes datées : **à la date où ils ont été marqués vus** (`Date` de `watched.csv`), avec la note de `ratings.csv` s’il y en a une. Comptés à part, dans `rapport.vus_sans_date`. **Un tel film n’est jamais importé si j’en ai déjà un visionnage, à n’importe quelle date** — il ne dit que « je l’ai vu » : aucune ligne de `diary.csv` ne s’écrit donc deux fois à cause de `watched.csv`. Sans `watched_csv`, l’import ne lit que `diary.csv`, comme avant.
      *
      * **Une tâche suivie, pas une réponse longue** (correctif du 29 septembre 2026). La route vérifie l’en-tête, lance le traitement et répond `202` aussitôt, avec la tâche `en_cours` ; `GET /me/journal/import/letterboxd/{id}` en donne l’avancement puis le rapport. Elle rendait le rapport à la fin, et un journal réel dépassait les 75 s du relais du NAS : `504` pendant que l’import continuait.
      *
-     * Pour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés, chacun avec son affiche TMDB.
+     * Pour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés, chacun avec son affiche TMDB — et la date et la note que l’import aurait écrites, pour que l’appli enregistre le visionnage tel quel une fois le candidat choisi (`POST /media` puis `POST /me/journal`).
      *
      * **Aucun candidat net en français ? La recherche est refaite en anglais** (brief du 16 septembre 2026) — Letterboxd donne parfois le titre anglais d’un film étranger, que ni le titre français ni l’original ne rapprochent. Un seul candidat net dans l’un ou l’autre importe ; plusieurs, dans l’une ou l’autre langue, partent dans `non_reconnus` avec l’union des deux recherches.
      *
@@ -4115,15 +4117,19 @@ export interface paths {
      *
      * **Un import à la fois par membre.** Renvoyer le même fichier pendant qu’il tourne rend la tâche en cours (même `id`), sans en lancer une seconde ; un autre fichier répond `409` jusqu’à la fin de la première.
      *
-     * Un CSV sans les en-têtes de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`) répond `400`, sans tâche. `watched.csv` et `ratings.csv`, qui n’en portent qu’un sous-ensemble, ne sont donc pas acceptés tels quels.
+     * Un fichier sans ses en-têtes répond `400`, sans tâche : `csv` doit porter celles de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`), `watched_csv` celles de `watched.csv` (`Date,Name,Year,Letterboxd URI`), `ratings_csv` celles de `ratings.csv` (`Date,Name,Year,Letterboxd URI,Rating`). `watched.csv` envoyé à la place de `diary.csv` est donc refusé.
      */
     post: {
-      /** @description Le CSV `diary.csv` de l’export Letterboxd */
+      /** @description Les CSV de l’export Letterboxd : `diary.csv`, et s’il y est, `watched.csv` et `ratings.csv` */
       requestBody: {
         content: {
           "application/json": {
             /** @description Le contenu de `diary.csv`, tel quel — l’appli l’a extrait du ZIP Letterboxd si besoin */
             csv: string;
+            /** @description Le contenu de `watched.csv` (`Date,Name,Year,Letterboxd URI`), tel quel : tous les films marqués vus, datés ou non. Ceux qui ne sont pas dans `diary.csv` s’importent à leur `Date`, la date où ils ont été marqués vus. */
+            watched_csv?: string;
+            /** @description Le contenu de `ratings.csv` (`Date,Name,Year,Letterboxd URI,Rating`), tel quel : la note d’un film de `watched.csv` absent de `diary.csv`. Ignoré sans `watched_csv`. */
+            ratings_csv?: string;
           };
         };
       };
@@ -4142,21 +4148,43 @@ export interface paths {
                * @enum {string}
                */
               etat: "en_cours" | "termine" | "echoue";
-              /** @description Lignes de données du fichier, en-tête exclu */
+              /** @description Lignes à traiter, en-têtes exclus : celles de `diary.csv`, plus les films de `watched.csv` absents de `diary.csv` (`rapport.vus_sans_date.lignes`) */
               lignes_total: number;
               /** @description Lignes déjà traitées — égal à `lignes_total` une fois `termine` */
               lignes_traitees: number;
               /** @description Le bilan de l’import, lignes traitées jusqu’ici — complet une fois la tâche `termine` */
               rapport: {
-                /** @description Visionnages importés — un par ligne reconnue et pas déjà présente */
+                /** @description Visionnages datés importés — un par ligne de `diary.csv` reconnue et pas déjà présente */
                 importes: number;
-                /** @description Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date */
+                /** @description Lignes de `diary.csv` ignorées : ce membre a déjà une entrée pour ce film à cette date */
                 deja_presents: number;
+                /** @description Les films vus sans date précise — dans `watched.csv`, pas dans `diary.csv` — comptés à part des visionnages datés. Tout à zéro sans `watched_csv`. */
+                vus_sans_date: {
+                  /** @description Films de `watched.csv` absents de `diary.csv` — ceux que l’import traite en plus des visionnages datés */
+                  lignes: number;
+                  /** @description Films importés à la date où ils ont été marqués vus */
+                  importes: number;
+                  /** @description Films ignorés : ce membre a déjà au moins un visionnage de ce film, à n’importe quelle date */
+                  deja_presents: number;
+                };
+                /** @description Des deux fichiers, `diary` d’abord */
                 non_reconnus: ({
-                    /** @description Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données */
+                    /**
+                     * @description Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport.
+                     * @enum {string}
+                     */
+                    fichier: "diary" | "watched";
+                    /** @description Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données */
                     ligne: number;
                     name: string;
                     year: number | null;
+                    /**
+                     * Format: date
+                     * @description La date que l’import aurait donnée au visionnage : `Watched Date`, sinon `Date` pour `diary` ; `Date` (le jour où le film a été marqué vu) pour `watched`. De quoi l’enregistrer tel quel une fois le candidat choisi.
+                     */
+                    date: string;
+                    /** @description La note que l’import aurait donnée (étoiles × 2) : `Rating` de la ligne pour `diary`, celle de `ratings.csv` pour `watched`. Nulle sans note. */
+                    rating: number | null;
                     /** @description Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu */
                     candidats: ({
                         /** @description Identifiant TMDB du candidat */
@@ -4169,10 +4197,17 @@ export interface paths {
                         cover_url: string | null;
                       })[];
                   })[];
-                erreurs: {
+                /** @description Des deux fichiers, `diary` d’abord */
+                erreurs: ({
+                    /**
+                     * @description Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport.
+                     * @enum {string}
+                     */
+                    fichier: "diary" | "watched";
+                    /** @description Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données */
                     ligne: number;
                     message: string;
-                  }[];
+                  })[];
               };
               /** @description Pourquoi la tâche s’est arrêtée, à afficher tel quel ; nul sauf quand `etat` vaut `echoue` */
               message: string | null;
@@ -4237,21 +4272,43 @@ export interface paths {
                * @enum {string}
                */
               etat: "en_cours" | "termine" | "echoue";
-              /** @description Lignes de données du fichier, en-tête exclu */
+              /** @description Lignes à traiter, en-têtes exclus : celles de `diary.csv`, plus les films de `watched.csv` absents de `diary.csv` (`rapport.vus_sans_date.lignes`) */
               lignes_total: number;
               /** @description Lignes déjà traitées — égal à `lignes_total` une fois `termine` */
               lignes_traitees: number;
               /** @description Le bilan de l’import, lignes traitées jusqu’ici — complet une fois la tâche `termine` */
               rapport: {
-                /** @description Visionnages importés — un par ligne reconnue et pas déjà présente */
+                /** @description Visionnages datés importés — un par ligne de `diary.csv` reconnue et pas déjà présente */
                 importes: number;
-                /** @description Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date */
+                /** @description Lignes de `diary.csv` ignorées : ce membre a déjà une entrée pour ce film à cette date */
                 deja_presents: number;
+                /** @description Les films vus sans date précise — dans `watched.csv`, pas dans `diary.csv` — comptés à part des visionnages datés. Tout à zéro sans `watched_csv`. */
+                vus_sans_date: {
+                  /** @description Films de `watched.csv` absents de `diary.csv` — ceux que l’import traite en plus des visionnages datés */
+                  lignes: number;
+                  /** @description Films importés à la date où ils ont été marqués vus */
+                  importes: number;
+                  /** @description Films ignorés : ce membre a déjà au moins un visionnage de ce film, à n’importe quelle date */
+                  deja_presents: number;
+                };
+                /** @description Des deux fichiers, `diary` d’abord */
                 non_reconnus: ({
-                    /** @description Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données */
+                    /**
+                     * @description Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport.
+                     * @enum {string}
+                     */
+                    fichier: "diary" | "watched";
+                    /** @description Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données */
                     ligne: number;
                     name: string;
                     year: number | null;
+                    /**
+                     * Format: date
+                     * @description La date que l’import aurait donnée au visionnage : `Watched Date`, sinon `Date` pour `diary` ; `Date` (le jour où le film a été marqué vu) pour `watched`. De quoi l’enregistrer tel quel une fois le candidat choisi.
+                     */
+                    date: string;
+                    /** @description La note que l’import aurait donnée (étoiles × 2) : `Rating` de la ligne pour `diary`, celle de `ratings.csv` pour `watched`. Nulle sans note. */
+                    rating: number | null;
                     /** @description Vide si aucun candidat ne correspond, plusieurs si le choix est ambigu */
                     candidats: ({
                         /** @description Identifiant TMDB du candidat */
@@ -4264,10 +4321,17 @@ export interface paths {
                         cover_url: string | null;
                       })[];
                   })[];
-                erreurs: {
+                /** @description Des deux fichiers, `diary` d’abord */
+                erreurs: ({
+                    /**
+                     * @description Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport.
+                     * @enum {string}
+                     */
+                    fichier: "diary" | "watched";
+                    /** @description Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données */
                     ligne: number;
                     message: string;
-                  }[];
+                  })[];
               };
               /** @description Pourquoi la tâche s’est arrêtée, à afficher tel quel ; nul sauf quand `etat` vaut `echoue` */
               message: string | null;
@@ -4461,7 +4525,9 @@ export interface paths {
      * Aperçu des doublons de mon journal
      * @description Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).
      *
-     * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.
+     * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une autre entrée du même jour, qui est gardée à sa place — celle qui porte un carnet s’il y en a une, sinon la plus ancienne (correctif du 30 septembre 2026 : seule la plus ancienne servait de modèle, et une copie dont le jumeau récent portait une réaction restait). **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Films seulement, comme le reste du carnet.
+     *
+     * **Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se date en UTC, un geste posé après minuit à Paris part la veille). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.
      *
      * Deux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.
      *
@@ -4469,7 +4535,7 @@ export interface paths {
      */
     get: {
       responses: {
-        /** @description Les doublons de mon journal */
+        /** @description Les doublons de mon journal, et ce qui leur ressemble */
         200: {
           content: {
             "application/json": {
@@ -4483,12 +4549,60 @@ export interface paths {
                   id: string;
                   /**
                    * Format: uuid
-                   * @description L’entrée gardée à sa place : la plus ancienne de ce film à cette date
+                   * @description L’entrée gardée à sa place, copie exacte de celle-ci : celle qui porte un carnet s’il y en a une, sinon la plus ancienne
                    */
                   garde_id: string;
                   /** Format: date */
                   finished_at: string;
                   rating: number | null;
+                  /** @description L’œuvre, réduite à ce que le journal affiche */
+                  media: {
+                    /** Format: uuid */
+                    id: string;
+                    /**
+                     * @description Type d'œuvre
+                     * @enum {string}
+                     */
+                    type: "book" | "comic_series" | "movie" | "tv" | "game" | "music";
+                    /**
+                     * @description Source d'origine de la fiche
+                     * @enum {string}
+                     */
+                    source: "openlibrary" | "googlebooks" | "anilist" | "tmdb" | "igdb" | "musicbrainz";
+                    title: string;
+                    cover_url: string | null;
+                    year: number | null;
+                    /** @description `metadata.director` de la fiche */
+                    director: string | null;
+                    /** @description Identifiant chez la source — le `tmdb_id` du film */
+                    external_id: string;
+                    /** @description Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas */
+                    backdrop_url: string | null;
+                  };
+                })[];
+              /** @description Les cas limites, **jamais retirés par le `DELETE`** — dans sa réponse, ceux qui restent après le retrait. Un seul par entrée, la plus récente des deux étant celle nommée par `id`, sauf si seule l’autre porte un carnet. */
+              cas_limites: ({
+                  /**
+                   * Format: uuid
+                   * @description L’entrée qui ressemble à une copie — jamais une entrée qui porte un carnet
+                   */
+                  id: string;
+                  /**
+                   * Format: uuid
+                   * @description L’entrée à laquelle elle ressemble
+                   */
+                  autre_id: string;
+                  /**
+                   * @description `autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour UTC d’écart, celui qu’un geste posé la nuit peut produire.
+                   * @enum {string}
+                   */
+                  raison: "autre_note" | "autre_debut_ou_commentaire" | "jour_voisin";
+                  /** Format: date */
+                  finished_at: string;
+                  rating: number | null;
+                  /** Format: date */
+                  autre_finished_at: string;
+                  autre_rating: number | null;
                   /** @description L’œuvre, réduite à ce que le journal affiche */
                   media: {
                     /** Format: uuid */
@@ -4529,17 +4643,19 @@ export interface paths {
      * Retirer les doublons de mon journal
      * @description Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).
      *
-     * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.
+     * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une autre entrée du même jour, qui est gardée à sa place — celle qui porte un carnet s’il y en a une, sinon la plus ancienne (correctif du 30 septembre 2026 : seule la plus ancienne servait de modèle, et une copie dont le jumeau récent portait une réaction restait). **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Films seulement, comme le reste du carnet.
+     *
+     * **Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se date en UTC, un geste posé après minuit à Paris part la veille). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.
      *
      * Deux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.
      *
-     * Retire, en une transaction, les doublons trouvés **au moment de l’appel** — pas ceux d’un aperçu plus ancien — et rend ceux qu’il a retirés. Chaque retrait suit la suppression d’un visionnage (`DELETE /me/journal/:id`) : le carnet part avec l’entrée, le cache du Voyage est invalidé, et ni le suivi ni les quêtes ne se recalculent. Un second appel ne retire rien (`total: 0`).
+     * Retire, en une transaction, les doublons trouvés **au moment de l’appel** — pas ceux d’un aperçu plus ancien — et rend ceux qu’il a retirés, avec les cas limites qui restent. Chaque retrait suit la suppression d’un visionnage (`DELETE /me/journal/:id`) : le carnet part avec l’entrée, le cache du Voyage est invalidé, et ni le suivi ni les quêtes ne se recalculent. Un second appel ne retire rien (`total: 0`).
      *
      * Chez soi seulement : aucun paramètre ne vise un autre membre.
      */
     delete: {
       responses: {
-        /** @description Les doublons de mon journal */
+        /** @description Les doublons de mon journal, et ce qui leur ressemble */
         200: {
           content: {
             "application/json": {
@@ -4553,12 +4669,60 @@ export interface paths {
                   id: string;
                   /**
                    * Format: uuid
-                   * @description L’entrée gardée à sa place : la plus ancienne de ce film à cette date
+                   * @description L’entrée gardée à sa place, copie exacte de celle-ci : celle qui porte un carnet s’il y en a une, sinon la plus ancienne
                    */
                   garde_id: string;
                   /** Format: date */
                   finished_at: string;
                   rating: number | null;
+                  /** @description L’œuvre, réduite à ce que le journal affiche */
+                  media: {
+                    /** Format: uuid */
+                    id: string;
+                    /**
+                     * @description Type d'œuvre
+                     * @enum {string}
+                     */
+                    type: "book" | "comic_series" | "movie" | "tv" | "game" | "music";
+                    /**
+                     * @description Source d'origine de la fiche
+                     * @enum {string}
+                     */
+                    source: "openlibrary" | "googlebooks" | "anilist" | "tmdb" | "igdb" | "musicbrainz";
+                    title: string;
+                    cover_url: string | null;
+                    year: number | null;
+                    /** @description `metadata.director` de la fiche */
+                    director: string | null;
+                    /** @description Identifiant chez la source — le `tmdb_id` du film */
+                    external_id: string;
+                    /** @description Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas */
+                    backdrop_url: string | null;
+                  };
+                })[];
+              /** @description Les cas limites, **jamais retirés par le `DELETE`** — dans sa réponse, ceux qui restent après le retrait. Un seul par entrée, la plus récente des deux étant celle nommée par `id`, sauf si seule l’autre porte un carnet. */
+              cas_limites: ({
+                  /**
+                   * Format: uuid
+                   * @description L’entrée qui ressemble à une copie — jamais une entrée qui porte un carnet
+                   */
+                  id: string;
+                  /**
+                   * Format: uuid
+                   * @description L’entrée à laquelle elle ressemble
+                   */
+                  autre_id: string;
+                  /**
+                   * @description `autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour UTC d’écart, celui qu’un geste posé la nuit peut produire.
+                   * @enum {string}
+                   */
+                  raison: "autre_note" | "autre_debut_ou_commentaire" | "jour_voisin";
+                  /** Format: date */
+                  finished_at: string;
+                  rating: number | null;
+                  /** Format: date */
+                  autre_finished_at: string;
+                  autre_rating: number | null;
                   /** @description L’œuvre, réduite à ce que le journal affiche */
                   media: {
                     /** Format: uuid */

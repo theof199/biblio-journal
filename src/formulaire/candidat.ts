@@ -1,7 +1,6 @@
 import type { MovieSearchResult } from '../api/recherche'
 import type { PlexFilm } from '../api/plex'
 import type { FichePrete } from '../api/voyage'
-import type { CandidatImport } from '../api/letterboxd'
 import type { SortieEnCoursFilm, SortieProchaineFilm } from '../api/sorties'
 
 /** Un film pas encore au journal, prêt pour le formulaire de création — quelle que soit sa provenance (recherche, Plex, Voyage). */
@@ -12,9 +11,13 @@ export interface CandidatFilm {
   year: number | null
   cover_url: string | null
   director: string | null
-  /** Une date de visionnage déjà connue (import Letterboxd) : le formulaire la propose au lieu d'aujourd'hui. */
+  /**
+   * Une date de visionnage déjà connue : le formulaire la propose au lieu d'aujourd'hui. Aucune
+   * provenance ne la pose depuis que le rapport d'import enregistre lui-même le candidat choisi
+   * (correctif du 30 septembre 2026) ; le formulaire sait toujours la lire.
+   */
   finished_at?: string
-  /** Une note déjà connue (import Letterboxd), de 1 à 10. */
+  /** Une note déjà connue, de 1 à 10 — même remarque. */
   rating?: number | null
 }
 
@@ -98,23 +101,4 @@ export const candidatDepuisFilmSuivi = (
   year: film.year,
   cover_url: film.cover_url,
   director,
-})
-
-/**
- * Un candidat du rapport d'import Letterboxd — son affiche TMDB depuis le correctif du
- * 29 septembre 2026, pas de réalisateur (la recherche TMDB ne le donne pas) — avec la date et la
- * note que la ligne du CSV portait : le formulaire s'ouvre déjà rempli.
- */
-export const candidatDepuisImport = (
-  candidat: CandidatImport,
-  ligne: { date: string | null; rating: number | null } | undefined,
-): CandidatFilm => ({
-  source: 'tmdb',
-  external_id: candidat.tmdb_id,
-  title: candidat.title,
-  year: candidat.year,
-  cover_url: candidat.cover_url,
-  director: null,
-  ...(ligne?.date ? { finished_at: ligne.date } : {}),
-  ...(ligne?.rating != null ? { rating: ligne.rating } : {}),
 })

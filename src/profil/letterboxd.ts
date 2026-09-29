@@ -1,9 +1,15 @@
 /**
  * La lecture de l'export Letterboxd (reprise de `LetterboxdDiary.kt`, Android), dans le navigateur :
- * ni bibliothèque ni réseau. Le web extrait `diary.csv` du ZIP (`DecompressionStream`, l'API du
- * navigateur) et l'envoie tel quel à `POST /me/journal/import/letterboxd` ; le back seul décide de
- * l'import. Le CSV est relu ici uniquement pour retrouver la date et la note d'une ligne, quand le
- * membre choisit un candidat du rapport : miroir de la lecture du back, jamais une seconde vérité.
+ * ni bibliothèque ni réseau. Le web extrait du ZIP (`DecompressionStream`, l'API du navigateur)
+ * `diary.csv`, et depuis le correctif du 30 septembre 2026 `watched.csv` et `ratings.csv`, et les
+ * envoie tels quels à `POST /me/journal/import/letterboxd` ; le back seul décide de l'import.
+ *
+ * **Pourquoi trois fichiers.** `diary.csv` ne porte que les visionnages datés ; un film seulement
+ * marqué « vu » sur Letterboxd n'est que dans `watched.csv`. Android n'envoyait que le premier : un
+ * export de 400 films vus n'en importait que 200.
+ *
+ * Le CSV ne se relit plus ici : le rapport du back donne, pour chaque ligne non reconnue, la date
+ * et la note que l'import aurait écrites.
  */
 
 /** Le ZIP est lisible mais ne contient pas `diary.csv`. */
@@ -48,14 +54,16 @@ async function decompresser(donnees: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(flux).arrayBuffer())
 }
 
-/**
- * `diary.csv`, où qu'il vive dans l'arborescence du ZIP : celui de la racine d'abord, sinon le
- * premier rencontré dans un sous-dossier — un homonyme rangé plus bas ne passe jamais devant celui
- * de la racine, quel que soit l'ordre des entrées. Lu par le répertoire central (les tailles y sont
- * toujours justes, même quand l'en-tête local les laisse à zéro). Stocké ou déflaté : les deux
- * seules méthodes qu'un export produit.
- */
-export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
+/** Une entrée du répertoire central, telle qu'il la décrit (les tailles y sont toujours justes). */
+interface EntreeCentrale {
+  nom: string
+  methode: number
+  tailleCompressee: number
+  decalageLocal: number
+}
+
+/** Le répertoire central du ZIP : la liste de ses entrées, ou `FichierIllisibleError`. */
+function repertoire(zip: Uint8Array): EntreeCentrale[] {
   const vue = new DataView(zip.buffer, zip.byteOffset, zip.byteLength)
   const texte = new TextDecoder('utf-8')
 
@@ -70,7 +78,7 @@ export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
 
   const nombre = vue.getUint16(fin + 10, true)
   let position = vue.getUint32(fin + 16, true)
-  let choisie: { methode: number; tailleCompressee: number; decalageLocal: number } | null = null
+  const entrees: EntreeCentrale[] = []
   for (let n = 0; n < nombre; n++) {
     if (position + 46 > zip.length || vue.getUint32(position, true) !== SIG_CENTRALE) throw new FichierIllisibleError()
     const methode = vue.getUint16(position + 10, true)
@@ -81,25 +89,44 @@ export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
     const decalageLocal = vue.getUint32(position + 42, true)
     const nom = texte.decode(zip.subarray(position + 46, position + 46 + longueurNom))
     position += 46 + longueurNom + longueurExtra + longueurCommentaire
-
-    if (nom.endsWith('/') || nom.slice(nom.lastIndexOf('/') + 1) !== 'diary.csv') continue
-    if (nom === 'diary.csv') {
-      choisie = { methode, tailleCompressee, decalageLocal }
-      break
-    }
-    choisie ??= { methode, tailleCompressee, decalageLocal }
+    entrees.push({ nom, methode, tailleCompressee, decalageLocal })
   }
-  if (!choisie) throw new DiaryCsvMissingError()
+  return entrees
+}
 
-  const locale = choisie.decalageLocal
+/**
+ * Le fichier `nom`, où qu'il vive dans l'arborescence : **le moins profond l'emporte**, le premier
+ * rencontré à profondeur égale. Celui de la racine passe donc devant un homonyme rangé plus bas,
+ * quel que soit l'ordre des entrées — et un export rangé sous un dossier (`export/diary.csv`)
+ * passe devant ses propres `deleted/` et `orphaned/`, que Letterboxd range un cran plus bas.
+ */
+function trouver(entrees: EntreeCentrale[], nom: string): EntreeCentrale | null {
+  let choisie: EntreeCentrale | null = null
+  let profondeur = Infinity
+  for (const entree of entrees) {
+    if (entree.nom.endsWith('/') || entree.nom.slice(entree.nom.lastIndexOf('/') + 1) !== nom) continue
+    const p = entree.nom.split('/').length
+    if (p < profondeur) {
+      choisie = entree
+      profondeur = p
+    }
+  }
+  return choisie
+}
+
+/** Le contenu d'une entrée, stockée ou déflatée : les deux seules méthodes qu'un export produit. */
+async function lire(zip: Uint8Array, entree: EntreeCentrale): Promise<string> {
+  const vue = new DataView(zip.buffer, zip.byteOffset, zip.byteLength)
+  const texte = new TextDecoder('utf-8')
+  const locale = entree.decalageLocal
   if (locale + 30 > zip.length || vue.getUint32(locale, true) !== SIG_LOCALE) throw new FichierIllisibleError()
   // Les longueurs du nom et de l'extra se relisent dans l'en-tête local : son extra n'a pas
   // forcément la taille de celui du répertoire central.
   const debut = locale + 30 + vue.getUint16(locale + 26, true) + vue.getUint16(locale + 28, true)
-  const donnees = zip.subarray(debut, debut + choisie.tailleCompressee)
-  if (donnees.length !== choisie.tailleCompressee) throw new FichierIllisibleError()
-  if (choisie.methode === 0) return texte.decode(donnees)
-  if (choisie.methode !== 8) throw new FichierIllisibleError()
+  const donnees = zip.subarray(debut, debut + entree.tailleCompressee)
+  if (donnees.length !== entree.tailleCompressee) throw new FichierIllisibleError()
+  if (entree.methode === 0) return texte.decode(donnees)
+  if (entree.methode !== 8) throw new FichierIllisibleError()
   try {
     return texte.decode(await decompresser(donnees))
   } catch (e) {
@@ -107,99 +134,37 @@ export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
   }
 }
 
-/** Le CSV à envoyer : extrait du ZIP si c'en est un (signature `PK`), lu tel quel sinon. */
-export async function csvDepuisFichier(octets: Uint8Array): Promise<string> {
-  return ressembleAUnZip(octets) ? extraireDiaryCsv(octets) : new TextDecoder('utf-8').decode(octets)
-}
-
-/** Guillemets et virgules dans un champ, guillemet échappé en le doublant (RFC 4180). */
-export function lireCsv(texte: string): string[][] {
-  const lignes: string[][] = []
-  let ligne: string[] = []
-  let champ = ''
-  let entreGuillemets = false
-  const finChamp = () => {
-    ligne.push(champ)
-    champ = ''
-  }
-  const finLigne = () => {
-    finChamp()
-    lignes.push(ligne)
-    ligne = []
-  }
-  for (let i = 0; i < texte.length; i++) {
-    const c = texte[i]!
-    if (entreGuillemets && c === '"' && texte[i + 1] === '"') {
-      champ += '"'
-      i++
-    } else if (entreGuillemets && c === '"') entreGuillemets = false
-    else if (entreGuillemets) champ += c
-    else if (c === '"') entreGuillemets = true
-    else if (c === ',') finChamp()
-    else if (c === '\r') continue
-    else if (c === '\n') finLigne()
-    else champ += c
-  }
-  if (champ !== '' || ligne.length > 0) finLigne()
-  // Une ligne blanche (fin de fichier) ne porte aucune donnée.
-  return lignes.filter((l) => !(l.length === 1 && l[0] === ''))
-}
-
-const ENTETES = ['Date', 'Name', 'Year', 'Letterboxd URI', 'Rating', 'Rewatch', 'Tags', 'Watched Date']
-
-/** Une ligne de `diary.csv` telle que le back la lit : date déjà résolue, note déjà convertie. */
-export interface LigneDiary {
-  ligne: number
-  name: string
-  year: number | null
-  date: string | null
-  rating: number | null
+/** Le corps de `POST /me/journal/import/letterboxd` : `diary.csv`, et les deux autres s'ils y sont. */
+export interface FichiersExport {
+  csv: string
+  watched_csv?: string
+  ratings_csv?: string
 }
 
 /**
- * Étoiles Letterboxd (0,5 à 5, parfois vide) vers une note sur 10. Une note hors de 1 à 10
- * (« 0 », illisible) devient nulle : le formulaire n'accepte que 1 à 10.
+ * `diary.csv`, `watched.csv` et `ratings.csv` d'un ZIP d'export. `diary.csv` est exigé
+ * (`DiaryCsvMissingError`) ; les deux autres manquent sans rien dire — un export ancien, ou refait à
+ * la main, s'importe encore, sans ses films vus sans date.
  */
-export function noteLetterboxd(brut: string): number | null {
-  const valeur = brut.trim()
-  if (valeur === '') return null
-  const etoiles = Number(valeur)
-  if (!Number.isFinite(etoiles)) return null
-  const note = Math.round(etoiles * 2)
-  return note >= 1 && note <= 10 ? note : null
+export async function lireExport(zip: Uint8Array): Promise<FichiersExport> {
+  const entrees = repertoire(zip)
+  const diary = trouver(entrees, 'diary.csv')
+  if (!diary) throw new DiaryCsvMissingError()
+  const fichiers: FichiersExport = { csv: await lire(zip, diary) }
+  const watched = trouver(entrees, 'watched.csv')
+  if (watched) fichiers.watched_csv = await lire(zip, watched)
+  const ratings = trouver(entrees, 'ratings.csv')
+  // Une note sans la liste des films vus ne sert à rien : le back l'ignorerait.
+  if (ratings && watched) fichiers.ratings_csv = await lire(zip, ratings)
+  return fichiers
 }
 
-/** `AAAA-MM-JJ` bien formé et réel (pas de 31 février), sinon nul. */
-export function dateLetterboxd(brut: string): string | null {
-  const valeur = brut.trim()
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valeur)
-  if (!m) return null
-  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
-  return d.toISOString().slice(0, 10) === valeur ? valeur : null
+/** `diary.csv` seul, d'un ZIP d'export. */
+export async function extraireDiaryCsv(zip: Uint8Array): Promise<string> {
+  return (await lireExport(zip)).csv
 }
 
-/**
- * Les lignes de `diary.csv` indexées par leur numéro (l'en-tête vaut 1, comme `ligne` dans la
- * réponse du back). Vide si l'en-tête n'est pas celui de `diary.csv` : le back aura répondu 400.
- */
-export function lireLignesDiary(csv: string): Map<number, LigneDiary> {
-  const lignes = lireCsv(csv)
-  const entete = lignes[0]
-  const table = new Map<number, LigneDiary>()
-  if (!entete) return table
-  const index = new Map(entete.map((nom, i) => [nom, i]))
-  if (!ENTETES.every((nom) => index.has(nom))) return table
-  const champ = (l: string[], nom: string) => l[index.get(nom)!] ?? ''
-  lignes.slice(1).forEach((l, i) => {
-    const numero = i + 2
-    const annee = champ(l, 'Year').trim()
-    table.set(numero, {
-      ligne: numero,
-      name: champ(l, 'Name').trim(),
-      year: annee.length === 4 && /^\d+$/.test(annee) ? Number(annee) : null,
-      date: dateLetterboxd(champ(l, 'Watched Date')) ?? dateLetterboxd(champ(l, 'Date')),
-      rating: noteLetterboxd(champ(l, 'Rating')),
-    })
-  })
-  return table
+/** Ce qu'on envoie : l'export extrait du ZIP si c'en est un (signature `PK`), `diary.csv` lu tel quel sinon. */
+export async function fichiersDepuisExport(octets: Uint8Array): Promise<FichiersExport> {
+  return ressembleAUnZip(octets) ? lireExport(octets) : { csv: new TextDecoder('utf-8').decode(octets) }
 }

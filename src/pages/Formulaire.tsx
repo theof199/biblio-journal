@@ -19,6 +19,11 @@ interface EtatCorrection {
   item: JournalItem
   /** La page qui avait ouvert la fiche, rendue à la fiche au retour (`Fiche.tsx`). */
   depuis?: string
+  /**
+   * Où revenir une fois la correction faite, à la place de l'accueil : le rapport d'import qui a
+   * ouvert le formulaire (`ImportLetterboxd.tsx`) se retrouve ainsi, ses lignes tranchées comprises.
+   */
+  retour?: string
 }
 
 /**
@@ -56,7 +61,7 @@ export default function Formulaire() {
     // « Ensuite » reproposerait le film qu'on vient de journaliser.
     void client.invalidateQueries({ queryKey: cles.realisateurs })
     void client.invalidateQueries({ queryKey: cles.sagas })
-    naviguer('/', { replace: true })
+    naviguer(etatCorrection?.retour ?? '/', { replace: true })
   }
 
   const creation = useMutation({

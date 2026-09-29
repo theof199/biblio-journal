@@ -233,6 +233,26 @@ describe('request — ce que le Journal envoie et accepte', () => {
     )
   })
 
+  it('ne se dit JSON que s’il envoie un corps : un DELETE sans corps part sans content-type', async () => {
+    // L'API (Fastify) refusait un corps JSON vide, 400 avant la route : le retrait des doublons
+    // échouait « à l'envoi », comme la suppression d'un visionnage et la déconnexion.
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }))
+
+    await request('/me/journal/doublons', { method: 'DELETE' })
+    await request('/auth/logout', { method: 'POST' })
+    for (const [, init] of vi.mocked(fetch).mock.calls) {
+      const entetes = (init!.headers ?? {}) as Record<string, string>
+      expect(Object.keys(entetes).map((c) => c.toLowerCase())).not.toContain('content-type')
+      // L'en-tête du client reste, lui : l'API l'exige sur toute écriture en SameSite=None.
+      expect(entetes['X-Mediatheque-Client']).toBe('mediatheque-journal')
+      expect(init!.body).toBeUndefined()
+    }
+
+    vi.mocked(fetch).mockClear()
+    await request('/me/journal', { method: 'POST', body: { media_id: 'x' } })
+    expect(vi.mocked(fetch).mock.calls[0]![1]).toMatchObject({ headers: { 'content-type': 'application/json' } })
+  })
+
   // Le Voyage répond 202 « en préparation » avec un corps : ce n'est pas une panne.
   it('rend le corps d’un 202', async () => {
     vi.mocked(fetch).mockResolvedValue(

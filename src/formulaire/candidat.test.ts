@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { candidatDepuisImport, candidatDepuisSortieEnCours, candidatDepuisSortieProchaine, sortieEnCoursOuvrable } from './candidat'
+import { candidatDepuisSortieEnCours, candidatDepuisSortieProchaine, sortieEnCoursOuvrable } from './candidat'
 import type { SortieEnCoursFilm, SortieProchaineFilm } from '../api/sorties'
 
 const FILM_EN_COURS: SortieEnCoursFilm = {
@@ -60,35 +60,5 @@ describe('candidatDepuisSortieProchaine', () => {
       cover_url: null,
       director: null,
     })
-  })
-})
-
-describe('candidatDepuisImport', () => {
-  const candidat = {
-    tmdb_id: '348',
-    title: 'Alien, le huitième passager',
-    original_title: 'Alien',
-    year: 1979,
-    cover_url: 'https://image.tmdb.org/t/p/w500/alien.jpg',
-  }
-
-  it('reprend le film du rapport, avec son affiche mais sans réalisateur, et la date et la note de sa ligne', () => {
-    expect(candidatDepuisImport(candidat, { date: '2026-09-01', rating: 9 })).toEqual({
-      source: 'tmdb',
-      external_id: '348',
-      title: 'Alien, le huitième passager',
-      year: 1979,
-      cover_url: 'https://image.tmdb.org/t/p/w500/alien.jpg',
-      director: null,
-      finished_at: '2026-09-01',
-      rating: 9,
-    })
-  })
-
-  it('une ligne sans date ni note (ou introuvable) ne pose ni l’une ni l’autre', () => {
-    const sans = candidatDepuisImport(candidat, { date: null, rating: null })
-    expect('finished_at' in sans).toBe(false)
-    expect('rating' in sans).toBe(false)
-    expect('finished_at' in candidatDepuisImport(candidat, undefined)).toBe(false)
   })
 })

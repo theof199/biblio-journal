@@ -91,7 +91,8 @@ export default function Profil() {
       {/* Le fichier se choisit ici, se lit et s'envoie sur la page suivante, qui montre l'attente puis le rapport. */}
       <label className={styles.entree}>
         <span className={styles.entreeTitre}>Importer Letterboxd</span>
-        <span className={styles.entreeAide}>Le fichier d’export de Letterboxd, ZIP ou diary.csv</span>
+        {/* Le ZIP entier : les films vus sans entrée de journal ne sont que dans son watched.csv. */}
+        <span className={styles.entreeAide}>Le ZIP d’export de Letterboxd (ou son diary.csv seul)</span>
         <input
           type="file"
           className="sr-only"

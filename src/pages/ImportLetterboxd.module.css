@@ -44,6 +44,39 @@
   gap: var(--espace-2);
 }
 
+.nom {
+  margin: 0;
+}
+
+/* Une ligne tranchée dans le rapport : ce qui a été ajouté, et de quoi le corriger. */
+.resolue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-2);
+}
+
+.resolue p {
+  margin: 0;
+}
+
+.secondaire {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
+  font-size: var(--taille-m);
+  cursor: pointer;
+}
+
+.candidat:disabled {
+  cursor: progress;
+  opacity: var(--opacite-inactif);
+}
+
 /* La vignette à gauche, le titre à droite : on tranche une ambiguïté à l'œil. */
 .candidat {
   display: flex;

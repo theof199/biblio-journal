@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, useNavigate } from 'react-router-dom'
-import type { NavigateFunction } from 'react-router-dom'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom'
+import type { Location, NavigateFunction } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
 import { cles } from '../api/cles'
@@ -14,6 +14,7 @@ import { fabriquerZip } from '../test/zip'
 import { INTERVALLE_SUIVI } from '../api/letterboxd'
 import type { RapportImport, TacheImport } from '../api/letterboxd'
 import type { Doublons } from '../api/doublons'
+import type { AddMediaResponse, JournalItem } from '../api/journal'
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 /** La tâche telle que le `POST` la rend (en cours), puis telle que le suivi la rend (finie). */
@@ -23,6 +24,15 @@ const RAPPORT = FINIE.rapport
 const SUIVI = `GET /api/me/journal/import/letterboxd/${LANCEE.id}`
 const lancee = () => json(LANCEE, 202)
 const finie = (rapport: RapportImport = RAPPORT) => json({ ...FINIE, rapport })
+/** Un rapport vide, complété de ce que le test regarde. */
+const unRapport = (partiel: Partial<RapportImport> = {}): RapportImport => ({
+  importes: 0,
+  deja_presents: 0,
+  vus_sans_date: { lignes: 0, importes: 0, deja_presents: 0 },
+  non_reconnus: [],
+  erreurs: [],
+  ...partiel,
+})
 const DOUBLONS = exemple<Doublons>('/me/journal/doublons', 'get', 200)
 const APERCU = 'GET /api/me/journal/doublons'
 const RETRAIT = 'DELETE /api/me/journal/doublons'
@@ -61,8 +71,11 @@ const erreurApi = (message: string, status = 400) => json({ code: 'VALIDATION_ER
 
 /** Le geste « retour » du navigateur (ou du téléphone), que la page ne dessine pas. */
 let historique!: NavigateFunction
+/** L'adresse affichée, telle que la barre du navigateur la montrerait. */
+let adresse!: Location
 function Historique() {
   historique = useNavigate()
+  adresse = useLocation()
   return null
 }
 
@@ -305,7 +318,11 @@ describe('le profil', () => {
 })
 
 describe('l’import Letterboxd', () => {
-  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    // Les lignes tranchées se gardent dans ce navigateur, sous la clé de la tâche.
+    localStorage.clear()
+  })
   afterEach(() => vi.unstubAllGlobals())
 
   const base = (extra: Record<string, (init: RequestInit) => Response | Promise<Response>> = {}) =>
@@ -331,7 +348,7 @@ describe('l’import Letterboxd', () => {
         suivis += 1
         return suivis === 1
           ? json({ ...LANCEE, lignes_total: 480, lignes_traitees: 120 })
-          : finie({ importes: 2, deja_presents: 1, non_reconnus: [], erreurs: [] })
+          : finie(unRapport({ importes: 2, deja_presents: 1 }))
       },
     })
     monter()
@@ -359,7 +376,7 @@ describe('l’import Letterboxd', () => {
     base({
       [IMPORT]: lancee,
       [SUIVI]: () =>
-        json({ ...FINIE, etat: 'echoue', message, rapport: { importes: 7, deja_presents: 0, non_reconnus: [], erreurs: [] } }),
+        json({ ...FINIE, etat: 'echoue', message, rapport: unRapport({ importes: 7 }) }),
     })
     monter()
     await screen.findByText(/Importer Letterboxd/)
@@ -405,7 +422,10 @@ describe('l’import Letterboxd', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 
-  it('un ZIP de l’export : diary.csv en est extrait avant l’envoi', async () => {
+  it('un ZIP de l’export : diary.csv, watched.csv et ratings.csv en sont extraits avant l’envoi', async () => {
+    // « 400 films dans le zip, 200 à l'import » : diary.csv seul ne porte que les visionnages datés.
+    const WATCHED = 'Date,Name,Year,Letterboxd URI\n2024-03-03,Heat,1995,https://boxd.it/f2\n'
+    const RATINGS = 'Date,Name,Year,Letterboxd URI,Rating\n2024-03-03,Heat,1995,https://boxd.it/f2,4\n'
     let corps = ''
     base({
       [IMPORT]: (init) => {
@@ -417,13 +437,30 @@ describe('l’import Letterboxd', () => {
     monter()
     await screen.findByText(/Importer Letterboxd/)
     const zip = await fabriquerZip([
-      { nom: 'watched.csv', contenu: 'x', methode: 'deflate' },
+      { nom: 'export/watched.csv', contenu: WATCHED, methode: 'deflate' },
       { nom: 'export/diary.csv', contenu: CSV, methode: 'deflate' },
+      { nom: 'export/ratings.csv', contenu: RATINGS, methode: 'deflate' },
+      { nom: 'export/deleted/watched.csv', contenu: 'pas celui-ci', methode: 'deflate' },
     ])
     choisir(fichier(zip as BlobPart, 'letterboxd-export.zip'))
 
     await screen.findByText(/importés ·/)
-    expect(JSON.parse(corps)).toEqual({ csv: CSV })
+    expect(JSON.parse(corps)).toEqual({ csv: CSV, watched_csv: WATCHED, ratings_csv: RATINGS })
+  })
+
+  it('les films vus sans date précise sont comptés à part des visionnages datés', async () => {
+    base({
+      [IMPORT]: lancee,
+      [SUIVI]: () => finie(unRapport({ importes: 200, vus_sans_date: { lignes: 200, importes: 150, deja_presents: 50 } })),
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+
+    expect(await screen.findByText('200 importés · 0 déjà présents')).toBeInTheDocument()
+    expect(
+      screen.getByText('Films vus sans date précise : 200 — 150 importés à la date où tu les as marqués vus · 50 déjà au journal'),
+    ).toBeInTheDocument()
   })
 
   it('un ZIP sans diary.csv : son message, et aucun appel à l’API d’import', async () => {
@@ -475,19 +512,34 @@ describe('l’import Letterboxd', () => {
   }
   const AWAKENING = { tmdb_id: '999501', title: 'Alien: Awakening', original_title: 'Alien: Awakening', year: 1979, cover_url: null }
 
+  /** La ligne ambiguë du rapport : la date et la note que l'import aurait écrites viennent avec elle. */
+  const LIGNE_ALIEN = {
+    fichier: 'diary' as const,
+    ligne: 2,
+    name: 'Alien',
+    year: 1979,
+    date: '2026-09-01',
+    rating: 9,
+    candidats: [ALIEN],
+  }
+
   it('le rapport liste les non reconnus avec leurs candidats, vignette comprise, et les erreurs par ligne', async () => {
     base({
       [IMPORT]: lancee,
       [SUIVI]: () =>
-        finie({
-          importes: 0,
-          deja_presents: 3,
-          non_reconnus: [
-            { ligne: 2, name: 'Alien', year: 1979, candidats: [ALIEN, AWAKENING] },
-            { ligne: 3, name: 'Film inconnu', year: null, candidats: [] },
-          ],
-          erreurs: [{ ligne: 4, message: 'Date illisible.' }],
-        }),
+        finie(
+          unRapport({
+            deja_presents: 3,
+            non_reconnus: [
+              { ...LIGNE_ALIEN, candidats: [ALIEN, AWAKENING] },
+              { fichier: 'watched', ligne: 3, name: 'Film inconnu', year: null, date: '2024-03-03', rating: null, candidats: [] },
+            ],
+            erreurs: [
+              { fichier: 'diary', ligne: 4, message: 'Date illisible.' },
+              { fichier: 'watched', ligne: 4, message: 'Titre manquant.' },
+            ],
+          }),
+        ),
     })
     monter()
     await screen.findByText(/Importer Letterboxd/)
@@ -502,57 +554,158 @@ describe('l’import Letterboxd', () => {
     expect(within(alien).getByText('Alien')).toBeInTheDocument()
     const awakening = screen.getByRole('button', { name: 'Alien: Awakening (1979)' })
     expect(within(awakening).queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByText('Vu le 1er septembre 2026 · 9/10')).toBeInTheDocument()
     expect(screen.getByText('Film inconnu')).toBeInTheDocument()
+    expect(screen.getByText('Vu sans date précise, marqué vu le 3 mars 2024')).toBeInTheDocument()
     expect(screen.getByText('Aucun candidat')).toBeInTheDocument()
+    // Deux fichiers, deux numérotations : la même ligne 4 ne se confond pas.
     expect(screen.getByText('Ligne 4 : Date illisible.')).toBeInTheDocument()
+    expect(screen.getByText('watched.csv, ligne 4 : Titre manquant.')).toBeInTheDocument()
   })
 
-  it('un candidat choisi ouvre le formulaire déjà rempli de la date et de la note de sa ligne, avec son affiche', async () => {
-    base({
-      [IMPORT]: lancee,
-      [SUIVI]: () =>
-        finie({
-          importes: 0,
-          deja_presents: 0,
-          non_reconnus: [{ ligne: 2, name: 'Alien', year: 1979, candidats: [ALIEN] }],
-          erreurs: [],
-        }),
-      'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
-    })
-    monter()
-    await screen.findByText(/Importer Letterboxd/)
-    choisir(fichier(CSV))
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' }))
-
-    expect(await screen.findByLabelText(/Vu le/)).toHaveValue('2026-09-01') // « Watched Date », pas « Date »
-    expect(screen.getByRole('radio', { name: 'Note 9 sur 10' })).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByRole('img', { name: 'Alien, le huitième passager' })).toHaveAttribute('src', AFFICHE_ALIEN)
+  const MEDIA = exemple<AddMediaResponse>('/media', 'post', 201)
+  const ITEM = exemple<JournalItem>('/me/journal', 'post', 201)
+  const AJOUT = 'POST /api/media'
+  const VISIONNAGE = 'POST /api/me/journal'
+  /** Les deux routes du formulaire, qui gardent ce qu'on leur envoie. */
+  const enregistrement = (corps: { media?: unknown; visionnage?: unknown } = {}) => ({
+    [AJOUT]: (init: RequestInit) => {
+      corps.media = JSON.parse(String(init.body))
+      return json(MEDIA, 201)
+    },
+    [VISIONNAGE]: (init: RequestInit) => {
+      corps.visionnage = JSON.parse(String(init.body))
+      return json(ITEM, 201)
+    },
   })
 
-  it('revenir au rapport depuis le formulaire d’un candidat le retrouve tel quel, sans renvoyer le fichier', async () => {
+  it('toucher un candidat enregistre le visionnage à la date et à la note de sa ligne, et le rapport reste à l’écran', async () => {
+    const corps: { media?: unknown; visionnage?: unknown } = {}
     const requetes = base({
       [IMPORT]: lancee,
-      [SUIVI]: () =>
-        finie({
-          importes: 4,
-          deja_presents: 0,
-          non_reconnus: [{ ligne: 2, name: 'Alien', year: 1979, candidats: [ALIEN] }],
-          erreurs: [],
-        }),
-      'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
+      [SUIVI]: () => finie(unRapport({ importes: 4, non_reconnus: [{ ...LIGNE_ALIEN, candidats: [ALIEN, AWAKENING] }] })),
+      ...enregistrement(corps),
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' }))
+
+    // Le formulaire ne s'ouvre pas : la ligne passe à « ajouté », dans le rapport.
+    expect(await screen.findByText('Ajouté : Alien, le huitième passager (1979)')).toBeInTheDocument()
+    expect(screen.getByText('4 importés · 0 déjà présents')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Vu le/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Alien: Awakening (1979)' })).not.toBeInTheDocument()
+    // Les deux routes du formulaire, dans son ordre, avec la date et la note de la ligne.
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([IMPORT, AJOUT, VISIONNAGE])
+    expect(corps.media).toEqual({ source: 'tmdb', external_id: '348', type: 'movie' })
+    expect(corps.visionnage).toEqual({ media_id: MEDIA.media.id, finished_at: '2026-09-01', rating: 9 })
+  })
+
+  it('une ligne sans note s’enregistre sans note ; un échec se dit sur sa ligne, qui reste à trancher', async () => {
+    const message = 'Ce film n’a pas pu être ajouté.'
+    const corps: { visionnage?: unknown } = {}
+    let essais = 0
+    base({
+      [IMPORT]: lancee,
+      [SUIVI]: () => finie(unRapport({ non_reconnus: [{ ...LIGNE_ALIEN, rating: null }] })),
+      [AJOUT]: () => json(MEDIA, 201),
+      [VISIONNAGE]: (init) => {
+        essais += 1
+        corps.visionnage = JSON.parse(String(init.body))
+        return essais === 1 ? erreurApi(message) : json(ITEM, 201)
+      },
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.queryByText(/^Ajouté/)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Alien, le huitième passager (1979)' }))
+    expect(await screen.findByText('Ajouté : Alien, le huitième passager (1979)')).toBeInTheDocument()
+    expect(corps.visionnage).toEqual({ media_id: MEDIA.media.id, finished_at: '2026-09-01' })
+  })
+
+  it('la ligne ajoutée le reste après un retour arrière et un rechargement, sans renvoyer le fichier', async () => {
+    const requetes = base({
+      [IMPORT]: lancee,
+      [SUIVI]: () => finie(unRapport({ importes: 4, non_reconnus: [LIGNE_ALIEN] })),
+      ...enregistrement(),
     })
     monter()
     await screen.findByText(/Importer Letterboxd/)
     choisir(fichier(CSV))
     fireEvent.click(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' }))
-    await screen.findByLabelText(/Vu le/)
+    await screen.findByText('Ajouté : Alien, le huitième passager (1979)')
+    // Lancée, la tâche a pris la place du fichier dans l'historique : c'est elle qu'un
+    // rechargement retrouvera, pas le fichier, qu'il renverrait en lançant une autre tâche.
+    expect([adresse.pathname, adresse.search]).toEqual(['/profil/import-letterboxd', `?tache=${LANCEE.id}`])
 
-    act(() => historique(-1))
+    // Au profil, puis retour arrière : la tâche est dans l'adresse, le rapport revient tel quel.
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+    await screen.findByText(/Importer Letterboxd/)
+    act(() => historique(1))
+    expect(await screen.findByText('Ajouté : Alien, le huitième passager (1979)')).toBeInTheDocument()
 
+    // Un rechargement : plus rien en mémoire, ni fichier ni cache — seulement l'adresse.
+    cleanup()
+    monter(`/profil/import-letterboxd?tache=${LANCEE.id}`)
     expect(await screen.findByText('4 importés · 0 déjà présents')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Alien, le huitième passager (1979)' })).toBeInTheDocument()
+    expect(screen.getByText('Ajouté : Alien, le huitième passager (1979)')).toBeInTheDocument()
     expect(requetes.filter((r) => r === IMPORT)).toHaveLength(1)
+    expect(requetes.filter((r) => r === VISIONNAGE)).toHaveLength(1)
+  })
+
+  it('l’état d’une ligne se garde sous la clé de sa tâche : une autre tâche ne le voit pas', async () => {
+    const AUTRE = { ...FINIE, id: '6c1f4d3e-9e5b-4a7c-8d2f-3b8e0f5c7a21', rapport: unRapport({ non_reconnus: [LIGNE_ALIEN] }) }
+    base({
+      [IMPORT]: lancee,
+      [SUIVI]: () => finie(unRapport({ non_reconnus: [LIGNE_ALIEN] })),
+      [`GET /api/me/journal/import/letterboxd/${AUTRE.id}`]: () => json(AUTRE),
+      ...enregistrement(),
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+    fireEvent.click(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' }))
+    await screen.findByText('Ajouté : Alien, le huitième passager (1979)')
+
+    cleanup()
+    monter(`/profil/import-letterboxd?tache=${AUTRE.id}`)
+    expect(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' })).toBeInTheDocument()
+    expect(screen.queryByText(/^Ajouté/)).not.toBeInTheDocument()
+  })
+
+  it('« Corriger » ouvre le formulaire sur le visionnage ajouté, et la correction ramène au rapport', async () => {
+    let patch: unknown
+    base({
+      [IMPORT]: lancee,
+      [SUIVI]: () => finie(unRapport({ importes: 4, non_reconnus: [LIGNE_ALIEN] })),
+      ...enregistrement(),
+      'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
+      [`PATCH /api/me/journal/${ITEM.entry.id}`]: (init) => {
+        patch = JSON.parse(String(init.body))
+        return json(ITEM)
+      },
+    })
+    monter()
+    await screen.findByText(/Importer Letterboxd/)
+    choisir(fichier(CSV))
+    fireEvent.click(await screen.findByRole('button', { name: 'Alien, le huitième passager (1979)' }))
+    await screen.findByText('Ajouté : Alien, le huitième passager (1979)')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+    expect(await screen.findByLabelText(/Vu le/)).toHaveValue(ITEM.entry.finished_at)
+    fireEvent.click(screen.getByRole('radio', { name: 'Note 3 sur 10' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+
+    expect(await screen.findByText('Ajouté : Alien, le huitième passager (1979)')).toBeInTheDocument()
+    expect(screen.getByText('4 importés · 0 déjà présents')).toBeInTheDocument()
+    expect(patch).toEqual({ rating: 3 })
   })
 
   it('après un import réussi, le journal, les chiffres et le bilan sont périmés', async () => {
@@ -604,7 +757,12 @@ describe('retirer les doublons', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  const TROIS: Doublons = { total: 3, doublons: [0, 1, 2].map((i) => ({ ...DOUBLONS.doublons[0]!, id: `d${i}` })) }
+  const TROIS: Doublons = {
+    total: 3,
+    doublons: [0, 1, 2].map((i) => ({ ...DOUBLONS.doublons[0]!, id: `d${i}` })),
+    cas_limites: [],
+  }
+  const CAS = DOUBLONS.cas_limites[0]!
 
   const base = (extra: Record<string, (init: RequestInit) => Response | Promise<Response>> = {}) =>
     servir({
@@ -643,11 +801,53 @@ describe('retirer les doublons', () => {
   })
 
   it('aucun doublon : il le dit, sans rien proposer de retirer', async () => {
-    base({ [APERCU]: () => json({ total: 0, doublons: [] }) })
+    base({ [APERCU]: () => json({ total: 0, doublons: [], cas_limites: [] }) })
     monter()
 
     fireEvent.click(await screen.findByRole('button', { name: /Retirer les doublons/ }))
     expect(await screen.findByText('Aucun doublon dans ton journal.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Retirer (le|les) / })).not.toBeInTheDocument()
+  })
+
+  it('les cas limites se montrent à part, ne partent jamais avec les doublons, et se retirent un par un', async () => {
+    const RETRAIT_CAS = `DELETE /api/me/journal/${CAS.id}`
+    let entetes: HeadersInit | undefined
+    const requetes = base({
+      [APERCU]: () => json({ ...TROIS, cas_limites: [CAS] }),
+      // Le retrait d'ensemble rend les cas limites qui restent : le même.
+      [RETRAIT]: () => json({ ...TROIS, cas_limites: [CAS] }),
+      [RETRAIT_CAS]: (init) => {
+        entetes = init.headers
+        return new Response(null, { status: 204 })
+      },
+    })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Retirer les doublons/ }))
+    expect(await screen.findByText('À vérifier toi-même')).toBeInTheDocument()
+    expect(screen.getByText(`${CAS.media.title} · 13 juillet 2026 (9/10)`)).toBeInTheDocument()
+    expect(screen.getByText('Ressemble à celui du 12 juillet 2026 (9/10) : la veille ou le lendemain.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer les 3 doublons' }))
+    expect(await screen.findByText('3 doublons retirés.')).toBeInTheDocument()
+    // Le retrait d'ensemble ne vise que `/me/journal/doublons` ; le cas limite est toujours là.
+    expect(requetes).not.toContain(RETRAIT_CAS)
+    const retirerCeluiCi = screen.getByRole('button', { name: `Retirer ${CAS.media.title} du 13 juillet 2026` })
+
+    fireEvent.click(retirerCeluiCi)
+    expect(await screen.findByText('Retiré.')).toBeInTheDocument()
+    expect(requetes.filter((r) => r === RETRAIT_CAS)).toHaveLength(1)
+    // Un DELETE sans corps ne se dit pas JSON : l'API refusait un corps JSON vide.
+    expect(Object.keys(entetes ?? {}).map((c) => c.toLowerCase())).not.toContain('content-type')
+  })
+
+  it('aucun doublon sûr, mais des cas limites : il le dit, sans proposer de retrait d’ensemble', async () => {
+    base({ [APERCU]: () => json({ total: 0, doublons: [], cas_limites: [CAS] }) })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Retirer les doublons/ }))
+    expect(await screen.findByText('Aucun doublon sûr dans ton journal.')).toBeInTheDocument()
+    expect(screen.getByText('À vérifier toi-même')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Retirer (le|les) / })).not.toBeInTheDocument()
   })
 

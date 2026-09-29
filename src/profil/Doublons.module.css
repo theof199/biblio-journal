@@ -43,6 +43,30 @@
   font-size: var(--taille-s);
 }
 
+.sousTitre {
+  margin: 0;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-moyenne);
+}
+
+/* Les cas limites : chacun avec ce à quoi il ressemble, et de quoi le retirer à la main. */
+.cas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unCas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-1);
+  font-size: var(--taille-s);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

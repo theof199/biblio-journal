@@ -3,12 +3,9 @@ import {
   DiaryCsvMissingError,
   FichierIllisibleError,
   NavigateurSansZipError,
-  csvDepuisFichier,
-  dateLetterboxd,
   extraireDiaryCsv,
-  lireCsv,
-  lireLignesDiary,
-  noteLetterboxd,
+  fichiersDepuisExport,
+  lireExport,
   ressembleAUnZip,
 } from './letterboxd'
 import { fabriquerZip } from '../test/zip'
@@ -18,77 +15,9 @@ const CSV = `${ENTETE}
 2026-09-02,"Alien, le huitième passager",1979,https://boxd.it/a,4.5,,,2026-09-01
 2026-09-03,Heat,1995,https://boxd.it/b,,Yes,,
 `
+const WATCHED = 'Date,Name,Year,Letterboxd URI\n2026-09-01,Alien,1979,https://boxd.it/f1\n2024-03-03,Heat,1995,https://boxd.it/f2\n'
+const RATINGS = 'Date,Name,Year,Letterboxd URI,Rating\n2024-03-03,Heat,1995,https://boxd.it/f2,4\n'
 const enc = (t: string) => new TextEncoder().encode(t)
-
-describe('lireCsv', () => {
-  it('lit les guillemets, les virgules et les guillemets doublés dans un champ', () => {
-    expect(lireCsv('a,"b, c","d ""e"""\n1,2,3\n')).toEqual([
-      ['a', 'b, c', 'd "e"'],
-      ['1', '2', '3'],
-    ])
-  })
-
-  it('lit du CRLF et écarte les lignes blanches, la dernière sans saut de ligne comprise', () => {
-    expect(lireCsv('a,b\r\n\r\n1,2')).toEqual([
-      ['a', 'b'],
-      ['1', '2'],
-    ])
-  })
-
-  it('un saut de ligne entre guillemets reste dans le champ', () => {
-    expect(lireCsv('"a\nb",c\n')).toEqual([['a\nb', 'c']])
-  })
-})
-
-describe('noteLetterboxd', () => {
-  it('double les étoiles : 0,5 vaut 1, 4,5 vaut 9, 5 vaut 10', () => {
-    expect([noteLetterboxd('0.5'), noteLetterboxd('4.5'), noteLetterboxd('5')]).toEqual([1, 9, 10])
-  })
-
-  it('vide, illisible ou hors de 1 à 10 : nulle, le formulaire refuserait le reste', () => {
-    expect([noteLetterboxd(''), noteLetterboxd('  '), noteLetterboxd('beaucoup'), noteLetterboxd('0'), noteLetterboxd('6')]).toEqual([
-      null,
-      null,
-      null,
-      null,
-      null,
-    ])
-  })
-})
-
-describe('dateLetterboxd', () => {
-  it('rend une date réelle telle quelle', () => {
-    expect(dateLetterboxd(' 2024-02-29 ')).toBe('2024-02-29')
-  })
-
-  it('refuse une forme fausse et un jour qui n’existe pas', () => {
-    expect(dateLetterboxd('29/02/2024')).toBeNull()
-    expect(dateLetterboxd('2025-02-29')).toBeNull()
-    expect(dateLetterboxd('2026-13-01')).toBeNull()
-    expect(dateLetterboxd('')).toBeNull()
-  })
-})
-
-describe('lireLignesDiary', () => {
-  it('indexe par numéro de ligne, l’en-tête valant 1, avec la date vue plutôt que la date de saisie', () => {
-    const lignes = lireLignesDiary(CSV)
-    expect(lignes.get(2)).toEqual({ ligne: 2, name: 'Alien, le huitième passager', year: 1979, date: '2026-09-01', rating: 9 })
-    // « Watched Date » vide : la colonne « Date » prend le relais ; note vide : nulle.
-    expect(lignes.get(3)).toEqual({ ligne: 3, name: 'Heat', year: 1995, date: '2026-09-03', rating: null })
-    expect(lignes.has(1)).toBe(false)
-  })
-
-  it('une année qui n’a pas quatre chiffres est ignorée', () => {
-    const csv = `${ENTETE}\n2026-09-02,X,79,u,3,,,2026-09-02\n2026-09-02,Y,,u,3,,,2026-09-02\n`
-    const l = lireLignesDiary(csv)
-    expect([l.get(2)!.year, l.get(3)!.year]).toEqual([null, null])
-  })
-
-  it('un CSV qui n’est pas diary.csv (en-têtes de watched.csv) ne donne rien', () => {
-    expect(lireLignesDiary('Date,Name,Year,Letterboxd URI\n2026-01-01,X,2000,u\n').size).toBe(0)
-    expect(lireLignesDiary('').size).toBe(0)
-  })
-})
 
 describe('le fichier d’export', () => {
   it('reconnaît un ZIP à sa signature, et rien d’autre', () => {
@@ -97,16 +26,28 @@ describe('le fichier d’export', () => {
     expect(ressembleAUnZip(new Uint8Array([0x50, 0x4b]))).toBe(false)
   })
 
-  it('un CSV seul est lu tel quel', async () => {
-    expect(await csvDepuisFichier(enc(CSV))).toBe(CSV)
+  it('un CSV seul est lu tel quel, comme diary.csv', async () => {
+    expect(await fichiersDepuisExport(enc(CSV))).toEqual({ csv: CSV })
   })
 
-  it('extrait diary.csv d’un ZIP déflaté, sous un dossier, à côté d’autres fichiers', async () => {
+  it('extrait diary.csv, watched.csv et ratings.csv d’un ZIP déflaté, sous un dossier, à côté d’autres fichiers', async () => {
+    // « 400 films dans le zip, 200 à l'import » : `diary.csv` seul ne porte que les visionnages
+    // datés. Les films marqués vus sans entrée de journal ne sont que dans `watched.csv`.
     const zip = await fabriquerZip([
-      { nom: 'ratings.csv', contenu: 'Date,Name\n', methode: 'deflate' },
+      { nom: 'letterboxd-export/ratings.csv', contenu: RATINGS, methode: 'deflate' },
+      { nom: 'letterboxd-export/reviews.csv', contenu: 'Date,Name\n', methode: 'deflate' },
       { nom: 'letterboxd-export/diary.csv', contenu: CSV, methode: 'deflate' },
+      { nom: 'letterboxd-export/watched.csv', contenu: WATCHED, methode: 'deflate' },
     ])
-    expect(await csvDepuisFichier(zip)).toBe(CSV)
+    expect(await fichiersDepuisExport(zip)).toEqual({ csv: CSV, watched_csv: WATCHED, ratings_csv: RATINGS })
+  })
+
+  it('un export sans watched.csv s’envoie avec diary.csv seul ; ratings.csv sans watched.csv ne part pas', async () => {
+    const zip = await fabriquerZip([
+      { nom: 'diary.csv', contenu: CSV },
+      { nom: 'ratings.csv', contenu: RATINGS },
+    ])
+    expect(await lireExport(zip)).toEqual({ csv: CSV })
   })
 
   it('extrait diary.csv d’un ZIP stocké, accents compris', async () => {
@@ -117,21 +58,31 @@ describe('le fichier d’export', () => {
 
   it('un ZIP d’archiveur réel : extras de tailles différentes, commentaire, tailles locales à zéro', async () => {
     const zip = await fabriquerZip([
-      { nom: 'ratings.csv', contenu: 'Date,Name\n', methode: 'deflate', reel: true },
+      { nom: 'ratings.csv', contenu: RATINGS, methode: 'deflate', reel: true },
       { nom: 'diary.csv', contenu: CSV, methode: 'deflate', reel: true },
+      { nom: 'watched.csv', contenu: WATCHED, methode: 'deflate', reel: true },
     ])
-    expect(await extraireDiaryCsv(zip)).toBe(CSV)
+    expect(await lireExport(zip)).toEqual({ csv: CSV, watched_csv: WATCHED, ratings_csv: RATINGS })
     const stocke = await fabriquerZip([{ nom: 'diary.csv', contenu: CSV, reel: true }])
     expect(await extraireDiaryCsv(stocke)).toBe(CSV)
   })
 
-  it('le diary.csv de la racine l’emporte sur un homonyme de sous-dossier, même rangé avant lui', async () => {
+  it('le fichier le moins profond l’emporte sur un homonyme rangé plus bas, même listé avant lui', async () => {
     const zip = await fabriquerZip([
       { nom: 'deleted/diary.csv', contenu: 'pas celui-ci', methode: 'deflate' },
       { nom: 'diary.csv', contenu: CSV, methode: 'deflate' },
       { nom: 'orphaned/diary.csv', contenu: 'ni celui-ci' },
     ])
     expect(await extraireDiaryCsv(zip)).toBe(CSV)
+
+    // Un export rangé sous un dossier : ses `deleted/` sont un cran plus bas.
+    const range = await fabriquerZip([
+      { nom: 'export/deleted/watched.csv', contenu: 'pas celui-ci' },
+      { nom: 'export/deleted/diary.csv', contenu: 'ni celui-ci' },
+      { nom: 'export/diary.csv', contenu: CSV },
+      { nom: 'export/watched.csv', contenu: WATCHED },
+    ])
+    expect(await lireExport(range)).toEqual({ csv: CSV, watched_csv: WATCHED })
   })
 
   it('un ZIP sans diary.csv : l’erreur qui le dit, avant tout réseau', async () => {
@@ -170,7 +121,7 @@ describe('le fichier d’export', () => {
       const zip = await fabriquerZip([{ nom: 'diary.csv', contenu: CSV }])
       vi.stubGlobal('DecompressionStream', undefined)
       expect(await extraireDiaryCsv(zip)).toBe(CSV)
-      expect(await csvDepuisFichier(enc(CSV))).toBe(CSV)
+      expect(await fichiersDepuisExport(enc(CSV))).toEqual({ csv: CSV })
     })
   })
 })

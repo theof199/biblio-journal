@@ -7,15 +7,16 @@ describe('l’import Letterboxd, tâche suivie', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
   afterEach(() => vi.unstubAllGlobals())
 
-  it('lance l’import en postant le CSV en JSON, `{ csv }`, jamais en text/csv', async () => {
+  it('lance l’import en postant les CSV en JSON, `{ csv, watched_csv, ratings_csv }`, jamais en text/csv', async () => {
     const tache = exemple<TacheImport>('/me/journal/import/letterboxd', 'post', 202)
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(tache), { status: 202 }))
 
-    await expect(lancerImport('Date,Name\n')).resolves.toEqual(tache)
+    const fichiers = { csv: 'Date,Name\n', watched_csv: 'Date,Name,Year\n', ratings_csv: 'Date,Name,Year,Rating\n' }
+    await expect(lancerImport(fichiers)).resolves.toEqual(tache)
 
     const [url, init] = vi.mocked(fetch).mock.calls[0]!
     expect(url).toBe('/api/me/journal/import/letterboxd')
-    expect(init).toMatchObject({ method: 'POST', body: JSON.stringify({ csv: 'Date,Name\n' }) })
+    expect(init).toMatchObject({ method: 'POST', body: JSON.stringify(fichiers) })
   })
 
   it('relit la tâche par son identifiant', async () => {

@@ -28502,11 +28502,11 @@
     },
     "/me/journal/import/letterboxd": {
       "post": {
-        "summary": "Lancer l’import du journal Letterboxd (`diary.csv`)",
+        "summary": "Lancer l’import du journal Letterboxd (`diary.csv`, `watched.csv`, `ratings.csv`)",
         "tags": [
           "carnet"
         ],
-        "description": "Letterboxd est fermé (Cloudflare, API sur invitation) : pas de synchronisation possible. Le seul chemin est l’export personnel du membre (Réglages → Import & Export → « Export your data » sur Letterboxd), un ZIP dont l’appli extrait `diary.csv` avant de l’envoyer ici — **en JSON**, `{ \"csv\": \"...\" }`, jamais en `text/csv`.\n\n**Une tâche suivie, pas une réponse longue** (correctif du 29 septembre 2026). La route vérifie l’en-tête, lance le traitement et répond `202` aussitôt, avec la tâche `en_cours` ; `GET /me/journal/import/letterboxd/{id}` en donne l’avancement puis le rapport. Elle rendait le rapport à la fin, et un journal réel dépassait les 75 s du relais du NAS : `504` pendant que l’import continuait.\n\nPour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés, chacun avec son affiche TMDB.\n\n**Aucun candidat net en français ? La recherche est refaite en anglais** (brief du 16 septembre 2026) — Letterboxd donne parfois le titre anglais d’un film étranger, que ni le titre français ni l’original ne rapprochent. Un seul candidat net dans l’un ou l’autre importe ; plusieurs, dans l’une ou l’autre langue, partent dans `non_reconnus` avec l’union des deux recherches.\n\nLa date de l’entrée est `Watched Date`, ou `Date` si elle est vide. La note est `Rating × 2` arrondie à l’entier (une note Letterboxd vide n’écrit pas de note). **Une ligne déjà présente — même film TMDB, même date, chez ce membre — est ignorée** (`deja_presents`), sans créer de doublon : relancer le même fichier ne duplique rien. Une ligne en échec part dans `erreurs` sans arrêter les autres.\n\nFilms seulement, comme le reste du carnet : l’œuvre entre dans la bibliothèque si elle n’y était pas, exactement comme `POST /media/:id/log`, sans toucher au statut de suivi.\n\nLes recherches TMDB passent une par une, à 250 ms d’écart, par la file sortante commune : compter une demi-seconde à une seconde par film nouveau. La résolution d’un titre et d’une année se mémorise 30 jours en Redis : rejouer le même fichier ne rappelle pas TMDB pour les lignes déjà résolues.\n\n**Un import à la fois par membre.** Renvoyer le même fichier pendant qu’il tourne rend la tâche en cours (même `id`), sans en lancer une seconde ; un autre fichier répond `409` jusqu’à la fin de la première.\n\nUn CSV sans les en-têtes de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`) répond `400`, sans tâche. `watched.csv` et `ratings.csv`, qui n’en portent qu’un sous-ensemble, ne sont donc pas acceptés tels quels.",
+        "description": "Letterboxd est fermé (Cloudflare, API sur invitation) : pas de synchronisation possible. Le seul chemin est l’export personnel du membre (Réglages → Import & Export → « Export your data » sur Letterboxd), un ZIP dont l’appli extrait `diary.csv`, `watched.csv` et `ratings.csv` avant de les envoyer ici — **en JSON**, `{ \"csv\": \"...\", \"watched_csv\": \"...\", \"ratings_csv\": \"...\" }`, jamais en `text/csv`. 3 Mo en tout.\n\n**Les films vus sans date** (correctif du 30 septembre 2026). `diary.csv` ne porte que les visionnages datés ; un film seulement marqué « vu » n’est que dans `watched.csv`. Les films de `watched.csv` absents de `diary.csv` (même titre normalisé, même année : les deux fichiers n’ont pas d’identifiant commun) sont traités après les lignes datées : **à la date où ils ont été marqués vus** (`Date` de `watched.csv`), avec la note de `ratings.csv` s’il y en a une. Comptés à part, dans `rapport.vus_sans_date`. **Un tel film n’est jamais importé si j’en ai déjà un visionnage, à n’importe quelle date** — il ne dit que « je l’ai vu » : aucune ligne de `diary.csv` ne s’écrit donc deux fois à cause de `watched.csv`. Sans `watched_csv`, l’import ne lit que `diary.csv`, comme avant.\n\n**Une tâche suivie, pas une réponse longue** (correctif du 29 septembre 2026). La route vérifie l’en-tête, lance le traitement et répond `202` aussitôt, avec la tâche `en_cours` ; `GET /me/journal/import/letterboxd/{id}` en donne l’avancement puis le rapport. Elle rendait le rapport à la fin, et un journal réel dépassait les 75 s du relais du NAS : `504` pendant que l’import continuait.\n\nPour chaque ligne : titre et année cherchent un candidat chez TMDB, apparié par les mêmes règles que l’import SensCritique (`dev/importer-senscritique.ts`) — **un seul candidat net importe**, zéro ou plusieurs partent dans `non_reconnus` avec les candidats trouvés, jamais devinés, chacun avec son affiche TMDB — et la date et la note que l’import aurait écrites, pour que l’appli enregistre le visionnage tel quel une fois le candidat choisi (`POST /media` puis `POST /me/journal`).\n\n**Aucun candidat net en français ? La recherche est refaite en anglais** (brief du 16 septembre 2026) — Letterboxd donne parfois le titre anglais d’un film étranger, que ni le titre français ni l’original ne rapprochent. Un seul candidat net dans l’un ou l’autre importe ; plusieurs, dans l’une ou l’autre langue, partent dans `non_reconnus` avec l’union des deux recherches.\n\nLa date de l’entrée est `Watched Date`, ou `Date` si elle est vide. La note est `Rating × 2` arrondie à l’entier (une note Letterboxd vide n’écrit pas de note). **Une ligne déjà présente — même film TMDB, même date, chez ce membre — est ignorée** (`deja_presents`), sans créer de doublon : relancer le même fichier ne duplique rien. Une ligne en échec part dans `erreurs` sans arrêter les autres.\n\nFilms seulement, comme le reste du carnet : l’œuvre entre dans la bibliothèque si elle n’y était pas, exactement comme `POST /media/:id/log`, sans toucher au statut de suivi.\n\nLes recherches TMDB passent une par une, à 250 ms d’écart, par la file sortante commune : compter une demi-seconde à une seconde par film nouveau. La résolution d’un titre et d’une année se mémorise 30 jours en Redis : rejouer le même fichier ne rappelle pas TMDB pour les lignes déjà résolues.\n\n**Un import à la fois par membre.** Renvoyer le même fichier pendant qu’il tourne rend la tâche en cours (même `id`), sans en lancer une seconde ; un autre fichier répond `409` jusqu’à la fin de la première.\n\nUn fichier sans ses en-têtes répond `400`, sans tâche : `csv` doit porter celles de `diary.csv` (`Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date`), `watched_csv` celles de `watched.csv` (`Date,Name,Year,Letterboxd URI`), `ratings_csv` celles de `ratings.csv` (`Date,Name,Year,Letterboxd URI,Rating`). `watched.csv` envoyé à la place de `diary.csv` est donc refusé.",
         "requestBody": {
           "required": true,
           "content": {
@@ -28519,17 +28519,29 @@
                     "minLength": 1,
                     "maxLength": 2097152,
                     "description": "Le contenu de `diary.csv`, tel quel — l’appli l’a extrait du ZIP Letterboxd si besoin"
+                  },
+                  "watched_csv": {
+                    "description": "Le contenu de `watched.csv` (`Date,Name,Year,Letterboxd URI`), tel quel : tous les films marqués vus, datés ou non. Ceux qui ne sont pas dans `diary.csv` s’importent à leur `Date`, la date où ils ont été marqués vus.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2097152
+                  },
+                  "ratings_csv": {
+                    "description": "Le contenu de `ratings.csv` (`Date,Name,Year,Letterboxd URI,Rating`), tel quel : la note d’un film de `watched.csv` absent de `diary.csv`. Ignoré sans `watched_csv`.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2097152
                   }
                 },
                 "required": [
                   "csv"
                 ],
                 "additionalProperties": false,
-                "description": "Le CSV `diary.csv` de l’export Letterboxd"
+                "description": "Les CSV de l’export Letterboxd : `diary.csv`, et s’il y est, `watched.csv` et `ratings.csv`"
               }
             }
           },
-          "description": "Le CSV `diary.csv` de l’export Letterboxd"
+          "description": "Les CSV de l’export Letterboxd : `diary.csv`, et s’il y est, `watched.csv` et `ratings.csv`"
         },
         "responses": {
           "202": {
@@ -28558,7 +28570,7 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Lignes de données du fichier, en-tête exclu"
+                      "description": "Lignes à traiter, en-têtes exclus : celles de `diary.csv`, plus les films de `watched.csv` absents de `diary.csv` (`rapport.vus_sans_date.lignes`)"
                     },
                     "lignes_traitees": {
                       "type": "integer",
@@ -28573,24 +28585,62 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991,
-                          "description": "Visionnages importés — un par ligne reconnue et pas déjà présente"
+                          "description": "Visionnages datés importés — un par ligne de `diary.csv` reconnue et pas déjà présente"
                         },
                         "deja_presents": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991,
-                          "description": "Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date"
+                          "description": "Lignes de `diary.csv` ignorées : ce membre a déjà une entrée pour ce film à cette date"
+                        },
+                        "vus_sans_date": {
+                          "type": "object",
+                          "properties": {
+                            "lignes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Films de `watched.csv` absents de `diary.csv` — ceux que l’import traite en plus des visionnages datés"
+                            },
+                            "importes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Films importés à la date où ils ont été marqués vus"
+                            },
+                            "deja_presents": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Films ignorés : ce membre a déjà au moins un visionnage de ce film, à n’importe quelle date"
+                            }
+                          },
+                          "required": [
+                            "lignes",
+                            "importes",
+                            "deja_presents"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Les films vus sans date précise — dans `watched.csv`, pas dans `diary.csv` — comptés à part des visionnages datés. Tout à zéro sans `watched_csv`."
                         },
                         "non_reconnus": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
+                              "fichier": {
+                                "type": "string",
+                                "enum": [
+                                  "diary",
+                                  "watched"
+                                ],
+                                "description": "Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport."
+                              },
                               "ligne": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991,
-                                "description": "Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données"
+                                "description": "Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données"
                               },
                               "name": {
                                 "type": "string"
@@ -28606,6 +28656,25 @@
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "description": "La date que l’import aurait donnée au visionnage : `Watched Date`, sinon `Date` pour `diary` ; `Date` (le jour où le film a été marqué vu) pour `watched`. De quoi l’enregistrer tel quel une fois le candidat choisi."
+                              },
+                              "rating": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "La note que l’import aurait donnée (étoiles × 2) : `Rating` de la ligne pour `diary`, celle de `ratings.csv` pour `watched`. Nulle sans note."
                               },
                               "candidats": {
                                 "type": "array",
@@ -28668,41 +28737,57 @@
                               }
                             },
                             "required": [
+                              "fichier",
                               "ligne",
                               "name",
                               "year",
+                              "date",
+                              "rating",
                               "candidats"
                             ],
                             "additionalProperties": false,
                             "description": "Une ligne non importée, faute d’un candidat net"
-                          }
+                          },
+                          "description": "Des deux fichiers, `diary` d’abord"
                         },
                         "erreurs": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
+                              "fichier": {
+                                "type": "string",
+                                "enum": [
+                                  "diary",
+                                  "watched"
+                                ],
+                                "description": "Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport."
+                              },
                               "ligne": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
+                                "maximum": 9007199254740991,
+                                "description": "Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données"
                               },
                               "message": {
                                 "type": "string"
                               }
                             },
                             "required": [
+                              "fichier",
                               "ligne",
                               "message"
                             ],
                             "additionalProperties": false,
                             "description": "Une ligne dont le traitement a échoué"
-                          }
+                          },
+                          "description": "Des deux fichiers, `diary` d’abord"
                         }
                       },
                       "required": [
                         "importes",
                         "deja_presents",
+                        "vus_sans_date",
                         "non_reconnus",
                         "erreurs"
                       ],
@@ -28737,11 +28822,16 @@
                     "value": {
                       "id": "5b0f3c2e-8d4a-4f6b-9c1e-2a7d9e4b6f10",
                       "etat": "en_cours",
-                      "lignes_total": 5,
+                      "lignes_total": 8,
                       "lignes_traitees": 0,
                       "rapport": {
                         "importes": 0,
                         "deja_presents": 0,
+                        "vus_sans_date": {
+                          "lignes": 3,
+                          "importes": 0,
+                          "deja_presents": 0
+                        },
                         "non_reconnus": [],
                         "erreurs": []
                       },
@@ -28842,7 +28932,7 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Lignes de données du fichier, en-tête exclu"
+                      "description": "Lignes à traiter, en-têtes exclus : celles de `diary.csv`, plus les films de `watched.csv` absents de `diary.csv` (`rapport.vus_sans_date.lignes`)"
                     },
                     "lignes_traitees": {
                       "type": "integer",
@@ -28857,24 +28947,62 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991,
-                          "description": "Visionnages importés — un par ligne reconnue et pas déjà présente"
+                          "description": "Visionnages datés importés — un par ligne de `diary.csv` reconnue et pas déjà présente"
                         },
                         "deja_presents": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991,
-                          "description": "Lignes ignorées : ce membre a déjà une entrée pour ce film à cette date"
+                          "description": "Lignes de `diary.csv` ignorées : ce membre a déjà une entrée pour ce film à cette date"
+                        },
+                        "vus_sans_date": {
+                          "type": "object",
+                          "properties": {
+                            "lignes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Films de `watched.csv` absents de `diary.csv` — ceux que l’import traite en plus des visionnages datés"
+                            },
+                            "importes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Films importés à la date où ils ont été marqués vus"
+                            },
+                            "deja_presents": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Films ignorés : ce membre a déjà au moins un visionnage de ce film, à n’importe quelle date"
+                            }
+                          },
+                          "required": [
+                            "lignes",
+                            "importes",
+                            "deja_presents"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Les films vus sans date précise — dans `watched.csv`, pas dans `diary.csv` — comptés à part des visionnages datés. Tout à zéro sans `watched_csv`."
                         },
                         "non_reconnus": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
+                              "fichier": {
+                                "type": "string",
+                                "enum": [
+                                  "diary",
+                                  "watched"
+                                ],
+                                "description": "Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport."
+                              },
                               "ligne": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991,
-                                "description": "Numéro de la ligne dans le CSV — 1 pour l’en-tête, 2 pour la première ligne de données"
+                                "description": "Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données"
                               },
                               "name": {
                                 "type": "string"
@@ -28890,6 +29018,25 @@
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "description": "La date que l’import aurait donnée au visionnage : `Watched Date`, sinon `Date` pour `diary` ; `Date` (le jour où le film a été marqué vu) pour `watched`. De quoi l’enregistrer tel quel une fois le candidat choisi."
+                              },
+                              "rating": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "La note que l’import aurait donnée (étoiles × 2) : `Rating` de la ligne pour `diary`, celle de `ratings.csv` pour `watched`. Nulle sans note."
                               },
                               "candidats": {
                                 "type": "array",
@@ -28952,41 +29099,57 @@
                               }
                             },
                             "required": [
+                              "fichier",
                               "ligne",
                               "name",
                               "year",
+                              "date",
+                              "rating",
                               "candidats"
                             ],
                             "additionalProperties": false,
                             "description": "Une ligne non importée, faute d’un candidat net"
-                          }
+                          },
+                          "description": "Des deux fichiers, `diary` d’abord"
                         },
                         "erreurs": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
+                              "fichier": {
+                                "type": "string",
+                                "enum": [
+                                  "diary",
+                                  "watched"
+                                ],
+                                "description": "Le fichier d’où vient la ligne : `diary` (`diary.csv`, un visionnage daté) ou `watched` (`watched.csv`, un film vu absent de `diary.csv`). Avec `ligne`, c’est la clé d’une ligne du rapport."
+                              },
                               "ligne": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
+                                "maximum": 9007199254740991,
+                                "description": "Numéro de la ligne dans son fichier (`fichier`) — 1 pour l’en-tête, 2 pour la première ligne de données"
                               },
                               "message": {
                                 "type": "string"
                               }
                             },
                             "required": [
+                              "fichier",
                               "ligne",
                               "message"
                             ],
                             "additionalProperties": false,
                             "description": "Une ligne dont le traitement a échoué"
-                          }
+                          },
+                          "description": "Des deux fichiers, `diary` d’abord"
                         }
                       },
                       "required": [
                         "importes",
                         "deja_presents",
+                        "vus_sans_date",
                         "non_reconnus",
                         "erreurs"
                       ],
@@ -29021,16 +29184,24 @@
                     "value": {
                       "id": "5b0f3c2e-8d4a-4f6b-9c1e-2a7d9e4b6f10",
                       "etat": "termine",
-                      "lignes_total": 5,
-                      "lignes_traitees": 5,
+                      "lignes_total": 8,
+                      "lignes_traitees": 8,
                       "rapport": {
                         "importes": 2,
                         "deja_presents": 1,
+                        "vus_sans_date": {
+                          "lignes": 3,
+                          "importes": 2,
+                          "deja_presents": 1
+                        },
                         "non_reconnus": [
                           {
+                            "fichier": "diary",
                             "ligne": 5,
                             "name": "Alien",
                             "year": 1979,
+                            "date": "2026-03-14",
+                            "rating": 8,
                             "candidats": [
                               {
                                 "tmdb_id": "348",
@@ -29051,6 +29222,7 @@
                         ],
                         "erreurs": [
                           {
+                            "fichier": "diary",
                             "ligne": 12,
                             "message": "Date invalide."
                           }
@@ -29546,10 +29718,10 @@
         "tags": [
           "carnet"
         ],
-        "description": "Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).\n\n**Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.\n\nDeux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.\n\nNe retire rien : dit combien, et lesquels, avant `DELETE /me/journal/doublons`.",
+        "description": "Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).\n\n**Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une autre entrée du même jour, qui est gardée à sa place — celle qui porte un carnet s’il y en a une, sinon la plus ancienne (correctif du 30 septembre 2026 : seule la plus ancienne servait de modèle, et une copie dont le jumeau récent portait une réaction restait). **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Films seulement, comme le reste du carnet.\n\n**Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se date en UTC, un geste posé après minuit à Paris part la veille). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.\n\nDeux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.\n\nNe retire rien : dit combien, et lesquels, avant `DELETE /me/journal/doublons`.",
         "responses": {
           "200": {
-            "description": "Les doublons de mon journal",
+            "description": "Les doublons de mon journal, et ce qui leur ressemble",
             "content": {
               "application/json": {
                 "schema": {
@@ -29576,7 +29748,7 @@
                             "type": "string",
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                            "description": "L’entrée gardée à sa place : la plus ancienne de ce film à cette date"
+                            "description": "L’entrée gardée à sa place, copie exacte de celle-ci : celle qui porte un carnet s’il y en a une, sinon la plus ancienne"
                           },
                           "finished_at": {
                             "type": "string",
@@ -29707,14 +29879,193 @@
                         "additionalProperties": false,
                         "description": "Un visionnage en double"
                       }
+                    },
+                    "cas_limites": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée qui ressemble à une copie — jamais une entrée qui porte un carnet"
+                          },
+                          "autre_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée à laquelle elle ressemble"
+                          },
+                          "raison": {
+                            "type": "string",
+                            "enum": [
+                              "autre_note",
+                              "autre_debut_ou_commentaire",
+                              "jour_voisin"
+                            ],
+                            "description": "`autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour UTC d’écart, celui qu’un geste posé la nuit peut produire."
+                          },
+                          "finished_at": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "rating": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10,
+                                "description": "Note sur 10"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "autre_finished_at": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "autre_rating": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10,
+                                "description": "Note sur 10"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "media": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "book",
+                                  "comic_series",
+                                  "movie",
+                                  "tv",
+                                  "game",
+                                  "music"
+                                ],
+                                "description": "Type d'œuvre"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "openlibrary",
+                                  "googlebooks",
+                                  "anilist",
+                                  "tmdb",
+                                  "igdb",
+                                  "musicbrainz"
+                                ],
+                                "description": "Source d'origine de la fiche"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "cover_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "year": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "director": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "`metadata.director` de la fiche"
+                              },
+                              "external_id": {
+                                "type": "string",
+                                "description": "Identifiant chez la source — le `tmdb_id` du film"
+                              },
+                              "backdrop_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "source",
+                              "title",
+                              "cover_url",
+                              "year",
+                              "director",
+                              "external_id",
+                              "backdrop_url"
+                            ],
+                            "additionalProperties": false,
+                            "description": "L’œuvre, réduite à ce que le journal affiche"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "autre_id",
+                          "raison",
+                          "finished_at",
+                          "rating",
+                          "autre_finished_at",
+                          "autre_rating",
+                          "media"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un visionnage qui ressemble à un doublon sans l’être sûrement : montré, jamais retiré d’office"
+                      },
+                      "description": "Les cas limites, **jamais retirés par le `DELETE`** — dans sa réponse, ceux qui restent après le retrait. Un seul par entrée, la plus récente des deux étant celle nommée par `id`, sauf si seule l’autre porte un carnet."
                     }
                   },
                   "required": [
                     "total",
-                    "doublons"
+                    "doublons",
+                    "cas_limites"
                   ],
                   "additionalProperties": false,
-                  "description": "Les doublons de mon journal"
+                  "description": "Les doublons de mon journal, et ce qui leur ressemble"
                 },
                 "examples": {
                   "Réponse type": {
@@ -29726,6 +30077,28 @@
                           "garde_id": "e0000000-0000-4000-8000-000000000002",
                           "finished_at": "2026-07-12",
                           "rating": 9,
+                          "media": {
+                            "id": "d0000000-0000-4000-8000-000000000013",
+                            "type": "movie",
+                            "source": "tmdb",
+                            "external_id": "27205",
+                            "title": "Inception",
+                            "cover_url": "https://image.tmdb.org/t/p/w500/9gk7adZmeSSuQfZBtWWLIcVcSY.jpg",
+                            "backdrop_url": "https://image.tmdb.org/t/p/w1280/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
+                            "year": 2010,
+                            "director": "Christopher Nolan"
+                          }
+                        }
+                      ],
+                      "cas_limites": [
+                        {
+                          "id": "7c2e9b14-5a3d-4f61-8e07-1d9b6a4c3f25",
+                          "autre_id": "e0000000-0000-4000-8000-000000000002",
+                          "raison": "jour_voisin",
+                          "finished_at": "2026-07-13",
+                          "rating": 9,
+                          "autre_finished_at": "2026-07-12",
+                          "autre_rating": 9,
                           "media": {
                             "id": "d0000000-0000-4000-8000-000000000013",
                             "type": "movie",
@@ -29762,10 +30135,10 @@
         "tags": [
           "carnet"
         ],
-        "description": "Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).\n\n**Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une entrée plus ancienne du même jour — celle-ci est gardée. **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Deux visionnages du même film à des dates différentes ne se comparent pas. Films seulement, comme le reste du carnet.\n\nDeux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.\n\nRetire, en une transaction, les doublons trouvés **au moment de l’appel** — pas ceux d’un aperçu plus ancien — et rend ceux qu’il a retirés. Chaque retrait suit la suppression d’un visionnage (`DELETE /me/journal/:id`) : le carnet part avec l’entrée, le cache du Voyage est invalidé, et ni le suivi ni les quêtes ne se recalculent. Un second appel ne retire rien (`total: 0`).\n\nChez soi seulement : aucun paramètre ne vise un autre membre.",
+        "description": "Des relances de l’import Letterboxd, pendant que le premier traitement continuait côté API, ont pu écrire deux fois la même ligne (correctif du 29 septembre 2026).\n\n**Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une autre entrée du même jour, qui est gardée à sa place — celle qui porte un carnet s’il y en a une, sinon la plus ancienne (correctif du 30 septembre 2026 : seule la plus ancienne servait de modèle, et une copie dont le jumeau récent portait une réaction restait). **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Films seulement, comme le reste du carnet.\n\n**Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se date en UTC, un geste posé après minuit à Paris part la veille). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.\n\nDeux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.\n\nRetire, en une transaction, les doublons trouvés **au moment de l’appel** — pas ceux d’un aperçu plus ancien — et rend ceux qu’il a retirés, avec les cas limites qui restent. Chaque retrait suit la suppression d’un visionnage (`DELETE /me/journal/:id`) : le carnet part avec l’entrée, le cache du Voyage est invalidé, et ni le suivi ni les quêtes ne se recalculent. Un second appel ne retire rien (`total: 0`).\n\nChez soi seulement : aucun paramètre ne vise un autre membre.",
         "responses": {
           "200": {
-            "description": "Les doublons de mon journal",
+            "description": "Les doublons de mon journal, et ce qui leur ressemble",
             "content": {
               "application/json": {
                 "schema": {
@@ -29792,7 +30165,7 @@
                             "type": "string",
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                            "description": "L’entrée gardée à sa place : la plus ancienne de ce film à cette date"
+                            "description": "L’entrée gardée à sa place, copie exacte de celle-ci : celle qui porte un carnet s’il y en a une, sinon la plus ancienne"
                           },
                           "finished_at": {
                             "type": "string",
@@ -29923,14 +30296,193 @@
                         "additionalProperties": false,
                         "description": "Un visionnage en double"
                       }
+                    },
+                    "cas_limites": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée qui ressemble à une copie — jamais une entrée qui porte un carnet"
+                          },
+                          "autre_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée à laquelle elle ressemble"
+                          },
+                          "raison": {
+                            "type": "string",
+                            "enum": [
+                              "autre_note",
+                              "autre_debut_ou_commentaire",
+                              "jour_voisin"
+                            ],
+                            "description": "`autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour UTC d’écart, celui qu’un geste posé la nuit peut produire."
+                          },
+                          "finished_at": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "rating": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10,
+                                "description": "Note sur 10"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "autre_finished_at": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "autre_rating": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10,
+                                "description": "Note sur 10"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "media": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "book",
+                                  "comic_series",
+                                  "movie",
+                                  "tv",
+                                  "game",
+                                  "music"
+                                ],
+                                "description": "Type d'œuvre"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "openlibrary",
+                                  "googlebooks",
+                                  "anilist",
+                                  "tmdb",
+                                  "igdb",
+                                  "musicbrainz"
+                                ],
+                                "description": "Source d'origine de la fiche"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "cover_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "year": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "director": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "`metadata.director` de la fiche"
+                              },
+                              "external_id": {
+                                "type": "string",
+                                "description": "Identifiant chez la source — le `tmdb_id` du film"
+                              },
+                              "backdrop_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Image de fond TMDB (w1280), servie telle quelle — nulle si TMDB n’en a pas"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "source",
+                              "title",
+                              "cover_url",
+                              "year",
+                              "director",
+                              "external_id",
+                              "backdrop_url"
+                            ],
+                            "additionalProperties": false,
+                            "description": "L’œuvre, réduite à ce que le journal affiche"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "autre_id",
+                          "raison",
+                          "finished_at",
+                          "rating",
+                          "autre_finished_at",
+                          "autre_rating",
+                          "media"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un visionnage qui ressemble à un doublon sans l’être sûrement : montré, jamais retiré d’office"
+                      },
+                      "description": "Les cas limites, **jamais retirés par le `DELETE`** — dans sa réponse, ceux qui restent après le retrait. Un seul par entrée, la plus récente des deux étant celle nommée par `id`, sauf si seule l’autre porte un carnet."
                     }
                   },
                   "required": [
                     "total",
-                    "doublons"
+                    "doublons",
+                    "cas_limites"
                   ],
                   "additionalProperties": false,
-                  "description": "Les doublons de mon journal"
+                  "description": "Les doublons de mon journal, et ce qui leur ressemble"
                 },
                 "examples": {
                   "Réponse type": {
@@ -29942,6 +30494,28 @@
                           "garde_id": "e0000000-0000-4000-8000-000000000002",
                           "finished_at": "2026-07-12",
                           "rating": 9,
+                          "media": {
+                            "id": "d0000000-0000-4000-8000-000000000013",
+                            "type": "movie",
+                            "source": "tmdb",
+                            "external_id": "27205",
+                            "title": "Inception",
+                            "cover_url": "https://image.tmdb.org/t/p/w500/9gk7adZmeSSuQfZBtWWLIcVcSY.jpg",
+                            "backdrop_url": "https://image.tmdb.org/t/p/w1280/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
+                            "year": 2010,
+                            "director": "Christopher Nolan"
+                          }
+                        }
+                      ],
+                      "cas_limites": [
+                        {
+                          "id": "7c2e9b14-5a3d-4f61-8e07-1d9b6a4c3f25",
+                          "autre_id": "e0000000-0000-4000-8000-000000000002",
+                          "raison": "jour_voisin",
+                          "finished_at": "2026-07-13",
+                          "rating": 9,
+                          "autre_finished_at": "2026-07-12",
+                          "autre_rating": 9,
                           "media": {
                             "id": "d0000000-0000-4000-8000-000000000013",
                             "type": "movie",

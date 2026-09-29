@@ -9,6 +9,8 @@ type Json<T> = T extends { content: { 'application/json': infer J } } ? J : neve
  * retiré, et un second appel ne retire rien.
  */
 export type Doublons = Json<paths['/me/journal/doublons']['get']['responses'][200]>
+/** Ce qui ressemble à un doublon sans l'être sûrement (correctif du 30 septembre 2026) : montré, jamais retiré d'office. */
+export type CasLimite = Doublons['cas_limites'][number]
 
 export const apercuDoublons = () => api.get<Doublons>('/me/journal/doublons')
 
