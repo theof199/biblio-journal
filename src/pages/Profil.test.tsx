@@ -155,6 +155,66 @@ describe('le profil', () => {
     expect(within(bilan).getByText('1 saga suivie, dont 1 terminée')).toBeInTheDocument()
   })
 
+  const panne = () => json({ code: 'INTERNAL', message: 'Indisponible.', retryable: false }, 500)
+  const suivi = (tmdb_id: number) => ({ ...exemple<{ tmdb_id: number }[]>('/me/realisateurs', 'get', 200)[0]!, tmdb_id })
+
+  it('les filmographies se chargent une à une : jamais deux requêtes de filmographie en vol', async () => {
+    const page = exemple<{ films: { vu: unknown }[] }>('/me/realisateurs/{tmdbId}/page', 'get', 200)
+    page.films.forEach((f) => (f.vu = null))
+    let enVol = 0
+    let maximum = 0
+    let arrivees = 0
+    const lente = async () => {
+      enVol += 1
+      maximum = Math.max(maximum, enVol)
+      await new Promise((r) => setTimeout(r, 20))
+      enVol -= 1
+      arrivees += 1
+      return json(page)
+    }
+    servir({
+      'GET /api/auth/me': () => json(SESSION),
+      'GET /api/stats': () => json(stats(1, 1)),
+      [JOURNAL]: () => json({ items: JOURNAL_DE_TEST, next_cursor: null }),
+      [REALISATEURS]: () => json([suivi(1), suivi(2), suivi(3)]),
+      'GET /api/me/realisateurs/1/page': lente,
+      'GET /api/me/realisateurs/2/page': lente,
+      'GET /api/me/realisateurs/3/page': lente,
+      [SAGAS]: () => json([]),
+    })
+    monter()
+
+    const bilan = await screen.findByRole('region', { name: 'Bilan' })
+    expect(await within(bilan).findByText('3 réalisateurs suivis, dont 0 terminé')).toBeInTheDocument()
+    expect(arrivees).toBe(3)
+    // Mutation : l'ancien `useQueries` les lançait toutes ensemble, trois en vol.
+    expect(maximum).toBe(1)
+  })
+
+  it('une filmographie en panne n’empêche pas le bilan : l’entité est suivie, pas terminée', async () => {
+    const page = exemple<{ films: { vu: unknown }[] }>('/me/realisateurs/{tmdbId}/page', 'get', 200)
+    const films = exemple<{ films: { vu: unknown; introuvable: boolean }[] }>('/me/sagas/{tmdbId}/films', 'get', 200)
+    const saga = exemple<{ tmdb_id: number }[]>('/me/sagas', 'get', 200)[0]!
+    const vu = { entry_id: 'e0000000-0000-4000-8000-000000000009', rating: 8, finished_at: '2026-01-01' }
+    films.films.forEach((f) => (f.vu = f.introuvable ? null : vu))
+    page.films.forEach((f) => (f.vu = null))
+    servir({
+      'GET /api/auth/me': () => json(SESSION),
+      'GET /api/stats': () => json(stats(1, 1)),
+      [JOURNAL]: () => json({ items: JOURNAL_DE_TEST, next_cursor: null }),
+      [REALISATEURS]: () => json([suivi(1), suivi(2)]),
+      'GET /api/me/realisateurs/1/page': panne,
+      'GET /api/me/realisateurs/2/page': () => json(page),
+      [SAGAS]: () => json([saga]),
+      [`GET /api/me/sagas/${saga.tmdb_id}/films`]: () => json(films),
+    })
+    monter()
+
+    const bilan = await screen.findByRole('region', { name: 'Bilan' })
+    expect(await within(bilan).findByText('2 réalisateurs suivis, dont 0 terminé')).toBeInTheDocument()
+    expect(within(bilan).getByText('1 saga suivie, dont 1 terminée')).toBeInTheDocument()
+  })
+
   it('un journal vide : « Aucun film noté », « Aucune année connue », pas de graphique', async () => {
     servir({
       ...VIDES,

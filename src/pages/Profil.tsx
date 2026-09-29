@@ -1,19 +1,39 @@
-import { useMemo } from 'react'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { journalComplet } from '../api/journal'
-import { lirePageRealisateur, lireRealisateurs } from '../api/realisateurs'
-import { lireFilmsSaga, lireSagas } from '../api/sagas'
+import { lireRealisateurs } from '../api/realisateurs'
+import { lireSagas } from '../api/sagas'
 import { lireStats } from '../api/stats'
-import { bilanSuivi } from '../profil/bilan'
+import { bilanSuivi, type BilanSuivi } from '../profil/bilan'
 import { BilanCarte, GraphiquesCarte } from '../profil/Cartes'
-import { filmsSansSeries } from '../suivis/prochain'
+import type { EtatFilmographie } from '../suivis/liste'
+import type { FilmSuivi } from '../suivis/prochain'
+import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { jourLocal } from '../ui/format'
 import cartes from '../ui/Page.module.css'
 import styles from './Profil.module.css'
+
+/**
+ * Le bilan d'une source suivie, une fois que **toutes** ses filmographies ont répondu (reprise de
+ * `SuiviState.pret()`, Android) : `null` (« … ») tant que la liste ou l'une d'elles est en
+ * attente, jamais un compte provisoire qui grimperait. Une filmographie indisponible est une
+ * réponse : l'entité compte parmi les suivies, pas parmi les terminées (`bilanSuivi`, Android).
+ */
+function bilanDe(
+  entites: readonly { tmdb_id: number }[] | undefined,
+  etats: ReadonlyMap<number, EtatFilmographie<FilmSuivi>>,
+): BilanSuivi | null {
+  if (!entites || entites.some((e) => etats.get(e.tmdb_id)?.statut !== 'pret' && etats.get(e.tmdb_id)?.statut !== 'indisponible')) return null
+  const table = new Map<number, readonly FilmSuivi[]>()
+  for (const e of entites) {
+    const etat = etats.get(e.tmdb_id)
+    if (etat?.statut === 'pret') table.set(e.tmdb_id, etat.films)
+  }
+  return bilanSuivi(entites, table)
+}
 
 /**
  * Le profil (reprise de `ProfileScreen.kt`) : le pseudo, les deux chiffres de `GET /stats`, le
@@ -28,33 +48,15 @@ export default function Profil() {
   // Une panne du journal entier se tait : elle ne prive que ces deux cartes, jamais le reste du profil.
   const journal = useQuery({ queryKey: cles.journalComplet, queryFn: ({ signal }) => journalComplet(signal) })
 
-  // Les réalisateurs et les sagas suivis, avec la filmographie de chacun : les mêmes clés que
-  // l'accueil et les pages de suivi, donc le même cache. Le bilan attend qu'ils soient tous là.
+  // Les réalisateurs et les sagas suivis, avec la filmographie de chacun, l'une après l'autre
+  // (`useFilmographies`, jamais toutes d'un coup : le back appelle TMDB derrière). Mêmes clés que
+  // l'accueil et les pages de suivi, donc le même cache.
   const realisateurs = useQuery({ queryKey: cles.realisateurs, queryFn: ({ signal }) => lireRealisateurs(signal) })
   const sagas = useQuery({ queryKey: cles.sagas, queryFn: ({ signal }) => lireSagas(signal) })
-  const pagesRealisateurs = useQueries({
-    queries: (realisateurs.data ?? []).map((r) => ({
-      queryKey: cles.pageRealisateur(r.tmdb_id),
-      queryFn: ({ signal }: { signal: AbortSignal }) => lirePageRealisateur(r.tmdb_id, signal),
-    })),
-  })
-  const filmsSagas = useQueries({
-    queries: (sagas.data ?? []).map((s) => ({
-      queryKey: cles.filmsSaga(s.tmdb_id),
-      queryFn: ({ signal }: { signal: AbortSignal }) => lireFilmsSaga(s.tmdb_id, signal),
-    })),
-  })
-  const bilanRealisateurs = useMemo(() => {
-    const liste = realisateurs.data
-    if (!liste || pagesRealisateurs.some((p) => !p.data)) return null
-    const table = new Map(liste.map((r, i) => [r.tmdb_id, filmsSansSeries(pagesRealisateurs[i]!.data!.films)]))
-    return bilanSuivi(liste, table)
-  }, [realisateurs.data, pagesRealisateurs])
-  const bilanSagas = useMemo(() => {
-    const liste = sagas.data
-    if (!liste || filmsSagas.some((f) => !f.data)) return null
-    return bilanSuivi(liste, new Map(liste.map((s, i) => [s.tmdb_id, filmsSagas[i]!.data!.films])))
-  }, [sagas.data, filmsSagas])
+  const filmographiesRealisateurs = useFilmographiesRealisateurs(realisateurs.data)
+  const filmographiesSagas = useFilmographiesSagas(sagas.data)
+  const bilanRealisateurs = bilanDe(realisateurs.data, filmographiesRealisateurs)
+  const bilanSagas = bilanDe(sagas.data, filmographiesSagas)
 
   const total = stats.data?.dashboard.periods.all.counts.finished_by_type.movie
   const cetteAnnee = stats.data?.dashboard.periods.year.counts.finished_by_type.movie
