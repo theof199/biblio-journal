@@ -4,6 +4,7 @@ import {
   apercuLitLaFiche,
   detecterFrontiereAvancee,
   etatDeCase,
+  compterRecompenses,
   jauge,
   prochainPas,
   recompensesJusquaAnneeEnCours,
@@ -23,6 +24,11 @@ describe('les récompenses du HUD', () => {
     const annees = [annee({ annee: 1897, recompense: 'lion' }), annee({ annee: 1898, recompense: 'ours' }), annee({ annee: 1899, recompense: 'ours' })]
     expect(recompensesJusquaAnneeEnCours(annees, 1898)).toEqual(['lion', 'ours'])
   })
+
+  // Mutation : `compte[r] = 1` au lieu de `+= 1` plafonne chaque sorte à une récompense.
+  it('se comptent une à une, par sorte', () => {
+    expect(compterRecompenses(['ours', 'lion', 'ours', 'ours'])).toEqual({ palme: 0, lion: 1, ours: 3 })
+  })
 })
 
 describe('prochainPas', () => {
@@ -30,6 +36,18 @@ describe('prochainPas', () => {
   // obtenu par un introuvable (essentiels_vus ne le compte pas).
   it('se tait sur le Lion une fois le Lion acquis, même si un essentiel n’est pas « vu »', () => {
     expect(prochainPas(4, P(2, 3, 0), 'lion', true, true)).toEqual(['Palme : 2 salles de plus'])
+  })
+
+  // Mutation : la garde du Lion réduite à `recompense !== 'lion'` réclame un essentiel à une Palme
+  // dont un essentiel est introuvable.
+  it('se tait sur le Lion sous la Palme aussi', () => {
+    expect(prochainPas(4, P(2, 3, 2), 'palme', true, true)).toEqual([])
+  })
+
+  // Mutation : la garde de l'Ours remplacée par `if (true)` réclame des films à un Lion obtenu par
+  // des introuvables, qui ne comptent pas dans la profondeur.
+  it('se tait sur l’Ours dès qu’une récompense est acquise, même sous trois films', () => {
+    expect(prochainPas(0, P(0, 2, 0), 'lion', true, true)).toEqual(['Palme : 2 salles de plus'])
   })
 
   it('compte l’Ours, le Lion et la Palme d’une année commencée', () => {
@@ -74,12 +92,13 @@ describe('l’état d’une case', () => {
   })
 
   // Mutation : oublier `!ia` met « Tu le rattrapes bientôt » sur l'année que le compte IA n'a
-  // simplement pas encore visitée.
+  // simplement pas encore visitée. Oublier `!a.visitee` le met sur toutes les années déjà écrites.
   it('n’est en attente que pour un membre hors IA, sur une année lisible non ouverte', () => {
     const nonVisitee = annee({ annee: 1898, statut: 'en_cours', visitee: false })
     expect(etatDeCase(nonVisitee, false).attente).toBe(true)
     expect(etatDeCase(nonVisitee, true).attente).toBe(false)
     expect(etatDeCase(annee({ annee: 1899, statut: 'verrouillee', visitee: false }), false).attente).toBe(false)
+    expect(etatDeCase(annee({ annee: 1897, statut: 'ouverte', visitee: true }), false).attente).toBe(false)
   })
 })
 
@@ -110,10 +129,12 @@ describe('la colonne Morris', () => {
 })
 
 describe('la frontière qui avance', () => {
-  // Mutation : rendre une avancée quand `avant` est nul rejoue la marche à chaque première ouverture.
+  // Mutation : rendre une avancée quand `avant` est nul rejoue la marche à chaque première ouverture ;
+  // `apres === avant` au lieu de `apres <= avant` fait marcher l'avatar à reculons.
   it('ne rejoue rien à la première ouverture ni sans avancée', () => {
     expect(detecterFrontiereAvancee(null, 1898)).toBeNull()
     expect(detecterFrontiereAvancee(1898, 1898)).toBeNull()
+    expect(detecterFrontiereAvancee(1899, 1897)).toBeNull()
   })
 
   // Mutation : comparer les années au lieu des décennies passe toujours la porte.
