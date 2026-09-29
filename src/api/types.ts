@@ -8585,9 +8585,9 @@ export interface paths {
                   visitee: boolean;
                   /** @description Films de mon journal sortis cette année-là ; un programme compte un */
                   profondeur: number;
-                  /** @description L’affiche du n°1 du podium — nulle si la marche 1 est vide */
+                  /** @description L’affiche du n°1 du podium — nulle si la marche 1 est vide ou l’année verrouillée */
                   affiche_url: string | null;
-                  /** @description L’image de fond du n°1 du podium — nulle si la marche 1 est vide, un programme, ou sans image de fond */
+                  /** @description L’image de fond du n°1 du podium — nulle si la marche 1 est vide, un programme, sans image de fond, ou l’année verrouillée */
                   fond_url: string | null;
                   /** @description Ours, Lion ou Palme — une année sans ouverture ne peut avoir que l’Ours */
                   recompense: ("ours" | "lion" | "palme") | null;

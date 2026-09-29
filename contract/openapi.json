@@ -42859,7 +42859,7 @@
                                 "type": "null"
                               }
                             ],
-                            "description": "L’affiche du n°1 du podium — nulle si la marche 1 est vide"
+                            "description": "L’affiche du n°1 du podium — nulle si la marche 1 est vide ou l’année verrouillée"
                           },
                           "fond_url": {
                             "anyOf": [
@@ -42871,7 +42871,7 @@
                                 "type": "null"
                               }
                             ],
-                            "description": "L’image de fond du n°1 du podium — nulle si la marche 1 est vide, un programme, ou sans image de fond"
+                            "description": "L’image de fond du n°1 du podium — nulle si la marche 1 est vide, un programme, sans image de fond, ou l’année verrouillée"
                           },
                           "recompense": {
                             "anyOf": [
