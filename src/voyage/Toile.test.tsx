@@ -20,14 +20,16 @@ function monter(dessiner: Dessin, options: { hauteur?: number; onToucher?: () =>
 
 /** Un `IntersectionObserver` de test : `signaler(oui)` dit la toile dans l'écran ou hors de lui. */
 function guetteur() {
-  const etat = { rappel: null as IntersectionObserverCallback | null, deconnecte: false }
+  const etat = { rappel: null as IntersectionObserverCallback | null, observees: [] as Element[], deconnecte: false }
   vi.stubGlobal(
     'IntersectionObserver',
     class {
       constructor(rappel: IntersectionObserverCallback) {
         etat.rappel = rappel
       }
-      observe() {}
+      observe(cible: Element) {
+        etat.observees.push(cible)
+      }
       disconnect() {
         etat.deconnecte = true
       }
@@ -105,7 +107,9 @@ describe('la toile d’une page', () => {
     expect([toile.width, toile.height]).toEqual([1560, 1000])
   })
 
-  // Mutation : l'effet du repère borné à `[fabrique]` : une toile qui change de hauteur garderait l'ancienne.
+  // Mutations : l'effet du repère borné à `[fabrique]` : une toile qui change de hauteur garderait
+  // l'ancienne ; le rapport de la feuille figé (`390 / 250`) : sur un `<canvas>`, `aspect-ratio`
+  // l'emporte sur les dimensions de la toile, le dessin serait écrasé.
   it('suit la hauteur que la page lui donne', () => {
     calme(true)
     const { ctx } = contexteFactice()
@@ -118,8 +122,10 @@ describe('la toile d’une page', () => {
     )
     const { rerender, container } = render(toile(250))
     expect(container.querySelector('canvas')!.height).toBe(250)
+    expect(container.querySelector('canvas')!.getAttribute('style')).toContain('aspect-ratio: 390 / 250')
     rerender(toile(300))
     expect(container.querySelector('canvas')!.height).toBe(300)
+    expect(container.querySelector('canvas')!.getAttribute('style')).toContain('aspect-ratio: 390 / 300')
   })
 
   // Mutations : `t` en millisecondes (sans `/ 1000`), puis compté depuis le chargement de la page
@@ -135,12 +141,14 @@ describe('la toile d’une page', () => {
     expect(t).toBeLessThanOrEqual(1)
   })
 
-  // Mutations : `if (visible)` retiré de la boucle ; `guet?.disconnect()` retiré du nettoyage.
+  // Mutations : `if (visible)` retiré de la boucle ; `guet?.observe(…)` retiré (le navigateur ne
+  // dirait jamais la toile sortie, elle peindrait hors de l'écran) ; `guet?.disconnect()` retiré du nettoyage.
   it('ne peint plus hors de l’écran, reprend quand elle y revient, et lâche son guetteur démontée', () => {
     calme(false)
     const { etat, signaler } = guetteur()
     const dessiner = vi.fn<Dessin>()
-    const { unmount } = monter(dessiner)
+    const { unmount, toile } = monter(dessiner)
+    expect(etat.observees).toEqual([toile])
     vi.advanceTimersByTime(100)
     signaler(false)
     const avant = dessiner.mock.calls.length
