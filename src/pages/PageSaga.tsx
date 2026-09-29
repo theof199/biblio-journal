@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { lireFilmsSaga, lireSagas, neplusSuivreSaga } from '../api/sagas'
 import { filmsVus } from '../suivis/prochain'
@@ -19,6 +19,7 @@ export default function PageSaga() {
   const { tmdbId } = useParams<{ tmdbId: string }>()
   const id = Number(tmdbId)
   const client = useQueryClient()
+  const naviguer = useNavigate()
 
   const sagas = useQuery({ queryKey: cles.sagas, queryFn: ({ signal }) => lireSagas(signal) })
   const films = useQuery({
@@ -28,7 +29,10 @@ export default function PageSaga() {
 
   const neplusSuivre = useMutation({
     mutationFn: () => neplusSuivreSaga(id),
-    onSuccess: () => void client.invalidateQueries({ queryKey: cles.sagas }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: cles.sagas })
+      naviguer('/suivis', { replace: true })
+    },
   })
 
   if (sagas.isPending || films.isPending) {

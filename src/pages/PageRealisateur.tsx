@@ -48,10 +48,10 @@ export default function PageRealisateur() {
       if (page.data!.suivi) await neplusSuivreRealisateur(id)
       else await suivreRealisateur(id)
     },
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: cles.realisateurs })
-      void client.invalidateQueries({ queryKey: cles.pageRealisateur(id) })
-    },
+    // `cles.realisateurs` seule suffit : `cles.pageRealisateur(id)` la préfixe
+    // (`['realisateurs', id, 'page']`), TanStack Query invalide donc les deux à l'appel d'un seul —
+    // un second appel explicite sur la clé la plus précise redemanderait la page deux fois.
+    onSuccess: () => void client.invalidateQueries({ queryKey: cles.realisateurs }),
   })
 
   if (page.isPending) {

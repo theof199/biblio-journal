@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import Accueil from './Accueil'
@@ -52,6 +52,31 @@ class FauxObservateur {
   }
 }
 
+/**
+ * Un `IntersectionObserver` fidèle au vrai sur un point : tout observateur neuf signale aussitôt
+ * une sentinelle déjà visible — jumelle de celle de `MesFilms.test.tsx`. C'est ce qui relance la
+ * pagination à chaque recréation, et donc en boucle sans la garde `isFetchNextPageError`.
+ */
+class ObservateurVisible {
+  callback: IntersectionObserverCallback
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback
+  }
+  observe() {
+    setTimeout(() => this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver))
+  }
+  unobserve() {}
+  disconnect() {}
+}
+
+/** Une panne qui prend le temps d'un vrai réseau : sans délai, l'état « en cours » ne se rend jamais. */
+const pannePassagere = async () => {
+  await new Promise((r) => setTimeout(r, 20))
+  return json({ code: 'INTERNAL', message: 'Le journal n’a pas pu être lu.', retryable: false }, 500)
+}
+const pagesDe = (requetes: string[]) => requetes.filter((r) => r.includes('cursor=page-2')).length
+const patienter = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 function monter() {
   return render(
     <QueryClientProvider client={createQueryClient()}>
@@ -79,6 +104,8 @@ describe('la pagination infinie de l’accueil', () => {
       'GET /api/stats': () => json(STATS_VIDES),
       'GET /api/me/voyage': () => json(VOYAGE_VIDE),
       'GET /api/reference/plex': () => json(PLEX_VIDE),
+      'GET /api/me/realisateurs': () => json([]),
+      'GET /api/me/sagas': () => json([]),
     })
     monter()
 
@@ -101,5 +128,36 @@ describe('la pagination infinie de l’accueil', () => {
     // plus déclencher de nouvelle page.
     await new Promise((r) => setTimeout(r, 20))
     expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toHaveLength(2)
+  })
+
+  it('une page en échec ne relance pas la sentinelle en boucle, et « Réessayer » la reprend', async () => {
+    vi.stubGlobal('IntersectionObserver', ObservateurVisible)
+    let enPanne = true
+    const requetes = servir({
+      'GET /api/me/journal?limit=20': () => json(page([ITEM], 'page-2')),
+      'GET /api/me/journal?limit=20&cursor=page-2': () => (enPanne ? pannePassagere() : json(page([], null))),
+      'GET /api/stats': () => json(STATS_VIDES),
+      'GET /api/me/voyage': () => json(VOYAGE_VIDE),
+      'GET /api/reference/plex': () => json(PLEX_VIDE),
+      'GET /api/me/realisateurs': () => json([]),
+      'GET /api/me/sagas': () => json([]),
+    })
+    monter()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le journal n’a pas pu être lu.')
+    // Mutation : `if (journal.error)` au lieu de `if (!journal.data)` effacerait toute la grille
+    // déjà affichée derrière la panne plein écran dès l'échec de la deuxième page.
+    expect(screen.getByAltText(ITEM.media.title)).toBeInTheDocument()
+    // Mutation : sans `isFetchNextPageError` dans la garde de l'effet et de `chargerLaSuite`,
+    // l'observateur recréé après l'échec signale la sentinelle toujours visible, et la page
+    // repart aussitôt — une quinzaine d'appels en un quart de seconde.
+    await patienter(250)
+    expect(pagesDe(requetes)).toBe(1)
+    expect(screen.queryByText('Chargement…')).not.toBeInTheDocument()
+
+    enPanne = false
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+    await vi.waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+    expect(pagesDe(requetes)).toBe(2)
   })
 })

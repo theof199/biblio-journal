@@ -2,10 +2,13 @@ import { json } from './serveur'
 
 /**
  * Depuis la reprise de l'accueil (lot 2 des onglets), `/` appelle aussi le journal, les
- * statistiques, le Voyage et le Plex — en plus de `/auth/me`. Un test qui monte `/` doit tous les
- * servir, sous peine de voir la page réessayer une route « inattendue » plutôt que de se stabiliser.
- * Toutes vides ou non configurées : de quoi n'afficher que la vitrine vide, sans « Ce soir » ni
- * « Ensuite », qui ont leurs propres tests.
+ * statistiques, le Voyage et le Plex — en plus de `/auth/me`. Depuis le lot Suivis, elle appelle
+ * aussi les réalisateurs et les sagas suivis (pour les secondes cartes « Ensuite »,
+ * `accueil/ensuite.ts`), toujours vides ici : une liste vide n'entraîne aucun appel de
+ * filmographie, donc rien de plus à servir. Un test qui monte `/` doit tous les servir, sous peine
+ * de voir la page réessayer une route « inattendue » plutôt que de se stabiliser. Toutes vides ou
+ * non configurées : de quoi n'afficher que la vitrine vide, sans « Ce soir » ni « Ensuite », qui
+ * ont leurs propres tests.
  */
 const COMPTES_VIDES = {
   finished: 0,
@@ -76,4 +79,6 @@ export const ROUTES_ACCUEIL: Record<string, () => Response> = {
       source: null,
     }),
   'GET /api/reference/plex': () => json({ configure: false, calcule_le: null, films: [], demandes: [] }),
+  'GET /api/me/realisateurs': () => json([]),
+  'GET /api/me/sagas': () => json([]),
 }

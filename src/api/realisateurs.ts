@@ -9,8 +9,9 @@ import type { paths } from './types'
 type Json<T> = T extends { content: { 'application/json': infer J } } ? J : never
 
 export type Realisateur = Json<paths['/me/realisateurs']['get']['responses'][200]>[number]
-export type PageRealisateur = Json<paths['/me/realisateurs/{tmdbId}/page']['get']['responses'][200]>
-export type FilmRealisateur = PageRealisateur['films'][number]
+/** Nommé `RealisateurPage`, pas `PageRealisateur` : ce dernier nom est déjà pris par le composant `pages/PageRealisateur.tsx`. */
+export type RealisateurPage = Json<paths['/me/realisateurs/{tmdbId}/page']['get']['responses'][200]>
+export type FilmRealisateur = RealisateurPage['films'][number]
 
 /** Mes réalisateurs suivis, du plus récemment ajouté au plus ancien — sans pagination (README, « Suivis »). */
 export const lireRealisateurs = (signal?: AbortSignal) =>
@@ -30,4 +31,4 @@ export const neplusSuivreRealisateur = (tmdbId: number) => api.delete<void>(`/me
  * dit). Pensée pour un seul appel : aucune requête annexe n'est nécessaire pour l'écran.
  */
 export const lirePageRealisateur = (tmdbId: number, signal?: AbortSignal) =>
-  api.get<PageRealisateur>(`/me/realisateurs/${tmdbId}/page`, undefined, signal)
+  api.get<RealisateurPage>(`/me/realisateurs/${tmdbId}/page`, undefined, signal)
