@@ -92,6 +92,8 @@ function dessinerAuTrait(
   couleur: Rampe['couleur'],
   nuit: number,
 ): void {
+  // La maquette plie `vivant` dans `roule` (`u < 1 && vivant`) : ici, les deux se lisent.
+  const tourne = roule && vivant
   g.save()
   g.translate(x, y)
   g.scale(dir * echelle, echelle)
@@ -101,7 +103,7 @@ function dessinerAuTrait(
     g.translate(hx, -8)
     g.scale(1.25, 1.25)
     g.fillStyle = g.strokeStyle = couleur('#1d1712')
-    cheval(g, roule ? t * 9 + hx : 1.2)
+    cheval(g, tourne ? t * 9 + hx : 1.2 + (vivant ? Math.sin(t * 0.8 + hx) * 0.08 : 0))
     g.restore()
   }
   g.strokeStyle = couleur('#1d1712')
@@ -134,12 +136,10 @@ function dessinerAuTrait(
   }
   g.fillStyle = couleur('#1d1712')
   g.fillRect(24, -50, 3, 12)
-  if (vivant) {
-    for (let k = 0; k < 4; k++) {
-      const u = (t * 0.45 + k / 4) % 1
-      g.fillStyle = couleur('#CFC6B6', 0.28 * (1 - u))
-      cercle(g, 25.5 - u * 10 * (roule ? 2 : 0.6), -52 - u * 20, 2 + u * 5)
-    }
+  for (let k = 0; k < 4; k++) {
+    const u = vivant ? (t * 0.45 + k / 4) % 1 : k / 4
+    g.fillStyle = couleur('#CFC6B6', 0.28 * (1 - u))
+    cercle(g, 25.5 - u * 10 * (tourne ? 2 : 0.6), -52 - u * 20, 2 + u * 5)
   }
   g.strokeStyle = couleur('#1d1712')
   g.lineWidth = 1
@@ -157,7 +157,7 @@ function dessinerAuTrait(
     cercle(g, wx, -4, 7)
     g.strokeStyle = couleur('#1d1712')
     g.lineWidth = 1
-    const r0 = roule ? t * 7 : 0
+    const r0 = tourne ? t * 7 : 0
     g.beginPath()
     for (let k = 0; k < 6; k++) {
       const b2 = r0 + (k * TAU) / 6
@@ -171,7 +171,11 @@ function dessinerAuTrait(
   g.restore()
 }
 
-/** Le dessin depuis la planche (`carte/images.ts`) : `n` images de même largeur, côte à côte. */
+/**
+ * Le dessin depuis la planche (`carte/images.ts`) : `n` images carrées de même taille, côte à
+ * côte sur une rangée — `n` se lit du rapport de la largeur à la hauteur. Une planche d'images
+ * non carrées se découperait mal : la déposer ainsi, ou changer cette règle avec elle.
+ */
 function dessinerDepuisPlanche(g: CanvasRenderingContext2D, planche: CanvasImageSource, x: number, y: number, dir: number, echelle: number, t: number, vivant: boolean): void {
   const src = planche as unknown as { width?: number; height?: number }
   const ih = src.height || 1
@@ -191,6 +195,8 @@ function dessinerDepuisPlanche(g: CanvasRenderingContext2D, planche: CanvasImage
  */
 /** `planche` : la suite d'images de la roulotte (`carte/assets/roulotte.webp`), nulle tant qu'elle manque ou charge ; le dessin de la maquette tient alors sa place. */
 export function dessinerRoulotte(g: CanvasRenderingContext2D, x: number, y: number, dir: number, roule: boolean, t: number, vivant: boolean, echelle: number, pseudo: string, couleur: Rampe['couleur'], nuit: number, planche: CanvasImageSource | null): void {
+  // Le halo de la lanterne sur le chemin (maquette : `roulotteCarte`, 16 px au-dessus de la roulotte).
+  halo(g, x, y - 16, 40, '#F2CD8C', 0.16 * (0.3 + 0.7 * nuit), couleur)
   if (planche) dessinerDepuisPlanche(g, planche, x, y, dir, echelle, t, vivant)
   else dessinerAuTrait(g, x, y, dir, roule, t, vivant, echelle, pseudo, couleur, nuit)
 }

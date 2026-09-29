@@ -144,7 +144,8 @@ export class Effets {
   brouillard(g: CanvasRenderingContext2D, camY: number, fogY: number, brume: Rgb, t: number, vivant: boolean): void {
     const top = fogY - camY
     if (top > this.H + 30) return
-    const gr = g.createLinearGradient(0, top - 30, 0, this.H)
+    // Le dégradé de la maquette : de 30 px au-dessus du bord jusqu'à 180 px sous lui, à 0,8 au-delà.
+    const gr = g.createLinearGradient(0, top - 30, 0, top + 180)
     gr.addColorStop(0, rgba(brume, 0))
     gr.addColorStop(0.35, rgba(brume, 0.55))
     gr.addColorStop(1, rgba(brume, 0.8))
@@ -166,28 +167,36 @@ export class Effets {
       g.restore()
     }
   }
-  /** La nuit : le voile bleu, puis les halos des feux (maquette : `nuitPasse`). */
+  /** La nuit : le voile bleu, puis les halos des feux ; le jour, un voile clair (maquette : `nuitPasse`). */
   nuit(g: CanvasRenderingContext2D, feux: readonly Feu[], ambiance: { nuitF: number; jourF: number; crep: number }): void {
     if (ambiance.nuitF > 0.01) {
       g.fillStyle = `rgba(4,5,14,${0.46 * ambiance.nuitF})`
       g.fillRect(0, 0, this.W, this.H)
     }
     const force = ambiance.nuitF * 1.05 + ambiance.crep * 0.35 * (1 - ambiance.nuitF)
-    if (force <= 0.02) return
-    g.save()
-    g.globalCompositeOperation = 'lighter'
-    for (const f of feux) {
-      const a = Math.min(1, f.w * force)
-      if (a < 0.02) continue
-      const c = HALO_COUL[f.c] ?? HALO_COUL.or!
-      const gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r)
-      gr.addColorStop(0, rgba(c, a * 0.62))
-      gr.addColorStop(0.3, rgba(c, a * 0.24))
-      gr.addColorStop(1, rgba(c, 0))
-      g.fillStyle = gr
-      g.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2)
+    if (force > 0.02) {
+      g.save()
+      g.globalCompositeOperation = 'lighter'
+      for (const f of feux) {
+        const a = Math.min(1, f.w * force)
+        if (a < 0.02) continue
+        const c = HALO_COUL[f.c] ?? HALO_COUL.or!
+        const gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r)
+        gr.addColorStop(0, rgba(c, a * 0.62))
+        gr.addColorStop(0.3, rgba(c, a * 0.24))
+        gr.addColorStop(1, rgba(c, 0))
+        g.fillStyle = gr
+        g.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2)
+      }
+      g.restore()
     }
-    g.restore()
+    if (ambiance.jourF > 0.01) {
+      g.save()
+      g.globalCompositeOperation = 'screen'
+      g.fillStyle = `rgba(255,238,210,${0.09 * ambiance.jourF})`
+      g.fillRect(0, 0, this.W, this.H)
+      g.restore()
+    }
   }
   /** La vignette (maquette : `vignette`), sans son voile qui palpite : au-delà du seuil de WCAG (voir la relecture du 29 septembre). */
   vignette(g: CanvasRenderingContext2D): void {

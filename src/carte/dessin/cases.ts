@@ -104,12 +104,12 @@ function glyphe(g: CanvasRenderingContext2D, type: string, c: string): void {
     g.fill()
   }
 }
-/** La médaille qui flotte au-dessus d'une année récompensée (maquette : `medaille`). */
-function medaille(g: CanvasRenderingContext2D, type: string, x: number, y: number, i: number, t: number, vivant: boolean): void {
+/** La médaille qui flotte au-dessus d'une année récompensée (maquette : `medaille`), aux couleurs du monde. */
+function medaille(g: CanvasRenderingContext2D, type: string, x: number, y: number, i: number, t: number, vivant: boolean, couleur: Monde['couleur']): void {
   const [c0, c1, c2] = MEDAILLES[type]!
   g.save()
   g.translate(x, y)
-  g.fillStyle = '#6E2A1E'
+  g.fillStyle = couleur('#6E2A1E')
   poly(g, [
     [-7, 6],
     [-11, 22],
@@ -127,18 +127,18 @@ function medaille(g: CanvasRenderingContext2D, type: string, x: number, y: numbe
   ])
   g.fill()
   const gr = g.createRadialGradient(-4, -5, 1, 0, 0, 14)
-  gr.addColorStop(0, c0)
-  gr.addColorStop(1, c1)
+  gr.addColorStop(0, couleur(c0))
+  gr.addColorStop(1, couleur(c1))
   g.fillStyle = 'rgba(0,0,0,.35)'
   cercle(g, 1, 2, 14)
   g.fillStyle = gr
   cercle(g, 0, 0, 13.5)
-  g.strokeStyle = c2
+  g.strokeStyle = couleur(c2)
   g.lineWidth = 1
   g.beginPath()
   g.arc(0, 0, 10.8, 0, TAU)
   g.stroke()
-  glyphe(g, type, c2)
+  glyphe(g, type, couleur(c2))
   if (vivant) {
     const p = (((t * 0.32 + i * 0.23) % 1) * 3) - 1
     if (p > -1 && p < 1.2) {
@@ -147,7 +147,7 @@ function medaille(g: CanvasRenderingContext2D, type: string, x: number, y: numbe
       g.arc(0, 0, 13.5, 0, TAU)
       g.clip()
       g.rotate(0.6)
-      g.fillStyle = 'rgba(255,255,240,.45)'
+      g.fillStyle = couleur('#FFFFF0', 0.45)
       g.fillRect(p * 16 - 3, -16, 5, 32)
       g.restore()
     }
@@ -156,44 +156,76 @@ function medaille(g: CanvasRenderingContext2D, type: string, x: number, y: numbe
 }
 
 /** Une affiche vierge, papier, quand `profondeur` demande plus d'affiches que l'année n'en a de traitées. */
-function afficheVierge(g: CanvasRenderingContext2D, x: number, y: number): void {
-  g.fillStyle = '#efe2c4'
+function afficheVierge(g: CanvasRenderingContext2D, x: number, y: number, couleur: Monde['couleur']): void {
+  g.fillStyle = couleur('#EFE2C4')
   g.fillRect(x, y, 13, 19)
   g.strokeStyle = 'rgba(0,0,0,.3)'
   g.lineWidth = 0.4
   g.strokeRect(x + 0.2, y + 0.2, 12.6, 18.6)
 }
 
-/** La colonne Morris d'une case, ses affiches (maquette : `colonne`), penchée au goût du monde. */
+/**
+ * La colonne Morris d'une case, ses affiches (carte v2 : `colonne`), aux couleurs de
+ * `palette.colonne`, penchée de `penche` (la carte v2 penchait la colonne des années 1920 de
+ * 0,12). Sans la largeur de l'écran (signature inchangée), elle se tient à 64 px à droite de sa
+ * case, là où la carte v2 la posait pour une case de la moitié gauche ; `c.pop` n'est pas porté.
+ */
 function colonne(g: CanvasRenderingContext2D, x: number, y: number, c: CaseCarte, monde: Monde, affiche: (url: string) => Toile | null): void {
   const col = monde.palette.colonne
-  if (!col) return
-  const N = Math.min(4, c.profondeur)
-  if (N <= 0) return
+  if (!col || c.etat === 'verrou' || c.profondeur <= 0) return
+  const couleur = monde.couleur
+  const Hc = 60
+  const R = 15
   g.save()
-  g.translate(x + 50, y - 60)
-  g.rotate(col.penche)
+  g.translate(x + 64, y + 16)
+  g.fillStyle = 'rgba(0,0,0,.42)'
+  g.beginPath()
+  g.ellipse(3, 1, 19, 5, 0, 0, TAU)
+  g.fill()
+  if (col.penche) g.transform(1, 0, -col.penche, 1, 0, 0)
+  g.fillStyle = col.fonce
+  g.fillRect(-R - 2.5, -7, 2 * R + 5, 7)
+  const fut = g.createLinearGradient(-R, 0, R, 0)
+  fut.addColorStop(0, col.fonce)
+  fut.addColorStop(0.35, col.clair)
+  fut.addColorStop(1, col.fonce)
+  g.fillStyle = fut
+  g.fillRect(-R, -Hc, 2 * R, Hc - 7)
+  const N = Math.min(4, c.profondeur)
   for (let j = 0; j < N; j++) {
-    const px = (j % 2) * 14
-    const py = (j >> 1) * 21
-    if (j < c.affiches.length) {
-      const url = c.affiches[j]!
-      const a = affiche(url)
-      if (a) g.drawImage(a as unknown as CanvasImageSource, px, py, 13, 19)
-      else afficheVierge(g, px, py)
-    } else afficheVierge(g, px, py)
+    const px = -R + 1.5 + (j % 2) * 14
+    const py = -Hc + 5 + (j >> 1) * 21
+    const url = c.affiches[j]
+    const a = url ? affiche(url) : null
+    if (a) g.drawImage(a as unknown as CanvasImageSource, px, py, 13, 19)
+    else afficheVierge(g, px, py, couleur)
   }
+  const om = g.createLinearGradient(-R, 0, R, 0)
+  om.addColorStop(0, 'rgba(0,0,0,.55)')
+  om.addColorStop(0.28, 'rgba(0,0,0,0)')
+  om.addColorStop(0.72, 'rgba(0,0,0,0)')
+  om.addColorStop(1, 'rgba(0,0,0,.6)')
+  g.fillStyle = om
+  g.fillRect(-R, -Hc, 2 * R, Hc - 7)
+  g.fillStyle = col.fonce
+  g.fillRect(-R - 2.5, -Hc - 3, 2 * R + 5, 4)
+  g.beginPath()
+  g.ellipse(0, -Hc - 3, R, 8, 0, Math.PI, 0)
+  g.fill()
+  g.fillStyle = col.clair
+  g.fillRect(-1, -Hc - 16, 2, 6)
+  cercle(g, 0, -Hc - 17, 2)
   const reste = c.profondeur - N
   if (reste > 0) {
     const txt = `+${reste}`
     g.font = "800 8px 'Manrope', system-ui, sans-serif"
     const tw = g.measureText(txt).width + 9
-    g.fillStyle = '#E6B94A'
-    rr(g, -tw / 2 + 6, 42, tw, 11, 5.5)
+    g.fillStyle = couleur('#E6B94A')
+    rr(g, -tw / 2, -12, tw, 11, 5.5)
     g.fill()
-    g.fillStyle = '#1b0e09'
+    g.fillStyle = couleur('#1B0E09')
     g.textAlign = 'center'
-    g.fillText(txt, 6, 50.3)
+    g.fillText(txt, 0, -3.7)
   }
   g.restore()
 }
@@ -237,6 +269,12 @@ export function dessinerCase(g: CanvasRenderingContext2D, x: number, y: number, 
     d1 = monde.couleur('#CDBB97')
     f0 = monde.couleur('#7d6a4b')
     f1 = monde.couleur('#3b2f1f')
+  } else if (c.etat === 'passee') {
+    // L'année passée au ticket prend la bobine du `ticket` de la maquette, plus terne qu'une année récompensée.
+    d0 = monde.couleur('#c9b894')
+    d1 = monde.couleur('#8a7856')
+    f0 = monde.couleur('#5a4c36')
+    f1 = monde.couleur('#2a2016')
   } else {
     [d0, d1] = p.caseFaite.dessus
     ;[f0, f1] = p.caseFaite.flanc
@@ -302,7 +340,7 @@ export function dessinerCase(g: CanvasRenderingContext2D, x: number, y: number, 
     g.fillStyle = monde.couleur('#F2E8D5')
     rr(g, -12, -7, 24, 13, 2)
     g.fill()
-    g.fillStyle = f1
+    g.fillStyle = d1
     cercle(g, -12, -0.5, 2.5)
     cercle(g, 12, -0.5, 2.5)
     g.strokeStyle = monde.couleur('#151009', 0.5)
@@ -335,7 +373,7 @@ export function dessinerCase(g: CanvasRenderingContext2D, x: number, y: number, 
   if ((c.etat === 'palme' || c.etat === 'lion' || c.etat === 'ours') && !c.attente) {
     const bob = vivant ? Math.sin(t * 1.6 + c.annee * 1.3) * 2.2 : 0
     ombre(g, x + 2, y + 1, 11 - bob * 0.6, 4, 0.3)
-    medaille(g, c.etat, x, y - 22 + bob, c.annee, t, vivant)
+    medaille(g, c.etat, x, y - 22 + bob, c.annee, t, vivant, monde.couleur)
   }
 }
 
@@ -367,9 +405,6 @@ export function dessinerCorail(g: CanvasRenderingContext2D, x: number, y: number
     g.lineCap = 'butt'
     g.restore()
   }
-  g.fillStyle = CORAIL
-  g.fillRect(x - 20, y + 20, 40, 18)
-  g.fillStyle = '#1b0e09'
-  g.textAlign = 'center'
-  g.fillText(String(c.annee), x, y + 33)
+  // La plaque du millésime, là où `dessinerCase` pose celle des autres années (maquette : `plaque`).
+  plaque(g, x, y + 11 + 19 * 0.3 + 12, String(c.annee), CORAIL, '#1b0e09')
 }

@@ -28,7 +28,9 @@ const MEDAILLES: Record<string, string> = { palme: '#B8862B', lion: '#B9A57C', o
 
 /** Une marquise, un an par étiquette d'une section détaillée, une décennie pour une repliée (maquette : `marquise`). */
 function marquise(g: CanvasRenderingContext2D, x: number, y: number, etat: EtatCase, texte: string, e: number, accent: string): void {
-  const w = 42
+  g.font = "800 10px 'Manrope', system-ui, sans-serif"
+  // 42 px pour un millésime (carte v2) ; une décennie repliée, « 1900 – 1909 », s'y élargit.
+  const w = Math.max(42, g.measureText(texte).width + 14)
   const h = 17
   const fait = FAITS.includes(etat)
   const ici = etat === 'encours'
@@ -88,7 +90,7 @@ export function dessinerEnsemble(g: CanvasRenderingContext2D, W: number, H: numb
         marquise(g, c.x * k, y, e2?.etat ?? 'verrou', String(c.annee), e, monde.palette.accent)
       }
     } else {
-      marquise(g, W / 2, (bande.y0 + bande.y1) / 2, 'verrou', monde.nom, e, monde.palette.accent)
+      marquise(g, W / 2, (bande.y0 + bande.y1) / 2, 'verrou', `${s.decennie} – ${s.decennie + 9}`, e, monde.palette.accent)
     }
   })
   g.globalAlpha = 1

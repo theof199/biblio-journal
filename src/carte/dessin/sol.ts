@@ -70,6 +70,8 @@ export function dessinerSol(x: CanvasRenderingContext2D, chemin: Path2D, route: 
     const e = parAnnee.get(c.annee)
     if (!e || e.etat === 'verrou') return
     const dens = Math.min(e.profondeur, 30) / 30
+    // Les photogrammes allumés passent par la rampe du monde de leur année (maquette : `C('#FFDEA0', …)`).
+    const couleur = mondeDe(plan.sections[c.section]!.decennie).couleur
     const d0 = i ? (route.dWay[plan.cases[i - 1]!.w] ?? 0) + 34 : 0
     const d1 = (route.dWay[c.w] ?? 0) - 36
     for (let j = Math.ceil((d0 - 13) / 26); 13 + 26 * j < d1; j++) {
@@ -81,9 +83,9 @@ export function dessinerSol(x: CanvasRenderingContext2D, chemin: Path2D, route: 
       g.save()
       g.translate(p.x, p.y)
       g.rotate(Math.atan2(b.y - a.y, b.x - a.x))
-      g.fillStyle = `rgba(255,222,160,${0.14 + 0.3 * dens * (0.6 + 0.4 * hash(j + c.annee))})`
+      g.fillStyle = couleur('#FFDEA0', 0.14 + 0.3 * dens * (0.6 + 0.4 * hash(j + c.annee)))
       g.fillRect(-10, -9.5, 20, 19)
-      g.fillStyle = `rgba(255,246,222,${0.08 + 0.12 * dens})`
+      g.fillStyle = couleur('#FFF6DE', 0.08 + 0.12 * dens)
       g.fillRect(-5.5, -5.5, 11, 11)
       g.restore()
     }
