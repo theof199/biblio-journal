@@ -24,6 +24,11 @@ describe('le dateur', () => {
     expect(peutAvancer('2026-09-30', '2026-09-30')).toBe(false)
   })
 
+  // Mutation : `iso !== aujourdhui` laisserait avancer un jour déjà passé au-delà d'aujourd'hui.
+  it('n’avance pas davantage un jour déjà au-delà d’aujourd’hui', () => {
+    expect(peutAvancer('2026-10-01', '2026-09-30')).toBe(false)
+  })
+
   it('allume « Aujourd’hui » ou « Hier », sinon rien', () => {
     expect(raccourci('2026-09-30', '2026-09-30')).toBe('aujourdhui')
     expect(raccourci('2026-09-29', '2026-09-30')).toBe('hier')
