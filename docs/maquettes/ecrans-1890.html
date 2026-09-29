@@ -63,6 +63,8 @@ img { display: block; max-width: 100%; }
 .curseur-demo { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 400px; font-size: 13px; color: var(--doux); }
 .curseur-demo input { flex: 1; min-width: 0; accent-color: #c9a15f; }
 .curseur-demo output { min-width: 64px; text-align: right; font-weight: 700; color: var(--papier); }
+.choix-demo { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--doux); }
+.choix-demo select { padding: 7px 12px; border: 1px solid rgba(232, 216, 191, .28); border-radius: 999px; background: #241a10; color: var(--papier); font: inherit; font-weight: 700; }
 
 /* ---------- Le téléphone et sa pellicule ---------- */
 .tel { position: relative; width: min(100%, 400px); height: min(740px, max(560px, calc(100svh - 150px))); margin: 0 auto; border-radius: 30px; overflow: hidden; background: #1d150d; isolation: isolate; box-shadow: 0 0 0 1px rgba(201, 161, 95, .3), 0 0 0 7px #0b0805, 0 0 0 8px rgba(201, 161, 95, .14), 0 24px 60px rgba(0, 0, 0, .6); --jx: 0px; --jy: 0px; }
@@ -549,20 +551,23 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
 
 <section class="ecran actif" id="e-carte" aria-labelledby="h-carte">
   <div class="scene">
-    <div class="tel"><div class="vue"><canvas class="scene" role="img" aria-label="La carte de 1890 : la baraque foraine, le manège, la lanterne magique et le guichet le long du chemin des années 1895 à 1899."></canvas></div><div class="affiche-date" role="dialog" aria-modal="true" aria-label="Petite affiche"><div class="feuillet"></div></div><div class="pellicule" aria-hidden="true"><i class="voile"></i><i class="rayure"></i><i class="rayure"></i></div><div class="carton" role="status"></div></div>
+    <div class="tel"><div class="vue"><canvas class="scene" role="img" aria-label="La carte de 1890 : la foire se bâtit le long du chemin des années 1895 à 1899, du Cinématographe en plein air à la baraque, au guichet, au manège et à la grande baraque en chantier."></canvas></div><div class="affiche-date" role="dialog" aria-modal="true" aria-label="Petite affiche"><div class="feuillet"></div></div><div class="pellicule" aria-hidden="true"><i class="voile"></i><i class="rayure"></i><i class="rayure"></i></div><div class="carton" role="status"></div></div>
     <div class="demo">
       <div class="segment" role="group" aria-label="Point de vue"><button type="button" data-vue="theo" aria-pressed="true">Vue Théo</button><button type="button" data-vue="second" aria-pressed="false">Vue second joueur</button></div>
-      <label class="curseur-demo">Films vus <input type="range" min="0" max="110" value="18" data-remplir aria-label="Films des années 1890 vus"><output>18 / 110</output></label>
+      <label class="choix-demo">Année ouverte <select data-annee aria-label="Année ouverte du joueur affiché"><option value="1895">1895</option><option value="1896">1896</option><option value="1897">1897</option><option value="1898">1898</option><option value="1899">1899</option><option value="1900">Décennie bouclée</option></select></label>
+      <button class="bouton" type="button" data-ouvrir>Ouvrir l’année suivante</button>
+      <label class="curseur-demo">Films vus en <span data-an-films>1896</span> <input type="range" min="0" max="24" value="6" data-remplir aria-label="Films vus dans l’année en cours"><output>6 · 27 %</output></label>
       <button class="bouton fort" type="button" data-boucler>Boucler 1896</button>
       <button class="bouton" type="button" data-1900>Passer à 1900</button>
     </div>
   </div>
-  <header class="notes-tete"><p class="num">0 · la carte</p><h2 id="h-carte">La foire des années 1890</h2><p>La carte validée, reprise pour porter les sept idées nouvelles : la roulotte, la foule, l’heure, les dates vraies, le passage à 1900.</p></header>
+  <header class="notes-tete"><p class="num">0 · la carte</p><h2 id="h-carte">La foire des années 1890</h2><p>La carte validée, reprise pour porter les idées nouvelles : la roulotte, la foule, l’heure, les dates vraies, la foire qui se bâtit, le passage à 1900.</p></header>
   <ul class="legende">
     <li class="idee"><b>Roulotte (idée 1)</b> : en vue second joueur, la roulotte de Théo descend le chemin et se gare sur 1896, l’année où il est rendu ; en vue Théo, elle traverse la foire.</li>
-    <li class="idee"><b>La foire se remplit (idée 2)</b> : le curseur « films vus » ajoute des spectateurs à la file, des lampions aux guirlandes, et à 110 sur 110 la fête est complète, avec feu d’artifice.</li>
+    <li class="idee"><b>La foire se remplit (idée 2)</b> : par paliers, un par année bouclée ; dans l’année en cours, chaque film vu (le curseur) ajoute un peu de monde sans atteindre le palier suivant. La fête n’est complète, avec feu d’artifice, qu’à la décennie bouclée.</li>
     <li class="idee"><b>Jour et nuit (idée 3)</b> : ciel, soleil ou lune et lampions suivent l’heure réelle ; le réglage en haut force le jour ou la nuit, pour tous les écrans.</li>
     <li class="idee"><b>Dates vraies (idée 4)</b> : des affichettes sur leur poteau, seulement pour les années ouvertes. Touchez-en une ; bouclez 1896 et celles de 1897 se collent.</li>
+    <li class="idee"><b>La foire se bâtit (idée 8)</b> : un élément par année ouverte, construit sous les yeux par une équipe d’ouvriers sur son échafaudage. 1895, un drap entre deux poteaux, le Cinématographe sur son trépied et quelques chaises, à côté de la lanterne magique ; 1896, la baraque se monte autour du drap ; 1897, le guichet à 1 franc et les lampions ; 1898, les chevaux de bois s’accrochent au manège ; 1899, la grande baraque « Prochainement » reste en chantier, pour 1900. Chaque joueur voit sa foire à son année.</li>
     <li class="idee"><b>Passage à 1900 (idée 7)</b> : la baraque se démonte, les chevaux de bois s’en vont, puis une affiche au pochoir se colle par-dessus.</li>
   </ul>
 </section>
@@ -774,7 +779,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     if (L < .5) { g.globalAlpha = ba * .5; g.strokeStyle = C('#3a2819'); g.lineWidth = .6; g.beginPath(); g.moveTo(x - r, y); g.lineTo(x + r, y); g.stroke(); }
     g.globalAlpha = ba;
   }
-  function guirlande(x0, y0, x1, y1, creux, n, type) {
+  function guirlande(x0, y0, x1, y1, creux, n, type, on = 1) {
     const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + creux;
     const q = (u) => [(1 - u) * (1 - u) * x0 + 2 * (1 - u) * u * mx + u * u * x1, (1 - u) * (1 - u) * y0 + 2 * (1 - u) * u * my + u * u * y1];
     g.strokeStyle = C('#080604', .95); g.lineWidth = 1.1; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(mx, my, x1, y1); g.stroke();
@@ -784,7 +789,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
         const sw = vivant ? Math.sin(t * 2.2 + i * .8) * 2.4 : 0;
         g.fillStyle = C(FANIONS[i % 4]); poly([[px - 5.5, py - 1], [px + 5.5, py - 1], [px + sw, py + 13]]); g.fill();
         g.fillStyle = 'rgba(0,0,0,.25)'; poly([[px + .5, py - 1], [px + 5.5, py - 1], [px + sw, py + 13]]); g.fill();
-      } else { g.fillStyle = C('#0a0806'); g.fillRect(px - .5, py, 1, 3); lampion(px, py + 6, 3, i); }
+      } else { g.fillStyle = C('#0a0806'); g.fillRect(px - .5, py, 1, 3); lampion(px, py + 6, 3, i, null, on); }
     }
   }
   const CIEL_N = ['#1b1116', '#3a2a1e', '#2e2117'], CIEL_J = ['#b9a27e', '#a58a64', '#6e5a40'];
@@ -1072,7 +1077,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     }
     g.fillStyle = C('#5a3e26'); g.fillRect(x0 - 4, s0 - 18, x1 - x0 + 8, 18); g.fillStyle = C('#2e2014'); g.fillRect(x0 - 4, s0 - 18, x1 - x0 + 8, 3);
     g.fillStyle = C('#3a2819'); for (let k = 0; k < 3; k++) g.fillRect(x0 - 16 + k * 4, s0 - 6 * (k + 1), 14, 6);
-    for (let i = 0; i <= 9; i++) lampion(x0 - 10 + i * wd, top + 9, 2, i, null, ferme ? 0 : 1);
+    for (let i = 0; i <= 9; i++) lampion(x0 - 10 + i * wd, top + 9, 2, i, null, ferme ? 0 : clamp((D.lampes ?? 1) * 10 - i, 0, 1));
     if (D.mode === 'attente') {
       g.strokeStyle = C('#6b4a2a'); g.lineWidth = 2; g.beginPath(); g.moveTo(352, s0 - 18); g.lineTo(334, top + 18); g.moveTo(364, s0 - 18); g.lineTo(346, top + 18); g.stroke();
       g.lineWidth = 1.4; for (let k = 1; k < 8; k++) { const u = k / 8; g.beginPath(); g.moveTo(lerp(352, 334, u), lerp(s0 - 18, top + 18, u)); g.lineTo(lerp(364, 346, u), lerp(s0 - 18, top + 18, u)); g.stroke(); }
@@ -1081,7 +1086,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
       g.beginPath(); g.moveTo(-1, -13); g.lineTo(-7, -18 + bras * 6); g.stroke(); g.fillStyle = C('#E9DCC0'); cercle(-8, -19 + bras * 6, 1.6); g.restore();
       g.fillStyle = C('#E9DCC0', .9); g.fillRect(x0 + 16, top + 16, (x1 - x0 - 32) * (vivant ? .35 + .3 * tri(T / 14) : .5), 2);
     }
-    bonimenteur(240, s0 - 18, 1.3, false);
+    if (!D.sansBoni) bonimenteur(240, s0 - 18, 1.3, false);
     const nq = D.file ?? 4;
     for (let j = 0; j < nq; j++) {
       const bx = 228 + (j % 6) * 12 + (j >= 6 ? 6 : 0), by = 232 + (j >= 6 ? 11 : 0) + (j % 2) * 3, ty = TYPES[j % 7];
@@ -1089,7 +1094,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
       silhouette(bx + pi, by, ty === 'enfant' ? 10 : 13.5, ty, 0, false, -1);
     }
   }
-  function carrousel(cx, base, R, top, a, nch = 6, enAllume = 1) {
+  function carrousel(cx, base, R, top, a, nch = 6, enAllume = 1, montes = nch) {
     ombre(cx + 3, base + 5, R + 10, 10);
     g.fillStyle = C('#3a2819'); g.beginPath(); g.ellipse(cx, base, R + 6, 11, 0, 0, TAU); g.fill();
     g.fillStyle = C('#5a3e26'); g.beginPath(); g.ellipse(cx, base - 3, R + 6, 11, 0, 0, TAU); g.fill();
@@ -1097,6 +1102,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     ch.sort((p, q) => p.z - q.z);
     const eave = top + 26;
     const dessinerCheval = (h) => {
+      if (h.i >= montes) return;
       const x = cx + Math.cos(h.b) * R, yb = base - 20 + h.z * 7, bob = Math.sin(h.b * 3 + h.i) * 4, sc = .9 + .15 * (h.z + 1) / 2;
       g.strokeStyle = C('#B8862B'); g.lineWidth = 1.3; g.beginPath(); g.moveTo(x, eave + h.z * 6); g.lineTo(x, base - 3 + h.z * 9); g.stroke();
       g.save(); g.translate(x, yb + bob); g.scale((h.z > 0 ? -1 : 1) * sc, sc);
@@ -1157,14 +1163,47 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     g.fillStyle = C('#FCE2AA', Math.min(1, .5 + .5 * fl)); cercle(x + 46, y - 42, 3); halo(x + 46, y - 42, 22 * Math.max(1, lampe), '#F2CD8C', .3 * fl * LUM * (.3 + .7 * NK));
     silhouette(x + 46, y + 4, 14, 'homme', 0, false, -1);
   }
-  function prochainement() {
-    const x = 322, y = 748;
-    ombre(x, y + 3, 60, 6);
-    g.fillStyle = C('#3a2819'); g.fillRect(x - 55, y - 60, 110, 60);
-    g.fillStyle = C('#20150d'); for (let k = 0; k < 5; k++) g.fillRect(x - 50 + k * 21, y - 50, 16, 44);
-    g.fillStyle = C('#A8452F', .8); poly([[x - 62, y - 60], [x + 62, y - 60], [x + 40, y - 80], [x - 40, y - 80]]); g.fill();
-    g.fillStyle = C('#E9DCC0'); rr(x - 46, y - 44, 92, 16, 2); g.fill();
-    texte('PROCHAINEMENT', x, y - 32, `9.5px ${F_A}`, C('#20150d'));
+  // La grande baraque de 1899, en chantier sous son échafaudage : elle sera le décor des années 1900.
+  function prochainement(k = 1) {
+    const x = 322, y = 748, x0 = x - 55, x1 = x + 55, top = y - 64, pic = y - 106;
+    const fond = lisse(0, .15, k), poteaux = lisse(.12, .42, k), ferme = lisse(.38, .56, k), bache = lisse(.56, .72, k), planches = lisse(.6, .85, k), ens = lisse(.78, .92, k);
+    ombre(x, y + 3, 62 * fond, 6);
+    g.fillStyle = C('#2b1c14'); g.fillRect(x0 - 4, y - 5, (x1 - x0 + 8) * fond, 5);
+    if (planches > 0) {
+      const rangs = Math.ceil(planches * 6);
+      for (let j = 0; j < rangs; j++) { const u = j < rangs - 1 ? 1 : planches * 6 - j; g.fillStyle = C(j % 2 ? '#4a3321' : '#553b26'); g.fillRect(x0, y - 5 - (j + 1) * 9.8, (x1 - x0) * (.64 - j * .045) * u, 9.2); }
+      g.strokeStyle = C('#2e2014', .7); g.lineWidth = 1; for (let px = x0 + 9; px < x0 + (x1 - x0) * .64; px += 11) { g.beginPath(); g.moveTo(px, y - 6); g.lineTo(px, y - 5 - rangs * 9.8); g.stroke(); }
+    }
+    g.strokeStyle = C('#6b4a2a'); g.lineWidth = 3; g.beginPath();
+    for (let i = 0; i <= 5; i++) { const u = clamp(poteaux * 6 - i, 0, 1); if (u > 0) { const px = lerp(x0, x1, i / 5); g.moveTo(px, y - 5); g.lineTo(px, y - 5 - (y - 5 - top) * ease(u)); } }
+    g.stroke();
+    if (ferme > 0) {
+      g.lineWidth = 2.5; g.beginPath(); g.moveTo(x0 - 4, top); g.lineTo(lerp(x0 - 4, x1 + 4, clamp(ferme * 2, 0, 1)), top); g.stroke();
+      const f2 = clamp(ferme * 2 - 1, 0, 1);
+      if (f2 > 0) {
+        if (bache > 0) {
+          g.save(); poly([[x0 - 6, top], [x, pic], [x1 + 6, top]]); g.clip();
+          const w = (x1 - x0 + 12) * bache;
+          for (let i = 0; i < 12; i++) { const a0 = x0 - 6 + i * (x1 - x0 + 12) / 12; if (a0 > x0 - 6 + w) break; g.fillStyle = C(i % 2 ? '#E9DCC0' : '#A8452F', .92); g.fillRect(a0, pic, Math.min((x1 - x0 + 12) / 12, x0 - 6 + w - a0), top - pic); }
+          g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x0 - 6, top - 8, w, 8); g.restore();
+          if (bache < 1) { g.fillStyle = C('#cfc2a4'); rr(x0 - 8 + w, lerp(top, pic, .5) - 2, 5, top - lerp(top, pic, .5) + 2, 2); g.fill(); }
+        }
+        g.strokeStyle = C('#6b4a2a'); g.lineWidth = 2.5; g.beginPath();
+        g.moveTo(x0 - 6, top); g.lineTo(lerp(x0 - 6, x, f2), lerp(top, pic, f2)); g.moveTo(x1 + 6, top); g.lineTo(lerp(x1 + 6, x, f2), lerp(top, pic, f2));
+        g.moveTo(x, top); g.lineTo(x, lerp(top, pic, f2)); g.stroke();
+        g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, top - 6); g.lineTo(lerp(x, x - 30, f2), lerp(top - 6, top - 22, f2)); g.moveTo(x, top - 6); g.lineTo(lerp(x, x + 30, f2), lerp(top - 6, top - 22, f2)); g.stroke();
+      }
+    }
+    echafaudage(x0 - 10, x1 + 10, pic + 10, y, lisse(.04, .24, k));
+    if (ens > 0) {
+      const dy = posee(ens) * 44, sw = vivant ? Math.sin(t * 1.4) * .035 + (1 - ens) * Math.sin(ens * 18) * .2 : 0;
+      g.save(); g.translate(x, top - 18 + dy); g.rotate(sw);
+      g.strokeStyle = C('#1c140c'); g.lineWidth = .8; g.beginPath(); g.moveTo(-40, 0); g.lineTo(-36, -22 - dy); g.moveTo(40, 0); g.lineTo(36, -22 - dy); g.stroke();
+      g.fillStyle = 'rgba(0,0,0,.35)'; rr(-45, 2, 92, 16, 2); g.fill();
+      g.fillStyle = C('#E9DCC0'); rr(-46, 0, 92, 16, 2); g.fill();
+      texte('PROCHAINEMENT', 0, 12, `9.5px ${F_A}`, C('#20150d'));
+      g.restore();
+    }
   }
 
   // ---------- La roulotte de Théo (le dessin de l’omnibus de la direction III) ----------
@@ -1336,12 +1375,16 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     { an: 1897, x: 38, y: 505, court: '1897', lieu: 'Montreuil-sous-Bois', titre: 'Le studio de verre', jour: 'Bâti de septembre 1896 à mars 1897', texte: 'Méliès fait construire dans sa propriété un atelier vitré, tourné vers la lumière : l’un des tout premiers studios bâtis pour le cinéma.' },
     { an: 1897, x: 206, y: 456, court: '4 mai', lieu: 'Paris · rue Jean-Goujon', titre: 'Le Bazar de la Charité', jour: 'Mardi 4 mai 1897', texte: 'Pendant une séance de cinématographe, le feu prend près de la lampe du projecteur ; l’incendie du Bazar de la Charité fait plus de cent victimes.' },
   ];
-  function etatCarte(M, vue) {
-    const theo = vue === 'theo';
+  // Chaque joueur a sa progression : Théo en est à 1896, le second joueur à 1895. `an` à 1900 : la décennie est bouclée.
+  const REC_CARTE = ['palme', 'ticket', 'lion', 'ours', 'ticket'];
+  function etatCarte(M, vue, an) {
+    const theo = vue === 'theo', garde = M.vue === vue && M.roul;
+    an = an || (theo ? 1896 : 1895);
+    const deca = an >= 1900, i0 = deca ? 5 : an - 1895;
     Object.assign(M, {
-      vue, cases: CASES0.map((c, i) => ({ ...c, etat: theo ? ['palme', 'encours', 'verrou', 'verrou', 'verrou'][i] : (i === 0 ? 'encours' : 'verrou'), pop: -9, secoue: -9 })),
-      progres: theo ? 3 : 2, bouclees: theo ? 1 : 0, avD: dCase(theo ? 1 : 0), fogY: CASES0[theo ? 1 : 0].y + 80, saut: 0,
-      passage: null, carte: null, fini: false, anneeJ: theo ? 1896 : 1895, roul: { t0: T }, datesT: {}, pointe: null,
+      vue, cases: CASES0.map((c, i) => ({ ...c, etat: i < i0 ? REC_CARTE[i] : i === i0 ? 'encours' : 'verrou', pop: -9, secoue: -9 })),
+      progres: theo ? 3 : 2, bouclees: i0, avD: dCase(Math.min(i0, 4)), fogY: deca ? H_CARTE + 100 : CASES0[i0].y + 80, saut: 0,
+      passage: null, carte: null, anneeJ: deca ? 1899 : an, anneeO: an, decennie: deca, chantier: null, roul: garde ? M.roul : { t0: T }, datesT: {}, pointe: null,
     });
     DATES.forEach((d, i) => { if (d.an <= M.anneeJ) M.datesT[i] = -99; });
   }
@@ -1483,7 +1526,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
   function recompense() {
     const P = D.passage; if (!P) return;
     const u = T - P.t0; if (u < .65 || u >= 2.05) return;
-    const c = D.cases[1], p1 = { x: c.x, y: c.y - 92 }, p2 = { x: 285, y: B_TOP + 46 };
+    const c = D.cases[P.i], p1 = { x: c.x, y: c.y - 92 }, p2 = { x: 285, y: B_TOP + 46 };
     let x, y, sc, rot;
     if (u < 1.05) { const k = ease((u - .65) / .4); x = c.x; y = lerp(c.y - 20, p1.y, k); sc = .6 + .6 * k; rot = Math.sin(u * 9) * .2; }
     else { const k = ease(clamp((u - 1.05) / 1, 0, 1)), mx = (p1.x + p2.x) / 2, my = Math.min(p1.y, p2.y) - 60; x = (1 - k) * (1 - k) * p1.x + 2 * (1 - k) * k * mx + k * k * p2.x; y = (1 - k) * (1 - k) * p1.y + 2 * (1 - k) * k * my + k * k * p2.y; sc = 1.2 - .5 * k; rot = Math.sin(u * 7) * .25 * (1 - k); }
@@ -1492,7 +1535,7 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     g.fillStyle = C('#F2E8D5'); rr(-13, -7.5, 26, 15, 2); g.fill();
     g.fillStyle = C(CIEL_N[1]); cercle(-13, 0, 2.6); cercle(13, 0, 2.6);
     g.strokeStyle = C('#A8452F'); g.lineWidth = 1; rr(-10, -5, 20, 10, 1.5); g.stroke();
-    texte('1896', 0, 3, `600 7px ${F_T}`, C('#151009'));
+    texte(String(c.annee), 0, 3, `600 7px ${F_T}`, C('#151009'));
     g.restore();
   }
   function affichette(d, i) {
@@ -1577,8 +1620,239 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
       g.restore();
     }
   }
+  // ---- La foire se bâtit (idée 8) : un élément par année ouverte, construit sous les yeux ----
+  // 1895 la séance en plein air (drap, Cinématographe, chaises) · 1896 la baraque · 1897 le guichet
+  // et les lampions · 1898 le manège · 1899 la grande baraque « Prochainement », en chantier.
+  const CHANTIER = { 1895: 4, 1896: 4.6, 1897: 4.2, 1898: 5, 1899: 4.4 };
+  const SITES = { 1895: [300, 172], 1896: [300, 150], 1897: [84, 530], 1898: [78, 300], 1899: [322, 690] };
+  const ECRITEAUX = { 1895: 'Le Cinématographe s’installe', 1896: 'Les forains montent la baraque', 1897: 'On pose le guichet', 1898: 'Les chevaux de bois arrivent', 1899: 'Une grande baraque en chantier' };
+  const ECRITEAU_Y = { 1895: 124, 1896: 16, 1897: 622, 1898: 226, 1899: 612 };
+  function bati(an) {
+    if (an > D.anneeO) return 0;
+    const c = D.chantier; if (calme || !c || c.an !== an) return 1;
+    return clamp((T - c.t0) / CHANTIER[an], 0, 1);
+  }
+  function lancerChantier(an) {
+    if (an < 1895 || an > 1899) return;
+    D.chantier = calme ? null : { an, t0: T, fx: {} };
+    if (D.surChantier) D.surChantier(an);
+  }
+  function unique(cle) { const c = D.chantier; if (!c || calme || c.fx[cle]) return false; c.fx[cle] = true; return true; }
+  // La foule par paliers : un par année bouclée, un peu à chaque film de l’année en cours, pleine à la décennie.
+  function remplissage(M) {
+    if (M.decennie) return 1;
+    const bouclees = M.cases.filter((c) => c.etat !== 'encours' && c.etat !== 'verrou').length, e = M.cases.find((c) => c.etat === 'encours');
+    return (Math.min(bouclees, 5) + (e ? e.n / (e.n + 4) : 0)) / 6;
+  }
+  // Une chute qui se pose : -1 en haut, 0 posé, un petit rebond à la fin.
+  function posee(u) { return u >= 1 ? 0 : u < .7 ? (u / .7) * (u / .7) - 1 : -Math.sin((u - .7) / .3 * Math.PI) * .08; }
+  function echafaudage(x0, x1, haut, s0, e) {
+    if (e <= .01) return;
+    const n = Math.max(2, Math.round((x1 - x0) / 30)), top = s0 - (s0 - haut) * e;
+    g.save(); g.lineCap = 'butt';
+    g.strokeStyle = C('#8a6a44', .7); g.lineWidth = .8; g.beginPath();
+    for (let i = 0; i < n; i++) for (let y = s0, j = 0; y - 24 >= top; y -= 24, j++) { const xa = lerp(x0, x1, i / n), xb = lerp(x0, x1, (i + 1) / n); if ((i + j) % 2) { g.moveTo(xa, y); g.lineTo(xb, y - 24); } else { g.moveTo(xb, y); g.lineTo(xa, y - 24); } }
+    g.stroke();
+    for (let y = s0 - 24; y > top + 3; y -= 24) { g.fillStyle = C('#5a3e26'); g.fillRect(x0 - 4, y - 2.5, x1 - x0 + 8, 3); }
+    g.strokeStyle = C('#9a7a50'); g.lineWidth = 2; g.beginPath();
+    for (let i = 0; i <= n; i++) { const x = lerp(x0, x1, i / n); g.moveTo(x, s0); g.lineTo(x, top); }
+    g.stroke();
+    g.fillStyle = C('#2b1c14'); for (let i = 0; i <= n; i++) for (let y = s0 - 24; y > top + 3; y -= 24) g.fillRect(lerp(x0, x1, i / n) - 1.5, y - 1.5, 3, 3);
+    g.restore();
+  }
+  function echelle(x, s0, h, e) {
+    if (e <= .01) return;
+    const hh = h * e, pen = 6 * e;
+    g.strokeStyle = C('#9a7a50'); g.lineWidth = 1.3; g.beginPath();
+    g.moveTo(x - 3, s0); g.lineTo(x - 3 - pen, s0 - hh); g.moveTo(x + 3, s0); g.lineTo(x + 3 - pen, s0 - hh);
+    for (let y = 6; y < hh; y += 6) { const d = pen * y / hh; g.moveTo(x - 3 - d, s0 - y); g.lineTo(x + 3 - d, s0 - y); }
+    g.stroke();
+  }
+  function ouvrier(x, y, ph, geste, dir = 1) {
+    silhouette(x, y, 14, 'homme', ph, (geste === 'marche' || geste === 'porte') && vivant, dir);
+    const s = 14 / 18;
+    g.save(); g.translate(x, y); g.scale(dir * s, s); g.strokeStyle = g.fillStyle = C('#0c0806'); g.lineWidth = 1.5; g.lineCap = 'round';
+    if (geste === 'marteau') {
+      const an = vivant ? -2.1 + Math.pow(Math.abs(Math.sin(t * 4 + ph)), 4) * 1.9 : -1.3, hx2 = Math.cos(an) * 7, hy = -13.4 + Math.sin(an) * 7;
+      g.beginPath(); g.moveTo(.5, -13.4); g.lineTo(hx2, hy); g.lineTo(hx2 + Math.cos(an) * 3, hy + Math.sin(an) * 3); g.stroke();
+      g.save(); g.translate(hx2 + Math.cos(an) * 3, hy + Math.sin(an) * 3); g.rotate(an); g.fillRect(-1.2, -2.6, 2.4, 5.2); g.restore();
+    } else if (geste === 'porte') {
+      g.beginPath(); g.moveTo(.5, -13.4); g.lineTo(3, -17); g.stroke();
+      g.fillStyle = C('#8a6a44'); g.fillRect(-12, -18.6, 26, 2.4);
+    } else if (geste === 'tire') {
+      const b = vivant ? Math.sin(t * 3 + ph) * 2 : 0;
+      g.beginPath(); g.moveTo(.5, -13.4); g.lineTo(3.5, -22 + b); g.moveTo(-.5, -13.4); g.lineTo(1.5, -21 - b); g.stroke();
+    }
+    g.restore();
+  }
+  // Une équipe : elle arrive, grimpe à son poste, travaille, redescend et s’en va (ou reste, pour le chantier de 1899).
+  function equipe(k, liste, s0, reste) {
+    if (k <= 0 || (k >= 1 && !reste)) return;
+    liste.forEach(([x, y, geste, dir], j) => {
+      const haut = s0 - y, a1 = lisse(0, .07, k), a2 = lisse(.07, .14, k), d1 = reste ? 0 : lisse(.86, .93, k), d2 = reste ? 0 : lisse(.93, 1, k);
+      let xx = x - dir * (1 - a1 + d2) * 70, yy = lerp(s0, y, a2 * (1 - d1)), sens = d1 > 0 ? -dir : dir;
+      const bouge = a1 < 1 || (haut > 0 && ((a2 > 0 && a2 < 1) || (d1 > 0 && d1 < 1))) || d2 > 0;
+      if (!bouge && geste === 'porte') { const u = t * .18 + j * .37; xx += (tri(u) - .5) * 36; sens = ((u % 1) + 1) % 1 < .5 ? 1 : -1; }
+      ouvrier(xx, yy, t * 7 + j * 1.7, bouge ? 'marche' : geste, sens);
+    });
+  }
+  // 1895 : un drap tendu entre deux poteaux, le Cinématographe sur son trépied, quelques chaises.
+  // Quand la baraque se monte (k96), on range les chaises et l’appareil ; le drap reste, les planches le recouvrent.
+  function seancePleinAir(k, k96) {
+    const s0 = B_SOL, sx = 262, sy = 150, sw = 76, sh = 46;
+    const pot = lisse(.08, .3, k), drap = lisse(.3, .55, k), tre = lisse(.45, .58, k), boite = lisse(.54, .66, k);
+    const lampe = lisse(.78, .88, k) * (1 - lisse(.02, .12, k96)), range = lisse(.02, .22, k96);
+    if (pot > 0) {
+      const hp = 70 * ease(pot);
+      ombre(sx - 4, s0 + 1, 5, 1.6); ombre(sx + sw + 4, s0 + 1, 5, 1.6);
+      g.strokeStyle = C('#2b1c14'); g.lineWidth = 2.5; g.beginPath(); g.moveTo(sx - 4, s0); g.lineTo(sx - 4, s0 - hp); g.moveTo(sx + sw + 4, s0); g.lineTo(sx + sw + 4, s0 - hp); g.stroke();
+    }
+    if (drap > 0) {
+      g.strokeStyle = C('#1c140c'); g.lineWidth = .8; g.beginPath(); g.moveTo(sx - 4, sy - 4); g.lineTo(sx + sw + 4, sy - 4); g.stroke();
+      const hh = sh * drap, w = vivant ? Math.sin(t * 1.7) * 1.6 : 0;
+      g.save(); g.beginPath(); g.moveTo(sx, sy - 3); g.lineTo(sx + sw, sy - 3); g.lineTo(sx + sw, sy + hh); g.quadraticCurveTo(sx + sw / 2, sy + hh + w, sx, sy + hh); g.closePath(); g.clip();
+      g.fillStyle = C('#E8DFC8'); g.fillRect(sx, sy - 3, sw, sh + 6);
+      if (lampe > 0) { g.globalAlpha = lampe; projectionUsine(sx, sy, sw, sh); g.globalAlpha = 1; }
+      g.strokeStyle = C('#8a7a60', .3); g.lineWidth = 1; for (let i = 1; i < 5; i++) { g.beginPath(); g.moveTo(sx + i * sw / 5, sy - 3); g.lineTo(sx + i * sw / 5 + w, sy + hh); g.stroke(); }
+      g.restore();
+      if (drap < 1) { g.fillStyle = C('#cfc2a4'); rr(sx - 3, sy + hh - 3, sw + 6, 6, 3); g.fill(); g.fillStyle = C('#8a7a60'); g.fillRect(sx - 3, sy + hh - .5, sw + 6, 1); }
+      g.fillStyle = C('#1c140c'); cercle(sx, sy - 3, 1.3); cercle(sx + sw, sy - 3, 1.3);
+    }
+    if (range < 1) {
+      const PL = [[272, 223], [287, 223], [302, 223], [317, 223], [332, 223], [279, 231], [294, 231], [309, 231], [324, 231]];
+      const assis = k >= .9 && range === 0 ? Math.min(PL.length, D.file) : 0;
+      g.save(); g.globalAlpha = 1 - range;
+      PL.forEach(([x, y], j) => {
+        const u = clamp((k - .6 - j * .022) / .07, 0, 1); if (u <= 0) return;
+        const cx = lerp(x, 300, range), cy = lerp(y, s0, range) + posee(u) * 14;
+        if (j < assis) { const ty = TYPES[(j + 1) % 7]; silhouette(cx, cy - 4, ty === 'enfant' ? 9 : 11.5, ty === 'enfant' ? 'enfant' : ty, 0, false, 1); }
+        g.strokeStyle = C('#2b1c14'); g.lineWidth = 1.1; g.beginPath();
+        g.moveTo(cx - 3, cy); g.lineTo(cx - 3, cy - 11); g.moveTo(cx + 3, cy); g.lineTo(cx + 3, cy - 11); g.moveTo(cx - 3, cy - 5); g.lineTo(cx + 3, cy - 5); g.moveTo(cx - 3, cy - 8.5); g.lineTo(cx + 3, cy - 8.5);
+        g.stroke(); g.beginPath(); g.arc(cx, cy - 11, 3, Math.PI, 0); g.stroke();
+      });
+      if (tre > 0) {
+        const px = lerp(232, 298, range), py = s0;
+        g.save(); g.translate(px, py); g.scale(1 - range * .5, 1 - range * .5);
+        const ec = 7 * ease(tre);
+        g.strokeStyle = C('#2b1c14'); g.lineWidth = 1.3; g.beginPath(); g.moveTo(0, -16); g.lineTo(-ec, 0); g.moveTo(0, -16); g.lineTo(ec, 0); g.moveTo(0, -16); g.lineTo(ec * .3, 0); g.stroke();
+        if (boite > 0) {
+          g.save(); g.translate(0, posee(boite) * 26);
+          g.fillStyle = C('#2b1f14'); g.fillRect(-13, -27, 7, 10); g.fillRect(-11, -31, 3, 4);
+          g.fillStyle = C('#8a5a30'); rr(-6, -26, 13, 10, 1.2); g.fill(); g.strokeStyle = C('#3a2414'); g.lineWidth = .8; g.stroke();
+          g.fillStyle = C('#B8862B'); g.fillRect(7, -23, 4, 4);
+          const an = vivant && lampe > .5 ? t * 9 : .6;
+          g.strokeStyle = C('#1c140c'); g.lineWidth = 1; g.beginPath(); g.moveTo(.5, -21); g.lineTo(.5 + Math.cos(an) * 3.5, -21 + Math.sin(an) * 3.5); g.stroke();
+          if (lampe > .01) { g.fillStyle = C('#FADEA0', lampe); g.fillRect(-12, -24, 5, 3); }
+          g.restore();
+        }
+        g.restore();
+        if (k > .6) {
+          const arr = lisse(.6, .72, k), ox = lerp(180, 222, arr) + range * 60;
+          silhouette(ox, s0, 13.5, 'homme', t * 7, arr < 1 && vivant, 1);
+          if (arr >= 1 && range === 0) { const an = vivant && lampe > .5 ? t * 9 : .6, s = 13.5 / 18; g.strokeStyle = C('#0c0806'); g.lineWidth = 1.5 * s; g.lineCap = 'round'; g.beginPath(); g.moveTo(ox + .5 * s, s0 - 13.4 * s); g.lineTo(232.5 + Math.cos(an) * 3.5, s0 - 21 + Math.sin(an) * 3.5); g.stroke(); }
+        }
+      }
+      g.restore();
+    }
+    if (lampe > .01 && drap > .95) {
+      const lx = 243, ly = s0 - 21;
+      g.save(); g.globalCompositeOperation = 'lighter';
+      const gr = g.createLinearGradient(lx, ly, sx + sw / 2, sy + sh / 2); gr.addColorStop(0, C('#F2D7A0', .34 * lampe)); gr.addColorStop(1, C('#F2D7A0', .05 * lampe));
+      g.fillStyle = gr; poly([[lx, ly - 1.5], [sx + sw, sy], [sx, sy], [sx, sy + sh], [lx, ly + 1.5]]); g.fill(); g.restore();
+      halo(sx + sw / 2, sy + sh / 2, 64, '#F2E2BE', .12 * lampe * (.4 + .6 * NK)); halo(222, s0 - 22, 16, '#F2CD8C', .3 * lampe * (.3 + .7 * NK));
+    }
+    echelle(352, s0, 62, lisse(.05, .2, k) * (1 - lisse(.84, .92, k)));
+    equipe(k, [[250, s0, 'marteau', 1], [352, s0 - 30, 'tire', -1]], s0);
+  }
+  // 1896 : l’échafaudage, les planches qui montent rangée par rangée, le toit rayé qui se pose, puis les lampions.
+  function baraqueChantier(k) {
+    const x0 = B_X0, x1 = B_X1, top = B_TOP, s0 = B_SOL, lim = top + 40, bas = s0 + 26;
+    const murs = lisse(.12, .55, k), toit = lisse(.55, .7, k), rangs = Math.floor(murs * 9 + 1e-6), hMur = (bas - lim) * rangs / 9;
+    const file = D.file, amp = D.ampoules;
+    D.sansBoni = k < .74; D.file = k < .74 ? 0 : Math.round(file * lisse(.74, .95, k)); D.lampes = lisse(.76, .9, k); D.ampoules = k < .8 ? 0 : amp;
+    if (hMur > 0) { g.save(); g.beginPath(); g.rect(x0 - 40, bas - hMur, x1 - x0 + 60, hMur); g.clip(); baraqueFacade(); g.restore(); }
+    if (murs > 0 && murs < 1) {
+      const u = murs * 9 - rangs, yy = bas - hMur - 9, by = lerp(s0 + 4, yy, ease(u));
+      g.strokeStyle = C('#1c140c'); g.lineWidth = .7; g.beginPath(); g.moveTo(x1 - 18, top - 4); g.lineTo(x1 - 18, by); g.stroke();
+      g.fillStyle = C('#6b4a2a'); g.fillRect(x1 - 40, by, 44, 8); g.fillStyle = C('#2e2014'); g.fillRect(x1 - 40, by + 6.5, 44, 1.5);
+    }
+    if (toit > 0) {
+      if (toit >= .7 && unique('toit')) fumee(B_CX, top + 34, 8, 150);
+      g.save(); g.translate(0, posee(toit) * 150); g.beginPath(); g.rect(-8, -80, W + 16, lim + 80); g.clip(); baraqueFacade(); g.restore();
+    }
+    D.sansBoni = false; D.file = file; D.lampes = undefined; D.ampoules = amp;
+    echafaudage(x0 - 6, x1 + 6, top - 8, s0, lisse(0, .14, k) * (1 - lisse(.86, .98, k)));
+    equipe(k, [[236, s0 - 48, 'marteau', 1], [362, s0 - 72, 'marteau', -1], [196, s0, 'porte', 1]], s0);
+  }
+  // 1897 : le guichet, planches, toile de l’auvent déroulée, enseigne hissée, puis la lampe s’allume.
+  function guichetChantier(k) {
+    const x = 84, y = 608, lim = y - 58, bas = y + 8;
+    const murs = lisse(.12, .45, k), auvent = lisse(.45, .6, k), ens = lisse(.6, .72, k), lampe = lisse(.74, .86, k);
+    if (k >= .74) guichet(0, lampe);
+    else {
+      const rangs = Math.floor(murs * 6 + 1e-6), hh = (bas - lim) * rangs / 6;
+      if (hh > 0) { g.save(); g.beginPath(); g.rect(x - 44, bas - hh, 82, hh); g.clip(); guichet(0, 0); g.restore(); }
+      if (auvent > 0) {
+        const w = 88 * auvent;
+        g.save(); g.beginPath(); g.rect(x - 44, y - 77, w, 19.5); g.clip(); guichet(0, 0); g.restore();
+        if (auvent < 1) { g.fillStyle = C('#cfc2a4'); rr(x - 46 + w, y - 78, 5, 21, 2.5); g.fill(); }
+      }
+      if (ens > 0) {
+        if (ens >= .7 && unique('enseigne')) fumee(x, y - 76, 4, 50);
+        const sw = (1 - ens) * Math.sin(ens * 16) * .25;
+        g.save(); g.translate(x, y - 94 + posee(ens) * 50); g.rotate(sw); g.translate(-x, -(y - 94));
+        g.strokeStyle = C('#1c140c'); g.lineWidth = .7; g.beginPath(); g.moveTo(x - 26, y - 94); g.lineTo(x - 22, y - 150); g.moveTo(x + 26, y - 94); g.lineTo(x + 22, y - 150); g.stroke();
+        g.beginPath(); g.rect(x - 34, y - 96, 68, 19.5); g.clip(); guichet(0, 0); g.restore();
+      }
+    }
+    echafaudage(x - 50, x + 50, y - 104, y, lisse(0, .14, k) * (1 - lisse(.86, .98, k)));
+    equipe(k, [[x - 30, y - 48, 'tire', 1], [x + 30, y - 24, 'marteau', -1], [x + 70, y + 2, 'porte', -1]], y + 2);
+  }
+  // 1898 : le plancher et le mât, le chapiteau qui descend, un cheval après l’autre, puis les lampions et le premier tour.
+  function manegeChantier(k, a) {
+    const cx = 78, base = 344, R = 44, top = 264, lim = top + 37;
+    const pied = lisse(.1, .3, k), toit = lisse(.3, .46, k), chevaux = lisse(.46, .86, k), lampes = lisse(.86, .93, k);
+    const montes = Math.min(6, Math.floor(chevaux * 6 + 1e-6));
+    if (pied > 0) { const hh = (base + 16 - lim) * ease(pied); g.save(); g.beginPath(); g.rect(-8, base + 16 - hh, 190, hh); g.clip(); carrousel(cx, base, R, top, a, 6, lampes, montes); g.restore(); }
+    if (toit > 0) {
+      if (toit >= .7 && unique('chapiteau')) fumee(cx, lim, 6, 90);
+      g.save(); g.translate(0, posee(toit) * 120); g.beginPath(); g.rect(-8, -60, 190, lim + 60); g.clip(); carrousel(cx, base, R, top, a, 6, lampes, montes); g.restore();
+    }
+    if (chevaux > 0 && montes < 6) {
+      const j = montes, u = chevaux * 6 - j, b = a + j * TAU / 6, z = Math.sin(b);
+      const tx = cx + Math.cos(b) * R, ty = base - 20 + z * 7, e = ease(clamp(u / .8, 0, 1));
+      const hx2 = lerp(-26, tx, e), hy = lerp(base + 4, ty, e) - Math.sin(e * Math.PI) * 16;
+      if (e < 1) ouvrier(lerp(-34, tx - 12, e), base + 8, t * 7 + j, 'marche', 1);
+      g.save(); g.translate(hx2, hy); g.scale(.95, .95); g.fillStyle = g.strokeStyle = C(j % 2 ? '#E9DCC0' : '#A8452F'); cheval(1.1 + j * .3); g.restore();
+      if (u >= .8 && unique('cheval' + j)) etincelles(tx, ty - 4, 10, '#F6D98A');
+    }
+    echafaudage(cx - R - 16, cx + R + 16, top - 8, base + 8, lisse(0, .12, k) * (1 - lisse(.88, .98, k)));
+    equipe(k, [[cx - 22, base + 8 - 48, 'marteau', 1], [cx + R + 30, base + 10, 'tire', -1]], base + 10);
+  }
+  // Les guirlandes de lampions de 1897 : tendues de proche en proche, puis allumées.
+  function guirlandesLampions(k97, r, seule) {
+    if (k97 <= 0) return;
+    const tend = lisse(.5, .8, k97), on = lisse(.8, .92, k97);
+    const G = [[6, 532, 178, 524, 18, 2 + Math.round(r * 8)]];
+    if (!seule && r > .35) G.push([214, 436, 384, 428, 14, Math.round(r * 7)]);
+    if (!seule && r > .7) G.push([140, 652, 270, 642, 16, Math.round(r * 6)]);
+    for (const [x0, y0, x1, y1, cr, n] of G) {
+      if (tend >= 1) { guirlande(x0, y0, x1, y1, cr, n, 'lampion', on); continue; }
+      g.save(); g.beginPath(); g.rect(x0 - 4, y0 - 20, (x1 - x0 + 8) * tend, 60); g.clip(); guirlande(x0, y0, x1, y1, cr, n, 'lampion', on); g.restore();
+    }
+  }
+  function guichetEtat(k97) { if (k97 < 1) guichetChantier(k97); else guichet(); }
+  function ecriteau() {
+    const c = D.chantier; if (!c || calme) return;
+    const k = bati(c.an), a = lisse(0, .08, k) * (1 - lisse(.9, 1, k)); if (a <= .01) return;
+    g.font = `600 11.5px ${F_T}`; const w = g.measureText(ECRITEAUX[c.an]).width + 16, x = clamp(SITES[c.an][0], w / 2 + 8, W - w / 2 - 8);
+    g.save(); g.globalAlpha = a; plaque(x, ECRITEAU_Y[c.an], ECRITEAUX[c.an], C('#F2E8D5'), C('#151009')); g.restore();
+  }
   function dessinCarte(h, P, dt) {
-    const r = S.vus / S.TOTAL, cine = D.cine ? (calme ? 99 : T - D.cine.t0) : -1, k1 = cine < 0 ? 0 : lisse(.3, 2.6, cine);
+    if (D.chantier && !calme && T - D.chantier.t0 > CHANTIER[D.chantier.an] + .05) { const [sx, sy] = SITES[D.chantier.an]; confettis(sx, sy - 30, 22); D.chantier = null; if (D.surFin) D.surFin(); }
+    const r = remplissage(D), cine = D.cine ? (calme ? 99 : T - D.cine.t0) : -1, k1 = cine < 0 ? 0 : lisse(.3, 2.6, cine);
+    const k95 = bati(1895), k96 = bati(1896), k97 = bati(1897), k98 = bati(1898), k99 = bati(1899);
+    if (k98 < .93) D.carrV = 0;
     D.carr += D.carrV * dt * .8; D.carrV += (1 - D.carrV) * Math.min(1, dt * .5);
     majPassage();
     D.ampoules = D.bouclees; D.file = 2 + Math.round(r * 9); D.mode = '';
@@ -1588,49 +1862,69 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     EXTINCTION = 1 - (cine < 0 ? 0 : lisse(0, 1.6, cine));
     if (cine > .8 && !D.cine.f1) { D.cine.f1 = true; fumee(300, 200, 10, 120); }
     if (cine > 1.8 && !D.cine.f2) { D.cine.f2 = true; fumee(300, 214, 12, 150); fumee(78, 330, 6, 60); }
-    g.save(); g.globalAlpha = 1 - k1; guirlande(300, 38, -8, 82, 26 + k1 * 140, 4 + Math.round(r * 6), 'fanion'); g.restore();
-    g.save(); g.translate(B_CX, B_SOL); g.rotate(k1 * .07 * Math.sin(k1 * 9)); g.scale(1 + k1 * .05, 1 - k1 * .94); g.translate(-B_CX, -B_SOL); g.globalAlpha = 1 - lisse(.7, 1, k1); baraqueFacade(); g.restore();
-    g.save(); g.translate(-k1 * 320, 0); carrousel(78, 344, 44, 264, D.carr + k1 * 6, 6); if (k1 < .3) foule(Math.round(r * 7), 18, 150, 362, 5); g.restore();
+    if (k96 > .66) {
+      const f = lisse(.66, .8, k96);
+      g.save(); g.globalAlpha = 1 - k1; g.beginPath(); g.rect(300 - 320 * f, 0, 320 * f + 12, 160); g.clip(); guirlande(300, 38, -8, 82, 26 + k1 * 140, 4 + Math.round(r * 6), 'fanion'); g.restore();
+    }
+    if (k96 < 1) seancePleinAir(k95, k96);
+    if (k96 > 0) {
+      g.save(); g.translate(B_CX, B_SOL); g.rotate(k1 * .07 * Math.sin(k1 * 9)); g.scale(1 + k1 * .05, 1 - k1 * .94); g.translate(-B_CX, -B_SOL); g.globalAlpha = 1 - lisse(.7, 1, k1);
+      if (k96 < 1) baraqueChantier(k96); else baraqueFacade();
+      g.restore();
+    }
+    if (k98 > 0) {
+      g.save(); g.translate(-k1 * 320, 0);
+      if (k98 < 1) manegeChantier(k98, D.carr); else carrousel(78, 344, 44, 264, D.carr + k1 * 6, 6);
+      if (k1 < .3 && k98 >= 1) foule(Math.round(r * 7), 18, 150, 362, 5);
+      g.restore();
+    }
     const ex = 24, ey = 404, bb = vivant ? Math.sin(t * 1.3) * 3 : 0;
     g.strokeStyle = C('#0c0806', .8); g.lineWidth = .7; g.beginPath(); g.moveTo(ex + 2, ey - 14); g.quadraticCurveTo(ex + 8, ey - 30, ex + 6, ey - 44 + bb); g.stroke();
     const bg = g.createRadialGradient(ex + 4, ey - 52 + bb, 1, ex + 6, ey - 49 + bb, 8); bg.addColorStop(0, C('#F08A70')); bg.addColorStop(1, C('#A8452F'));
     g.fillStyle = bg; g.beginPath(); g.ellipse(ex + 6, ey - 50 + bb, 6.5, 7.8, 0, 0, TAU); g.fill();
     silhouette(ex, ey, 10, 'enfant', 0, false, 1);
     lanterneMagique(); foule(Math.round(r * 5), 236, 326, 440, 9, 12);
-    guichet(); prochainement();
+    if (k97 > 0) guichetEtat(k97);
+    if (k99 > 0) { prochainement(k99); equipe(k99, [[292, 700, 'marteau', 1], [358, 724, 'marteau', -1], [236, 750, 'porte', 1]], 750, true); }
     sol();
     if (D.vue === 'theo') { const u = vivant ? (T / 26) % 1 : .42; roulotte(-130 + u * 650, 254, 1, vivant, .5); }
     DATES.forEach((d, i) => affichette(d, i));
     D.cases.forEach((c, i) => dessinerCase(c, i));
     avatar();
-    guirlande(6, 532, 178, 524, 18, 2 + Math.round(r * 8), 'lampion');
-    if (r > .35) guirlande(214, 436, 384, 428, 14, Math.round(r * 7), 'lampion');
-    if (r > .7) guirlande(140, 652, 270, 642, 16, Math.round(r * 6), 'lampion');
+    guirlandesLampions(k97, r);
     const u2 = vivant ? (T / 18) % 1 : .3; silhouette(-24 + 206 * tri(u2), 640, 15, 'ombrelle', T * 5.2, vivant, u2 < .5 ? 1 : -1);
     brume();
+    // Le guichet ouvert en 1897 perce la brume : l’année est ouverte, son décor ne s’y perd pas.
+    if (k97 > 0 && D.fogY < 640) { g.save(); g.globalAlpha = .72; guichetEtat(k97); guirlandesLampions(k97, r, true); g.restore(); }
     roulotteCarte();
     if (r >= 1 && k1 === 0) {
       artifice(90, 70, 3.1, 0); artifice(310, 44, 3.7, .4); artifice(200, 120, 4.3, .7);
       plaque(195, 6, 'Fête complète · 1899 bouclée', C('#E6B94A'), C('#151009'));
       if (vivant && hash(FRAME * .37) < .05) confettis(40 + hash(FRAME) * 310, 240, 18);
     }
+    ecriteau();
     dessinerParts(); recompense(); infobulle();
     if (cine >= 0) cinematique(cine);
   }
   function majPassage() {
     const P = D.passage; if (!P) return;
-    const u = T - P.t0, c1 = D.cases[1], c2 = D.cases[2];
+    const u = T - P.t0, i = P.i, c1 = D.cases[i], c2 = D.cases[i + 1];
     if (u < 3.5) D.progres = 3 + (u > .22 ? 1 : 0) + (u > .45 ? 1 : 0);
     if (u >= .65 && c1.etat === 'encours') { c1.etat = 'ticket'; c1.pop = T; etincelles(c1.x, c1.y - 6, 16, CORAIL, 'c'); }
-    if (u >= 2.05 && D.bouclees < 2) { D.bouclees = 2; etincelles(285, B_TOP + 46, 18, '#F6D98A'); }
-    if (u >= 2.2) { const k = ease(clamp((u - 2.2) / 1.3, 0, 1)); D.avD = lerp(dCase(1), dCase(2), k); D.saut = k < 1 ? Math.abs(Math.sin(k * Math.PI * 4)) * 9 : 0; D.fogY = lerp(CASES0[1].y + 80, CASES0[2].y + 80, k); }
-    if (u >= 3.5 && c2.etat === 'verrou') { c2.etat = 'encours'; c2.pop = T; D.progres = 0; etincelles(c2.x, c2.y - 4, 14, '#F2E8D5'); ouvrirDates(1897); }
-    if (u >= 3.8) { D.passage = null; D.fini = true; D.saut = 0; if (D.surFin) D.surFin(); }
+    if (u >= 2.05 && D.bouclees < i + 1) { D.bouclees = i + 1; etincelles(285, B_TOP + 46, 18, '#F6D98A'); }
+    if (u >= 2.2) { const k = ease(clamp((u - 2.2) / 1.3, 0, 1)); D.avD = lerp(dCase(i), dCase(c2 ? i + 1 : i), k); D.saut = k < 1 ? Math.abs(Math.sin(k * Math.PI * 4)) * 9 : 0; D.fogY = lerp(CASES0[i].y + 80, c2 ? CASES0[i + 1].y + 80 : H_CARTE + 100, k); }
+    if (u >= 3.5 && !P.ouvert) {
+      P.ouvert = true; D.anneeO = c1.annee + 1;
+      if (c2) { c2.etat = 'encours'; c2.pop = T; D.progres = 0; etincelles(c2.x, c2.y - 4, 14, '#F2E8D5'); ouvrirDates(c2.annee); lancerChantier(c2.annee); }
+      else { D.decennie = true; confettis(195, 200, 40); }
+    }
+    if (u >= 3.8) { D.passage = null; D.saut = 0; if (D.surFin) D.surFin(); }
   }
-  function finirPassage() {
-    const c1 = D.cases[1], c2 = D.cases[2];
-    c1.etat = 'ticket'; c2.etat = 'encours'; D.progres = 0; D.bouclees = 2; D.avD = dCase(2); D.fogY = CASES0[2].y + 80; D.saut = 0; D.passage = null; D.fini = true;
-    ouvrirDates(1897);
+  function finirPassage(i) {
+    const c1 = D.cases[i], c2 = D.cases[i + 1];
+    c1.etat = 'ticket'; D.progres = 0; D.bouclees = i + 1; D.saut = 0; D.passage = null; D.anneeO = c1.annee + 1;
+    if (c2) { c2.etat = 'encours'; D.avD = dCase(i + 1); D.fogY = CASES0[i + 1].y + 80; ouvrirDates(c2.annee); lancerChantier(c2.annee); }
+    else { D.decennie = true; D.fogY = H_CARTE + 100; }
   }
 
   // =====================================================================
@@ -2090,24 +2384,52 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
     const P = toile('carte', cv, H_CARTE, dessinCarte, { carr: 0, carrV: 1, lues: {} }); X.P = P;
     D = P.D; etatCarte(P.D, 'theo');
     const bB = $('[data-boucler]', X.sec), b19 = $('[data-1900]', X.sec), rng = $('[data-remplir]', X.sec), out = $('output', X.sec);
-    const majB = () => { const M = P.D; bB.disabled = M.vue !== 'theo' || !!M.passage || !!M.cine; bB.textContent = M.fini ? 'Rejouer 1896' : M.passage ? 'Passage en cours…' : 'Boucler 1896'; };
-    P.D.surFin = majB;
-    X.majCurseur = () => { rng.value = S.vus; out.textContent = `${S.vus} / ${S.TOTAL}`; };
-    rng.addEventListener('input', () => { S.vus = +rng.value; X.majCurseur(); if (calme) peindre(true); });
+    const sel = $('[data-annee]', X.sec), bO = $('[data-ouvrir]', X.sec), anF = $('[data-an-films]', X.sec);
+    const encours = () => P.D.cases.find((c) => c.etat === 'encours');
+    const majB = () => {
+      const M = P.D, occupe = !!M.passage || !!M.cine || !!M.chantier;
+      bB.disabled = occupe || M.decennie; bB.textContent = M.passage ? 'Passage en cours…' : M.decennie ? 'Décennie bouclée' : `Boucler ${M.anneeO}`;
+      bO.disabled = occupe || M.anneeO >= 1899; sel.disabled = !!M.passage || !!M.cine; sel.value = String(M.anneeO);
+      X.majCurseur();
+    };
+    // Le chantier qui commence : on fait défiler la carte jusqu’à lui s’il est hors de vue.
+    const montrerChantier = (an) => {
+      const v = X.vue, s = cv.clientWidth / W, y = SITES[an][1] * s;
+      if (y < v.scrollTop + 60 || y > v.scrollTop + v.clientHeight - 60) v.scrollTo({ top: Math.max(0, y - v.clientHeight / 2), behavior: calme ? 'auto' : 'smooth' });
+    };
+    P.D.surFin = majB; P.D.surChantier = (an) => { montrerChantier(an); majB(); };
+    X.majCurseur = () => {
+      const M = P.D, c = encours(); rng.disabled = !c; anF.textContent = c ? c.annee : M.decennie ? '1899' : M.anneeO;
+      if (c) rng.value = c.n;
+      out.textContent = c ? `${c.n} · ${Math.round(remplissage(M) * 100)} %` : M.decennie ? '100 %' : '…';
+    };
+    rng.addEventListener('input', () => { const c = encours(); if (c) c.n = +rng.value; X.majCurseur(); if (calme) peindre(true); });
+    sel.addEventListener('change', () => {
+      const M = P.D; D = M; t = T; etatCarte(M, M.vue, +sel.value); M.cine = null; b19.textContent = 'Passer à 1900'; majB(); peindre(true);
+    });
+    bO.addEventListener('click', () => {
+      const M = P.D; D = M; t = T; if (M.anneeO >= 1899) return;
+      const an = M.anneeO + 1; etatCarte(M, M.vue, an); M.cases[an - 1895].pop = T;
+      DATES.forEach((d, i) => { if (d.an === an) delete M.datesT[i]; }); ouvrirDates(an);
+      lancerChantier(an); majB(); if (calme) peindre(true);
+    });
     $$('[data-vue]', X.sec).forEach((b) => b.addEventListener('click', () => {
       $$('[data-vue]', X.sec).forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
-      D = P.D; etatCarte(P.D, b.dataset.vue); P.D.cine = null; b19.textContent = 'Passer à 1900'; majB(); peindre(true);
-      toast(X, b.dataset.vue === 'theo' ? '<b>Vue Théo</b>Sa roulotte traverse la foire.' : '<b>Vue second joueur</b>La roulotte de Théo descend le chemin et s’arrête où il est rendu.');
+      D = P.D; t = T; etatCarte(P.D, b.dataset.vue); P.D.cine = null; b19.textContent = 'Passer à 1900';
+      if (b.dataset.vue === 'second') lancerChantier(1895);
+      majB(); peindre(true);
+      toast(X, b.dataset.vue === 'theo' ? '<b>Vue Théo</b>Sa foire en est à 1896, et sa roulotte la traverse.' : '<b>Vue second joueur</b>Sa foire en est à 1895 : le Cinématographe s’installe. La roulotte de Théo, en avance, s’arrête en 1896.');
     }));
     bB.addEventListener('click', () => {
       const M = P.D; D = M; t = T;
-      if (M.fini) { etatCarte(M, 'theo'); majB(); peindre(true); return; }
-      M.carte = null; if (calme) { finirPassage(); majB(); peindre(true); return; }
-      M.passage = { t0: T }; majB();
+      const c = encours(); if (!c || M.passage) return;
+      const i = M.cases.indexOf(c);
+      M.carte = null; if (calme) { finirPassage(i); majB(); peindre(true); return; }
+      M.passage = { t0: T, i }; majB();
     });
     b19.addEventListener('click', () => {
       const M = P.D;
-      if (M.cine) { M.cine = null; b19.textContent = 'Passer à 1900'; } else { M.cine = { t0: T }; M.carte = null; b19.textContent = 'Revenir en 1896'; }
+      if (M.cine) { M.cine = null; b19.textContent = 'Passer à 1900'; } else { M.cine = { t0: T }; M.carte = null; b19.textContent = M.decennie ? 'Revenir aux années 1890' : `Revenir en ${M.anneeO}`; }
       majB(); peindre(true);
     });
     const aff = $('.affiche-date', X.tel), feuillet = $('.feuillet', aff);
@@ -2124,16 +2446,16 @@ canvas.scene { display: block; width: 100%; height: auto; touch-action: manipula
           aff.classList.add('ouverte'); return;
         }
       }
-      if (M.vue === 'second' && M.roulPos && Math.hypot(x - M.roulPos.x, y - M.roulPos.y) < 36) { toast(X, '<b>La roulotte de Théo</b>Il est rendu en 1896 : ses salles t’attendent là-bas.'); return; }
+      if (M.vue === 'second' && M.roulPos && Math.hypot(x - M.roulPos.x, y - M.roulPos.y) < 36) { toast(X, M.anneeO > 1896 ? '<b>La roulotte de Théo</b>Il en est encore à 1896 : tu l’as dépassé.' : '<b>La roulotte de Théo</b>Il est rendu en 1896 : ses salles t’attendent là-bas.'); return; }
       for (let i = 0; i < M.cases.length; i++) {
         const c = M.cases[i];
         if (Math.hypot(x - c.x, (y - (c.y - 6)) * 1.1) > 38) continue;
-        if (c.etat === 'encours') { if (M.vue === 'theo' && i === 1 && !M.fini) bB.click(); else c.pop = T; }
+        if (c.etat === 'encours') { if (!bB.disabled) bB.click(); else c.pop = T; }
         else if (c.etat === 'verrou') { c.secoue = T; M.carte = { i, t0: T }; }
         else { c.pop = T; M.carte = { i, t0: T }; confettis(c.x, c.y - 24); M.pointe = { x: c.x, y: c.y, t0: T }; }
         if (calme) peindre(true); return;
       }
-      if (Math.hypot(x - 78, y - 310) < 56) M.carrV = 5;
+      if (M.anneeO >= 1898 && Math.hypot(x - 78, y - 310) < 56) M.carrV = 5;
       else if (x > 255 && x < 345 && y > 145 && y < 205) M.rideauT = T - 1;
       if (calme) peindre(true);
     });
