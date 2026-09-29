@@ -10,7 +10,7 @@
 
 .panneau {
   width: 100%;
-  max-width: 24rem;
+  max-width: var(--largeur-panneau);
   padding: var(--espace-5);
   border-radius: var(--rayon-l);
   background: var(--couleur-surface);
@@ -58,6 +58,6 @@
 }
 
 .bouton:disabled {
-  opacity: 0.6;
+  opacity: var(--opacite-inactif);
   cursor: default;
 }

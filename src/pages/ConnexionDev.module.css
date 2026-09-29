@@ -12,7 +12,7 @@
 .titre {
   font-size: var(--taille-xs);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--interlettre-capitales);
   color: var(--couleur-texte-doux);
 }
 

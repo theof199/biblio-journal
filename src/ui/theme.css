@@ -36,6 +36,9 @@
   --graisse-moyenne: 500;
   --graisse-forte: 700;
   --interligne: 1.5;
+  --interligne-titre: 1.2;
+  --interligne-serre: 1; /* libellés sur une ligne, sous une icône */
+  --interlettre-capitales: 0.08em; /* petits titres en capitales */
 
   /* Tailles de texte */
   --taille-xs: 0.75rem; /* libellés de la barre d'onglets */
@@ -66,6 +69,9 @@
   --ombre-m: 0 4px 16px rgb(0 0 0 / 0.1);
   --ombre-barre: 0 -1px 0 var(--couleur-bordure);
 
+  /* États */
+  --opacite-inactif: 0.6; /* un bouton désactivé */
+
   /* Mouvement */
   --duree: 150ms;
 
@@ -74,6 +80,8 @@
   --largeur-contenu: 40rem; /* la largeur maximale d'une page */
   --barre-onglets-hauteur: 3.75rem; /* sans la zone sûre, ajoutée par la coque */
   --barre-onglets-icone: 24px;
+  --barre-onglets-icone-trait: 1.75; /* l'épaisseur du trait des icônes */
+  --largeur-panneau: 24rem; /* la carte de connexion */
   /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));
 
@@ -136,7 +144,7 @@ h2,
 h3 {
   font-family: var(--police-titre);
   font-weight: var(--graisse-forte);
-  line-height: 1.2;
+  line-height: var(--interligne-titre);
 }
 
 h1 {

@@ -61,8 +61,9 @@
 .icone {
   width: var(--barre-onglets-icone);
   height: var(--barre-onglets-icone);
+  stroke-width: var(--barre-onglets-icone-trait);
 }
 
 .libelle {
-  line-height: 1;
+  line-height: var(--interligne-serre);
 }

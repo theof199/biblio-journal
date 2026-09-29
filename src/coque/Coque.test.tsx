@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
+import Coque from './Coque'
 import { createQueryClient } from '../api/queryClient'
 import { exemple } from '../test/contrat'
 import { json, servir } from '../test/serveur'
@@ -77,6 +78,26 @@ describe('la coque à onglets', () => {
     expect(await screen.findByRole('heading', { level: 1, name: cible.titre })).toBeInTheDocument()
     expect(chemin()).toBe(cible.chemin)
     expect(within(barre()).getByRole('link', { name: cible.libelle })).toHaveAttribute('aria-current', 'page')
+  })
+
+  // Aucune sous-page n'existe encore dans `App.tsx` : la coque se monte seule, sous une route qui
+  // prend tout, comme le fera `voyage/:annee`.
+  it.each(ATTENDUS.filter((o) => o.chemin !== '/'))('sur une sous-page de $chemin, $libelle reste seul marqué', (parent) => {
+    render(
+      <MemoryRouter initialEntries={[`${parent.chemin}/sous-page`]}>
+        <Routes>
+          <Route element={<Coque />}>
+            <Route path="*" element={<h1>Sous-page</h1>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const marques = within(barre())
+      .getAllByRole('link')
+      .filter((lien) => lien.getAttribute('aria-current') === 'page')
+      .map((lien) => lien.textContent)
+    expect(marques).toEqual([parent.libelle])
   })
 
   it.each(['/nulle-part', '/voyage/1898', '/profil/reglages'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {

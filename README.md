@@ -64,6 +64,10 @@ polices, tailles de texte, espacements, rayons, ombres, gabarits. Une base neutr
 sombre (le réglage du téléphone ; `data-theme="clair"` ou `"sombre"` sur `<html>` force l'un ou
 l'autre). Les `*.module.css` des composants ne portent aucune valeur en dur : redessiner l'app,
 c'est changer ces variables, puis au besoin les styles des composants, sans toucher au code.
+`src/ui/theme.test.ts` y veille : hors du Voyage (dossiers `carte/`, `mondes/`, `voyage/`, fichiers
+`Voyage*.module.css`), une feuille qui porte une couleur ou un nombre en dur (hormis `0`, `100%`,
+`100dvh`, `flex: 1`) ou lit une variable absente de `theme.css` fait échouer les tests ; le même
+fichier garde la zone sûre de la barre d'onglets.
 Seuls `theme-color` (`index.html`) et les couleurs du manifeste (`vite.config.ts`) restent à
 accorder à la main.
 

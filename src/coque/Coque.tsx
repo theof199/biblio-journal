@@ -47,7 +47,7 @@ export default function Coque() {
               {/* Sans `end` : un onglet reste marqué sur ses sous-pages (`/voyage/…`). `/` n'en
                   a pas besoin, React Router ne le marque que sur `/` même (6.30). */}
               <NavLink to={chemin} className={styles.onglet}>
-                <Icone aria-hidden="true" className={styles.icone} stroke={1.75} />
+                <Icone aria-hidden="true" className={styles.icone} />
                 <span className={styles.libelle}>{libelle}</span>
               </NavLink>
             </li>
