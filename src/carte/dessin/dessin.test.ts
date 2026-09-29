@@ -8,6 +8,7 @@ import { construireRoute } from '../route'
 import { dessinerCase } from './cases'
 import { dessinerSol } from './sol'
 import { dessinerRoulotte } from './roulotte'
+import { Particules } from './particules'
 
 /**
  * Un monde dont la rampe et la palette marquent tout ce qui les traverse : un hexadécimal qui
@@ -104,5 +105,25 @@ describe('le dessin commun', () => {
     expect(source(0.2, true)).toEqual([300, 0, 100, 100])
     expect(source(0.3, true)).toEqual([0, 0, 100, 100])
     expect(source(0.2, false)).toEqual([0, 0, 100, 100])
+  })
+
+  // Mutation : la borne retirée ou changée dans `etincelles`, `confettis` ou `fumee` (la maquette
+  // ne bornait pas la fumée).
+  it('ne garde jamais plus de deux cent quarante particules, de quelque sorte qu’elles soient', () => {
+    const lancers: Array<(p: Particules) => void> = [
+      (p) => p.etincelles(0, 0, 500, '#abcdef'),
+      (p) => {
+        for (let i = 0; i < 20; i++) p.confettis(0, 0, ['#abcdef', '#fedcba'])
+      },
+      (p) => p.fumee(0, 0, 500, 4),
+    ]
+    for (const lancer of lancers) {
+      const p = new Particules()
+      lancer(p)
+      lancer(p)
+      const { ctx, appels } = contexteFactice()
+      p.dessiner(ctx, false)
+      expect(appels.filter((a) => a.nom === 'fill' || a.nom === 'fillRect').length).toBe(240)
+    }
   })
 })
