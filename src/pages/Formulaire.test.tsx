@@ -50,7 +50,10 @@ function monterCorrection(item: JournalItem = ITEM, client = createQueryClient()
 
 describe('le formulaire, en création', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
 
   it('appelle les deux routes dans l’ordre : le média, puis le journal', async () => {
     const requetes = servir({
@@ -69,6 +72,88 @@ describe('le formulaire, en création', () => {
 
     await screen.findByText('Accueil')
     expect(requetes.filter((r) => r.startsWith('POST'))).toEqual(['POST /api/media', 'POST /api/me/journal'])
+  })
+
+  it('envoie au journal ce que porte le formulaire : la note, les réactions, la remarque', async () => {
+    let corps: Record<string, unknown> | undefined
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      'POST /api/media': () => json(MEDIA, 201),
+      'POST /api/me/journal': (init) => {
+        corps = JSON.parse(String(init.body)) as Record<string, unknown>
+        return json(exemple<JournalItem>('/me/journal', 'post', 201), 201)
+      },
+    })
+    monterCreation()
+    const reaction = CATALOGUE.reactions[0]!
+    await screen.findByRole('button', { name: `${reaction.emoji} ${reaction.phrase}` })
+
+    fireEvent.change(screen.getByLabelText('Vu le'), { target: { value: '2026-09-20' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'Note 7 sur 10' }))
+    fireEvent.click(screen.getByRole('button', { name: `${reaction.emoji} ${reaction.phrase}` }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '  Revu en salle.  ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await screen.findByText('Accueil')
+    // Mutation : un champ du brouillon oublié dans `creerVisionnage` (la note, les réactions, la
+    // remarque) ou la remarque envoyée sans `trim()` fait tomber cette égalité.
+    expect(corps).toEqual({
+      media_id: MEDIA.media.id,
+      finished_at: '2026-09-20',
+      rating: 7,
+      reactions: [reaction.cle],
+      comment: 'Revu en salle.',
+    })
+  })
+
+  it('n’envoie ni réactions ni remarque quand il n’y en a pas', async () => {
+    let corps: Record<string, unknown> | undefined
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      'POST /api/media': () => json(MEDIA, 201),
+      'POST /api/me/journal': (init) => {
+        corps = JSON.parse(String(init.body)) as Record<string, unknown>
+        return json(exemple<JournalItem>('/me/journal', 'post', 201), 201)
+      },
+    })
+    monterCreation()
+    await screen.findByText('Inception')
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '   ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await screen.findByText('Accueil')
+    // Mutation : une remarque blanche envoyée telle quelle poserait un carnet vide mais non nul.
+    expect(corps).not.toHaveProperty('comment')
+    expect(corps).not.toHaveProperty('reactions')
+    expect(corps).toHaveProperty('rating', null)
+  })
+
+  it('date du jour du téléphone, et ne permet pas de choisir demain', async () => {
+    // 0 h 30 à Paris, encore la veille à Greenwich (fuseau figé dans `vite.config.ts`).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 30, 0, 30))
+    servir({ 'GET /api/reference/reactions': () => json(CATALOGUE) })
+    monterCreation()
+    await screen.findByText('Inception')
+
+    const date = screen.getByLabelText('Vu le')
+    // Mutation, sur l'un ou l'autre site : `toISOString().slice(0, 10)` rend '2026-09-29'.
+    expect(date).toHaveValue('2026-09-30')
+    expect(date).toHaveAttribute('max', '2026-09-30')
+  })
+
+  it('sans film choisi (accès direct), renvoie vers la recherche plutôt que de planter', () => {
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MemoryRouter initialEntries={['/journal/nouveau']}>
+          <Routes>
+            <Route path="/journal/nouveau" element={<Formulaire />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByRole('link', { name: 'Retour à la recherche' })).toHaveAttribute('href', '/recherche')
   })
 
   it('affiche une erreur de l’API telle quelle', async () => {
@@ -144,6 +229,52 @@ describe('le formulaire, en correction', () => {
 
     await screen.findByText('Accueil')
     expect(corpsEnvoye).toEqual({ rating: nouvelleNote })
+  })
+
+  it('affiche une erreur de la correction telle quelle, sans quitter la page', async () => {
+    const message = 'Ce visionnage n’existe plus.'
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      [`PATCH /api/me/journal/${ITEM.entry.id}`]: () => json({ code: 'NOT_FOUND', message, retryable: false }, 404),
+    })
+    monterCorrection()
+    await screen.findByText(ITEM.media.title)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+
+    // Mutation : une erreur lue sur la seule mutation de création (`creation.error`) resterait muette ici.
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.queryByText('Accueil')).not.toBeInTheDocument()
+  })
+
+  it('affiche une erreur de la suppression telle quelle, sans quitter la page', async () => {
+    const message = 'Ce visionnage n’existe plus.'
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      [`DELETE /api/me/journal/${ITEM.entry.id}`]: () => json({ code: 'NOT_FOUND', message, retryable: false }, 404),
+    })
+    monterCorrection()
+    await screen.findByText(ITEM.media.title)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+
+    // Mutation : sans l'alerte de la confirmation, un échec de suppression ne se disait nulle part.
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.queryByText('Accueil')).not.toBeInTheDocument()
+  })
+
+  it('sans entrée (rechargement direct), renvoie vers l’accueil plutôt que de planter', () => {
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MemoryRouter initialEntries={[`/journal/${ITEM.entry.id}/corriger`]}>
+          <Routes>
+            <Route path="/journal/:id/corriger" element={<Formulaire />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByRole('link', { name: 'Retour à l’accueil' })).toHaveAttribute('href', '/')
   })
 
   it('exige une confirmation avant de supprimer — jamais `confirm()`', async () => {

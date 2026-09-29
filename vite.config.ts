@@ -58,6 +58,9 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}'],
+      // Le fuseau du propriétaire, partout : sur la CI (UTC), un jour calculé à Greenwich plutôt
+      // qu'au téléphone passerait inaperçu (`ui/format.ts`, `jourLocal`).
+      env: { TZ: 'Europe/Paris' },
       // Vitest vide les feuilles de style qu'il importe ; `?raw` doit passer intact, pour que
       // `ui/theme.test.ts` lise ce que les feuilles portent vraiment.
       css: { include: [/[?&]raw\b/] },

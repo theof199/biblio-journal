@@ -88,8 +88,9 @@ describe('la pagination infinie de l’accueil', () => {
     // La sentinelle entre dans l'écran : la page suivante se charge.
     FauxObservateur.dernier!.declencher()
 
-    // Mutation : sans le passage de `next_cursor: null` à `undefined` (`curseurSuivant`),
-    // `hasNextPage` resterait vrai et la sentinelle ne quitterait jamais le DOM.
+    // Mutation : une sentinelle rendue sans condition, ou un `getNextPageParam` qui rendrait
+    // autre chose que `null`/`undefined` sur la dernière page (une chaîne vide, par exemple),
+    // laisseraient la sentinelle dans le DOM.
     await vi.waitFor(() => expect(screen.queryByTestId('sentinelle-journal')).not.toBeInTheDocument())
     expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([
       'GET /api/me/journal?limit=20',

@@ -1,3 +1,4 @@
+import { jourLocal } from '../ui/format'
 import type { JournalItem, JournalPatchBody } from '../api/journal'
 
 /** Le brouillon du formulaire, indépendant de la forme d'écriture de l'API (`FormScreen.kt`, `FormUi`). */
@@ -9,7 +10,7 @@ export interface FormulaireBrouillon {
 }
 
 export function brouillonInitial(item?: JournalItem): FormulaireBrouillon {
-  if (!item) return { date: new Date().toISOString().slice(0, 10), note: null, reactions: [], remarque: '' }
+  if (!item) return { date: jourLocal(), note: null, reactions: [], remarque: '' }
   return {
     date: item.entry.finished_at,
     note: item.entry.rating,

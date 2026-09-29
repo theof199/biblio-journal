@@ -15,7 +15,9 @@ describe('curseurSuivant', () => {
     expect(curseurSuivant({ items: [], next_cursor: 'abc' })).toBe('abc')
   })
 
-  it('rend `undefined` — jamais `null` — sur la dernière page, pour que React Query s’arrête', () => {
+  it('rend `undefined` sur la dernière page, le type que déclare `getNextPageParam`', () => {
+    // React Query v5 s’arrête aussi sur `null` (`!= null`) : ce test garde le type, pas l’arrêt,
+    // que garde `pages/Accueil.test.tsx`.
     expect(curseurSuivant({ items: [], next_cursor: null })).toBeUndefined()
   })
 })

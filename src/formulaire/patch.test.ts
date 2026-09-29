@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { brouillonInitial, construirePatch } from './patch'
 import { exemple } from '../test/contrat'
 import type { JournalItem, JournalPage } from '../api/journal'
@@ -38,11 +38,17 @@ describe('construirePatch', () => {
 })
 
 describe('brouillonInitial', () => {
+  afterEach(() => vi.useRealTimers())
+
   it('part d’aujourd’hui, sans note, sans le visionnage d’une entrée', () => {
+    // 0 h 30 à Paris, 22 h 30 la veille à Greenwich (fuseau figé dans `vite.config.ts`). Mutation :
+    // un `toISOString()` daterait de la veille le film vu ce soir et noté après minuit.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 30, 0, 30))
     const brouillon = brouillonInitial()
     expect(brouillon.note).toBeNull()
     expect(brouillon.reactions).toEqual([])
-    expect(brouillon.date).toBe(new Date().toISOString().slice(0, 10))
+    expect(brouillon.date).toBe('2026-09-30')
   })
 
   it('reprend la date, la note, les réactions et la remarque de l’entrée corrigée', () => {

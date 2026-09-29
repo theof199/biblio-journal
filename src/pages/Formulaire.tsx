@@ -7,7 +7,7 @@ import { basculerReaction, lireReactions } from '../api/reactions'
 import { brouillonInitial, construirePatch } from '../formulaire/patch'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
-import { sousTitre } from '../ui/format'
+import { jourLocal, sousTitre } from '../ui/format'
 import styles from './Formulaire.module.css'
 import type { CandidatFilm } from '../formulaire/candidat'
 import type { JournalItem } from '../api/journal'
@@ -106,6 +106,7 @@ export default function Formulaire() {
 
   const enregistrer = () => {
     if (mutation.isPending) return
+    suppression.reset()
     if (correction) correctionMutation.mutate(item!)
     else creation.mutate(candidat!)
   }
@@ -129,7 +130,7 @@ export default function Formulaire() {
         <input
           type="date"
           value={brouillon.date}
-          max={new Date().toISOString().slice(0, 10)}
+          max={jourLocal()}
           onChange={(event) => setBrouillon((b) => ({ ...b, date: event.target.value }))}
           className={styles.saisie}
         />
@@ -200,18 +201,29 @@ export default function Formulaire() {
         confirmerSuppression ? (
           <div className={styles.confirmation}>
             <p>Supprimer ce visionnage ? Le commentaire et les réactions partent avec.</p>
+            {suppression.error ? (
+              <p role="alert" className={styles.erreur}>
+                {suppression.error.message}
+              </p>
+            ) : null}
             <div className={styles.confirmationActions}>
               <button
                 type="button"
                 className={styles.boutonSecondaire}
-                onClick={() => setConfirmerSuppression(false)}
+                onClick={() => {
+                  suppression.reset()
+                  setConfirmerSuppression(false)
+                }}
               >
                 Annuler
               </button>
               <button
                 type="button"
                 className={styles.boutonDanger}
-                onClick={() => suppression.mutate(item!)}
+                onClick={() => {
+                  correctionMutation.reset()
+                  suppression.mutate(item!)
+                }}
                 disabled={suppression.isPending}
               >
                 Supprimer
