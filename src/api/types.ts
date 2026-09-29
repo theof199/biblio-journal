@@ -8294,7 +8294,9 @@ export interface paths {
      *
      * `seance_prise` porte la dernière séance que j’ai prise (`POST /me/voyage/seances/{id}/prendre`), tant que son long n’est pas encore vu — `null` dès qu’il l’est, ou si aucune séance n’est prise.
      *
-     * `ia` dit si le chroniqueur écrit pour moi : le compte marqué du Voyage, avec une clé posée. `source` porte ce compte quand ce n’est pas moi (`id`, `pseudo`), `null` pour lui. Les salles, films et ouvertures des années portées ici sont alors lus chez `source`, jamais chez moi, et bornés à mes années lisibles (celles qu’il a déjà ouvertes, jusqu’à la mienne) — au-delà, `visitee` reste faux même si `source` a continué.
+     * `ia` dit si le chroniqueur écrit pour moi : le compte marqué du Voyage, avec une clé posée. `source` porte ce compte quand ce n’est pas moi (`id`, `pseudo`, `annee_en_cours`), `null` pour lui. Les salles, films et ouvertures des années portées ici sont alors lus chez `source`, jamais chez moi, et bornés à mes années lisibles (celles qu’il a déjà ouvertes, jusqu’à la mienne) — au-delà, `visitee` reste faux même si `source` a continué.
+     *
+     * `source.annee_en_cours` dit où en est ce Voyage (`1895` s’il n’a jamais encaissé de ticket). Elle peut retarder de soixante secondes : encaisser un ticket n’invalide que le cache de son auteur.
      *
      * Réponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium et toute écriture sur une séance.
      */
@@ -8374,6 +8376,8 @@ export interface paths {
                 /** Format: uuid */
                 id: string;
                 pseudo: string;
+                /** @description L’année où en est ce Voyage : la roulotte de la carte s’y gare */
+                annee_en_cours: number;
               } | null;
             };
           };
