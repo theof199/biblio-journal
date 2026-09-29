@@ -41,6 +41,20 @@ export function sousTitreCinemas(cinemas: string[]): string {
 }
 
 /**
+ * Le cinéma unique de la grille « à l'affiche dans mes cinémas » — reprise de
+ * `cinemaUniqueEnCours()` (point 13 de la revue du 24 septembre 2026, Android) : quand toutes les
+ * tuiles ne portent, ensemble, qu'un seul nom de cinéma distinct, il devient le titre de la grille,
+ * une seule fois, au lieu de se répéter sous chaque affiche. `null` dès que deux noms distincts
+ * apparaissent (ou aucun) : `sousTitreCinemas` garde alors son rôle, tuile par tuile.
+ */
+export function cinemaUniqueEnCours(films: SortiesEnCours['films']): string | null {
+  const noms = new Set(films.flatMap((film) => film.cinemas))
+  if (noms.size !== 1) return null
+  const [nom] = noms
+  return nom ?? null
+}
+
+/**
  * Le message à afficher à la place de la grille « à l'affiche dans mes cinémas », ou `null`
  * quand elle doit s'afficher — reprise de `SortiesEnCours.messageAuCine()`. Deux causes distinctes
  * rendent « Pas encore de programme. » : aucun cinéma configuré, ou la tâche de fond n'a **jamais**

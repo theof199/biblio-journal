@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { dejaDansLeJournal, messageAuCine, miseAJourAffichee, seancesCetteAnnee, sousTitreCinemas } from './etats'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cinemaUniqueEnCours, dejaDansLeJournal, messageAuCine, miseAJourAffichee, seancesCetteAnnee, sousTitreCinemas } from './etats'
 import { exemple } from '../test/contrat'
 import type { JournalItem, JournalPage } from '../api/journal'
 import type { SortiesEnCours } from '../api/sorties'
@@ -68,6 +68,47 @@ describe('sousTitreCinemas', () => {
   })
 })
 
+type FilmEnCours = SortiesEnCours['films'][number]
+
+function filmEnCours(allocineId: number, cinemas: string[]): FilmEnCours {
+  return {
+    tmdb_id: allocineId,
+    allocine_id: allocineId,
+    title: `Film ${allocineId}`,
+    original_title: null,
+    year: null,
+    release_date: null,
+    cover_url: null,
+    directors: [],
+    cinemas,
+  }
+}
+
+// Reprise des trois tests JVM de `cinemaUniqueEnCours` (point 13 de la revue du 24 septembre 2026).
+describe('cinemaUniqueEnCours', () => {
+  it('rend le nom quand toutes les tuiles partagent le même cinéma', () => {
+    expect(cinemaUniqueEnCours([filmEnCours(1, ['Le Rex']), filmEnCours(2, ['Le Rex'])])).toBe('Le Rex')
+  })
+
+  // Mutation : rendre le premier cinéma trouvé plutôt qu'exiger un nom unique casse cette assertion.
+  it('est nul dès que deux cinémas différents apparaissent', () => {
+    expect(cinemaUniqueEnCours([filmEnCours(1, ['Le Rex']), filmEnCours(2, ['Le Majestic'])])).toBeNull()
+    // Deux cinémas sur une même tuile, sans autre tuile : pas de cinéma unique non plus.
+    expect(cinemaUniqueEnCours([filmEnCours(1, ['Le Rex', 'Le Majestic'])])).toBeNull()
+  })
+
+  // Mutation : comparer les listes de cinémas plutôt que l'ensemble des noms casse cette assertion.
+  it('compare des noms, pas des listes : une tuile sans cinéma ne rompt pas l’unicité', () => {
+    expect(
+      cinemaUniqueEnCours([filmEnCours(1, ['Le Rex']), filmEnCours(2, ['Le Rex']), filmEnCours(3, [])]),
+    ).toBe('Le Rex')
+  })
+
+  it('une grille vide n’a pas de cinéma unique', () => {
+    expect(cinemaUniqueEnCours([])).toBeNull()
+  })
+})
+
 describe('messageAuCine', () => {
   const base: SortiesEnCours = { du: '2026-09-15', au: '2026-09-15', calcule_le: null, cinemas_configures: false, films: [] }
 
@@ -106,6 +147,12 @@ describe('messageAuCine', () => {
     }
     expect(messageAuCine(avecProgramme)).toBeNull()
   })
+
+  // « Jamais tourné » exige les deux : pas de films ET pas de `calcule_le`. Mutation : ne tester
+  // que `calcule_le` cacherait une grille qui a bien des films derrière « Pas encore de programme. ».
+  it('des films sans `calcule_le` s’affichent quand même : aucun message', () => {
+    expect(messageAuCine({ ...base, cinemas_configures: true, calcule_le: null, films: [filmEnCours(1, ['Le Rex'])] })).toBeNull()
+  })
 })
 
 describe('miseAJourAffichee', () => {
@@ -120,6 +167,21 @@ describe('miseAJourAffichee', () => {
   it('formate en heure Europe/Paris, pas en heure UTC', () => {
     // 12h00 UTC un 15 septembre (CEST, +2) : 14h à Paris.
     expect(miseAJourAffichee('2026-09-15T12:00:03.000Z')).toBe('mis à jour à 14 h')
+  })
+
+  describe('sur un appareil qui n’est pas à l’heure de Paris', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    // La suite tourne en Europe/Paris (`vite.config.ts`) : sans changer de fuseau, un
+    // `miseAJourAffichee` qui lirait l'heure de l'appareil passerait. Mutation : retirer `timeZone`
+    // du formateur casse cette assertion (8 h à New York, pas 14 h).
+    it('l’heure reste celle de Paris', () => {
+      vi.stubEnv('TZ', 'America/New_York')
+      expect(new Date('2026-09-15T12:00:03.000Z').getHours()).toBe(8)
+      expect(miseAJourAffichee('2026-09-15T12:00:03.000Z')).toBe('mis à jour à 14 h')
+    })
   })
 
   // Le fuseau Europe/Paris est déjà fixé pour toute la suite (`vite.config.ts`, `test.env.TZ`) :

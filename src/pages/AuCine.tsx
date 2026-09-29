@@ -10,7 +10,7 @@ import {
   candidatDepuisSortieProchaine,
   sortieEnCoursOuvrable,
 } from '../formulaire/candidat'
-import { dejaDansLeJournal, messageAuCine, miseAJourAffichee, seancesCetteAnnee, sousTitreCinemas } from '../cinema/etats'
+import { cinemaUniqueEnCours, dejaDansLeJournal, messageAuCine, miseAJourAffichee, seancesCetteAnnee, sousTitreCinemas } from '../cinema/etats'
 import { useChargementInfini } from '../accueil/useChargementInfini'
 import Affiche from '../ui/Affiche'
 import Panne from '../ui/Panne'
@@ -60,6 +60,8 @@ export default function AuCine() {
   const enCours = sorties.data?.en_cours
   const messageEnCours = enCours ? messageAuCine(enCours) : null
   const majAffichee = enCours ? miseAJourAffichee(enCours.calcule_le) : null
+  // Un seul cinéma pour toute la grille : son nom la titre une fois, et quitte chaque tuile.
+  const cinemaUnique = enCours ? cinemaUniqueEnCours(enCours.films) : null
   const prochaine = sorties.data?.prochaine
 
   return (
@@ -85,11 +87,19 @@ export default function AuCine() {
         ) : messageEnCours ? (
           <p className={styles.videGrille}>{messageEnCours}</p>
         ) : (
-          <div className={styles.grille}>
-            {enCours!.films.map((film) => (
-              <TuileEnCours key={film.allocine_id} film={film} dejaVu={dejaDansLeJournal(items, film.tmdb_id)} />
-            ))}
-          </div>
+          <>
+            {cinemaUnique ? <p className={styles.cinemaUnique}>{cinemaUnique}</p> : null}
+            <div className={styles.grille}>
+              {enCours!.films.map((film) => (
+                <TuileEnCours
+                  key={film.allocine_id}
+                  film={film}
+                  dejaVu={dejaDansLeJournal(items, film.tmdb_id)}
+                  avecCinemas={cinemaUnique == null}
+                />
+              ))}
+            </div>
+          </>
         )}
       </section>
 
@@ -195,13 +205,16 @@ function Tuile({
   )
 }
 
-/** « À l'affiche dans mes cinémas » (Allociné) : sous-titre les cinémas, ouvrable seulement si TMDB a été résolu. */
-function TuileEnCours({ film, dejaVu }: { film: SortieEnCoursFilm; dejaVu: boolean }) {
+/**
+ * « À l'affiche dans mes cinémas » (Allociné) : sous-titre les cinémas quand la grille en montre
+ * plusieurs (`avecCinemas`), ouvrable seulement si TMDB a été résolu.
+ */
+function TuileEnCours({ film, dejaVu, avecCinemas }: { film: SortieEnCoursFilm; dejaVu: boolean; avecCinemas: boolean }) {
   return (
     <Tuile
       coverUrl={film.cover_url}
       title={film.title}
-      sousTitre={sousTitreCinemas(film.cinemas)}
+      sousTitre={avecCinemas ? sousTitreCinemas(film.cinemas) : null}
       dejaVu={dejaVu}
       candidat={sortieEnCoursOuvrable(film) ? candidatDepuisSortieEnCours(film) : null}
     />

@@ -47,6 +47,8 @@ export default function Formulaire() {
   const ordre = catalogue.map((r) => r.cle)
 
   const apresEcriture = () => {
+    // Par préfixe : `cles.journal` périme aussi `cles.seances` (« Tes séances », Au ciné), qui
+    // commence par lui — le test « périme « Tes séances » » garde ce lien.
     void client.invalidateQueries({ queryKey: cles.journal })
     void client.invalidateQueries({ queryKey: cles.stats })
     void client.invalidateQueries({ queryKey: cles.voyage })

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import Formulaire from './Formulaire'
+import { cles } from '../api/cles'
 import { createQueryClient } from '../api/queryClient'
 import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
@@ -297,5 +298,72 @@ describe('le formulaire, en correction', () => {
     await screen.findByText('Accueil')
     expect(requetes.filter((r) => r.startsWith('DELETE'))).toHaveLength(1)
     expect(confirmSpy).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * « Tes séances » (Au ciné) a sa propre clé, `cles.seances` : une écriture du formulaire qui ne la
+ * marquerait pas périmée laisserait l'onglet montrer une séance supprimée, ou taire la nouvelle,
+ * jusqu'à la fin de son `staleTime`. Mutation : sortir `cles.seances` du préfixe `cles.journal`
+ * (`['seances']`), sans l'invalider à part dans `apresEcriture`, casse ces trois assertions.
+ */
+describe('le formulaire, après une écriture, périme « Tes séances »', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const avecSeances = () => {
+    const client = createQueryClient()
+    client.setQueryData(cles.seances, { pages: [{ items: [ITEM], next_cursor: null }], pageParams: [undefined] })
+    expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(false)
+    return client
+  }
+
+  it('après une création', async () => {
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      'POST /api/media': () => json(MEDIA, 201),
+      'POST /api/me/journal': () => json(exemple<JournalItem>('/me/journal', 'post', 201), 201),
+    })
+    const client = avecSeances()
+    monterCreation(client)
+
+    await screen.findByText('Inception')
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await screen.findByText('Accueil')
+    expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
+  })
+
+  it('après une correction', async () => {
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      [`PATCH /api/me/journal/${ITEM.entry.id}`]: () => json(ITEM),
+    })
+    const client = avecSeances()
+    monterCorrection(ITEM, client)
+    await screen.findByText(ITEM.media.title)
+
+    const nouvelleNote = ITEM.entry.rating === 10 ? 1 : (ITEM.entry.rating ?? 0) + 1
+    fireEvent.click(screen.getByRole('radio', { name: `Note ${nouvelleNote} sur 10` }))
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+
+    await screen.findByText('Accueil')
+    expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
+  })
+
+  it('après une suppression', async () => {
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      [`DELETE /api/me/journal/${ITEM.entry.id}`]: () => new Response(null, { status: 204 }),
+    })
+    const client = avecSeances()
+    monterCorrection(ITEM, client)
+    await screen.findByText(ITEM.media.title)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+
+    await screen.findByText('Accueil')
+    expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
   })
 })

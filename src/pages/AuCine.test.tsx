@@ -152,6 +152,28 @@ describe('Au ciné', () => {
     expect(await screen.findByRole('link', { name: /Marée basse/ })).toBeInTheDocument()
   })
 
+  it('un seul cinéma pour toute la grille : son nom la titre une fois, et quitte chaque tuile', async () => {
+    const film = SORTIES_EXEMPLE.en_cours.films[0]!
+    const sorties: Sorties = {
+      ...SORTIES_EXEMPLE,
+      en_cours: {
+        ...SORTIES_EXEMPLE.en_cours,
+        films: [
+          { ...film, allocine_id: 1, tmdb_id: 1, title: 'Premier film', cinemas: ['Le Rex'] },
+          { ...film, allocine_id: 2, tmdb_id: 2, title: 'Second film', cinemas: ['Le Rex'] },
+        ],
+      },
+    }
+    servir({ 'GET /api/reference/sorties': () => json(sorties), ...routeSeances([]) })
+    monter()
+
+    await screen.findByRole('link', { name: /Premier film/ })
+    // Mutation : garder le sous-titre sur chaque tuile le répète trois fois ; ne pas titrer la
+    // grille ne le montre plus du tout.
+    expect(screen.getAllByText('Le Rex')).toHaveLength(1)
+    expect(screen.getByRole('link', { name: /Premier film/ })).not.toHaveTextContent('Le Rex')
+  })
+
   it('« mis à jour à HH h » suit calcule_le, en heure Europe/Paris', async () => {
     servir({ 'GET /api/reference/sorties': () => json(SORTIES_EXEMPLE), ...routeSeances([]) })
     monter()

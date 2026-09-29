@@ -50,6 +50,12 @@
   letter-spacing: var(--interlettre-capitales);
 }
 
+.cinemaUnique {
+  margin: 0;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-moyenne);
+}
+
 .maj {
   margin: 0;
   font-size: var(--taille-xs);
