@@ -1,0 +1,1946 @@
+<title>Pages du Voyage</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Limelight&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root {
+  color-scheme: dark;
+  --fond: #151009;
+  --papier: #F2E8D5;
+  --papier2: #E6D6B4;
+  --encre: #2a1f14;
+  --or: #E6B94A;
+  --or-clair: #F6D98A;
+  --corail: #FF6B57;
+  --m1890: #2A2118;
+  --a1890: #D9B382;
+  --m1900: #1C1C22;
+  --a1900: #E7D8A8;
+  --bronze: #D69A62;
+  --doux: rgba(242, 232, 213, .7);
+  --pale: rgba(242, 232, 213, .46);
+  --filet: rgba(230, 185, 74, .28);
+  --titre: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --affiche: 'Limelight', 'Bodoni 72', Didot, Georgia, serif;
+  --corps: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --grain: none;
+}
+* { box-sizing: border-box; }
+html { background: var(--fond); }
+body { margin: 0; padding: 24px 16px 72px; background: var(--fond); color: var(--papier); font: 15px/1.55 var(--corps); overflow-x: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+button:disabled { cursor: default; }
+:focus-visible { outline: 2px solid var(--or); outline-offset: 3px; }
+img { display: block; }
+
+/* ---------- La page ---------- */
+.tete { max-width: 780px; margin: 0 auto 10px; text-align: center; }
+.tete .sur { margin: 0; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--or); }
+.tete h1 { margin: 4px 0 8px; font: 600 clamp(28px, 7vw, 42px)/1.1 var(--titre); }
+.tete p { margin: 0 auto; max-width: 600px; color: var(--doux); font-size: 14px; }
+.onglets { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 -16px; padding: 12px 16px 16px; background: linear-gradient(var(--fond) 72%, rgba(21, 16, 9, 0)); }
+.onglets a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--filet); background: rgba(242, 232, 213, .04); color: var(--doux); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.onglets a:hover { color: var(--papier); background: rgba(242, 232, 213, .09); }
+.onglets a.actif { background: var(--corail); border-color: var(--corail); color: #1b0e09; }
+
+.page { max-width: 860px; margin: 48px auto 0; scroll-margin-top: 76px; display: grid; grid-template-columns: minmax(0, 390px); justify-content: center; gap: 22px; }
+.page-tete { grid-column: 1 / -1; text-align: center; }
+.page-tete .num { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; color: var(--or); }
+.page-tete h2 { margin: 2px 0 0; font: 600 clamp(22px, 5vw, 28px)/1.2 var(--titre); }
+@media (min-width: 880px) {
+  .page { grid-template-columns: 390px minmax(0, 1fr); align-items: start; }
+  .page-tete { text-align: left; }
+  .notes { position: sticky; top: 84px; }
+}
+.telephone { width: 100%; max-width: 390px; margin: 0 auto; }
+.ecran {
+  position: relative; height: 720px; height: clamp(560px, calc(100vh - 150px), 790px); height: clamp(560px, calc(100svh - 150px), 790px);
+  border-radius: 28px; overflow: hidden; background: var(--m1890); isolation: isolate;
+  box-shadow: 0 0 0 1px rgba(230, 185, 74, .28), 0 0 0 7px #0b0805, 0 0 0 8px rgba(230, 185, 74, .14), 0 30px 80px rgba(0, 0, 0, .65);
+}
+.ecran.monde1900 { background: var(--m1900); }
+.ecran.choc { animation: choc .32s cubic-bezier(.3, .8, .4, 1); }
+@keyframes choc { 25% { transform: translate(-3px, 2px); } 50% { transform: translate(2px, -2px); } 75% { transform: translate(-1px, 1px); } }
+.vue { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; }
+.vue::-webkit-scrollbar { display: none; }
+.grain { position: absolute; inset: -64px; z-index: 30; pointer-events: none; opacity: .55; background-image: var(--grain); background-size: 128px 128px; animation: grain .36s steps(1) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 33% { transform: translate(-37px, 21px); } 66% { transform: translate(19px, -44px); } }
+.demo { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+.bouton { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--filet); background: rgba(242, 232, 213, .06); font-size: 13px; font-weight: 600; }
+.bouton:hover { background: rgba(242, 232, 213, .11); }
+.bouton:disabled { opacity: .42; }
+.bouton.fort { background: var(--corail); border-color: var(--corail); color: #1b0e09; }
+.bouton[aria-pressed="true"] { border-color: var(--or); color: var(--or); }
+.legende { margin: 10px auto 0; max-width: 370px; text-align: center; font-size: 12.5px; color: var(--pale); }
+.notes { font-size: 14px; color: var(--doux); }
+.notes > p { margin: 0 0 12px; }
+.notes b { color: var(--papier); }
+.faisa { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--filet); border-radius: 16px; background: rgba(242, 232, 213, .035); }
+.faisa h3 { margin: 0 0 8px; font: 800 11px var(--corps); letter-spacing: .2em; text-transform: uppercase; color: var(--or); }
+.faisa p { margin: 0 0 8px; }
+.faisa ul { margin: 0; padding-left: 18px; }
+.faisa li { margin: 0 0 6px; font-size: 13.5px; }
+.faisable { display: inline-block; padding: 1px 9px; border-radius: 10px; border: 1px solid var(--filet); font-size: 12px; font-weight: 700; color: var(--or); }
+.faisable.simplifie { border-color: rgba(242, 232, 213, .3); color: var(--papier); font-weight: 600; }
+.effort { display: inline-block; min-width: 22px; padding: 0 7px; border-radius: 999px; background: var(--corail); color: #1b0e09; font: 800 11px/19px var(--corps); text-align: center; }
+code { font: 600 12px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: var(--or); background: rgba(230, 185, 74, .08); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.change { max-width: 780px; margin: 64px auto 0; }
+.change h2 { margin: 0 0 12px; font: 600 24px/1.2 var(--titre); }
+.change ul { margin: 0; padding-left: 18px; }
+.change li { margin: 0 0 10px; color: var(--doux); font-size: 14px; }
+.change li b { color: var(--papier); }
+
+/* ---------- Les écrans : communs ---------- */
+.retour { position: absolute; z-index: 5; top: 14px; left: 12px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(10, 7, 5, .55); border: 1px solid rgba(242, 232, 213, .18); }
+.retour svg { width: 20px; height: 20px; }
+.chip-chap { position: absolute; z-index: 5; top: 22px; right: 14px; padding: 3px 10px; border-radius: 999px; background: rgba(10, 7, 5, .55); border: 1px solid var(--filet); font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--a1890); }
+.toast { position: absolute; left: 50%; bottom: 22px; z-index: 26; width: max-content; max-width: calc(100% - 32px); padding: 9px 14px; border-radius: 12px; background: rgba(10, 7, 5, .94); border: 1px solid var(--filet); font-size: 12.5px; line-height: 1.45; text-align: center; color: var(--doux); opacity: 0; transform: translate(-50%, 8px); transition: opacity .3s, transform .3s; pointer-events: none; }
+.toast.visible { opacity: 1; transform: translate(-50%, 0); }
+.toast b { color: var(--or); }
+.plus-un { position: absolute; left: 0; top: 0; z-index: 27; pointer-events: none; padding: 2px 9px; border-radius: 999px; background: var(--corail); color: #1b0e09; font: 800 13px var(--corps); box-shadow: 0 0 18px rgba(255, 107, 87, .6); }
+.section { padding: 0 16px; margin-top: 22px; }
+.sec-titre { margin: 0 0 10px; display: flex; align-items: center; gap: 10px; font: 700 10.5px var(--corps); letter-spacing: .22em; text-transform: uppercase; color: var(--a1890); }
+.sec-titre::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--filet), rgba(230, 185, 74, 0)); }
+.lien { min-height: 40px; padding: 0 2px; color: #b8452f; font: 700 14px var(--corps); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+
+/* ---------- En-tête d'année ---------- */
+.bandeau { position: relative; height: 262px; }
+.bandeau canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.titre-annee { position: relative; z-index: 2; margin-top: -8px; text-align: center; padding: 0 16px; }
+.millesime { margin: 0; font: 600 54px/1 var(--titre); letter-spacing: -.01em; font-variant-numeric: lining-nums; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+.monde-sous { margin: 6px 0 0; font-size: 11.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--a1890); }
+.pastilles { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 12px; }
+.pastille { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 11px 3px 5px; border-radius: 999px; background: linear-gradient(#3a2c1c, #241a10); border: 1px solid rgba(230, 185, 74, .38); box-shadow: inset 0 1px 0 rgba(255, 240, 210, .12), 0 2px 6px rgba(0, 0, 0, .35); font-size: 12.5px; font-weight: 600; }
+.pastille .ico { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: rgba(230, 185, 74, .14); color: var(--or); }
+.pastille .ico svg { width: 14px; height: 14px; }
+.pastille.fete { border-color: var(--corail); }
+.odo { display: inline-grid; overflow: hidden; height: 1.3em; line-height: 1.3em; font: 700 13px var(--titre); color: var(--or-clair); }
+.odo > span { grid-area: 1 / 1; }
+
+/* ---------- Cartouche ---------- */
+.cartouche {
+  position: relative; margin: 20px 16px 0; padding: 18px 18px 14px; border-radius: 16px; color: var(--encre);
+  background: radial-gradient(120% 90% at 30% 10%, #f7efdd, #ecdcbc 70%, #dfc99f), var(--papier);
+  box-shadow: inset 0 0 0 1px rgba(90, 64, 34, .45), inset 0 0 0 5px rgba(0, 0, 0, 0), inset 0 0 0 6px rgba(90, 64, 34, .35), 0 10px 28px rgba(0, 0, 0, .45);
+  transform-origin: 50% 0; transform: scaleY(.12); opacity: 0;
+}
+.cartouche.deplie { transform: none; opacity: 1; transition: transform .6s cubic-bezier(.2, .8, .2, 1), opacity .45s; }
+.cartouche::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background-image: var(--grain); background-size: 128px; opacity: .35; mix-blend-mode: multiply; pointer-events: none; }
+.coin { position: absolute; width: 9px; height: 9px; background: #8a6a3e; transform: rotate(45deg); }
+.coin.a { top: 2px; left: 50%; margin-left: -4.5px; } .coin.b { bottom: 2px; left: 50%; margin-left: -4.5px; }
+.cart-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cart-an { font: 600 26px/1 var(--titre); }
+.cart-rec { display: flex; align-items: center; gap: 8px; font: 800 10px var(--corps); letter-spacing: .18em; text-transform: uppercase; color: #7a5a2a; }
+.embleme { width: 44px; height: 44px; }
+.embleme.pop { animation: pop .55s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes pop { from { transform: scale(.3) rotate(-30deg); opacity: 0; } }
+.ouverture { margin: 10px 0 2px; font: 400 16.5px/1.5 var(--titre); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cart-liens { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.faits { margin: 6px 0 0; padding: 10px 0 0; list-style: none; border-top: 1px dashed rgba(90, 64, 34, .35); font-size: 13.5px; line-height: 1.45; }
+.faits li { position: relative; padding-left: 16px; margin-bottom: 5px; }
+.faits li::before { content: '✦'; position: absolute; left: 0; top: 0; font-size: 10px; color: #a0703a; }
+
+/* ---------- Prochain pas ---------- */
+.prochain { position: relative; margin: 18px 16px 0; padding: 12px 14px 10px; border-radius: 14px; background: linear-gradient(#20170e, #150f09); border: 1px solid rgba(230, 185, 74, .45); box-shadow: 0 0 0 3px rgba(0, 0, 0, .3), inset 0 0 22px rgba(0, 0, 0, .6); perspective: 500px; }
+.prochain h4 { margin: 0 0 6px; display: flex; justify-content: space-between; align-items: baseline; font: 16px var(--affiche); letter-spacing: .06em; color: var(--or); }
+.prochain h4 small { font: 700 9.5px var(--corps); letter-spacing: .2em; color: var(--pale); }
+.rivet { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f6d98a, #7a5a22); }
+.rivet.a { top: 6px; left: 6px; } .rivet.b { top: 6px; right: 6px; } .rivet.c { bottom: 6px; left: 6px; } .rivet.d { bottom: 6px; right: 6px; }
+.prochain ol { margin: 0; padding: 0; list-style: none; }
+.prochain li { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(242, 232, 213, .08); transform-origin: 50% 50%; }
+.prochain li:first-child { border-top: 0; }
+.prochain li img, .prochain li .tk { width: 28px; height: 28px; }
+.prochain li .tk { display: grid; place-items: center; color: var(--corail); }
+.pp-t { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.pp-j { display: flex; gap: 3px; }
+.pp-j i { width: 7px; height: 7px; border-radius: 50%; background: rgba(242, 232, 213, .16); }
+.pp-j i.on { background: var(--corail); box-shadow: 0 0 6px rgba(255, 107, 87, .7); }
+
+/* ---------- Podium ---------- */
+.podium canvas { display: block; width: 100%; height: 318px; border-radius: 14px; }
+.podium-aide { margin: 6px 0 0; text-align: center; font-size: 11.5px; color: var(--pale); }
+
+/* ---------- Ce soir ---------- */
+.seance { position: relative; border-radius: 12px; overflow: hidden; background: #efe3c8; color: var(--encre); box-shadow: 0 12px 28px rgba(0, 0, 0, .5); transform: rotate(-.6deg); }
+.seance-bande { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px; background: repeating-linear-gradient(-45deg, #2a1f14 0 10px, #3a2a1a 10px 20px); color: var(--or-clair); font: 800 10px var(--corps); letter-spacing: .2em; }
+.seance-bande b { padding: 2px 8px; border-radius: 3px; background: var(--corail); color: #1b0e09; letter-spacing: .24em; }
+.seance-corps { position: relative; padding: 12px 14px 8px 26px; }
+.seance-corps::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 8px; background: radial-gradient(circle, #1b130c 2.6px, transparent 3px) 0 0 / 8px 14px repeat-y; opacity: .75; }
+.sf { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 6px 0; }
+.sf img { border-radius: 4px; box-shadow: 0 3px 8px rgba(0, 0, 0, .35); }
+.sf .role { display: inline-block; padding: 1px 7px; border: 1px solid rgba(42, 31, 20, .45); border-radius: 3px; font: 800 9px var(--corps); letter-spacing: .18em; text-transform: uppercase; color: #6a4a26; }
+.sf b { display: block; margin-top: 3px; font: 600 16px/1.2 var(--titre); }
+.sf small { display: block; font-size: 12px; color: #6a5438; }
+.real { display: inline-flex; align-items: center; gap: 2px; min-height: 28px; font-size: 12.5px; font-weight: 700; color: #8a3a22; }
+.seance-gen { margin: 8px 0 4px; padding: 8px 10px; background: repeating-linear-gradient(#fbf5e6 0 21px, rgba(120, 150, 190, .35) 21px 22px); border-radius: 4px; border-left: 3px solid rgba(200, 80, 60, .5); }
+.seance-gen span { display: block; font: 800 9.5px var(--corps); letter-spacing: .18em; text-transform: uppercase; color: #8a6a3e; }
+.seance-gen p { margin: 2px 0 0; font: italic 400 14px/22px var(--titre); }
+.seance-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 4px; }
+.guichet { min-height: 40px; border-radius: 6px; border: 1.5px solid rgba(42, 31, 20, .55); font: 700 13px var(--corps); color: var(--encre); background: linear-gradient(#f7eedb, #e6d4ae); box-shadow: 0 2px 0 rgba(42, 31, 20, .35); }
+.guichet:active { transform: translateY(1px); box-shadow: none; }
+.guichet.plein { background: var(--corail); border-color: #c24a38; color: #1b0e09; }
+.seance-talon { display: flex; justify-content: space-between; padding: 7px 14px 8px; border-top: 2px dashed rgba(42, 31, 20, .35); font: 700 10px var(--corps); letter-spacing: .14em; text-transform: uppercase; color: #8a6a3e; }
+.seance .tampon-prise { position: absolute; right: 18px; top: 40px; padding: 4px 10px; border: 2.5px double #b0352a; border-radius: 6px; color: #b0352a; font: 17px var(--affiche); letter-spacing: .1em; transform: rotate(-12deg); opacity: 0; }
+.seance.prise .tampon-prise { opacity: .88; animation: tamponne .3s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes tamponne { from { transform: rotate(-12deg) scale(2.2); opacity: 0; } }
+.actions-film { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.actions-film .guichet { min-height: 34px; padding: 0 10px; font-size: 12px; }
+
+/* ---------- Les salles ---------- */
+.salle { margin-top: 26px; }
+.salle canvas { display: block; width: 100%; height: 98px; }
+.salle-infos { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin: 6px 0 8px; }
+.raison { text-align: left; font: italic 400 13.5px/1.45 var(--titre); color: var(--doux); min-height: 40px; }
+.raison span { display: block; margin-top: 2px; font: 700 11.5px var(--corps); font-style: normal; color: var(--or); }
+.salle-compte { flex: none; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--filet); font-size: 11px; font-weight: 700; color: var(--pale); white-space: nowrap; }
+.etagere { margin: 0 -16px; }
+.rayon { display: flex; gap: 12px; overflow-x: auto; padding: 14px 16px 6px; scrollbar-width: none; scroll-snap-type: x proximity;
+  background: linear-gradient(#5a3e22, #3a2714 55%, #1b120a) 0 152px / 100% 11px repeat-x local, radial-gradient(60% 40px at 50% 0, rgba(246, 217, 138, .08), transparent) 0 0 / 100% 150px no-repeat local; }
+.rayon::-webkit-scrollbar { display: none; }
+.aff { flex: none; width: 92px; scroll-snap-align: start; text-align: left; }
+.aff-cadre { position: relative; display: block; width: 92px; height: 136px; border-radius: 3px; box-shadow: 0 8px 12px -4px rgba(0, 0, 0, .7); }
+.aff-cadre img { width: 92px; height: 136px; border-radius: 3px; transition: filter 1.1s ease; }
+.aff-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 16px; font-size: 12px; font-weight: 600; line-height: 1.3; }
+.aff-e { display: block; margin-top: 2px; font-size: 11px; color: var(--pale); }
+.aff[data-etat="vu"] .aff-cadre { outline: 1.5px solid var(--or); outline-offset: 2px; }
+.aff[data-etat="vu"] .aff-cadre::after { content: ''; position: absolute; inset: -14px -10px auto; height: 40px; background: radial-gradient(closest-side, rgba(246, 217, 138, .25), transparent); pointer-events: none; }
+.aff:not([data-etat="vu"]) img { filter: grayscale(1) sepia(.55) brightness(.62) contrast(.92); }
+.aff[data-etat="plex"] img { filter: grayscale(1) sepia(.45) brightness(.8); }
+.aff[data-etat="perdu"] img { filter: grayscale(1) brightness(.42); }
+.aff-note { position: absolute; right: -7px; bottom: -8px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fbe3a0, #b8862b); color: #3a260c; font: 700 13px var(--titre); box-shadow: 0 2px 6px rgba(0, 0, 0, .5), inset 0 0 0 1.5px #6B4712; }
+.aff-note.pop { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1) both; }
+.badge-plex { position: absolute; left: 5px; bottom: 6px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 4px; border-radius: 999px; background: rgba(12, 9, 6, .88); border: 1px solid rgba(229, 160, 13, .6); font: 800 9px var(--corps); letter-spacing: .08em; color: #f2c14e; }
+.badge-plex i { width: 6px; height: 6px; border-radius: 50%; background: #f2c14e; box-shadow: 0 0 6px #f2c14e; animation: veille 1.6s ease-in-out infinite; }
+@keyframes veille { 50% { opacity: .35; } }
+.fiche-demande { position: absolute; left: -4px; right: -4px; top: 44px; padding: 4px 0; background: #efe3c8; color: var(--encre); text-align: center; font: 800 10px var(--corps); letter-spacing: .16em; text-transform: uppercase; transform: rotate(-8deg); box-shadow: 0 3px 6px rgba(0, 0, 0, .45); }
+.fiche-demande::before { content: ''; position: absolute; left: 50%; top: -5px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a78, #a02a1c); }
+.tampon-perdu { position: absolute; left: 50%; top: 50%; padding: 3px 8px; border: 2px solid #c0503c; border-radius: 4px; color: #d0604a; font: 15px var(--affiche); letter-spacing: .12em; transform: translate(-50%, -50%) rotate(-16deg); background: rgba(20, 10, 6, .35); }
+.tampon-vu { position: absolute; left: 50%; top: 42%; padding: 2px 10px; border: 2.5px solid var(--or); border-radius: 50%; color: var(--or-clair); font: 18px var(--affiche); transform: translate(-50%, -50%) rotate(-14deg); animation: vuTampon 1.1s ease forwards; pointer-events: none; }
+@keyframes vuTampon { 0% { transform: translate(-50%, -50%) rotate(-14deg) scale(2.2); opacity: 0; } 20% { transform: translate(-50%, -50%) rotate(-14deg) scale(1); opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+.aff-fin { flex: none; width: 92px; height: 136px; display: grid; place-items: center; align-content: center; gap: 8px; border-radius: 4px; border: 1.5px dashed rgba(230, 185, 74, .5); color: var(--or); font-size: 12px; font-weight: 700; text-align: center; background: rgba(230, 185, 74, .05); }
+.aff-fin svg { width: 30px; height: 30px; }
+.aff-fin:disabled { border-color: rgba(242, 232, 213, .2); color: var(--pale); background: none; }
+
+/* ---------- Nouvelle salle, bas ---------- */
+.nouvelle { margin: 28px 16px 0; padding: 16px; border-radius: 14px; border: 1.5px dashed rgba(230, 185, 74, .4); text-align: center; background: repeating-linear-gradient(-45deg, rgba(230, 185, 74, .035) 0 12px, transparent 12px 24px); }
+.nouvelle p { margin: 0 0 10px; font: italic 400 13px var(--titre); color: var(--pale); }
+.bouton-or { width: 100%; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--or); color: var(--papier); font-weight: 700; font-size: 14.5px; background: rgba(230, 185, 74, .07); }
+.bas { margin: 22px 16px 0; padding-bottom: 36px; min-height: 150px; position: relative; }
+.maturite { position: relative; padding: 14px 16px 12px; background: #efe3c8; color: var(--encre); border-radius: 3px; transform: rotate(-1deg); box-shadow: 0 8px 18px rgba(0, 0, 0, .5); font: italic 400 14.5px/1.45 var(--titre); }
+.maturite b { display: block; font: 800 9.5px var(--corps); font-style: normal; letter-spacing: .2em; text-transform: uppercase; color: #8a6a3e; margin-bottom: 2px; }
+.maturite::before { content: ''; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a78, #a02a1c); box-shadow: 0 2px 3px rgba(0, 0, 0, .5); }
+.maturite.part { transition: opacity .3s, transform .3s; opacity: 0; transform: translateY(12px) rotate(3deg); }
+.attente { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
+.attente p { margin: 0; font: 600 14px/1.35 var(--titre); }
+.ticket-p {
+  position: relative; width: 250px; min-height: 124px; margin: 0 auto; padding: 14px 18px 12px 44px; border-radius: 6px; color: var(--encre); text-align: center;
+  background: radial-gradient(120% 90% at 30% 20%, #f7efdd, #e9d8b5); box-shadow: 0 14px 26px rgba(0, 0, 0, .55);
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 9px, #000 9.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 9px, #000 9.5px) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle at 0 50%, transparent 9px, #000 9.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 9px, #000 9.5px) right / 51% 100% no-repeat;
+  transform: rotate(-3deg);
+}
+.ticket-p::before { content: ''; position: absolute; left: 32px; top: 8px; bottom: 8px; border-left: 2px dashed rgba(42, 31, 20, .35); }
+.ticket-p .adm { display: block; font: 800 8.5px var(--corps); letter-spacing: .22em; }
+.ticket-p .an { display: block; margin: 2px 0; font: 34px/1 var(--affiche); color: #8a5a2a; }
+.ticket-p .mot { display: block; font: italic 400 13px/1.35 var(--titre); }
+.ticket-p .trou { position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: var(--m1890); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .7); transform: scale(0); }
+.ticket-p.poinconne .trou { transform: scale(1); transition: transform .35s cubic-bezier(.3, 1.7, .4, 1); }
+.ticket-rang { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+.btn-corail { min-height: 44px; padding: 0 20px; border-radius: 999px; background: var(--corail); color: #1b0e09; font-weight: 800; font-size: 14px; }
+.btn-texte { min-height: 44px; padding: 0 12px; color: var(--doux); font-size: 13.5px; font-weight: 600; }
+
+/* ---------- Feuille de lecture ---------- */
+.feuille { position: absolute; inset: 0; z-index: 24; display: flex; flex-direction: column; justify-content: flex-end; visibility: hidden; }
+.feuille.ouverte { visibility: visible; }
+.feuille-voile { position: absolute; inset: 0; background: rgba(6, 4, 3, .66); opacity: 0; transition: opacity .3s; }
+.feuille.ouverte .feuille-voile { opacity: 1; }
+.feuille-papier {
+  position: relative; height: 92%; display: flex; flex-direction: column; padding: 8px 22px 12px; border-radius: 22px 22px 0 0; color: var(--encre);
+  background: var(--filigrane, none) right -30px bottom 30px / 260px no-repeat, repeating-linear-gradient(transparent 0 29.5px, rgba(138, 106, 62, .13) 29.5px 30.5px) 0 118px / 100% 100% no-repeat, radial-gradient(140% 90% at 20% 0, #f8f0df, #efe1c4 60%, #e2cda3);
+  box-shadow: 0 -14px 40px rgba(0, 0, 0, .55); transform: translateY(104%); transition: transform .42s cubic-bezier(.2, .8, .2, 1);
+}
+.feuille.ouverte .feuille-papier { transform: none; }
+.monde1900 .feuille-papier { background-color: #e6e4ea; }
+.feuille-papier::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background-image: var(--grain); background-size: 128px; opacity: .45; mix-blend-mode: multiply; pointer-events: none; }
+.poignee { width: 44px; height: 5px; margin: 4px auto 14px; border-radius: 3px; background: rgba(90, 64, 34, .35); }
+.feuille header { display: grid; grid-template-columns: 1fr auto; align-items: end; padding-bottom: 10px; border-bottom: 1px solid rgba(90, 64, 34, .4); }
+.f-espece { margin: 0; font: 800 10.5px var(--corps); letter-spacing: .24em; text-transform: uppercase; color: #8a6a3e; }
+.f-titre { margin: 2px 0 0; font: 600 28px/1.1 var(--titre); }
+.f-sous { margin: 2px 0 0; font: italic 400 13px var(--titre); color: #6a5438; }
+.fermer { width: 44px; height: 44px; display: grid; place-items: center; color: var(--encre); }
+.fermer svg { width: 22px; height: 22px; }
+.tampon-monde { position: absolute; right: 70px; top: 18px; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid rgba(160, 60, 40, .55); box-shadow: inset 0 0 0 3px transparent, inset 0 0 0 4px rgba(160, 60, 40, .4); color: rgba(160, 60, 40, .7); font: 800 7px/1.25 var(--corps); letter-spacing: .12em; text-align: center; transform: rotate(-12deg); }
+.f-corps { flex: 1; overflow-y: auto; padding: 14px 0 8px; font: 400 16.5px/30px var(--titre); scrollbar-width: none; }
+.f-corps p { margin: 0 0 30px; }
+.lettre { display: inline; position: relative; top: var(--dy, 0); }
+.curseur { display: inline-block; width: 2px; height: 1.05em; margin-left: 1px; vertical-align: -.15em; background: var(--encre); animation: clignote 1s steps(1) infinite; }
+@keyframes clignote { 50% { opacity: 0; } }
+.f-suite { opacity: 0; transition: opacity .7s; }
+.f-suite.vue-f { opacity: 1; }
+.f-erreur { font-style: italic; }
+.feuille footer { display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid rgba(90, 64, 34, .25); font: 800 10px var(--corps); letter-spacing: .24em; color: #8a7350; }
+
+/* ---------- Année verrouillée ---------- */
+.lettre-box { position: absolute; left: 0; right: 0; height: 30px; z-index: 22; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font: 800 9px var(--corps); letter-spacing: .26em; color: rgba(231, 216, 168, .55); pointer-events: none; }
+.lettre-box.haut { top: 0; } .lettre-box.dessous { bottom: 0; }
+.monde1900 .retour { top: 40px; }
+.monde1900 .chip-chap { top: 48px; color: var(--a1900); }
+.monde1900 .millesime { color: rgba(242, 232, 213, .78); }
+.monde1900 .monde-sous { color: var(--a1900); }
+.ba { margin: 20px 16px 0; }
+.ba canvas { display: block; width: 100%; height: 86px; }
+.condition { margin: 12px 0 0; text-align: center; font: 500 16px/1.4 var(--titre); }
+.condition b { color: var(--a1900); font-weight: 600; }
+.bande-route { display: flex; gap: 0; margin: 14px auto 0; width: max-content; max-width: 100%; padding: 7px 6px; background: #0b0b0e; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(231, 216, 168, .15); position: relative; }
+.bande-route::before, .bande-route::after { content: ''; position: absolute; left: 4px; right: 4px; height: 4px; background: radial-gradient(circle, rgba(231, 216, 168, .35) 1.2px, transparent 1.6px) 0 0 / 8px 4px repeat-x; }
+.bande-route::before { top: 1px; } .bande-route::after { bottom: 1px; }
+.cadre-route { width: 56px; height: 44px; margin: 0 2px; display: grid; place-items: center; align-content: center; border-radius: 2px; background: #1f1f26; font: 600 14px var(--titre); color: var(--pale); }
+.cadre-route small { font: 700 8px var(--corps); letter-spacing: .12em; text-transform: uppercase; }
+.cadre-route.ici { background: var(--corail); color: #1b0e09; }
+.cadre-route.cible { background: #2a2a33; color: var(--a1900); box-shadow: inset 0 0 0 1px var(--a1900); }
+.encore { margin: 8px 0 0; text-align: center; font-size: 12.5px; color: var(--pale); }
+.fantomes { display: flex; justify-content: center; gap: 22px; margin-top: 8px; }
+.fantome { width: 110px; text-align: center; animation: flotte 5s ease-in-out infinite; }
+.fantome:nth-child(2) { animation-delay: -2.4s; }
+@keyframes flotte { 50% { transform: translateY(-6px); } }
+.fantome .aff-cadre { width: 110px; height: 162px; margin: 0 auto; outline: 1px dashed rgba(231, 216, 168, .55); outline-offset: 4px; box-shadow: 0 0 30px rgba(180, 190, 230, .18); }
+.fantome img { width: 110px; height: 162px; filter: grayscale(1) brightness(1.15) contrast(.85); opacity: .5; mix-blend-mode: screen; animation: vacille 3.2s steps(1) infinite; }
+@keyframes vacille { 0%, 100% { opacity: .5; } 8% { opacity: .3; } 11% { opacity: .55; } 57% { opacity: .42; } 60% { opacity: .52; } }
+.fantome .aff-note { background: radial-gradient(circle at 35% 30%, #f3ecd6, #a7a08a); }
+.fantome b { display: block; margin-top: 12px; font: 600 13px/1.25 var(--titre); }
+.fantome small { font-size: 11px; color: var(--pale); }
+.intertitre { position: relative; margin: 26px 16px 0; padding: 22px 16px 18px; text-align: center; background: #050506; border: 1px solid var(--a1900); outline: 1px solid rgba(231, 216, 168, .3); outline-offset: 5px; }
+.intertitre::before, .intertitre::after { content: ''; position: absolute; left: 50%; width: 9px; height: 9px; margin-left: -4.5px; background: var(--a1900); transform: rotate(45deg); }
+.intertitre::before { top: -5px; } .intertitre::after { bottom: -5px; }
+.intertitre p { margin: 0; font-size: 10px; font-weight: 800; letter-spacing: .3em; text-transform: uppercase; color: var(--pale); }
+.intertitre strong { display: block; margin: 8px 0 6px; font: 27px/1.05 var(--affiche); color: var(--a1900); }
+.intertitre em { display: block; font: italic 400 13.5px/1.45 var(--titre); color: var(--doux); }
+
+/* ---------- Décennie ---------- */
+.dec-tete { padding: 70px 16px 0; text-align: center; }
+.dec-tete h3 { margin: 0; font: 600 34px/1.05 var(--titre); }
+.dec-tete p { margin: 4px 0 0; font: italic 400 15px var(--titre); color: var(--a1890); }
+.monument canvas { display: block; width: 100%; height: 330px; }
+.passeport { position: relative; margin: 0 16px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 14px; border-radius: 10px; color: var(--encre); background: repeating-linear-gradient(45deg, rgba(120, 90, 50, .06) 0 2px, transparent 2px 6px), radial-gradient(120% 100% at 20% 0, #f5ecd8, #e3cfa6); box-shadow: 0 10px 24px rgba(0, 0, 0, .45); }
+.passeport .anneau { width: 70px; height: 70px; }
+.passeport .anneau circle { fill: none; stroke-width: 7; }
+.passeport .pct { font: 600 17px var(--titre); }
+.passeport h4 { margin: 0; font: 800 9.5px var(--corps); letter-spacing: .2em; text-transform: uppercase; color: #8a6a3e; }
+.passeport p { margin: 2px 0 0; font: 600 15px/1.3 var(--titre); }
+.passeport small { display: block; margin-top: 3px; font-size: 11.5px; color: #6a5438; }
+.place-tampon { width: 66px; height: 66px; display: grid; place-items: center; border-radius: 50%; border: 1.5px dashed rgba(160, 60, 40, .5); color: rgba(160, 60, 40, .45); font: 800 7px/1.3 var(--corps); letter-spacing: .1em; text-align: center; transform: rotate(-12deg); }
+.morris { display: flex; gap: 16px; overflow-x: auto; padding: 16px 16px 8px; scrollbar-width: none; }
+.morris::-webkit-scrollbar { display: none; }
+.colonne { flex: none; width: 100px; display: grid; justify-items: center; }
+.col-dome { width: 92px; height: 26px; border-radius: 50% 50% 4px 4px / 100% 100% 4px 4px; background: linear-gradient(90deg, #16201a, #3b5238 35%, #16201a); position: relative; }
+.col-dome::before { content: ''; position: absolute; left: 50%; top: -12px; width: 4px; height: 12px; margin-left: -2px; background: #3b5238; border-radius: 2px 2px 0 0; }
+.col-fut { position: relative; width: 84px; padding: 6px 5px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: linear-gradient(90deg, #16201a, #3b5238 35%, #16201a); }
+.col-fut::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .55), transparent 28%, transparent 72%, rgba(0, 0, 0, .6)); pointer-events: none; }
+.col-fut img { width: 35px; height: 52px; border-radius: 1px; }
+.col-plus { position: absolute; z-index: 1; right: -8px; top: -8px; padding: 1px 6px; border-radius: 999px; background: var(--or); color: #1b0e09; font: 800 10px var(--corps); }
+.col-socle { width: 96px; padding: 4px 0 5px; display: flex; justify-content: center; align-items: center; gap: 5px; background: #0f1611; border-radius: 0 0 4px 4px; font: 600 14px var(--titre); }
+.col-socle img { width: 20px; height: 20px; }
+.colonne.avance { opacity: .5; }
+.colonne.avance .col-socle small { font: 700 8px var(--corps); letter-spacing: .1em; text-transform: uppercase; color: var(--pale); }
+.tableau { margin: 12px 16px 36px; padding: 6px 12px; border-radius: 10px; background: #0f0b07; box-shadow: inset 0 0 0 1px rgba(230, 185, 74, .25), inset 0 0 24px rgba(0, 0, 0, .8); }
+.ligne-an { width: 100%; display: grid; grid-template-columns: 52px 1fr auto 46px; align-items: center; gap: 8px; min-height: 40px; border-top: 1px solid rgba(242, 232, 213, .07); text-align: left; }
+.ligne-an:first-child { border-top: 0; }
+.ligne-an .a { font: 600 16px var(--titre); }
+.ligne-an .v { font-size: 13px; color: var(--doux); }
+.ligne-an img { width: 22px; height: 22px; }
+.ligne-an .n { text-align: right; font-size: 12.5px; font-weight: 700; color: var(--a1890); }
+.ligne-an.terne { opacity: .38; }
+.ligne-an.ici .a { color: var(--corail); }
+.ligne-an.ici .v::after { content: ' · en cours'; color: var(--corail); font-weight: 700; }
+
+/* ---------- Fiche d'un film ---------- */
+.heros { position: relative; height: 440px; }
+.heros canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.legende-aff { position: absolute; left: 0; right: 0; bottom: 6px; margin: 0; text-align: center; font-size: 10.5px; color: var(--pale); }
+.fiche-corps { position: relative; padding: 4px 16px 36px; }
+.salle-pastille { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border-radius: 4px; background: #1b130c; border: 1px solid var(--or); font: 800 10px var(--corps); letter-spacing: .18em; text-transform: uppercase; color: var(--or-clair); box-shadow: 0 0 12px rgba(230, 185, 74, .2); }
+.salle-pastille i { width: 34px; height: 6px; background: radial-gradient(circle, var(--or-clair) 1.6px, transparent 2px) 0 0 / 7px 6px repeat-x; filter: drop-shadow(0 0 3px var(--or)); }
+.fiche-titre { margin: 10px 0 2px; font: 600 32px/1.08 var(--titre); }
+.fiche-meta { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--doux); font-size: 14px; }
+.fiche-meta .real { color: var(--papier); font-size: 14px; }
+.raison-film { margin: 14px 0 0; padding: 2px 0 2px 12px; border-left: 1.5px solid var(--a1890); font: italic 400 15px/1.5 var(--titre); color: var(--doux); }
+.ta-note { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+.rosette { position: relative; width: 74px; height: 74px; display: grid; place-items: center; flex: none; }
+.rosette::before { content: ''; position: absolute; inset: 0; background: conic-gradient(from 0deg, #b8862b 0 10deg, #F6D98A 10deg 20deg); border-radius: 50%; -webkit-mask: radial-gradient(circle, #000 60%, transparent 61%), conic-gradient(#000 0 0); mask: radial-gradient(circle, transparent 0 0), repeating-conic-gradient(#000 0 7deg, transparent 7deg 10deg); }
+.rosette b { position: relative; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fbe3a0, #b8862b); color: #3a260c; font: 600 26px var(--titre); box-shadow: inset 0 0 0 2px #6B4712; }
+.rosette.pop { animation: pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+.ta-note p { margin: 0; font-size: 13px; color: var(--doux); }
+.puces { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.puces span { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--filet); font-size: 12px; font-weight: 600; color: var(--papier); }
+.guichet-zone { position: relative; margin-top: 22px; padding: 26px 14px 14px; border-radius: 14px 14px 8px 8px; background: linear-gradient(#241a10, #17100a); box-shadow: inset 0 0 0 1px rgba(230, 185, 74, .35); display: grid; gap: 10px; }
+.guichet-zone::before { content: 'GUICHET'; position: absolute; top: -11px; left: 50%; transform: translateX(-50%); padding: 3px 14px; border-radius: 4px; background: linear-gradient(#f6d98a, #b8862b); color: #2a1a08; font: 12px var(--affiche); letter-spacing: .2em; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.btn-ticket {
+  position: relative; min-height: 58px; display: grid; justify-items: center; align-content: center; background: var(--corail); color: #1b0e09;
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 10px, #000 10.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 10px, #000 10.5px) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle at 0 50%, transparent 10px, #000 10.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 10px, #000 10.5px) right / 51% 100% no-repeat;
+}
+.btn-ticket b { font-size: 16px; font-weight: 800; }
+.btn-ticket small { font-size: 11px; font-weight: 700; opacity: .7; letter-spacing: .1em; text-transform: uppercase; }
+.btn-ticket .trou { position: absolute; left: 34px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: #17100a; transform: scale(0); }
+.btn-ticket.poinconne .trou { transform: scale(1); transition: transform .35s cubic-bezier(.3, 1.7, .4, 1); }
+.btn-plaque { min-height: 50px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 8px; background: linear-gradient(#3a2c1a, #2a1f12); border: 1px solid rgba(230, 185, 74, .6); box-shadow: inset 0 1px 0 rgba(255, 240, 200, .15); font-weight: 700; color: var(--or-clair); }
+.btn-plaque i { width: 9px; height: 9px; border-radius: 50%; background: #f2c14e; box-shadow: 0 0 8px #f2c14e; }
+.btn-filet { min-height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; border: 1.5px solid var(--or); font-weight: 700; }
+.btn-filet svg { width: 18px; height: 18px; color: var(--or); }
+.btn-gris { min-height: 44px; color: var(--pale); font-weight: 600; font-size: 14px; }
+
+/* ---------- Célébrations ---------- */
+.fond-celeb { position: absolute; inset: 0; width: 100%; height: 100%; }
+.celeb-dom { position: absolute; inset: 0; z-index: 12; pointer-events: none; display: grid; place-items: end center; padding-bottom: 40px; }
+.celeb-dom > * { pointer-events: auto; }
+.celeb-ticket { display: grid; justify-items: center; gap: 4px; opacity: 0; transform: translateY(30px); transition: opacity .4s, transform .5s cubic-bezier(.3, 1.4, .5, 1); }
+.celeb-ticket.visible { opacity: 1; transform: none; }
+.celeb-lien { position: absolute; left: 50%; top: 64%; transform: translateX(-50%); color: var(--or-clair); font-weight: 700; font-size: 14px; min-height: 44px; opacity: 0; transition: opacity .4s; text-decoration: underline; text-underline-offset: 4px; }
+.celeb-lien.visible { opacity: 1; }
+.celeb-repos { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; padding: 30px; z-index: 11; color: var(--doux); font: italic 400 15px/1.5 var(--titre); transition: opacity .3s; }
+.celeb-repos b { font: 22px var(--affiche); color: var(--or); font-style: normal; }
+
+@media (prefers-reduced-motion: reduce) {
+  .grain, .badge-plex i, .fantome, .fantome img, .curseur { animation: none; }
+  .cartouche, .cartouche.deplie { transition: none; }
+  .ecran.choc, .embleme.pop, .aff-note.pop, .rosette.pop, .seance.prise .tampon-prise { animation: none; }
+  .feuille-papier, .feuille-voile, .toast, .celeb-ticket, .aff-cadre img, .f-suite { transition: none; }
+  .tampon-vu { animation: none; opacity: 0; }
+}
+</style>
+
+<header class="tete">
+  <p class="sur">Maquette animée · Journal · pages du Voyage</p>
+  <h1>Le Voyage, page par page</h1>
+  <p>La direction de la carte validée, prolongée à tout le Voyage : décors en parallaxe, marquises, estrade, guichet, papier du monde, cartons et tampons. Sept écrans, les mêmes données que la carte (1895 Palme, 1896 Lion, 1897 Ours, 1898 en cours à 3/5). Pensé pour la web app : Canvas 2D, CSS, SVG et Web Animations, sans WebGL, fluide sur un Android ou un iPhone moyens.</p>
+</header>
+
+<nav class="onglets" aria-label="Pages de la maquette">
+  <a href="#p1">1 · 1898 en cours</a>
+  <a href="#p2">2 · 1896 bouclée</a>
+  <a href="#p3">3 · 1902 verrouillée</a>
+  <a href="#p4">4 · Années 1890</a>
+  <a href="#p5">5 · Fiche d’un film</a>
+  <a href="#p6">6 · Feuille de lecture</a>
+  <a href="#p7">7 · Célébrations</a>
+  <a href="#changements">Ce qui change</a>
+</nav>
+
+<section class="page" id="p1" aria-labelledby="t1">
+  <header class="page-tete"><p class="num">1 · l’écran principal</p><h2 id="t1">La fiche d’une année en cours : 1898</h2></header>
+  <div class="telephone">
+    <div class="ecran" id="tel1"><div class="vue" tabindex="0" aria-label="Fiche de l’année 1898"></div><div class="grain"></div></div>
+    <div class="demo">
+      <button class="bouton fort" type="button" data-demo="vu">Je l’ai vu</button>
+      <button class="bouton" type="button" data-demo="ticket">Le ticket tombe</button>
+      <button class="bouton" type="button" data-demo="reset">Recommencer</button>
+    </div>
+    <p class="legende">« Je l’ai vu » enregistre <i>Shooting Captured Insurgents</i> : le « +1 » vole, les pastilles défilent, la salle se referme en rideau et se tamponne. Les affiches sont dessinées pour la maquette ; l’appli montre les vraies affiches TMDB.</p>
+  </div>
+  <aside class="notes">
+    <p>Tout le contenu d’aujourd’hui est là, dans le même ordre : en-tête et pastilles, cartouche (ouverture, « Lire l’ouverture », faits), <b>Prochain pas</b>, podium, séance « Ce soir », les salles avec leurs états et « En voir plus », « Ouvrir une nouvelle salle », puis la ligne de maturité ou le ticket.</p>
+    <p>L’en-tête prolonge la carte : le décor de 1890 en bandeau (quatre plans qui glissent à des vitesses différentes au défilement) et la case de l’année en médaillon, avec sa jauge corail 3/5. Chaque salle devient un cinéma : marquise dont les ampoules allumées disent la part vue, étagère d’affiches, états lisibles d’un coup d’œil (vu, à voir, sur le Plex, demandé, perdu).</p>
+    <div class="faisa">
+      <h3>Faisabilité web</h3>
+      <p><span class="faisable">Faisable tel quel</span> <span class="effort" title="Effort">L</span></p>
+      <ul>
+        <li><b>Technique :</b> Canvas 2D (bandeau, podium, marquises) dans une seule boucle <code>requestAnimationFrame</code> par écran, coupée hors vue par <code>IntersectionObserver</code> ; CSS et Web Animations pour le reste.</li>
+        <li>Parallaxe : chaque plan décalé selon <code>scrollTop</code>, dessiné seulement quand le bandeau est visible.</li>
+        <li>Virage sépia du décor par <code>globalCompositeOperation = 'color'</code> (l’équivalent canvas de <code>mix-blend-mode: color</code>), impossible en Compose sur Android 8 ; le corail est dessiné après, jamais teinté.</li>
+        <li>Étagère : défilement horizontal CSS (<code>scroll-snap</code>), états par <code>filter</code> (grayscale, sepia) avec transition ; vraies affiches TMDB en <code>&lt;img loading="lazy"&gt;</code>.</li>
+        <li>Pastilles, « +1 », bandeau Prochain pas, ticket qui tombe : Web Animations sur <code>transform</code> et <code>opacity</code> seulement, composités par le GPU.</li>
+        <li>Poinçon : un disque de la couleur du fond, ou <code>mask</code> CSS pour un vrai trou.</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section class="page" id="p2" aria-labelledby="t2">
+  <header class="page-tete"><p class="num">2 · une année passée</p><h2 id="t2">1896, bouclée avec le Lion</h2></header>
+  <div class="telephone">
+    <div class="ecran" id="tel2"><div class="vue" tabindex="0" aria-label="Fiche de l’année 1896"></div><div class="grain"></div></div>
+    <p class="legende">Même écran, autres états : la médaille posée en grand sur la case, des gerbes au-dessus du décor, le podium complet, une marquise dorée qui court, une autre éteinte.</p>
+  </div>
+  <aside class="notes">
+    <p>Une année bouclée garde toutes ses fonctions (podium modifiable, salles, « Ouvrir une nouvelle salle », « Le générique de fin ») mais perd ce qui ne concerne que l’année en cours : <b>Prochain pas</b>, séance et ligne du bas.</p>
+    <p>La récompense se voit trois fois : la médaille sur le médaillon, l’emblème du cartouche, et la marquise des essentiels, dorée et tamponnée. Une salle incomplète reste éteinte, ses ampoules allumées au prorata des films vus.</p>
+    <div class="faisa">
+      <h3>Faisabilité web</h3>
+      <p><span class="faisable">Faisable tel quel</span> <span class="effort" title="Effort">S</span></p>
+      <ul>
+        <li><b>Technique :</b> le composant de la page 1 avec d’autres données ; gerbes en Canvas (au plus trois, 24 points chacune).</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section class="page" id="p3" aria-labelledby="t3">
+  <header class="page-tete"><p class="num">3 · une année verrouillée</p><h2 id="t3">1902, en bande-annonce</h2></header>
+  <div class="telephone">
+    <div class="ecran monde1900" id="tel3"><div class="vue" tabindex="0" aria-label="Année 1902 verrouillée"></div><div class="lettre-box haut"><span>Bande-annonce</span><span>Chapitre II</span></div><div class="lettre-box dessous"><span>Bientôt sur cet écran</span><span>1902</span></div><div class="grain"></div></div>
+    <p class="legende">Le monde suivant, « La féerie », dans sa propre palette : vagues de théâtre, manège forain, étoiles de Méliès. Le décor reste voilé et ses ampoules hésitent : le courant n’est pas encore là.</p>
+  </div>
+  <aside class="notes">
+    <p>Le carton « Prochainement » vide de <code>20_annee1903_verrouillee.png</code> devient une bande-annonce : ce qu’il faut pour ouvrir l’année (le ticket de 1901), le chemin qui y mène depuis « tu es ici », les films déjà vus en avance en affiches fantômes (touchables, ils ouvrent leur fiche), et l’intertitre du monde avec le titre de passeport à gagner.</p>
+    <div class="faisa">
+      <h3>Faisabilité web</h3>
+      <p><span class="faisable">Faisable tel quel</span> <span class="effort" title="Effort">M</span></p>
+      <ul>
+        <li><b>Technique :</b> Canvas 2D pour le décor de la féerie (vagues, manège, étoiles) ; bandes noires et fantômes en CSS (<code>filter</code>, <code>mix-blend-mode: screen</code>, animation d’opacité par paliers).</li>
+        <li>Rien de nouveau côté API : l’année en cours est connue (d’où « s’ouvre avec le ticket de 1901 »), les films vus en avance viennent du journal.</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section class="page" id="p4" aria-labelledby="t4">
+  <header class="page-tete"><p class="num">4 · la décennie</p><h2 id="t4">Les années 1890, autour de la grande roue</h2></header>
+  <div class="telephone">
+    <div class="ecran" id="tel4"><div class="vue" tabindex="0" aria-label="Décennie 1890"></div><div class="grain"></div></div>
+    <p class="legende">Touchez une nacelle ou une ligne du tableau : l’appli ouvrirait l’année. Les colonnes Morris défilent de côté.</p>
+  </div>
+  <aside class="notes">
+    <p>La grande roue de la carte porte dix nacelles, une par année : éteintes de 1890 à 1894 (rien à voir), une médaille dans celles de 1895 à 1897, la jauge corail en 1898, 1899 à peine allumée par ses films vus en avance. Les lampions du cercle s’allument au prorata : 83 %, comme l’anneau du passeport, qui garde la place du tampon à venir.</p>
+    <p>La rangée d’affiches devient des colonnes Morris par année (quatre affiches au plus et « +N »), puis le tableau des années garde films vus, récompense et meilleure note.</p>
+    <div class="faisa">
+      <h3>Faisabilité web</h3>
+      <p><span class="faisable simplifie">Faisable simplifié : le monument n’existe que pour 1890 (la grande roue). Chaque monde en demande un, dessiné une fois et partagé avec la carte (la tour de Metropolis y est déjà).</span> <span class="effort" title="Effort">M</span></p>
+      <ul>
+        <li><b>Technique :</b> roue en Canvas 2D, nacelles touchables d’après les positions de la dernière image ; passeport en SVG (<code>stroke-dashoffset</code>) ; colonnes Morris en CSS (dégradés de cylindre) dans un défilement horizontal.</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section class="page" id="p5" aria-labelledby="t5">
+  <header class="page-tete"><p class="num">5 · la fiche d’un film</p><h2 id="t5">Photographing a Ghost, salle des essentiels</h2></header>
+  <div class="telephone">
+    <div class="ecran" id="tel5"><div class="vue" tabindex="0" aria-label="Fiche du film"></div><div class="grain"></div></div>
+    <div class="demo">
+      <button class="bouton" type="button" data-etat="plex" aria-pressed="true">État : sur le Plex</button>
+      <button class="bouton" type="button" data-etat="vu" aria-pressed="false">État : vu</button>
+    </div>
+    <p class="legende">« Je l’ai vu », dans l’écran, poinçonne le ticket puis montre ta note. L’affiche est dessinée ; l’appli montre celle de TMDB.</p>
+  </div>
+  <aside class="notes">
+    <p>L’affiche en héros, dans le cadre de scène du monde (arc doré, ampoules, velours), qui s’incline et flotte au défilement. Puis la salle en petite marquise, le titre, le réalisateur (touchable), la raison du film dans la salle, ta note en rosette et tes réactions quand le film est vu.</p>
+    <p>Les boutons passent au guichet : le seul geste corail est « Je l’ai vu », en ticket à encoches ; « Voir sur le Plex » est une plaque de laiton allumée, « Introuvable » reste en texte gris, « Le film » garde son filet or. Vu : « Corriger », « Mettre sur le podium », « Le film ».</p>
+    <div class="faisa">
+      <h3>Faisabilité web</h3>
+      <p><span class="faisable">Faisable tel quel</span> <span class="effort" title="Effort">M</span></p>
+      <ul>
+        <li><b>Technique :</b> cadre de scène, velours et affiche en Canvas 2D, l’affiche décalée et inclinée selon <code>scrollTop</code> ; bouton-ticket à encoches par <code>mask</code> CSS ; rosette en <code>conic-gradient</code>.</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section class="page" id="p6" aria-labelledby="t6">
+  <header class="page-tete"><p class="num">6 · la feuille de lecture</p><h2 id="t6">La feuille du chroniqueur</h2></header>
+  <div class="telephone">
+    <div class="ecran" id="tel6"><div class="vue" tabindex="0" aria-label="Feuille de lecture"></div><div class="grain"></div></div>
+    <div class="demo">
+      <button class="bouton" type="button" data-f="ouverture">Ouverture</button>
+      <button class="bouton" type="button" data-f="salle">Contexte de salle</button>
+      <button class="bouton" type="button" data-f="film">Le film</button>
+      <button class="bouton" type="button" data-f="generique">Le générique de fin</button>
+      <button class="bouton" type="button" data-f="attente">Pendant l’écriture</button>
+      <button class="bouton" type="button" data-f="erreur">Erreur</button>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>Les quatre feuilles d’aujourd’hui (ouverture, contexte d’une salle, texte sur le film, générique de fin), avec leurs états d’attente et d’erreur. Le papier prend la teinte du monde, des lignes de cahier au pas du texte, le filigrane du monument et le tampon du chapitre.</p>
+    <p>La machine tape le début (≈ 140 caractères, arrêtés entre deux mots comme <code>partieTapee</code>), chaque lettre un peu décalée, l’encre inégale ; le reste arrive en fondu, paragraphe par paragraphe. Pendant l’écriture, elle tape « Le chroniqueur écrit… », l’efface et recommence.</p>
+    <div class="faisa">
+      <h3>Faisabilité web</h3>
+      <p><span class="faisable">Faisable tel quel</span> <span class="effort" title="Effort">S</span></p>
+      <ul>
+        <li><b>Technique :</b> lettres tapées en <code>&lt;span&gt;</code> décalés (CSS <code>top</code>, opacité variable), <code>setTimeout</code> à 22–56 ms ; papier en dégradés CSS, grain en <code>mix-blend-mode: multiply</code>, filigrane pré-rendu en image de fond.</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section class="page" id="p7" aria-labelledby="t7">
+  <header class="page-tete"><p class="num">7 · les célébrations</p><h2 id="t7">Clap, ticket, salle, décennie</h2></header>
+  <div class="telephone">
+    <div class="ecran" id="tel7"><canvas class="fond-celeb" aria-hidden="true"></canvas><div class="celeb-repos" id="repos"><b>Célébrations</b>Choisissez un calque ci-dessous pour le jouer.</div><div class="celeb-dom"></div><div class="grain"></div></div>
+    <div class="demo">
+      <button class="bouton" type="button" data-c="clap">Film enregistré</button>
+      <button class="bouton" type="button" data-c="ticket">Ticket obtenu</button>
+      <button class="bouton" type="button" data-c="salle">Salle bouclée</button>
+      <button class="bouton" type="button" data-c="decennie">Tampon de décennie</button>
+    </div>
+  </div>
+  <aside class="notes">
+    <p><b>Film enregistré</b> : le clap claque (éclair, secousse), l’année en Limelight or, puis la feuille « Le film » qui commence à s’écrire.</p>
+    <p><b>Ticket obtenu</b> : l’amorce 3-2-1, la médaille qui tombe sous les confettis, « 1898 dans la boîte », le photogramme de 1899, puis le ticket : le garder ou l’utiliser (poinçon).</p>
+    <p><b>Salle bouclée</b> : la marquise se remplit, le rideau tombe, « COMPLET » est tamponné, les perforations s’allument. <b>Tampon de décennie</b> : la marquise « complet », le générique qui défile, « FIN », et le tampon du passeport.</p>
+    <div class="faisa">
+      <h3>Faisabilité web</h3>
+      <p><span class="faisable">Faisable tel quel</span> <span class="effort" title="Effort">M</span></p>
+      <ul>
+        <li><b>Technique :</b> Canvas 2D et Web Animations. Les Lottie de l’appli (<code>clap-2</code>, <code>confetti-1</code>) peuvent rester par <code>lottie-web</code>, ou céder la place au dessin montré ici, plus léger.</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section class="change" id="changements" aria-labelledby="tc">
+  <h2 id="tc">Ce qui change par rapport aux pages actuelles</h2>
+  <ul>
+    <li><b>L’en-tête.</b> Le « 1898 » entre deux éclats sur fond uni de <code>08_annee1898_haut.png</code> devient le décor du monde en bandeau, en parallaxe, avec la case de la carte en médaillon ; les pastilles grises deviennent des plaques émaillées qui défilent.</li>
+    <li><b>La récompense.</b> Le petit glyphe à côté du millésime (<code>16_annee1895_haut.png</code>) devient une médaille posée sur le médaillon, un emblème de 44 px au cartouche et une marquise dorée.</li>
+    <li><b>Le podium.</b> Les trois cadres noirs sur fond noir de <code>09_annee1898_podium.png</code> deviennent une estrade : velours, faisceaux croisés, marches numérotées, médailles ; la marche vide reste lisible (« à venir »).</li>
+    <li><b>Les salles.</b> Les listes de billets de <code>10_annee1898_salles.png</code> et <code>17_annee1895_milieu.png</code> deviennent des cinémas : marquise au nom de la salle, étagère d’affiches, états visibles sans lire ; « En voir plus » et « Salle épuisée » ferment l’étagère.</li>
+    <li><b>Le bas de page.</b> <code>12_annee1898_bas.png</code> finit sur un bouton ; ici viennent la séance « Ce soir » en carte de vidéo-club, une façade à louer pour « Ouvrir une nouvelle salle », la note du jury ou le ticket qui tombe.</li>
+    <li><b>La feuille.</b> Le papier uni de <code>13_ouverture_machine.png</code> et <code>14_ouverture_fin.png</code> prend la teinte du monde, des lignes, un filigrane et un tampon ; la frappe devient inégale.</li>
+    <li><b>La fiche d’un film.</b> L’image plein cadre et les quatre boutons Material de <code>15_fiche_film_haut.png</code> deviennent l’affiche dans son cadre de scène et un guichet, avec un seul geste corail.</li>
+    <li><b>La décennie.</b> L’anneau et la liste de <code>19_decennie1890.png</code> deviennent la grande roue à dix nacelles, un passeport qui attend son tampon, des colonnes Morris et un tableau des années.</li>
+    <li><b>L’année verrouillée.</b> Le carton « Prochainement » sur écran vide de <code>20_annee1903_verrouillee.png</code> devient une bande-annonce : condition, chemin, films vus en avance, ambiance du monde.</li>
+  </ul>
+</section>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let calme = mq.matches;
+  const TAU = Math.PI * 2;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const ressort = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+  const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+  const alea = (seed) => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const hashStr = (s) => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+  const attendre = (ms) => new Promise((r) => setTimeout(r, calme ? Math.min(ms, 40) : ms));
+  const F_TITRE = 'Fraunces, Georgia, serif', F_AFF = 'Limelight, Didot, Georgia, serif', F_CORPS = 'Manrope, system-ui, sans-serif';
+
+  let g = null;
+  const cercle = (x, y, r) => { g.beginPath(); g.arc(x, y, Math.max(0, r), 0, TAU); g.fill(); };
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath(); };
+  const poly = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); };
+  const etoile4 = (x, y, s) => { poly([[x, y - s], [x + s * .22, y - s * .22], [x + s, y], [x + s * .22, y + s * .22], [x, y + s], [x - s * .22, y + s * .22], [x - s, y], [x - s * .22, y - s * .22]]); g.fill(); };
+  function toile(cv) {
+    const w = cv.clientWidth, h = cv.clientHeight, d = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.max(1, Math.round(w * d)), H = Math.max(1, Math.round(h * d));
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    return [w, h];
+  }
+  function texteAjuste(txt, maxW, taille, police) {
+    g.font = `${taille}px ${police}`; const m = g.measureText(txt).width;
+    if (m > maxW) g.font = `${taille * maxW / m}px ${police}`;
+  }
+  function lignes(txt, maxW) {
+    const mots = txt.split(' '), out = []; let l = '';
+    for (const m of mots) { const e = l ? l + ' ' + m : m; if (g.measureText(e).width > maxW && l) { out.push(l); l = m; } else l = e; }
+    if (l) out.push(l); return out;
+  }
+
+  // ---------- Le grain : une texture pré-rendue, décalée par CSS ----------
+  (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'), im = x.createImageData(128, 128), r = alea(41);
+    for (let p = 0; p < im.data.length; p += 4) { const v = r() > .5 ? 255 : 0; im.data[p] = im.data[p + 1] = im.data[p + 2] = v; im.data[p + 3] = r() < .5 ? 20 : 0; }
+    x.putImageData(im, 0, 0);
+    document.documentElement.style.setProperty('--grain', `url(${c.toDataURL()})`);
+  })();
+
+  // ---------- Les films (affiches dessinées pour la maquette) ----------
+  const FILMS = {
+    lune: ['La Lune à un mètre', 'Georges Méliès', 1898, 'LA LUNE', 'lune'],
+    tentation: ['La Tentation de saint Antoine', 'Georges Méliès', 1898, 'ANTOINE', 'griffe'],
+    tetes: ['Un homme de têtes', 'Georges Méliès', 1898, 'TÊTES', 'rond'],
+    magicien: ['Le Magicien', 'Georges Méliès', 1898, 'MAGICIEN', 'etoile'],
+    santa: ['Santa Claus', 'G. A. Smith', 1898, 'SANTA', 'porte'],
+    comealong: ['Come Along, Do!', 'Robert W. Paul', 1898, 'COME ALONG', 'train'],
+    ghost: ['Photographing a Ghost', 'G. A. Smith', 1898, 'GHOST', 'oeil'],
+    cavalier: ['The Cavalier’s Dream', 'Edwin S. Porter', 1898, 'CAVALIER', 'spirale'],
+    maine: ['Visite sous-marine du Maine', 'Georges Méliès', 1898, 'MAINE', 'vague'],
+    insurgents: ['Shooting Captured Insurgents', 'Edison Manufacturing', 1898, 'INSURGENTS', 'tour'],
+    wreck: ['Wreck of the Battleship ‘Maine’', 'Edison Manufacturing', 1898, 'WRECK', 'vague'],
+    illusions: ['Illusions fantasmagoriques', 'Georges Méliès', 1898, 'ILLUSIONS', 'etoile'],
+    corsican: ['The Corsican Brothers', 'G. A. Smith', 1898, 'CORSICAN', 'rond'],
+    train: ['L’Arrivée d’un train en gare de La Ciotat', 'Louis Lumière', 1896, 'TRAIN', 'train'],
+    fee: ['La Fée aux choux', 'Alice Guy', 1896, 'LA FÉE', 'rond'],
+    manoir: ['Le Manoir du diable', 'Georges Méliès', 1896, 'DIABLE', 'griffe'],
+    escamotage: ['Escamotage d’une dame au théâtre Robert-Houdin', 'Georges Méliès', 1896, 'ESCAMOTAGE', 'etoile'],
+    baiser: ['Le Baiser', 'William Heise', 1896, 'LE BAISER', 'oeil'],
+    cartes: ['Une partie de cartes', 'Georges Méliès', 1896, 'CARTES', 'porte'],
+    mur: ['Démolition d’un mur', 'Louis Lumière', 1896, 'LE MUR', 'tour'],
+    cauchemar: ['Le Cauchemar', 'Georges Méliès', 1896, 'CAUCHEMAR', 'lune'],
+    venise: ['Panorama du Grand Canal pris d’un bateau', 'Alexandre Promio', 1896, 'VENISE', 'vague'],
+    tsar: ['Le Couronnement du tsar Nicolas II', 'Opérateurs Lumière', 1896, 'LE TSAR', 'etoile'],
+    sortie: ['La Sortie de l’usine Lumière à Lyon', 'Louis Lumière', 1895, 'USINE', 'porte'],
+    arroseur: ['L’Arroseur arrosé', 'Louis Lumière', 1895, 'ARROSEUR', 'vague'],
+    bebe: ['Le Repas de bébé', 'Louis Lumière', 1895, 'BÉBÉ', 'rond'],
+    voltige: ['La Voltige', 'Louis Lumière', 1895, 'VOLTIGE', 'etoile'],
+    chateau: ['Le Château hanté', 'Georges Méliès', 1897, 'CHÂTEAU', 'tour'],
+    bal: ['Après le bal', 'Georges Méliès', 1897, 'LE BAL', 'etoile'],
+    serpentine: ['Danse serpentine', 'Frères Lumière', 1897, 'SERPENTINE', 'spirale'],
+    calais: ['Entre Calais et Douvres', 'Georges Méliès', 1897, 'CALAIS', 'vague'],
+    cendrillon: ['Cendrillon', 'Georges Méliès', 1899, 'CENDRILLON', 'etoile'],
+    dreyfus: ['L’Affaire Dreyfus', 'Georges Méliès', 1899, 'DREYFUS', 'porte'],
+    couvent: ['Le Diable au couvent', 'Georges Méliès', 1899, 'COUVENT', 'griffe'],
+    flots: ['Le Christ marchant sur les flots', 'Georges Méliès', 1899, 'LES FLOTS', 'vague'],
+    voyage: ['Le Voyage dans la Lune', 'Georges Méliès', 1902, 'VOYAGE', 'lune'],
+    jack: ['Jack and the Beanstalk', 'George S. Fleming, Edwin S. Porter', 1902, 'JACK', 'tour'],
+  };
+  const PAL_AFF = ['#A8452F', '#3E5360', '#B8862B', '#5E7A45', '#8a5234', '#5a4a78', '#7A2F2F', '#2F4A6B'];
+  function motifAffiche(x, m, papier, coul) {
+    x.fillStyle = '#23180f'; x.strokeStyle = '#23180f'; x.lineWidth = .7; x.lineCap = 'round';
+    const rond = (cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0, TAU); x.fill(); };
+    if (m === 'rond') { rond(0, 0, 3.3); x.fillStyle = coul; rond(-1, -1, 1.1); }
+    else if (m === 'lune') { rond(0, 0, 3.6); x.fillStyle = papier; rond(1.7, -.9, 3.1); }
+    else if (m === 'train') { x.fillRect(-3.5, -1.6, 7, 4.4); x.fillRect(-2.7, -4.2, 2, 2.8); x.fillStyle = coul; rond(-2, 3.3, 1.2); rond(2, 3.3, 1.2); rond(2.4, .3, .8); }
+    else if (m === 'vague') { for (const dy of [-1.6, 1.6]) { x.beginPath(); x.moveTo(-4.6, dy); x.quadraticCurveTo(-2.3, dy - 2, 0, dy); x.quadraticCurveTo(2.3, dy + 2, 4.6, dy); x.stroke(); } }
+    else if (m === 'etoile') { x.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 1.6 : 3.9; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); } x.closePath(); x.fill(); }
+    else if (m === 'spirale') { x.beginPath(); for (let a = 0; a < 4.2 * Math.PI; a += .25) { const r = .2 + a * .28; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); } x.stroke(); }
+    else if (m === 'griffe') { x.beginPath(); x.ellipse(0, 2.8, 1.8, 1.4, 0, 0, TAU); x.fill(); for (let d = 0; d < 4; d++) { x.beginPath(); x.moveTo(-1.2 + d * .8, 2); x.quadraticCurveTo(-2.4 + d * 1.5, -1.6, -3.6 + d * 2.4, -4.4); x.stroke(); } }
+    else if (m === 'tour') { x.fillRect(-3, -.4, 6, 4.4); x.fillRect(-2, -2.9, 4, 2.6); x.fillRect(-1, -4.9, 2, 2.1); x.beginPath(); x.moveTo(0, -4.9); x.lineTo(0, -6); x.stroke(); }
+    else if (m === 'porte') { x.beginPath(); x.moveTo(-2.2, 4); x.lineTo(-2.2, -1.5); x.arc(0, -1.5, 2.2, Math.PI, 0); x.lineTo(2.2, 4); x.closePath(); x.fill(); x.fillStyle = coul; x.fillRect(-4.6, 1.2, 1.2, 2.8); x.fillRect(3.4, 1.2, 1.2, 2.8); }
+    else if (m === 'oeil') { x.beginPath(); x.moveTo(-4.6, 0); x.quadraticCurveTo(0, -3.8, 4.6, 0); x.quadraticCurveTo(0, 3.8, -4.6, 0); x.stroke(); x.fillStyle = coul; rond(0, 0, 1.6); x.fillStyle = '#23180f'; rond(0, 0, .7); }
+  }
+  const AFF = new Map(), URL_AFF = new Map();
+  function affiche(id, S = 2) {
+    const cle = id + '@' + S; let c = AFF.get(cle); if (c) return c;
+    const [, qui, annee, court, motif] = FILMS[id], h0 = hashStr(id), r = alea(h0);
+    const W = 92, H = 136; c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+    const x = c.getContext('2d'); x.scale(S, S);
+    const coul = PAL_AFF[h0 % PAL_AFF.length], papier = '#efe2c4';
+    x.fillStyle = coul; x.fillRect(0, 0, W, H);
+    x.fillStyle = papier; x.fillRect(6, 6, W - 12, 78);
+    x.save(); x.beginPath(); x.rect(6, 6, W - 12, 78); x.clip(); x.translate(W / 2, 45); x.fillStyle = coul; x.globalAlpha = .15;
+    for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, 80, a, a + TAU / 32); x.closePath(); x.fill(); }
+    x.restore();
+    x.strokeStyle = 'rgba(35,24,15,.55)'; x.lineWidth = .8; x.strokeRect(9.5, 9.5, W - 19, 72);
+    x.save(); x.translate(W / 2, 45); x.scale(5.2, 5.2); motifAffiche(x, motif, papier, coul); x.restore();
+    x.fillStyle = papier; x.textAlign = 'center'; x.textBaseline = 'middle';
+    let fs = 14; x.font = `${fs}px ${F_AFF}`; let mw = x.measureText(court).width; if (mw > W - 14) { fs *= (W - 14) / mw; x.font = `${fs}px ${F_AFF}`; }
+    x.fillText(court, W / 2, 100);
+    x.globalAlpha = .85; fs = 5.4; x.font = `700 ${fs}px ${F_CORPS}`; const q = qui.toUpperCase(); mw = x.measureText(q).width; if (mw > W - 12) x.font = `700 ${fs * (W - 12) / mw}px ${F_CORPS}`;
+    x.fillText(q, W / 2, 115);
+    x.font = `italic 500 7px ${F_TITRE}`; x.fillText(String(annee), W / 2, 126); x.globalAlpha = 1;
+    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(40,25,10,${r() * .1})`; x.beginPath(); x.arc(r() * W, r() * H, .5 + r() * 2.2, 0, TAU); x.fill(); }
+    x.fillStyle = 'rgba(255,250,235,.07)'; x.fillRect(W / 2 - .5, 0, 1, H);
+    x.strokeStyle = 'rgba(0,0,0,.4)'; x.lineWidth = 1; x.strokeRect(.5, .5, W - 1, H - 1);
+    AFF.set(cle, c); return c;
+  }
+  function afficheURL(id) { let u = URL_AFF.get(id); if (!u) { u = affiche(id, 2).toDataURL('image/jpeg', .86); URL_AFF.set(id, u); } return u; }
+
+  // ---------- Médailles et emblèmes ----------
+  const MEDAILLES = { palme: ['#FBE3A0', '#B8862B', '#6B4712'], lion: ['#F8EFDC', '#B9A57C', '#5A4A2E'], ours: ['#EBB684', '#8A5530', '#4A2A12'] };
+  const NOM_REC = { palme: 'Palme', lion: 'Lion', ours: 'Ours' };
+  function glyphe(type, c) {
+    g.strokeStyle = c; g.fillStyle = c; g.lineCap = 'round';
+    if (type === 'palme') {
+      g.lineWidth = 1.5; g.beginPath(); g.moveTo(-1, 8); g.quadraticCurveTo(0, 0, 4, -8); g.stroke(); g.lineWidth = 1.2;
+      for (let i = 0; i < 4; i++) { const yy = 5 - i * 3.6, xx = -.6 + i * 1.1; g.beginPath(); g.moveTo(xx, yy); g.lineTo(xx - 5 + i * .5, yy - 2.6); g.moveTo(xx, yy); g.lineTo(xx + 4.5 - i * .4, yy - 3.4); g.stroke(); }
+    } else if (type === 'lion') {
+      g.beginPath(); for (let i = 0; i < 20; i++) { const an = i / 20 * TAU, r = i % 2 ? 6.2 : 8.4; g.lineTo(Math.cos(an) * r, Math.sin(an) * r); } g.closePath();
+      const a = g.globalAlpha; g.globalAlpha = a * .55; g.fill(); g.globalAlpha = a;
+      cercle(0, .5, 4.4); g.fillStyle = 'rgba(255,245,220,.5)'; cercle(0, 2.2, 1.8);
+    } else {
+      cercle(-4.8, -4.6, 2.6); cercle(4.8, -4.6, 2.6); cercle(0, .8, 6.2); g.fillStyle = 'rgba(255,240,215,.45)'; g.beginPath(); g.ellipse(0, 3, 2.6, 2, 0, 0, TAU); g.fill();
+    }
+  }
+  function medaille(type, x, y, R, t, ruban = true, i = 0) {
+    const [c0, c1, c2] = MEDAILLES[type];
+    g.save(); g.translate(x, y); g.scale(R / 13.5, R / 13.5);
+    if (ruban) { g.fillStyle = '#6E2A1E'; poly([[-7, 6], [-11, 22], [-6, 19], [-3, 23], [0, 8]]); g.fill(); poly([[7, 6], [11, 22], [6, 19], [3, 23], [0, 8]]); g.fill(); }
+    const gr = g.createRadialGradient(-4, -5, 1, 0, 0, 14); gr.addColorStop(0, c0); gr.addColorStop(1, c1);
+    g.fillStyle = 'rgba(0,0,0,.35)'; cercle(1, 2, 14); g.fillStyle = gr; cercle(0, 0, 13.5);
+    g.strokeStyle = c2; g.lineWidth = 1; g.beginPath(); g.arc(0, 0, 10.8, 0, TAU); g.stroke();
+    glyphe(type, c2);
+    if (!calme && t) {
+      const p = ((t * .32 + i * .23) % 1) * 3 - 1;
+      if (p > -1 && p < 1.2) { g.save(); g.beginPath(); g.arc(0, 0, 13.5, 0, TAU); g.clip(); g.rotate(.6); g.fillStyle = 'rgba(255,255,240,.5)'; g.fillRect(p * 16 - 3, -16, 5, 32); g.restore(); }
+    }
+    g.restore();
+  }
+  const URL_EMB = {};
+  function emblemeURL(type) {
+    if (URL_EMB[type]) return URL_EMB[type];
+    const c = document.createElement('canvas'); c.width = c.height = 96; const avant = g;
+    g = c.getContext('2d'); medaille(type, 48, 48, 42, 0, false); g = avant;
+    return (URL_EMB[type] = c.toDataURL());
+  }
+
+  // ---------- Décors : 1890 (repris de la carte) ----------
+  const ETOILES = Array.from({ length: 48 }, (_, i) => { const r = alea(i * 13 + 5); return { x: r(), y: r(), r: .5 + r() * 1.1, p: r() * TAU, v: .6 + r() * 1.6 }; });
+  const LAMPIONS = ['#E6B94A', '#DE7A45', '#F2E8D5'];
+  function lampion(x, y, r, i, t, on = true) {
+    if (!on) { g.fillStyle = 'rgba(242,232,213,.16)'; cercle(x, y, r * .8); return; }
+    const tw = calme ? .85 : .55 + .45 * Math.sin(t * 2.6 + i * 1.9), ba = g.globalAlpha;
+    g.fillStyle = LAMPIONS[i % 3];
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = ba * tw * .28; cercle(x, y, r * 2.8);
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = ba * (.6 + .4 * tw); cercle(x, y, r); g.globalAlpha = ba;
+  }
+  function guirlande(x0, y0, x1, y1, creux, n, t, type = 'lampion') {
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + creux;
+    const q = (u) => [(1 - u) * (1 - u) * x0 + 2 * (1 - u) * u * mx + u * u * x1, (1 - u) * (1 - u) * y0 + 2 * (1 - u) * u * my + u * u * y1];
+    g.strokeStyle = 'rgba(8,6,4,.95)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(mx, my, x1, y1); g.stroke();
+    const fan = ['#8a5234', '#D9B382', '#c49a5a', '#5e4a38'];
+    for (let i = 1; i <= n; i++) {
+      const [px, py] = q(i / (n + 1));
+      if (type === 'fanion') { const sw = calme ? 0 : Math.sin(t * 2.2 + i * .8) * 2.4; g.fillStyle = fan[i % 4]; poly([[px - 5.5, py - 1], [px + 5.5, py - 1], [px + sw, py + 13]]); g.fill(); }
+      else { g.fillStyle = '#0a0806'; g.fillRect(px - .5, py, 1, 3); lampion(px, py + 6, 3, i, t); }
+    }
+  }
+  function lune(x, y, r, t) {
+    g.save(); g.translate(x, y + (calme ? 0 : Math.sin(t * .5) * 2));
+    const halo = g.createRadialGradient(0, 0, r * .8, 0, 0, r * 2.4); halo.addColorStop(0, 'rgba(242,226,190,.2)'); halo.addColorStop(1, 'rgba(242,226,190,0)');
+    g.fillStyle = halo; cercle(0, 0, r * 2.4);
+    const d = g.createRadialGradient(-r * .3, -r * .35, r * .1, 0, 0, r); d.addColorStop(0, '#f6ecd4'); d.addColorStop(1, '#bda57b');
+    g.fillStyle = d; cercle(0, 0, r);
+    g.fillStyle = 'rgba(110,88,58,.2)'; [[-.5, .45, .14], [.45, .5, .1], [-.15, -.62, .09], [.6, -.05, .07]].forEach(([u, v, s]) => cercle(u * r, v * r, s * r));
+    g.strokeStyle = 'rgba(80,60,38,.75)'; g.lineWidth = r * .045; g.lineCap = 'round';
+    g.beginPath(); g.arc(-r * .32, -r * .1, r * .15, .15 * Math.PI, .85 * Math.PI); g.stroke();
+    g.beginPath(); g.moveTo(-r * .52, -r * .34); g.quadraticCurveTo(-r * .32, -r * .44, -r * .14, -r * .32); g.stroke();
+    g.beginPath(); g.moveTo(-r * .02, -r * .05); g.quadraticCurveTo(r * .08, r * .14, -r * .04, r * .2); g.stroke();
+    g.beginPath(); g.moveTo(-r * .36, r * .42); g.quadraticCurveTo(-r * .02, r * .56, r * .3, r * .36); g.stroke();
+    g.fillStyle = '#efe4c8'; g.beginPath(); for (let i = 0; i < 9; i++) { const an = i / 9 * TAU, r2 = r * (i % 2 ? .14 : .24); g.lineTo(r * .32 + Math.cos(an) * r2, -r * .1 + Math.sin(an) * r2); } g.closePath(); g.fill();
+    g.save(); g.translate(r * .32, -r * .1); g.rotate(-.75);
+    const o = g.createLinearGradient(0, -r * .1, 0, r * .1); o.addColorStop(0, '#c9c3b6'); o.addColorStop(1, '#6d675c');
+    g.fillStyle = o; g.beginPath(); g.moveTo(-r * .02, -r * .1); g.lineTo(r * .42, -r * .1); g.lineTo(r * .5, 0); g.lineTo(r * .42, r * .1); g.lineTo(-r * .02, r * .1); g.quadraticCurveTo(-r * .14, 0, -r * .02, -r * .1); g.fill();
+    g.restore();
+    const om = g.createLinearGradient(-r, 0, r, 0); om.addColorStop(0, 'rgba(30,20,10,.35)'); om.addColorStop(.45, 'rgba(30,20,10,0)');
+    g.fillStyle = om; cercle(0, 0, r);
+    g.restore();
+  }
+  function tourEiffel(x, y, s, col, t) {
+    g.save(); g.translate(x, y); g.scale(s, s); g.fillStyle = col;
+    g.beginPath(); g.moveTo(-34, 0); g.quadraticCurveTo(-16, -44, -7, -100); g.lineTo(-3, -146); g.lineTo(0, -168); g.lineTo(3, -146); g.lineTo(7, -100); g.quadraticCurveTo(16, -44, 34, 0);
+    g.lineTo(21, 0); g.quadraticCurveTo(0, -30, -21, 0); g.closePath(); g.fill();
+    g.fillRect(-19, -47, 38, 4); g.fillRect(-9, -103, 18, 3);
+    const b = calme ? .7 : .5 + .5 * Math.sin(t * 1.3);
+    g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(242,220,170,${.35 * b})`; cercle(0, -168, 6); g.fillStyle = `rgba(255,240,210,${.8 * b})`; cercle(0, -168, 1.6);
+    g.restore();
+  }
+  function toits(x, y, s, col, seed) {
+    g.save(); g.translate(x, y); g.scale(s, s); const r = alea(seed);
+    g.fillStyle = col; g.beginPath(); g.moveTo(-64, 0); let cx = -64; const fen = [];
+    while (cx < 64) { const w = 12 + r() * 14, h = 22 + r() * 30; g.lineTo(cx, -h); g.lineTo(cx + 3, -h - 9); g.lineTo(cx + w - 3, -h - 9); g.lineTo(cx + w, -h); if (r() < .5) fen.push([cx + 4 + r() * (w - 8), -h + 6 + r() * (h - 14)]); cx += w; }
+    g.lineTo(64, 0); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(230,185,74,.6)'; fen.forEach(([fx, fy]) => g.fillRect(fx, fy, 2.2, 3));
+    g.restore();
+  }
+  function chapiteau(x, y, s, t) {
+    g.save(); g.translate(x, y); g.scale(s, s);
+    for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#4f241a' : '#5d4e3a'; g.fillRect(-40 + i * 10, -30, 10, 30); }
+    g.fillStyle = '#0d0806'; g.beginPath(); g.moveTo(-9, 0); g.lineTo(-9, -15); g.quadraticCurveTo(0, -26, 9, -15); g.lineTo(9, 0); g.fill();
+    const toit = () => { g.beginPath(); g.moveTo(-46, -28); g.lineTo(0, -78); g.lineTo(46, -28); for (let i = 0; i < 8; i++) { const x0 = 46 - i * 11.5; g.quadraticCurveTo(x0 - 5.75, -19, x0 - 11.5, -28); } g.closePath(); };
+    toit(); g.fillStyle = '#5d4e3a'; g.fill();
+    g.save(); toit(); g.clip(); g.fillStyle = '#4f241a'; for (let i = 0; i < 8; i += 2) { poly([[0, -78], [-46 + i * 11.5, -18], [-46 + (i + 1) * 11.5, -18]]); g.fill(); } g.restore();
+    g.strokeStyle = '#2b1c14'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, -78); g.lineTo(0, -96); g.stroke();
+    const w = calme ? 0 : Math.sin(t * 4) * 2.5;
+    g.fillStyle = '#8a5234'; g.beginPath(); g.moveTo(0, -96); g.quadraticCurveTo(8, -94 + w, 17, -92 + w * 1.4); g.quadraticCurveTo(8, -88 + w, 0, -87); g.closePath(); g.fill();
+    for (let i = 0; i <= 8; i++) lampion(-46 + i * 11.5, -25, 2, i, t);
+    g.restore();
+  }
+  function becDeGaz(x, y, s, t) {
+    g.save(); g.translate(x, y); g.scale(s, s);
+    const b = calme ? .9 : .8 + .2 * Math.sin(t * 5.3) * Math.sin(t * 2.2);
+    g.globalCompositeOperation = 'lighter';
+    const h = g.createRadialGradient(0, -128, 2, 0, -128, 48); h.addColorStop(0, `rgba(242,205,140,${.38 * b})`); h.addColorStop(1, 'rgba(242,205,140,0)');
+    g.fillStyle = h; cercle(0, -128, 48); g.globalCompositeOperation = 'source-over';
+    g.fillStyle = '#0b0806'; g.fillRect(-2.5, -120, 5, 120); g.fillRect(-7, -8, 14, 8);
+    poly([[-7, -122], [7, -122], [9, -136], [-9, -136]]); g.fill(); poly([[-10, -136], [10, -136], [0, -146]]); g.fill();
+    g.fillStyle = `rgba(252,226,170,${b})`; g.fillRect(-4.5, -134, 9, 10);
+    g.restore();
+  }
+  function nacelle(px, py, nac, sc, t, grand) {
+    const e = nac.etat;
+    g.save(); g.translate(px, py); g.scale(sc, sc);
+    g.strokeStyle = '#1b140e'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 3.5); g.stroke();
+    g.fillStyle = '#1b140e'; poly([[-6.5, 3.5], [6.5, 3.5], [5.2, 5.6], [-5.2, 5.6]]); g.fill();
+    if (e === 'vide' || e === 'verrou') {
+      g.setLineDash([1.5, 1.6]); g.strokeStyle = `rgba(242,232,213,${e === 'vide' ? .2 : .38})`; g.lineWidth = .8; rr(-5.6, 5.4, 11.2, 9, 1.5); g.stroke(); g.setLineDash([]);
+    } else {
+      const ici = e === 'encours', av = e === 'avance';
+      g.fillStyle = ici ? '#7a2a1c' : av ? '#3d3022' : '#6d4a22'; rr(-5.6, 5.4, 11.2, 9, 1.5); g.fill();
+      g.fillStyle = ici ? '#FF8A78' : av ? 'rgba(252,222,150,.35)' : 'rgba(252,222,150,.95)'; g.fillRect(-4, 7, 3.4, 4); g.fillRect(.6, 7, 3.4, 4);
+      g.globalCompositeOperation = 'lighter'; g.fillStyle = ici ? `rgba(255,107,87,${calme ? .3 : .22 + .12 * Math.sin(t * 3)})` : av ? 'rgba(246,210,130,.06)' : 'rgba(246,210,130,.2)'; cercle(0, 10, 10); g.globalCompositeOperation = 'source-over';
+      if (MEDAILLES[e] && grand) medaille(e, 0, 9.8, 4.4, t, false);
+    }
+    if (grand) {
+      g.textAlign = 'center'; g.font = `700 5.4px ${F_CORPS}`;
+      g.fillStyle = e === 'encours' ? '#FF8A78' : e === 'vide' ? 'rgba(242,232,213,.3)' : e === 'verrou' || e === 'avance' ? 'rgba(242,232,213,.55)' : '#F2E8D5';
+      g.fillText(String(nac.annee), 0, 21.5);
+    }
+    g.restore();
+  }
+  function roue(x, y, R, angle, nacs, t, o = {}) {
+    const n = nacs.length, pos = [];
+    g.save(); g.translate(x, y);
+    g.strokeStyle = '#1b140e'; g.lineWidth = R * .065; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(-R * .62, R * 1.48); g.moveTo(0, 0); g.lineTo(R * .62, R * 1.48); g.stroke();
+    g.lineWidth = R * .025; g.beginPath(); g.moveTo(-R * .42, R); g.lineTo(R * .42, R); g.stroke(); g.lineCap = 'butt';
+    if (o.complet) { const h = g.createRadialGradient(0, 0, R * .4, 0, 0, R * 1.8); h.addColorStop(0, 'rgba(246,217,138,.2)'); h.addColorStop(1, 'rgba(246,217,138,0)'); g.fillStyle = h; cercle(0, 0, R * 1.8); }
+    g.strokeStyle = '#4a3622'; g.lineWidth = Math.max(1.5, R * .045); g.beginPath(); g.arc(0, 0, R, 0, TAU); g.stroke();
+    g.lineWidth = Math.max(.7, R * .015); g.beginPath(); g.arc(0, 0, R * .9, 0, TAU); g.stroke();
+    g.beginPath(); for (let i = 0; i < n * 2; i++) { const b = angle + i * TAU / (n * 2); g.moveTo(0, 0); g.lineTo(Math.cos(b) * R, Math.sin(b) * R); } g.stroke();
+    const nb = n * 3, lit = Math.round((o.lit == null ? 1 : o.lit) * nb);
+    for (let i = 0; i < nb; i++) {
+      const b = -Math.PI / 2 + (i + .5) * TAU / nb + (o.fixe ? 0 : angle), on = o.chase ? (calme || (i + Math.floor(t * 7)) % 4 !== 0) : i < lit;
+      lampion(Math.cos(b) * R, Math.sin(b) * R, Math.max(1.2, R * .026), i, t, on);
+    }
+    for (let i = 0; i < n; i++) {
+      const b = angle + i * TAU / n - Math.PI / 2, px = Math.cos(b) * R, py = Math.sin(b) * R, sc = o.grand ? 1.9 : 1;
+      nacelle(px, py, nacs[i], sc, t, o.grand);
+      pos.push({ x: x + px, y: y + py + 10 * sc, i });
+    }
+    g.fillStyle = '#1b140e'; cercle(0, 0, R * .08); g.fillStyle = '#6B4712'; cercle(0, 0, R * .035);
+    g.restore(); return pos;
+  }
+  function plaque(x, y, texte, fond, encre) {
+    g.font = `600 11.5px ${F_TITRE}`; const w = Math.max(40, g.measureText(texte).width + 16);
+    g.fillStyle = 'rgba(0,0,0,.35)'; rr(x - w / 2 + 1, y + 2, w, 18, 9); g.fill();
+    g.fillStyle = fond; rr(x - w / 2, y, w, 18, 9); g.fill();
+    g.fillStyle = encre; g.textAlign = 'center'; g.fillText(texte, x, y + 13);
+  }
+  function caseBobine(x, y, sc, etat, progres, t) {
+    const rx = 31, ry = 19, ep = 11;
+    g.save(); g.translate(x, y); g.scale(sc, sc);
+    if (etat === 'encours' && !calme) { const s = 1 + .02 * Math.sin(t * 2.1); g.scale(s, s); }
+    const om = g.createRadialGradient(4, ep + 6, 4, 4, ep + 6, rx + 12); om.addColorStop(0, 'rgba(0,0,0,.55)'); om.addColorStop(1, 'rgba(0,0,0,0)');
+    g.save(); g.scale(1, .5); g.fillStyle = om; cercle(4, (ep + 6) * 2, rx + 12); g.restore();
+    let d0, d1, f0, f1;
+    if (etat === 'encours') { d0 = '#FBF4E6'; d1 = '#CDBB97'; f0 = '#7d6a4b'; f1 = '#3b2f1f'; }
+    else { d0 = '#F1DDB4'; d1 = '#A9864F'; f0 = '#6d5332'; f1 = '#2e2213'; }
+    const fl = g.createLinearGradient(-rx, 0, rx, 0); fl.addColorStop(0, f1); fl.addColorStop(.35, f0); fl.addColorStop(1, f1);
+    g.fillStyle = fl; g.beginPath(); g.ellipse(0, ep, rx, ry, 0, 0, Math.PI); g.lineTo(-rx, 0); g.ellipse(0, 0, rx, ry, 0, Math.PI, 0, true); g.closePath(); g.fill();
+    const ds = g.createRadialGradient(-rx * .35, -ry * .5, 2, 0, 0, rx); ds.addColorStop(0, d0); ds.addColorStop(1, d1);
+    g.fillStyle = ds; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, TAU); g.fill();
+    g.save(); g.scale(1, ry / rx);
+    g.strokeStyle = 'rgba(40,28,14,.32)'; g.lineWidth = 1.2; g.beginPath(); g.arc(0, 0, rx * .8, 0, TAU); g.stroke();
+    g.fillStyle = 'rgba(40,28,14,.26)'; for (let j = 0; j < 6; j++) { const an = j / 6 * TAU + .3 + (calme ? 0 : t * .2); cercle(Math.cos(an) * rx * .47, Math.sin(an) * rx * .47, rx * .15); }
+    g.fillStyle = 'rgba(40,28,14,.4)'; cercle(0, 0, rx * .12);
+    g.restore();
+    g.strokeStyle = 'rgba(255,250,235,.45)'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(0, 0, rx - .6, ry - .6, 0, Math.PI * 1.08, Math.PI * 1.9); g.stroke();
+    if (etat === 'encours') {
+      const R1 = rx + 9, R2 = ry + 7;
+      g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 6; g.beginPath(); g.ellipse(0, 1, R1, R2, 0, 0, TAU); g.stroke();
+      for (let j = 0; j < 5; j++) { const a0 = -Math.PI / 2 + j * TAU / 5 + .09, a1 = a0 + TAU / 5 - .18; g.strokeStyle = j < progres ? '#FF6B57' : 'rgba(242,232,213,.2)'; g.lineWidth = 4; g.lineCap = 'round'; g.beginPath(); g.ellipse(0, 1, R1, R2, 0, a0, a1); g.stroke(); }
+      g.lineCap = 'butt';
+    }
+    plaque(0, ep + ry * .3 + 12, etat === 'encours' ? '1898' : String(caseBobine.annee || ''), etat === 'encours' ? '#FF6B57' : '#F2E8D5', '#151009');
+    g.restore();
+  }
+  function barre(x, y, w, h) {
+    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.fillStyle = '#F2E8D5'; g.fillRect(x, y, w, h); g.fillStyle = '#151009';
+    const p = h * 1.4; for (let i = -1; i < w / p + 1; i++) { const bx = x + i * p; poly([[bx, y + h], [bx + p / 2, y + h], [bx + p, y], [bx + p / 2, y]]); g.fill(); }
+    g.restore(); g.strokeStyle = 'rgba(0,0,0,.7)'; g.lineWidth = .8; g.strokeRect(x, y, w, h);
+  }
+  function clap(x, y, angle, sc) {
+    g.save(); g.translate(x, y); g.fillStyle = 'rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(2, 2, 17, 5, 0, 0, TAU); g.fill();
+    g.scale(sc, sc);
+    g.fillStyle = '#231e19'; rr(-15, -24, 30, 24, 3); g.fill(); g.strokeStyle = 'rgba(242,232,213,.55)'; g.lineWidth = 1; g.stroke();
+    g.fillStyle = 'rgba(242,232,213,.55)'; g.fillRect(-11, -18, 22, 1.2); g.fillRect(-11, -12, 13, 1.2); g.fillRect(-11, -6, 18, 1.2);
+    barre(-15, -30, 30, 6); g.save(); g.translate(-15, -30); g.rotate(-angle); barre(0, -6, 31, 6); g.restore();
+    g.restore();
+  }
+  const POUSSIERE = Array.from({ length: 26 }, (_, i) => { const r = alea(i * 31 + 9); return { u: .15 + r() * .85, v: r() * 2 - 1, p: r() * TAU, s: .3 + r() * .8, r: .6 + r() * 1.3 }; });
+  function faisceau(sx, sy, ax, ay, larg, t, force = 1) {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const re = calme ? 1 : 1 + .06 * Math.sin(t * 1.1);
+    const fx = g.createLinearGradient(sx, sy, ax, ay); fx.addColorStop(0, `rgba(255,236,200,${.2 * re * force})`); fx.addColorStop(1, `rgba(255,236,200,${.06 * re * force})`);
+    g.fillStyle = fx; poly([[sx - 4, sy], [sx + 4, sy], [ax + larg, ay + 10], [ax - larg, ay + 4]]); g.fill();
+    g.save(); g.translate(ax, ay + 6); g.scale(1, .42);
+    const fl = g.createRadialGradient(0, 0, 4, 0, 0, larg * 1.5); fl.addColorStop(0, `rgba(255,230,190,${.28 * re * force})`); fl.addColorStop(1, 'rgba(255,230,190,0)');
+    g.fillStyle = fl; cercle(0, 0, larg * 1.5); g.restore();
+    for (const d of POUSSIERE) {
+      const u = clamp(d.u + (calme ? 0 : .05 * Math.sin(t * d.s + d.p)), 0, 1), v = d.v + (calme ? 0 : .12 * Math.sin(t * d.s * 1.3 + d.p * 2));
+      const a = (calme ? .5 : .35 + .35 * Math.sin(t * 2.2 * d.s + d.p)) * (1 - Math.abs(v) * .6) * force;
+      g.fillStyle = `rgba(255,242,218,${Math.max(0, a)})`; cercle(lerp(sx, ax + v * larg, u), lerp(sy, ay + 8, u), d.r);
+    }
+    g.restore();
+  }
+  function artifice(w, h, t) {
+    if (calme) return;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let k = 0; k < 3; k++) {
+      const per = 3.1, tt = t + k * 1.03, ph = (tt % per) / per; if (ph > .55) continue;
+      const cyc = Math.floor(tt / per), x = w * (.2 + .6 * hash(cyc * 3 + k)), y = h * (.1 + .22 * hash(cyc * 7 + k)), r = ph / .55;
+      g.fillStyle = ['#F6D98A', '#FF8A78', '#F2E8D5'][k];
+      for (let i = 0; i < 24; i++) { const a = i / 24 * TAU, d = ease(r) * 38; g.globalAlpha = (1 - r) * .9; cercle(x + Math.cos(a) * d, y + Math.sin(a) * d + r * r * 14, 1.4); }
+    }
+    g.restore();
+  }
+  function tonalite(w, h, coul, a) { g.save(); g.globalCompositeOperation = 'color'; g.globalAlpha = a; g.fillStyle = coul; g.fillRect(0, 0, w, h); g.restore(); }
+  function vignette(w, h, fin) {
+    const v = g.createRadialGradient(w / 2, h * .45, h * .3, w / 2, h * .45, Math.max(w, h) * .8); v.addColorStop(0, 'rgba(6,4,3,0)'); v.addColorStop(1, 'rgba(6,4,3,.62)');
+    g.fillStyle = v; g.fillRect(0, 0, w, h);
+    if (fin) { const f = g.createLinearGradient(0, h - 44, 0, h); f.addColorStop(0, fin + '00'); f.addColorStop(1, fin); g.fillStyle = f; g.fillRect(0, h - 44, w, 44); }
+  }
+  const NACS_CARTE = [{ etat: 'palme', annee: 1895 }, { etat: 'lion', annee: 1896 }, { etat: 'ours', annee: 1897 }, { etat: 'encours', annee: 1898 }, { etat: 'verrou', annee: 1899 }];
+
+  function scene1890(w, h, s, t, D) {
+    const passee = D.statut === 'passee';
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#0e0906'); gr.addColorStop(.55, '#241a11'); gr.addColorStop(1, '#3a2b1b');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.save(); g.translate(0, s * .75);
+    g.fillStyle = '#F2E8D5';
+    for (const e of ETOILES) { g.globalAlpha = calme ? .5 : .3 + .3 * Math.sin(t * e.v + e.p); g.fillRect(e.x * w, e.y * h * .7, e.r, e.r); }
+    g.globalAlpha = 1; lune(w * .8, 64, 28, t);
+    if (passee) artifice(w, h, t);
+    g.restore();
+    g.save(); g.translate(0, s * .55); tourEiffel(w * .1, h - 54, .6, '#3d3023', t); toits(w * .92, h - 58, .62, '#3a2e21', 11); g.restore();
+    g.save(); g.translate(0, s * .38);
+    roue(w * .24, h - 132, 42, calme ? .3 : t * .12, NACS_CARTE, t, { lit: passee ? 1 : .8, chase: passee, fixe: true });
+    chapiteau(w * .8, h - 60, .74, t); g.restore();
+    const sol = g.createLinearGradient(0, h - 90, 0, h); sol.addColorStop(0, 'rgba(42,33,24,0)'); sol.addColorStop(.5, 'rgba(42,33,24,.92)'); sol.addColorStop(1, '#2A2118');
+    g.fillStyle = sol; g.fillRect(0, h - 90, w, 90);
+    g.save(); g.translate(0, s * .2); guirlande(-10, 22, w + 10, 12, 30, 11, t); g.restore();
+    g.save(); g.translate(0, -s * .12); becDeGaz(14, h + 16, .8, t); becDeGaz(w - 14, h + 16, .8, t); g.restore();
+    tonalite(w, h, '#96683a', .38);
+    const cx = w / 2, cy = h - 96;
+    faisceau(cx + 150, -40, cx, cy + 4, 56, t, .9);
+    caseBobine.annee = D.annee;
+    caseBobine(cx, cy, 1.45, passee ? 'passee' : 'encours', D.progres, t);
+    if (passee) medaille(D.recompense, cx, cy - 50 + (calme ? 0 : Math.sin(t * 1.6) * 3), 25, t, true);
+    else clap(cx + 70, cy + 10, calme ? .3 : .28 + .05 * Math.sin(t * 1.5), .9);
+    vignette(w, h, '#2A2118');
+  }
+
+  // ---------- Velours (pré-rendu une fois par taille) ----------
+  const VEL = new Map();
+  function velours(w, h, col = [90, 36, 25]) {
+    const cle = `${w}x${h}:${col}`; let c = VEL.get(cle); if (c) return c;
+    c = document.createElement('canvas'); c.width = Math.ceil(w * 2); c.height = Math.ceil(h * 2);
+    const x = c.getContext('2d'); x.scale(2, 2);
+    const pli = 17;
+    for (let px = -pli; px < w + pli; px += pli) {
+      const gr = x.createLinearGradient(px, 0, px + pli, 0);
+      gr.addColorStop(0, `rgb(${col.map((v) => v * .45 | 0)})`); gr.addColorStop(.45, `rgb(${col})`); gr.addColorStop(.6, `rgb(${col.map((v) => Math.min(255, v * 1.25) | 0)})`); gr.addColorStop(1, `rgb(${col.map((v) => v * .4 | 0)})`);
+      x.fillStyle = gr; x.fillRect(px, 0, pli + .5, h);
+    }
+    const ombre = x.createLinearGradient(0, 0, 0, h); ombre.addColorStop(0, 'rgba(0,0,0,.55)'); ombre.addColorStop(.3, 'rgba(0,0,0,0)'); ombre.addColorStop(1, 'rgba(0,0,0,.5)');
+    x.fillStyle = ombre; x.fillRect(0, 0, w, h);
+    VEL.set(cle, c); return c;
+  }
+  function lambrequin(w, y, t) {
+    g.fillStyle = '#4a1d14'; g.fillRect(0, y, w, 20);
+    g.beginPath(); g.moveTo(0, y + 20); for (let x = 0; x <= w; x += 26) g.quadraticCurveTo(x + 13, y + 34, x + 26, y + 20); g.lineTo(w, y); g.lineTo(0, y); g.fill();
+    g.strokeStyle = '#c9a050'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(0, y + 20); for (let x = 0; x <= w; x += 26) g.quadraticCurveTo(x + 13, y + 34, x + 26, y + 20); g.stroke();
+    g.fillStyle = '#E6B94A'; for (let x = 13; x <= w; x += 26) { const sw = calme ? 0 : Math.sin(t * 1.4 + x) * 1; g.fillRect(x - 1 + sw, y + 27, 2, 7); cercle(x + sw, y + 35, 2); }
+  }
+
+  // ---------- Le podium : une estrade de cérémonie ----------
+  const MARCHES = [{ p: 2, cx: .22, top: 176, lw: 94, pw: 50 }, { p: 1, cx: .5, top: 150, lw: 106, pw: 58 }, { p: 3, cx: .78, top: 194, lw: 94, pw: 46 }];
+  const COUL_PLACE = { 1: ['#FBE3A0', '#B8862B'], 2: ['#F4F1EA', '#9e9a90'], 3: ['#EBB684', '#8A5530'] };
+  function podiumDessin(w, h, t, podium) {
+    const yF = 238;
+    g.drawImage(velours(w, yF), 0, 0, w, yF);
+    lambrequin(w, 0, t);
+    // plancher
+    const pl = g.createLinearGradient(0, yF, 0, h); pl.addColorStop(0, '#3a2818'); pl.addColorStop(1, '#140d07'); g.fillStyle = pl; g.fillRect(0, yF, w, h - yF);
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1; for (let i = -6; i <= 6; i++) { g.beginPath(); g.moveTo(w / 2 + i * 18, yF); g.lineTo(w / 2 + i * 64, h); g.stroke(); }
+    tonalite(w, h, '#96683a', .3);
+    // les deux faisceaux qui se croisent sur la première marche
+    const osc = calme ? 0 : Math.sin(t * .5) * 14;
+    faisceau(-10, -10, w * .5 + osc, 118, 46, t, .8);
+    faisceau(w + 10, -10, w * .5 - osc, 118, 46, t, .8);
+    for (const M of MARCHES) {
+      const cx = w * M.cx, x0 = cx - M.lw / 2, top = M.top, id = podium[M.p - 1];
+      // dessus
+      g.fillStyle = '#7a5a36'; poly([[x0, top], [x0 + M.lw, top], [x0 + M.lw - 7, top - 9], [x0 + 7, top - 9]]); g.fill();
+      g.strokeStyle = '#E6B94A'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0, top); g.lineTo(x0 + M.lw, top); g.stroke();
+      // face
+      const fa = g.createLinearGradient(0, top, 0, yF); fa.addColorStop(0, '#4d3722'); fa.addColorStop(1, '#1f150c'); g.fillStyle = fa; g.fillRect(x0, top, M.lw, yF - top);
+      g.strokeStyle = 'rgba(230,185,74,.55)'; g.strokeRect(x0 + 5.5, top + 5.5, M.lw - 11, yF - top - 11);
+      // chiffre gravé et lauriers
+      g.textAlign = 'center'; g.font = `${M.p === 1 ? 38 : 30}px ${F_AFF}`;
+      const ny = top + (yF - top) / 2 + (M.p === 1 ? 14 : 11);
+      g.fillStyle = 'rgba(0,0,0,.5)'; g.fillText(M.p, cx + 1, ny + 2);
+      const or = g.createLinearGradient(0, ny - 30, 0, ny); or.addColorStop(0, '#FBE3A0'); or.addColorStop(1, '#9a6a1e'); g.fillStyle = or; g.fillText(M.p, cx, ny);
+      g.strokeStyle = 'rgba(230,185,74,.6)'; g.lineWidth = 1.2;
+      for (const sx of [-1, 1]) { g.beginPath(); g.arc(cx, ny - 12, 22, sx < 0 ? Math.PI * .6 : Math.PI * .1, sx < 0 ? Math.PI * .9 : Math.PI * .4); g.stroke(); for (let k = 0; k < 3; k++) { const a = (sx < 0 ? Math.PI * .65 : Math.PI * .35) + sx * k * .1 * -1; g.save(); g.translate(cx + Math.cos(a) * 22, ny - 12 + Math.sin(a) * 22); g.rotate(a + sx * .8); g.fillStyle = 'rgba(230,185,74,.6)'; g.beginPath(); g.ellipse(0, 0, 4, 1.6, 0, 0, TAU); g.fill(); g.restore(); } }
+      // l'affiche posée sur la marche
+      const pw = M.pw, ph = pw * 1.48, px = cx - pw / 2, py = top - 6 - ph;
+      if (id) {
+        g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(px + 4, py + 6, pw, ph);
+        g.drawImage(affiche(id, 2), px, py, pw, ph);
+        g.strokeStyle = '#E6B94A'; g.lineWidth = M.p === 1 ? 2 : 1.2; g.strokeRect(px - .5, py - .5, pw + 1, ph + 1);
+        const sw = calme ? 0 : Math.sin(t * 1.8 + M.p) * .12, [c0, c1] = COUL_PLACE[M.p];
+        g.save(); g.translate(px + pw - 2, py + 4); g.rotate(sw);
+        g.fillStyle = '#6E2A1E'; poly([[-3, -8], [3, -8], [2, 2], [-2, 2]]); g.fill();
+        const md = g.createRadialGradient(-2, 3, 1, 0, 6, 9); md.addColorStop(0, c0); md.addColorStop(1, c1); g.fillStyle = md; cercle(0, 7, 8);
+        g.fillStyle = '#3a260c'; g.font = `700 9px ${F_TITRE}`; g.fillText(M.p, 0, 10.5); g.restore();
+      } else {
+        g.setLineDash([4, 4]); g.strokeStyle = 'rgba(242,232,213,.35)'; g.lineWidth = 1.2; g.strokeRect(px, py, pw, ph); g.setLineDash([]);
+        g.fillStyle = 'rgba(242,232,213,.08)'; g.fillRect(px, py, pw, ph);
+        g.fillStyle = 'rgba(242,232,213,.5)'; g.font = `600 22px ${F_TITRE}`; g.fillText('?', cx, py + ph / 2 + 4);
+        g.font = `italic 500 11px ${F_TITRE}`; g.fillText('à venir', cx, py + ph / 2 + 22);
+      }
+      // titre sous l'estrade
+      g.font = `600 11.5px ${F_TITRE}`; g.fillStyle = id ? '#F2E8D5' : 'rgba(242,232,213,.4)';
+      const ls = id ? lignes(FILMS[id][0], M.lw - 4).slice(0, 2) : ['Marche libre'];
+      ls.forEach((l, k) => g.fillText(k === 1 && lignes(FILMS[id][0], M.lw - 4).length > 2 ? l + '…' : l, cx, 262 + k * 15));
+    }
+    // éclat sur la première marche
+    const pic = calme ? 1 : .8 + .2 * Math.sin(t * 2);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(255,236,190,${.9 * pic})`; etoile4(w * .5 + 28, 70, 5 * pic); g.restore();
+    const v = g.createLinearGradient(0, 0, w, 0); v.addColorStop(0, 'rgba(0,0,0,.45)'); v.addColorStop(.15, 'rgba(0,0,0,0)'); v.addColorStop(.85, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.45)');
+    g.fillStyle = v; g.fillRect(0, 0, w, h);
+  }
+
+  // ---------- La marquise d'une salle ----------
+  function marquise(x, y, w, h, nom, o, t) {
+    // o : part (0-1), complet, rideau (0 à 2), tampon (échelle, 0 = rien), perfs (0-8), flicker, palette
+    const P = o.palette || { panneau: ['#f7ecd4', '#e0cda4'], encre: '#23180f', cadre: '#b8862b', amp: '#F6D98A' };
+    g.save();
+    g.fillStyle = 'rgba(0,0,0,.45)'; rr(x + 3, y + 5, w, h, 8); g.fill();
+    const cad = g.createLinearGradient(0, y, 0, y + h); cad.addColorStop(0, '#2e2014'); cad.addColorStop(1, '#140d07'); g.fillStyle = cad; rr(x, y, w, h, 8); g.fill();
+    g.strokeStyle = o.complet ? '#E6B94A' : P.cadre; g.lineWidth = 1.5; g.stroke();
+    // ampoules sur le pourtour
+    const ins = 7, pas = 12.5, pts = [];
+    const L = w - 2 * ins, Hh = h - 2 * ins, nbx = Math.floor(L / pas), nby = Math.floor(Hh / pas);
+    for (let i = 0; i <= nbx; i++) pts.push([x + ins + i * L / nbx, y + ins]);
+    for (let i = 1; i <= nby; i++) pts.push([x + w - ins, y + ins + i * Hh / nby]);
+    for (let i = nbx - 1; i >= 0; i--) pts.push([x + ins + i * L / nbx, y + h - ins]);
+    for (let i = nby - 1; i >= 1; i--) pts.push([x + ins, y + ins + i * Hh / nby]);
+    const n = pts.length, allumees = Math.round((o.part || 0) * n);
+    pts.forEach(([bx, by], i) => {
+      let on;
+      if (o.flicker) on = calme ? i % 3 === 0 : hash(i * 7.1 + Math.floor(t * 5)) > .62;
+      else if (o.complet) on = calme || (i + Math.floor(t * 9)) % 3 !== 0;
+      else on = i < allumees;
+      if (on) { g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(246,217,138,.28)'; cercle(bx, by, 4.2); g.globalCompositeOperation = 'source-over'; g.fillStyle = P.amp; cercle(bx, by, 1.8); }
+      else { g.fillStyle = '#3a3024'; cercle(bx, by, 1.7); }
+    });
+    // panneau à lettres
+    const px = x + 15, py = y + 15, pw = w - 30, ph = h - 30, lum = o.complet ? 1 : .5 + .5 * (o.part || 0);
+    const pn = g.createLinearGradient(0, py, 0, py + ph); pn.addColorStop(0, P.panneau[0]); pn.addColorStop(1, P.panneau[1]);
+    g.fillStyle = pn; g.fillRect(px, py, pw, ph);
+    if (lum < 1) { g.fillStyle = `rgba(20,14,8,${(1 - lum) * .9})`; g.fillRect(px, py, pw, ph); }
+    if (o.complet) { g.save(); g.globalCompositeOperation = 'lighter'; const hl = g.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, pw * .6); hl.addColorStop(0, 'rgba(255,236,190,.2)'); hl.addColorStop(1, 'rgba(255,236,190,0)'); g.fillStyle = hl; g.fillRect(x - 20, y - 20, w + 40, h + 40); g.restore(); }
+    g.fillStyle = P.encre; g.textAlign = 'center'; g.globalAlpha = .55 + .45 * lum;
+    g.font = `800 7px ${F_CORPS}`; g.fillText(o.sur || 'SALLE', px + pw / 2, py + 11);
+    const marge = o.tampon > 0 ? 88 : 0;
+    texteAjuste(nom.toUpperCase(), pw - 20 - marge, 20, F_AFF); g.fillText(nom.toUpperCase(), px + (pw - marge) / 2, py + ph - 9);
+    g.globalAlpha = 1;
+    // le rideau qui se referme
+    if (o.rideau > 0) {
+      const f = Math.min(1, o.rideau), a = o.rideau > 1 ? 1 - (o.rideau - 1) : 1;
+      g.save(); g.globalAlpha = a; g.beginPath(); g.rect(px, py, pw, ph); g.clip();
+      const vl = velours(pw / 2, ph, [120, 40, 28]);
+      g.drawImage(vl, px - pw / 2 * (1 - f), py, pw / 2, ph); g.drawImage(vl, px + pw - pw / 2 * f, py, pw / 2, ph);
+      g.restore();
+    }
+    // le tampon « COMPLET »
+    if (o.tampon > 0) {
+      g.save(); g.translate(px + pw - 44, py + ph / 2 + 2); g.rotate(-.14); g.scale(o.tampon, o.tampon);
+      g.globalAlpha = .9; g.strokeStyle = '#a8382a'; g.lineWidth = 2.2; g.strokeRect(-38, -12, 76, 24); g.lineWidth = .8; g.strokeRect(-34.5, -8.5, 69, 17);
+      g.fillStyle = '#a8382a'; g.font = `13px ${F_AFF}`; g.textAlign = 'center'; g.fillText('COMPLET', 0, 5);
+      g.restore();
+    }
+    // perforations
+    if (o.perfs != null) {
+      const yP = y + h + 8, nbP = 8;
+      for (let i = 0; i < nbP; i++) {
+        const cx = x + w * (i + .5) / nbP, on = i < o.perfs;
+        if (on) { g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(246,217,138,.3)'; g.fillRect(cx - 8, yP - 4, 16, 13); g.globalCompositeOperation = 'source-over'; }
+        g.fillStyle = on ? '#F6D98A' : 'rgba(242,232,213,.1)'; rr(cx - 5, yP, 10, 6, 1.5); g.fill();
+      }
+    }
+    g.restore();
+  }
+
+  // ---------- Décor de la féerie (1900) ----------
+  function sceneFeerie(w, h, s, t) {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#07080d'); gr.addColorStop(.6, '#15161d'); gr.addColorStop(1, '#23232d'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.save(); g.translate(0, s * .75);
+    for (let i = 0; i < ETOILES.length; i++) { const e = ETOILES[i]; g.globalAlpha = calme ? .45 : .25 + .3 * Math.sin(t * e.v + e.p); g.fillStyle = '#E7D8A8'; g.fillRect(e.x * w, e.y * h * .6, e.r, e.r); }
+    g.globalAlpha = 1;
+    // les étoiles peintes de Méliès, qui scintillent
+    [[.14, 48, 11], [.42, 30, 8], [.62, 70, 7]].forEach(([u, y, r], i) => {
+      const p = calme ? 1 : .75 + .25 * Math.sin(t * 1.7 + i * 2);
+      g.save(); g.translate(w * u, y); g.rotate(calme ? 0 : Math.sin(t * .6 + i) * .1);
+      g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(231,216,168,${.18 * p})`; cercle(0, 0, r * 2.2); g.globalCompositeOperation = 'source-over';
+      g.fillStyle = '#d9cfa8'; g.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rr2 = k % 2 ? r * .45 : r; g.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } g.closePath(); g.fill();
+      g.fillStyle = 'rgba(60,50,30,.55)'; cercle(-r * .18, -r * .1, r * .07); cercle(r * .18, -r * .1, r * .07); g.restore();
+    });
+    // croissant de lune avec son visage
+    const mx = w * .8, my = 70;
+    g.fillStyle = '#e8dfc4'; cercle(mx, my, 30); g.fillStyle = '#101118'; cercle(mx + 13, my - 6, 27);
+    g.strokeStyle = 'rgba(70,60,40,.8)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(mx - 20, my - 6); g.quadraticCurveTo(mx - 16, my - 9, mx - 13, my - 7); g.stroke();
+    g.beginPath(); g.moveTo(mx - 24, my + 8); g.quadraticCurveTo(mx - 18, my + 14, mx - 12, my + 12); g.stroke();
+    g.restore();
+    // le manège forain, éteint
+    g.save(); g.translate(w * .25, h - 64 + s * .38);
+    const rot = calme ? 0 : t * .6;
+    g.fillStyle = '#2d2a36'; g.beginPath(); g.ellipse(0, 22, 62, 10, 0, 0, TAU); g.fill();
+    for (let k = 0; k < 6; k++) {
+      const a = rot + k * TAU / 6, xx = Math.cos(a) * 50, z = Math.sin(a); if (z < -.2) continue;
+      const bob = calme ? 0 : Math.sin(t * 2 + k) * 4;
+      g.strokeStyle = '#8a8070'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(xx, -30); g.lineTo(xx, 20); g.stroke();
+      g.fillStyle = z > .5 ? '#cfc4a0' : '#8f876f'; g.beginPath(); g.ellipse(xx, 2 + bob, 9, 4.5, 0, 0, TAU); g.fill();
+      g.beginPath(); g.ellipse(xx + 8 * Math.sign(Math.cos(a + 1.6) || 1), -3 + bob, 3, 5, .5, 0, TAU); g.fill();
+    }
+    g.fillStyle = '#3a3646'; g.beginPath(); g.moveTo(-66, -30); g.lineTo(0, -68); g.lineTo(66, -30); g.closePath(); g.fill();
+    g.save(); g.beginPath(); g.moveTo(-66, -30); g.lineTo(0, -68); g.lineTo(66, -30); g.closePath(); g.clip(); g.fillStyle = '#6b5f4a'; for (let k = -6; k < 6; k += 2) { poly([[0, -68], [k * 11, -28], [(k + 1) * 11, -28]]); g.fill(); } g.restore();
+    for (let k = 0; k <= 12; k++) { const on = calme ? k % 3 === 0 : hash(k * 3.3 + Math.floor(t * 4)) > .7; g.fillStyle = on ? '#E7D8A8' : '#4a4658'; cercle(-66 + k * 11, -30, 1.8); if (on) { g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(231,216,168,.25)'; cercle(-66 + k * 11, -30, 5); g.globalCompositeOperation = 'source-over'; } }
+    g.strokeStyle = '#3a3646'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, -68); g.lineTo(0, -82); g.stroke();
+    g.fillStyle = '#7a3a4a'; poly([[0, -82], [14, -78], [0, -74]]); g.fill();
+    g.restore();
+    // les vagues de théâtre, découpées et animées
+    for (let r = 0; r < 3; r++) {
+      const yv = h - 52 + r * 16 + s * (.2 - r * .06), dx = calme ? 0 : Math.sin(t * .9 + r * 1.7) * 12;
+      g.fillStyle = ['#2c3446', '#232a39', '#1a1f2b'][r];
+      g.beginPath(); g.moveTo(-20, h + 10);
+      for (let x = -40; x <= w + 40; x += 34) { const xx = x + dx + (r % 2) * 17; g.lineTo(xx, yv); g.quadraticCurveTo(xx + 10, yv - 14, xx + 17, yv - 4); g.quadraticCurveTo(xx + 26, yv + 6, xx + 34, yv); }
+      g.lineTo(w + 20, h + 10); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(231,216,168,.18)'; g.lineWidth = 1; g.stroke();
+    }
+    // coulisses
+    g.fillStyle = '#0c0c11'; poly([[0, 0], [26, 0], [34, h], [0, h]]); g.fill(); poly([[w, 0], [w - 26, 0], [w - 34, h], [w, h]]); g.fill();
+    // voile : l'année n'est pas ouverte
+    g.fillStyle = 'rgba(28,28,34,.34)'; g.fillRect(0, 0, w, h);
+    if (!calme && hash(Math.floor(t * 9)) > .9) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, 0, w, h); }
+    tonalite(w, h, '#8f8a78', .3);
+    vignette(w, h, '#1C1C22');
+  }
+
+  // ---------- Le cadre de scène de la fiche d'un film ----------
+  function cadreScene(w, h, s, t, id) {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#0b0705'); gr.addColorStop(1, '#2A2118'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    const vl = velours(70, h, [96, 34, 24]);
+    g.drawImage(vl, -8 + s * .05, s * .3, 70, h); g.drawImage(vl, w - 62 - s * .05, s * .3, 70, h);
+    // plancher de scène
+    const yP = h - 70 + s * .1; const pl = g.createLinearGradient(0, yP, 0, h); pl.addColorStop(0, '#4a331f'); pl.addColorStop(1, '#1a110a'); g.fillStyle = pl; g.fillRect(0, yP, w, h - yP);
+    g.fillStyle = '#E6B94A'; g.fillRect(0, yP, w, 1.5);
+    tonalite(w, h, '#96683a', .32);
+    faisceau(w / 2, -30, w / 2, yP - 8, 90, t, .8);
+    // l'affiche : elle flotte et s'incline au défilement
+    const pw = 176, ph = pw * 1.48, ay = 62 + s * .42 + (calme ? 0 : Math.sin(t * .8) * 3), incl = clamp(s / 300, 0, .35);
+    g.save(); g.translate(w / 2, ay + ph / 2); g.transform(1, 0, calme ? 0 : Math.sin(t * .5) * .012, 1, 0, 0); g.scale(1 - incl * .15, 1 - incl * .3);
+    g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(-pw / 2 + 8, -ph / 2 + 12, pw, ph);
+    g.drawImage(affiche(id, 4), -pw / 2, -ph / 2, pw, ph);
+    g.strokeStyle = '#E6B94A'; g.lineWidth = 3; g.strokeRect(-pw / 2 - 2, -ph / 2 - 2, pw + 4, ph + 4);
+    g.strokeStyle = 'rgba(230,185,74,.4)'; g.lineWidth = 1; g.strokeRect(-pw / 2 - 7, -ph / 2 - 7, pw + 14, ph + 14);
+    const p = calme ? -1 : ((t * .18) % 1) * 3 - 1;
+    if (p > -1 && p < 1.3) { g.save(); g.beginPath(); g.rect(-pw / 2, -ph / 2, pw, ph); g.clip(); g.rotate(.5); g.fillStyle = 'rgba(255,250,235,.12)'; g.fillRect(p * pw - 20, -ph, 26, ph * 2); g.restore(); }
+    g.restore();
+    // l'arc doré et ses ampoules
+    const ya = 30 + s * .15;
+    g.save(); g.lineCap = 'round';
+    const arc = () => { g.beginPath(); g.moveTo(34, h); g.lineTo(34, ya + 90); g.quadraticCurveTo(34, ya, w / 2, ya); g.quadraticCurveTo(w - 34, ya, w - 34, ya + 90); g.lineTo(w - 34, h); };
+    g.strokeStyle = '#3a2410'; g.lineWidth = 16; arc(); g.stroke();
+    const ga = g.createLinearGradient(0, ya, 0, h); ga.addColorStop(0, '#F6D98A'); ga.addColorStop(.5, '#b8862b'); ga.addColorStop(1, '#6b4712');
+    g.strokeStyle = ga; g.lineWidth = 9; arc(); g.stroke();
+    g.strokeStyle = 'rgba(255,245,215,.5)'; g.lineWidth = 1.5; arc(); g.stroke();
+    for (let i = 0; i <= 20; i++) {
+      const u = i / 20, bx = lerp(34, w - 34, u), by = ya + 90 * Math.pow(Math.abs(u - .5) * 2, 2) - 2;
+      const on = calme || (i + Math.floor(t * 4)) % 5 !== 0;
+      if (on) { g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(246,217,138,.3)'; cercle(bx, by, 5); g.globalCompositeOperation = 'source-over'; }
+      g.fillStyle = on ? '#FFF1C8' : '#6b5a3a'; cercle(bx, by, 2.1);
+    }
+    g.restore();
+    vignette(w, h, '#2A2118');
+  }
+
+  // ---------- Célébrations : le grand clap, le tampon ----------
+  function clapGrand(x, y, S, angle, titre) {
+    g.save(); g.translate(x, y); g.scale(S, S);
+    g.fillStyle = '#231e19'; rr(-60, -40, 120, 82, 6); g.fill(); g.strokeStyle = 'rgba(242,232,213,.5)'; g.lineWidth = 1; g.stroke();
+    g.fillStyle = 'rgba(242,232,213,.85)'; g.textAlign = 'left';
+    g.font = `800 6px ${F_CORPS}`; g.fillText('JOURNAL · LE VOYAGE', -52, -28);
+    g.fillStyle = 'rgba(242,232,213,.35)'; g.fillRect(-52, -23, 104, .8); g.fillRect(-52, 8, 104, .8); g.fillRect(0, -23, .8, 31);
+    g.fillStyle = 'rgba(242,232,213,.6)'; g.font = `800 5px ${F_CORPS}`; g.fillText('ANNÉE', -50, -15); g.fillText('SALLE', 4, -15);
+    g.fillStyle = 'rgba(242,232,213,.92)'; g.font = `600 13px ${F_TITRE}`; g.fillText('1898', -50, 2); g.font = `600 8px ${F_TITRE}`; g.fillText('Les essentiels', 4, 0);
+    g.textAlign = 'center'; g.font = `italic 500 9.5px ${F_TITRE}`; g.fillText(titre, 0, 26);
+    barre(-60, -52, 120, 12); g.save(); g.translate(-60, -52); g.rotate(-angle); barre(0, -12, 122, 12); g.restore();
+    g.restore();
+  }
+  function tamponRond(x, y, R, l1, l2, l3, rot, sc, coul) {
+    g.save(); g.translate(x, y); g.rotate(rot); g.scale(sc, sc);
+    g.strokeStyle = coul; g.fillStyle = coul; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, R, 0, TAU); g.stroke();
+    g.lineWidth = 1.2; g.beginPath(); g.arc(0, 0, R - 6, 0, TAU); g.stroke();
+    g.textAlign = 'center'; g.font = `800 8px ${F_CORPS}`; g.fillText(l1, 0, -R * .42);
+    texteAjuste(l2, R * 1.6, 20, F_AFF); g.fillText(l2, 0, 6);
+    g.font = `italic 500 10px ${F_TITRE}`; g.fillText(l3, 0, R * .5);
+    g.restore();
+  }
+
+  // ---------- Un téléphone : une seule boucle d'images, coupée hors écran ----------
+  const TELS = [];
+  class Tel {
+    constructor(el) {
+      this.el = el; this.vue = $('.vue', el); this.peintres = []; this.raf = 0; this.vis = false; this.t = 0; this.dernier = 0;
+      new IntersectionObserver((e) => { this.vis = e[0].isIntersecting; if (this.vis) this.go(); }).observe(el);
+      if (this.vue) this.vue.addEventListener('scroll', () => this.go(), { passive: true });
+      TELS.push(this);
+    }
+    ajouter(f) { this.peintres.push(f); this.go(); }
+    go() { if (!this.raf && this.vis) this.raf = requestAnimationFrame((n) => this.boucle(n)); }
+    boucle(now) {
+      this.raf = 0;
+      const dt = this.dernier ? Math.min(.05, (now - this.dernier) / 1000) : .016; this.dernier = now;
+      if (!calme) this.t += dt;
+      for (const f of this.peintres) f(this.t, dt);
+      if (this.vis && !calme && !document.hidden) this.raf = requestAnimationFrame((n) => this.boucle(n)); else this.dernier = 0;
+    }
+    voit(el) { const r = el.getBoundingClientRect(), v = this.el.getBoundingClientRect(); return r.width > 0 && r.bottom > v.top - 10 && r.top < v.bottom + 10; }
+    toast(html, ms = 2800) {
+      let el = $('.toast', this.el);
+      if (!el) { el = document.createElement('div'); el.className = 'toast'; el.setAttribute('aria-live', 'polite'); this.el.appendChild(el); }
+      el.innerHTML = html; void el.offsetWidth; el.classList.add('visible');
+      clearTimeout(this.toastT); this.toastT = setTimeout(() => el.classList.remove('visible'), ms);
+    }
+  }
+  document.addEventListener('visibilitychange', () => TELS.forEach((t) => t.go()));
+  const surCalme = () => { calme = mq.matches; TELS.forEach((t) => t.go()); };
+  if (mq.addEventListener) mq.addEventListener('change', surCalme); else if (mq.addListener) mq.addListener(surCalme);
+  const yDans = (vue, el) => el.getBoundingClientRect().top - vue.getBoundingClientRect().top + vue.scrollTop;
+  function defilerVers(tel, y) {
+    const v = tel.vue, cible = clamp(y, 0, v.scrollHeight - v.clientHeight), d = Math.abs(v.scrollTop - cible);
+    v.scrollTo({ top: cible, behavior: calme ? 'auto' : 'smooth' });
+    return attendre(Math.min(950, 200 + d * .7));
+  }
+  function voler(tel, x0, y0, cible, txt = '+1') {
+    if (calme) return Promise.resolve();
+    const e = tel.el.getBoundingClientRect(), r = cible.getBoundingClientRect();
+    const x1 = r.left - e.left + 16, y1 = r.top - e.top + r.height / 2;
+    const s = document.createElement('span'); s.className = 'plus-un'; s.textContent = txt; tel.el.appendChild(s);
+    const kf = []; for (let i = 0; i <= 12; i++) { const u = i / 12, k = ease(u); kf.push({ transform: `translate(${lerp(x0, x1, k)}px, ${lerp(y0, y1, k) - Math.sin(u * Math.PI) * 110}px) translate(-50%, -50%) scale(${lerp(1.6, .7, u)})`, opacity: u > .92 ? 0 : 1 }); }
+    return s.animate(kf, { duration: 900, easing: 'linear' }).finished.then(() => s.remove());
+  }
+  function secouer(tel) { if (calme) return; tel.el.classList.remove('choc'); void tel.el.offsetWidth; tel.el.classList.add('choc'); }
+  const SVG = {
+    retour: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+    fermer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    film: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3 2h10v12H3zM1 3h1.4v1.4H1zm0 3h1.4v1.4H1zm0 3h1.4v1.4H1zm0 3h1.4v1.4H1zm12.6-9H15v1.4h-1.4zm0 3H15v1.4h-1.4zm0 3H15v1.4h-1.4zm0 3H15v1.4h-1.4z" opacity=".9"/><path d="M5 4h6v3.5H5zm0 4.5h6V12H5z" fill="#241a10"/></svg>',
+    etoile: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.1l-3.9 2.2.9-4.3-3.3-3 4.4-.5z"/></svg>',
+    salle: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="7" rx="1"/><path d="M4 13h8M8 10v3"/><circle cx="4.5" cy="3" r=".9" fill="currentColor"/><circle cx="8" cy="3" r=".9" fill="currentColor"/><circle cx="11.5" cy="3" r=".9" fill="currentColor"/></svg>',
+    ticket: '<svg viewBox="0 0 28 28" fill="currentColor" aria-hidden="true"><path d="M4 8h20v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z" transform="rotate(-8 14 14)"/><path d="M11 9v10" stroke="#20170e" stroke-width="1.4" stroke-dasharray="1.6 1.6" transform="rotate(-8 14 14)"/></svg>',
+    porte: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M8 28V6h14v22M5 28h22M17 17h.5M22 9l5-3v22"/></svg>',
+    rideau: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 5h24M6 5c0 9 4 16 9 22M26 5c0 9-4 16-9 22M10 5v10M22 5v10"/></svg>',
+    bobine: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="10" r="8.5" opacity=".9"/><g fill="#20170e"><circle cx="10" cy="5.8" r="1.7"/><circle cx="13.9" cy="8.7" r="1.7"/><circle cx="12.4" cy="13.3" r="1.7"/><circle cx="7.6" cy="13.3" r="1.7"/><circle cx="6.1" cy="8.7" r="1.7"/></g></svg>',
+  };
+
+  // ---------- Les textes du chroniqueur ----------
+  const OUV98 = '1898, et le cinéma commence déjà à mentir avec un aplomb magnifique. Le cuirassé Maine explose dans le port de La Havane en février, et avant même que la fumée ne retombe, Méliès et l’Américain Blackton reconstituent la scène dans leurs studios avec des maquettes de baignoire : la première guerre filmée est une guerre en carton-pâte.\n\nC’est aussi l’année où le trucage cesse d’être un gag pour devenir un langage : G. A. Smith, en Angleterre, superpose une image à une autre et invente sans le savoir le montage parallèle. Robert Paul construit deux scènes qui se répondent au lieu de n’en filmer qu’une, minuscule révolution qu’on ne remarquera qu’après coup.\n\nMéliès, lui, continue de couper sa propre tête sur scène, pardon, à l’écran, et prouve qu’un studio peut être un cabinet de prestidigitateur. Rien de tout cela ne dure plus de deux minutes, mais on sent déjà, sous la brièveté, l’idée qu’un film puisse raconter quelque chose plutôt que simplement le montrer.';
+  const FAITS98 = ['L’explosion du cuirassé Maine à La Havane déclenche la guerre hispano-américaine, aussitôt reconstituée à l’écran par Méliès et par Blackton.', 'G. A. Smith réalise Santa Claus, une des premières surimpressions pour raconter une action simultanée.', 'Émile Zola publie J’accuse, et l’affaire Dreyfus divise la France.', 'Pierre et Marie Curie découvrent le radium et le polonium.', 'Robert W. Paul tourne Come Along, Do!, l’un des tout premiers films en deux scènes qui se répondent.'];
+  const OUV96 = '1896, et l’image qui bouge part en tournée. Les opérateurs Lumière embarquent leur caméra de Moscou à Venise, et chaque ville découvre qu’elle peut se voir en vue animée. À Paris, Alice Guy tourne La Fée aux choux, et la fiction entre par la petite porte.\n\nMéliès, lui, fonde la Star Film et découvre, à la faveur d’une caméra qui se bloque, qu’un omnibus peut se changer en corbillard. Le trucage est né d’une panne ; il ne quittera plus le cinéma.';
+  const FAITS96 = ['L’Arrivée d’un train en gare de La Ciotat est projetée au public en janvier.', 'Alice Guy tourne La Fée aux choux, parmi les tout premiers films de fiction.', 'Méliès fonde la Star Film.', 'Le Baiser d’Edison, une vingtaine de secondes, fait scandale.'];
+  const CONTEXTES = {
+    guerre: 'En avril 1898, les États-Unis déclarent la guerre à l’Espagne. Aucune caméra n’est à Cuba au bon moment ; qu’à cela ne tienne, on tourne la bataille navale dans une cuve, avec des maquettes découpées et de la fumée de cigare.\n\nLe public applaudit des images qu’il croit vraies. Cette salle réunit ces reconstitutions et les rares vues prises sur place : la guerre telle qu’on l’a montrée, et telle qu’on l’a fabriquée.',
+    essentiels: 'Cinq films pour comprendre 1898 : la surimpression de Smith, le montage en deux temps de Paul, les tours de Méliès. Chacun dure moins de trois minutes ; ensemble, ils dessinent déjà le cinéma qui raconte.',
+    ailleurs: 'Ce qui ne rentre dans aucune salle mais qu’on ne veut pas laisser filer : les têtes coupées de Méliès, ses saints tentés, ses lunes trop proches.',
+    monde: 'En 1896, les opérateurs Lumière partent aux quatre coins du monde avec une caméra qui sert aussi de projecteur. Ils filment Venise depuis une gondole, et inventent sans le vouloir le travelling.',
+    trucages: 'Une caméra qui se bloque, un omnibus qui devient corbillard : Méliès vient de trouver l’arrêt de caméra. Cette salle suit ses premiers tours.',
+  };
+  const FILM_GHOST = 'G. A. Smith filme un photographe qui tente de tirer le portrait d’un fantôme. Le spectre, obtenu par double exposition, traverse le décor comme un voile de fumée et renverse les meubles.\n\nUne minute à peine, mais l’un des tout premiers usages de la surimpression pour raconter une histoire plutôt que pour épater. Smith tourne à Hove, dans un jardin transformé en studio à ciel ouvert.';
+  const GEN98 = 'Treize films, trois essentiels, une salle bouclée : 1898 aura été l’année des guerres de baignoire et des fantômes en surimpression.\n\nTa meilleure note va à La Lune à un mètre, où Méliès avale un astronome. La marche 3 du podium est restée libre : la place attend son film.';
+  const GEN96 = 'Vingt-trois films, les cinq essentiels, le Lion : 1896 est bouclée. Le train de La Ciotat tient la première marche, la fée d’Alice Guy la deuxième, le diable de Méliès la troisième.\n\nLe monde en vues est complet ; les premiers trucages attendent encore Le Cauchemar.';
+  const PHRASE_ATTENTE = 'Le chroniqueur écrit…';
+  const paragraphes = (t) => t.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  function partieTapee(texte, limite = 140) {
+    if (texte.length <= limite) return texte.length;
+    for (let i = limite; i < texte.length; i++) if (/\s/.test(texte[i])) return i;
+    return texte.length;
+  }
+
+  // ---------- La feuille de lecture ----------
+  let FILIGRANE = '';
+  function filigrane() {
+    if (FILIGRANE) return FILIGRANE;
+    const c = document.createElement('canvas'); c.width = c.height = 360; const avant = g; g = c.getContext('2d');
+    g.globalAlpha = .1; roue(180, 150, 120, .2, NACS_CARTE.concat(NACS_CARTE), 0, { lit: 0, fixe: true }); g = avant;
+    return (FILIGRANE = `url(${c.toDataURL()})`);
+  }
+  class Feuille {
+    constructor(tel, chap = 'CHAPITRE I<br>LES<br>ORIGINES') {
+      this.tel = tel; this.timers = [];
+      const el = this.el = document.createElement('div'); el.className = 'feuille';
+      el.innerHTML = `<div class="feuille-voile"></div><div class="feuille-papier" role="dialog" aria-modal="true" aria-label="Feuille de lecture"><div class="poignee"></div><span class="tampon-monde" aria-hidden="true">${chap}</span><header><div><p class="f-espece"></p><h4 class="f-titre"></h4><p class="f-sous"></p></div><button class="fermer" type="button" aria-label="Fermer">${SVG.fermer}</button></header><div class="f-corps" aria-live="polite"></div><footer><span>LE CHRONIQUEUR</span><span class="f-num">FEUILLE N° 1</span></footer></div>`;
+      tel.el.appendChild(el);
+      $('.feuille-papier', el).style.setProperty('--filigrane', filigrane());
+      $('.fermer', el).addEventListener('click', () => this.fermer());
+      $('.feuille-voile', el).addEventListener('click', () => this.fermer());
+      el.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.fermer(); });
+    }
+    vider() { this.timers.forEach(clearTimeout); this.timers = []; }
+    plus(f, ms) { this.timers.push(setTimeout(f, ms)); }
+    ouvrir(o) {
+      this.vider();
+      $('.f-espece', this.el).textContent = o.espece; $('.f-titre', this.el).textContent = o.titre;
+      const s = $('.f-sous', this.el); s.textContent = o.sous || ''; s.hidden = !o.sous;
+      $('.f-num', this.el).textContent = `FEUILLE N° ${o.num || 1}`;
+      const corps = this.corps = $('.f-corps', this.el); corps.innerHTML = ''; corps.scrollTop = 0;
+      this.el.classList.add('ouverte'); $('.fermer', this.el).focus({ preventScroll: true });
+      if (o.erreur) { corps.innerHTML = '<p class="f-erreur">Le chroniqueur n’a pas répondu, reviens plus tard.</p>'; const b = document.createElement('button'); b.className = 'guichet'; b.type = 'button'; b.style.padding = '0 18px'; b.textContent = 'Réessayer'; b.onclick = () => this.ouvrir({ ...o, erreur: false, attente: true }); corps.appendChild(b); return; }
+      if (o.attente) { this.attendre(o); return; }
+      this.taper(o.texte);
+    }
+    attendre(o) {
+      const p = document.createElement('p'), span = document.createElement('span'), cur = document.createElement('span'); cur.className = 'curseur';
+      p.append(span, cur); this.corps.appendChild(p);
+      if (calme) { span.textContent = PHRASE_ATTENTE; this.plus(() => { this.corps.innerHTML = ''; this.taper(o.texte); }, 1500); return; }
+      let i = 0, sens = 1, tours = 0;
+      const pas = () => {
+        if (sens > 0) { span.textContent = PHRASE_ATTENTE.slice(0, ++i); if (i >= PHRASE_ATTENTE.length) { sens = -1; this.plus(pas, 1200); return; } this.plus(pas, 60); }
+        else { span.textContent = PHRASE_ATTENTE.slice(0, --i); if (i <= 0) { sens = 1; tours++; if (tours >= 2) { this.corps.innerHTML = ''; this.taper(o.texte); return; } } this.plus(pas, 28); }
+      };
+      pas();
+    }
+    taper(texte) {
+      const paras = paragraphes(texte), n = partieTapee(paras[0]), r = alea(texte.length);
+      const p = document.createElement('p'), tape = document.createElement('span'), reste = document.createElement('span'), cur = document.createElement('span');
+      cur.className = 'curseur'; reste.className = 'f-suite'; reste.textContent = paras[0].slice(n);
+      p.append(tape, cur, reste); this.corps.appendChild(p);
+      const suites = paras.slice(1).map((t) => { const q = document.createElement('p'); q.className = 'f-suite'; q.textContent = t; this.corps.appendChild(q); return q; });
+      const finir = () => { cur.remove(); [reste, ...suites].forEach((q, k) => this.plus(() => q.classList.add('vue-f'), calme ? 0 : 120 + k * 380)); };
+      if (calme) { tape.textContent = paras[0].slice(0, n); finir(); return; }
+      let i = 0;
+      const pas = () => {
+        if (i >= n) { this.plus(finir, 450); return; }
+        const ch = paras[0][i++], s = document.createElement('span'); s.className = 'lettre'; s.textContent = ch;
+        s.style.setProperty('--dy', (r() * 1.4 - .7).toFixed(2) + 'px'); s.style.opacity = (.78 + r() * .22).toFixed(2);
+        tape.appendChild(s); this.plus(pas, ch === ' ' ? 40 : 22 + r() * 34);
+      };
+      this.plus(pas, 380);
+    }
+    fermer() { this.vider(); this.el.classList.remove('ouverte'); }
+  }
+
+  // ---------- Données des années ----------
+  function D1898() {
+    return {
+      annee: 1898, statut: 'encours', chap: 'Chapitre I · Les origines', sous: 'Les origines · la manivelle',
+      films: 12, ess: [3, 5], salles: [0, 2], recompense: 'ours', ticket: null, progres: 3, podium: ['lune', 'tentation', null],
+      ouverture: OUV98, faits: FAITS98, generique: GEN98, maturite: 'il manque encore deux essentiels pour juger l’année.',
+      liste: [
+        { id: 'essentiels', nom: 'Les essentiels', sur: 'LES ESSENTIELS · 1898', raison: 'Trois minutes de cinéma qui, mises côte à côte, dessinent déjà l’avenir du médium.', films: [['magicien', 'vu', 7], ['santa', 'vu', 8], ['comealong', 'vu', 6], ['ghost', 'plex'], ['cavalier', 'demande']], fin: 'epuisee' },
+        { id: 'guerre', nom: 'La guerre en carton-pâte', raison: 'La guerre hispano-américaine, refaite en studio avec des bassines et des drapeaux en tissu.', films: [['maine', 'vu', 6], ['insurgents', 'plex'], ['wreck', 'perdu']], fin: 'plus' },
+        { id: 'ailleurs', nom: 'Ailleurs cette année-là', raison: 'Ce qui ne rentre nulle part mais qu’on ne veut pas laisser filer.', films: [['lune', 'vu', 9], ['tentation', 'vu', 8], ['tetes', 'vu', 8], ['illusions', 'avoir'], ['corsican', 'plex']], fin: 'plus' },
+      ],
+    };
+  }
+  function D1896() {
+    return {
+      annee: 1896, statut: 'passee', chap: 'Chapitre I · Les origines', sous: 'Les origines · la manivelle',
+      films: 23, ess: [5, 5], salles: [1, 2], recompense: 'lion', ticket: { annee: 1897, utilise: true }, progres: 5, podium: ['train', 'fee', 'manoir'],
+      ouverture: OUV96, faits: FAITS96, generique: GEN96,
+      liste: [
+        { id: 'essentiels', nom: 'Les essentiels', sur: 'LES ESSENTIELS · 1896', raison: 'Le cinéma sort de la foire : fiction, trucage et scandale en une seule année.', films: [['train', 'vu', 9], ['fee', 'vu', 8], ['manoir', 'vu', 8], ['escamotage', 'vu', 7], ['baiser', 'vu', 6]], fin: 'epuisee' },
+        { id: 'monde', nom: 'Le monde en vues', raison: 'Les opérateurs Lumière partent filmer la planète, cinquante secondes à la fois.', films: [['venise', 'vu', 8], ['tsar', 'vu', 7]], fin: 'epuisee' },
+        { id: 'trucages', nom: 'Les premiers trucages', raison: 'Méliès découvre l’arrêt de caméra, et tout devient possible.', films: [['cartes', 'vu', 6], ['mur', 'vu', 7], ['cauchemar', 'avoir']], fin: 'plus' },
+      ],
+    };
+  }
+  const ETIQ = { vu: 'vu', avoir: 'à voir', plex: 'sur ton Plex', demande: 'demandé', perdu: 'perdu' };
+  const complete = (S) => S.films.every((f) => f[1] === 'vu' || f[1] === 'perdu');
+  const partSalle = (S) => S.films.filter((f) => f[1] === 'vu' || f[1] === 'perdu').length / S.films.length;
+  function libPast(k, v, D) {
+    if (k === 'films') return v <= 1 ? 'film' : 'films';
+    if (k === 'ess') return `essentiel${v > 1 ? 's' : ''} sur ${D.ess[1]}`;
+    return `salle${v > 1 ? 's' : ''} complète${v > 1 ? 's' : ''} sur ${D.salles[1]}`;
+  }
+  function etapes(D) {
+    const e = [], rec = D.recompense;
+    if (!rec) { const r = Math.max(0, 3 - D.films); if (r) e.push({ k: 'ours', t: `Ours : encore ${r} film${r > 1 ? 's' : ''}`, j: [D.films, 3] }); }
+    if (rec !== 'lion' && rec !== 'palme') { const r = D.ess[1] - D.ess[0]; if (r > 0) e.push({ k: 'lion', t: `Lion : encore ${r} essentiel${r > 1 ? 's' : ''}`, j: D.ess }); }
+    if (rec !== 'palme') { const r = 2 - D.salles[0]; if (r > 0) e.push({ k: 'palme', t: `Palme : ${r} salle${r > 1 ? 's' : ''} de plus`, j: [D.salles[0], 2] }); }
+    if (!D.ticket) e.push({ k: 'ticket', t: 'Ticket : au Lion, ou plus tôt si le jury le décide' });
+    return e;
+  }
+  function ligneEtape(e) {
+    const ico = e.k === 'ticket' ? `<span class="tk">${SVG.ticket}</span>` : `<img src="${emblemeURL(e.k)}" alt="">`;
+    const j = e.j ? Array.from({ length: e.j[1] }, (_, i) => `<i class="${i < e.j[0] ? 'on' : ''}"></i>`).join('') : '';
+    return `${ico}<span class="pp-t">${e.t}</span><span class="pp-j" aria-hidden="true">${j}</span>`;
+  }
+  function afficheHTML([id, etat, note]) {
+    const calque = etat === 'vu' ? `<span class="aff-note">${note}</span>` : etat === 'plex' ? '<span class="badge-plex"><i></i>PLEX</span>' : etat === 'demande' ? '<span class="fiche-demande">demandé</span>' : etat === 'perdu' ? '<span class="tampon-perdu">PERDU</span>' : '';
+    return `<button class="aff" type="button" data-film="${id}" data-etat="${etat}"><span class="aff-cadre"><img src="${afficheURL(id)}" width="92" height="136" alt="">${calque}</span><span class="aff-t">${FILMS[id][0]}</span><span class="aff-e">${ETIQ[etat]}${note && etat === 'vu' ? ` · ${note}/10` : ''}</span></button>`;
+  }
+  function salleHTML(S) {
+    const v = S.films.filter((f) => f[1] === 'vu').length;
+    const fin = S.fin === 'plus' ? `<button class="aff-fin" type="button" data-fin="plus">${SVG.porte}En voir plus</button>` : `<button class="aff-fin" type="button" disabled>${SVG.rideau}Salle épuisée</button>`;
+    return `<section class="section salle" data-salle="${S.id}" aria-label="Salle ${S.nom}"><canvas role="img" aria-label="Marquise de la salle ${S.nom}"></canvas>
+      <div class="salle-infos"><button class="raison" type="button" data-contexte="${S.id}">${S.raison}<span>Le contexte de la salle ›</span></button><span class="salle-compte">${v} vu${v > 1 ? 's' : ''} sur ${S.films.length}</span></div>
+      <div class="etagere"><div class="rayon">${S.films.map(afficheHTML).join('')}${fin}</div></div></section>`;
+  }
+  function seanceHTML() {
+    return `<div class="section"><p class="sec-titre">Ce soir</p><article class="seance" aria-label="La séance de ce soir">
+      <div class="seance-bande"><span>Vidéo-club du Voyage</span><b>Ce soir</b></div>
+      <div class="seance-corps"><span class="tampon-prise" aria-hidden="true">PRISE</span>
+        <div class="sf"><img src="${afficheURL('ghost')}" width="56" height="83" alt=""><div><span class="role">Le long</span><b>Photographing a Ghost</b><small>Les essentiels · sur ton Plex</small><button class="real" type="button">G. A. Smith ›</button>
+          <div class="actions-film" hidden><button class="guichet" type="button">Voir sur le Plex</button><button class="guichet plein" type="button" data-s="vu">Je l’ai vu</button></div></div></div>
+        <div class="sf"><img src="${afficheURL('illusions')}" width="40" height="59" alt=""><div><span class="role">En ouverture</span><b>Illusions fantasmagoriques</b><small>Ailleurs cette année-là · à demander</small><button class="real" type="button">Georges Méliès ›</button>
+          <div class="actions-film" hidden><button class="guichet" type="button">Demander sur Sir</button><button class="guichet plein" type="button" data-s="vu">Je l’ai vu</button></div></div></div>
+        <div class="seance-gen"><span>Pendant le générique</span><p>À Hove, G. A. Smith s’est bricolé un studio à ciel ouvert au fond d’un jardin d’agrément.</p></div>
+        <div class="seance-actions"><button class="guichet plein" type="button" data-s="prendre">Prendre</button><button class="guichet" type="button" data-s="ignorer">Ignorer</button><button class="guichet" type="button" data-s="long">Autre long</button><button class="guichet" type="button" data-s="court">Autre court</button></div>
+      </div><div class="seance-talon"><span>Séance n° 4</span><span>À rendre avant minuit</span></div></article></div>`;
+  }
+  function htmlAnnee(D) {
+    const enCours = D.statut === 'encours';
+    const past = [['films', D.films, SVG.film], ['ess', D.ess[0], SVG.etoile], ['salles', D.salles[0], SVG.salle]]
+      .map(([k, v, ico]) => `<span class="pastille" data-p="${k}"><span class="ico">${ico}</span><b class="odo"><span>${v}</span></b><span class="lib">${libPast(k, v, D)}</span></span>`).join('');
+    return `<div class="bandeau"><canvas aria-hidden="true"></canvas><button class="retour" type="button" aria-label="Retour à la carte">${SVG.retour}</button><span class="chip-chap">${D.chap}</span></div>
+      <div class="titre-annee"><h3 class="millesime">${D.annee}</h3><p class="monde-sous">${D.sous}</p><div class="pastilles">${past}</div></div>
+      <section class="cartouche" aria-label="Cartouche de ${D.annee}"><i class="coin a"></i><i class="coin b"></i>
+        <div class="cart-tete"><span class="cart-an">${D.annee}</span><span class="cart-rec">${NOM_REC[D.recompense]}<img class="embleme" src="${emblemeURL(D.recompense)}" alt="${NOM_REC[D.recompense]}"></span></div>
+        <p class="ouverture">${paragraphes(D.ouverture)[0]}</p>
+        <div class="cart-liens"><button class="lien" type="button" data-feuille="ouverture">Lire l’ouverture</button><button class="lien" type="button" data-feuille="generique"${D.ticket ? '' : ' hidden'}>Le générique de fin</button></div>
+        <ul class="faits">${D.faits.map((f) => `<li>${f}</li>`).join('')}</ul></section>
+      ${enCours ? '<section class="prochain" aria-live="polite"><i class="rivet a"></i><i class="rivet b"></i><i class="rivet c"></i><i class="rivet d"></i><h4>Prochain pas <small>ANNÉE EN COURS</small></h4><ol></ol></section>' : ''}
+      <div class="section podium"><p class="sec-titre">Le podium</p><canvas role="img" aria-label="Podium : ${D.podium.map((p, i) => `marche ${i + 1}, ${p ? FILMS[p][0] : 'libre'}`).join(' ; ')}"></canvas><p class="podium-aide">Toucher une marche pour y poser un film · appui long pour la vider</p></div>
+      ${enCours ? seanceHTML() : ''}
+      ${D.liste.map(salleHTML).join('')}
+      <div class="nouvelle"><p>Le chroniqueur propose des pistes ; une phrase suffit.</p><button class="bouton-or" type="button" data-nouvelle>Ouvrir une nouvelle salle</button></div>
+      ${enCours ? `<div class="bas"><div class="maturite"><b>Le jury</b>Pas encore mûre : ${D.maturite}</div></div>` : '<div style="height:40px"></div>'}`;
+  }
+
+  // ---------- Pages 1 et 2 : la fiche d'une année ----------
+  function pageAnnee(tel, fabrique, demo) {
+    const P = { tel, D: fabrique(), occupe: false, salles: {} };
+    const vue = tel.vue;
+    const monter = () => {
+      tel.peintres = []; P.D = fabrique(); P.occupe = false; P.salles = {};
+      vue.innerHTML = htmlAnnee(P.D); vue.scrollTop = 0;
+      const D = P.D;
+      if (!P.feuille) P.feuille = new Feuille(tel);
+      P.feuille.fermer();
+      $$('.attente-ticket', tel.el).forEach((e) => e.remove());
+      majProchain(P, false);
+      const cvB = $('.bandeau canvas', vue);
+      tel.ajouter((t) => { if (!tel.voit(cvB)) return; const [w, h] = toile(cvB); scene1890(w, h, vue.scrollTop, t, P.D); });
+      const cvP = $('.podium canvas', vue);
+      tel.ajouter((t) => { if (!tel.voit(cvP)) return; const [w, h] = toile(cvP); podiumDessin(w, h, t, P.D.podium); });
+      D.liste.forEach((S) => {
+        const el = $(`[data-salle="${S.id}"]`, vue), cv = $('canvas', el), A = P.salles[S.id] = { t0: -1 };
+        tel.ajouter((t) => {
+          if (!tel.voit(cv)) return; const [w] = toile(cv);
+          const fini = complete(S) && !A.retenu;
+          const o = { part: A.retenu ? A.part0 : partSalle(S), complet: fini, perfs: fini ? 8 : 0, tampon: fini ? 1 : 0, sur: S.sur };
+          if (A.t0 >= 0 && !calme) {
+            const e = (performance.now() - A.t0) / 1000;
+            o.complet = e > 1.05; o.part = lerp(A.part0, 1, clamp(e / .3, 0, 1));
+            o.rideau = e < .3 ? 0 : e < .56 ? (e - .3) / .26 : e < .76 ? 1 : e < 1.05 ? 1 + (e - .76) / .29 : 0;
+            o.perfs = e < .76 ? 0 : Math.min(8, Math.floor((e - .76) / .036));
+            o.tampon = e < .5 ? 0 : e < .72 ? lerp(1.8, 1, ease((e - .5) / .22)) : 1;
+            if (e > 1.4) A.t0 = -1;
+          }
+          marquise(2, 4, w - 6, 76, S.nom, o, t);
+        });
+      });
+      const cart = $('.cartouche', vue);
+      new IntersectionObserver((es, obs) => es.forEach((e) => { if (e.isIntersecting) { cart.classList.add('deplie'); const em = $('.embleme', cart); if (!calme) em.classList.add('pop'); em.style.animationDelay = '.35s'; obs.disconnect(); } }), { threshold: .2 }).observe(cart);
+    };
+    monter();
+    vue.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      const D = P.D;
+      if (b.dataset.feuille === 'ouverture') P.feuille.ouvrir({ espece: 'Ouverture', titre: String(D.annee), texte: D.ouverture, num: 1 });
+      else if (b.dataset.feuille === 'generique') P.feuille.ouvrir({ espece: 'Générique', titre: 'Le générique de fin', sous: String(D.annee), texte: D.generique, num: 4 });
+      else if (b.dataset.contexte) { const S = D.liste.find((s) => s.id === b.dataset.contexte); P.feuille.ouvrir({ espece: 'Salle', titre: S.nom, sous: String(D.annee), texte: CONTEXTES[S.id], num: 2 }); }
+      else if (b.classList.contains('aff')) tel.toast(`<b>${FILMS[b.dataset.film][0]}</b><br>ouvrirait sa fiche (page 5)`);
+      else if (b.dataset.fin === 'plus') { const txt = b.lastChild; b.disabled = true; txt.textContent = 'La salle se remplit…'; setTimeout(() => { b.disabled = false; txt.textContent = 'En voir plus'; tel.toast('Trois films de plus arriveraient sur l’étagère.'); }, calme ? 300 : 1600); }
+      else if (b.hasAttribute('data-nouvelle')) tel.toast('La feuille « Quelle salle ? » s’ouvrirait, avec les pistes du chroniqueur.');
+      else if (b.classList.contains('retour')) tel.toast('Retour à la carte, sur la case de l’année.');
+      else if (b.classList.contains('real')) tel.toast('La page du réalisateur s’ouvrirait.');
+      else if (b.dataset.s === 'prendre') { const se = b.closest('.seance'); se.classList.add('prise'); $('.seance-actions', se).hidden = true; $$('.actions-film', se).forEach((a) => { a.hidden = false; }); }
+      else if (b.dataset.s === 'ignorer') tel.toast('Séance ignorée : « Composer une séance » reviendrait à sa place.');
+      else if (b.dataset.s === 'long' || b.dataset.s === 'court') tel.toast(`La feuille « Un autre ${b.dataset.s} » s’ouvrirait.`);
+      else if (b.dataset.s === 'vu') tel.toast('Le formulaire du journal s’ouvrirait.');
+    });
+    const cvP = () => $('.podium canvas', vue);
+    vue.addEventListener('pointerup', (e) => {
+      const c = cvP(); if (!c || e.target !== c) return;
+      const r = c.getBoundingClientRect(), u = (e.clientX - r.left) / r.width, M = u < .36 ? 2 : u > .64 ? 3 : 1, id = P.D.podium[M - 1];
+      tel.toast(id ? `Marche ${M} · ${FILMS[id][0]}<br>toucher pour changer, appui long pour vider` : `Marche ${M} libre : choisir un film à poser`);
+    });
+    if (demo) {
+      const racine = tel.el.closest('.telephone');
+      racine.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-demo]'); if (!b) return;
+        if (b.dataset.demo === 'reset') { monter(); tel.toast('Tout est revenu comme avant.'); }
+        else if (b.dataset.demo === 'vu') demoVu(P);
+        else if (b.dataset.demo === 'ticket') demoTicket(P);
+      });
+    }
+    return P;
+  }
+  function majProchain(P, anim) {
+    const ol = $('.prochain ol', P.tel.vue); if (!ol) return;
+    const E = etapes(P.D);
+    if (!anim || calme) { ol.innerHTML = E.map((e) => `<li data-k="${e.k}">${ligneEtape(e)}</li>`).join(''); return; }
+    for (const li of $$('li', ol)) {
+      const e = E.find((x) => x.k === li.dataset.k);
+      if (!e) { li.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'rotateX(90deg)' }], { duration: 320, fill: 'forwards' }).finished.then(() => li.remove()); continue; }
+      if ($('.pp-t', li).textContent !== e.t) {
+        li.animate([{ transform: 'rotateX(0)' }, { transform: 'rotateX(90deg)' }], { duration: 170, easing: 'ease-in', fill: 'forwards' }).finished
+          .then(() => { li.innerHTML = ligneEtape(e); li.animate([{ transform: 'rotateX(-90deg)' }, { transform: 'rotateX(0)' }], { duration: 240, easing: 'ease-out', fill: 'forwards' }); });
+      }
+    }
+  }
+  function defiler(p, v, lib) {
+    const odo = $('.odo', p), ancien = odo.lastElementChild, nv = document.createElement('span'); nv.textContent = v; odo.appendChild(nv);
+    $('.lib', p).textContent = lib;
+    if (calme) { ancien.remove(); return; }
+    ancien.animate([{ transform: 'none' }, { transform: 'translateY(-110%)', opacity: 0 }], { duration: 340, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards' }).finished.then(() => ancien.remove());
+    nv.animate([{ transform: 'translateY(110%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 340, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    p.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.14)', boxShadow: '0 0 18px rgba(255,107,87,.7)' }, { transform: 'scale(1)' }], { duration: 560, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+  }
+  function boutonsDemo(P, actif) { $$('[data-demo]', P.tel.el.closest('.telephone')).forEach((b) => { if (b.dataset.demo !== 'reset') b.disabled = !actif; }); }
+  async function demoVu(P) {
+    if (P.occupe) return;
+    const { tel, D } = P, vue = tel.vue, S = D.liste.find((s) => s.id === 'guerre'), entree = S.films.find((f) => f[0] === 'insurgents');
+    if (entree[1] === 'vu') { tel.toast('Déjà enregistré : « Recommencer » pour rejouer.'); return; }
+    P.occupe = true; boutonsDemo(P, false); P.feuille.fermer();
+    const salleEl = $('[data-salle="guerre"]', vue);
+    await defilerVers(tel, yDans(vue, salleEl) - 60);
+    const rayon = $('.rayon', salleEl); rayon.scrollTo({ left: 0, behavior: calme ? 'auto' : 'smooth' });
+    await attendre(350);
+    const A = P.salles.guerre; A.part0 = 2 / 3; A.retenu = true;
+    entree[1] = 'vu'; entree[2] = 7;
+    const ancien = $('[data-film="insurgents"]', salleEl), tmp = document.createElement('div'); tmp.innerHTML = afficheHTML(entree); const nv = tmp.firstElementChild;
+    $('img', nv).style.filter = $('img', ancien) ? getComputedStyle($('img', ancien)).filter : '';
+    ancien.replaceWith(nv); void nv.offsetWidth; $('img', nv).style.filter = '';
+    const tv = document.createElement('span'); tv.className = 'tampon-vu'; tv.textContent = 'VU'; $('.aff-cadre', nv).appendChild(tv);
+    const note = $('.aff-note', nv); if (!calme) note.classList.add('pop');
+    const v = S.films.filter((f) => f[1] === 'vu').length; $('.salle-compte', salleEl).textContent = `${v} vus sur ${S.films.length}`;
+    tel.toast('<b>Shooting Captured Insurgents</b> enregistré · 7/10');
+    await attendre(1300);
+    const pf = $('[data-p="films"]', vue);
+    await defilerVers(tel, yDans(vue, pf) - 230);
+    const H = tel.el.clientHeight, W = tel.el.clientWidth;
+    await voler(tel, W / 2, H - 90, pf);
+    D.films = 13; defiler(pf, 13, libPast('films', 13, D));
+    await attendre(260);
+    const ps = $('[data-p="salles"]', vue);
+    await voler(tel, W / 2, H - 90, ps);
+    D.salles[0] = 1; defiler(ps, 1, libPast('salles', 1, D));
+    majProchain(P, true);
+    await attendre(1100);
+    await defilerVers(tel, yDans(vue, salleEl) - 90);
+    A.retenu = false; A.t0 = performance.now(); tel.go();
+    await attendre(1250);
+    secouer(tel);
+    tel.toast('<b>Salle bouclée</b> · La guerre en carton-pâte<br>Palme : encore une salle');
+    P.occupe = false; boutonsDemo(P, true);
+  }
+  async function demoTicket(P) {
+    if (P.occupe) return;
+    const { tel, D } = P, vue = tel.vue;
+    if (D.ticket) { tel.toast('Le ticket est déjà tombé : « Recommencer » pour rejouer.'); return; }
+    P.occupe = true; boutonsDemo(P, false); P.feuille.fermer();
+    const bas = $('.bas', vue);
+    await defilerVers(tel, vue.scrollHeight);
+    const mat = $('.maturite', bas); if (mat) { mat.classList.add('part'); await attendre(320); mat.remove(); }
+    D.ticket = { annee: 1899, utilise: false };
+    const bloc = document.createElement('div'); bloc.className = 'attente-ticket';
+    bloc.innerHTML = '<div class="ticket-p"><span class="trou"></span><span class="adm">ADMIS UNE PERSONNE</span><span class="an">1899</span><span class="mot">Ton ticket pour 1899 t’attend</span></div><div class="ticket-rang"><button class="btn-corail" type="button">Utiliser</button></div>';
+    bas.appendChild(bloc); vue.scrollTop = vue.scrollHeight;
+    const tk = $('.ticket-p', bloc);
+    if (!calme) await tk.animate([{ transform: 'translateY(-560px) rotate(-26deg)' }, { transform: 'translateY(16px) rotate(5deg)', offset: .6 }, { transform: 'translateY(-8px) rotate(-6deg)', offset: .76 }, { transform: 'translateY(3px) rotate(-2deg)', offset: .9 }, { transform: 'translateY(0) rotate(-3deg)' }], { duration: 1350, easing: 'cubic-bezier(.35,.1,.6,1)' }).finished;
+    secouer(tel);
+    $('[data-feuille="generique"]', vue).hidden = false; majProchain(P, true);
+    tel.toast('<b>Ticket pour 1899</b><br>« Le générique de fin » s’ouvre au cartouche');
+    $('.btn-corail', bloc).addEventListener('click', async (e) => {
+      e.currentTarget.disabled = true; tk.classList.add('poinconne');
+      if (!calme) tk.animate([{ transform: 'rotate(-3deg)' }, { transform: 'translateY(6px) rotate(-3deg)' }, { transform: 'rotate(-3deg)' }], { duration: 320 });
+      await attendre(750);
+      if (!calme) await bloc.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(-240px) rotate(12deg) scale(.6)', opacity: 0 }], { duration: 650, easing: 'cubic-bezier(.5,0,.7,.4)', fill: 'forwards' }).finished;
+      bloc.remove(); D.ticket.utilise = true;
+      tel.toast('En route pour 1899 : sur la carte, le clap avance d’une case.');
+    });
+    P.occupe = false; boutonsDemo(P, true);
+  }
+
+  // ---------- Page 3 : l'année verrouillée ----------
+  function pageVerrou(tel) {
+    const vue = tel.vue;
+    vue.innerHTML = `<div class="bandeau" style="height:280px"><canvas aria-hidden="true"></canvas><button class="retour" type="button" aria-label="Retour à la carte">${SVG.retour}</button><span class="chip-chap">Chapitre II · La féerie</span></div>
+      <div class="titre-annee"><h3 class="millesime">1902</h3><p class="monde-sous">La féerie · Méliès et les forains</p><div class="pastilles"><span class="pastille"><span class="ico">${SVG.film}</span><b class="odo"><span>2</span></b><span class="lib">films vus en avance</span></span></div></div>
+      <div class="ba"><canvas role="img" aria-label="Marquise : prochainement"></canvas>
+        <p class="condition">Cette année s’ouvre avec<br><b>le ticket de 1901</b>.</p>
+        <div class="bande-route" aria-label="Chemin : 1898 tu es ici, puis 1899, 1900, 1901, et 1902"><span class="cadre-route ici">1898<small>ici</small></span><span class="cadre-route">1899</span><span class="cadre-route">1900</span><span class="cadre-route">1901</span><span class="cadre-route cible">1902<small>fermée</small></span></div>
+        <p class="encore">Encore quatre tickets avant la féerie.</p></div>
+      <div class="section"><p class="sec-titre" style="color:var(--a1900)">Déjà vus, en avance</p>
+        <div class="fantomes"><button class="fantome" type="button" data-film="voyage"><span class="aff-cadre"><img src="${afficheURL('voyage')}" alt=""><span class="aff-note">10</span></span><b>Le Voyage dans la Lune</b><small>Georges Méliès</small></button>
+        <button class="fantome" type="button" data-film="jack"><span class="aff-cadre"><img src="${afficheURL('jack')}" alt=""><span class="aff-note">6</span></span><b>Jack and the Beanstalk</b><small>Fleming et Porter</small></button></div></div>
+      <div class="intertitre"><p>Chapitre II</p><strong>La féerie</strong><em>Méliès et les forains : fusées, sirènes et manèges. Au bout des années 1900, le tampon « Compagnon de Méliès ».</em></div>
+      <div style="height:64px"></div>`;
+    const cvB = $('.bandeau canvas', vue), cvM = $('.ba canvas', vue);
+    const PAL = { panneau: ['#e7d8a8', '#bfb28a'], encre: '#15151b', cadre: '#8f8a78', amp: '#fff4d0' };
+    tel.ajouter((t) => { if (tel.voit(cvB)) { const [w, h] = toile(cvB); sceneFeerie(w, h, vue.scrollTop, t); } });
+    tel.ajouter((t) => { if (tel.voit(cvM)) { const [w] = toile(cvM); marquise(2, 4, w - 6, 76, 'Prochainement', { part: .3, flicker: true, palette: PAL, sur: 'BIENTÔT SUR CET ÉCRAN' }, t); } });
+    vue.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.film) tel.toast(`<b>${FILMS[b.dataset.film][0]}</b><br>vu en avance · sa fiche s’ouvrirait`); else if (b.classList.contains('retour')) tel.toast('Retour à la carte.'); });
+  }
+
+  // ---------- Page 4 : la décennie ----------
+  const NACS_DEC = [1890, 1891, 1892, 1893, 1894].map((a) => ({ etat: 'vide', annee: a })).concat([{ etat: 'palme', annee: 1895 }, { etat: 'lion', annee: 1896 }, { etat: 'ours', annee: 1897 }, { etat: 'encours', annee: 1898 }, { etat: 'avance', annee: 1899 }]);
+  const DEC = [[1895, 9, 'palme', 8, ['sortie', 'arroseur', 'bebe', 'voltige']], [1896, 23, 'lion', 9, ['train', 'fee', 'manoir', 'escamotage']], [1897, 41, 'ours', 9, ['chateau', 'bal', 'serpentine', 'calais']], [1898, 12, null, 9, ['lune', 'tentation', 'tetes', 'magicien']], [1899, 6, null, 8, ['cendrillon', 'dreyfus', 'couvent', 'flots']]];
+  function pageDecennie(tel) {
+    const vue = tel.vue, circ = 2 * Math.PI * 29;
+    const colonnes = DEC.map(([a, n, rec, , ids]) => `<button class="colonne${a === 1899 ? ' avance' : ''}" type="button" data-an="${a}" aria-label="${a}, ${n} films"><span class="col-dome"></span><span class="col-fut">${ids.map((id) => `<img src="${afficheURL(id)}" alt="">`).join('')}<span class="col-plus">+${n - 4}</span></span><span class="col-socle">${a}${rec ? `<img src="${emblemeURL(rec)}" alt="${NOM_REC[rec]}">` : a === 1899 ? '<small>en avance</small>' : ''}</span></button>`).join('');
+    const lignesT = Array.from({ length: 10 }, (_, i) => 1890 + i).map((a) => {
+      const d = DEC.find((x) => x[0] === a), ici = a === 1898;
+      return `<button class="ligne-an${!d || a === 1899 ? ' terne' : ''}${ici ? ' ici' : ''}" type="button" data-an="${a}"><span class="a">${a}</span><span class="v">${d ? `${d[1]} vus` : '—'}</span>${d && d[2] ? `<img src="${emblemeURL(d[2])}" alt="${NOM_REC[d[2]]}">` : '<span></span>'}<span class="n">${d ? `★ ${d[3]}` : ''}</span></button>`;
+    }).join('');
+    vue.innerHTML = `<button class="retour" type="button" aria-label="Retour à la carte">${SVG.retour}</button><span class="chip-chap">Chapitre I</span>
+      <div class="dec-tete"><h3>Années 1890</h3><p>Les origines · la manivelle</p></div>
+      <div class="monument"><canvas role="img" aria-label="La grande roue : une nacelle par année, de 1890 à 1899"></canvas></div>
+      <div class="passeport"><svg class="anneau" viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="29" stroke="rgba(90,64,34,.2)"/><circle cx="35" cy="35" r="29" stroke="#b8452f" stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${(circ * .17).toFixed(1)}" transform="rotate(-90 35 35)"/><text x="35" y="41" text-anchor="middle" class="pct" fill="#2a1f14">83 %</text></svg>
+        <div><h4>Passeport · années 1890</h4><p>91 vus · 18 à voir</p><small>Le tampon « Spectateur des origines » attend la décennie bouclée.</small></div>
+        <span class="place-tampon" aria-hidden="true">SPECTATEUR<br>DES<br>ORIGINES</span></div>
+      <div class="morris" aria-label="Colonnes Morris des années">${colonnes}</div>
+      <div class="tableau">${lignesT}</div>`;
+    const cv = $('.monument canvas', vue); let pos = [];
+    tel.ajouter((t) => {
+      if (!tel.voit(cv)) return; const [w, h] = toile(cv);
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#0e0906'); gr.addColorStop(1, '#3a2b1b'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#F2E8D5'; for (const e of ETOILES) { g.globalAlpha = calme ? .45 : .25 + .3 * Math.sin(t * e.v + e.p); g.fillRect(e.x * w, e.y * h * .5, e.r, e.r); } g.globalAlpha = 1;
+      lune(w * .86, 40, 18, t);
+      faisceau(w * .5 - 170, -30, w * .5, 150, 120, t, .5);
+      pos = roue(w / 2, 150, 110, calme ? 0 : t * .05, NACS_DEC, t, { lit: .83, grand: true, fixe: true });
+      // le guichet au pied de la roue et la foule
+      g.fillStyle = '#20160d'; g.fillRect(w / 2 - 22, h - 46, 44, 34); g.fillStyle = '#5d4e3a'; poly([[w / 2 - 28, h - 46], [w / 2 + 28, h - 46], [w / 2, h - 62]]); g.fill();
+      g.fillStyle = 'rgba(252,222,150,.85)'; g.fillRect(w / 2 - 14, h - 38, 28, 12); g.fillStyle = '#2a1f14'; g.font = `800 6px ${F_CORPS}`; g.textAlign = 'center'; g.fillText('GUICHET', w / 2, h - 30);
+      g.fillStyle = '#0c0806';
+      for (let i = 0; i < 16; i++) { const x = (i + .5) * w / 16 + hash(i) * 8, y = h - 6 + (calme ? 0 : Math.sin(t * 1.5 + i) * .8), s = .8 + hash(i * 3) * .4; if (Math.abs(x - w / 2) < 30) continue; cercle(x, y - 17 * s, 3 * s); g.fillRect(x - 3 * s, y - 14 * s, 6 * s, 14 * s); if (i % 3 === 0) g.fillRect(x - 2 * s, y - 23 * s, 4 * s, 4 * s); }
+      tonalite(w, h, '#96683a', .32);
+      vignette(w, h, '#2A2118');
+    });
+    cv.addEventListener('click', (e) => {
+      const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+      let best = null, bd = 34; for (const p of pos) { const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } }
+      if (best) { const n = NACS_DEC[best.i]; tel.toast(n.etat === 'vide' ? `${n.annee} · aucun film de cette année` : `<b>${n.annee}</b> · ${NOM_REC[n.etat] || (n.etat === 'encours' ? 'en cours, 3/5' : 'verrouillée, 6 vus en avance')}<br>l’appli ouvrirait l’année`); }
+    });
+    vue.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.an) tel.toast(`L’année ${b.dataset.an} s’ouvrirait.`); else if (b.classList.contains('retour')) tel.toast('Retour à la carte.'); });
+  }
+
+  // ---------- Page 5 : la fiche d'un film ----------
+  function pageFilm(tel) {
+    const vue = tel.vue; let etat = 'plex';
+    vue.innerHTML = `<div class="heros"><canvas role="img" aria-label="L’affiche de Photographing a Ghost dans un cadre de scène doré"></canvas><button class="retour" type="button" aria-label="Retour">${SVG.retour}</button><p class="legende-aff">Affiche dessinée pour la maquette · l’appli montre celle de TMDB</p></div>
+      <div class="fiche-corps"><span class="salle-pastille"><i></i>Salle · Les essentiels</span>
+        <h3 class="fiche-titre">Photographing a Ghost</h3>
+        <p class="fiche-meta"><button class="real" type="button">G. A. Smith <span aria-hidden="true">›</span></button><span>· 1898 · 1 min</span></p>
+        <p class="raison-film">Smith filme un fantôme par double exposition : la surimpression cesse d’épater pour raconter.</p>
+        <div class="zone-note"></div><div class="guichet-zone"></div></div>`;
+    const cv = $('.heros canvas', vue);
+    tel.ajouter((t) => { if (tel.voit(cv)) { const [w, h] = toile(cv); cadreScene(w, h, vue.scrollTop, t, 'ghost'); } });
+    const rendre = (pop) => {
+      $('.zone-note', vue).innerHTML = etat === 'vu' ? `<div class="ta-note"><span class="rosette${pop && !calme ? ' pop' : ''}"><b>7</b></span><div><p>Ta note · vu le 28 septembre</p><div class="puces"><span>Inventif</span><span>Drôle</span><span>Court et net</span></div></div></div>` : '';
+      $('.guichet-zone', vue).innerHTML = etat === 'vu'
+        ? '<button class="btn-ticket" type="button" data-b="corriger"><span class="trou"></span><b>Corriger</b><small>ta note, tes réactions</small></button><button class="btn-plaque" type="button" data-b="podium"><i></i>Mettre sur le podium</button><button class="btn-filet" type="button" data-b="film">' + SVG.bobine.replace('<svg', '<svg style="width:18px;height:18px;color:var(--or)"') + 'Le film</button>'
+        : '<button class="btn-plaque" type="button" data-b="plex"><i></i>Voir sur le Plex</button><button class="btn-ticket" type="button" data-b="vu"><span class="trou"></span><b>Je l’ai vu</b><small>poinçonner le ticket</small></button><button class="btn-gris" type="button" data-b="introuvable">Introuvable</button><button class="btn-filet" type="button" data-b="film">' + SVG.bobine.replace('<svg', '<svg style="width:18px;height:18px;color:var(--or)"') + 'Le film</button>';
+    };
+    rendre(false);
+    const racine = tel.el.closest('.telephone');
+    const choisir = (e2, pop) => { etat = e2; $$('[data-etat]', racine).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.etat === etat))); rendre(pop); };
+    racine.addEventListener('click', (e) => { const b = e.target.closest('[data-etat]'); if (b) choisir(b.dataset.etat, true); });
+    vue.addEventListener('click', async (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.b === 'vu') {
+        b.classList.add('poinconne'); b.disabled = true;
+        if (!calme) b.animate([{ transform: 'none' }, { transform: 'translateY(4px) scale(.98)' }, { transform: 'none' }], { duration: 300 });
+        await attendre(700); choisir('vu', true); secouer(tel);
+        tel.toast('<b>Enregistré</b> · le clap jouerait ici (page 7)');
+      } else if (b.dataset.b === 'plex') tel.toast('Plex s’ouvrirait sur le film.');
+      else if (b.dataset.b === 'introuvable') tel.toast('Le film passerait « perdu » dans sa salle.');
+      else if (b.dataset.b === 'film') tel.toast('La feuille « Le film » du chroniqueur s’ouvrirait (page 6).');
+      else if (b.dataset.b === 'podium') tel.toast('Choisir la marche : 1, 2 ou 3 (libre).');
+      else if (b.dataset.b === 'corriger') tel.toast('Le formulaire du journal s’ouvrirait, prérempli.');
+      else if (b.classList.contains('real')) tel.toast('La page de G. A. Smith s’ouvrirait.');
+      else if (b.classList.contains('retour')) tel.toast('Retour à l’année 1898.');
+    });
+  }
+
+  // ---------- Page 6 : la feuille de lecture ----------
+  function pageFeuille(tel) {
+    const vue = tel.vue;
+    vue.innerHTML = `<div class="titre-annee" style="padding-top:70px"><h3 class="millesime">1898</h3><p class="monde-sous">Les origines · la manivelle</p></div>
+      <section class="cartouche deplie"><div class="cart-tete"><span class="cart-an">1898</span><img class="embleme" src="${emblemeURL('ours')}" alt="Ours"></div><p class="ouverture">${paragraphes(OUV98)[0]}</p><div class="cart-liens"><button class="lien" type="button" data-f="ouverture">Lire l’ouverture</button></div></section><div style="height:400px"></div>`;
+    const F = new Feuille(tel);
+    const DEF = {
+      ouverture: { espece: 'Ouverture', titre: '1898', texte: OUV98, num: 1 },
+      salle: { espece: 'Salle', titre: 'La guerre en carton-pâte', sous: '1898', texte: CONTEXTES.guerre, num: 2 },
+      film: { espece: 'Le film', titre: 'Photographing a Ghost', sous: '1898 · Salle « Les essentiels »', texte: FILM_GHOST, num: 3 },
+      generique: { espece: 'Générique', titre: 'Le générique de fin', sous: '1898', texte: GEN98, num: 4 },
+    };
+    const jouer = (k) => {
+      if (k === 'attente') F.ouvrir({ ...DEF.film, attente: true });
+      else if (k === 'erreur') F.ouvrir({ ...DEF.salle, erreur: true });
+      else F.ouvrir(DEF[k]);
+    };
+    const racine = tel.el.closest('.telephone');
+    racine.addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (b) jouer(b.dataset.f); });
+    let premiere = true;
+    new IntersectionObserver((es) => { if (es[0].isIntersecting && premiere) { premiere = false; setTimeout(() => jouer('ouverture'), 400); } }, { threshold: .5 }).observe(tel.el);
+  }
+
+  // ---------- Page 7 : les célébrations ----------
+  const DUREES = { clap: 5.4, ticket: 99, salle: 4.6, decennie: 11.5 };
+  const GENERIQUE = ['ANNÉES 1890', 'vues par Théophile', '', '1895 · La Sortie de l’usine Lumière à Lyon', '1895 · L’Arroseur arrosé', '1896 · L’Arrivée d’un train en gare de La Ciotat', '1896 · La Fée aux choux', '1896 · Le Manoir du diable', '1897 · Le Château hanté', '1897 · Danse serpentine', '1898 · La Lune à un mètre', '1898 · Photographing a Ghost', '1899 · Cendrillon', '1899 · L’Affaire Dreyfus', '', '91 films · 3 récompenses', 'Du 12 septembre au 28 septembre 2026'];
+  function confettis(x0, y0, e, n, cols) {
+    if (e < 0 || e > 2.6 || calme) return;
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (hash(i * 1.7) - .5) * 2.6, v = 120 + hash(i * 3.1) * 180, k = 1.6;
+      const f = (1 - Math.exp(-k * e)) / k, x = x0 + Math.cos(a) * v * f, y = y0 + Math.sin(a) * v * f + 70 * e * e, rot = e * (4 + hash(i) * 10);
+      g.save(); g.translate(x, y); g.rotate(rot); g.scale(Math.cos(rot * 1.7), 1); g.globalAlpha = clamp(2.6 - e, 0, 1); g.fillStyle = cols[i % cols.length]; g.fillRect(-2, -3, 4, 6); g.restore();
+    }
+  }
+  function pageCelebrations(tel) {
+    const el = tel.el, cv = $('.fond-celeb', el), dom = $('.celeb-dom', el), repos = $('#repos');
+    const C = { type: null, t0: 0, domFait: false };
+    const FOND = { statut: 'encours', annee: 1898, progres: 3 };
+    tel.ajouter((t) => {
+      const [w, h] = toile(cv);
+      scene1890(w, h, 0, t, FOND);
+      g.fillStyle = 'rgba(8,6,4,.45)'; g.fillRect(0, 0, w, h);
+      if (!C.type) return;
+      const e = calme ? DUREES[C.type] * .82 : (performance.now() - C.t0) / 1000;
+      if (C.type !== 'ticket' && e > DUREES[C.type]) { C.type = null; repos.style.opacity = 1; return; }
+      const sortie = C.type === 'ticket' ? 1 : clamp((DUREES[C.type] - e) / .4, 0, 1);
+      g.save(); g.globalAlpha = sortie; DESSINS[C.type](w, h, e, t); g.restore();
+    });
+    const DESSINS = {
+      clap(w, h, e, t) {
+        g.fillStyle = `rgba(0,0,0,${Math.min(.92, e * 3)})`; g.fillRect(0, 0, w, h);
+        let sx = 0, sy = 0; if (e > 1 && e < 1.3 && !calme) { sx = Math.sin(e * 90) * 4; sy = Math.cos(e * 70) * 3; }
+        const S = e < .35 ? .6 + .4 * ressort(e / .35) : 1, ang = e < .9 ? .6 + (calme ? 0 : Math.sin(e * 6) * .03) : e < 1 ? .6 * (1 - (e - .9) / .1) : 0;
+        clapGrand(w / 2 + sx, h * .42 + sy, 1.45 * S, calme ? 0 : ang, 'Photographing a Ghost');
+        if (e > 1 && e < 1.3) {
+          g.save(); g.strokeStyle = `rgba(246,217,138,${1 - (e - 1) / .3})`; g.lineWidth = 2; g.lineCap = 'round';
+          for (let j = 0; j < 7; j++) { const a = -Math.PI * .95 + j * .3, r0 = 30 + (e - 1) * 160; g.beginPath(); g.moveTo(w / 2 - 87 + Math.cos(a) * r0 * .5, h * .42 - 76 + Math.sin(a) * r0 * .5); g.lineTo(w / 2 - 87 + Math.cos(a) * r0, h * .42 - 76 + Math.sin(a) * r0); g.stroke(); }
+          g.restore();
+          g.fillStyle = `rgba(255,248,230,${Math.max(0, 1 - (e - 1) / .22)})`; g.fillRect(0, 0, w, h);
+        }
+        if (e > 1.25) {
+          const a = clamp((e - 1.25) / .3, 0, 1); g.globalAlpha *= a; g.textAlign = 'center';
+          g.fillStyle = '#E6B94A'; g.font = `38px ${F_AFF}`; g.fillText('1898', w / 2, h * .42 + 118);
+          g.fillStyle = 'rgba(242,232,213,.8)'; g.font = `600 13px ${F_CORPS}`; g.fillText('Photographing a Ghost · enregistré', w / 2, h * .42 + 142);
+          g.globalAlpha /= a || 1;
+        }
+        if (e > 2.2) {
+          const u = ease(clamp((e - 2.2) / .45, 0, 1)), y = lerp(h + 10, h - 150, u);
+          g.fillStyle = '#efe1c4'; rr(12, y, w - 24, 200, 18); g.fill();
+          g.fillStyle = '#8a6a3e'; g.textAlign = 'left'; g.font = `800 9px ${F_CORPS}`; g.fillText('LE FILM', 32, y + 30);
+          g.fillStyle = '#2a1f14'; g.font = `600 20px ${F_TITRE}`; g.fillText('Photographing a Ghost', 32, y + 54);
+          const txt = 'G. A. Smith filme un photographe qui tente de tirer le portrait d’un fantôme.', n = calme ? 40 : Math.floor(clamp((e - 2.8) * 32, 0, txt.length));
+          g.font = `400 14px ${F_TITRE}`; lignes(txt.slice(0, n), w - 64).forEach((l, k) => g.fillText(l, 32, y + 84 + k * 22));
+        }
+      },
+      ticket(w, h, e, t) {
+        g.fillStyle = '#050403'; g.globalAlpha = Math.min(1, e * 4) * .94; g.fillRect(0, 0, w, h); g.globalAlpha = 1;
+        const cx = w / 2, cy = h * .4;
+        if (e < 1.8) {
+          const k = Math.floor(e / .6), u = (e % .6) / .6, chiffre = 3 - k;
+          g.fillStyle = '#d9cdb0'; cercle(cx, cy, 104); g.fillStyle = '#b8a888';
+          g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, 104, -Math.PI / 2, -Math.PI / 2 + u * TAU); g.closePath(); g.fill();
+          g.strokeStyle = '#2a1f14'; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy, 104, 0, TAU); g.stroke(); g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, 84, 0, TAU); g.stroke();
+          g.beginPath(); g.moveTo(cx - 130, cy); g.lineTo(cx + 130, cy); g.moveTo(cx, cy - 130); g.lineTo(cx, cy + 130); g.stroke();
+          g.fillStyle = '#2a1f14'; g.textAlign = 'center'; g.font = `600 110px ${F_TITRE}`; g.fillText(chiffre, cx, cy + 38);
+          return;
+        }
+        if (e < 1.95) { g.fillStyle = `rgba(255,248,230,${1 - (e - 1.8) / .15})`; g.fillRect(0, 0, w, h); }
+        const md = e < 2.7 ? ressort(clamp((e - 1.9) / .8, 0, 1)) : 1, my = lerp(-80, cy - 30, md);
+        faisceau(cx, -20, cx, cy + 40, 90, t, .8);
+        medaille('lion', cx, my, 44, t, true);
+        confettis(cx, cy - 40, e - 2.2, 70, ['#F6D98A', '#E6B94A', '#B8862B']);
+        if (e > 2.4) {
+          const a = clamp((e - 2.4) / .3, 0, 1); g.globalAlpha = a; g.textAlign = 'center';
+          g.fillStyle = '#E6B94A'; g.font = `44px ${F_AFF}`; g.fillText('1898', cx, cy + 72);
+          g.font = `20px ${F_AFF}`; g.fillText('DANS LA BOÎTE', cx, cy + 98);
+          g.fillStyle = 'rgba(242,232,213,.7)'; g.font = `700 11px ${F_CORPS}`; g.fillText('LION · les cinq essentiels', cx, cy + 120); g.globalAlpha = 1;
+        }
+        if (e > 3.4 && e < 5.2) {
+          const u = ease(clamp((e - 3.4) / .5, 0, 1)), y = lerp(h + 20, h - 150, u) + (e > 4.8 ? (e - 4.8) * 400 : 0);
+          g.fillStyle = '#0b0b0e'; rr(cx - 86, y, 172, 104, 4); g.fill();
+          g.fillStyle = 'rgba(242,232,213,.4)'; for (let i = 0; i < 12; i++) { g.fillRect(cx - 80 + i * 14, y + 5, 6, 5); g.fillRect(cx - 80 + i * 14, y + 94, 6, 5); }
+          g.drawImage(affiche('cendrillon', 2), cx - 72, y + 16, 50, 74);
+          g.textAlign = 'left'; g.fillStyle = '#F2E8D5'; g.font = `26px ${F_AFF}`; g.fillText('1899', cx - 12, y + 50);
+          g.font = `italic 500 12px ${F_TITRE}`; g.fillStyle = 'rgba(242,232,213,.75)'; g.fillText('s’ouvre à toi', cx - 12, y + 70);
+        }
+        if (e > 2.6 && !C.lien) { C.lien = true; const l = document.createElement('button'); l.type = 'button'; l.className = 'celeb-lien'; l.textContent = 'Lire le générique'; l.onclick = () => tel.toast('La feuille du générique de 1898 s’ouvrirait.'); dom.appendChild(l); requestAnimationFrame(() => l.classList.add('visible')); }
+        if (e > 5.1 && !C.domFait) {
+          C.domFait = true; $$('.celeb-lien', dom).forEach((x) => x.remove());
+          const b = document.createElement('div'); b.className = 'celeb-ticket';
+          b.innerHTML = '<div class="ticket-p"><span class="trou"></span><span class="adm">ADMIS UNE PERSONNE</span><span class="an">1899</span><span class="mot">Le Lion de 1898 t’ouvre l’année suivante</span></div><div class="ticket-rang"><button class="btn-texte" type="button" data-t="garder">Garder dans le portefeuille</button><button class="btn-corail" type="button" data-t="utiliser">Utiliser maintenant</button></div>';
+          dom.appendChild(b); requestAnimationFrame(() => b.classList.add('visible'));
+          b.addEventListener('click', async (ev) => {
+            const bt = ev.target.closest('[data-t]'); if (!bt) return; $$('button', b).forEach((x) => { x.disabled = true; });
+            if (bt.dataset.t === 'utiliser') { $('.ticket-p', b).classList.add('poinconne'); secouer(tel); await attendre(800); tel.toast('Ticket poinçonné · en route pour 1899'); }
+            else tel.toast('Rangé dans le portefeuille · « Utiliser » au bas de la fiche');
+            b.classList.remove('visible'); await attendre(400); fin();
+          });
+        }
+      },
+      salle(w, h, e, t) {
+        g.fillStyle = `rgba(0,0,0,${Math.min(.86, e * 3)})`; g.fillRect(0, 0, w, h);
+        const mw = w - 36, my = h * .34;
+        faisceau(w / 2, -20, w / 2, my + 80, 120, t, .6);
+        const o = { part: lerp(2 / 3, 1, clamp((e - .2) / .3, 0, 1)), complet: e > 1.35, sur: 'SALLE · 1898' };
+        o.rideau = e < .6 ? 0 : e < .86 ? (e - .6) / .26 : e < 1.06 ? 1 : e < 1.35 ? 1 + (e - 1.06) / .29 : 0;
+        o.tampon = e < .8 ? 0 : e < 1.02 ? lerp(1.8, 1, ease((e - .8) / .22)) : 1;
+        o.perfs = e < 1.06 ? 0 : Math.min(8, Math.floor((e - 1.06) / .036));
+        g.save(); g.translate(18, my); g.scale(1, 1.3); marquise(0, 0, mw, 76, 'La guerre en carton-pâte', o, t); g.restore();
+        if (e > .8 && e < 1.1 && !C.choc) { C.choc = true; secouer(tel); }
+        if (e > 1.5) {
+          g.globalAlpha *= clamp((e - 1.5) / .3, 0, 1); g.textAlign = 'center';
+          g.fillStyle = '#E6B94A'; g.font = `24px ${F_AFF}`; g.fillText('Salle complète', w / 2, my + 150);
+          g.fillStyle = 'rgba(242,232,213,.75)'; g.font = `600 13px ${F_CORPS}`; g.fillText('1 salle complète sur 2 · Palme : encore une salle', w / 2, my + 174);
+        }
+      },
+      decennie(w, h, e, t) {
+        g.fillStyle = `rgba(0,0,0,${Math.min(.95, e * 3)})`; g.fillRect(0, 0, w, h);
+        const o = { part: clamp(e / 1.5, 0, 1), complet: e > 1.6, sur: 'LE VOYAGE · CHAPITRE I' };
+        marquise(18, 36, w - 36, 76, 'Années 1890 · complet', o, t);
+        if (e > 1.6 && e < 7.4) {
+          g.save(); g.beginPath(); g.rect(0, 134, w, h - 134); g.clip(); g.textAlign = 'center';
+          const y0 = h + 20 - (e - 1.6) * 78;
+          GENERIQUE.forEach((l, k) => {
+            const y = y0 + k * 30; if (y < 120 || y > h + 30) return;
+            if (k === 0) { g.fillStyle = '#E6B94A'; g.font = `24px ${F_AFF}`; } else if (k === 1) { g.fillStyle = 'rgba(242,232,213,.75)'; g.font = `italic 500 15px ${F_TITRE}`; } else { g.fillStyle = '#F2E8D5'; g.font = `500 13.5px ${F_TITRE}`; }
+            g.fillText(l, w / 2, y);
+          });
+          const yf = y0 + GENERIQUE.length * 30 + 40; g.fillStyle = '#F2EDE6'; g.font = `44px ${F_AFF}`; g.fillText('FIN', w / 2, Math.max(h * .55, yf));
+          g.restore();
+        }
+        if (e > 7.2) {
+          const u = ease(clamp((e - 7.2) / .5, 0, 1)), py = lerp(h + 20, h * .42, u);
+          g.fillStyle = 'rgba(0,0,0,.4)'; rr(w / 2 - 128, py + 6, 256, 230, 10); g.fill();
+          const pg = g.createRadialGradient(w / 2 - 60, py, 10, w / 2, py + 100, 240); pg.addColorStop(0, '#f5ecd8'); pg.addColorStop(1, '#dcc59a'); g.fillStyle = pg; rr(w / 2 - 130, py, 260, 230, 10); g.fill();
+          g.fillStyle = '#8a6a3e'; g.textAlign = 'center'; g.font = `800 9px ${F_CORPS}`; g.fillText('PASSEPORT DU VOYAGE · PAGE 1', w / 2, py + 24);
+          if (e > 7.8) {
+            const s = e < 8.1 ? lerp(2.3, 1, ease((e - 7.8) / .3)) : 1;
+            if (e > 7.95 && !C.choc) { C.choc = true; secouer(tel); }
+            tamponRond(w / 2, py + 124, 78, 'PASSEPORT', 'ANNÉES 1890', 'Spectateur des origines', -.24, s, 'rgba(168,56,42,.88)');
+          }
+        }
+      },
+    };
+    const fin = () => { C.type = null; dom.innerHTML = ''; repos.style.opacity = 1; tel.go(); };
+    const racine = el.closest('.telephone');
+    racine.addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-c]'); if (!b) return;
+      dom.innerHTML = ''; Object.assign(C, { type: b.dataset.c, t0: performance.now(), domFait: false, lien: false, choc: false });
+      repos.style.opacity = 0; tel.go();
+      if (calme && C.type === 'ticket') { C.t0 = performance.now() - 6000; }
+    });
+  }
+
+  // ---------- Démarrage ----------
+  function demarrer() {
+    pageAnnee(new Tel($('#tel1')), D1898, true);
+    pageAnnee(new Tel($('#tel2')), D1896, false);
+    pageVerrou(new Tel($('#tel3')));
+    pageDecennie(new Tel($('#tel4')));
+    pageFilm(new Tel($('#tel5')));
+    pageFeuille(new Tel($('#tel6')));
+    pageCelebrations(new Tel($('#tel7')));
+    const liens = $$('.onglets a');
+    const obs = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) liens.forEach((a) => a.classList.toggle('actif', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '-45% 0px -50% 0px' });
+    $$('.page, .change').forEach((s) => obs.observe(s));
+  }
+  const polices = document.fonts ? Promise.all(['20px Limelight', '600 20px Fraunces', 'italic 500 20px Fraunces', '400 20px Fraunces', '700 12px Manrope', '800 12px Manrope'].map((f) => document.fonts.load(f).catch(() => null))) : Promise.resolve();
+  Promise.race([polices, new Promise((r) => setTimeout(r, 2500))]).then(demarrer);
+})();
+</script>
