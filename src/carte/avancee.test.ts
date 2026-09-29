@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { jouerAvancee, type Scene } from './avancee'
+import type { FrontiereAvancee } from '../voyage/regles'
 
 function sceneNotee() {
   const journal: string[] = []
@@ -31,5 +32,53 @@ describe('la frontière qui avance, mise en scène', () => {
     const { journal, scene } = sceneNotee()
     await jouerAvancee({ anneeQuittee: 1899, decennieQuittee: 1890 }, 1900, [], scene)
     expect(journal).not.toContain('tampon 1890')
+  })
+})
+
+describe('la frontière qui avance, chaque étape attend la précédente', () => {
+  async function jouerEnDetail(avancee: FrontiereAvancee, vers: number, tampons: number[]) {
+    const journal: string[] = []
+    const etape = (nom: string) => async () => {
+      journal.push(`début ${nom}`)
+      await new Promise<void>((fini) => setTimeout(fini, 10))
+      journal.push(`fin ${nom}`)
+    }
+    const scene: Scene = {
+      passerLaPorte: etape('porte'),
+      marcher: etape('marche'),
+      montrerTampon: etape('tampon'),
+      montrerCarton: etape('carton'),
+      claquer: () => void journal.push('clap'),
+    }
+    vi.useFakeTimers()
+    try {
+      const fin = jouerAvancee(avancee, vers, tampons, scene).then(() => void journal.push('fini'))
+      await vi.runAllTimersAsync()
+      await fin
+    } finally {
+      vi.useRealTimers()
+    }
+    return journal
+  }
+
+  // Mutation : un `await` retiré devant une étape de la scène.
+  it('d’une décennie à l’autre, aucune étape ne commence avant la fin de la précédente', async () => {
+    expect(await jouerEnDetail({ anneeQuittee: 1899, decennieQuittee: 1890 }, 1900, [1890])).toEqual([
+      'début porte', 'fin porte',
+      'début tampon', 'fin tampon',
+      'début marche', 'fin marche',
+      'clap',
+      'début carton', 'fin carton',
+      'fini',
+    ])
+  })
+
+  // Mutation : l’`await` retiré devant la marche dans une décennie.
+  it('dans une décennie, le clap attend la fin de la marche', async () => {
+    expect(await jouerEnDetail({ anneeQuittee: 1897, decennieQuittee: null }, 1898, [])).toEqual([
+      'début marche', 'fin marche',
+      'clap',
+      'fini',
+    ])
   })
 })
