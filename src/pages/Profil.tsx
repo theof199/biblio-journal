@@ -1,3 +1,4 @@
+import { Version } from '../profil/Version'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { cles } from '../api/cles'
@@ -111,6 +112,7 @@ export default function Profil() {
         <img src={`${import.meta.env.BASE_URL}tmdb.svg`} alt="TMDB" className={styles.logoTmdb} />
         <p>This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</p>
       </div>
+      <Version />
     </div>
   )
 }

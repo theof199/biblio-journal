@@ -1,0 +1,6 @@
+.version {
+  margin-top: var(--espace-3);
+  text-align: center;
+  font-size: var(--taille-xs);
+  color: var(--couleur-texte-doux);
+}
