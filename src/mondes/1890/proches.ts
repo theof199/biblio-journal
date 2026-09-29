@@ -26,7 +26,7 @@ export function guirlandesLampions(g: CanvasRenderingContext2D, v: VueMonde, k97
 }
 
 /** Un feu d'artifice (maquette : `artifice`). */
-function artifice(g: CanvasRenderingContext2D, v: VueMonde, cx: number, cy: number, per: number, ph: number, force = 1): void {
+export function artifice(g: CanvasRenderingContext2D, v: VueMonde, cx: number, cy: number, per: number, ph: number, force = 1): void {
   const u = v.vivant ? (((v.t / per + ph) % 1) + 1) % 1 : 0.5 + ph * 0.3
   const a = force * (0.25 + 0.75 * v.nuit)
   if (u < 0.22) {

@@ -1,6 +1,6 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
-import { clamp, ease, hash, lisse, TAU } from '../../carte/outils'
+import { clamp, ease, hash, lerp, lisse, TAU } from '../../carte/outils'
 import { chantier, avancement, ELEMENTS } from './chantier'
 import { quantites, remplissage, ampoules as ampoulesDe } from './foire'
 import { imageDu1890 } from './images'
@@ -226,7 +226,12 @@ export function lampion(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: 
   g.globalAlpha = ba
 }
 
-function bonimenteur(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: number, sc = 1.3): void {
+/**
+ * Le bonimenteur (maquette : `bonimenteur`). `parle` : le bras se lève et s'agite (l'estrade du
+ * chroniqueur qui compose) ; `repos` : l'angle du bras au repos (maquette : `D.repos`, que l'estrade
+ * pose). Sans lui, le bras se balance, comme sur la carte, qui appelle sans ces deux paramètres.
+ */
+export function bonimenteur(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: number, sc = 1.3, parle = false, repos?: number): void {
   g.save(); g.translate(x, y); g.scale(sc, sc)
   ombre(g, 0, 0, 6, 1.6, 0.38)
   g.fillStyle = g.strokeStyle = c('#0c0806')
@@ -240,7 +245,11 @@ function bonimenteur(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: num
   g.lineWidth = 0.9
   g.beginPath(); g.moveTo(-3, -13); g.lineTo(-6, 0); g.stroke()
   // Le bras au repos : ce qui montre la case touchée (`D.pointe`) n'est pas porté (l'aperçu de la page en tient lieu).
-  const an = -1.9 + (v.vivant ? Math.sin(v.t * 2.4) * 0.45 : 0)
+  const an = parle
+    ? -1.3 + (v.vivant ? Math.sin(v.t * 7) * 0.55 + Math.sin(v.t * 2.3) * 0.3 : 0)
+    : repos !== undefined
+      ? repos
+      : -1.9 + (v.vivant ? Math.sin(v.t * 2.4) * 0.45 : 0)
   g.lineWidth = 1.5
   g.beginPath(); g.moveTo(1.5, -15.5); g.lineTo(1.5 + Math.cos(an) * 8, -15.5 + Math.sin(an) * 8); g.stroke()
   g.restore()
@@ -361,8 +370,13 @@ function projectionTrain(g: CanvasRenderingContext2D, v: VueMonde, sx: number, s
   g.globalAlpha = ga
 }
 
-/** La façade de la baraque, ouverte (maquette : `baraqueFacade`, sans ses deux états fermés : plan 2b). */
-function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { ampoules: readonly boolean[]; file: number; lampes: number; sansBoni: boolean }): void {
+/**
+ * La façade de la baraque (maquette : `baraqueFacade`). Ouverte sur la carte, qui n'appelle jamais
+ * avec `ferme` ; sur le bandeau d'une année (plan 2b), ses deux états fermés : `verrou` (les
+ * planches clouées sur l'écran, le cadenas, les ampoules qui vacillent) et `attente` (l'échelle,
+ * le monteur qui fait signe, la barre du montage), les lampions éteints dans les deux.
+ */
+export function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { ampoules: readonly boolean[]; file: number; lampes: number; sansBoni: boolean; ferme?: 'verrou' | 'attente' }): void {
   const x0 = B_X0, x1 = B_X1, cx = B_CX, top = B_TOP, s0 = B_SOL
   ombre(g, cx, s0 + 4, 98, 9)
   g.strokeStyle = c('#2b1c14'); g.lineWidth = 2
@@ -396,7 +410,8 @@ function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { ampoule
     const by = top + 46
     g.fillStyle = c('#20150d')
     cercle(g, bx, by, 3.6)
-    if (opts.ampoules[i]) lampion(g, v, bx, by, 2.5, 0, ['#F6D98A'], 1, 0.55)
+    const vacille = opts.ferme === 'verrou' && v.vivant && hash(Math.floor(v.t * 3) + i) < 0.7
+    if (opts.ampoules[i] && !vacille) lampion(g, v, bx, by, 2.5, 0, ['#F6D98A'], 1, 0.55)
     else { g.fillStyle = c('#F2E8D5', 0.16); cercle(g, bx, by, 2) }
   }
   const sx = 262, sy = top + 54, sw = 76, sh = 46
@@ -417,11 +432,40 @@ function baraqueFacade(g: CanvasRenderingContext2D, v: VueMonde, opts: { ampoule
   }
   g.fillStyle = c('#7A1F1A')
   for (let i = 0; i < 7; i++) { g.beginPath(); g.arc(sx + sw / 14 + (i * sw) / 7, sy - 1, sw / 14, 0, Math.PI); g.fill() }
+  if (opts.ferme === 'verrou') {
+    for (let k = 0; k < 3; k++) {
+      g.save(); g.translate(cx, sy + 9 + k * 14); g.rotate(k % 2 ? 0.13 : -0.1)
+      g.fillStyle = c('#5a3e26'); g.fillRect(-48, -5, 96, 10); g.fillStyle = c('#2e2014'); g.fillRect(-48, 3, 96, 2)
+      g.fillStyle = c('#1c140c'); cercle(g, -42, 0, 1.3); cercle(g, 42, 0, 1.3); g.restore()
+    }
+    const an = v.vivant ? Math.sin(v.t * 1.7) * 0.28 : 0.1
+    g.save(); g.translate(cx, sy + sh - 2); g.rotate(an)
+    g.strokeStyle = c('#9a8f7c'); g.lineWidth = 1.4
+    for (let k = 0; k < 3; k++) { g.beginPath(); g.ellipse(0, k * 4, 1.6, 2.4, 0, 0, TAU); g.stroke() }
+    g.strokeStyle = c('#c9b894'); g.lineWidth = 1.8; g.beginPath(); g.arc(0, 15, 4, Math.PI, 0); g.stroke()
+    g.fillStyle = c('#b8a07a'); rr(g, -6, 15, 12, 10, 2); g.fill(); g.fillStyle = c('#1c140c'); cercle(g, 0, 19, 1.4); g.restore()
+  }
   g.fillStyle = c('#5a3e26'); g.fillRect(x0 - 4, s0 - 18, x1 - x0 + 8, 18)
   g.fillStyle = c('#2e2014'); g.fillRect(x0 - 4, s0 - 18, x1 - x0 + 8, 3)
   g.fillStyle = c('#3a2819')
   for (let k = 0; k < 3; k++) g.fillRect(x0 - 16 + k * 4, s0 - 6 * (k + 1), 14, 6)
-  for (let i = 0; i <= 9; i++) lampion(g, v, x0 - 10 + i * wd, top + 9, 2, i, null, clamp(opts.lampes * 10 - i, 0, 1))
+  for (let i = 0; i <= 9; i++) lampion(g, v, x0 - 10 + i * wd, top + 9, 2, i, null, opts.ferme ? 0 : clamp(opts.lampes * 10 - i, 0, 1))
+  if (opts.ferme === 'attente') {
+    g.strokeStyle = c('#6b4a2a'); g.lineWidth = 2
+    g.beginPath(); g.moveTo(352, s0 - 18); g.lineTo(334, top + 18); g.moveTo(364, s0 - 18); g.lineTo(346, top + 18); g.stroke()
+    g.lineWidth = 1.4
+    for (let k = 1; k < 8; k++) {
+      const u = k / 8
+      g.beginPath(); g.moveTo(lerp(352, 334, u), lerp(s0 - 18, top + 18, u)); g.lineTo(lerp(364, 346, u), lerp(s0 - 18, top + 18, u)); g.stroke()
+    }
+    const bras = v.vivant ? Math.sin(v.t * 5) * 0.5 : 0
+    g.save(); g.translate(343, top + 64); g.scale(1.1, 1.1)
+    g.fillStyle = g.strokeStyle = c('#0c0806'); g.lineCap = 'round'; g.lineWidth = 1.5; corps(g, 'homme', 0, 0)
+    g.beginPath(); g.moveTo(-1, -13); g.lineTo(-7, -18 + bras * 6); g.stroke()
+    g.fillStyle = c('#E9DCC0'); cercle(g, -8, -19 + bras * 6, 1.6); g.restore()
+    const tri = 1 - Math.abs((((v.t / 14) % 1) + 1) % 1 * 2 - 1)
+    g.fillStyle = c('#E9DCC0', 0.9); g.fillRect(x0 + 16, top + 16, (x1 - x0 - 32) * (v.vivant ? 0.35 + 0.3 * tri : 0.5), 2)
+  }
   if (!opts.sansBoni) bonimenteur(g, v, 240, s0 - 18)
   for (let j = 0; j < opts.file; j++) {
     const bx = 228 + (j % 6) * 12 + (j >= 6 ? 6 : 0)
@@ -656,7 +700,7 @@ function baraqueChantier(g: CanvasRenderingContext2D, v: VueMonde, k: number, op
 }
 
 /** 1897 : le guichet, planches, auvent, enseigne, puis la lampe s'allume (maquette : `guichet`, `guichetChantier`). */
-function guichet(g: CanvasRenderingContext2D, v: VueMonde, penche = 0, lampe = 1): void {
+export function guichet(g: CanvasRenderingContext2D, v: VueMonde, penche = 0, lampe = 1): void {
   const x = 84, y = 608
   ombre(g, x + 3, y + 3, 44, 6)
   g.fillStyle = c('#5a3e26'); g.fillRect(x - 34, y - 58, 68, 58)
@@ -759,7 +803,7 @@ function manegeChantier(g: CanvasRenderingContext2D, v: VueMonde, k: number, a: 
 }
 
 /** Le manège (maquette : `carrousel`). */
-function carrousel(g: CanvasRenderingContext2D, v: VueMonde, cx: number, base: number, R: number, top: number, a: number, nch = 6, enAllume = 1, montes = nch): void {
+export function carrousel(g: CanvasRenderingContext2D, v: VueMonde, cx: number, base: number, R: number, top: number, a: number, nch = 6, enAllume = 1, montes = nch): void {
   ombre(g, cx + 3, base + 5, R + 10, 10)
   g.fillStyle = c('#3a2819'); g.beginPath(); g.ellipse(cx, base, R + 6, 11, 0, 0, TAU); g.fill()
   g.fillStyle = c('#5a3e26'); g.beginPath(); g.ellipse(cx, base - 3, R + 6, 11, 0, 0, TAU); g.fill()

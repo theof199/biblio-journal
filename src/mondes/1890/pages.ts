@@ -1,5 +1,7 @@
 import type { HabillagePages } from '../types'
-import { c } from './couleur'
+import { dessinerBandeau } from './bandeau'
+import { dessinerScene } from './scene'
+import { dessinerEstrade } from './estrade'
 
 /**
  * Les pages des années 1890 : l'affiche de la baraque, la projection, le billet, le prospectus du
@@ -46,17 +48,8 @@ export const PAGES_1890: HabillagePages = {
     billet: { tete: 'Cinématographe · billet de séance', titre: 'Séance du', valider: 'Composter le billet', validerSous: 'et revenir à l’année' },
   },
   hauteurs: { bandeau: 250, scene: 300, estrade: 190 },
-  // Réduits à un fond jusqu'à la tâche 5, qui porte `dessinBandeau`, `dessinTheatre` et `dessinEstrade`.
-  dessinerBandeau: (v) => {
-    v.ctx.fillStyle = c('#3a2a1b')
-    v.ctx.fillRect(0, 0, v.W, v.H)
-  },
-  dessinerScene: (v) => {
-    v.ctx.fillStyle = c('#2a1510')
-    v.ctx.fillRect(0, 0, v.W, v.H)
-  },
-  dessinerEstrade: (v) => {
-    v.ctx.fillStyle = c('#4a1a12')
-    v.ctx.fillRect(0, 0, v.W, v.H)
-  },
+  // Portés de la maquette : `dessinBandeau`, `dessinTheatre`, `dessinEstrade`.
+  dessinerBandeau,
+  dessinerScene,
+  dessinerEstrade,
 }

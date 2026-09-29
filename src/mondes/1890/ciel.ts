@@ -36,7 +36,7 @@ const halo = (g: CanvasRenderingContext2D, x: number, y: number, r: number, hex:
 }
 
 /** Le soleil ou la lune, selon l'heure (maquette : `astre`). */
-function astre(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: number, r: number): void {
+export function astre(g: CanvasRenderingContext2D, v: VueMonde, x: number, y: number, r: number): void {
   const nk = v.nuit
   if (nk < 0.99) {
     g.globalAlpha = 1 - nk

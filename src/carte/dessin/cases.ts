@@ -54,7 +54,7 @@ const plaque = (g: CanvasRenderingContext2D, x: number, y: number, s: string, fo
   g.fillText(s, x, y + 13)
 }
 
-const MEDAILLES: Record<string, readonly [string, string, string]> = {
+export const MEDAILLES: Record<string, readonly [string, string, string]> = {
   palme: ['#FBE3A0', '#B8862B', '#6B4712'],
   lion: ['#F8EFDC', '#B9A57C', '#5A4A2E'],
   ours: ['#EBB684', '#8A5530', '#4A2A12'],
@@ -105,7 +105,7 @@ function glyphe(g: CanvasRenderingContext2D, type: string, c: string): void {
   }
 }
 /** La médaille qui flotte au-dessus d'une année récompensée (maquette : `medaille`), aux couleurs du monde. */
-function medaille(g: CanvasRenderingContext2D, type: string, x: number, y: number, i: number, t: number, vivant: boolean, couleur: Monde['couleur']): void {
+export function medaille(g: CanvasRenderingContext2D, type: string, x: number, y: number, i: number, t: number, vivant: boolean, couleur: Monde['couleur']): void {
   const [c0, c1, c2] = MEDAILLES[type]!
   g.save()
   g.translate(x, y)
