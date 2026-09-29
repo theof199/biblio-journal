@@ -144,14 +144,78 @@ describe('la carte', () => {
     expect(moteur.reglerCalme).toHaveBeenLastCalledWith(true)
   })
 
-  // Mutation : `etatDeCase(a, true)` pour tout le monde.
+  // Mutation : `etatDeCase(a, true)` pour tout le monde ; et, relecture de la tâche 9, dans
+  // l'objectif du HUD seul (`etatDeCase(enCours, true)`), qui dirait « Touche l’année pour l’ouvrir ».
   it('pour un membre hors IA, l’année que le Voyage suivi n’a pas ouverte se rattrape', async () => {
     const { rappels, etats } = monter({ ...VOYAGE, ia: false, source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: 1898 } })
     expect(await screen.findByText('Tu suis le Voyage de Théo')).toBeInTheDocument()
+    expect(screen.getByText('Tu le rattrapes bientôt')).toBeInTheDocument()
+    expect(screen.queryByText('Touche l’année pour l’ouvrir')).not.toBeInTheDocument()
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
     act(() => rappels().apercu(1898, { x: 10, y: 10 }))
     expect(await screen.findByText('Tu le rattrapes bientôt.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '1898, tu le rattrapes bientôt' })).toBeInTheDocument()
+  })
+
+  /** 1898 ouverte, en cours, sa Palme déjà là : il ne reste que le ticket. */
+  const OUVERTE = {
+    ...VOYAGE,
+    annees: VOYAGE.annees.map((a) => (a.annee === 1898 ? { ...a, visitee: true, recompense: 'palme' as const, progression: P, profondeur: 6 } : a)),
+  }
+
+  // Relecture de la tâche 9. Mutations : `v.ia` remplacé par `true` dans l'objectif du HUD, ou
+  // dans l'aperçu (un membre hors IA lirait le jury).
+  it('pour un membre hors IA, l’objectif d’une année ouverte ne parle jamais du jury', async () => {
+    const { rappels, etats } = monter({ ...OUVERTE, ia: false, source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: 1898 } })
+    expect(await screen.findByText('Ticket : au Lion')).toBeInTheDocument()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().apercu(1898, { x: 10, y: 10 }))
+    await waitFor(() => expect(screen.getAllByText('Ticket : au Lion')).toHaveLength(2))
+    expect(screen.queryByText(/jury/)).not.toBeInTheDocument()
+  })
+
+  // Relecture de la tâche 9. Mutation : `ticketConnu` à `false` dans l'objectif du HUD (le
+  // ticket déjà reçu, il réclamerait encore un ticket).
+  it('l’objectif ne réclame plus de ticket quand celui de l’année suivante est reçu', async () => {
+    monter(OUVERTE, {
+      'GET /api/me/voyage/tickets': () =>
+        json({ tickets: [{ annee: 1899, motif: '1898 t’a bien occupé.', emis_le: '2026-09-28T10:00:00.000Z', montre_le: null, utilise_le: null }] }),
+    })
+    expect(await screen.findByText('Tout est vu')).toBeInTheDocument()
+  })
+
+  // Relecture de la tâche 9. Mutations : le relais de changement de `calme` retiré de
+  // `CarteCanvas` (`[]` au lieu de `[calme]`) : le réglage changé en route ne gagnerait jamais le
+  // moteur, et une marche en cours ne s'achèverait pas.
+  it('relaie au moteur le réglage des animations changé en cours de route', async () => {
+    const ecouteurs = new Set<() => void>()
+    const mq = { matches: false, addEventListener: (_: string, f: () => void) => ecouteurs.add(f), removeEventListener: (_: string, f: () => void) => ecouteurs.delete(f) }
+    vi.stubGlobal('matchMedia', () => mq)
+    const { moteur, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(moteur.reglerCalme).toHaveBeenLastCalledWith(false)
+    act(() => {
+      mq.matches = true
+      ecouteurs.forEach((f) => f())
+    })
+    expect(moteur.reglerCalme).toHaveBeenLastCalledWith(true)
+  })
+
+  // Relecture de la tâche 9. Mutations : « Tu es ici » qui n'appelle rien ; « Vue d’ensemble »
+  // qui ne bascule rien ; le relais `ensemble` de `CarteCanvas` retiré (le bouton ne saurait
+  // jamais que la vue a changé).
+  it('« Tu es ici » et « Vue d’ensemble » commandent le moteur, et suivent la vue qu’il annonce', async () => {
+    const { moteur, rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    fireEvent.click(screen.getByRole('button', { name: 'Tu es ici' }))
+    expect(moteur.allerIci).toHaveBeenLastCalledWith()
+    fireEvent.click(screen.getByRole('button', { name: 'Vue d’ensemble' }))
+    expect(moteur.basculerEnsemble).toHaveBeenLastCalledWith(true)
+    act(() => rappels().ensemble(true))
+    const revenir = screen.getByRole('button', { name: 'Revenir à la carte' })
+    expect(revenir).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(revenir)
+    expect(moteur.basculerEnsemble).toHaveBeenLastCalledWith(false)
   })
 })
 
@@ -210,6 +274,25 @@ describe('le ticket', () => {
     })
     fireEvent.click(await screen.findByRole('button', { name: /Utiliser le ticket/ }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Ce ticket n’existe pas, ou a déjà été utilisé.')
+  })
+
+  // Relecture de la tâche 9. Mutation : la garde du double encaissement jamais relâchée
+  // (`onSettled` retiré) : après une panne, le ticket ne répondrait plus jusqu'au rechargement.
+  it('après une panne, le ticket se réessaie', async () => {
+    let essais = 0
+    const { requetes } = monter(VOYAGE, {
+      'GET /api/me/voyage/tickets': () => json({ tickets: [TICKET] }),
+      'POST /api/me/voyage/tickets/1899/utiliser': () => {
+        essais += 1
+        return json({ code: 'INTERNAL', message: 'Une erreur est survenue. Réessaie.', retryable: true }, 500)
+      },
+    })
+    fireEvent.click(await screen.findByRole('button', { name: /Utiliser le ticket/ }))
+    await screen.findByRole('alert')
+    await waitFor(() => expect(screen.getByRole('button', { name: /Utiliser le ticket/ })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: /Utiliser le ticket/ }))
+    await waitFor(() => expect(essais).toBe(2))
+    expect(requetes.filter((r) => r === 'POST /api/me/voyage/tickets/1899/utiliser')).toHaveLength(2)
   })
 
   // Mutation : relire `anneeAvatar` sans la mémoire de l'appareil (le ticket utilisé sur la fiche ne se voit jamais marcher).
@@ -323,6 +406,44 @@ describe('le ticket', () => {
     const { moteur } = monter(v1900)
     await waitFor(() => expect(moteur.direAdieu).toHaveBeenCalledWith(1890))
     expect(vi.mocked(moteur.passerLaPorte).mock.invocationCallOrder[0]!).toBeLessThan(vi.mocked(moteur.direAdieu).mock.invocationCallOrder[0]!)
+    // Relecture de la tâche 9. Mutation : `montrerCarton` sans son calque (le carton du monde
+    // neuf ne se montrerait jamais).
+    expect(await screen.findByText('Années 1900')).toBeInTheDocument()
+  })
+
+  /** Le passage à 1900 : les années 1890 toutes bouclées d'un Ours, 1900 en cours. */
+  const V1900 = voyage1890(1900, [
+    ...[1895, 1896, 1897, 1898, 1899].map((annee) => ({ annee, statut: 'ouverte' as const, visitee: true, recompense: 'ours' as const, progression: P })),
+    { annee: 1900, statut: 'en_cours' as const, visitee: false, recompense: null, progression: null },
+  ])
+
+  // Relecture de la tâche 9. Mutations : `void moteur.passerLaPorte()` (l'adieu dit pendant que la
+  // porte s'ouvre encore) ; `void moteur.direAdieu(…)` (l'avatar repart pendant l'adieu).
+  it('attend la porte passée pour dire adieu, et l’adieu dit pour repartir', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1899')
+    const { moteur } = monter(V1900)
+    let passee: () => void = () => undefined
+    let dit: () => void = () => undefined
+    vi.mocked(moteur.passerLaPorte).mockImplementationOnce(() => new Promise<void>((fin) => (passee = fin)))
+    vi.mocked(moteur.direAdieu).mockImplementationOnce(() => new Promise<void>((fin) => (dit = fin)))
+    await waitFor(() => expect(moteur.passerLaPorte).toHaveBeenCalled())
+    expect(moteur.direAdieu).not.toHaveBeenCalled()
+    await act(async () => passee())
+    await waitFor(() => expect(moteur.direAdieu).toHaveBeenCalledWith(1890))
+    expect(moteur.marcher).not.toHaveBeenCalled()
+    await act(async () => dit())
+    await waitFor(() => expect(moteur.marcher).toHaveBeenCalledWith(1900))
+  })
+
+  // Relecture de la tâche 9. Mutation : `jouerAvancee(…, [], …)` (les tampons du passeport
+  // retenus : la décennie bouclée ne se tamponnerait jamais).
+  it('tamponne le passeport quand la décennie quittée est bouclée', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1899')
+    const { moteur } = monter({ ...V1900, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] })
+    await waitFor(() => expect(moteur.direAdieu).toHaveBeenCalledWith(1890))
+    const tampon = await screen.findByText('Années 1890')
+    expect(tampon.closest('[role="status"]')).toHaveTextContent('Spectateur des origines')
+    expect(moteur.marcher).not.toHaveBeenCalled()
   })
 
   // Mutation : la petite affiche sans son image ou sans sa légende de crédit.

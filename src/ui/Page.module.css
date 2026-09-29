@@ -13,11 +13,6 @@
   margin: 0;
 }
 
-.texte {
-  margin: 0;
-  color: var(--couleur-texte-doux);
-}
-
 .bouton {
   align-self: flex-start;
   min-height: var(--cible-tactile);

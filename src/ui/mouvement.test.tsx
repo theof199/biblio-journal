@@ -31,4 +31,20 @@ describe('useMouvementReduit', () => {
     act(() => changer(true))
     expect(result.current).toBe(true)
   })
+
+  // Relecture de la tâche 9. Mutation : le repli `addListener` retiré (Safari avant 14 n'a pas
+  // `addEventListener` sur `MediaQueryList` : le réglage changé en route n'y serait jamais suivi).
+  it('suit le réglage là où seul `addListener` existe', () => {
+    const ecouteurs = new Set<() => void>()
+    const mq = { matches: false, addListener: (f: () => void) => ecouteurs.add(f), removeListener: (f: () => void) => ecouteurs.delete(f) }
+    vi.stubGlobal('matchMedia', () => mq)
+    const { result, unmount } = renderHook(() => useMouvementReduit())
+    act(() => {
+      mq.matches = true
+      ecouteurs.forEach((f) => f())
+    })
+    expect(result.current).toBe(true)
+    unmount()
+    expect(ecouteurs.size).toBe(0)
+  })
 })
