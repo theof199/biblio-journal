@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { construireRoute, pointA } from './route'
 import { placerCarte } from './placement'
 import { cibleCamera, poidsSections } from './camera'
-import { rayonEcran, trouverZone, type Zone } from './zones'
+import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { geoEnsemble } from './ensemble'
 import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
@@ -52,8 +52,25 @@ describe('le placement', () => {
     expect(plan.hauteur).toBe(derniere.y0 + derniere.hauteur)
   })
 
+  // Mutation : retirer la garde de `trace1890` (ou la borne `i < 1`). Le message est exigé : sans
+  // garde, l'indice −1 fait lever un `TypeError` dans `placerCarte`, et `toThrow()` seul passait.
   it('refuse une année avant le départ du Voyage', () => {
-    expect(() => placerCarte([1893, 1895], traceDe)).toThrow()
+    expect(() => placerCarte([1893, 1895], traceDe)).toThrow('les années 1890 du Voyage vont de 1895 à 1899')
+  })
+
+  // Mutation : `porte: trace.porte` sans `base` pose toutes les portes dans la première section ;
+  // `section` figée à 0 donne à chaque case le monde des années 1890.
+  it('rapporte chaque porte et chaque case à sa section, dans le repère de la carte', () => {
+    expect(plan.points[plan.sections[0]!.porte]).toEqual([210, 820])
+    expect(plan.points[plan.sections[1]!.porte]).toEqual([195, 1240 + 170 + 10 * 170 + 40])
+    expect(plan.cases.map((c) => plan.sections[c.section]!.decennie)).toEqual(plan.cases.map((c) => Math.floor(c.annee / 10) * 10))
+  })
+
+  // Mutation : retirer le tri de `placerCarte` pose les décennies dans l'ordre reçu.
+  it('range les années quel que soit l’ordre reçu', () => {
+    const melange = placerCarte([1901, 1897, 1895, 1900], traceDe)
+    expect(melange.cases.map((c) => c.annee)).toEqual([1895, 1897, 1900, 1901])
+    expect(melange.sections.map((s) => s.decennie)).toEqual([1890, 1900])
   })
 
   // Mutation : retirer la garde de `placerCarte` pose des années sans case.
@@ -95,6 +112,17 @@ describe('les zones', () => {
   // Mutation : `Math.max(20, …)` comme la maquette laisse des cibles de 40 px.
   it('ne descendent jamais sous 44 px de diamètre', () => {
     expect(rayonEcran({ a: 2, b: 0, c: 0, d: 2, e: 0, f: 0 }, 2, 3)).toBe(22)
+  })
+
+  // Mutation : un rayon qui ignore l'échelle du repère (`lr / dpr`), n'en lit qu'un coefficient
+  // (`m.a`), ou oublie le `DPR`.
+  it('mettent un grand rayon à l’échelle de l’écran', () => {
+    expect(rayonEcran({ a: 3, b: 4, c: -4, d: 3, e: 0, f: 0 }, 2, 30)).toBe(75)
+  })
+
+  // Mutation : `b` et `c` échangés, la translation ou le `DPR` oubliés sur l'un des deux axes.
+  it('ramènent un point du repère courant en px CSS de l’écran', () => {
+    expect(ecranDe({ a: 2, b: 1, c: 3, d: 4, e: 10, f: 40 }, 2, 5, 7)).toEqual({ x: 20.5, y: 36.5 })
   })
 
   it('rendent la plus prioritaire, puis la plus proche', () => {
@@ -143,6 +171,18 @@ describe('le cache des tuiles', () => {
     expect(lru.get(2)).toBeUndefined()
     expect(lru.get(1)).toBe('a')
   })
+
+  // Mutation : `set` sans le `delete` qui le précède laisse une tuile refaite à sa place d'origine,
+  // et c'est elle qui sort la première.
+  it('compte une tuile refaite comme la plus récente', () => {
+    const lru = new Lru<number, string>(2)
+    lru.set(1, 'a')
+    lru.set(2, 'b')
+    lru.set(1, 'a2')
+    lru.set(3, 'c')
+    expect(lru.get(2)).toBeUndefined()
+    expect(lru.get(1)).toBe('a2')
+  })
 })
 
 describe('l’image qui tremble', () => {
@@ -164,6 +204,14 @@ describe('l’image qui tremble', () => {
     expect(horlogeDuMonde(0.1, 16)).toBe(horlogeDuMonde(0.12, 16))
     expect(horlogeDuMonde(0.1, 16)).not.toBe(horlogeDuMonde(0.13, 16))
     expect(tremblement(0.1, 16, 0.8, false)).toEqual(tremblement(0.12, 16, 0.8, false))
+    expect(tremblement(0.1, 16, 0.8, false)).not.toEqual(tremblement(0.13, 16, 0.8, false))
     expect(horlogeDuMonde(0.1, null)).toBe(0.1)
+  })
+
+  // Mutation : `scintillement` qui tire sur `t` au lieu de l'image (`Math.floor(t * cadence)`) :
+  // le voile change à chaque rafraîchissement de l'écran, pas à chaque image du monde.
+  it('tient aussi la palpitation jusqu’à l’image suivante', () => {
+    expect(scintillement(0.1, 16, 0.03, false)).toBe(scintillement(0.12, 16, 0.03, false))
+    expect(scintillement(0.1, 16, 0.03, false)).not.toBe(scintillement(0.13, 16, 0.03, false))
   })
 })
