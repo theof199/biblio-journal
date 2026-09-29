@@ -2,6 +2,7 @@ import { jourLocal } from '../ui/format'
 import { DECENNIES_DU_VOYAGE, bilanJournal, decenniesCouvertesGrille, filmsParMois, repartitionNotes } from './bilan'
 import styles from './Cartes.module.css'
 import type { JournalItem } from '../api/journal'
+import type { BilanSuivi } from './bilan'
 
 const LARGEUR_BARRE = 10
 const HAUTEUR = 40
@@ -51,7 +52,18 @@ export function GrilleDecennies({ couvertes, decennies }: { couvertes: boolean[]
 const virgule = (n: number) => String(n).replace('.', ',')
 
 /** « … » tant que le journal n'est pas là : jamais un chiffre provisoire, ni un zéro qui se ferait passer pour un compte. */
-export function BilanCarte({ journal, anneeCourante }: { journal: JournalItem[] | undefined; anneeCourante: number }) {
+export function BilanCarte({
+  journal,
+  anneeCourante,
+  realisateurs,
+  sagas,
+}: {
+  journal: JournalItem[] | undefined
+  anneeCourante: number
+  /** Nuls tant que la liste ou l'une de ses filmographies n'est pas arrivée. */
+  realisateurs: BilanSuivi | null
+  sagas: BilanSuivi | null
+}) {
   const b = journal ? bilanJournal(journal, anneeCourante) : null
   const d = b?.decennies
   const lignes = [
@@ -67,6 +79,12 @@ export function BilanCarte({ journal, anneeCourante }: { journal: JournalItem[] 
       : b.plusAncien === null
         ? 'Le plus ancien : inconnu'
         : `Le plus ancien : ${b.plusAncien.titre} (${b.plusAncien.annee})`,
+    realisateurs
+      ? `${realisateurs.suivis} ${realisateurs.suivis > 1 ? 'réalisateurs suivis' : 'réalisateur suivi'}, dont ${realisateurs.termines} ${realisateurs.termines > 1 ? 'terminés' : 'terminé'}`
+      : '…',
+    sagas
+      ? `${sagas.suivis} ${sagas.suivis > 1 ? 'sagas suivies' : 'saga suivie'}, dont ${sagas.termines} ${sagas.termines > 1 ? 'terminées' : 'terminée'}`
+      : '…',
   ]
   return (
     <section className={styles.carte} aria-label="Bilan">

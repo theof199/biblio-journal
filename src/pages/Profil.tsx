@@ -1,9 +1,14 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { journalComplet } from '../api/journal'
+import { lirePageRealisateur, lireRealisateurs } from '../api/realisateurs'
+import { lireFilmsSaga, lireSagas } from '../api/sagas'
 import { lireStats } from '../api/stats'
+import { bilanSuivi } from '../profil/bilan'
 import { BilanCarte, GraphiquesCarte } from '../profil/Cartes'
+import { filmsSansSeries } from '../suivis/prochain'
 import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { jourLocal } from '../ui/format'
@@ -23,6 +28,34 @@ export default function Profil() {
   // Une panne du journal entier se tait : elle ne prive que ces deux cartes, jamais le reste du profil.
   const journal = useQuery({ queryKey: cles.journalComplet, queryFn: ({ signal }) => journalComplet(signal) })
 
+  // Les réalisateurs et les sagas suivis, avec la filmographie de chacun : les mêmes clés que
+  // l'accueil et les pages de suivi, donc le même cache. Le bilan attend qu'ils soient tous là.
+  const realisateurs = useQuery({ queryKey: cles.realisateurs, queryFn: ({ signal }) => lireRealisateurs(signal) })
+  const sagas = useQuery({ queryKey: cles.sagas, queryFn: ({ signal }) => lireSagas(signal) })
+  const pagesRealisateurs = useQueries({
+    queries: (realisateurs.data ?? []).map((r) => ({
+      queryKey: cles.pageRealisateur(r.tmdb_id),
+      queryFn: ({ signal }: { signal: AbortSignal }) => lirePageRealisateur(r.tmdb_id, signal),
+    })),
+  })
+  const filmsSagas = useQueries({
+    queries: (sagas.data ?? []).map((s) => ({
+      queryKey: cles.filmsSaga(s.tmdb_id),
+      queryFn: ({ signal }: { signal: AbortSignal }) => lireFilmsSaga(s.tmdb_id, signal),
+    })),
+  })
+  const bilanRealisateurs = useMemo(() => {
+    const liste = realisateurs.data
+    if (!liste || pagesRealisateurs.some((p) => !p.data)) return null
+    const table = new Map(liste.map((r, i) => [r.tmdb_id, filmsSansSeries(pagesRealisateurs[i]!.data!.films)]))
+    return bilanSuivi(liste, table)
+  }, [realisateurs.data, pagesRealisateurs])
+  const bilanSagas = useMemo(() => {
+    const liste = sagas.data
+    if (!liste || filmsSagas.some((f) => !f.data)) return null
+    return bilanSuivi(liste, new Map(liste.map((s, i) => [s.tmdb_id, filmsSagas[i]!.data!.films])))
+  }, [sagas.data, filmsSagas])
+
   const total = stats.data?.dashboard.periods.all.counts.finished_by_type.movie
   const cetteAnnee = stats.data?.dashboard.periods.year.counts.finished_by_type.movie
 
@@ -39,7 +72,11 @@ export default function Profil() {
         </p>
       ) : null}
 
-      <BilanCarte journal={journal.data} anneeCourante={Number(jourLocal().slice(0, 4))} />
+      <BilanCarte
+        journal={journal.data} anneeCourante={Number(jourLocal().slice(0, 4))}
+        realisateurs={bilanRealisateurs}
+        sagas={bilanSagas}
+      />
       <GraphiquesCarte journal={journal.data} />
 
       <Link to="/profil/mes-films" className={styles.entree}>

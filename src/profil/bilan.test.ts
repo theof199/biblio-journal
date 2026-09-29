@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DECENNIES_DU_VOYAGE,
   bilanJournal,
+  bilanSuivi,
   decenniesCouvertes,
   decenniesCouvertesGrille,
   filmsParMois,
@@ -150,5 +151,34 @@ describe('repartitionNotes', () => {
 
   it('un journal sans aucune note : dix zéros', () => {
     expect(repartitionNotes([v({ id: 'a', date: '2026-01-01' })])).toEqual(new Array(10).fill(0))
+  })
+})
+
+describe('bilanSuivi', () => {
+  const vu = { entry_id: 'e', rating: null, finished_at: '2026-01-01' }
+  const film = (tmdb_id: number, etat: 'vu' | 'a-voir' | 'introuvable') => ({
+    tmdb_id,
+    vu: etat === 'vu' ? vu : null,
+    introuvable: etat === 'introuvable',
+  })
+
+  it('une filmographie est terminée quand tout ce qui se trouve est vu : un introuvable ne compte pas contre', () => {
+    const table = new Map([
+      [1, [film(10, 'vu'), film(11, 'introuvable')]],
+      [2, [film(20, 'vu'), film(21, 'a-voir')]],
+    ])
+    expect(bilanSuivi([{ tmdb_id: 1 }, { tmdb_id: 2 }], table)).toEqual({ suivis: 2, termines: 1 })
+  })
+
+  it('une filmographie vide est terminée : rien n’y reste à voir', () => {
+    expect(bilanSuivi([{ tmdb_id: 1 }], new Map([[1, []]]))).toEqual({ suivis: 1, termines: 1 })
+  })
+
+  it('une entité dont la filmographie manque est comptée suivie, jamais terminée', () => {
+    expect(bilanSuivi([{ tmdb_id: 1 }], new Map())).toEqual({ suivis: 1, termines: 0 })
+  })
+
+  it('aucune entité suivie : zéro et zéro', () => {
+    expect(bilanSuivi([], new Map())).toEqual({ suivis: 0, termines: 0 })
   })
 })

@@ -15,6 +15,9 @@ import type { RapportImport } from '../api/letterboxd'
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 const RAPPORT = exemple<RapportImport>('/me/journal/import/letterboxd', 'post', 200)
 const JOURNAL = 'GET /api/me/journal?limit=100'
+const REALISATEURS = 'GET /api/me/realisateurs'
+const SAGAS = 'GET /api/me/sagas'
+const VIDES = { [REALISATEURS]: () => json([]), [SAGAS]: () => json([]) }
 const IMPORT = 'POST /api/me/journal/import/letterboxd'
 
 const compte = (film: number) => ({ finished_by_type: { movie: film } })
@@ -74,6 +77,7 @@ describe('le profil', () => {
 
   it('montre le pseudo, les deux chiffres de /stats, le bilan et les graphiques', async () => {
     servir({
+      ...VIDES,
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/stats': () => json(stats(12, 3)),
       [JOURNAL]: () => json({ items: JOURNAL_DE_TEST, next_cursor: null }),
@@ -88,6 +92,8 @@ describe('le profil', () => {
     expect(within(bilan).getByText('Note moyenne : 8/10')).toBeInTheDocument()
     expect(within(bilan).getByText('1920 → 1990, 3 décennies sur 8')).toBeInTheDocument()
     expect(within(bilan).getByText('Le plus ancien : Metropolis (1927)')).toBeInTheDocument()
+    expect(within(bilan).getByText('0 réalisateur suivi, dont 0 terminé')).toBeInTheDocument()
+    expect(within(bilan).getByText('0 saga suivie, dont 0 terminée')).toBeInTheDocument()
 
     const graphiques = screen.getByRole('region', { name: 'Graphiques' })
     // Septembre 2026 est le dernier des douze mois : une entrée en août, une en septembre… et deux en août.
@@ -100,6 +106,7 @@ describe('le profil', () => {
   it('tant que le journal n’est pas là, le bilan dit « … » et les graphiques manquent : jamais un zéro', async () => {
     let liberer!: (r: Response) => void
     servir({
+      ...VIDES,
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/stats': () => json(stats(12, 3)),
       [JOURNAL]: () => new Promise<Response>((r) => (liberer = r)),
@@ -107,15 +114,41 @@ describe('le profil', () => {
     monter()
 
     const bilan = await screen.findByRole('region', { name: 'Bilan' })
-    expect(within(bilan).getAllByText('…')).toHaveLength(4)
+    expect(within(bilan).getAllByText('…')).toHaveLength(6)
     expect(screen.queryByRole('region', { name: 'Graphiques' })).not.toBeInTheDocument()
 
     liberer(json({ items: JOURNAL_DE_TEST, next_cursor: null }))
     expect(await within(bilan).findByText('Note moyenne : 8/10')).toBeInTheDocument()
   })
 
+  it('les réalisateurs et les sagas suivis : combien, et combien terminés (un introuvable ne compte pas contre)', async () => {
+    const realisateur = exemple<{ tmdb_id: number }[]>('/me/realisateurs', 'get', 200)[0]!
+    const page = exemple<{ films: { vu: unknown }[] }>('/me/realisateurs/{tmdbId}/page', 'get', 200)
+    const saga = exemple<{ tmdb_id: number }[]>('/me/sagas', 'get', 200)[0]!
+    const films = exemple<{ films: { vu: unknown; introuvable: boolean }[] }>('/me/sagas/{tmdbId}/films', 'get', 200)
+    // Tout vu, sauf les introuvables : la saga est terminée. Le réalisateur garde son film pas vu.
+    const vu = { entry_id: 'e0000000-0000-4000-8000-000000000009', rating: 8, finished_at: '2026-01-01' }
+    films.films.forEach((f) => (f.vu = f.introuvable ? null : vu))
+    page.films[0]!.vu = null
+    servir({
+      'GET /api/auth/me': () => json(SESSION),
+      'GET /api/stats': () => json(stats(1, 1)),
+      [JOURNAL]: () => json({ items: JOURNAL_DE_TEST, next_cursor: null }),
+      [REALISATEURS]: () => json([realisateur]),
+      [`GET /api/me/realisateurs/${realisateur.tmdb_id}/page`]: () => json(page),
+      [SAGAS]: () => json([saga]),
+      [`GET /api/me/sagas/${saga.tmdb_id}/films`]: () => json(films),
+    })
+    monter()
+
+    const bilan = await screen.findByRole('region', { name: 'Bilan' })
+    expect(await within(bilan).findByText('1 réalisateur suivi, dont 0 terminé')).toBeInTheDocument()
+    expect(within(bilan).getByText('1 saga suivie, dont 1 terminée')).toBeInTheDocument()
+  })
+
   it('un journal vide : « Aucun film noté », « Aucune année connue », pas de graphique', async () => {
     servir({
+      ...VIDES,
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/stats': () => json(stats(0, 0)),
       [JOURNAL]: () => json({ items: [], next_cursor: null }),
@@ -132,6 +165,7 @@ describe('le profil', () => {
 
   it('un journal qui échoue se tait : ni alerte, le bilan reste à « … », les chiffres du haut restent', async () => {
     servir({
+      ...VIDES,
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/stats': () => json(stats(12, 3)),
       [JOURNAL]: () => erreurApi('Le journal n’a pas pu être lu.', 500),
@@ -163,6 +197,7 @@ describe('le profil', () => {
 
   it('porte la mention de TMDB, en anglais, avec son logo', async () => {
     servir({
+      ...VIDES,
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/stats': () => json(stats(0, 0)),
       [JOURNAL]: () => json({ items: [], next_cursor: null }),
@@ -177,6 +212,7 @@ describe('le profil', () => {
 
   it('« Mes films » et « Se déconnecter » restent là', async () => {
     servir({
+      ...VIDES,
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/stats': () => json(stats(0, 0)),
       [JOURNAL]: () => json({ items: [], next_cursor: null }),
@@ -194,6 +230,7 @@ describe('l’import Letterboxd', () => {
 
   const base = (extra: Record<string, (init: RequestInit) => Response | Promise<Response>> = {}) =>
     servir({
+      ...VIDES,
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/stats': () => json(stats(0, 0)),
       [JOURNAL]: () => json({ items: [], next_cursor: null }),

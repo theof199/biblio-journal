@@ -1,5 +1,6 @@
 import { REACTION_EN_SALLE } from '../api/journal'
 import type { JournalItem } from '../api/journal'
+import type { FilmSuivi } from '../suivis/prochain'
 
 /**
  * Le bilan du profil : la cinéphilie du membre, calculée dans l'app depuis le journal entier
@@ -107,4 +108,32 @@ export function repartitionNotes(journal: JournalItem[]): number[] {
     if (note != null && note >= 1 && note <= 10) comptes[note - 1]! += 1
   }
   return comptes
+}
+
+/** Combien d'entités suivies (réalisateurs ou sagas), et combien « terminées ». */
+export interface BilanSuivi {
+  suivis: number
+  termines: number
+}
+
+/**
+ * Une filmographie est terminée quand tous ses films retrouvables sont vus : un introuvable ne
+ * compte pas contre elle (comme `prochainAVoir`). Vide, elle l'est aussi : rien n'y reste à voir.
+ */
+export const filmographieTerminee = (films: readonly FilmSuivi[]): boolean =>
+  films.every((f) => f.introuvable || f.vu != null)
+
+/**
+ * La même fonction pour les réalisateurs et les sagas : elle ne connaît que des identifiants et
+ * des filmographies. Une entité dont la filmographie n'est pas dans la table n'est pas terminée.
+ */
+export function bilanSuivi(
+  entites: readonly { tmdb_id: number }[],
+  filmographies: ReadonlyMap<number, readonly FilmSuivi[]>,
+): BilanSuivi {
+  const termines = entites.filter((e) => {
+    const films = filmographies.get(e.tmdb_id)
+    return films !== undefined && filmographieTerminee(films)
+  }).length
+  return { suivis: entites.length, termines }
 }
