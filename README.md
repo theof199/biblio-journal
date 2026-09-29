@@ -57,6 +57,13 @@ au-dessus de la barre : une page plein écran s'y pose en `position: absolute; i
 élément en `position: fixed` doit laisser libre le bas de l'écran, `var(--coque-bas)` (la barre et
 la zone sûre du téléphone) ; la barre est au-dessus de tout le reste (`--z-barre-onglets`, 20).
 
+Le document ne défile pas : ce `<main>` est la seule zone qui défile. Elle se comporte comme le
+navigateur (`coque/defilement.ts`) : une navigation nouvelle part du haut, un retour dans
+l'historique retrouve la position que la page avait, en attendant au besoin qu'une liste ait
+rechargé ses pages (cinq secondes au plus, et jamais contre un geste du membre). Le bouton
+« Retour » des pages sans onglet (`ui/BoutonRetour.tsx`) recule donc dans l'historique dès qu'il y a
+de quoi ; son `vers` n'est que le repli d'une page ouverte d'un lien.
+
 Les icônes viennent de `@tabler/icons-react`, importées une à une par leur nom : le build n'en
 garde que celles-là.
 

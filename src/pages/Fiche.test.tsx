@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import Fiche from './Fiche'
@@ -53,6 +53,27 @@ describe('la fiche d’un visionnage', () => {
       'href',
       `/journal/${ITEM.entry.id}/corriger`,
     )
+  })
+
+  it('sans historique de l’app derrière elle, « Retour » mène à la page qui l’a ouverte (`depuis`)', async () => {
+    servir({ 'GET /api/reference/reactions': () => json(CATALOGUE) })
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MemoryRouter initialEntries={[{ pathname: `/journal/${ITEM.entry.id}`, state: { item: ITEM, depuis: '/profil/mes-films' } }]}>
+          <Routes>
+            <Route path="/journal/:id" element={<Fiche />} />
+            <Route path="/profil/mes-films" element={<h1>Mes films</h1>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await screen.findByRole('heading', { name: ITEM.media.title })
+
+    // Mutation : `vers="/"` en dur dans la fiche ramènerait à l'accueil. Avec l'historique derrière
+    // elle, le retour recule (`ui/BoutonRetour.tsx`) ; `depuis` est le repli sans lui.
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+
+    expect(await screen.findByRole('heading', { name: 'Mes films' })).toBeInTheDocument()
   })
 
   it('sans état de navigation (rechargement direct), renvoie vers l’accueil plutôt que de planter', () => {

@@ -368,10 +368,11 @@ describe('l’import Letterboxd', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(screen.queryByText(/importés ·/)).not.toBeInTheDocument()
 
-    // Parti au profil puis revenu par l'historique : la même erreur, rien de renvoyé.
+    // Parti au profil puis revenu par l'historique : la même erreur, rien de renvoyé. « Retour »
+    // recule dans l'historique (`ui/BoutonRetour.tsx`) : l'import se retrouve en avançant.
     fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
     await screen.findByText(/Importer Letterboxd/)
-    act(() => historique(-1))
+    act(() => historique(1))
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(requetes.filter((r) => r === IMPORT)).toHaveLength(1)
   })

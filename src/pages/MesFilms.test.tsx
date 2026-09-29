@@ -485,7 +485,8 @@ describe('Mes films', () => {
     fireEvent.click(screen.getByText('Interstellar'))
     await screen.findByRole('heading', { name: 'Interstellar' })
 
-    // Mutation : `vers="/"` en dur dans la fiche ramènerait à l'accueil.
+    // « Retour » recule dans l'historique (`ui/BoutonRetour.tsx`, qui le garde) ; le repli par
+    // `depuis`, sans historique, est gardé par `Fiche.test.tsx`.
     fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
     await screen.findByRole('heading', { name: 'Mes films' })
 

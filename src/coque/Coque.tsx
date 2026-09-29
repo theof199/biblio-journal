@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   IconArmchair,
@@ -8,6 +8,7 @@ import {
   IconTicket,
   type TablerIcon,
 } from '@tabler/icons-react'
+import { useDefilementMemorise } from './defilement'
 import styles from './Coque.module.css'
 
 export interface Onglet {
@@ -36,13 +37,7 @@ export const ONGLETS: readonly Onglet[] = [
  */
 export default function Coque() {
   const contenu = useRef<HTMLElement>(null)
-  const { pathname } = useLocation()
-
-  // La zone de contenu est la même d'une page à l'autre : sans ce retour en haut, la page qu'on
-  // ouvre hériterait de la position de la précédente (le document le faisait déjà, en le taisant).
-  useEffect(() => {
-    if (contenu.current) contenu.current.scrollTop = 0
-  }, [pathname])
+  useDefilementMemorise(contenu, useLocation().key)
 
   return (
     <div className={styles.coque}>
