@@ -4527,7 +4527,7 @@ export interface paths {
      *
      * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une autre entrée du même jour, qui est gardée à sa place — celle qui porte un carnet s’il y en a une, sinon la plus ancienne (correctif du 30 septembre 2026 : seule la plus ancienne servait de modèle, et une copie dont le jumeau récent portait une réaction restait). **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Films seulement, comme le reste du carnet.
      *
-     * **Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se date en UTC, un geste posé après minuit à Paris part la veille). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.
+     * **Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se datait en UTC jusqu’au correctif du 30 septembre 2026, et un geste posé après minuit à Paris partait la veille ; les entrées écrites avant restent). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.
      *
      * Deux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.
      *
@@ -4593,7 +4593,7 @@ export interface paths {
                    */
                   autre_id: string;
                   /**
-                   * @description `autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour UTC d’écart, celui qu’un geste posé la nuit peut produire.
+                   * @description `autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour d’écart, celui qu’un geste posé la nuit produisait tant que le passage à « terminé » se datait en UTC (jusqu’au 30 septembre 2026).
                    * @enum {string}
                    */
                   raison: "autre_note" | "autre_debut_ou_commentaire" | "jour_voisin";
@@ -4645,7 +4645,7 @@ export interface paths {
      *
      * **Un doublon** : même film, même jour de visionnage, même note, même date de début et même commentaire public qu’une autre entrée du même jour, qui est gardée à sa place — celle qui porte un carnet s’il y en a une, sinon la plus ancienne (correctif du 30 septembre 2026 : seule la plus ancienne servait de modèle, et une copie dont le jumeau récent portait une réaction restait). **Une entrée qui porte un carnet (une réaction, une remarque) n’est jamais un doublon**, même si l’autre porte le même. Films seulement, comme le reste du carnet.
      *
-     * **Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se date en UTC, un geste posé après minuit à Paris part la veille). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.
+     * **Les cas limites** (`cas_limites`) : une entrée sans carnet qui ressemble à une autre du même film sans lui être identique — le même jour avec une autre note (`autre_note`), une autre date de début ou un autre commentaire public (`autre_debut_ou_commentaire`), ou la veille ou le lendemain (`jour_voisin` : le passage à « terminé » se datait en UTC jusqu’au correctif du 30 septembre 2026, et un geste posé après minuit à Paris partait la veille ; les entrées écrites avant restent). Rien ne prouve que c’est le même visionnage : **ils sont montrés, jamais retirés par le `DELETE`** — `DELETE /me/journal/:id` retire celui qu’on choisit.
      *
      * Deux fois le même film le même jour reste possible à la main (`POST /media/:id/log`) : l’aperçu les montre avant qu’on retire quoi que ce soit.
      *
@@ -4713,7 +4713,7 @@ export interface paths {
                    */
                   autre_id: string;
                   /**
-                   * @description `autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour UTC d’écart, celui qu’un geste posé la nuit peut produire.
+                   * @description `autre_note` : même film, même jour, une autre note (ou une note d’un côté seulement). `autre_debut_ou_commentaire` : même film, même jour, même note, mais une autre date de début ou un autre commentaire public. `jour_voisin` : même film, la veille ou le lendemain — un jour d’écart, celui qu’un geste posé la nuit produisait tant que le passage à « terminé » se datait en UTC (jusqu’au 30 septembre 2026).
                    * @enum {string}
                    */
                   raison: "autre_note" | "autre_debut_ou_commentaire" | "jour_voisin";
