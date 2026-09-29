@@ -5,6 +5,12 @@ import { cles } from '../api/cles'
 import { lireRealisateurs, suivreRealisateur, type Realisateur } from '../api/realisateurs'
 import { lireSagas, suivreSaga, type Saga } from '../api/sagas'
 import { chercherRealisateurs, chercherSagas } from '../api/personnes'
+import { compteCarte, dernierVisionnage, LIBELLES_SUIVI, repartirSuivis, sousLigneCarte } from '../suivis/liste'
+import type { EtatFilmographie, SourceSuivi } from '../suivis/liste'
+import { useMasquerIntrouvables } from '../suivis/masquer'
+import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
+import type { FilmSuivi } from '../suivis/prochain'
+import { jourLocal } from '../ui/format'
 import Affiche from '../ui/Affiche'
 import Panne from '../ui/Panne'
 import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
@@ -29,7 +35,15 @@ interface ResultatRecherche {
   image_url: string | null
 }
 
-interface Props<E extends { tmdb_id: number; name: string }> {
+type Suivie = { tmdb_id: number; name: string; ajoute_le: string }
+
+interface Props<E extends Suivie> {
+  source: SourceSuivi
+  /** Leurs films, chargés l'un après l'autre (`useFilmographies`) : la ligne sous chaque nom, l'ordre et les « complets » en dépendent. */
+  filmographies: ReadonlyMap<number, EtatFilmographie<FilmSuivi>>
+  masquerIntrouvables: boolean
+  /** Le jour d'aujourd'hui (`AAAA-MM-JJ`), lu une fois : « vu il y a 3 jours » ne se recalcule pas à minuit. */
+  aujourdHui: string
   titre: string
   libelleVide: string
   placeholderRecherche: string
@@ -49,7 +63,11 @@ interface Props<E extends { tmdb_id: number; name: string }> {
  * une recherche pour en suivre d'autres — reprise de `SuivisScreen.kt` et `ChercherSuiviScreen.kt`,
  * réunis ici en une seule page plutôt qu'un écran séparé.
  */
-function SectionSuivis<E extends { tmdb_id: number; name: string }>({
+function SectionSuivis<E extends Suivie>({
+  source,
+  filmographies,
+  masquerIntrouvables,
+  aujourdHui,
   titre,
   libelleVide,
   placeholderRecherche,
@@ -79,6 +97,33 @@ function SectionSuivis<E extends { tmdb_id: number; name: string }>({
   })
 
   const tmdbIdsSuivis = useMemo(() => new Set((entites ?? []).map((e) => e.tmdb_id)), [entites])
+  // En cours d'abord, bouclées ensuite (la section « complets »), chacune de la plus récemment
+  // active à la plus ancienne : un ordre d'affichage seulement, la liste du back reste celle du cache.
+  const { enCours, bouclees } = useMemo(
+    () => repartirSuivis(entites ?? [], filmographies),
+    [entites, filmographies],
+  )
+
+  const ligne = (entite: E, bouclee: boolean) => {
+    const etat = filmographies.get(entite.tmdb_id)
+    let sousLigne = '…'
+    if (etat?.statut === 'indisponible') sousLigne = 'indisponible'
+    else if (etat?.statut === 'pret') {
+      const { vus, total } = compteCarte(source, etat.films, masquerIntrouvables)
+      sousLigne = sousLigneCarte(source, vus, total, dernierVisionnage(etat.films), entite.ajoute_le, aujourdHui, bouclee)
+    }
+    return (
+      <li key={entite.tmdb_id}>
+        <Link to={lienDetail(entite.tmdb_id)} className={styles.entite}>
+          <Affiche src={image(entite)} titre={entite.name} taille="ligne" />
+          <span className={styles.texteEntite}>
+            <span className={styles.nomEntite}>{entite.name}</span>
+            <span className={styles.sousLigne}>{sousLigne}</span>
+          </span>
+        </Link>
+      </li>
+    )
+  }
 
   return (
     <section className={styles.section}>
@@ -89,16 +134,15 @@ function SectionSuivis<E extends { tmdb_id: number; name: string }>({
       ) : erreur ? (
         <Panne erreur={erreur} onReessayer={onReessayer} />
       ) : entites && entites.length > 0 ? (
-        <ul className={styles.liste}>
-          {entites.map((entite) => (
-            <li key={entite.tmdb_id}>
-              <Link to={lienDetail(entite.tmdb_id)} className={styles.entite}>
-                <Affiche src={image(entite)} titre={entite.name} taille="ligne" />
-                <span className={styles.nomEntite}>{entite.name}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <>
+          {enCours.length > 0 ? <ul className={styles.liste}>{enCours.map((entite) => ligne(entite, false))}</ul> : null}
+          {bouclees.length > 0 ? (
+            <>
+              <h3 className={styles.titreComplets}>{LIBELLES_SUIVI[source].titreComplets}</h3>
+              <ul className={styles.liste}>{bouclees.map((entite) => ligne(entite, true))}</ul>
+            </>
+          ) : null}
+        </>
       ) : (
         <p className={styles.vide}>{libelleVide}</p>
       )}
@@ -161,11 +205,21 @@ export default function Suivis() {
   const realisateurs = useQuery({ queryKey: cles.realisateurs, queryFn: ({ signal }) => lireRealisateurs(signal) })
   const sagas = useQuery({ queryKey: cles.sagas, queryFn: ({ signal }) => lireSagas(signal) })
 
+  // Leurs films, une entité après l'autre — jamais toutes d'un coup (`useFilmographies`).
+  const filmsRealisateurs = useFilmographiesRealisateurs(realisateurs.data)
+  const filmsSagas = useFilmographiesSagas(sagas.data)
+  const masquerIntrouvables = useMasquerIntrouvables()
+  const aujourdHui = useMemo(() => jourLocal(), [])
+
   return (
     <div className={styles.page}>
       <h1 className={styles.titre}>Suivis</h1>
 
       <SectionSuivis<Realisateur>
+        source="realisateurs"
+        filmographies={filmsRealisateurs}
+        masquerIntrouvables={masquerIntrouvables}
+        aujourdHui={aujourdHui}
         titre="Réalisateurs"
         libelleVide="Tu ne suis aucun réalisateur."
         placeholderRecherche="Un nom de réalisateur"
@@ -181,6 +235,10 @@ export default function Suivis() {
       />
 
       <SectionSuivis<Saga>
+        source="sagas"
+        filmographies={filmsSagas}
+        masquerIntrouvables={masquerIntrouvables}
+        aujourdHui={aujourdHui}
         titre="Sagas"
         libelleVide="Tu ne suis aucune saga."
         placeholderRecherche="Un nom de saga"

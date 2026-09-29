@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from 'react'
-import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
+import { useCallback } from 'react'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { IconPlus } from '@tabler/icons-react'
 import { cles } from '../api/cles'
@@ -7,9 +7,11 @@ import { curseurSuivant, lireJournal } from '../api/journal'
 import { lireStats } from '../api/stats'
 import { lireVoyage } from '../api/voyage'
 import { lirePlex } from '../api/plex'
-import { lirePageRealisateur, lireRealisateurs } from '../api/realisateurs'
-import { lireFilmsSaga, lireSagas } from '../api/sagas'
-import { entiteEnCours, filmsSansSeries } from '../suivis/prochain'
+import { lireRealisateurs } from '../api/realisateurs'
+import { lireSagas } from '../api/sagas'
+import { entiteEnCours } from '../suivis/prochain'
+import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
+import type { EtatFilmographie } from '../suivis/liste'
 import { cartesEnsuite } from '../accueil/ensuite'
 import { candidatDepuisFilmSuivi, candidatDepuisPlex } from '../formulaire/candidat'
 import Affiche from '../ui/Affiche'
@@ -24,6 +26,15 @@ import type { FilmRealisateur, Realisateur } from '../api/realisateurs'
 import type { FilmSaga, Saga } from '../api/sagas'
 
 const LIMITE = 20
+
+/** Les seules filmographies arrivées : une entité encore en attente ou en panne ne participe pas au « Ensuite ». */
+function filmsPrets<F>(etats: ReadonlyMap<number, EtatFilmographie<F>>): Map<number, F[]> {
+  const prets = new Map<number, F[]>()
+  etats.forEach((etat, id) => {
+    if (etat.statut === 'pret') prets.set(id, etat.films)
+  })
+  return prets
+}
 
 /**
  * « Accueil · la porte d'entrée » (reprise de `HomeScreen.kt`) : le fronton, « Ce soir », « Ensuite »
@@ -55,38 +66,17 @@ export default function Accueil() {
   const realisateursSuivis = useQuery({ queryKey: cles.realisateurs, queryFn: ({ signal }) => lireRealisateurs(signal) })
   const sagasSuivies = useQuery({ queryKey: cles.sagas, queryFn: ({ signal }) => lireSagas(signal) })
 
-  const pagesRealisateurs = useQueries({
-    queries: (realisateursSuivis.data ?? []).map((r) => ({
-      queryKey: cles.pageRealisateur(r.tmdb_id),
-      queryFn: ({ signal }: { signal: AbortSignal }) => lirePageRealisateur(r.tmdb_id, signal),
-    })),
-  })
-  const filmographiesSagas = useQueries({
-    queries: (sagasSuivies.data ?? []).map((s) => ({
-      queryKey: cles.filmsSaga(s.tmdb_id),
-      queryFn: ({ signal }: { signal: AbortSignal }) => lireFilmsSaga(s.tmdb_id, signal),
-    })),
-  })
+  // Une filmographie après l'autre, jamais toutes d'un coup (`useFilmographies`, reprise de
+  // `SuivisViewModel.refresh` : le back appelle TMDB derrière, et sa file sortante a déjà cédé à une
+  // rafale). Les réalisateurs d'abord, puis les sagas : deux chaînes qui ne se gênent pas.
+  const filmographiesRealisateurs = useFilmographiesRealisateurs(realisateursSuivis.data)
+  const filmographiesSagas = useFilmographiesSagas(sagasSuivies.data)
 
-  const ensuiteRealisateur = useMemo(() => {
-    const entites = realisateursSuivis.data ?? []
-    const filmographies = new Map<number, FilmRealisateur[]>()
-    entites.forEach((r, index) => {
-      const page = pagesRealisateurs[index]?.data
-      if (page) filmographies.set(r.tmdb_id, filmsSansSeries(page.films))
-    })
-    return entiteEnCours<Realisateur, FilmRealisateur>(entites, filmographies)
-  }, [realisateursSuivis.data, pagesRealisateurs])
-
-  const ensuiteSaga = useMemo(() => {
-    const entites = sagasSuivies.data ?? []
-    const filmographies = new Map<number, FilmSaga[]>()
-    entites.forEach((s, index) => {
-      const films = filmographiesSagas[index]?.data
-      if (films) filmographies.set(s.tmdb_id, films.films)
-    })
-    return entiteEnCours<Saga, FilmSaga>(entites, filmographies)
-  }, [sagasSuivies.data, filmographiesSagas])
+  const ensuiteRealisateur = entiteEnCours<Realisateur, FilmRealisateur>(
+    realisateursSuivis.data ?? [],
+    filmsPrets(filmographiesRealisateurs),
+  )
+  const ensuiteSaga = entiteEnCours<Saga, FilmSaga>(sagasSuivies.data ?? [], filmsPrets(filmographiesSagas))
 
   // Dépendances primitives plutôt que `journal` entier : sa référence change à chaque
   // notification de la requête, ce qui recréerait l'observateur (et la sentinelle) à chaque rendu.

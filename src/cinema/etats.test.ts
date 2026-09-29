@@ -1,5 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cinemaUniqueEnCours, dejaDansLeJournal, messageAuCine, miseAJourAffichee, seancesCetteAnnee, sousTitreCinemas } from './etats'
+import {
+  cinemaUniqueEnCours,
+  dejaDansLeJournal,
+  marqueEnCours,
+  marqueProchaine,
+  messageAuCine,
+  miseAJourAffichee,
+  reperesSuivis,
+  seancesCetteAnnee,
+  sousTitreCinemas,
+} from './etats'
+import type { EtatFilmographie } from '../suivis/liste'
 import { exemple } from '../test/contrat'
 import type { JournalItem, JournalPage } from '../api/journal'
 import type { SortiesEnCours } from '../api/sorties'
@@ -191,5 +202,55 @@ describe('miseAJourAffichee', () => {
     expect(miseAJourAffichee('2026-09-15T22:30:00.000Z')).toBe('mis à jour à 0 h')
     // 23h05 UTC en janvier (CET, +1) : 00h05 le lendemain à Paris — l'hiver ne change rien à la règle.
     expect(miseAJourAffichee('2026-01-15T23:05:00.000Z')).toBe('mis à jour à 0 h')
+  })
+})
+
+describe('le sceau des Suivis (« le guichet »)', () => {
+  const sagas = (etats: Record<number, EtatFilmographie<{ tmdb_id: number }>>) => new Map(Object.entries(etats).map(([id, e]) => [Number(id), e]))
+  const pret = (...ids: number[]): EtatFilmographie<{ tmdb_id: number }> => ({ statut: 'pret', films: ids.map((tmdb_id) => ({ tmdb_id })) })
+
+  it('rapproche le réalisateur par son nom, sans accents ni casse', () => {
+    const reperes = reperesSuivis([{ name: 'Céline Sciamma' }], new Map())
+
+    // Allociné et TMDB écrivent parfois différemment : « CELINE SCIAMMA » retrouve « Céline Sciamma ».
+    expect(marqueEnCours(reperes, { tmdb_id: 42, directors: ['CELINE SCIAMMA'] })).toBe('realisateur')
+    // Mutation : une comparaison brute (sans `normaliser`) manquerait celui-ci.
+    expect(marqueEnCours(reperes, { tmdb_id: 42, directors: ['Céline Sciamma'] })).toBe('realisateur')
+    expect(marqueEnCours(reperes, { tmdb_id: 42, directors: ['Alix Delaporte'] })).toBeNull()
+  })
+
+  it('rapproche la saga par le tmdb_id d’un de ses films', () => {
+    const reperes = reperesSuivis([], sagas({ 8091: pret(348, 679) }))
+
+    expect(marqueEnCours(reperes, { tmdb_id: 679, directors: ['Quelqu’un'] })).toBe('saga')
+    expect(marqueEnCours(reperes, { tmdb_id: 12, directors: [] })).toBeNull()
+    expect(marqueProchaine(reperes, { tmdb_id: 348 })).toBe('saga')
+    expect(marqueProchaine(reperes, { tmdb_id: 12 })).toBeNull()
+  })
+
+  it('une filmographie en attente ou en panne ne contribue rien', () => {
+    const reperes = reperesSuivis([], sagas({ 1: { statut: 'attente' }, 2: { statut: 'indisponible' } }))
+
+    expect(reperes.filmsDeSagas.size).toBe(0)
+  })
+
+  it('le réalisateur l’emporte quand les deux sont vrais', () => {
+    const reperes = reperesSuivis([{ name: 'Peter Jackson' }], sagas({ 1: pret(120) }))
+
+    // Mutation : inverser l'ordre des deux tests rendrait « saga ».
+    expect(marqueEnCours(reperes, { tmdb_id: 120, directors: ['Peter Jackson'] })).toBe('realisateur')
+  })
+
+  it('une tuile sans tmdb_id ne porte aucune marque', () => {
+    const reperes = reperesSuivis([{ name: 'Peter Jackson' }], new Map())
+
+    expect(marqueEnCours(reperes, { tmdb_id: null, directors: ['Peter Jackson'] })).toBeNull()
+  })
+
+  it('la semaine prochaine ne porte que la saga : TMDB n’y donne pas de réalisateur', () => {
+    const reperes = reperesSuivis([{ name: 'Peter Jackson' }], sagas({ 1: pret(120) }))
+
+    expect(marqueProchaine(reperes, { tmdb_id: 120 })).toBe('saga')
+    expect(marqueProchaine(reperesSuivis([{ name: 'Peter Jackson' }], new Map()), { tmdb_id: 120 })).toBeNull()
   })
 })

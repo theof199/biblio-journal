@@ -115,6 +115,26 @@
   height: var(--taille-icone-inline);
 }
 
+.sceau {
+  position: absolute;
+  top: var(--espace-1);
+  right: var(--espace-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--espace-5);
+  height: var(--espace-5);
+  border: var(--trait) solid var(--couleur-fond);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.iconeSceau {
+  width: var(--taille-icone-inline);
+  height: var(--taille-icone-inline);
+}
+
 .titreTuile {
   margin: 0;
   font-size: var(--taille-xs);

@@ -1,5 +1,7 @@
 import type { JournalItem } from '../api/journal'
 import type { SortiesEnCours } from '../api/sorties'
+import { normaliser } from '../ui/format'
+import type { EtatFilmographie } from '../suivis/liste'
 
 /**
  * L'onglet Au ciné (reprise de `AuCineEtats.kt`) : le nombre de séances, le rapprochement
@@ -87,4 +89,59 @@ export function miseAJourAffichee(calculeLe: string | null): string | null {
     new Intl.DateTimeFormat('en-US', { timeZone: FUSEAU_AU_CINE, hourCycle: 'h23', hour: 'numeric' }).format(date),
   )
   return `mis à jour à ${heure} h`
+}
+
+/**
+ * Ce que les tuiles d'Au ciné savent des Suivis (reprise de `ReperesSuivis`, « Au ciné · le
+ * guichet », 25 septembre 2026) : de quoi poser le sceau « réalisateur suivi » ou « saga suivie »
+ * sur une affiche, **sans aucun appel réseau nouveau** — seulement ce que l'accueil et l'onglet
+ * Suivis ont déjà mis en cache.
+ *
+ * Pas de `lireRealisateursDuFilm` par tuile : jusqu'à quarante tuiles, donc jusqu'à quarante appels
+ * à l'ouverture de l'onglet, refusé. Le réalisateur se rapproche donc par son **nom** :
+ * `directors` vient d'Allociné, le nom d'un réalisateur suivi de TMDB — les deux s'écrivent parfois
+ * différemment (accents, casse), d'où la comparaison par `normaliser`. `realisateurs` porte ces
+ * noms déjà normalisés.
+ *
+ * `filmsDeSagas` : les `tmdb_id` de tous les films des sagas suivies dont la filmographie est
+ * arrivée. Une filmographie encore en attente ou en panne ne contribue rien : le sceau apparaît
+ * quand elle arrive.
+ */
+export interface ReperesSuivis {
+  realisateurs: ReadonlySet<string>
+  filmsDeSagas: ReadonlySet<number>
+}
+
+export function reperesSuivis(
+  realisateurs: readonly { name: string }[] | undefined,
+  filmographiesSagas: ReadonlyMap<number, EtatFilmographie<{ tmdb_id: number }>>,
+): ReperesSuivis {
+  const filmsDeSagas = new Set<number>()
+  filmographiesSagas.forEach((etat) => {
+    if (etat.statut === 'pret') etat.films.forEach((film) => filmsDeSagas.add(film.tmdb_id))
+  })
+  return { realisateurs: new Set((realisateurs ?? []).map((r) => normaliser(r.name))), filmsDeSagas }
+}
+
+/** Le sceau d'une tuile : une personne pour un réalisateur suivi, un film pour une saga suivie. */
+export type MarqueSuivi = 'realisateur' | 'saga'
+
+/**
+ * La marque d'une tuile « à l'affiche dans mes cinémas ». Le réalisateur l'emporte quand les deux
+ * sont vrais (décision du 25 septembre 2026) : c'est le suivi le plus personnel des deux. Une tuile
+ * sans `tmdb_id` n'en porte aucune — ni coche ni sceau sur une tuile qu'on ne peut pas toucher.
+ */
+export function marqueEnCours(reperes: ReperesSuivis, film: { tmdb_id: number | null; directors: string[] }): MarqueSuivi | null {
+  if (film.tmdb_id == null) return null
+  if (film.directors.some((nom) => reperes.realisateurs.has(normaliser(nom)))) return 'realisateur'
+  if (reperes.filmsDeSagas.has(film.tmdb_id)) return 'saga'
+  return null
+}
+
+/**
+ * La marque d'une tuile « la semaine prochaine » : la saga seule, TMDB ne portant pas de
+ * réalisateur sur ces sorties (correctif Android du 14 septembre 2026).
+ */
+export function marqueProchaine(reperes: ReperesSuivis, film: { tmdb_id: number }): MarqueSuivi | null {
+  return reperes.filmsDeSagas.has(film.tmdb_id) ? 'saga' : null
 }

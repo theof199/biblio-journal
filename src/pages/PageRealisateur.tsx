@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
@@ -37,6 +38,9 @@ export default function PageRealisateur() {
   const { tmdbId } = useParams<{ tmdbId: string }>()
   const id = Number(tmdbId)
   const client = useQueryClient()
+  // Local à cette page, actif par défaut (`rememberSaveable`, `RealisateurScreen.kt`) : à la
+  // différence de celui d'une saga, il ne survit pas à une sortie de la page.
+  const [masquerIntrouvables, setMasquerIntrouvables] = useState(true)
 
   const page = useQuery({
     queryKey: cles.pageRealisateur(id),
@@ -73,6 +77,9 @@ export default function PageRealisateur() {
 
   const fiche = page.data
   const films = filmsSansSeries(fiche.films)
+  // Masqués, les introuvables quittent la liste (`filmsAffiches`) ; l'en-tête garde tous les films —
+  // l'interrupteur cache des affiches, il ne change pas la filmographie.
+  const filmsAffiches = masquerIntrouvables ? films.filter((film) => !film.introuvable) : films
   const dates = ligneDates(fiche.naissance, fiche.deces, fiche.genre)
 
   return (
@@ -106,11 +113,21 @@ export default function PageRealisateur() {
 
       {fiche.presentation ? <p className={styles.presentation}>{fiche.presentation}</p> : null}
 
+      <label className={styles.interrupteur}>
+        <input
+          type="checkbox"
+          role="switch"
+          checked={masquerIntrouvables}
+          onChange={(event) => setMasquerIntrouvables(event.target.checked)}
+        />
+        Masquer les introuvables
+      </label>
+
       {films.length === 0 ? (
         <p className={styles.vide}>Aucun film connu pour ce réalisateur.</p>
       ) : (
         <ul className={styles.liste}>
-          {films.map((film) => (
+          {filmsAffiches.map((film) => (
             <li key={film.tmdb_id}>
               <Link
                 to={`/suivis/films/${film.tmdb_id}`}

@@ -11,6 +11,8 @@ import type { RealisateurPage } from '../api/realisateurs'
 
 const PAGE_SUIVI = exemple<RealisateurPage>('/me/realisateurs/{tmdbId}/page', 'get', 200)
 const PAGE_NON_SUIVI: RealisateurPage = { ...PAGE_SUIVI, suivi: false }
+const PERDU = { ...PAGE_SUIVI.films[0]!, tmdb_id: 999, title: 'Film perdu', year: 2001, vu: null, introuvable: true }
+const PAGE_AVEC_PERDU: RealisateurPage = { ...PAGE_SUIVI, films: [PAGE_SUIVI.films[0]!, PERDU] }
 const PAGE_SANS_FILMS: RealisateurPage = { ...PAGE_SUIVI, films: [] }
 
 function monter(tmdbId = 525, client = createQueryClient()) {
@@ -39,6 +41,36 @@ describe('la page d’un réalisateur', () => {
     // Mutation : sans `filmsSansSeries`, la série de l'exemple (« Voyage à travers le cinéma
     // américain ») apparaîtrait aussi dans la liste et fausserait le compte ci-dessus (2 sur 2).
     expect(screen.queryByText(/Voyage à travers le cinéma américain/)).not.toBeInTheDocument()
+  })
+
+  it('« Masquer les introuvables » est actif par défaut, le coupe les fait revenir, le compte garde tout', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_PERDU) })
+    monter()
+
+    const interrupteur = await screen.findByRole('switch', { name: 'Masquer les introuvables' })
+    expect(interrupteur).toBeChecked()
+    // Mutation : un filtre qui ignorerait l'interrupteur laisserait « Film perdu » affiché d'emblée.
+    expect(screen.queryByText('Film perdu (2001)')).not.toBeInTheDocument()
+    // L'en-tête compte tous les films, introuvables compris : masquer n'efface rien.
+    expect(screen.getByText('1 vus sur 2')).toBeInTheDocument()
+
+    fireEvent.click(interrupteur)
+
+    expect(screen.getByText('Film perdu (2001)')).toBeInTheDocument()
+    expect(screen.getByText('Introuvable')).toBeInTheDocument()
+    expect(screen.getByText('1 vus sur 2')).toBeInTheDocument()
+  })
+
+  it('l’interrupteur d’un réalisateur ne survit pas à la page : il redevient actif', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_PERDU) })
+    const premiere = monter()
+    fireEvent.click(await screen.findByRole('switch', { name: 'Masquer les introuvables' }))
+    premiere.unmount()
+
+    monter()
+
+    // Mutation : un réglage tenu hors de la page (comme celui des sagas) resterait coupé ici.
+    expect(await screen.findByRole('switch', { name: 'Masquer les introuvables' })).toBeChecked()
   })
 
   it('sans aucun film, le dit plutôt que de montrer une liste vide', async () => {

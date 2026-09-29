@@ -4,11 +4,21 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import AuCine from './AuCine'
 import { createQueryClient } from '../api/queryClient'
-import { json, servir } from '../test/serveur'
+import { json, servir as servirBrut } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import type { JournalItem, JournalPage } from '../api/journal'
+import { cles } from '../api/cles'
 import type { Sorties } from '../api/sorties'
+import type { Realisateur } from '../api/realisateurs'
+import type { FilmsSaga, Saga } from '../api/sagas'
 import type { CandidatFilm } from '../formulaire/candidat'
+
+/**
+ * Depuis le sceau des Suivis, l'onglet demande aussi les deux listes suivies : vides ici, sauf
+ * quand un test les pose lui-même (`routes` l'emporte sur ces défauts).
+ */
+const servir = (routes: Parameters<typeof servirBrut>[0]) =>
+  servirBrut({ 'GET /api/me/realisateurs': () => json([]), 'GET /api/me/sagas': () => json([]), ...routes })
 
 const SORTIES_EXEMPLE = exemple<Sorties>('/reference/sorties', 'get', 200)
 const BASE_ITEM = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
@@ -86,9 +96,9 @@ function StubFiche() {
   )
 }
 
-function monter() {
+function monter(client = createQueryClient()) {
   return render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/au-cine']}>
         <Routes>
           <Route path="/au-cine" element={<AuCine />} />
@@ -343,5 +353,67 @@ describe('Au ciné', () => {
     monter()
 
     expect(await screen.findByText('2 séances cette année')).toBeInTheDocument()
+  })
+
+  describe('le sceau des Suivis', () => {
+    const DELAPORTE = { ...exemple<Realisateur[]>('/me/realisateurs', 'get', 200)[0]!, tmdb_id: 7, name: 'ALIX DELAPORTE' }
+    const ALIEN = exemple<Saga[]>('/me/sagas', 'get', 200)[0]!
+    const FILMS_ALIEN = exemple<FilmsSaga>('/me/sagas/{tmdbId}/films', 'get', 200)
+    // « Marée basse » (1022789), de la semaine prochaine : faisons-la sortir d'une saga suivie.
+    const SORTIES = structuredClone(SORTIES_EXEMPLE)
+    const MAREE = { ...FILMS_ALIEN.films[0]!, tmdb_id: SORTIES.prochaine.films[0]!.tmdb_id }
+
+    it('un réalisateur suivi, retrouvé par son nom, pose le sceau sur sa tuile à l’affiche', async () => {
+      servir({
+        'GET /api/reference/sorties': () => json(SORTIES),
+        'GET /api/me/realisateurs': () => json([DELAPORTE]),
+        ...routeSeances([]),
+      })
+      monter()
+
+      // Mutation : sans le rapprochement des noms, aucune tuile ne porterait ce sceau.
+      expect(await screen.findByLabelText('Réalisateur suivi')).toBeInTheDocument()
+      expect(screen.queryByLabelText('Saga suivie')).not.toBeInTheDocument()
+    })
+
+    it('une saga suivie dont les films sont déjà en cache pose le sceau sur la tuile de la semaine prochaine', async () => {
+      const client = createQueryClient()
+      client.setQueryData(cles.filmsSaga(ALIEN.tmdb_id), { films: [MAREE] })
+      const requetes = servir({
+        'GET /api/reference/sorties': () => json(SORTIES),
+        'GET /api/me/sagas': () => json([ALIEN]),
+        ...routeSeances([]),
+      })
+      monter(client)
+
+      expect(await screen.findByLabelText('Saga suivie')).toBeInTheDocument()
+      // « aucun appel réseau nouveau » : jamais la filmographie d'une saga depuis cet onglet.
+      expect(requetes.filter((r) => r.includes('/films'))).toEqual([])
+    })
+
+    it('sans filmographie en cache, le sceau de saga n’est pas posé, et rien n’est demandé pour autant', async () => {
+      const requetes = servir({
+        'GET /api/reference/sorties': () => json(SORTIES),
+        'GET /api/me/sagas': () => json([ALIEN]),
+        ...routeSeances([]),
+      })
+      monter()
+
+      await screen.findAllByText('Marée basse')
+      await vi.waitFor(() => expect(requetes).toContain('GET /api/me/sagas'))
+      await patienter(30)
+      // Mutation : un chargement des films (charger = true) ferait partir `GET /api/me/sagas/8091/films`.
+      expect(requetes.filter((r) => r.includes('/films'))).toEqual([])
+      expect(screen.queryByLabelText('Saga suivie')).not.toBeInTheDocument()
+    })
+
+    it('rien de suivi : aucun sceau', async () => {
+      servir({ 'GET /api/reference/sorties': () => json(SORTIES), ...routeSeances([]) })
+      monter()
+
+      await screen.findAllByText('Marée basse')
+      expect(screen.queryByLabelText('Réalisateur suivi')).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Saga suivie')).not.toBeInTheDocument()
+    })
   })
 })

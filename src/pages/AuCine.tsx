@@ -1,16 +1,30 @@
 import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { IconCheck } from '@tabler/icons-react'
+import { IconCheck, IconMovie, IconUser } from '@tabler/icons-react'
 import { cles } from '../api/cles'
 import { curseurSuivant, lireSeances } from '../api/journal'
+import { lireRealisateurs } from '../api/realisateurs'
+import { lireSagas } from '../api/sagas'
 import { lireSorties } from '../api/sorties'
 import {
   candidatDepuisSortieEnCours,
   candidatDepuisSortieProchaine,
   sortieEnCoursOuvrable,
 } from '../formulaire/candidat'
-import { cinemaUniqueEnCours, dejaDansLeJournal, messageAuCine, miseAJourAffichee, seancesCetteAnnee, sousTitreCinemas } from '../cinema/etats'
+import {
+  cinemaUniqueEnCours,
+  dejaDansLeJournal,
+  marqueEnCours,
+  marqueProchaine,
+  messageAuCine,
+  miseAJourAffichee,
+  reperesSuivis,
+  seancesCetteAnnee,
+  sousTitreCinemas,
+  type MarqueSuivi,
+} from '../cinema/etats'
+import { useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useChargementInfini } from '../accueil/useChargementInfini'
 import Affiche from '../ui/Affiche'
 import Panne from '../ui/Panne'
@@ -27,8 +41,12 @@ const LIMITE = 40
  * « Au ciné » (reprise de `AuCineScreen.kt`) : mes séances (`GET /me/journal?reaction=en_salle`),
  * et les sorties en salle de la semaine en cours et de la semaine prochaine (`GET
  * /reference/sorties`) — rien de plus, pas de recommandation. Le sceau des Suivis (« le guichet »,
- * 25 septembre 2026) n'est pas repris ici : il dépend du lot Suivis, pas encore construit dans ce
- * dépôt.
+ * 25 septembre 2026) marque une tuile dont le réalisateur ou la saga est suivi (`cinema/etats.ts`).
+ * Il ne coûte **aucun appel de filmographie** : les films des sagas ne sont lus que dans le cache
+ * (`useFilmographiesSagas(…, false)`), là où l'accueil, toujours visité avant, les a mis — comme
+ * `CinemaRoute.kt`, qui lit les Suivis tels que l'appli les tient déjà. Seules les deux listes
+ * (`GET /me/realisateurs`, `GET /me/sagas`, sans TMDB derrière) se demandent ici : une page ouverte
+ * ou rechargée directement n'a pas eu l'accueil pour les amorcer.
  *
  * Deux appels indépendants, chacun avec son chargement et son erreur (même règle que
  * `AuCineViewModel` : une panne TMDB n'a aucune raison d'effacer « Tes séances », qui vient d'une
@@ -36,6 +54,12 @@ const LIMITE = 40
  */
 export default function AuCine() {
   const sorties = useQuery({ queryKey: cles.sorties, queryFn: ({ signal }) => lireSorties(signal) })
+
+  // Le sceau des Suivis : de quoi le poser, jamais de quoi le charger (voir plus haut).
+  const realisateursSuivis = useQuery({ queryKey: cles.realisateurs, queryFn: ({ signal }) => lireRealisateurs(signal) })
+  const sagasSuivies = useQuery({ queryKey: cles.sagas, queryFn: ({ signal }) => lireSagas(signal) })
+  const filmographiesSagas = useFilmographiesSagas(sagasSuivies.data, false)
+  const reperes = reperesSuivis(realisateursSuivis.data, filmographiesSagas)
 
   const seances = useInfiniteQuery({
     queryKey: cles.seances,
@@ -95,6 +119,7 @@ export default function AuCine() {
                   key={film.allocine_id}
                   film={film}
                   dejaVu={dejaDansLeJournal(items, film.tmdb_id)}
+                  marque={marqueEnCours(reperes, film)}
                   avecCinemas={cinemaUnique == null}
                 />
               ))}
@@ -115,7 +140,12 @@ export default function AuCine() {
         ) : prochaine ? (
           <div className={styles.grille}>
             {prochaine.films.map((film) => (
-              <TuileProchaine key={film.tmdb_id} film={film} dejaVu={dejaDansLeJournal(items, film.tmdb_id)} />
+              <TuileProchaine
+                key={film.tmdb_id}
+                film={film}
+                dejaVu={dejaDansLeJournal(items, film.tmdb_id)}
+                marque={marqueProchaine(reperes, film)}
+              />
             ))}
           </div>
         ) : null}
@@ -166,18 +196,23 @@ export default function AuCine() {
   )
 }
 
-/** Une tuile de sortie, commune aux deux grilles — l'affiche, la coche « déjà dans ton journal », le titre, un sous-titre facultatif. */
+/**
+ * Une tuile de sortie, commune aux deux grilles — l'affiche, la coche « déjà dans ton journal » en
+ * bas à droite, le sceau d'un suivi en haut à droite, le titre, un sous-titre facultatif.
+ */
 function Tuile({
   coverUrl,
   title,
   sousTitre: sousTitreTexte,
   dejaVu,
+  marque,
   candidat,
 }: {
   coverUrl: string | null
   title: string
   sousTitre?: string | null
   dejaVu: boolean
+  marque: MarqueSuivi | null
   /** `null` : la tuile n'est pas ouvrable (aucun `tmdb_id` résolu côté back), rien à préremplir. */
   candidat: CandidatFilm | null
 }) {
@@ -188,6 +223,15 @@ function Tuile({
         {dejaVu ? (
           <span className={styles.coche} aria-label="Déjà dans ton journal">
             <IconCheck aria-hidden="true" className={styles.iconeCoche} />
+          </span>
+        ) : null}
+        {marque ? (
+          <span className={styles.sceau} aria-label={marque === 'realisateur' ? 'Réalisateur suivi' : 'Saga suivie'}>
+            {marque === 'realisateur' ? (
+              <IconUser aria-hidden="true" className={styles.iconeSceau} />
+            ) : (
+              <IconMovie aria-hidden="true" className={styles.iconeSceau} />
+            )}
           </span>
         ) : null}
       </div>
@@ -209,25 +253,37 @@ function Tuile({
  * « À l'affiche dans mes cinémas » (Allociné) : sous-titre les cinémas quand la grille en montre
  * plusieurs (`avecCinemas`), ouvrable seulement si TMDB a été résolu.
  */
-function TuileEnCours({ film, dejaVu, avecCinemas }: { film: SortieEnCoursFilm; dejaVu: boolean; avecCinemas: boolean }) {
+function TuileEnCours({
+  film,
+  dejaVu,
+  marque,
+  avecCinemas,
+}: {
+  film: SortieEnCoursFilm
+  dejaVu: boolean
+  marque: MarqueSuivi | null
+  avecCinemas: boolean
+}) {
   return (
     <Tuile
       coverUrl={film.cover_url}
       title={film.title}
       sousTitre={avecCinemas ? sousTitreCinemas(film.cinemas) : null}
       dejaVu={dejaVu}
+      marque={marque}
       candidat={sortieEnCoursOuvrable(film) ? candidatDepuisSortieEnCours(film) : null}
     />
   )
 }
 
 /** « La semaine prochaine » (TMDB) : toujours ouvrable, pas de cinéma à afficher. */
-function TuileProchaine({ film, dejaVu }: { film: SortieProchaineFilm; dejaVu: boolean }) {
+function TuileProchaine({ film, dejaVu, marque }: { film: SortieProchaineFilm; dejaVu: boolean; marque: MarqueSuivi | null }) {
   return (
     <Tuile
       coverUrl={film.cover_url}
       title={film.title}
       dejaVu={dejaVu}
+      marque={marque}
       candidat={candidatDepuisSortieProchaine(film)}
     />
   )

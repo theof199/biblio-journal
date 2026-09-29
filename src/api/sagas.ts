@@ -23,3 +23,14 @@ export const neplusSuivreSaga = (tmdbId: number) => api.delete<void>(`/me/sagas/
 /** Ses films, de la plus ancienne sortie à la plus récente — `404` si cette saga n'est pas suivie. */
 export const lireFilmsSaga = (tmdbId: number, signal?: AbortSignal) =>
   api.get<FilmsSaga>(`/me/sagas/${tmdbId}/films`, undefined, signal)
+
+/**
+ * Ajouter à la main un film que la collection TMDB ne porte pas (`filmId` est celui du **film**,
+ * `tmdbId` celui de la collection). Idempotent, `204` — `404` si cette saga n'est pas suivie.
+ */
+export const ajouterFilmSaga = (tmdbId: number, filmId: number) =>
+  api.put<void>(`/me/sagas/${tmdbId}/films/${filmId}`)
+
+/** L'inverse : ne touche jamais aux films de la collection, seulement à ceux ajoutés. `204` dans tous les cas. */
+export const retirerFilmSaga = (tmdbId: number, filmId: number) =>
+  api.delete<void>(`/me/sagas/${tmdbId}/films/${filmId}`)
