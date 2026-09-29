@@ -46374,6 +46374,811 @@
           }
         }
       }
+    },
+    "/me/senscritique": {
+      "get": {
+        "summary": "L’état de ma liaison SensCritique",
+        "tags": [
+          "senscritique"
+        ],
+        "description": "Connecté ou non, pseudo SensCritique, expiration annoncée, nombre de notes en attente d’envoi et de films à apparier.\n\n`connecte` ne repasse à `false` que sur un **vrai refus** de SensCritique (ou une clé de chiffrement changée) : `expire_le` est indicatif, l’API ne le compare jamais à l’horloge. Les envois en attente et les choix mémorisés survivent à ce refus ; seul `DELETE /me/senscritique` les efface.\n\nSans `SENSCRITIQUE_CLE` sur le serveur, `503 SERVICE_UNCONFIGURED`.",
+        "responses": {
+          "200": {
+            "description": "L’état de la liaison SensCritique de l’utilisateur de la session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "connecte": {
+                      "type": "boolean",
+                      "description": "Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux"
+                    },
+                    "pseudo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Ton pseudo chez SensCritique, nul si tu n’es pas connecté"
+                    },
+                    "expire_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte"
+                    },
+                    "envois_en_attente": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra"
+                    },
+                    "a_apparier": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi"
+                    }
+                  },
+                  "required": [
+                    "connecte",
+                    "pseudo",
+                    "expire_le",
+                    "envois_en_attente",
+                    "a_apparier"
+                  ],
+                  "additionalProperties": false,
+                  "description": "L’état de la liaison SensCritique de l’utilisateur de la session"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "connecte": true,
+                      "pseudo": "Cinephile42",
+                      "expire_le": "2026-10-29T08:14:03.000Z",
+                      "envois_en_attente": 1,
+                      "a_apparier": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Effacer ma liaison SensCritique",
+        "tags": [
+          "senscritique"
+        ],
+        "description": "Efface **tout** : le cookie chiffré, la file des envois en attente, les films à apparier et les choix mémorisés. Rien ne part plus, et rien de ce qui attendait ne partira.\n\nNe touche jamais au journal : les notes déjà posées y restent, et chez SensCritique, ce qui est déjà parti aussi. La réponse est l’état, remis à zéro.\n\nIdempotent : effacer une liaison qui n’existe pas répond de même.",
+        "responses": {
+          "200": {
+            "description": "L’état de la liaison SensCritique de l’utilisateur de la session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "connecte": {
+                      "type": "boolean",
+                      "description": "Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux"
+                    },
+                    "pseudo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Ton pseudo chez SensCritique, nul si tu n’es pas connecté"
+                    },
+                    "expire_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte"
+                    },
+                    "envois_en_attente": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra"
+                    },
+                    "a_apparier": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi"
+                    }
+                  },
+                  "required": [
+                    "connecte",
+                    "pseudo",
+                    "expire_le",
+                    "envois_en_attente",
+                    "a_apparier"
+                  ],
+                  "additionalProperties": false,
+                  "description": "L’état de la liaison SensCritique de l’utilisateur de la session"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "connecte": false,
+                      "pseudo": null,
+                      "expire_le": null,
+                      "envois_en_attente": 0,
+                      "a_apparier": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/senscritique/connexion": {
+      "post": {
+        "summary": "Relier mon compte SensCritique",
+        "tags": [
+          "senscritique"
+        ],
+        "description": "L’API se connecte à SensCritique **à ta place, une fois**, avec l’identifiant et le mot de passe reçus, et ne garde que le cookie de session rendu — chiffré, avec sa date d’expiration et ton pseudo SensCritique.\n\n**Le mot de passe n’est jamais stocké, jamais journalisé, jamais renvoyé.** Il n’existe que dans ce corps de requête.\n\nLa réponse est l’état, comme `GET /me/senscritique`, rendu **sans attendre** : la reconnexion rejoue les envois qui attendaient **en arrière-plan**, et `envois_en_attente` les compte encore dans cette réponse.\n\n**Limite de débit :** 5 tentatives par 15 minutes, **réussies comprises**, comptées par membre et par IP : chacune part chez SensCritique, et l’API ne doit pas servir de relais pour essayer des mots de passe chez eux. Au-delà : `429 RATE_LIMITED`, avec un en-tête `Retry-After`, et rien ne part.\n\n`422 SENSCRITIQUE_IDENTIFIANTS_REFUSES` : SensCritique a refusé l’identifiant ou le mot de passe (jamais 401 : ce n’est pas ta session de la médiathèque). `503 UPSTREAM_UNAVAILABLE` : SensCritique ne répond pas, réessayer. `503 SERVICE_UNCONFIGURED` : pas de `SENSCRITIQUE_CLE` sur ce serveur.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "identifiant": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 254,
+                    "description": "L’identifiant du compte SensCritique, tel que le formulaire de leur site le demande (adresse e-mail)"
+                  },
+                  "mot_de_passe": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "description": "Le mot de passe SensCritique. **Jamais stocké, jamais journalisé, jamais renvoyé** : il ne sert qu’à cet appel"
+                  }
+                },
+                "required": [
+                  "identifiant",
+                  "mot_de_passe"
+                ],
+                "description": "Les identifiants SensCritique, envoyés une fois pour ouvrir la liaison"
+              }
+            }
+          },
+          "description": "Les identifiants SensCritique, envoyés une fois pour ouvrir la liaison"
+        },
+        "responses": {
+          "200": {
+            "description": "L’état de la liaison SensCritique de l’utilisateur de la session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "connecte": {
+                      "type": "boolean",
+                      "description": "Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux"
+                    },
+                    "pseudo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Ton pseudo chez SensCritique, nul si tu n’es pas connecté"
+                    },
+                    "expire_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte"
+                    },
+                    "envois_en_attente": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra"
+                    },
+                    "a_apparier": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi"
+                    }
+                  },
+                  "required": [
+                    "connecte",
+                    "pseudo",
+                    "expire_le",
+                    "envois_en_attente",
+                    "a_apparier"
+                  ],
+                  "additionalProperties": false,
+                  "description": "L’état de la liaison SensCritique de l’utilisateur de la session"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "connecte": true,
+                      "pseudo": "Cinephile42",
+                      "expire_le": "2026-10-29T08:14:03.000Z",
+                      "envois_en_attente": 1,
+                      "a_apparier": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/senscritique/a-apparier": {
+      "get": {
+        "summary": "Les films à apparier chez SensCritique",
+        "tags": [
+          "senscritique"
+        ],
+        "description": "Les films dont la recherche chez SensCritique n’a pas donné **un seul** candidat net (plusieurs, ou aucun) : l’API ne devine pas, rien ne part tant que tu n’as pas choisi par `PUT /me/senscritique/appariements/{mediaId}`.\n\nChaque film porte la note et la date qui attendent, et les candidats — vides quand la recherche n’a rien rendu, auquel cas « Aucun de ceux-là » est la seule réponse.",
+        "responses": {
+          "200": {
+            "description": "Les films à apparier, du plus ancien au plus récent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "media_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "Le film, dans la bibliothèque"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "original_title": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "year": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "rating": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "La note qui attend d’être envoyée"
+                          },
+                          "watched_on": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                            "description": "La date de visionnage qui attend d’être envoyée"
+                          },
+                          "candidates": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "product_id": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Identifiant du produit chez SensCritique — à renvoyer tel quel pour choisir"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "original_title": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "year": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "director": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Premier réalisateur crédité chez SensCritique"
+                                },
+                                "picture_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Affiche chez SensCritique, telle qu’ils la donnent"
+                                }
+                              },
+                              "required": [
+                                "product_id",
+                                "title",
+                                "original_title",
+                                "year",
+                                "director",
+                                "picture_url"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Un film que la recherche SensCritique a rendu"
+                            },
+                            "description": "Les films SensCritique parmi lesquels choisir — vide si la recherche n’a rien rendu"
+                          }
+                        },
+                        "required": [
+                          "media_id",
+                          "title",
+                          "original_title",
+                          "year",
+                          "rating",
+                          "watched_on",
+                          "candidates"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un film qui attend que tu dises lequel c’est chez SensCritique"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Les films à apparier, du plus ancien au plus récent"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "items": [
+                        {
+                          "media_id": "3f1c2a52-6f0e-4d8a-9a57-0b7a4f7a1c11",
+                          "title": "Le Voyage dans la Lune",
+                          "original_title": "Le Voyage dans la Lune",
+                          "year": 1902,
+                          "rating": 9,
+                          "watched_on": "2026-09-27",
+                          "candidates": [
+                            {
+                              "product_id": 447293,
+                              "title": "Le Voyage dans la Lune",
+                              "original_title": "Le Voyage dans la Lune",
+                              "year": 1902,
+                              "director": "Georges Méliès",
+                              "picture_url": "https://media.senscritique.com/media/000000000001/300/le_voyage_dans_la_lune.jpg"
+                            },
+                            {
+                              "product_id": 1587012,
+                              "title": "Le Voyage dans la Lune",
+                              "original_title": "A Trip to the Moon",
+                              "year": 1902,
+                              "director": null,
+                              "picture_url": null
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/senscritique/appariements/{mediaId}": {
+      "put": {
+        "summary": "Choisir le film SensCritique d’un média",
+        "tags": [
+          "senscritique"
+        ],
+        "description": "Mémorise, **par membre et par média**, quel produit SensCritique est ce film — ou `null` pour « Aucun de ceux-là », qui exclut le film de tout envoi. Un choix ne se redemande jamais.\n\nSi une note attendait ce choix, elle part aussitôt : `resultat` vaut `envoye`, ou `en_attente` si l’envoi a échoué ou dépassé six secondes (le choix reste, un rejeu suivra). Sans note en attente : `memorise` ; avec `null` : `ignore`, et l’envoi en attente est abandonné.\n\n`409 SENSCRITIQUE_SESSION_EXPIREE` : pas de connexion active, le choix n’est alors **pas** mémorisé — reconnecte-toi d’abord ; si SensCritique refuse la session pendant l’envoi, en revanche, le choix est mémorisé et la note reste en attente. `404` : ce média n’est pas dans la bibliothèque. `400` : ce média n’est pas un film — seuls les films partent chez SensCritique.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product_id": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Le `product_id` choisi parmi les candidats, ou `null` pour « Aucun de ceux-là » : ce film ne sera jamais envoyé"
+                  }
+                },
+                "required": [
+                  "product_id"
+                ],
+                "description": "Le choix du film SensCritique"
+              }
+            }
+          },
+          "description": "Le choix du film SensCritique"
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "mediaId",
+            "required": true,
+            "description": "Le film de la bibliothèque"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ce que le choix a déclenché",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "media_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "product_id": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Le choix mémorisé — `null` pour « Aucun de ceux-là »"
+                    },
+                    "resultat": {
+                      "type": "string",
+                      "enum": [
+                        "envoye",
+                        "en_attente",
+                        "memorise",
+                        "ignore"
+                      ],
+                      "description": "`envoye` : la note est partie. `en_attente` : le choix est mémorisé, l’envoi a échoué et sera rejoué. `memorise` : le choix est mémorisé, aucune note n’attendait. `ignore` : « Aucun de ceux-là » mémorisé, l’envoi en attente est abandonné"
+                    },
+                    "etat": {
+                      "type": "object",
+                      "properties": {
+                        "connecte": {
+                          "type": "boolean",
+                          "description": "Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux"
+                        },
+                        "pseudo": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Ton pseudo chez SensCritique, nul si tu n’es pas connecté"
+                        },
+                        "expire_le": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte"
+                        },
+                        "envois_en_attente": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra"
+                        },
+                        "a_apparier": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi"
+                        }
+                      },
+                      "required": [
+                        "connecte",
+                        "pseudo",
+                        "expire_le",
+                        "envois_en_attente",
+                        "a_apparier"
+                      ],
+                      "additionalProperties": false,
+                      "description": "L’état de la liaison SensCritique de l’utilisateur de la session"
+                    }
+                  },
+                  "required": [
+                    "media_id",
+                    "product_id",
+                    "resultat",
+                    "etat"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Ce que le choix a déclenché"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "media_id": "3f1c2a52-6f0e-4d8a-9a57-0b7a4f7a1c11",
+                      "product_id": 447293,
+                      "resultat": "envoye",
+                      "etat": {
+                        "connecte": true,
+                        "pseudo": "Cinephile42",
+                        "expire_le": "2026-10-29T08:14:03.000Z",
+                        "envois_en_attente": 1,
+                        "a_apparier": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -46410,6 +47215,10 @@
     {
       "name": "carnet",
       "description": "La partie privée du journal — la seule exception à « tout est public ». Ne parle que de l’utilisateur de la session."
+    },
+    {
+      "name": "senscritique",
+      "description": "Envoyer chez SensCritique la note et la date de chaque visionnage noté du journal. Ne parle que de l’utilisateur de la session. Le mot de passe SensCritique ne fait que traverser `POST /me/senscritique/connexion`."
     },
     {
       "name": "réalisateurs",

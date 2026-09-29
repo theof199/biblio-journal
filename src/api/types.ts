@@ -9690,6 +9690,314 @@ export interface paths {
       };
     };
   };
+  "/me/senscritique": {
+    /**
+     * L’état de ma liaison SensCritique
+     * @description Connecté ou non, pseudo SensCritique, expiration annoncée, nombre de notes en attente d’envoi et de films à apparier.
+     *
+     * `connecte` ne repasse à `false` que sur un **vrai refus** de SensCritique (ou une clé de chiffrement changée) : `expire_le` est indicatif, l’API ne le compare jamais à l’horloge. Les envois en attente et les choix mémorisés survivent à ce refus ; seul `DELETE /me/senscritique` les efface.
+     *
+     * Sans `SENSCRITIQUE_CLE` sur le serveur, `503 SERVICE_UNCONFIGURED`.
+     */
+    get: {
+      responses: {
+        /** @description L’état de la liaison SensCritique de l’utilisateur de la session */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
+              connecte: boolean;
+              /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+              pseudo: string | null;
+              /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
+              expire_le: string | null;
+              /** @description Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra */
+              envois_en_attente: number;
+              /** @description Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi */
+              a_apparier: number;
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    /**
+     * Effacer ma liaison SensCritique
+     * @description Efface **tout** : le cookie chiffré, la file des envois en attente, les films à apparier et les choix mémorisés. Rien ne part plus, et rien de ce qui attendait ne partira.
+     *
+     * Ne touche jamais au journal : les notes déjà posées y restent, et chez SensCritique, ce qui est déjà parti aussi. La réponse est l’état, remis à zéro.
+     *
+     * Idempotent : effacer une liaison qui n’existe pas répond de même.
+     */
+    delete: {
+      responses: {
+        /** @description L’état de la liaison SensCritique de l’utilisateur de la session */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
+              connecte: boolean;
+              /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+              pseudo: string | null;
+              /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
+              expire_le: string | null;
+              /** @description Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra */
+              envois_en_attente: number;
+              /** @description Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi */
+              a_apparier: number;
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/senscritique/connexion": {
+    /**
+     * Relier mon compte SensCritique
+     * @description L’API se connecte à SensCritique **à ta place, une fois**, avec l’identifiant et le mot de passe reçus, et ne garde que le cookie de session rendu — chiffré, avec sa date d’expiration et ton pseudo SensCritique.
+     *
+     * **Le mot de passe n’est jamais stocké, jamais journalisé, jamais renvoyé.** Il n’existe que dans ce corps de requête.
+     *
+     * La réponse est l’état, comme `GET /me/senscritique`, rendu **sans attendre** : la reconnexion rejoue les envois qui attendaient **en arrière-plan**, et `envois_en_attente` les compte encore dans cette réponse.
+     *
+     * **Limite de débit :** 5 tentatives par 15 minutes, **réussies comprises**, comptées par membre et par IP : chacune part chez SensCritique, et l’API ne doit pas servir de relais pour essayer des mots de passe chez eux. Au-delà : `429 RATE_LIMITED`, avec un en-tête `Retry-After`, et rien ne part.
+     *
+     * `422 SENSCRITIQUE_IDENTIFIANTS_REFUSES` : SensCritique a refusé l’identifiant ou le mot de passe (jamais 401 : ce n’est pas ta session de la médiathèque). `503 UPSTREAM_UNAVAILABLE` : SensCritique ne répond pas, réessayer. `503 SERVICE_UNCONFIGURED` : pas de `SENSCRITIQUE_CLE` sur ce serveur.
+     */
+    post: {
+      /** @description Les identifiants SensCritique, envoyés une fois pour ouvrir la liaison */
+      requestBody: {
+        content: {
+          "application/json": {
+            /** @description L’identifiant du compte SensCritique, tel que le formulaire de leur site le demande (adresse e-mail) */
+            identifiant: string;
+            /** @description Le mot de passe SensCritique. **Jamais stocké, jamais journalisé, jamais renvoyé** : il ne sert qu’à cet appel */
+            mot_de_passe: string;
+          };
+        };
+      };
+      responses: {
+        /** @description L’état de la liaison SensCritique de l’utilisateur de la session */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
+              connecte: boolean;
+              /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+              pseudo: string | null;
+              /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
+              expire_le: string | null;
+              /** @description Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra */
+              envois_en_attente: number;
+              /** @description Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi */
+              a_apparier: number;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        422: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        429: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/senscritique/a-apparier": {
+    /**
+     * Les films à apparier chez SensCritique
+     * @description Les films dont la recherche chez SensCritique n’a pas donné **un seul** candidat net (plusieurs, ou aucun) : l’API ne devine pas, rien ne part tant que tu n’as pas choisi par `PUT /me/senscritique/appariements/{mediaId}`.
+     *
+     * Chaque film porte la note et la date qui attendent, et les candidats — vides quand la recherche n’a rien rendu, auquel cas « Aucun de ceux-là » est la seule réponse.
+     */
+    get: {
+      responses: {
+        /** @description Les films à apparier, du plus ancien au plus récent */
+        200: {
+          content: {
+            "application/json": {
+              items: ({
+                  /**
+                   * Format: uuid
+                   * @description Le film, dans la bibliothèque
+                   */
+                  media_id: string;
+                  title: string;
+                  original_title: string | null;
+                  year: number | null;
+                  /** @description La note qui attend d’être envoyée */
+                  rating: number;
+                  /**
+                   * Format: date
+                   * @description La date de visionnage qui attend d’être envoyée
+                   */
+                  watched_on: string;
+                  /** @description Les films SensCritique parmi lesquels choisir — vide si la recherche n’a rien rendu */
+                  candidates: ({
+                      /** @description Identifiant du produit chez SensCritique — à renvoyer tel quel pour choisir */
+                      product_id: number;
+                      title: string;
+                      original_title: string | null;
+                      year: number | null;
+                      /** @description Premier réalisateur crédité chez SensCritique */
+                      director: string | null;
+                      /** @description Affiche chez SensCritique, telle qu’ils la donnent */
+                      picture_url: string | null;
+                    })[];
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/senscritique/appariements/{mediaId}": {
+    /**
+     * Choisir le film SensCritique d’un média
+     * @description Mémorise, **par membre et par média**, quel produit SensCritique est ce film — ou `null` pour « Aucun de ceux-là », qui exclut le film de tout envoi. Un choix ne se redemande jamais.
+     *
+     * Si une note attendait ce choix, elle part aussitôt : `resultat` vaut `envoye`, ou `en_attente` si l’envoi a échoué ou dépassé six secondes (le choix reste, un rejeu suivra). Sans note en attente : `memorise` ; avec `null` : `ignore`, et l’envoi en attente est abandonné.
+     *
+     * `409 SENSCRITIQUE_SESSION_EXPIREE` : pas de connexion active, le choix n’est alors **pas** mémorisé — reconnecte-toi d’abord ; si SensCritique refuse la session pendant l’envoi, en revanche, le choix est mémorisé et la note reste en attente. `404` : ce média n’est pas dans la bibliothèque. `400` : ce média n’est pas un film — seuls les films partent chez SensCritique.
+     */
+    put: {
+      parameters: {
+        path: {
+          /** @description Le film de la bibliothèque */
+          mediaId: string;
+        };
+      };
+      /** @description Le choix du film SensCritique */
+      requestBody: {
+        content: {
+          "application/json": {
+            /** @description Le `product_id` choisi parmi les candidats, ou `null` pour « Aucun de ceux-là » : ce film ne sera jamais envoyé */
+            product_id: number | null;
+          };
+        };
+      };
+      responses: {
+        /** @description Ce que le choix a déclenché */
+        200: {
+          content: {
+            "application/json": {
+              /** Format: uuid */
+              media_id: string;
+              /** @description Le choix mémorisé — `null` pour « Aucun de ceux-là » */
+              product_id: number | null;
+              /**
+               * @description `envoye` : la note est partie. `en_attente` : le choix est mémorisé, l’envoi a échoué et sera rejoué. `memorise` : le choix est mémorisé, aucune note n’attendait. `ignore` : « Aucun de ceux-là » mémorisé, l’envoi en attente est abandonné
+               * @enum {string}
+               */
+              resultat: "envoye" | "en_attente" | "memorise" | "ignore";
+              /** @description L’état de la liaison SensCritique de l’utilisateur de la session */
+              etat: {
+                /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
+                connecte: boolean;
+                /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+                pseudo: string | null;
+                /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
+                expire_le: string | null;
+                /** @description Notes qui n’ont pas pu partir (SensCritique injoignable, session refusée) et qu’un rejeu enverra */
+                envois_en_attente: number;
+                /** @description Films dont la recherche chez SensCritique est ambiguë : rien ne part tant que tu n’as pas choisi */
+                a_apparier: number;
+              };
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
 }
 
 export type webhooks = Record<string, never>;
