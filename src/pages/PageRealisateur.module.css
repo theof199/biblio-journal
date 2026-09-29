@@ -1,0 +1,107 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  max-width: var(--largeur-contenu);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--espace-4) var(--espace-6);
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.fiche {
+  display: flex;
+  gap: var(--espace-4);
+}
+
+.photo {
+  width: var(--largeur-affiche-fiche);
+}
+
+.infos {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
+.nom {
+  margin: 0;
+  font-size: var(--taille-xl);
+}
+
+.dates {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.compte {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.boutonSuivre {
+  align-self: flex-start;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--trait) solid var(--couleur-accent);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-accent);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}
+
+.presentation {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.film {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.infosFilm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
+.titreFilm {
+  margin: 0;
+  font-weight: var(--graisse-moyenne);
+}
+
+.etatFilm {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.vide {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}

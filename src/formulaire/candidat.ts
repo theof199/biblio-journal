@@ -76,3 +76,21 @@ export const candidatDepuisSortieProchaine = (film: SortieProchaineFilm): Candid
   cover_url: film.cover_url,
   director: null,
 })
+
+/**
+ * Un film d'une filmographie suivie (réalisateur ou saga), ou de la fiche d'un film — le
+ * réalisateur n'est connu que lorsqu'on l'a déjà résolu ailleurs (la page d'où le film vient, ou
+ * `GET /reference/films/{tmdbId}/realisateurs`) : une saga n'en a pas, contrairement à un
+ * réalisateur.
+ */
+export const candidatDepuisFilmSuivi = (
+  film: { tmdb_id: number; title: string; year: number | null; cover_url: string | null },
+  director: string | null = null,
+): CandidatFilm => ({
+  source: 'tmdb',
+  external_id: String(film.tmdb_id),
+  title: film.title,
+  year: film.year,
+  cover_url: film.cover_url,
+  director,
+})

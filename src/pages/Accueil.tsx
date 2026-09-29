@@ -20,9 +20,9 @@ const LIMITE = 20
 
 /**
  * « Accueil · la porte d'entrée » (reprise de `HomeScreen.kt`) : le fronton, « Ce soir », « Ensuite »
- * et la grille du journal, en pagination infinie. « Ensuite » se réduit à Plex dans ce lot — les
- * réalisateurs et sagas suivis appartiennent au lot Suivis, pas encore construit ici ; « Ce soir »
- * et la carte du Voyage renvoient vers l'onglet Voyage, dont la fiche d'année vit dans un autre lot.
+ * et la grille du journal, en pagination infinie. « Ensuite » montre aussi, à défaut de Plex, le
+ * réalisateur ou la saga suivis dont il reste le plus à voir (`accueil/ensuite.ts`) ; « Ce soir » et
+ * la carte du Voyage renvoient vers l'onglet Voyage, dont la fiche d'année vit dans un autre lot.
  */
 export default function Accueil() {
   const naviguer = useNavigate()
@@ -41,14 +41,20 @@ export default function Accueil() {
 
   // Dépendances primitives plutôt que `journal` entier : sa référence change à chaque
   // notification de la requête, ce qui recréerait l'observateur (et la sentinelle) à chaque rendu.
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = journal
+  // Une erreur arrête la boucle (jumeau de `MesFilms.tsx`) : sans `isFetchNextPageError`, l'échec
+  // d'une page faisait retomber `isFetchingNextPage` à faux, l'observateur recréé signalait la
+  // sentinelle toujours visible, et la page repartait sans fin. « Réessayer » relance à la main.
+  const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = journal
   const chargerLaSuite = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) void fetchNextPage()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+    if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage()
+  }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
   const sentinelle = useChargementInfini(chargerLaSuite, !!hasNextPage)
 
   if (journal.isPending) return <p role="status">Chargement…</p>
-  if (journal.error) return <Panne erreur={journal.error} onReessayer={() => void journal.refetch()} />
+  // `!journal.data`, pas `journal.error` (jumeau de `MesFilms.tsx`) : une fois la première page
+  // arrivée, l'échec d'une page suivante ne doit pas effacer la grille déjà affichée derrière la
+  // panne plein écran — il se dit en ligne, avec « Réessayer ».
+  if (!journal.data) return <Panne erreur={journal.error} onReessayer={() => void journal.refetch()} />
 
   const items = journal.data.pages.flatMap((page) => page.items)
   const vide = items.length === 0 && !journal.hasNextPage
@@ -86,7 +92,17 @@ export default function Accueil() {
           {journal.hasNextPage ? (
             <div ref={sentinelle} data-testid="sentinelle-journal" className={styles.sentinelle} />
           ) : null}
-          {journal.isFetchingNextPage ? <p className={styles.chargement}>Chargement…</p> : null}
+          {journal.isFetchingNextPage && !isFetchNextPageError ? (
+            <p className={styles.chargement}>Chargement…</p>
+          ) : null}
+          {isFetchNextPageError ? (
+            <div className={styles.erreur} role="alert">
+              <p className={styles.erreurTexte}>{journal.error?.message}</p>
+              <button type="button" className={styles.bouton} onClick={() => void fetchNextPage()}>
+                Réessayer
+              </button>
+            </div>
+          ) : null}
         </>
       )}
 

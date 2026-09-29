@@ -9,6 +9,9 @@ import Fiche from './pages/Fiche'
 import MesFilms from './pages/MesFilms'
 import Voyage from './pages/Voyage'
 import Suivis from './pages/Suivis'
+import PageRealisateur from './pages/PageRealisateur'
+import PageSaga from './pages/PageSaga'
+import FicheFilm from './pages/FicheFilm'
 import AuCine from './pages/AuCine'
 import Profil from './pages/Profil'
 
@@ -28,6 +31,9 @@ export default function App() {
           <Route path="journal/:id/corriger" element={<Formulaire />} />
           <Route path="voyage" element={<Voyage />} />
           <Route path="suivis" element={<Suivis />} />
+          <Route path="suivis/realisateurs/:tmdbId" element={<PageRealisateur />} />
+          <Route path="suivis/sagas/:tmdbId" element={<PageSaga />} />
+          <Route path="suivis/films/:tmdbId" element={<FicheFilm />} />
           <Route path="au-cine" element={<AuCine />} />
           <Route path="profil" element={<Profil />} />
           {/* Sous-page du profil (README, « La coque à onglets ») : l'onglet Profil reste marqué,

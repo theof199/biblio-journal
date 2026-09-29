@@ -14,4 +14,8 @@ export const cles = {
    */
   seances: ['journal', 'seances'] as const,
   sorties: ['sorties'] as const,
+  realisateurs: ['realisateurs'] as const,
+  pageRealisateur: (tmdbId: number) => ['realisateurs', tmdbId, 'page'] as const,
+  sagas: ['sagas'] as const,
+  filmsSaga: (tmdbId: number) => ['sagas', tmdbId, 'films'] as const,
 }

@@ -1,0 +1,92 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-6);
+  max-width: var(--largeur-contenu);
+  margin: 0 auto;
+  padding: var(--espace-5) var(--espace-4);
+}
+
+.titre {
+  margin: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.titreSection {
+  margin: 0;
+  font-size: var(--taille-l);
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.entite {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.nomEntite {
+  font-weight: var(--graisse-moyenne);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.champRecherche {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  font-size: var(--taille-m);
+}
+
+.resultatRecherche {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+}
+
+.resultatRecherche .nomEntite {
+  flex: 1;
+}
+
+.boutonSuivre {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--trait) solid var(--couleur-accent);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-accent);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.boutonSuivre:disabled {
+  opacity: var(--opacite-inactif);
+  cursor: default;
+}
+
+.vide {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
