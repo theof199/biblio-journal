@@ -1,0 +1,107 @@
+/* Le petit calque des choix (maquette 1890 : `.feuillet`, `.affiche-date`, lignes 491 à 500) : les
+   couleurs et les polices viennent des jetons du monde, posés sur `.calque`. */
+
+/* Par-dessus la page, sous le bandeau « Nouvelle version » et la barre d'onglets, qui restent visibles. */
+.calque {
+  position: fixed;
+  z-index: var(--z-calque);
+  top: 0;
+  right: 0;
+  bottom: var(--coque-bas);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.voile {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--m-fond) 82%, transparent);
+}
+
+.feuillet {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 80%;
+  margin: 0 auto;
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  box-shadow: 0 -12px 32px var(--m-ombre);
+  animation: colle 0.45s cubic-bezier(0.3, 1.3, 0.5, 1);
+  transform-origin: 50% 100%;
+}
+
+.feuillet::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 3px double color-mix(in srgb, var(--m-encre2) 50%, transparent);
+  pointer-events: none;
+}
+
+@keyframes colle {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tete {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tete h2 {
+  margin: 0;
+  font: 400 22px/1.1 var(--m-f-affiche);
+}
+
+.fermer {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  color: var(--m-rouge);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.fermer:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: -2px;
+}
+
+.choix {
+  position: relative;
+  margin-top: 8px;
+  font: 15.5px/1.45 var(--m-f-texte);
+}
+
+/* Chaque ligne touchable fait 44 px au moins. */
+.choix :is(button, a) {
+  min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feuillet {
+    animation: none;
+  }
+}

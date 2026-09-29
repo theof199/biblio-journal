@@ -103,6 +103,7 @@
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));
 
   /* Empilement */
+  --z-calque: 5; /* un calque du Voyage (la feuille du chroniqueur, un feuillet) : sous le bandeau et la barre, qu'il laisse visibles */
   --z-bandeau: 10; /* le bandeau « Nouvelle version » : au-dessus de la carte, sous la barre d'onglets */
   --z-barre-onglets: 20;
 }

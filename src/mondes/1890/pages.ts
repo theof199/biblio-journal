@@ -25,6 +25,7 @@ export const PAGES_1890: HabillagePages = {
     '--m-pale': 'rgba(232, 216, 191, 0.52)',
     '--m-filet': 'rgba(201, 161, 95, 0.28)',
     '--m-ombre': 'rgba(0, 0, 0, 0.5)',
+    '--m-grain': 'rgba(90, 62, 36, 0.1)',
     '--m-f-titre': "'Fraunces', Georgia, serif",
     '--m-f-affiche': "'Limelight', Didot, Georgia, serif",
     '--m-f-texte': "'IM Fell English', 'Iowan Old Style', Georgia, serif",

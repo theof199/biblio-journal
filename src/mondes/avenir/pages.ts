@@ -22,6 +22,7 @@ export const PAGES_A_VENIR: HabillagePages = {
     '--m-pale': 'rgba(242, 232, 213, 0.52)',
     '--m-filet': 'rgba(230, 185, 74, 0.28)',
     '--m-ombre': 'rgba(0, 0, 0, 0.45)',
+    '--m-grain': 'rgba(61, 52, 42, 0.08)',
     '--m-f-titre': "'Fraunces', Georgia, serif",
     '--m-f-affiche': "'Limelight', Georgia, serif",
     '--m-f-texte': "'Fraunces', Georgia, serif",

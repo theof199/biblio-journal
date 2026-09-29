@@ -11,6 +11,9 @@ const FEUILLES = {
 /** Les polices embarquées, telles que `ui/polices.ts` les importe. */
 const POLICES = Object.values(import.meta.glob<string>('/src/ui/polices.ts', { query: '?raw', import: 'default', eager: true }))[0] ?? ''
 
+/** Le thème de l'app, où vivent la zone sûre au-dessus de la barre et les étages. */
+const THEME = Object.values(import.meta.glob<string>('/src/ui/theme.css', { query: '?raw', import: 'default', eager: true }))[0] ?? ''
+
 const sansCommentaires = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 const lues = (css: string) => [...sansCommentaires(css).matchAll(/var\(\s*(--[\w-]+)/g)].map(([, nom]) => nom!)
 
@@ -32,7 +35,25 @@ describe('l’habillage des pages du Voyage', () => {
   it('trouve les feuilles qu’il garde', () => {
     // Sans ce plancher, un glob qui ne trouverait plus rien rendrait les gardes suivantes muettes.
     // Chaque tâche qui ajoute une feuille l'ajoute ici.
-    expect(Object.keys(FEUILLES)).toEqual(expect.arrayContaining(['/src/voyage/Toile.module.css']))
+    expect(Object.keys(FEUILLES)).toEqual(
+      expect.arrayContaining(['/src/voyage/Toile.module.css', '/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css']),
+    )
+  })
+
+  // Le jumeau des jetons du monde : ce qu'une feuille lit de `ui/theme.css` (la zone sûre, les étages)
+  // doit y être défini, sinon la valeur retombe en silence. Mutation : `var(--z-calqeu)` dans une feuille.
+  it.each(Object.entries(FEUILLES))('%s ne lit de theme.css que ce qu’il définit', (_chemin, css) => {
+    const definies = new Set([...sansCommentaires(THEME).matchAll(/(--[\w-]+)\s*:/g)].map(([, nom]) => nom!))
+    expect(lues(css).filter((nom) => PERMISES(nom) && nom !== '--corail' && !definies.has(nom))).toEqual([])
+  })
+
+  // Un calque laisse visibles le bandeau « Nouvelle version » et la barre d'onglets. Mutation :
+  // `--z-calque: 30`, au-dessus d'eux.
+  it('pose les calques sous le bandeau et la barre d’onglets', () => {
+    const etage = (nom: string) => Number(new RegExp(`${nom}\\s*:\\s*(\\d+)`).exec(sansCommentaires(THEME))?.[1])
+    expect(etage('--z-calque')).toBeGreaterThan(0)
+    expect(etage('--z-calque')).toBeLessThan(etage('--z-bandeau'))
+    expect(etage('--z-calque')).toBeLessThan(etage('--z-barre-onglets'))
   })
 
   // Mutation : retirer un jeton d'un monde (le monde « à venir » d'abord : on l'oublie).

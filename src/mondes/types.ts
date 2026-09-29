@@ -203,6 +203,8 @@ export const JETONS_DE_PAGE = [
   '--m-pale',
   '--m-filet',
   '--m-ombre',
+  /** Le grain du papier : les points d'encre semés sur un prospectus (maquette 1890 : `.prospectus`). */
+  '--m-grain',
   '--m-f-titre',
   '--m-f-affiche',
   '--m-f-texte',
