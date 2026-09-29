@@ -10,6 +10,7 @@ import { creerRegistre } from '../mondes'
 import type { Monde, VueBandeau } from '../mondes/types'
 import Panne from '../ui/Panne'
 import { useMouvementReduit } from '../ui/mouvement'
+import { useRevenir } from '../ui/revenir'
 import { afficherGenerique, billetsDeProgression, ligneDuBas, statutDeLAnnee } from '../voyage/annee'
 import { useCalque } from '../voyage/calque'
 import Feuille from '../voyage/Feuille'
@@ -61,6 +62,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   const style: CSSProperties & typeof jetons = { ...jetons }
   const calme = useMouvementReduit()
   const navigate = useNavigate()
+  const revenir = useRevenir('/voyage')
   const client = useQueryClient()
 
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
@@ -211,7 +213,19 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
             monde.pages.dessinerBandeau({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.bandeau, t, vivant, nuit, mode, annee, recompense, cases, bouclee, roulotte, touche: touche.current })
           }}
         />
-        <Link to="/voyage" className={styles.retour} aria-label="Retour à la carte">
+        {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
+            quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
+        <Link
+          to="/voyage"
+          className={styles.retour}
+          aria-label="Retour à la carte"
+          onClick={(e) => {
+            // Ouvrir dans un autre onglet reste au navigateur.
+            if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+            e.preventDefault()
+            revenir()
+          }}
+        >
           <span aria-hidden="true">‹</span>
         </Link>
         {monde.chapitre ? <span className={styles.plaque}>{monde.chapitre}</span> : null}

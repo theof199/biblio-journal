@@ -89,7 +89,8 @@ describe('la carte', () => {
   })
 
   // Mutations (coque) : le lien d'une année vers `/annee/…` (la route n'existe plus : la coque
-  // renvoie ailleurs) ; « Retour à la carte » vers `/` (l'Accueil de la coque, pas la carte).
+  // renvoie ailleurs). « Retour à la carte » recule ici dans l'historique : son repli vers `/voyage`,
+  // quand rien n'est derrière, est gardé par `VoyageAnnee.test.tsx`.
   it('chaque année est un lien vers sa fiche, pour qui ne voit pas le canvas, et la fiche ramène à la carte', async () => {
     monter(VOYAGE, { 'GET /api/me/voyage/annees/1897': () => json(fichePrete({ annee: 1897 })) })
     fireEvent.click(await screen.findByRole('link', { name: '1897, Ours' }))

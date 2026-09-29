@@ -4,8 +4,9 @@ import styles from './Programme.module.css'
 
 /** Des trous de poinçon : `total` en tout, les `perces` premiers percés. */
 function Trous({ total, perces }: { total: number; perces: number }) {
+  const n = Math.min(perces, total)
   return (
-    <span className={styles.trous} role="img" aria-label={`${Math.min(perces, total)} percés sur ${total}`}>
+    <span className={styles.trous} role="img" aria-label={`${n} percé${n > 1 ? 's' : ''} sur ${total}`}>
       {Array.from({ length: total }, (_, i) => {
         // Une seule valeur pour le trou peint et pour ce que le test lit.
         const perce = i < perces

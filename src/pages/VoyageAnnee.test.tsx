@@ -121,6 +121,48 @@ describe('la fiche d’une année', () => {
     expect(requetes.filter((r) => r === 'GET /api/me/voyage/annees/1897')).toHaveLength(RELECTURES.annee.plafond + 3)
   })
 
+  // Mutation : « Retour à la carte » en simple lien vers `/voyage` : la carte s'empilerait devant
+  // l'année quittée, et le geste « retour » du téléphone y ramènerait.
+  it('« Retour à la carte » recule dans l’historique quand il y a de quoi', async () => {
+    monterVoyage(['/voyage/1896', '/voyage/1897'], {
+      ...ROUTES,
+      'GET /api/me/voyage/annees/1896': () => json(nue({ annee: 1896, recompense: 'lion' })),
+    })
+    await screen.findByRole('heading', { level: 1, name: '1897' })
+    fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+    expect(await screen.findByRole('heading', { level: 1, name: '1896' })).toBeInTheDocument()
+  })
+
+  // Le jumeau : ouverte d'un lien, sans rien de l'app derrière. Mutation : toujours reculer (rien
+  // ne se passerait).
+  it('« Retour à la carte » mène à la carte quand rien n’est derrière', async () => {
+    monterVoyage('/voyage/1897', ROUTES)
+    await screen.findByRole('heading', { level: 1, name: '1897' })
+    const retour = screen.getByRole('link', { name: 'Retour à la carte' })
+    expect(retour).toHaveAttribute('href', '/voyage')
+    fireEvent.click(retour)
+    expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
+  })
+
+  // Mutation : la page d'une année sans `key` : revenir d'une année à une autre garderait le compte
+  // des relectures de la première, et l'abandonnerait d'emblée.
+  it('une autre année repart de zéro dans ses relectures', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    let n = 0
+    monterVoyage(['/voyage/1897', '/voyage/1896'], {
+      ...ROUTES,
+      'GET /api/me/voyage/annees/1896': () => json(EN_PREPARATION, 202),
+      'GET /api/me/voyage/annees/1897': () => (++n < 2 ? json(EN_PREPARATION, 202) : json(FICHE)),
+    })
+    await screen.findByRole('status', { name: 'Le chroniqueur écrit…' })
+    for (let i = 0; i < 40; i += 1) await vi.advanceTimersByTimeAsync(5_000)
+    await screen.findByText('Le chroniqueur n’a pas répondu, reviens plus tard.')
+    fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+    await screen.findByRole('status', { name: 'Le chroniqueur écrit…' })
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(await screen.findByRole('region', { name: 'Boniment d’ouverture' })).toBeInTheDocument()
+  })
+
   // Mutation : le `:annee` lu sans vérifier qu'il est un entier : `GET …/annees/NaN`.
   it('ramène à la carte une année qui n’est pas un nombre', async () => {
     const { requetes } = monterVoyage('/voyage/demain', ROUTES)
@@ -282,6 +324,23 @@ describe('la fiche d’une année', () => {
     expect(encaissements).toBe(1)
   })
 
+  // Le jumeau de la garde : elle se lève quand l'encaissement a répondu. Mutation : la garde jamais
+  // relâchée (après un refus passager, « Utiliser » ne répondrait plus).
+  it('après un refus, « Utiliser » se retente', async () => {
+    let n = 0
+    monterVoyage('/voyage/1897', {
+      ...ROUTES,
+      'GET /api/me/voyage/annees/1897': () => json(nue({ ticket: ticket(1898) })),
+      'POST /api/me/voyage/tickets/1898/utiliser': () =>
+        ++n === 1 ? json({ code: 'UPSTREAM_UNAVAILABLE', message: 'Le serveur est occupé.', retryable: true }, 503) : json({ annee_en_cours: 1898 }),
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Utiliser' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le serveur est occupé.')
+    fireEvent.click(screen.getByRole('button', { name: 'Utiliser' }))
+    expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
+    expect(n).toBe(2)
+  })
+
   // Mutation : l'invalidation de la carte oubliée : elle garderait l'année d'avant (60 s de cache côté
   // API ne s'y ajoutent pas : c'est le cache du Journal qui mentirait), et ne jouerait pas la marche.
   it('après l’encaissement, la carte relit le Voyage', async () => {
@@ -377,7 +436,8 @@ describe('la fiche d’une année', () => {
     const lion = within(programme).getByText('Lion : encore 2 essentiels').closest('li')!
     expect(within(lion).getByRole('img', { name: '3 percés sur 5' }).querySelectorAll('[data-perce="true"]')).toHaveLength(3)
     const palme = within(programme).getByText('Palme : 1 salle de plus').closest('li')!
-    expect(within(palme).getByRole('img', { name: '1 percés sur 2' }).querySelectorAll('i')).toHaveLength(2)
+    // Mutation : le pluriel figé (« 1 percés »).
+    expect(within(palme).getByRole('img', { name: '1 percé sur 2' }).querySelectorAll('i')).toHaveLength(2)
     expect(within(programme).getByText('Ticket : au Lion, ou plus tôt si le jury le décide')).toBeInTheDocument()
   })
 
