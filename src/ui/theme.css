@@ -84,6 +84,7 @@
   --largeur-panneau: 24rem; /* la carte de connexion */
   --ratio-affiche: 2 / 3; /* la jaquette d'un film */
   --grille-affiches-colonnes: repeat(2, 1fr); /* la grille du journal, deux colonnes */
+  --grille-sorties-colonnes: repeat(3, 1fr); /* les grilles de sorties d'Au ciné, trois colonnes */
   --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, « Ensuite », « Ce soir ») */
   --taille-bouton-rond: 3.5rem; /* le bouton d'ajout flottant */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */

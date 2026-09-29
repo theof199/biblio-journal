@@ -26,6 +26,16 @@ export type MediaItem = AddMediaResponse['media']
 export const lireJournal = (params: { limit?: number; cursor?: string } = {}, signal?: AbortSignal) =>
   api.get<JournalPage>('/me/journal', params, signal)
 
+/** La réaction qui marque une entrée comme vue au cinéma — reprise de `Reactions.EN_SALLE` (Android). */
+export const REACTION_EN_SALLE = 'en_salle'
+
+/**
+ * « Tes séances » (l'onglet Au ciné, brief du 14 septembre 2026) : le journal filtré sur la
+ * réaction `en_salle`, même pagination que `lireJournal`.
+ */
+export const lireSeances = (params: { limit?: number; cursor?: string } = {}, signal?: AbortSignal) =>
+  api.get<JournalPage>('/me/journal', { ...params, reaction: REACTION_EN_SALLE }, signal)
+
 /** `next_cursor` nul, c'est la fin : le seul signal (voir `CLAUDE.md`, « Pagination »). */
 export const curseurSuivant = (page: JournalPage): string | undefined => page.next_cursor ?? undefined
 
