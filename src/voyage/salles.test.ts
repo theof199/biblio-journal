@@ -33,6 +33,11 @@ describe('une salle', () => {
     expect(compteDeLaSalle(salle({ id: 's', films: [f('1', 'vu'), f('2', 'vu'), f('3', 'demande')] }))).toBe('2 vus sur 3')
     expect(compteDeLaSalle(salle({ id: 's', films: [f('1', 'vu'), f('2', 'demande')] }))).toBe('1 vu sur 2')
   })
+
+  // Mutation : compter les films `acquis` : un introuvable passerait pour vu, jumeau de l'ampoule éteinte.
+  it('ne compte jamais un introuvable parmi les vus', () => {
+    expect(compteDeLaSalle(salle({ id: 's', films: [f('1', 'vu'), f('2', 'introuvable')] }))).toBe('1 vu sur 2')
+  })
 })
 
 describe('la porte de l’étagère', () => {

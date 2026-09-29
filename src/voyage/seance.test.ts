@@ -43,6 +43,34 @@ describe('« Autre court »', () => {
     expect(groupes[0]!.candidats.map((c) => `${c.type}:${c.tmdbId}`)).toEqual(['film:100', 'bobine:102', 'film:3'])
   })
 
+  // Mutations, jumelles de celles de « Autre long » : un tri retiré (programmes ou films) ; un
+  // programme vu proposé ; un film vu ou introuvable proposé.
+  it('trie chaque sous-liste Plex d’abord, et n’y garde que du libre', () => {
+    const aVoir = filmDeSalle({
+      id: 'p2',
+      tmdb_id: 200,
+      etat: 'a_demander',
+      title: 'Programme à voir',
+      programme: { duree_min: 4, bobines: [bobine(201, 'sur_le_plex')] },
+    })
+    const toutVu = filmDeSalle({
+      id: 'p3',
+      tmdb_id: 300,
+      etat: 'vu',
+      title: 'Programme vu',
+      programme: { duree_min: 2, bobines: [bobine(301, 'vu')] },
+    })
+    const groupes = candidatsCourt([salle({ id: 's', films: [toutVu, aVoir, programme, aDemander, vu, perdu, demande, plex] })], 'f-plex')
+    expect(groupes[0]!.candidats.map((c) => `${c.type}:${c.tmdbId}`)).toEqual([
+      'film:100',
+      'bobine:102',
+      'film:200',
+      'bobine:201',
+      'film:2',
+      'film:3',
+    ])
+  })
+
   it('se remplace par `film_id`, et par la bobine quand c’en est une', () => {
     const [ligne, laBobine] = candidatsCourt([salle({ id: 's', films: [programme] })], 'aucun')[0]!.candidats
     expect(corpsRemplacement('court', ligne!)).toEqual({ morceau: 'court', film_id: 'p1' })

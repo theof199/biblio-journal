@@ -82,6 +82,11 @@ describe('les paliers', () => {
     expect(estUnPalier('salles', 2, P(0, 5, 2))).toBe(true)
     expect(estUnPalier('salles', 1, P(0, 5, 1))).toBe(false)
   })
+
+  // Mutation : `valeur >= 2` pour la Palme : une troisième salle complète rejouerait le palier.
+  it('ne se franchissent qu’une fois, jamais au-delà du seuil', () => {
+    expect(estUnPalier('salles', 3, P(0, 5, 3))).toBe(false)
+  })
 })
 
 describe('la ligne du bas', () => {

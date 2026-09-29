@@ -36,6 +36,13 @@ describe('les candidats au podium', () => {
     expect(candidats([serie, vu('e4', 10, 1897, 8)], 1897, []).map((c) => c.titre)).toEqual(['Film e4'])
   })
 
+  // Mutation : la garde `Number.isInteger` retirée : un identifiant non numérique partirait en `tmdb_id: NaN`.
+  it('ne proposent jamais un film dont l’identifiant TMDB n’est pas un entier', () => {
+    const casse = vu('e6', 60, 1897, 7)
+    casse.media.external_id = 'tt0000060'
+    expect(candidats([casse, vu('e4', 10, 1897, 8)], 1897, []).map((c) => c.titre)).toEqual(['Film e4'])
+  })
+
   it('se posent par `tmdb_id` ou par `programme_id`, jamais les deux', () => {
     expect(corpsPodium({ type: 'film', tmdbId: 10, titre: 't', affiche: null, note: null })).toEqual({ tmdb_id: 10 })
     expect(corpsPodium({ type: 'programme', programmeId: 'p1', titre: 't', affiche: null })).toEqual({ programme_id: 'p1' })
@@ -71,5 +78,15 @@ describe('« Mettre sur le podium »', () => {
     // Un autre film au même titre (un remake) n'est pas celui de la marche.
     const homonyme: Candidat = { type: 'film', tmdbId: 999, titre: MARCHE_1.title, affiche: null, note: null }
     expect(choixDesMarches(PODIUM, homonyme)[0]!.cochee).toBe(false)
+  })
+
+  // Mutation : ne reconnaître l'occupant que parmi les films : un programme déjà posé ne serait jamais coché.
+  it('coche aussi la marche qui porte déjà ce programme, et lui seul', () => {
+    const marcheProgramme = { ...MARCHE_1, place: 2, tmdb_id: null, programme_id: 'p1', title: 'Programme' }
+    const podium: typeof PODIUM = [MARCHE_1, marcheProgramme, null]
+    const programme: Candidat = { type: 'programme', programmeId: 'p1', titre: 'Programme', affiche: null }
+    expect(choixDesMarches(podium, programme).map((c) => c.cochee)).toEqual([false, true, false])
+    const autre: Candidat = { type: 'programme', programmeId: 'p2', titre: 'Programme', affiche: null }
+    expect(choixDesMarches(podium, autre).map((c) => c.cochee)).toEqual([false, false, false])
   })
 })
