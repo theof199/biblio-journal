@@ -85,9 +85,11 @@
   --barre-onglets-icone-trait: 1.75; /* l'épaisseur du trait des icônes */
   --largeur-panneau: 24rem; /* la carte de connexion */
   --ratio-affiche: 2 / 3; /* la jaquette d'un film */
-  --grille-affiches-colonnes: repeat(2, 1fr); /* la grille du journal, deux colonnes */
-  --grille-sorties-colonnes: repeat(3, 1fr); /* les grilles de sorties d'Au ciné, trois colonnes */
-  --grille-bande-colonnes: repeat(6, 1fr); /* la bande d'un cycle, six affiches par rangée */
+  /* Les grilles : `minmax(0, 1fr)` et non `1fr`, dont le minimum est le contenu (un titre long, une
+     image) : la piste déborderait de l'écran et la page défilerait de côté. */
+  --grille-affiches-colonnes: repeat(2, minmax(0, 1fr)); /* la grille du journal, deux colonnes */
+  --grille-sorties-colonnes: repeat(3, minmax(0, 1fr)); /* les grilles de sorties d'Au ciné, trois colonnes */
+  --grille-bande-colonnes: repeat(6, minmax(0, 1fr)); /* la bande d'un cycle, six affiches par rangée */
   --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, « Ensuite », « Ce soir ») */
   --taille-bouton-rond: 3.5rem; /* le bouton d'ajout flottant */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */
@@ -142,9 +144,16 @@
   box-sizing: border-box;
 }
 
+/* Le document ne défile pas : la coque a sa zone de contenu qui défile (`Coque.module.css`). Rien
+   ne doit rebondir derrière elle. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--couleur-fond);
   color: var(--couleur-texte);
   font-family: var(--police-texte);

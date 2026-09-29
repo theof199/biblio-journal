@@ -17,7 +17,11 @@
   width: var(--largeur-affiche-ligne);
 }
 
+/* Posée dans le cadre et non dans le flux : la taille de l'image, chargée ou pas, ne change jamais
+   celle du cadre, qui ne dépend que de son ratio et de sa largeur. */
 .image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;

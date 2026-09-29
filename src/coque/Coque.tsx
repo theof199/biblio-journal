@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   IconArmchair,
   IconBuildingPavilion,
@@ -34,9 +35,18 @@ export const ONGLETS: readonly Onglet[] = [
  * dans `App.tsx` (voir le README, « La coque à onglets »).
  */
 export default function Coque() {
+  const contenu = useRef<HTMLElement>(null)
+  const { pathname } = useLocation()
+
+  // La zone de contenu est la même d'une page à l'autre : sans ce retour en haut, la page qu'on
+  // ouvre hériterait de la position de la précédente (le document le faisait déjà, en le taisant).
+  useEffect(() => {
+    if (contenu.current) contenu.current.scrollTop = 0
+  }, [pathname])
+
   return (
     <div className={styles.coque}>
-      <main className={styles.contenu}>
+      <main ref={contenu} className={styles.contenu}>
         <Outlet />
       </main>
 

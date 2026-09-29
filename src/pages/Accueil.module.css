@@ -38,6 +38,7 @@
 }
 
 .entree {
+  min-width: 0;
   display: block;
   text-decoration: none;
   color: inherit;

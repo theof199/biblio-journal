@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import theme from './theme.css?raw'
 import voyage from './voyage.css?raw'
 import coque from '../coque/Coque.module.css?raw'
+import affiche from './Affiche.module.css?raw'
+import auCine from '../pages/AuCine.module.css?raw'
+import accueil from '../pages/Accueil.module.css?raw'
 
 /** Tous les `*.module.css` de l'app, par chemin (`/src/…`). */
 const MODULES = import.meta.glob<string>('/src/**/*.module.css', { query: '?raw', import: 'default', eager: true })
@@ -78,6 +81,65 @@ describe('la zone sûre du téléphone', () => {
 
   it('le contenu laisse libre la barre et la zone sûre', () => {
     expect(regle(theme, ':root')).toMatch(/--coque-bas:[^;]*env\(safe-area-inset-bottom\)/)
-    expect(regle(coque, '.contenu')).toMatch(/margin-bottom:\s*var\(--coque-bas\)/)
+    expect(regle(coque, '.contenu')).toMatch(/height:\s*calc\(100% - var\(--coque-bas\)\)/)
+  })
+})
+
+describe('le défilement', () => {
+  it('seule la zone de contenu de la coque défile, bornée au-dessus de la barre', () => {
+    expect(regle(coque, '.coque')).toMatch(/position:\s*fixed/)
+    expect(regle(coque, '.coque')).toMatch(/bottom:\s*0/)
+    expect(regle(coque, '.contenu')).toMatch(/overflow-y:\s*auto/)
+    expect(regle(coque, '.contenu')).toMatch(/overflow-x:\s*hidden/)
+  })
+
+  it('le rebond reste dans la zone : ni la zone ni le document ne le passent à la page', () => {
+    expect(regle(coque, '.contenu')).toMatch(/overscroll-behavior:\s*contain/)
+    expect(regle(theme, 'html,\nbody')).toMatch(/overscroll-behavior:\s*none/)
+  })
+
+  it('le corps ne dépasse pas l’écran du téléphone (100vh compte sous la barre d’adresse)', () => {
+    expect(sansCommentaires(theme)).toMatch(/\nbody \{[^}]*min-height:\s*100dvh/)
+  })
+})
+
+describe('les grilles', () => {
+  // `1fr` vaut `minmax(auto, 1fr)` : le minimum est le contenu, un titre long ou une image gonfle la
+  // piste et la page défile de côté. `minmax(0, 1fr)` la borne.
+  it.each(['--grille-affiches-colonnes', '--grille-sorties-colonnes', '--grille-bande-colonnes'])(
+    '%s borne ses pistes à zéro',
+    (jeton) => {
+      const valeur = regle(theme, ':root').match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]
+      expect(valeur).toMatch(/^repeat\(\d+, minmax\(0, 1fr\)\)/)
+    },
+  )
+
+  it('aucune feuille n’écrit de piste `1fr` nue', () => {
+    const fautes = HORS_VOYAGE.flatMap(([chemin, css]) =>
+      declarations(css)
+        .filter(({ prop, valeur }) => /^grid-template-(columns|rows)$/.test(prop) && /(^|[\s,(])1fr\b/.test(valeur.replace(/minmax\(0, 1fr\)/g, '')))
+        .map(({ valeur }) => `${chemin} : ${valeur}`),
+    )
+    expect(fautes).toEqual([])
+  })
+
+  it.each([
+    ['AuCine', auCine, '.tuile'],
+    ['Accueil', accueil, '.entree'],
+  ])('l’élément de grille de %s peut rétrécir sous son contenu', (_nom, css, selecteur) => {
+    expect(regle(css, selecteur)).toMatch(/min-width:\s*0/)
+  })
+})
+
+describe('l’affiche', () => {
+  it('le cadre tient son ratio, image ou non', () => {
+    expect(regle(affiche, '.cadre')).toMatch(/aspect-ratio:\s*var\(--ratio-affiche\)/)
+    expect(regle(affiche, '.cadre')).toMatch(/overflow:\s*hidden/)
+  })
+
+  it('l’image remplit le cadre sans le dimensionner', () => {
+    const image = regle(affiche, '.image')
+    expect(image).toMatch(/position:\s*absolute/)
+    expect(image).toMatch(/object-fit:\s*cover/)
   })
 })

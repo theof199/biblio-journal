@@ -75,6 +75,20 @@ describe('la coque à onglets', () => {
     }
   })
 
+  it('changer d’onglet remet la zone de contenu en haut', async () => {
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
+    monter('/profil')
+    await within(await screen.findByRole('navigation', { name: 'Onglets' })).findAllByRole('link')
+    const zone = screen.getByRole('main')
+    zone.scrollTop = 300
+
+    fireEvent.click(within(barre()).getByRole('link', { name: 'Suivis' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Suivis' })).toBeInTheDocument()
+    expect(screen.getByRole('main')).toBe(zone)
+    expect(zone.scrollTop).toBe(0)
+  })
+
   it.each(ATTENDUS)('un clic sur $libelle mène à sa page', async (cible) => {
     // Depuis un autre onglet : un clic sur l'onglet déjà ouvert ne prouverait rien.
     const depart = cible.chemin === '/profil' ? '/suivis' : '/profil'

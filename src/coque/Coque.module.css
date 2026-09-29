@@ -1,15 +1,24 @@
 /* Aucune valeur en dur : tout vient de `ui/theme.css`. */
 
+/* La coque occupe l'écran, sous la zone sûre du haut : le document ne défile pas, c'est `.contenu`
+   qui défile. La barre de défilement s'arrête donc au-dessus de la barre d'onglets. */
 .coque {
-  min-height: calc(100dvh - env(safe-area-inset-top));
+  position: fixed;
+  top: env(safe-area-inset-top);
+  right: env(safe-area-inset-right);
+  bottom: 0;
+  left: env(safe-area-inset-left);
 }
 
-/* Le contenu d'un onglet. `position: relative` en fait le repère d'une page qui veut occuper
-   toute la place au-dessus de la barre (`position: absolute; inset: 0`). */
+/* Le contenu d'un onglet : la seule zone qui défile. `position: relative` en fait le repère d'une
+   page qui veut occuper toute la place au-dessus de la barre (`position: absolute; inset: 0`, la
+   carte du Voyage). `overscroll-behavior` garde le rebond dans la zone. */
 .contenu {
   position: relative;
-  min-height: calc(100dvh - env(safe-area-inset-top) - var(--coque-bas));
-  margin-bottom: var(--coque-bas);
+  height: calc(100% - var(--coque-bas));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .barre {
