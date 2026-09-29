@@ -37,10 +37,10 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          // L'enveloppe seule : rien de /api/ ni de /covers/ n'est mis en cache.
-          // Le repli de navigation sert index.html, relatif à la portée /journal/.
+          // L'enveloppe et les images des mondes : rien de /api/ ni de /covers/ n'est mis en
+          // cache, aucune vidéo non plus. Le repli de navigation sert index.html, relatif à la portée /journal/.
           navigateFallback: 'index.html',
-          globPatterns: ['**/*.{js,css,html,woff2,png,svg,ico}'],
+          globPatterns: ['**/*.{js,css,html,woff2,png,svg,ico,webp}'],
         },
       }),
     ],

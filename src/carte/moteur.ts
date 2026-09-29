@@ -18,6 +18,7 @@ import { Particules } from './dessin/particules'
 import { Effets, type Feu } from './dessin/effets'
 import { afficheTraitee } from './dessin/affiches'
 import { dessinerPlaqueRoulotte, dessinerRoulotte } from './dessin/roulotte'
+import { imageCommune } from './images'
 
 /** Le corail : ce que le joueur déclenche. Jamais sous un voile, jamais teinté (spec, « Le rendu »). */
 export const CORAIL = '#FF6B57'
@@ -708,8 +709,9 @@ export class MoteurCarte {
     const roul = this.etat.roulotte
     if (rg && roul) {
       const m = this.deps.mondeDe(this.plan.sections[rg.section]!.decennie)
-      // La planche d'images de la roulotte arrive à la tâche 6 (`carte/images.ts`).
-      dessinerRoulotte(g, rg.x, rg.y + 8, rg.dir, rg.roule, this.t, !this.calme, 0.42, roul.pseudo, m.couleur, ambiance.nuit, null)
+      const url = imageCommune('roulotte.webp')
+      const planche = url ? this.deps.image(url, () => this.demander()) : null
+      dessinerRoulotte(g, rg.x, rg.y + 8, rg.dir, rg.roule, this.t, !this.calme, 0.42, roul.pseudo, m.couleur, ambiance.nuit, planche)
       if (rg.posee) dessinerPlaqueRoulotte(g, rg.x, rg.y - 48, `${roul.pseudo} est rendu en ${roul.annee}`, m.couleur)
       this.zones.push({ id: 'roulotte', x: rg.x, y: rg.y - 8, r: 36, data: null, prio: 2 })
     }

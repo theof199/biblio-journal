@@ -56,6 +56,26 @@ const client = fichiers(join(dist, 'assets'))
 exiger(client.includes('addEventListener("controlling"'), 'client : aucun enregistrement en mode prompt (MiseAJour non monté ?)')
 exiger(!client.includes('addEventListener("activated"'), 'client : rechargement automatique (autoUpdate)')
 
+// 6. Les images et les vidéos des mondes (plan 2a) : chaque image est précachée et sous son
+// plafond, aucune vidéo ne l'est, et le tout des images tient dans le budget d'installation.
+// Une image de moins de 4 Kio est inlinée par Vite dans le JS : elle n'apparaît pas ici.
+// 384 Kio : la planche du train de la maquette (351 Kio), prise telle quelle (tâche 7).
+const PLAFONDS = { webp: 384 * 1024, png: 384 * 1024, webm: 600 * 1024 }
+const BUDGET_IMAGES = 1536 * 1024
+let images = 0
+for (const f of fichiers(join(dist, 'assets')).filter((f) => /\.(webp|png|webm)$/.test(f))) {
+  const nom = f.slice(dist.length)
+  const ext = nom.split('.').pop()
+  const poids = statSync(f).size
+  exiger(poids <= PLAFONDS[ext], `${nom} : ${poids} octets, plafond ${PLAFONDS[ext]}`)
+  if (ext === 'webm') exiger(!precache.includes(nom), `sw.js : ${nom} précachée`)
+  else {
+    images += poids
+    exiger(precache.includes(nom), `sw.js : ${nom} hors du précache`)
+  }
+}
+exiger(images <= BUDGET_IMAGES, `images des mondes : ${images} octets, budget ${BUDGET_IMAGES}`)
+
 if (echecs.length) {
   console.error(echecs.map((e) => `ECHEC ${e}`).join('\n'))
   process.exit(1)
