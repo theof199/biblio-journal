@@ -104,6 +104,21 @@ describe('la page d’une décennie', () => {
     expect(screen.queryByRole('heading', { name: /^Années/ })).not.toBeInTheDocument()
   })
 
+  // Le jumeau de la règle, dans la page. Mutation : `decennieDeLAdresse(decennie, new Date().getFullYear())`
+  // (l'année de l'appareil, réglé sur UTC : encore 2029).
+  it('ouvre la décennie neuve dès le 1er janvier à Paris, quel que soit le fuseau de l’appareil', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2029-12-31T23:30:00.000Z'))
+    vi.stubEnv('TZ', 'UTC')
+    try {
+      monterVoyage('/voyage/decennies/2030', { ...ROUTES, 'GET /api/me/journal?limit=100&sortie_min=2030&sortie_max=2039': journal([]) })
+      expect(await screen.findByRole('heading', { level: 1, name: 'Années 2030' })).toBeInTheDocument()
+    } finally {
+      vi.unstubAllEnvs()
+      vi.useRealTimers()
+    }
+  })
+
   // Mutations : `figureTouchee` contournée par la première figure (1893, sans page) ; le toucher
   // sans ses coordonnées ; l'ouverture branchée sur le premier contact (`onToucher`), qu'un
   // défilement commence aussi : le `pointerdown` seul ne doit rien ouvrir.
