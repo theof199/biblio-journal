@@ -32,6 +32,14 @@ export function anneeCivile(maintenant: Date = new Date()): number {
   return Number(new Intl.DateTimeFormat('en-CA', { year: 'numeric', timeZone: 'Europe/Paris' }).format(maintenant))
 }
 
+/**
+ * Les pages d'une décennie qui ont leur route (`App.tsx`) : la page de la décennie n'offre qu'elles.
+ * La boîte à billets (`billets`, tâche 7 du plan 2c) et le guichet (`recherche`, tâche 9) s'y
+ * ajoutent avec leur route ; avant, leur lien tomberait sur la route inconnue, qui ramène à
+ * l'accueil, hors du Voyage.
+ */
+export const PAGES_DE_LA_DECENNIE: readonly ('billets' | 'recherche')[] = []
+
 export const anneesDe = (decennie: number): number[] => Array.from({ length: 10 }, (_, i) => decennie + i)
 
 /** Les films de mon journal sortis cette année-là : jamais une série (le Voyage ne compte que des films). */

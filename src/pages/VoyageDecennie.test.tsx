@@ -11,9 +11,21 @@ import { visionnage } from '../test/journal'
 import { SESSION, monterVoyage } from '../test/pageVoyage'
 import { json } from '../test/serveur'
 import { fichePrete, voyage1890 } from '../test/voyage'
-import { anneeCivile } from '../voyage/decennie'
+import { PAGES_DE_LA_DECENNIE, anneeCivile } from '../voyage/decennie'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 import { decennieDe } from '../voyage/regles'
+
+/** Les pages de la décennie que la page offre : les vraies (`null`), ou celles qu'un test pose. */
+const entrees = vi.hoisted(() => ({ pages: null as readonly ('billets' | 'recherche')[] | null }))
+vi.mock('../voyage/decennie', async (original) => {
+  const vrai = await original<{ PAGES_DE_LA_DECENNIE: readonly ('billets' | 'recherche')[] }>()
+  return {
+    ...vrai,
+    get PAGES_DE_LA_DECENNIE() {
+      return entrees.pages ?? vrai.PAGES_DE_LA_DECENNIE
+    },
+  }
+})
 
 /**
  * 1895 Palme, 1896 Lion, 1897 en cours (deux films, pas encore l'Ours), 1898 verrouillée mais
@@ -341,12 +353,39 @@ describe('la page d’une décennie', () => {
     expect(registreDeLaPage().getAllByRole('listitem')[5]).toHaveTextContent('8/10')
   })
 
-  // Mutation : un lien vers la décennie de l'année civile au lieu de celle de la page.
-  it('la boîte et le guichet sont à un toucher', async () => {
-    monterVoyage('/voyage/decennies/1890', ROUTES)
+  // Tant que leur route manque, la page ne les offre pas (le test précédent) ; la liste doublée, leurs
+  // liens. Mutation : un lien vers la décennie de l'année civile au lieu de celle de la page.
+  it('la boîte et le guichet, une fois leur page écrite, sont à un toucher', async () => {
+    entrees.pages = ['billets', 'recherche']
+    try {
+      monterVoyage('/voyage/decennies/1890', ROUTES)
+      await decennie()
+      expect(screen.getByRole('link', { name: 'La boîte à billets' })).toHaveAttribute('href', '/voyage/decennies/1890/billets')
+      expect(screen.getByRole('link', { name: 'Catalogue des vues' })).toHaveAttribute('href', '/voyage/decennies/1890/recherche')
+    } finally {
+      entrees.pages = null
+    }
+  })
+
+  // Un lien sans route tombe sur la route inconnue, qui ramène à l'accueil, hors du Voyage : le
+  // joueur qui touche « La boîte à billets » se retrouverait sur son journal. Mutation : la boîte et
+  // le guichet offerts avant que leur page n'existe (`PAGES_DE_LA_DECENNIE` qui les nomme sans leur
+  // route dans `App.tsx`).
+  it('chaque lien de la page mène à une page du Voyage', async () => {
+    const page = monterVoyage('/voyage/decennies/1890', ROUTES)
     await decennie()
-    expect(screen.getByRole('link', { name: 'La boîte à billets' })).toHaveAttribute('href', '/voyage/decennies/1890/billets')
-    expect(screen.getByRole('link', { name: 'Catalogue des vues' })).toHaveAttribute('href', '/voyage/decennies/1890/recherche')
+    await screen.findByRole('list', { name: 'La palissade' })
+    const liens = within(screen.getByRole('region', { name: 'Années 1890' }))
+      .getAllByRole('link')
+      .map((l) => l.getAttribute('href')!)
+    expect(liens).toEqual(expect.arrayContaining(['/voyage', '/voyage/1895', ...PAGES_DE_LA_DECENNIE.map((p) => `/voyage/decennies/1890/${p}`)]))
+    page.unmount()
+    for (const lien of liens) {
+      const vue = monterVoyage(lien, ROUTES)
+      const onglet = () => within(screen.getByRole('navigation', { name: 'Onglets' })).getByRole('link', { name: 'Voyage' })
+      await waitFor(() => expect(onglet(), lien).toHaveAttribute('aria-current', 'page'))
+      vue.unmount()
+    }
   })
 
   // Mutation : la `Panne` du journal à la place de toute la page.

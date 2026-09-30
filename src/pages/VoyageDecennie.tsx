@@ -9,7 +9,7 @@ import { creerRegistre } from '../mondes'
 import Panne from '../ui/Panne'
 import { useMouvementReduit } from '../ui/mouvement'
 import { useRevenir } from '../ui/revenir'
-import { anneeCivile, chevaux, decennieDeLAdresse, figureTouchee, palissade, registre, type Figure } from '../voyage/decennie'
+import { PAGES_DE_LA_DECENNIE, anneeCivile, chevaux, decennieDeLAdresse, figureTouchee, palissade, registre, type Figure } from '../voyage/decennie'
 import Livret from '../voyage/decennie/Livret'
 import Palissade from '../voyage/decennie/Palissade'
 import Registre from '../voyage/decennie/Registre'
@@ -184,14 +184,16 @@ function PageDeLaDecennie({ decennie: d }: { decennie: number }) {
       {/* Sans mon journal, le registre se lit sans ses notes : la panne se dit une fois, sur la palissade. */}
       <Registre monde={monde} lignes={lignes} depart={v.depart} notes={!!journal.data} />
 
-      <nav className={styles.liens} aria-label={`Les billets et le catalogue des années ${d}`}>
-        <Link to={`/voyage/decennies/${d}/billets`} className={styles.lien}>
-          {m.boite.titre}
-        </Link>
-        <Link to={`/voyage/decennies/${d}/recherche`} className={styles.lien}>
-          {m.recherche.catalogue}
-        </Link>
-      </nav>
+      {/* Seulement les pages qui ont leur route : sans elle, le lien ramènerait à l'accueil. */}
+      {PAGES_DE_LA_DECENNIE.length > 0 ? (
+        <nav className={styles.liens} aria-label={`Les billets et le catalogue des années ${d}`}>
+          {PAGES_DE_LA_DECENNIE.map((p) => (
+            <Link key={p} to={`/voyage/decennies/${d}/${p}`} className={styles.lien}>
+              {p === 'billets' ? m.boite.titre : m.recherche.catalogue}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
     </section>
   )
 }
