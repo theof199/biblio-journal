@@ -352,6 +352,22 @@ describe('la fiche d’un film du Voyage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Ce film ne se marque pas.')
   })
 
+  // Le jumeau de la garde du double toucher (ledger, tâche 7) : relâchée une fois la réponse venue.
+  // Mutation : `onSettled` retiré (après un refus passager, le guichet ne répondrait plus).
+  it('après un refus, « Introuvable » se retente', async () => {
+    let poses = 0
+    monterVoyage(page(FAUCON), {
+      ...ROUTES,
+      'PUT /api/me/introuvables/963': () => (++poses === 1 ? json({ code: 'INTERNAL', message: 'Panne passagère.', retryable: true }, 500) : vide()),
+    })
+    const bouton = await screen.findByRole('button', { name: 'Introuvable' })
+    fireEvent.click(bouton)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Panne passagère.')
+    await waitFor(() => expect(bouton).toBeEnabled())
+    fireEvent.click(bouton)
+    await waitFor(() => expect(poses).toBe(2))
+  })
+
   // Mutations : la cible toujours un film (`{ tmdb_id }` pour un programme, que l'API refuserait) ;
   // l'invalidation réduite à la fiche (la carte garderait l'affiche de l'ancien n°1).
   it('« Mettre sur le podium » d’un programme pose `{ programme_id }`, puis ferme le feuillet et relit la fiche et la carte', async () => {
@@ -409,6 +425,10 @@ describe('la fiche d’un film du Voyage', () => {
     fireEvent.click(marche)
     expect(await within(feuillet).findByRole('alert')).toHaveTextContent('Ce film n’est pas dans ton journal pour cette année.')
     expect(poses).toBe(1)
+    // Et la garde se relâche à la réponse. Mutation : `onSettled` retiré du feuillet (plus rien ne partirait).
+    await waitFor(() => expect(marche).toBeEnabled())
+    fireEvent.click(marche)
+    await waitFor(() => expect(poses).toBe(2))
   })
 
   // Le piège du rappel qui survit (ledger, tâches 8 et 9). Mutation : la fermeture du feuillet dans
@@ -439,6 +459,15 @@ describe('la fiche d’un film du Voyage', () => {
     expect(within(programme).getByText('Programme · 2 min')).toBeInTheDocument()
     expect(within(programme).queryByRole('link', { name: 'Je l’ai vu : La Sortie de l’usine' })).toBeNull()
     fireEvent.click(within(programme).getByRole('link', { name: 'Je l’ai vu : Le Repas de bébé' }))
+    expect(await screen.findByTestId('sonde')).toHaveTextContent('/voyage/1897/films/p-lumiere/billet?bobine=512 null')
+  })
+
+  // Le jumeau du guichet : un programme porte le `tmdb_id` de sa première bobine, ici déjà vue.
+  // Mutation : « Je l’ai vu » du guichet vers le billet du programme sans `?bobine=` (il noterait
+  // une seconde fois la première bobine).
+  it('sur un programme vu en partie, « Je l’ai vu » du guichet ouvre le billet de la première bobine à voir', async () => {
+    monterAvecSonde(page(PROGRAMME), ROUTES)
+    fireEvent.click(await screen.findByRole('link', { name: /poinçonner mon billet/ }))
     expect(await screen.findByTestId('sonde')).toHaveTextContent('/voyage/1897/films/p-lumiere/billet?bobine=512 null')
   })
 

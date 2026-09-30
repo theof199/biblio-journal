@@ -75,6 +75,11 @@ export default function Guichet({ monde, annee, film, podium, entree, onFilm }: 
     ? { type: 'programme', programmeId: film.id, titre: film.title, affiche: film.cover_url }
     : { type: 'film', tmdbId: tmdb, titre: film.title, affiche: film.cover_url, note: film.note }
   const billet = `/voyage/${annee}/films/${film.id}/billet`
+  // Un programme se note bobine par bobine, et porte l'identifiant TMDB de sa première bobine
+  // (l'API) : sans `?bobine=`, le billet noterait la première, fût-elle déjà vue. « Je l'ai vu »
+  // ouvre donc celui de la première bobine qui reste à voir (un programme non vu en a toujours une).
+  const aVoir = film.programme?.bobines.find((b) => b.etat !== 'vu')
+  const billetVu = aVoir ? `${billet}?bobine=${aVoir.tmdb_id}` : billet
 
   return (
     <div className={styles.guichet}>
@@ -101,7 +106,7 @@ export default function Guichet({ monde, annee, film, podium, entree, onFilm }: 
             )
           case 'vu':
             return (
-              <Link key={b} to={billet} className={styles.ticket}>
+              <Link key={b} to={billetVu} className={styles.ticket}>
                 <span>
                   <b>Je l’ai vu</b>
                   <small>poinçonner mon billet</small>
