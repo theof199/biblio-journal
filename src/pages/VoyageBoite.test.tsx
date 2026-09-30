@@ -6,6 +6,8 @@ import App from '../App'
 import { cles } from '../api/cles'
 import type { JournalItem, JournalPage } from '../api/journal'
 import { createQueryClient } from '../api/queryClient'
+import { PAGES_1890 } from '../mondes/1890/pages'
+import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { exemple } from '../test/contrat'
 import { visionnage } from '../test/journal'
 import { SESSION } from '../test/pageVoyage'
@@ -115,6 +117,20 @@ describe('la boîte à billets', () => {
     monter(`/voyage/decennies/${d}/billets`, { ...ROUTES, 'GET /api/me/voyage/tickets': () => json({ tickets: [] }) })
     expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
     expect(adresse()).toBe('/voyage')
+  })
+
+  // L'habillage vient du monde de la décennie, par le registre. Mutations : le monde de 1890 en dur
+  // (`mondes(1890)`) ; les jetons retirés de la racine.
+  it.each([
+    [1890, PAGES_1890],
+    [1900, PAGES_A_VENIR],
+  ])('s’habille du monde de sa décennie (%i)', async (d, pages) => {
+    monter(`/voyage/decennies/${d}/billets`, { ...ROUTES, [`GET /api/me/journal?limit=100&sortie_min=${d}&sortie_max=${d + 9}`]: journal([]) })
+    expect(await screen.findByRole('heading', { level: 1, name: pages.mots.boite.titre })).toBeInTheDocument()
+    const racine = screen.getByRole('region', { name: `${pages.mots.boite.titre}, années ${d}` })
+    expect(racine.style.getPropertyValue('--m-papier')).toBe(pages.jetons['--m-papier'])
+    expect(racine.style.getPropertyValue('--m-f-affiche')).toBe(pages.jetons['--m-f-affiche'])
+    expect(await screen.findByText('Aucun billet encore')).toBeInTheDocument()
   })
 
   // Mutations : `casier` contourné (l'ordre de l'API, ou la boîte sans la retourner).
