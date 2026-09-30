@@ -13,6 +13,7 @@ import { json, servir } from '../test/serveur'
 import { fichePrete, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import { oublierLeBillet, rangerLeBillet } from '../voyage/billet/range'
 import stylesDuCasier from '../voyage/boite/Casier.module.css'
+import FEUILLE_DU_CASIER from '../voyage/boite/Casier.module.css?raw'
 
 const VOYAGE = voyage1890(
   1897,
@@ -208,8 +209,8 @@ describe('la boîte à billets', () => {
     expect(billet(/L’Arroseur arrosé/)).not.toHaveClass(stylesDuCasier.nouveau!)
   })
 
-  // Mutation : le billet rangé oublié par une boîte qui ne le porte pas (celle des années 1900
-  // l'oublierait avant que celle des années 1890 ne le montre).
+  // Mutation : le billet rangé oublié par une boîte qui ne le porte pas (celle d'une autre décennie,
+  // ici un journal qui ne l'a pas encore, l'oublierait avant que la sienne ne le montre).
   it('une boîte qui ne porte pas le billet rangé le laisse à la sienne', async () => {
     rangerLeBillet(SESSION.user.id, 'e2')
     const autre = monter('/voyage/decennies/1890/billets', { ...ROUTES, [JOURNAL]: journal([SORTIE, TRAIN]) })
@@ -250,8 +251,29 @@ describe('la boîte à billets', () => {
     expect(await billets()).toHaveLength(3)
   })
 
-  // Mutation : `useRevenir` remplacé par un simple lien (la décennie s'empilerait devant la boîte),
-  // ou par un recul sans condition (rien derrière : rien ne se passerait).
+  // Le liseré dit un billet rangé, pas un geste du joueur : l'or du monde, jamais le corail, et rien
+  // qui tombe au calme. Mutations : `var(--corail)` dans le liseré ; la règle du calme retirée.
+  it('borde le billet rangé de l’or du monde, jamais du corail', () => {
+    const regle = (selecteur: string) => {
+      const debut = FEUILLE_DU_CASIER.indexOf(`${selecteur} {`)
+      return debut < 0 ? '' : FEUILLE_DU_CASIER.slice(debut, FEUILLE_DU_CASIER.indexOf('}', debut))
+    }
+    expect(FEUILLE_DU_CASIER).not.toMatch(/--corail/)
+    expect(regle('.nouveau')).toMatch(/box-shadow:\s*0 0 0 2px var\(--m-or\)/)
+    const calme = FEUILLE_DU_CASIER.slice(FEUILLE_DU_CASIER.indexOf('@media (prefers-reduced-motion: reduce)'))
+    expect(calme).toMatch(/\.nouveau\s*\{\s*animation:\s*none/)
+  })
+
+  // Mutation : un simple lien vers la décennie au lieu de `useRevenir` (la décennie s'empilerait
+  // devant la page quittée, et le geste « retour » du téléphone ramènerait à la boîte).
+  it('le retour recule dans l’historique quand il y a de quoi', async () => {
+    monter(['/voyage', '/voyage/decennies/1890/billets'], { ...ROUTES, 'GET /api/me/voyage/tickets': () => json({ tickets: [] }) })
+    await boite()
+    fireEvent.click(screen.getByRole('link', { name: 'Retour aux années 1890' }))
+    expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
+  })
+
+  // Mutation : un recul sans condition (rien derrière : rien ne se passerait).
   it('le retour mène à la décennie quand rien n’est derrière', async () => {
     monter('/voyage/decennies/1890/billets', { ...ROUTES, 'GET /api/me/voyage/tickets': () => json({ tickets: [] }) })
     await boite()
