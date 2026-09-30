@@ -11,6 +11,7 @@ import { SESSION, monterVoyage } from '../test/pageVoyage'
 import { json } from '../test/serveur'
 import { fichePrete, voyage1890 } from '../test/voyage'
 import { anneeCivile } from '../voyage/decennie'
+import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 import { decennieDe } from '../voyage/regles'
 
 /**
@@ -202,12 +203,16 @@ describe('la page d’une décennie', () => {
     expect(screen.queryByText(/ticket de 1900/)).not.toBeInTheDocument()
   })
 
-  // Mutation : la phrase montrée même tamponné (`phraseDuPasseport(…, null)`).
-  it('montre le tampon et sa date, sans phrase, une fois bouclée', async () => {
+  // Mutations : la phrase montrée même tamponné (`phraseDuPasseport(…, null)`) ; le tampon du livret
+  // qui frappe (`frappe` passé) : il se refrapperait à chaque visite d'une décennie bouclée depuis
+  // des mois.
+  it('montre le tampon et sa date, sans phrase ni frappe, une fois bouclée', async () => {
     const bouclee: Voyage = { ...VOYAGE, tampons: [{ decennie: 1890, boucle_le: '2026-01-14T10:00:00.000Z' }] }
     monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage': () => json(bouclee) })
     await decennie()
-    expect(await screen.findByText('14 janvier 2026')).toBeInTheDocument()
+    const jour = await screen.findByText('14 janvier 2026')
+    expect(jour.parentElement).toHaveClass(stylesDuTampon.tampon!)
+    expect(jour.parentElement).not.toHaveClass(stylesDuTampon.frappe!)
     expect(screen.queryByText('Le tampon se pose ici')).not.toBeInTheDocument()
     // Les tickets lus, la phrase aurait pu se dire : elle se tait.
     await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url) === '/api/me/voyage/tickets')).toBe(true))
@@ -222,7 +227,8 @@ describe('la page d’une décennie', () => {
     expect(await screen.findByText('Le tampon se pose ici')).toBeInTheDocument()
   })
 
-  // Mutation : `ouvrable` ignoré (chaque ligne un lien, 1890 et 1899 compris).
+  // Mutations : `ouvrable` ignoré (chaque ligne un lien, 1890 et 1899 compris) ; « Prochainement »
+  // dit aussi d'une année d'avant le départ.
   it('le registre ouvre les années ouvrables, et elles seules', async () => {
     const court = voyage1890(1897, VOYAGE.annees.filter((a) => a.annee <= 1897), { ia: true, depart: 1895 })
     monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage': () => json(court) })
@@ -235,7 +241,7 @@ describe('la page d’une décennie', () => {
     expect(lignes[9]).toHaveTextContent(/^1899Prochainement$/)
   })
 
-  // Mutations : la palissade nourrie d'une liste vide ; la note tue ; les films d'une autre année collés.
+  // Mutations : la palissade nourrie d'une liste vide ; la note tue.
   it('colle mes affiches par année et dit ma meilleure note au registre', async () => {
     monterVoyage('/voyage/decennies/1890', { ...ROUTES, [JOURNAL]: journal([vu('a', 1895, 8), vu('b', 1895, 6), vu('c', 1896)]) })
     await decennie()
