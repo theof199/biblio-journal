@@ -34,7 +34,17 @@ cinématique d'adieu — et que le registre (`src/mondes/index.ts`, `creerRegist
 
 **Ajouter une décennie ne touche que `src/mondes/<décennie>/` et une ligne du registre.**
 `src/mondes/isolation.test.ts` l'inventorie : hors de `src/mondes/`, aucun fichier n'importe un
-monde précis (seuls `mondes/types`, `mondes/trace` et le registre s'importent). Si l'interface ne
+monde précis (seuls `mondes/types`, `mondes/trace` et le registre s'importent).
+
+**Un monde habille aussi les pages** de ses années (`pages` : les jetons CSS, les mots, les hauteurs
+et trois dessins : le bandeau, la scène, l'estrade). Une page ou un composant de `src/voyage/`
+n'importe jamais un monde précis : il passe par le registre. **Une couleur ou une police de page
+passe par un jeton** : aucune feuille de `src/voyage/` ni `src/pages/Voyage*.module.css` ne porte de
+couleur ni de police en dur, ni ne lit une variable hors des jetons du monde, de `--corail`, de `--coque-bas` et des
+`--z-*` (`src/voyage/habillage.test.ts`). Une couleur de maquette sans jeton en gagne un, dans
+`JETONS_DE_PAGE` et dans chaque monde ; une feuille neuve s'ajoute au plancher du même test.
+
+Si l'interface ne
 suffit pas au monde qu'on écrit, **elle s'étend d'abord, dans une tâche à part, avec le monde « à
 venir »** (que la signature oblige à suivre) : jamais un contournement dans le moteur ou la page.
 

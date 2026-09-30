@@ -38,7 +38,7 @@ session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
 | Onglet | Chemin | Icône Tabler | Page |
 |---|---|---|---|
 | Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` : le fronton, « Ce soir », « Ensuite », la grille du journal |
-| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; la fiche d'une année, `/voyage/:annee`, est encore `pages/AnneeProvisoire.tsx` |
+| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`) : « Les pages du Voyage », plus bas |
 | Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` : réalisateurs et sagas suivis ; sous-pages `suivis/realisateurs/:tmdbId`, `suivis/sagas/:tmdbId`, `suivis/films/:tmdbId` |
 | Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` : mes séances et les sorties en salle |
 | Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, les chiffres de `/stats`, le bilan (dont les réalisateurs et sagas suivis) et les graphiques (`profil/`), « Mes films » (`pages/MesFilms.tsx`, sous `/profil/mes-films`), l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), « Se déconnecter », la mention TMDB |
@@ -121,6 +121,66 @@ sa licence et son traitement (`src/test/credits.test.ts` l'exige). `mondes/1890/
 cuit la rampe sépia dans une image ou une extraction vidéo. `npm run verifier:dist` constate sur
 `dist/` que chaque `.webp` ou `.png` est précaché et sous son plafond (384 Kio), qu'aucune
 `.webm` ne l'est (plafond 600 Kio), et que les images tiennent ensemble dans 1,5 Mio.
+
+## Les pages du Voyage
+
+Toucher une année de la carte ouvre sa fiche, `/voyage/:annee`, lue sur
+`GET /me/voyage/annees/{annee}` à chaque ouverture (plan 2b). Selon la forme que rend l'API : l'année
+en cours ou bouclée (la corde des billets, le boniment, le programme, la parade du podium, la séance
+du soir, les salles, le ticket), une année fermée (la pancarte, le chemin, mes films vus en avance),
+une année qui attend le Voyage suivi (« Tu le rattrapes bientôt »), ou l'ouverture qui s'écrit
+(relue toutes les cinq secondes, trente-six fois au plus, puis « Réessayer »). Une affiche de salle
+ouvre la fiche du film, `/voyage/:annee/films/:filmId` (`filmId` est la ligne de salle, pas un
+identifiant TMDB) : la projection, le guichet, le programme et ses bobines. « Je l’ai vu » ouvre le
+billet de séance (`…/billet`, `?bobine=<tmdb_id>` pour une bobine d'un programme), « Corriger » le
+billet de correction (`…/billet/corriger`, l'entrée du journal dans l'état de navigation) ;
+composter enregistre le visionnage comme le formulaire du journal (`creerVisionnage`, ou
+`construirePatch` en correction) et revient à l'année.
+
+Où vit quoi :
+
+- `src/voyage/` : les règles pures de ces pages (`annee.ts`, `salles.ts`, `podium.ts`, `seance.ts`,
+  `film.ts`, `billet.ts`, `feuille.ts`, `relecture.ts` pour les intervalles et les plafonds des
+  relectures) et leurs composants (`annee/`, `salles/`, `parade/`, `seance/`, `film/`, `billet/`,
+  la feuille du chroniqueur `Feuille.tsx`, le petit calque des choix `Feuillet.tsx`, la toile
+  `Toile.tsx`).
+- `Monde.pages` (`src/mondes/types.ts`, `HabillagePages`) : l'habillage d'une page par la décennie
+  de son année, trouvé par le registre comme pour la carte — les jetons CSS posés sur la racine de
+  la page (couleurs et polices, `JETONS_DE_PAGE`), les mots (« La parade », « Ce soir à la
+  baraque »), les hauteurs et les trois dessins (le bandeau d'une année, la scène d'un film,
+  l'estrade du chroniqueur). Le monde « à venir » habille les années sans chantier. En 1890, les
+  pages s'écrivent en IM Fell English et IM Fell English SC (`@fontsource`, précachées,
+  `ui/polices.ts`).
+
+**Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
+`generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`. Le geste
+« retour » du téléphone ferme donc un calque sans quitter la page. Ouvert par la page, il se ferme
+en reculant dans l'historique ; arrivé avec l'adresse, en retirant son paramètre. Échap ne ferme
+que le dernier calque ouvert (`voyage/dialogue.ts`).
+
+**Le chroniqueur n'est appelé que sur un geste** : ouvrir une année, lire le générique, ouvrir le
+contexte d'une salle qui n'est pas encore écrit, « En voir plus », « Ouvrir une nouvelle salle »,
+« D’autres pistes », « Composer une séance », « Le film » (le carton). Un texte écrit ne se
+redemande pas. Hors du compte IA, les gestes que l'API refuserait (`403`) ne s'affichent pas.
+
+**Le retour d'un billet.** Le billet confie à l'année ce qu'elle doit jouer
+(`voyage/annee/retour.ts` : un seul membre, trente secondes au plus) ; l'année relue, les billets
+gagnés roulent sur la corde, un « +1 » tombe, la région d'état le dit, et le téléphone vibre au
+palier (Android ; Safari n'a pas de vibration). Au compte IA, après une création d'un film sorti
+l'année en cours, la fiche se relit toutes les cinq secondes, douze fois au plus, pour le verdict du
+jury. Ni un rechargement ni le retour suivant ne rejouent rien.
+
+**L'historique.** Depuis la fiche d'un film, composter **remplace** le billet par l'année ; depuis la
+séance de l'année, il recule vers elle. La page d'un réalisateur (onglet Suivis) mène un film qui
+figure dans une salle à sa fiche du Voyage (la plus ancienne année où il figure), l'onglet Voyage
+marqué : « Retour » y recule jusqu'au réalisateur. Composter depuis là donne l'historique
+`[réalisateur, film, année]` : le retour depuis l'année ramène au film, désormais vu, puis au
+réalisateur.
+
+**« Moins d'animations »** y pose tout à l'état final : chaque toile peint une image immobile
+(repeinte au rendu et quand une police finit de charger), la feuille du chroniqueur se pose d'un
+coup sans minuterie, la corde ne se balance plus, les compteurs sont à leur valeur, aucun « +1 »
+ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas.
 
 ## Le thème
 
