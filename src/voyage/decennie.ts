@@ -34,11 +34,11 @@ export function anneeCivile(maintenant: Date = new Date()): number {
 
 /**
  * Les pages d'une décennie qui ont leur route (`App.tsx`) : la page de la décennie n'offre qu'elles.
- * La boîte à billets (`billets`, tâche 7 du plan 2c) et le guichet (`recherche`, tâche 9) s'y
- * ajoutent avec leur route ; avant, leur lien tomberait sur la route inconnue, qui ramène à
+ * La boîte à billets (`billets`, tâche 7 du plan 2c) y est ; le guichet (`recherche`, tâche 9) s'y
+ * ajoutera avec sa route : avant, son lien tomberait sur la route inconnue, qui ramène à
  * l'accueil, hors du Voyage.
  */
-export const PAGES_DE_LA_DECENNIE: readonly ('billets' | 'recherche')[] = []
+export const PAGES_DE_LA_DECENNIE: readonly ('billets' | 'recherche')[] = ['billets']
 
 export const anneesDe = (decennie: number): number[] => Array.from({ length: 10 }, (_, i) => decennie + i)
 

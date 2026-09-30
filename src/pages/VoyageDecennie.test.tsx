@@ -367,6 +367,16 @@ describe('la page d’une décennie', () => {
     }
   })
 
+  // La boîte a sa page (tâche 7) : la page de la décennie l'offre, sans liste doublée. Mutations :
+  // `billets` retiré de `PAGES_DE_LA_DECENNIE` ; le lien vers une autre adresse que la boîte.
+  it('la boîte à billets est à un toucher, et s’ouvre', async () => {
+    monterVoyage('/voyage/decennies/1890', ROUTES)
+    await decennie()
+    fireEvent.click(screen.getByRole('link', { name: 'La boîte à billets' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'La boîte à billets' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'La boîte à billets, années 1890' })).toBeInTheDocument()
+  })
+
   // Un lien sans route tombe sur la route inconnue, qui ramène à l'accueil, hors du Voyage : le
   // joueur qui touche « La boîte à billets » se retrouverait sur son journal. Mutation : la boîte et
   // le guichet offerts avant que leur page n'existe (`PAGES_DE_LA_DECENNIE` qui les nomme sans leur

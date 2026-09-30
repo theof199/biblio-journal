@@ -1,0 +1,91 @@
+import { useId } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { cles } from '../../api/cles'
+import { lireReactions } from '../../api/reactions'
+import type { Monde } from '../../mondes/types'
+import { formatDateVisionnage } from '../../ui/format'
+import { numeroLisible, type Billet } from '../billets'
+import { useDialogue } from '../dialogue'
+import styles from './Visionneuse.module.css'
+
+interface Props {
+  monde: Monde
+  billet: Billet
+  /** Le billet de correction, quand la fiche de l'année du film est déjà lue ; nul sinon. */
+  corriger: string | null
+  onFermer: () => void
+}
+
+/**
+ * Un billet de la boîte ouvert en grand (maquette 1890 : `.visionneuse`, `.billet-plein`, écran
+ * VII) : ce que dit le billet de séance — le titre, la date, la note, les réactions — et la remarque
+ * privée, puisque c'est mon journal (`/me/journal`). Un dialogue comme le feuillet : il prend le
+ * focus, le rend en se fermant, et se ferme à Échap comme d'un toucher sur le voile.
+ */
+export default function Visionneuse({ monde, billet, corriger, onFermer }: Props) {
+  const m = monde.pages.mots
+  const ranger = useDialogue<HTMLButtonElement>(onFermer)
+  const id = useId()
+  const { entry, media, carnet } = billet.item
+  // Le catalogue des réactions, seulement pour un billet qui en porte (comme la fiche d'un film) :
+  // jamais à l'ouverture de la boîte. Sans lui, la clé se lit telle quelle.
+  const reactions = useQuery({ queryKey: cles.reactions, queryFn: ({ signal }) => lireReactions(signal), enabled: carnet.reactions.length > 0 })
+  const reaction = (cle: string) => reactions.data?.reactions.find((r) => r.cle === cle)
+
+  return (
+    <div className={styles.calque}>
+      <div className={styles.voile} onClick={onFermer} aria-hidden="true" />
+      <div className={styles.billet} role="dialog" aria-modal="true" aria-labelledby={id}>
+        <div className={styles.entete}>
+          <small>{m.billet.tete}</small>
+          <strong id={id}>{media.title}</strong>
+          <span className={styles.numero}>{numeroLisible(billet.numero)}</span>
+        </div>
+        <dl className={styles.champs}>
+          <div className={styles.champ}>
+            <dt>{m.billet.titre}</dt>
+            <dd>{formatDateVisionnage(entry.finished_at)}</dd>
+          </div>
+          {media.director ? (
+            <div className={styles.champ}>
+              <dt>Réalisation</dt>
+              <dd>{media.director}</dd>
+            </div>
+          ) : null}
+          <div className={styles.champ}>
+            <dt>Note</dt>
+            <dd>{entry.rating !== null ? `${entry.rating} sur 10` : 'sans note'}</dd>
+          </div>
+        </dl>
+        {carnet.reactions.length > 0 ? (
+          <ul className={styles.reactions} aria-label="Tes réactions">
+            {carnet.reactions.map((cle) => {
+              const r = reaction(cle)
+              return <li key={cle}>{r ? `${r.emoji} ${r.phrase}` : cle}</li>
+            })}
+          </ul>
+        ) : null}
+        {carnet.comment ? (
+          <p className={styles.prive}>
+            <span className={styles.sc}>Ta remarque · rien qu’à toi</span>
+            {carnet.comment}
+          </p>
+        ) : null}
+        <span className={styles.tampon} aria-hidden="true">
+          {m.billet.tampon}
+        </span>
+        <div className={styles.gestes}>
+          {corriger ? (
+            <Link to={corriger} state={{ item: billet.item }} className={styles.corriger}>
+              Corriger le billet
+            </Link>
+          ) : null}
+          <button ref={ranger} type="button" className={styles.ranger} onClick={onFermer}>
+            {m.boite.ranger}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

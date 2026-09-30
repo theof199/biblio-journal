@@ -1,0 +1,209 @@
+/* La boîte à billets (maquette 1890 : `.boite`, `.intercalaires`, `.casier`, `.b-ligne`, lignes 398
+   à 416). Les couleurs et les polices viennent des jetons du monde, posés sur la racine de la page ;
+   les bruns de la maquette qui n'ont pas de jeton se tirent du bois et du fond. */
+.boite {
+  position: relative;
+  margin: 40px 14px 0;
+  padding: 30px 12px 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    var(--m-bois),
+    color-mix(in srgb, var(--m-bois) 70%, var(--m-fond)) 30%,
+    color-mix(in srgb, var(--m-bois) 50%, var(--m-fond))
+  );
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--m-bois) 60%, var(--m-or)),
+    inset 0 0 0 6px color-mix(in srgb, var(--m-bois) 50%, var(--m-fond)),
+    0 14px 30px var(--m-ombre);
+}
+
+/* Le couvercle ouvert. */
+.boite::before {
+  content: '';
+  position: absolute;
+  top: -34px;
+  right: 6px;
+  left: 6px;
+  height: 40px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(color-mix(in srgb, var(--m-bois) 60%, var(--m-or)), var(--m-bois));
+  box-shadow: inset 0 0 0 3px var(--m-or3);
+  transform: perspective(300px) rotateX(38deg);
+  transform-origin: 50% 100%;
+}
+
+.etiquette {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  padding: 2px 12px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  font: 12px var(--m-f-capitales);
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--m-bois);
+  transform: translateX(-50%);
+}
+
+.intercalaires {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  margin-bottom: -1px;
+}
+
+.intercalaires button {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 2px 4px;
+  border: 0;
+  border-radius: 6px 6px 0 0;
+  background: color-mix(in srgb, var(--m-carton) 80%, var(--m-bois));
+  color: var(--m-encre);
+  font: 400 14px var(--m-f-affiche);
+  cursor: pointer;
+}
+
+.intercalaires button[aria-pressed='true'] {
+  background: var(--m-papier);
+}
+
+.intercalaires button:focus-visible,
+.billet:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: -2px;
+}
+
+.casier {
+  padding: 10px 8px 8px;
+  border-radius: 0 0 4px 4px;
+  background: var(--m-papier);
+}
+
+.billets {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.billets li + li {
+  margin-top: -8px;
+}
+
+/* Un billet en petit : son numéro, son titre, la date et la note, le « VU » tamponné. */
+.billet {
+  position: relative;
+  display: grid;
+  grid-template-columns: 62px 1fr 30px;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px 16px 12px;
+  border: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--m-papier2);
+  color: var(--m-encre);
+  text-align: left;
+  box-shadow:
+    0 -2px 6px color-mix(in srgb, var(--m-ombre) 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--m-papier) 60%, transparent);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.billets li:nth-child(odd) .billet {
+  background: color-mix(in srgb, var(--m-papier2) 70%, var(--m-carton));
+}
+
+.billet:hover,
+.billet:focus-visible {
+  transform: translateY(-6px);
+}
+
+.numero {
+  font: 700 12px var(--m-f-corps);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--m-rouge);
+}
+
+.texte {
+  display: grid;
+  min-width: 0;
+}
+
+.titre {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 14px var(--m-f-texte);
+}
+
+.texte small {
+  font: 12px var(--m-f-corps);
+  color: var(--m-encre2);
+}
+
+.vu {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid color-mix(in srgb, var(--m-rouge) 70%, transparent);
+  border-radius: 50%;
+  color: var(--m-rouge);
+  font: 400 10px var(--m-f-affiche);
+  transform: rotate(-14deg);
+}
+
+/* Le billet que la séance vient de ranger : il tombe dans la boîte, bordé d'or (pas le corail : ce
+   n'est pas un geste du joueur). */
+.nouveau {
+  box-shadow:
+    0 0 0 2px var(--m-or),
+    0 -2px 6px color-mix(in srgb, var(--m-ombre) 40%, transparent);
+  animation: tombe 0.7s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+@keyframes tombe {
+  from {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Dit au lecteur d'écran, caché à l'œil (le liseré le dit). */
+.lecteur {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.vide {
+  margin: 10px 4px;
+  font: italic 15px var(--m-f-texte);
+  color: var(--m-encre2);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .billet {
+    transition: none;
+  }
+
+  .nouveau {
+    animation: none;
+  }
+}

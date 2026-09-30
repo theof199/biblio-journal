@@ -64,6 +64,9 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/decennie/Livret.module.css',
         '/src/voyage/decennie/Palissade.module.css',
         '/src/voyage/decennie/Registre.module.css',
+        '/src/pages/VoyageBoite.module.css',
+        '/src/voyage/boite/Casier.module.css',
+        '/src/voyage/boite/Visionneuse.module.css',
       ]),
     )
   })
@@ -87,7 +90,7 @@ describe('l’habillage des pages du Voyage', () => {
   // Le jumeau : l'étage ne vaut que si les calques le lisent, et s'arrêtent au-dessus de la barre.
   // Mutations : `z-index: 30` en dur, ou `bottom: 0`, sur le `.calque` de la feuille ou du feuillet
   // (le calque couvrirait la barre d'onglets, ou son bas passerait dessous).
-  it.each(['/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css'])('%s pose son calque à l’étage des calques, au-dessus de la barre', (chemin) => {
+  it.each(['/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css', '/src/voyage/boite/Visionneuse.module.css'])('%s pose son calque à l’étage des calques, au-dessus de la barre', (chemin) => {
     const css = sansCommentaires(FEUILLES[chemin as keyof typeof FEUILLES] ?? '')
     const debut = css.indexOf('.calque {')
     expect(debut).toBeGreaterThanOrEqual(0)
