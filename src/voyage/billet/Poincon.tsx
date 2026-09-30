@@ -52,19 +52,23 @@ export default function Poincon({ note, onNote }: Props) {
   return (
     <div className={styles.zone} ref={zone}>
       <div className={styles.poincon} role="group" aria-label="Note sur 10">
-        {TROUS.map((n) => (
-          <button
-            key={n}
-            ref={(b) => void (trous.current[n - 1] = b)}
-            type="button"
-            className={note !== null && n <= note ? styles.troue : undefined}
-            aria-label={`${n} sur 10`}
-            aria-pressed={note === n}
-            onClick={() => poinconner(n)}
-          >
-            {n}
-          </button>
-        ))}
+        {TROUS.map((n) => {
+          const perce = note !== null && n <= note
+          return (
+            <button
+              key={n}
+              ref={(b) => void (trous.current[n - 1] = b)}
+              type="button"
+              className={perce ? styles.troue : undefined}
+              data-perce={perce}
+              aria-label={`${n} sur 10`}
+              aria-pressed={note === n}
+              onClick={() => poinconner(n)}
+            >
+              {n}
+            </button>
+          )
+        })}
       </div>
       <div className={styles.lue}>
         <b>{note ?? '—'}</b>

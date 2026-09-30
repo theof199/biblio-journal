@@ -204,6 +204,20 @@ describe('le billet de séance', () => {
     })
   })
 
+  // Mutations : la limite des douze cartons ignorée ; un carton choisi qui ne se reprend pas.
+  it('douze cartons au plus, et un carton choisi se reprend', async () => {
+    const { routes } = serveur()
+    monterVoyage(billet(FAUCON), routes)
+    await screen.findByRole('button', { name: CATALOGUE.reactions[0]!.phrase })
+    expect(CATALOGUE.reactions.length).toBeGreaterThan(12)
+    for (const r of CATALOGUE.reactions) fireEvent.click(screen.getByRole('button', { name: r.phrase }))
+    expect(screen.getByText('12 cartons choisis')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: CATALOGUE.reactions[12]!.phrase })).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(screen.getByRole('button', { name: CATALOGUE.reactions[0]!.phrase }))
+    expect(screen.getByRole('button', { name: CATALOGUE.reactions[0]!.phrase })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('11 cartons choisis')).toBeInTheDocument()
+  })
+
   // Mutation : un billet sans note envoie la note d'avant, ou `0` (« sans note » rebouche tout).
   it('« sans note » rebouche le poinçon et envoie une note nulle', async () => {
     const { routes } = serveur()
@@ -237,6 +251,28 @@ describe('le billet de séance', () => {
     fireEvent.click(suivant)
     fireEvent.click(suivant)
     expect(suivant).toBeDisabled()
+    // Le jumeau de « Hier » : « Aujourd’hui » ramène au jour du téléphone.
+    fireEvent.click(within(dateur).getByRole('button', { name: 'Jour précédent' }))
+    fireEvent.click(within(dateur).getByRole('button', { name: 'Jour précédent' }))
+    fireEvent.click(within(dateur).getByRole('button', { name: 'Aujourd’hui' }))
+    expect(within(dateur).getByRole('button', { name: 'Aujourd’hui' })).toHaveAttribute('aria-pressed', 'true')
+    expect(suivant).toBeDisabled()
+  })
+
+  // Mutations : la date dite hors de la molette oubliée ; une molette décalée d'un cran (le jour, le
+  // mois ou l'année).
+  it('le dateur dit la date en toutes lettres, et chaque molette tourne sur son cran', async () => {
+    const { routes } = serveur()
+    monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, routes)
+    const dateur = await screen.findByRole('group', { name: 'Date du visionnage' })
+    expect(within(dateur).getByText('1er septembre 2026')).toBeInTheDocument()
+    const crans = [...dateur.querySelectorAll<HTMLElement>('[style*="translateY"]')].map((p) => p.style.transform)
+    const an = Number(jourLocal().slice(0, 4))
+    // 1er (cran 0), septembre (cran 8), 2026 parmi les années de la molette, qui partent de deux ans avant celle-ci.
+    expect(crans).toEqual(['translateY(0px)', 'translateY(-320px)', `translateY(${-(2026 - Math.min(2026, an - 2)) * 40}px)`])
+    fireEvent.click(within(dateur).getByRole('button', { name: 'Jour précédent' }))
+    expect(within(dateur).getByText('31 août 2026')).toBeInTheDocument()
+    expect([...dateur.querySelectorAll<HTMLElement>('[style*="translateY"]')].map((p) => p.style.transform).slice(0, 2)).toEqual(['translateY(-1200px)', 'translateY(-280px)'])
   })
 
   // Mutation : le candidat du programme (son `tmdb_id`, celui de la première bobine, déjà vue).
@@ -250,10 +286,11 @@ describe('le billet de séance', () => {
     expect(media).toEqual({ source: 'tmdb', external_id: '512', type: 'movie' })
   })
 
-  // Mutation : la garde de la bobine retirée : le billet d'un programme noterait sa première bobine.
-  it('un programme sans bobine reconnue ne s’offre pas au billet', async () => {
+  // Mutations : la garde de la bobine retirée : le billet d'un programme noterait sa première bobine ;
+  // puis la garde réduite à une bobine demandée (le jumeau : un programme ouvert sans `?bobine=`).
+  it.each(['?bobine=999', ''])('un programme sans bobine reconnue (« %s ») ne s’offre pas au billet', async (suite) => {
     const { routes } = serveur()
-    const { requetes } = monterVoyage(billet(PROGRAMME, '?bobine=999'), routes)
+    const { requetes } = monterVoyage(billet(PROGRAMME, suite), routes)
     expect(await screen.findByText('Cette bobine n’est pas au programme de « Programme Lumière ».')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Retour au film' })).toHaveAttribute('href', '/voyage/1897/films/p-lumiere')
     expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
@@ -439,6 +476,41 @@ describe('le billet de séance', () => {
       expect(compte(requetes, ANNEE)).toBe(n)
     })
 
+    // Le jumeau du verdict : le Lion accorde le ticket sans rejuger. Mutation : le ticket ignoré par le guet.
+    it('un ticket apparu arrête le guet, même sans verdict neuf', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      let ticket: FichePrete['ticket'] = null
+      const { routes } = serveur({ entree: entreeRendue(1897), apres: () => fiche({ profondeur: 3, ticket }) })
+      const { requetes } = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      await vi.advanceTimersByTimeAsync(200)
+      const n = compte(requetes, ANNEE)
+      ticket = { annee: 1898, emis_le: REJUGE, utilise_le: null }
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms)
+      expect(compte(requetes, ANNEE)).toBe(n + 1)
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms * 4)
+      expect(compte(requetes, ANNEE)).toBe(n + 1)
+    })
+
+    // Le jumeau : l'API ne juge qu'à la création. Mutation : `creation` toujours vrai.
+    it('au compte IA, une correction ne guette rien', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur()
+      const { requetes } = monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, {
+        ...routes,
+        'PATCH /api/me/journal/e-kane': () => json(kaneVu()),
+      })
+      fireEvent.click(await screen.findByRole('button', { name: '7 sur 10' }))
+      fireEvent.click(screen.getByRole('button', { name: /Corriger le billet/ }))
+      await lAnnee()
+      await vi.advanceTimersByTimeAsync(200)
+      const n = compte(requetes, ANNEE)
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms * 4)
+      expect(kaneVu().media.year).toBe(VOYAGE.annee_en_cours)
+      expect(compte(requetes, ANNEE)).toBe(n)
+    })
+
     // Mutation : le guet au plafond ignoré (la fiche se relirait tant que le verdict ne change pas).
     it('le guet s’arrête au douzième essai', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -468,6 +540,23 @@ describe('le billet de séance', () => {
       const n = compte(requetes, ANNEE)
       await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms * 4)
       expect(compte(requetes, ANNEE)).toBe(n)
+    })
+
+    // Le jumeau : depuis la fiche du film, le billet est remplacé par l'année ; reculer ramène au film,
+    // jamais au billet. Mutations : toujours reculer (le billet ramènerait au film, pas à l'année) ;
+    // pousser l'année au lieu de la remplacer (reculer rouvrirait le billet).
+    it('depuis la fiche du film, le billet laisse place à l’année, et reculer ne le rouvre pas', async () => {
+      const { routes } = serveur()
+      monterVoyage(['/voyage/1896', `/voyage/1897/films/${FAUCON.id}`, billet(FAUCON)], {
+        ...routes,
+        'GET /api/me/voyage/annees/1896': () => json(fiche({ annee: 1896, recompense: 'lion', maturite: null })),
+        'GET /api/reference/films/963/realisateurs': () => json({ realisateurs: [] }),
+      })
+      fireEvent.click(await composter())
+      expect(await lAnnee()).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
     })
 
     // Depuis la séance, l'année est derrière le billet. Mutations : le lien de la séance sans son état
@@ -544,6 +633,30 @@ describe('le billet de séance', () => {
       expect(await lAnnee()).toBeInTheDocument()
     })
 
+    // Le jumeau du rappel qui survit, pour la suppression. Mutation : la navigation dans `onSuccess` de
+    // `useMutation` : quitté pendant l'envoi, le billet reculerait une seconde fois, hors du film.
+    it('quitté pendant la suppression, le billet ne recule pas une seconde fois à la réponse', async () => {
+      const { routes } = serveur()
+      let repondre: () => void = () => undefined
+      const { requetes } = monterVoyage(['/voyage/1897', `/voyage/1897/films/${KANE.id}`, { pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }], {
+        ...routes,
+        'GET /api/me/journal?limit=20': () => json({ ...PAGE, items: [kaneVu()], next_cursor: null }),
+        'GET /api/reference/films/15/realisateurs': () => json({ realisateurs: [] }),
+        'DELETE /api/me/journal/e-kane': () => new Promise<Response>((r) => (repondre = () => r(new Response(null, { status: 204 })))),
+      })
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+      await waitFor(() => expect(requetes).toContain('DELETE /api/me/journal/e-kane'))
+      fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      await act(async () => {
+        repondre()
+        await new Promise((r) => setTimeout(r, 50))
+      })
+      expect(screen.getByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+    })
+
     // Le jumeau des péremptions du compostage. Mutation : « Supprimer » qui ne périme rien.
     it('« Supprimer » périme ce que périme le formulaire du journal', async () => {
       const { routes } = serveur()
@@ -559,6 +672,26 @@ describe('le billet de séance', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
       await screen.findByText('Salle · Les essentiels')
       expect(PERIMABLES.filter((cle) => !vue.client.getQueryState(cle)?.isInvalidated)).toEqual([])
+    })
+
+    // Les jumeaux du refus du compostage. Mutations : le message de l'API réécrit ; la garde de
+    // « Supprimer » jamais relâchée après un refus.
+    it('un refus de la suppression s’affiche tel que l’API l’a écrit, et « Supprimer » se retente', async () => {
+      const { routes } = serveur()
+      let essais = 0
+      monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, {
+        ...routes,
+        'GET /api/me/journal?limit=20': () => json({ ...PAGE, items: [], next_cursor: null }),
+        'GET /api/reference/films/15/realisateurs': () => json({ realisateurs: [] }),
+        'DELETE /api/me/journal/e-kane': () =>
+          ++essais === 1 ? json({ code: 'NOT_FOUND', message: 'Ce visionnage n’existe plus.', retryable: false }, 404) : new Response(null, { status: 204 }),
+      })
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent('Ce visionnage n’existe plus.')
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(essais).toBe(2)
     })
 
     // Le jumeau de la garde du compostage. Mutation : la garde de « Supprimer » retirée.
@@ -581,6 +714,20 @@ describe('le billet de séance', () => {
   })
 
   describe('le poinçon', () => {
+    // Mutations : seul le trou de la note percé ; la note lue oubliée.
+    it('perce les trous de 1 à la note, et la lit en grand', async () => {
+      const { routes } = serveur()
+      monterVoyage(billet(FAUCON), routes)
+      const poincon = await screen.findByRole('group', { name: 'Note sur 10' })
+      expect(poincon.querySelectorAll('[data-perce="true"]')).toHaveLength(0)
+      fireEvent.click(within(poincon).getByRole('button', { name: '4 sur 10' }))
+      expect([...poincon.querySelectorAll('[data-perce="true"]')].map((b) => b.textContent)).toEqual(['1', '2', '3', '4'])
+      expect(poincon.nextElementSibling).toHaveTextContent('4sur 10')
+      fireEvent.click(screen.getByRole('button', { name: 'sans note' }))
+      expect(poincon.querySelectorAll('[data-perce="true"]')).toHaveLength(0)
+      expect(poincon.nextElementSibling).toHaveTextContent('—sur 10')
+    })
+
     // Mutations : la garde du calme retirée (des confettis au calme) ; les confettis comptés depuis 1
     // (chaque trou déjà percé relâcherait le sien).
     it('lâche un confetti par trou nouvellement percé, jamais au calme', async () => {
