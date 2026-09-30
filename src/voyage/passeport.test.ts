@@ -49,6 +49,12 @@ describe('ce qui manque au tampon', () => {
     expect(ceQuiManque(carte, [], 1890, 1895).ticket).toBe(1900)
   })
 
+  // Jumeau de `ticketsUtilises.get(fin + 1)` dans `calculerTampons` : ce ticket-là, aucun autre.
+  // Mutation : `>=` au lieu de `===` (un ticket de 1910 utilisé tiendrait lieu de celui de 1900).
+  it('ne demande que le ticket de la décennie suivante, pas un plus tardif', () => {
+    expect(ceQuiManque(carte, [ticket(1910, true)], 1890, 1895).ticket).toBe(1900)
+  })
+
   it('compte une année absente de la carte comme sans récompense', () => {
     expect(ceQuiManque([annee({ annee: 2020, recompense: 'ours' })], [], 2020, 1895).annees).toEqual([2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029])
   })

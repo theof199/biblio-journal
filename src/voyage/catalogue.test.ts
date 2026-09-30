@@ -34,9 +34,11 @@ describe('les années du catalogue', () => {
       annee({ annee: 1896, statut: 'en_cours', visitee: true }),
       annee({ annee: 1897, statut: 'ouverte', visitee: false }),
       annee({ annee: 1898, statut: 'verrouillee', visitee: true }),
+      // La dernière année de la décennie en est : une borne stricte la perdrait.
+      annee({ annee: 1899, statut: 'ouverte', visitee: true }),
       annee({ annee: 1900, statut: 'ouverte', visitee: true }),
     ]
-    expect(anneesDuCatalogue(annees, 1890)).toEqual([1895, 1896])
+    expect(anneesDuCatalogue(annees, 1890)).toEqual([1895, 1896, 1899])
   })
 })
 
@@ -76,6 +78,13 @@ describe('le pliage', () => {
   // Mutation : la fin prise au caractère suivant (une moitié de ligature soulignerait le caractère d'après).
   it('souligne la ligature entière quand la saisie s’arrête en son milieu', () => {
     expect(passage('Cœur', 'co')).toEqual({ avant: '', trouve: 'Cœ', apres: 'ur' })
+  })
+
+  // Un caractère hors du plan de base (un emoji, deux unités UTF-16) : les positions se comptent en
+  // unités, comme `indexOf` et `slice`. Mutation : une position par caractère plié (le passage glisse
+  // d'une unité après l'emoji).
+  it('souligne le bon passage après un caractère de deux unités', () => {
+    expect(passage('🎬 L’Arrivée', 'arrivee')).toEqual({ avant: '🎬 L’', trouve: 'Arrivée', apres: '' })
   })
 })
 

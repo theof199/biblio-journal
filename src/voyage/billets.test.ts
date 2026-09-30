@@ -54,6 +54,32 @@ describe('les billets d’une décennie', () => {
   it('ne laissent pas la boîte d’une décennie à l’autre', () => {
     expect(billetsDeLaDecennie(journal, 1900).map((b) => [b.numero, b.item.entry.id])).toEqual([[1, 'e4']])
   })
+
+  // Mutations : une borne stricte (`> decennie` perd la première année de chaque décennie, 1900 ou
+  // 1910 ; `< decennie + 9` perd la dernière, 1899, celle qui manque au tampon) ; une borne élargie.
+  it('comptent la première et la dernière année de la décennie, et rien au-delà', () => {
+    const bords = [
+      vu('b1', 1889, '2026-09-01'),
+      vu('b2', 1890, '2026-09-02'),
+      vu('b3', 1899, '2026-09-03'),
+      vu('b4', 1900, '2026-09-04'),
+      vu('b5', 1909, '2026-09-05'),
+      vu('b6', 1910, '2026-09-06'),
+    ]
+    expect(billetsDeLaDecennie(bords, 1890).map((b) => b.item.entry.id)).toEqual(['b2', 'b3'])
+    expect(billetsDeLaDecennie(bords, 1900).map((b) => b.item.entry.id)).toEqual(['b4', 'b5'])
+  })
+
+  // Mutation : la création avant la date du visionnage (D3 : la date d'abord). Un visionnage ancien
+  // ajouté après coup (un import Letterboxd) prend son rang à sa date, et décale ceux qui le suivent.
+  it('rangent un visionnage ancien ajouté après coup à sa date, pas à sa création', () => {
+    const recent = vu('r1', 1896, '2026-09-20', '2026-09-20T21:00:00.000Z')
+    const importe = vu('r2', 1897, '2019-03-02', '2026-09-28T10:00:00.000Z')
+    expect(billetsDeLaDecennie([recent, importe], 1890).map((b) => [b.numero, b.item.entry.id])).toEqual([
+      [1, 'r2'],
+      [2, 'r1'],
+    ])
+  })
 })
 
 describe('le numéroteur', () => {

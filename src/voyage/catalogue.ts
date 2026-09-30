@@ -66,9 +66,10 @@ function plierUn(c: string): string {
 }
 
 /**
- * Un texte plié pour la recherche, et, pour chaque caractère plié, où commence et finit dans le
- * texte d'origine le caractère dont il vient : de quoi souligner le passage trouvé dans le titre
- * tel qu'il s'écrit (« Arrivée » trouvé par « arrivee »).
+ * Un texte plié pour la recherche, et, pour chaque unité UTF-16 du texte plié, où commence et finit
+ * dans le texte d'origine le caractère dont elle vient : de quoi souligner le passage trouvé dans le
+ * titre tel qu'il s'écrit (« Arrivée » trouvé par « arrivee »). Des unités, pas des caractères :
+ * `indexOf` et `slice` comptent ainsi, et un emoji en occupe deux.
  */
 export function plier(texte: string): { plie: string; debut: number[]; fin: number[] } {
   let plie = ''
@@ -76,8 +77,9 @@ export function plier(texte: string): { plie: string; debut: number[]; fin: numb
   const fin: number[] = []
   let i = 0
   for (const c of texte) {
-    for (const p of plierUn(c)) {
-      plie += p
+    const p = plierUn(c)
+    plie += p
+    for (let u = 0; u < p.length; u += 1) {
       debut.push(i)
       fin.push(i + c.length)
     }

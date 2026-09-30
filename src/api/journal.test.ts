@@ -172,4 +172,10 @@ describe('mes visionnages d’une fourchette d’années de sortie', () => {
     expect(cles.journalDesAnnees(1890, 1899).slice(0, cles.journal.length)).toEqual([...cles.journal])
     expect(cles.journalDesAnnees(1890, 1899)).not.toEqual(cles.journalDesAnnees(1900, 1909))
   })
+
+  // Mutation : la clé sans sa borne haute. L'année fermée de 1900 (`journalDesAnnees(1900, 1900)`,
+  // plan 2c, tâche 11) et la décennie 1900 (`(1900, 1909)`) partageraient alors leur cache.
+  it('distingue deux fourchettes qui partent de la même année', () => {
+    expect(cles.journalDesAnnees(1900, 1900)).not.toEqual(cles.journalDesAnnees(1900, 1909))
+  })
 })
