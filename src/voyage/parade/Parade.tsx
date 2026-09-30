@@ -135,6 +135,9 @@ function MarcheDuPodium({ place, marche, onOuvrir, onVider }: PropsMarche) {
       onPointerUp={lacher}
       onPointerLeave={lacher}
       onPointerCancel={lacher}
+      // Une touche n'est jamais le relâcher d'un appui long : le clavier (le chemin qui remplace
+      // l'appui long, par le feuillet et « Retirer ») ne se fait pas avaler son premier geste.
+      onKeyDown={() => void (long.current = false)}
       // L'appui long ne doit ouvrir ni le menu du navigateur, ni le feuillet au relâcher.
       onContextMenu={(e) => e.preventDefault()}
       onClick={() => {

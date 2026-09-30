@@ -155,10 +155,15 @@ describe('la séance du soir', () => {
     expect(within(zone).queryByRole('alert')).toBeNull()
   })
 
-  // Mutations : le plafond jamais atteint ; l'abandon tu ; « Réessayer » sans relecture.
-  it('une séance trouvée en composition se guette, jusqu’au plafond, puis « Réessayer » reprend', async () => {
+  // Mutations : le plafond jamais atteint ; l'abandon tu ; « Réessayer » sans relecture ; « Réessayer »
+  // qui recompose (un appel au chroniqueur, des jetons, sans que le membre l'ait demandé).
+  it('une séance trouvée en composition se guette, jusqu’au plafond, puis « Réessayer » reprend, sans rien recomposer', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    const { requetes } = monterVoyage('/voyage/1897', { ...ROUTES, [ANNEE]: () => json(fiche({ seances: [], seance_en_cours: true })) })
+    const { requetes } = monterVoyage('/voyage/1897', {
+      ...ROUTES,
+      [ANNEE]: () => json(fiche({ seances: [], seance_en_cours: true })),
+      'POST /api/me/voyage/annees/1897/seances': () => json({ statut: 'en_preparation' }, 202),
+    })
     const zone = await laSeance()
     expect(within(zone).getByText('Le chroniqueur compose la séance…')).toBeInTheDocument()
     for (let i = 0; i < RELECTURES.seance.plafond + 4; i += 1) await vi.advanceTimersByTimeAsync(RELECTURES.seance.ms)
@@ -167,6 +172,26 @@ describe('la séance du soir', () => {
     fireEvent.click(within(zone).getByRole('button', { name: 'Réessayer' }))
     await waitFor(() => expect(compte(requetes, ANNEE)).toBe(2 + RELECTURES.seance.plafond))
     expect(within(zone).queryByRole('alert')).toBeNull()
+    await vi.advanceTimersByTimeAsync(RELECTURES.seance.ms)
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
+  })
+
+  // Aucun appel au chroniqueur sans geste : ni au montage, ni en boucle, que la zone montre le bouton
+  // ou une séance. Mutation : composer au montage (un effet qui appelle `lancer`).
+  it.each([
+    ['le bouton', []],
+    ['une séance proposée', [PROPOSEE]],
+  ] as const)('au montage (%s), rien ne part chez le chroniqueur', async (_nom, seances) => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { requetes } = monterVoyage('/voyage/1897', {
+      ...ROUTES,
+      [ANNEE]: () => json(fiche({ seances: [...seances] })),
+      'POST /api/me/voyage/annees/1897/seances': () => json({ statut: 'en_preparation' }, 202),
+    })
+    await laSeance()
+    await vi.advanceTimersByTimeAsync(RELECTURES.seance.ms * 3)
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
+    expect(compte(requetes, ANNEE)).toBe(1)
   })
 
   // Mutations : le refus réécrit par la page ; la garde jamais relâchée.

@@ -62,8 +62,9 @@ const MON_JOURNAL = [vu('e1', 'Un film de 1897', 1897, 101, 8), vu('e2', 'Un fil
 const journal = (items: JournalItem[]) => () => json({ ...PAGE, items, next_cursor: null })
 
 const ANNEE = 'GET /api/me/voyage/annees/1897'
+const CARTE = 'GET /api/me/voyage'
 const ROUTES = {
-  'GET /api/me/voyage': () => json(VOYAGE),
+  [CARTE]: () => json(VOYAGE),
   [ANNEE]: () => json(fiche()),
   [JOURNAL]: journal(MON_JOURNAL),
 }
@@ -92,8 +93,9 @@ describe('la parade du podium', () => {
   })
 
   // Mutations : `candidats` lu pour une autre année que celle de la fiche ; l'invalidation retirée (la
-  // fiche ne se relirait pas) ; les salles de la fiche non passées (aucun programme).
-  it('le feuillet d’une marche vide propose mes films de l’année et les programmes vus, sans « Retirer » ; choisir pose le film et relit la fiche', async () => {
+  // fiche ne se relirait pas), ou réduite à la fiche (la carte garderait l'affiche de l'ancien n° 1) ;
+  // les salles de la fiche non passées (aucun programme).
+  it('le feuillet d’une marche vide propose mes films de l’année et les programmes vus, sans « Retirer » ; choisir pose le film et relit la fiche et la carte', async () => {
     let pose: unknown
     const { requetes } = monterVoyage('/voyage/1897', {
       ...ROUTES,
@@ -111,6 +113,7 @@ describe('la parade du podium', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(pose).toEqual({ tmdb_id: 101 })
     await waitFor(() => expect(compte(requetes, ANNEE)).toBe(2))
+    await waitFor(() => expect(compte(requetes, CARTE)).toBe(2))
   })
 
   // Mutation : le programme posé par son titre, ou son `tmdb_id` (le corps, côté page, réduit au film).
@@ -235,6 +238,21 @@ describe('la parade du podium', () => {
     fireEvent.pointerDown(une)
     fireEvent.pointerUp(une)
     fireEvent.click(une)
+    expect(await screen.findByRole('dialog', { name: 'Marche 1' })).toBeInTheDocument()
+  })
+
+  // Le jumeau au clavier : le chemin qui remplace l'appui long (le feuillet, puis « Retirer ») ne doit
+  // pas être avalé par la marque d'un appui long resté sans clic. Mutation : la marque non remise à zéro
+  // par une touche.
+  it('après un appui long sans clic, « Entrée » au clavier ouvre le feuillet', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    monterVoyage('/voyage/1897', { ...ROUTES, 'DELETE /api/me/voyage/annees/1897/podium/1': () => new Response(null, { status: 204 }) })
+    const une = await laMarche(1)
+    fireEvent.pointerDown(une)
+    await vi.advanceTimersByTimeAsync(500)
+    fireEvent.pointerLeave(une)
+    fireEvent.keyDown(une, { key: 'Enter' })
+    fireEvent.click(une, { detail: 0 })
     expect(await screen.findByRole('dialog', { name: 'Marche 1' })).toBeInTheDocument()
   })
 
