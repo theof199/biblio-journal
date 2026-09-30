@@ -41,9 +41,12 @@
   height: 150px;
 }
 
+/* Des affiches TMDB en 2:3, pas les vues en 3:4 de la maquette : à ses 76 px de large, elles
+   couvriraient le millésime. À 66 px, la plus basse finit où finit celle de la maquette
+   (`Palissade.test.ts`). */
 .colle img {
   position: absolute;
-  width: 76px;
+  width: 66px;
   aspect-ratio: 2 / 3;
   object-fit: cover;
   border: 3px solid var(--m-papier);
