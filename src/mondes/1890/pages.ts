@@ -1,8 +1,9 @@
 import type { HabillagePages } from '../types'
-import { c } from './couleur'
 import { dessinerBandeau } from './bandeau'
 import { dessinerScene } from './scene'
 import { dessinerEstrade } from './estrade'
+import { dessinerMonument } from './monument'
+import { dessinerGuichet } from './guichetPage'
 
 /**
  * Les pages des années 1890 : l'affiche de la baraque, la projection, le billet, le prospectus du
@@ -62,13 +63,7 @@ export const PAGES_1890: HabillagePages = {
   dessinerBandeau,
   dessinerScene,
   dessinerEstrade,
-  // Réduits à un fond jusqu'à la tâche 4 du plan 2c, qui porte `dessinManege` et `dessinGuichet`.
-  dessinerMonument: (v) => {
-    v.ctx.fillStyle = c('#3a2a1b')
-    v.ctx.fillRect(0, 0, v.W, v.H)
-  },
-  dessinerGuichet: (v) => {
-    v.ctx.fillStyle = c('#4a3321')
-    v.ctx.fillRect(0, 0, v.W, v.H)
-  },
+  // Portés de la maquette : `dessinManege`, `dessinGuichet`.
+  dessinerMonument,
+  dessinerGuichet,
 }

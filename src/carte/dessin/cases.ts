@@ -2,7 +2,7 @@ import type { CaseCarte, Toile } from '../moteur'
 import type { Monde } from '../../mondes/types'
 import { TAU } from '../outils'
 
-const CORAIL = '#FF6B57'
+export const CORAIL = '#FF6B57'
 
 const rr = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void => {
   g.beginPath()

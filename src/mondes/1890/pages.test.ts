@@ -6,7 +6,9 @@ import { dessinerEstrade } from './estrade'
 import { bonimenteur } from './moyen'
 import { vuePage } from './vuePage'
 import { c } from './couleur'
-import type { VueBandeau, VueEstrade, VueScene } from '../types'
+import { avancerManege, departDuManege, dessinerMonument } from './monument'
+import { dessinerGuichet } from './guichetPage'
+import type { VueBandeau, VueEstrade, VueGuichet, VueMonument, VueScene } from '../types'
 
 const CASES = [1895, 1896, 1897, 1898, 1899].map((annee, i) => ({
   annee,
@@ -308,5 +310,162 @@ describe('l’estrade du chroniqueur', () => {
   it('se tait, tape ou parle : trois bras différents', () => {
     const images = new Set((['non', 'tape', 'parle'] as const).map((parle) => image(estrade({ parle }))))
     expect(images.size).toBe(3)
+  })
+})
+
+type Cheval = VueMonument['annees'][number]
+/** Les dix chevaux : bruts avant le départ, puis une année par état. */
+const ANNEES: Cheval[] = [
+  ...[1890, 1891, 1892, 1893, 1894].map((annee) => ({ annee, etat: 'avant' as const })),
+  { annee: 1895, etat: 'palme' },
+  { annee: 1896, etat: 'lion' },
+  { annee: 1897, etat: 'ours' },
+  { annee: 1898, etat: 'encours' },
+  { annee: 1899, etat: 'avance' },
+]
+const avec = (changes: Record<number, Cheval['etat']>): Cheval[] => ANNEES.map((a) => ({ ...a, etat: changes[a.annee] ?? a.etat }))
+const casesDe = (...etats: VueMonument['cases'][number]['etat'][]) => etats.map((etat, i) => ({ annee: 1895 + i, etat, profondeur: 3 }))
+const CASES_MONUMENT = casesDe('palme', 'lion', 'ours', 'encours', 'verrou')
+
+function monument(o: Partial<VueMonument> = {}, toile = contexteFactice()) {
+  const zones: { annee: number; x: number; y: number; r: number }[] = []
+  const debut = toile.appels.length
+  dessinerMonument({
+    ctx: toile.ctx, W: 390, H: 330, t: 0, vivant: false, nuit: 0, annees: ANNEES, cases: CASES_MONUMENT, bouclee: false, touche: -9,
+    zone: (annee, x, y, r) => void zones.push({ annee, x, y, r }),
+    ...o,
+  })
+  return { appels: toile.appels.slice(debut), zones }
+}
+/** Le corps d'un cheval (`cheval`, `moyen.ts`) : son ellipse de 8,5 × 3,4, dans le repère du cheval. */
+const corps = (appels: ReturnType<typeof bandeau>) => appels.filter((a) => a.nom === 'ellipse' && a.args[2] === 8.5 && a.args[3] === 3.4)
+/** La lueur d'un lampion allumé du toit (r = 2,6) : un cercle de 2,6 × 2,8 en composition `lighter`. */
+const lampionsAllumes = (appels: ReturnType<typeof bandeau>) =>
+  appels.filter((a) => a.nom === 'arc' && a.composite === 'lighter' && Math.abs((a.args[2] as number) - 7.28) < 1e-9).length
+
+describe('le manège des années', () => {
+  // Mutations : les chevaux de devant seuls inscrits ; un rayon de 20.
+  it('inscrit la figure de chacune des dix années, rayon 30', () => {
+    for (const o of [{}, { vivant: true, t: 1.3 }]) {
+      const { zones } = monument(o)
+      expect(zones).toHaveLength(10)
+      expect(new Set(zones.map((z) => z.annee))).toEqual(new Set(ANNEES.map((a) => a.annee)))
+      expect(zones.every((z) => z.r === 30)).toBe(true)
+    }
+  })
+
+  // Mutation : la figure inscrite à la hauteur de la barre, sans le galop (`yb` au lieu de `yb + bob`) :
+  // le doigt posé sur un cheval qui monte tomberait à côté.
+  it('inscrit la figure là où le cheval se tient, galop compris', () => {
+    const { appels, zones } = monument({ vivant: true, t: 1.3 })
+    const poses = appels.filter((a) => a.nom === 'translate').map((a) => a.args.join())
+    for (const z of zones) expect(poses).toContain(`${z.x},${z.y}`)
+  })
+
+  // Mutation : `D.v = 6` retiré.
+  it('s’emballe au toucher', () => {
+    const depart = departDuManege(0)
+    const sans = avancerManege(depart, { t: 0.1, touche: -9, vivant: true })
+    const avecToucher = avancerManege(depart, { t: 0.1, touche: 0.05, vivant: true })
+    expect(avecToucher.a - depart.a).toBeGreaterThan(sans.a - depart.a)
+  })
+
+  // Mutations : la formule close depuis le dernier toucher ; le second toucher ignoré (`touche`
+  // comparé au premier).
+  it('ne revient pas en arrière au second toucher', () => {
+    const course = (touches: number[]) => {
+      let e = departDuManege(0)
+      const angles = [e.a]
+      for (let k = 1; k <= 40; k++) {
+        const t = k * 0.05
+        const touche = touches.filter((x) => x <= t + 1e-9).pop() ?? -9
+        e = avancerManege(e, { t, touche, vivant: true })
+        angles.push(e.a)
+      }
+      return angles
+    }
+    const deux = course([0.2, 0.4])
+    for (let i = 1; i < deux.length; i++) expect(deux[i]!).toBeGreaterThanOrEqual(deux[i - 1]!)
+    expect(deux[deux.length - 1]!).toBeGreaterThan(course([0.2])[40]!)
+  })
+
+  // Mutations : `dt` non borné ; `dt` négatif laissé passer (une horloge qui recule ferait reculer le manège).
+  it('le pas est borné', () => {
+    const depart = departDuManege(0)
+    expect(avancerManege(depart, { t: 60, touche: -9, vivant: true }).a - depart.a).toBeLessThanOrEqual(0.1 * 0.3 * depart.v + 1e-12)
+    expect(avancerManege(departDuManege(5), { t: 4, touche: -9, vivant: true }).a).toBe(departDuManege(5).a)
+  })
+
+  // Mutations : la garde `vivant` retirée de l'angle ; du galop (`bob`).
+  it('immobile au calme', () => {
+    const toile = contexteFactice()
+    const trace = (appels: ReturnType<typeof bandeau>) => JSON.stringify(appels.map((a) => [a.nom, a.args, a.fillStyle, a.strokeStyle, a.alpha]))
+    const premiere = monument({ t: 0, nuit: 1 }, toile)
+    // La même toile, remise aux styles de départ : seul l'état du manège passe d'une image à l'autre.
+    toile.ctx.fillStyle = '#000'
+    toile.ctx.strokeStyle = '#000'
+    const seconde = monument({ t: 3, nuit: 1 }, toile)
+    expect(trace(seconde.appels)).toBe(trace(premiere.appels))
+    expect(seconde.zones).toEqual(premiere.zones)
+    // Au calme, chaque cheval se tient à la même hauteur sur sa barre ; au galop, non.
+    const hauteurs = (o: Partial<VueMonument>) => {
+      const { appels, zones } = monument(o)
+      const barres = appels.filter((a) => a.nom === 'lineTo' && a.strokeStyle === c('#B8862B'))
+      return new Set(zones.map((z) => (barres.find((b) => b.args[0] === z.x)!.args[1] as number) - z.y).map((d) => d.toFixed(6))).size
+    }
+    expect(hauteurs({})).toBe(1)
+    expect(hauteurs({ vivant: true, t: 1.3 })).toBeGreaterThan(1)
+  })
+
+  // Mutations : le corail passé par `c()`, sur le cheval, sur son anneau, sur sa plaque.
+  it('le cheval de l’année en cours est corail, non teinté', () => {
+    const { appels } = monument({ nuit: 1 })
+    expect(corps(appels).filter((a) => a.fillStyle === '#FF6B57')).toHaveLength(1)
+    expect(appels.some((a) => a.nom === 'ellipse' && a.args[2] === 16 && a.args[3] === 4 && a.strokeStyle === '#FF6B57')).toBe(true)
+    // La plaque ne se lit que devant : 1892 y est à l'angle de départ.
+    const devant = monument({ nuit: 1, annees: avec({ 1892: 'encours', 1898: 'passee' }) }).appels
+    const plaque = devant.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1892')
+    expect(plaque).toBeGreaterThan(-1)
+    expect(devant.slice(0, plaque).filter((a) => a.nom === 'fill').pop()!.fillStyle).toBe('#FF6B57')
+  })
+
+  // Mutation : la médaille réservée à la Palme, comme la maquette (le Lion et l'Ours perdraient la leur).
+  it('médaille chaque cheval récompensé', () => {
+    expect(medailles(monument().appels)).toBe(3)
+    expect(medailles(monument({ annees: avec({ 1895: 'passee', 1896: 'passee', 1897: 'passee' }) }).appels)).toBe(0)
+  })
+
+  // Mutations : l'année passée ternie comme celles d'avant le Voyage ; peinte d'une autre couleur que le bois.
+  it('ternit les chevaux d’avant le Voyage, pas celui d’une année passée', () => {
+    const appels = monument({ annees: avec({ 1899: 'passee' }) }).appels
+    expect(corps(appels).filter((a) => a.alpha === 0.75)).toHaveLength(5)
+    expect(corps(appels).filter((a) => a.alpha === 1 && a.fillStyle === c('#8a6a44'))).toHaveLength(1)
+  })
+
+  // Mutations : la part comptée sur les années quittées (`etat !== 'verrou'`) ; sur toutes ; sans
+  // la garde des cases vides (`0 / 0` : la foule disparaîtrait).
+  it('allume ses lampions à la part des années récompensées', () => {
+    const lampions = (cases: VueMonument['cases']) => lampionsAllumes(monument({ nuit: 1, cases }).appels)
+    const toutes = lampions(casesDe('palme', 'lion', 'ours', 'palme', 'lion'))
+    const deux = lampions(casesDe('palme', 'lion', 'encours', 'verrou', 'verrou'))
+    expect(lampions(casesDe('passee', 'passee', 'encours', 'verrou', 'verrou'))).toBe(0)
+    expect(deux).toBeGreaterThan(0)
+    expect(toutes).toBeGreaterThan(deux)
+    const image = (cases: VueMonument['cases']) => JSON.stringify(monument({ nuit: 1, cases }).appels.map((a) => [a.nom, a.args]))
+    expect(image([])).toBe(image(casesDe('verrou', 'verrou')))
+  })
+})
+
+describe('le guichet de la recherche', () => {
+  const guichet = (o: Partial<VueGuichet>) => {
+    const { ctx, appels } = contexteFactice()
+    dessinerGuichet({ ctx, W: 390, H: 170, t: 5, vivant: true, nuit: 0, frappe: -9, ...o })
+    return JSON.stringify(appels.map((a) => [a.nom, a.args, a.fillStyle, a.alpha]))
+  }
+
+  // Mutations : `p` toujours 0 ; la garde `vivant` retirée.
+  it('le guichetier se penche après une lettre, pas au calme', () => {
+    expect(guichet({ frappe: 4.9 })).not.toBe(guichet({ frappe: -9 }))
+    expect(guichet({ vivant: false, frappe: 4.9 })).toBe(guichet({ vivant: false, frappe: -9 }))
   })
 })

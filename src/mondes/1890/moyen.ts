@@ -146,7 +146,7 @@ export function silhouette(g: CanvasRenderingContext2D, v: VueMonde, x: number, 
   g.restore()
 }
 
-function cheval(g: CanvasRenderingContext2D, ph: number): void {
+export function cheval(g: CanvasRenderingContext2D, ph: number): void {
   const b = Math.sin(ph * 2) * 0.8
   g.lineWidth = 1.4
   g.lineCap = 'round'

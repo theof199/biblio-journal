@@ -22,7 +22,7 @@ const ETOILES = Array.from({ length: 46 }, (_, i) => ({
 }))
 
 /** Le ciel du jour et de la nuit, et ses étoiles sur les `haut` premiers pixels (maquette : `ciel`, ligne 797). */
-function ciel(g: CanvasRenderingContext2D, v: VueBandeau, h: number, haut: number): void {
+export function ciel(g: CanvasRenderingContext2D, v: Pick<VueBandeau, 'W' | 'nuit' | 'vivant' | 't'>, h: number, haut: number): void {
   for (const [cols, a] of [[CIEL_J, 1], [CIEL_N, v.nuit]] as const) {
     if (a <= 0.01) continue
     const gr = g.createLinearGradient(0, 0, 0, h)
