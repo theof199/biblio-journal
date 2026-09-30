@@ -304,7 +304,7 @@ export default function Carte() {
 
       {calque?.type === 'tampon' ? (
         <div className={styles.tampon} role="status">
-          <Tampon monde={mondes(calque.decennie)} decennie={calque.decennie} tampon={tamponDe(v.tampons, calque.decennie)} />
+          <Tampon monde={mondes(calque.decennie)} decennie={calque.decennie} tampon={tamponDe(v.tampons, calque.decennie)} frappe />
         </div>
       ) : null}
       {calque?.type === 'carton' ? (

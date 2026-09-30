@@ -10,6 +10,7 @@ import { moteurFactice } from '../test/moteurFactice'
 import { fichePrete, voyage1890 } from '../test/voyage'
 import { exemple } from '../test/contrat'
 import { cles } from '../api/cles'
+import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 
 const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)
 const P = { essentiels_vus: 1, essentiels_total: 3, salles_completes: 0, salles_autres: 2 }
@@ -471,6 +472,17 @@ describe('le ticket', () => {
     const tampon = await screen.findByText('Années 1890')
     expect(tampon.closest('[role="status"]')).toHaveTextContent('Spectateur des origines')
     expect(moteur.marcher).not.toHaveBeenCalled()
+  })
+
+  // Relecture de la tâche 5 (plan 2c) : le calque monte le tampon du passeport, le sien. Mutations :
+  // un tampon fabriqué à la place de `tamponDe` (le jour de l'appareil, pas celui du passeport) ; le
+  // tampon monté sans `frappe` (la carte montre le moment où il se pose).
+  it('le tampon de la carte dit le jour du passeport et frappe', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1899')
+    monter({ ...V1900, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] })
+    const jour = await screen.findByText('28 septembre 2026')
+    expect(jour.closest('[role="status"]')).toHaveTextContent('Années 1890')
+    expect(jour.parentElement).toHaveClass(stylesDuTampon.frappe!)
   })
 
   // Mutation : la petite affiche sans son image ou sans sa légende de crédit.

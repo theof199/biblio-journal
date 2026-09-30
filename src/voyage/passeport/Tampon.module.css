@@ -1,9 +1,11 @@
 /* Le tampon du passeport (maquette 1890 : `.tampon` et `@keyframes frappe`, lignes 222 à 224 ; la
    place : `.livret .place`, ligne 289). L'encre est le rouge du monde, jamais le corail : le tampon
    n'est pas un geste. Tout se mesure en em : le conteneur en fixe la taille par sa police
-   (la carte : 12,25 px, un tampon de 196 px). */
+   (la carte : 12,25 px, un tampon de 196 px), jamais en dessous : dans les 56 px de la place de la
+   maquette, le jour tomberait à 3 px. */
 .tampon,
 .place {
+  font-size: max(1em, 12.25px);
   box-sizing: border-box;
   width: 16em;
   height: 16em;
@@ -69,12 +71,13 @@
   font: 0.9em var(--m-f-texte);
 }
 
-/* Sa place, en pointillés, avant la décennie bouclée. */
+/* Sa place, en pointillés, avant la décennie bouclée. Sans fond à elle, elle écrit en encre douce
+   (5,3:1 sur le velours du livret ; `--m-pale`, 3,3:1, ne garde que les pointillés). */
 .place {
   gap: 0.4em;
   padding: 2em;
   border: 0.2em dashed var(--m-pale);
-  color: var(--m-pale);
+  color: var(--m-doux);
 }
 
 .titrePlace {

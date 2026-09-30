@@ -33,11 +33,12 @@ describe('le tampon du passeport', () => {
 
   // `boucle_le` est aussi l'instant où le ticket de la décennie suivante a été utilisé
   // (`calculerTampons`) : un ticket utilisé à 0 h 30 à Paris l'a été le 1er janvier.
-  // Mutation : `timeZone: 'UTC'` (le 31 décembre).
+  // Mutation : `timeZone: 'UTC'` (le 31 décembre). Le premier du mois s'écrit « 1er », comme partout
+  // ailleurs dans le Journal (`formatDateVisionnage`) ; mutation : `Intl` seul (« 1 janvier 2000 »).
   it('dit le jour de Paris quand la décennie a été bouclée par un ticket utilisé la nuit', () => {
     vi.stubEnv('TZ', 'UTC')
     render(<Tampon monde={mondes(1890)} decennie={1890} tampon={{ decennie: 1890, boucle_le: '1999-12-31T23:30:00.000Z' }} />)
-    expect(screen.getByText('1 janvier 2000')).toBeInTheDocument()
+    expect(screen.getByText('1er janvier 2000')).toBeInTheDocument()
   })
 
   // Mutations : la place qui dit « bouclée » ; la place qui montre la date ou le millésime du tampon.
@@ -57,14 +58,20 @@ describe('le tampon du passeport', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  // Mutation : la garde du calme retirée (le tampon frappe aussi au calme).
-  it('frappe au premier rendu, pas au calme', () => {
+  // Il ne frappe que quand il vient d'être posé (la carte, au passage de la décennie) : le livret
+  // l'ouvre posé depuis des mois, et le montre posé. Mutations : `frappe` ignoré (le tampon frappe à
+  // chaque ouverture du livret) ; la garde du calme retirée (le tampon frappe aussi au calme).
+  it('frappe quand il vient d’être posé, jamais posé de longue date ni au calme', () => {
     const tampon = { decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }
-    const vif = render(<Tampon monde={mondes(1890)} decennie={1890} tampon={tampon} />)
+    const vif = render(<Tampon monde={mondes(1890)} decennie={1890} tampon={tampon} frappe />)
     expect(vif.container.firstElementChild).toHaveClass(styles.tampon!, styles.frappe!)
     vif.unmount()
+    const ancien = render(<Tampon monde={mondes(1890)} decennie={1890} tampon={tampon} />)
+    expect(ancien.container.firstElementChild).toHaveClass(styles.tampon!)
+    expect(ancien.container.firstElementChild).not.toHaveClass(styles.frappe!)
+    ancien.unmount()
     calme(true)
-    const pose = render(<Tampon monde={mondes(1890)} decennie={1890} tampon={tampon} />)
+    const pose = render(<Tampon monde={mondes(1890)} decennie={1890} tampon={tampon} frappe />)
     expect(pose.container.firstElementChild).toHaveClass(styles.tampon!)
     expect(pose.container.firstElementChild).not.toHaveClass(styles.frappe!)
   })
@@ -101,5 +108,22 @@ describe('le tampon du passeport', () => {
     expect(FEUILLE).not.toMatch(/--corail/)
     expect(regle('.tampon')).toMatch(/color:\s*var\(--m-rouge\)/)
     expect(regle('.millesime')).toMatch(/font:[^;]*var\(--m-f-pochoir\)/)
+  })
+
+  // Ce qui le garde lisible, où qu'on le pose. L'encre rouge ne se lit que sur son rond de papier
+  // (5,7:1 ; 1,4:1 sur le velours du livret). La place, sans fond à elle, écrit en `--m-doux`
+  // (5,3:1 sur le velours ; `--m-pale`, 3,3:1). Et sa taille a un plancher : le livret de la
+  // maquette le loge dans 56 px, où son jour tomberait à 3 px. Mutations : le fond de papier retiré ;
+  // la place en `--m-pale` ; le plancher retiré.
+  it('reste lisible : encre sur papier, place en encre douce, jamais sous 196 px', () => {
+    const regle = (selecteur: string) => {
+      const debut = FEUILLE.indexOf(`${selecteur} {`)
+      return debut < 0 ? '' : FEUILLE.slice(debut, FEUILLE.indexOf('}', debut))
+    }
+    expect(regle('.tampon')).toMatch(/background:\s*var\(--m-papier\)/)
+    // La dernière règle `.place` : la sienne, pas celle qu'elle partage avec le tampon, écrite avant.
+    const place = FEUILLE.slice(FEUILLE.lastIndexOf('\n.place {'))
+    expect(place.slice(0, place.indexOf('}'))).toMatch(/(^|[\s;{])color:\s*var\(--m-doux\)/)
+    expect(regle('.tampon,\n.place')).toMatch(/font-size:\s*max\(1em,\s*12\.25px\)/)
   })
 })
