@@ -24,7 +24,9 @@ import Fronton from '../voyage/annee/Fronton'
 import LigneDuBas from '../voyage/annee/LigneDuBas'
 import Programme from '../voyage/annee/Programme'
 import { useFiche } from '../voyage/annee/useFiche'
+import Parade from '../voyage/parade/Parade'
 import Salles from '../voyage/salles/Salles'
+import Seance from '../voyage/seance/Seance'
 import styles from './VoyageAnnee.module.css'
 
 /** Un registre pour la page, comme la carte a le sien : rien de ce qu'un monde tient ne passe de l'une à l'autre. */
@@ -180,8 +182,9 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
         voyage={v}
         profondeur={fermee.profondeur}
         journal={{ items: journal.data, erreur: journal.error, onReessayer: () => void journal.refetch() }}
-        // La parade d'une année en attente : le podium se pose déjà (tâche 9).
-        parade={null}
+        // Le podium se pose sur toute année ouverte : une année en attente a déjà sa parade (sans
+        // salles, donc sans programme), une année fermée n'en a pas (l'API la rend toujours vide).
+        parade={fermee.statut === 'en_attente' ? <Parade monde={monde} annee={annee} podium={fermee.podium} salles={[]} /> : null}
       />
     )
   } else if (prete) {
@@ -275,7 +278,9 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
         onGenerique={() => feuille.ouvrir('generique')}
       />
       {enCours ? <Programme monde={monde} etapes={prochainPas(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket !== null, v.ia)} progression={fiche.progression} /> : null}
-      {/* La parade (tâche 9), la séance (tâche 9 : en cours, au compte IA), avant les salles. */}
+      <Parade monde={monde} annee={annee} podium={fiche.podium} salles={fiche.salles} />
+      {/* La séance n'appartient qu'au compte IA (l'API la refuse aux autres), et à l'année en cours. */}
+      {enCours && v.ia ? <Seance monde={monde} annee={annee} fiche={fiche} /> : null}
       <Salles monde={monde} annee={annee} fiche={fiche} ia={v.ia} />
       {/* Le jury n'appartient qu'au compte IA : jamais promis à un autre membre, quoi que porte la fiche. */}
       <LigneDuBas monde={monde} annee={annee} ligne={ligneDuBas(fiche.ticket, v.ia ? fiche.maturite : null, v.annee_en_cours)} onUtiliser={onUtiliser} occupe={occupe} erreur={erreur} />

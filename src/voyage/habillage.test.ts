@@ -50,6 +50,8 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/annee/Programme.module.css',
         '/src/voyage/salles/Salle.module.css',
         '/src/voyage/salles/NouvelleSalle.module.css',
+        '/src/voyage/parade/Parade.module.css',
+        '/src/voyage/seance/Seance.module.css',
       ]),
     )
   })
