@@ -155,12 +155,14 @@ describe('la page d’une décennie', () => {
   it('ne s’emballe pas au calme', async () => {
     calme()
     const manege = doublerLeManege()
-    monterVoyage('/voyage/decennies/1890', ROUTES)
+    let lire: (r: Response) => void = () => undefined
+    monterVoyage('/voyage/decennies/1890', { ...ROUTES, [TICKETS]: () => new Promise<Response>((fin) => void (lire = fin)) })
     await decennie()
     await manege.peint()
 
     fireEvent.pointerDown(screen.getByRole('img', { name: MANEGE }), { clientX: 10, clientY: 300 })
-    // Au calme, l'image se repeint au rendu : la phrase du passeport, lue ensuite, en provoque un.
+    // Au calme, l'image ne se repeint qu'au rendu : les tickets, servis après le toucher, en provoquent un.
+    lire(json({ tickets: [ticket(1900)] }))
     await screen.findByText(PHRASE)
     await waitFor(() => expect(manege.dernier().vivant).toBe(false))
     expect(manege.dernier().touche).toBe(-9)
