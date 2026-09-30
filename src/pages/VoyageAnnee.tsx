@@ -129,20 +129,20 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     client.setQueryData<FicheAnnee>(cles.annee(annee), (f) => (estPrete(f) ? { ...f, generique: ecrit } : f))
   }, [client, annee, ecrit])
 
-  // « Utiliser » (décision D3) : encaisser, puis la carte, qui joue la marche vers l'année neuve.
+  // « Utiliser » (décision D3) : encaisser, puis la carte, qui joue la marche vers l'année neuve. Ce
+  // que le cache doit apprendre reste ici (la carte se relit, page quittée ou non) ; la navigation va
+  // dans les rappels de `mutate`, qui se taisent si l'année est quittée pendant l'envoi (le « retour »
+  // du téléphone) : ceux de `useMutation` lui survivent, et ramèneraient à la carte depuis ailleurs.
   const utiliser = useMutation({
     mutationFn: (a: number) => utiliserTicket(a),
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: cles.voyage })
-      navigate('/voyage')
-    },
+    onSuccess: () => void client.invalidateQueries({ queryKey: cles.voyage }),
   })
   // `isPending` ne se voit qu'au rendu suivant : deux touchers rapprochés encaisseraient deux fois.
   const envoi = useRef(false)
   const encaisser = (a: number) => {
     if (envoi.current) return
     envoi.current = true
-    utiliser.mutate(a, { onSettled: () => void (envoi.current = false) })
+    utiliser.mutate(a, { onSuccess: () => navigate('/voyage'), onSettled: () => void (envoi.current = false) })
   }
 
   // Le bandeau : le dernier toucher, en secondes de la toile, rouvre le rideau et emballe le manège.

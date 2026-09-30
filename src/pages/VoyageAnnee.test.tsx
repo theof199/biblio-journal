@@ -342,6 +342,33 @@ describe('la fiche d’une année', () => {
     expect(n).toBe(2)
   })
 
+  // Le piège du rappel qui survit (tâche 8), sur le jumeau de « Utiliser » : la navigation dans
+  // `onSuccess` de `useMutation` survit à la page quittée pendant l'envoi (le « retour » du
+  // téléphone), et ramènerait à la carte depuis ailleurs. Mutations : `navigate('/voyage')` remis
+  // dans `useMutation` (la carte s'ouvre) ; l'invalidation passée dans les rappels de `mutate` (la
+  // carte ne se relit plus, alors que le ticket a bien servi).
+  it('quitter l’année pendant l’encaissement, puis la réponse : on reste où l’on est allé, et le Voyage se relit', async () => {
+    let repondre: () => void = () => undefined
+    let lectures = 0
+    const { requetes } = monterVoyage(['/voyage/1896', '/voyage/1897'], {
+      ...ROUTES,
+      'GET /api/me/voyage': () => ((lectures += 1), json(VOYAGE)),
+      'GET /api/me/voyage/annees/1896': () => json(nue({ annee: 1896, recompense: 'lion' })),
+      'GET /api/me/voyage/annees/1897': () => json(nue({ ticket: ticket(1898) })),
+      'POST /api/me/voyage/tickets/1898/utiliser': () => new Promise<Response>((r) => (repondre = () => r(json({ annee_en_cours: 1898 })))),
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Utiliser' }))
+    await waitFor(() => expect(requetes).toContain('POST /api/me/voyage/tickets/1898/utiliser'))
+    fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+    expect(await screen.findByRole('heading', { level: 1, name: '1896' })).toBeInTheDocument()
+    const avant = lectures
+    await act(async () => repondre())
+    await waitFor(() => expect(lectures).toBeGreaterThan(avant))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.getByRole('heading', { level: 1, name: '1896' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeNull()
+  })
+
   // Mutation : l'invalidation de la carte oubliée : elle garderait l'année d'avant (60 s de cache côté
   // API ne s'y ajoutent pas : c'est le cache du Journal qui mentirait), et ne jouerait pas la marche.
   it('après l’encaissement, la carte relit le Voyage', async () => {
