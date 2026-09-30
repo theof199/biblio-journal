@@ -52,6 +52,15 @@ export function derniereEntree(pages: readonly JournalPage[], tmdbId: number): J
   return undefined
 }
 
+/**
+ * Une durée de programme ou de bobine, lisible (portée de `formatDuree`, `ui/fiche/FicheEtats.kt`,
+ * Android) : « 12 min » sous l'heure, « 1 h 03 » au-delà, « 2 h 00 » pile.
+ */
+export function dureeLisible(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`
+}
+
 /** Une bobine du programme d'un film, par son identifiant TMDB. */
 export const bobineDuFilm = (film: FilmDeSalle, tmdbId: number): Bobine | undefined =>
   film.programme?.bobines.find((b) => b.tmdb_id === tmdbId)

@@ -1,0 +1,185 @@
+/* Le guichet de la fiche d'un film (maquette 1890, `.guichet-zone`, `.btn-ticket`, `.btn-laiton`,
+   `.btn-gris`, `.btn-filet`, lignes 321 à 330). Couleurs et polices : les jetons du monde ; le corail
+   ne marque que le billet, ce que le joueur déclenche, et n'est jamais teinté. */
+.guichet {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* Le billet corail : « Je l’ai vu », « Corriger ». Ses deux demi-lunes, découpées par un masque. */
+.ticket {
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  align-items: stretch;
+  width: 100%;
+  min-height: 60px;
+  border-radius: 3px;
+  background: var(--corail);
+  color: var(--m-encre);
+  text-decoration: none;
+  -webkit-mask:
+    radial-gradient(circle 8px at 0 50%, transparent 96%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, transparent 96%, var(--m-encre)) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 8px at 0 50%, transparent 96%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, transparent 96%, var(--m-encre)) right / 51% 100% no-repeat;
+}
+
+.ticket b {
+  display: block;
+  padding: 10px 0 0 20px;
+  font: 400 21px var(--m-f-affiche);
+}
+
+.ticket small {
+  display: block;
+  padding: 0 0 10px 20px;
+  font: italic 14px var(--m-f-texte);
+}
+
+.talon {
+  display: grid;
+  place-items: center;
+  border-left: 2px dashed color-mix(in srgb, var(--m-encre) 45%, transparent);
+  font: 400 14px var(--m-f-affiche);
+}
+
+/* La plaque de laiton : « Voir sur le Plex », « Mettre sur le podium ». */
+.laiton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(var(--m-or2), var(--m-or3) 60%, color-mix(in srgb, var(--m-or3) 80%, var(--m-bois)));
+  color: var(--m-encre);
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--m-papier) 40%, transparent),
+    0 3px 0 var(--m-bois);
+  cursor: pointer;
+}
+
+.laiton i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m-papier);
+  box-shadow: 0 0 8px var(--m-or2);
+}
+
+/* Le texte discret : « Introuvable », « Le remettre à voir ». */
+.gris {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  font: italic 15px var(--m-f-texte);
+  color: var(--m-pale);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Le filet or : « Le film », « Demander sur Sir ». */
+.filet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: 1px solid var(--m-or);
+  border-radius: 3px;
+  background: none;
+  color: var(--m-or2);
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.gris:disabled,
+.filet:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ticket:focus-visible,
+.laiton:focus-visible,
+.gris:focus-visible,
+.filet:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.note {
+  margin: 0;
+  text-align: center;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-pale);
+}
+
+.erreur {
+  margin: 0;
+  font: italic 15px/1.4 var(--m-f-texte);
+  color: var(--m-or2);
+}
+
+/* Le feuillet « Mettre sur le podium » : une ligne par marche, celle qui porte le film cochée. */
+.marches {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marches button {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--m-encre2) 35%, transparent);
+  background: none;
+  color: var(--m-encre);
+  font: 15.5px/1.3 var(--m-f-texte);
+  text-align: left;
+  cursor: pointer;
+}
+
+.marches button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--m-rouge) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--m-rouge);
+}
+
+.marches button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.marches button:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: -2px;
+}
+
+.place {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--m-encre);
+  color: var(--m-or2);
+  font: 400 16px var(--m-f-affiche);
+}
+
+.erreurFeuillet {
+  margin: 10px 0 0;
+  font: italic 15px/1.4 var(--m-f-texte);
+  color: var(--m-rouge);
+}

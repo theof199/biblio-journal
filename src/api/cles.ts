@@ -3,6 +3,11 @@ export const cles = {
   voyage: ['voyage'] as const,
   tickets: ['voyage', 'tickets'] as const,
   annee: (annee: number) => ['voyage', 'annee', annee] as const,
+  /**
+   * Le carton d'un film (`GET /reference/chroniques/films/{tmdbId}`) : hors du préfixe `voyage`, un
+   * carton ne change pas avec le journal, et l'invalidation qui suit une écriture ne le relit pas.
+   */
+  carton: (tmdbId: number) => ['chroniques', 'film', tmdbId] as const,
   journal: ['journal'] as const,
   reactions: ['reactions'] as const,
   stats: ['stats'] as const,

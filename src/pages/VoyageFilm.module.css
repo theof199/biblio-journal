@@ -1,0 +1,188 @@
+/* La fiche d'un film du Voyage (maquette 1890 : `initFilm`, écran V, styles 312 à 337). Les couleurs
+   et les polices viennent des jetons du monde, posés sur la racine par la page. */
+.page {
+  position: relative;
+  min-height: 100%;
+  padding-bottom: 8px;
+  background: var(--m-tel);
+  color: var(--m-papier);
+  font: 15px/1.55 var(--m-f-corps);
+}
+
+/* Le retour de la maquette (`.retour`), porté à la cible tactile, par-dessus la scène. */
+.retour {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0 0 3px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 60%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-fond) 78%, transparent);
+  color: var(--m-or2);
+  font: 400 24px/1 var(--m-f-affiche);
+  cursor: pointer;
+}
+
+.retour:focus-visible,
+.real:focus-visible,
+.lien:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.fiche {
+  padding: 0 16px 30px;
+}
+
+.enseigne {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--m-or);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-tel) 80%, var(--m-or));
+  color: var(--m-or2);
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+}
+
+.enseigne i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m-papier);
+  box-shadow: 0 0 8px var(--m-or2);
+}
+
+.titre {
+  margin: 12px 0 0;
+  font: 400 30px/1.02 var(--m-f-affiche);
+  color: var(--m-papier);
+  text-shadow: 2px 2px 0 var(--m-velours);
+}
+
+.original {
+  margin: 4px 0 0;
+  font: italic 21px/1.2 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  margin: 10px 0 0;
+  font: 15px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+/* Le réalisateur, un lien : porté à la cible tactile par sa hauteur de ligne. */
+.real {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  color: var(--m-or2);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.boniment {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--m-or);
+  background: color-mix(in srgb, var(--m-or) 8%, transparent);
+  font: italic 16px/1.45 var(--m-f-texte);
+  color: var(--m-papier);
+}
+
+/* Ta note : le carton perforé. */
+.note {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 3px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+}
+
+.sc {
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-rouge);
+}
+
+.perfo {
+  display: flex;
+  gap: 5px;
+  margin: 8px 0;
+}
+
+.perfo i {
+  flex: 1;
+  max-width: 22px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px dashed color-mix(in srgb, var(--m-encre2) 50%, transparent);
+  border-radius: 50%;
+  font: normal 10px var(--m-f-capitales);
+  color: color-mix(in srgb, var(--m-encre2) 60%, transparent);
+}
+
+/* Un trou percé : l'avancée du joueur, comme les trous du programme de l'année. */
+.perfo i.troue {
+  border: 0;
+  background: var(--m-tel);
+  box-shadow: inset 0 2px 3px var(--m-ombre);
+  color: transparent;
+}
+
+/* Les réactions en cartons d'intertitre. */
+.cartons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartons li {
+  padding: 4px 9px;
+  background: var(--m-fond);
+  color: var(--m-papier);
+  font: italic 13.5px var(--m-f-titre);
+  outline: 1px solid color-mix(in srgb, var(--m-papier) 50%, transparent);
+  outline-offset: -3px;
+}
+
+/* Le chargement, la panne, un film absent de l'année. */
+.etat {
+  margin: 0;
+  padding: 72px 16px 18px;
+  text-align: center;
+  font: italic 16px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.etat p {
+  margin: 0 0 12px;
+}
+
+.lien {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  color: var(--m-or2);
+}

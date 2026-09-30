@@ -52,6 +52,9 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/salles/NouvelleSalle.module.css',
         '/src/voyage/parade/Parade.module.css',
         '/src/voyage/seance/Seance.module.css',
+        '/src/pages/VoyageFilm.module.css',
+        '/src/voyage/film/Guichet.module.css',
+        '/src/voyage/film/Programme.module.css',
       ]),
     )
   })

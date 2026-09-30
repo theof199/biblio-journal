@@ -1,0 +1,93 @@
+/* Le programme d'un film de salle : le cadre du programme de la maquette 1890 (`.programme`, lignes
+   138 à 149), une ligne par bobine. Couleurs et polices : les jetons du monde. */
+.programme {
+  margin-top: 18px;
+  padding: 12px 14px 8px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 40%, transparent);
+  background: color-mix(in srgb, var(--m-tel) 70%, var(--m-velours));
+  box-shadow:
+    inset 0 0 0 4px var(--m-tel),
+    inset 0 0 0 5px color-mix(in srgb, var(--m-or) 25%, transparent);
+}
+
+.tete {
+  margin: 0 0 6px;
+  text-align: center;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-or2);
+}
+
+.bobines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bobine {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--m-filet);
+}
+
+.bobine:first-child {
+  border-top: 0;
+}
+
+.bobine img,
+.sansImage {
+  display: block;
+  width: 34px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 1px;
+  background: var(--m-carton);
+  box-shadow: 0 0 0 1px var(--m-or3);
+}
+
+.sepia img {
+  filter: sepia(0.4) brightness(0.9);
+}
+
+.gris img {
+  filter: grayscale(1);
+}
+
+.texte {
+  min-width: 0;
+}
+
+.texte b {
+  display: block;
+  font: 400 15px/1.2 var(--m-f-texte);
+  color: var(--m-papier);
+}
+
+.texte small {
+  display: block;
+  font: italic 13px var(--m-f-texte);
+  color: var(--m-pale);
+}
+
+/* « Je l’ai vu » : ce que le joueur déclenche, au corail, jamais teinté. */
+.vu {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 2px;
+  background: var(--corail);
+  color: var(--m-encre);
+  font: 14px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+
+.vu:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}

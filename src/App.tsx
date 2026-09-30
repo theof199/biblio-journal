@@ -9,6 +9,7 @@ import Fiche from './pages/Fiche'
 import MesFilms from './pages/MesFilms'
 import Carte from './pages/Carte'
 import VoyageAnnee from './pages/VoyageAnnee'
+import VoyageFilm from './pages/VoyageFilm'
 import Suivis from './pages/Suivis'
 import PageRealisateur from './pages/PageRealisateur'
 import PageSaga from './pages/PageSaga'
@@ -33,6 +34,8 @@ export default function App() {
           <Route path="journal/:id/corriger" element={<Formulaire />} />
           <Route path="voyage" element={<Carte />} />
           <Route path="voyage/:annee" element={<VoyageAnnee />} />
+          {/* La fiche d'un film du Voyage (décision D5) : l'onglet Voyage reste marqué, d'où qu'on vienne. */}
+          <Route path="voyage/:annee/films/:filmId" element={<VoyageFilm />} />
           <Route path="suivis" element={<Suivis />} />
           <Route path="suivis/realisateurs/:tmdbId" element={<PageRealisateur />} />
           <Route path="suivis/sagas/:tmdbId" element={<PageSaga />} />

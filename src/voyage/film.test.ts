@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bobineDuFilm, boutonsDuFilm, candidatDuBillet, derniereEntree, filmDeLaFiche } from './film'
+import { bobineDuFilm, boutonsDuFilm, candidatDuBillet, derniereEntree, dureeLisible, filmDeLaFiche } from './film'
 import { visionnage } from '../test/journal'
 import { fichePrete, filmDeSalle, salle } from '../test/voyage'
 import { exemple } from '../test/contrat'
@@ -108,5 +108,15 @@ describe('le billet', () => {
   it('note le film de la salle à son année et avec son affiche', () => {
     const film = filmDeSalle({ id: 'f', tmdb_id: 200, year: 1897, title: 'Film', realisateur: 'Méliès', cover_url: 'https://a/f.jpg' })
     expect(candidatDuBillet(film)).toEqual({ source: 'tmdb', external_id: '200', title: 'Film', year: 1897, cover_url: 'https://a/f.jpg', director: 'Méliès' })
+  })
+})
+
+describe('la durée d’un programme', () => {
+  // Mutations : `<=` au lieu de `<` (une heure pile en minutes) ; les minutes sans leur zéro.
+  it('se dit en minutes sous l’heure, en heures et minutes au-delà', () => {
+    expect(dureeLisible(12)).toBe('12 min')
+    expect(dureeLisible(59)).toBe('59 min')
+    expect(dureeLisible(60)).toBe('1 h 00')
+    expect(dureeLisible(123)).toBe('2 h 03')
   })
 })
