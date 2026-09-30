@@ -30,6 +30,7 @@ export const PAGES_A_VENIR: HabillagePages = {
     '--m-f-texte': "'Fraunces', Georgia, serif",
     '--m-f-capitales': "'Manrope', system-ui, sans-serif",
     '--m-f-corps': "'Manrope', system-ui, sans-serif",
+    '--m-f-pochoir': "'Fraunces', Georgia, serif",
   },
   mots: {
     annonce: { enCours: 'L’année en cours', bouclee: 'Une année bouclée', fermee: 'Prochainement', attente: 'Bientôt ouverte' },
@@ -45,9 +46,13 @@ export const PAGES_A_VENIR: HabillagePages = {
     fermee: { pancarte: 'Fermée jusqu’au ticket', dejaVus: 'Déjà vus', enAvance: 'en avance' },
     intertitre: 'Un monde à venir.',
     feuille: { tete: 'La feuille', titre: 'Le chroniqueur', sous: 'écrit pour toi', pied: 'Le chroniqueur', imprimeur: 'Le Voyage' },
-    billet: { tete: 'Le visionnage', titre: 'Vu le', valider: 'Je l’ai vu', validerSous: 'enregistrer' },
+    billet: { tete: 'Le visionnage', titre: 'Vu le', valider: 'Je l’ai vu', validerSous: 'enregistrer', tampon: 'VU', tamponAutour: 'Le Voyage · vu le' },
+    decennie: { annonce: 'La décennie', passeport: 'Passeport', palissade: { titre: 'Les affiches', sous: 'par année' }, registre: 'Les années', prochainement: 'À venir' },
+    boite: { sur: 'Collection', titre: 'Les billets', etiquette: 'LE VOYAGE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger le billet' },
+    recherche: { champ: 'Quel film cherches-tu ?', catalogue: 'Le catalogue', affiche: 'À voir en priorité', vide: 'Aucun film à ce nom dans les salles.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher partout' },
+    manivelle: { tirer: 'Tire pour recharger', relacher: 'Relâche pour recharger', charge: 'Rechargement…', fait: 'Le Voyage est à jour.', bouton: 'Recharger' },
   },
-  hauteurs: { bandeau: 200, scene: 240, estrade: 150 },
+  hauteurs: { bandeau: 200, scene: 240, estrade: 150, monument: 240, guichet: 140 },
   dessinerBandeau: (v) => {
     v.ctx.fillStyle = '#151009'
     v.ctx.fillRect(0, 0, v.W, v.H)
@@ -57,6 +62,15 @@ export const PAGES_A_VENIR: HabillagePages = {
     v.ctx.fillRect(0, 0, v.W, v.H)
   },
   dessinerEstrade: (v) => {
+    v.ctx.fillStyle = '#151009'
+    v.ctx.fillRect(0, 0, v.W, v.H)
+  },
+  // Aucune figure touchable : le registre de la page ouvre les années.
+  dessinerMonument: (v) => {
+    v.ctx.fillStyle = '#151009'
+    v.ctx.fillRect(0, 0, v.W, v.H)
+  },
+  dessinerGuichet: (v) => {
     v.ctx.fillStyle = '#151009'
     v.ctx.fillRect(0, 0, v.W, v.H)
   },

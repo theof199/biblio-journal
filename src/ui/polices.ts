@@ -15,3 +15,5 @@ import '@fontsource/limelight/latin-400.css'
 import '@fontsource/im-fell-english/latin-400.css'
 import '@fontsource/im-fell-english/latin-400-italic.css'
 import '@fontsource/im-fell-english-sc/latin-400.css'
+// Les millésimes au pochoir des années 1890 (plan 2c, décision D9) : la palissade, l'affiche de l'adieu.
+import '@fontsource/stardos-stencil/latin-700.css'

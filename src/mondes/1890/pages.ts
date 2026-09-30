@@ -1,4 +1,5 @@
 import type { HabillagePages } from '../types'
+import { c } from './couleur'
 import { dessinerBandeau } from './bandeau'
 import { dessinerScene } from './scene'
 import { dessinerEstrade } from './estrade'
@@ -33,6 +34,7 @@ export const PAGES_1890: HabillagePages = {
     '--m-f-texte': "'IM Fell English', 'Iowan Old Style', Georgia, serif",
     '--m-f-capitales': "'IM Fell English SC', Georgia, serif",
     '--m-f-corps': "'Manrope', system-ui, sans-serif",
+    '--m-f-pochoir': "'Stardos Stencil', Georgia, serif",
   },
   mots: {
     annonce: { enCours: 'Grande attraction', bouclee: 'Soirée de gala', fermee: 'Prochainement', attente: 'En montage' },
@@ -48,11 +50,25 @@ export const PAGES_1890: HabillagePages = {
     fermee: { pancarte: 'Fermé jusqu’au ticket', dejaVus: 'Déjà vus', enAvance: 'en avance' },
     intertitre: 'La manivelle, les forains, le train qui fonce sur la salle.',
     feuille: { tete: 'Aujourd’hui · entrée libre', titre: 'Le Boniment', sous: 'du chroniqueur', pied: 'Le chroniqueur', imprimeur: 'Imprimerie du Voyage · composé à la main' },
-    billet: { tete: 'Cinématographe · billet de séance', titre: 'Séance du', valider: 'Composter le billet', validerSous: 'et revenir à l’année' },
+    // `valider` et `validerSous` changent avec le billet numéroté (tâche 8, décision D4).
+    billet: { tete: 'Cinématographe · billet de séance', titre: 'Séance du', valider: 'Composter le billet', validerSous: 'et revenir à l’année', tampon: 'VU', tamponAutour: 'Cinématographe · séance du' },
+    decennie: { annonce: 'Le manège des années', passeport: 'Passeport', palissade: { titre: 'La palissade', sous: 'affiches par année' }, registre: 'Registre des recettes', prochainement: 'Prochainement' },
+    boite: { sur: 'Collection', titre: 'La boîte à billets', etiquette: 'CINÉMATOGRAPHE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger le billet' },
+    recherche: { champ: 'Quel film cherchez-vous ?', catalogue: 'Catalogue des vues', affiche: 'Les plus demandées au guichet', vide: 'Aucune vue à ce nom au catalogue.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher hors du Voyage' },
+    manivelle: { tirer: 'Tirez pour recharger la bobine', relacher: 'Relâchez : la bobine se recharge', charge: 'La bobine se recharge…', fait: 'La bobine est rechargée, le Voyage est à jour.', bouton: 'Recharger la bobine' },
   },
-  hauteurs: { bandeau: 250, scene: 300, estrade: 190 },
+  hauteurs: { bandeau: 250, scene: 300, estrade: 190, monument: 330, guichet: 170 },
   // Portés de la maquette : `dessinBandeau`, `dessinTheatre`, `dessinEstrade`.
   dessinerBandeau,
   dessinerScene,
   dessinerEstrade,
+  // Réduits à un fond jusqu'à la tâche 4 du plan 2c, qui porte `dessinManege` et `dessinGuichet`.
+  dessinerMonument: (v) => {
+    v.ctx.fillStyle = c('#3a2a1b')
+    v.ctx.fillRect(0, 0, v.W, v.H)
+  },
+  dessinerGuichet: (v) => {
+    v.ctx.fillStyle = c('#4a3321')
+    v.ctx.fillRect(0, 0, v.W, v.H)
+  },
 }

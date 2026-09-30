@@ -7,7 +7,7 @@ import { contexteFactice } from '../test/contexteFactice'
 const calme = (oui: boolean) =>
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: oui, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
 
-function monter(dessiner: Dessin, options: { hauteur?: number; onToucher?: () => void } = {}) {
+function monter(dessiner: Dessin, options: { hauteur?: number; onToucher?: (p: { x: number; y: number }) => void } = {}) {
   const { ctx, appels } = contexteFactice()
   const vue = render(
     <FabriqueContexteToile.Provider value={() => ctx}>
@@ -193,5 +193,17 @@ describe('la toile d’une page', () => {
     monter(vi.fn<Dessin>(), { onToucher })
     fireEvent.pointerDown(screen.getByRole('img', { name: 'La baraque' }))
     expect(onToucher).toHaveBeenCalledTimes(1)
+  })
+
+  // Mutations : le toucher rendu en pixels de l'écran (sans l'échelle), ou sans retirer le coin de la
+  // toile : un cheval du manège se chercherait ailleurs que sous le doigt.
+  it('rend le toucher en unités de la toile, depuis son coin', () => {
+    calme(true)
+    const onToucher = vi.fn()
+    const { toile } = monter(vi.fn<Dessin>(), { hauteur: 250, onToucher })
+    // Une toile affichée à moitié de sa largeur logique, décalée de (10, 20).
+    vi.spyOn(toile, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 20, width: 195, height: 125, right: 205, bottom: 145, x: 10, y: 20, toJSON: () => ({}) })
+    fireEvent.pointerDown(toile, { clientX: 107.5, clientY: 82.5 })
+    expect(onToucher).toHaveBeenCalledWith({ x: 195, y: 125 })
   })
 })

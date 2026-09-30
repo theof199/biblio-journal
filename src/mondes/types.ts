@@ -2,6 +2,7 @@ import type { Rgb } from '../carte/outils'
 import type { Rampe } from '../carte/rampe'
 import type { Trace } from './trace'
 import type { EtatCase } from '../voyage/regles'
+import type { EtatCheval } from '../voyage/decennie'
 import type { Recompense } from '../api/voyage'
 
 /**
@@ -214,6 +215,8 @@ export const JETONS_DE_PAGE = [
   '--m-f-texte',
   '--m-f-capitales',
   '--m-f-corps',
+  /** Les millésimes au pochoir (maquette 1890 : `--f-poch`, la palissade de l'écran IV). */
+  '--m-f-pochoir',
 ] as const
 
 export type JetonDePage = (typeof JETONS_DE_PAGE)[number]
@@ -236,7 +239,19 @@ export interface MotsDesPages {
   /** La phrase d'ambiance de l'intertitre d'une année fermée, avant le titre du passeport. */
   intertitre: string
   feuille: { tete: string; titre: string; sous: string; pied: string; imprimeur: string }
-  billet: { tete: string; titre: string; valider: string; validerSous: string }
+  /**
+   * Le billet de séance ; `tampon` est le mot que le tampon frappe (« VU »), `tamponAutour` ce qui
+   * court autour de lui avant la date (maquette 1890 : `encreVu`).
+   */
+  billet: { tete: string; titre: string; valider: string; validerSous: string; tampon: string; tamponAutour: string }
+  /** La page d'une décennie (plan 2c ; maquette 1890, écran IV). */
+  decennie: { annonce: string; passeport: string; palissade: { titre: string; sous: string }; registre: string; prochainement: string }
+  /** La boîte à billets (idée 5 ; maquette 1890, écran VII). */
+  boite: { sur: string; titre: string; etiquette: string; tous: string; vide: string; ranger: string }
+  /** Le guichet, la recherche du Voyage (maquette 1890, écran X). */
+  recherche: { champ: string; catalogue: string; affiche: string; vide: string; ouvrir: string; partout: string }
+  /** Tirer pour rafraîchir (idée 6 ; maquette 1890, écran I). */
+  manivelle: { tirer: string; relacher: string; charge: string; fait: string; bouton: string }
 }
 
 /** Ce que la page passe au monde pour le bandeau d'une fiche d'année (maquette 1890 : `dessinBandeau`). */
@@ -289,12 +304,48 @@ export interface VueEstrade {
   parle: 'non' | 'tape' | 'parle'
 }
 
+/** Le monument de la page d'une décennie (maquette 1890 : `dessinManege`, le manège à dix chevaux). */
+export interface VueMonument {
+  ctx: CanvasRenderingContext2D
+  W: number
+  H: number
+  t: number
+  vivant: boolean
+  nuit: number
+  /** Les dix années de la décennie, et l'état de leur figure (`chevaux`, `voyage/decennie.ts`). */
+  annees: readonly { annee: number; etat: EtatCheval }[]
+  /** Les années de ce monde telles que la carte les voit, et le tampon : de quoi remplir la foire, comme le bandeau. */
+  cases: readonly Pick<CaseVue, 'annee' | 'etat' | 'profondeur'>[]
+  bouclee: boolean
+  /** Le dernier toucher du monument hors d'une figure, en secondes de `t` ; -9 : jamais (le manège s'emballe). */
+  touche: number
+  /**
+   * Inscrit, pour cette image, où se tient la figure d'une année, en unités de la toile : la page y
+   * cherche le toucher (la figure la plus proche, sous son rayon) et ouvre l'année.
+   */
+  zone: (annee: number, x: number, y: number, r: number) => void
+}
+
+/** Le bandeau du guichet, sur la recherche du Voyage (maquette 1890 : `dessinGuichet`). */
+export interface VueGuichet {
+  ctx: CanvasRenderingContext2D
+  W: number
+  H: number
+  t: number
+  vivant: boolean
+  nuit: number
+  /** La dernière lettre tapée dans le champ, en secondes de `t` ; -9 : jamais (la lampe se ravive, le guichetier se penche). */
+  frappe: number
+}
+
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>
   mots: MotsDesPages
-  /** Les hauteurs logiques des trois toiles (la maquette : 250, 300, 190). */
-  hauteurs: { bandeau: number; scene: number; estrade: number }
+  /** Les hauteurs logiques des toiles (la maquette : 250, 300, 190, puis 330 et 170). */
+  hauteurs: { bandeau: number; scene: number; estrade: number; monument: number; guichet: number }
   dessinerBandeau: (v: VueBandeau) => void
   dessinerScene: (v: VueScene) => void
   dessinerEstrade: (v: VueEstrade) => void
+  dessinerMonument: (v: VueMonument) => void
+  dessinerGuichet: (v: VueGuichet) => void
 }

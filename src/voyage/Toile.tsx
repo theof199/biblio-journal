@@ -18,7 +18,8 @@ interface Props {
   hauteur: number
   dessiner: Dessin
   libelle: string
-  onToucher?: () => void
+  /** Le toucher, en unités logiques de la toile (390 de large, `hauteur` de haut) : de quoi trouver ce qui est touché. */
+  onToucher?: (p: { x: number; y: number }) => void
   className?: string
 }
 
@@ -95,7 +96,17 @@ export default function Toile({ hauteur, dessiner, libelle, onToucher, className
       style={{ aspectRatio: `${LARGEUR_LOGIQUE} / ${hauteur}` }}
       role="img"
       aria-label={libelle}
-      onPointerDown={onToucher}
+      onPointerDown={
+        onToucher
+          ? (e) => {
+              // Sans mise en page (jsdom), la toile mesure zéro : les coordonnées restent celles du toucher.
+              const r = e.currentTarget.getBoundingClientRect()
+              const sx = r.width > 0 ? LARGEUR_LOGIQUE / r.width : 1
+              const sy = r.height > 0 ? hauteur / r.height : 1
+              onToucher({ x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy })
+            }
+          : undefined
+      }
     />
   )
 }
