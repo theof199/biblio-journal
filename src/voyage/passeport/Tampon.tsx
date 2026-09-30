@@ -20,7 +20,8 @@ interface Props {
  * décennie suivante a été utilisé (`calculerTampons`, la plus tardive des deux). Un minuit UTC est le
  * même jour à Paris ; un ticket utilisé à 0 h 30 à Paris l'est le jour même, pas la veille comme en
  * UTC. Jamais le fuseau de l'appareil : un téléphone réglé ailleurs reculerait d'un jour. Le format
- * se crée à chaque appel : créé une fois au chargement, il figerait le fuseau de ce moment-là.
+ * se crée à chaque appel : les tests changent le fuseau de Node, et un format créé au chargement ne
+ * le verrait pas (le retrait du fuseau passerait alors inaperçu).
  */
 function jourDe(iso: string): string {
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'Europe/Paris' }).format(new Date(iso))
