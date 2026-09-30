@@ -49,7 +49,8 @@ export default function Livret({ monde, decennie, tampon, anneau, manque }: Prop
         <div>
           <h2 id="livret-titre" className={styles.titre}>{`${monde.pages.mots.decennie.passeport} · années ${decennie}`}</h2>
           <p className={styles.annees}>{annees}</p>
-          {tampon ? null : manque.type === 'phrase' ? (
+          {/* Tamponnée, la phrase est nulle (`phraseDuPasseport`) : une seule garde, celle de la règle. */}
+          {manque.type === 'phrase' ? (
             manque.phrase ? <p className={styles.manque}>{manque.phrase}</p> : null
           ) : manque.type === 'panne' ? (
             <div className={styles.panne}>
