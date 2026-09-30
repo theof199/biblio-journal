@@ -112,7 +112,10 @@
   border-top: 2px dashed color-mix(in srgb, var(--m-encre2) 40%, transparent);
 }
 
+/* La tête garde la hauteur qu'y prenait le numéro de la maquette (décision D2 : sans numéro), pour
+   que les demi-lunes et le pointillé (à 104 px) passent entre elle et le dateur. */
 .entete {
+  min-height: 68px;
   text-align: center;
 }
 

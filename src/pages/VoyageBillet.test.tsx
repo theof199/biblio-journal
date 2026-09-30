@@ -617,11 +617,17 @@ describe('le billet de séance', () => {
         'GET /api/reference/films/15/realisateurs': () => json({ realisateurs: [] }),
         'DELETE /api/me/journal/e-kane': () => ((effacements += 1), new Response(null, { status: 204 })),
       })
-      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+      // Rien ne prend le focus à l'ouverture du billet.
+      expect(await screen.findByRole('button', { name: 'Supprimer' })).not.toHaveFocus()
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
       expect(screen.getByText('Supprimer ce visionnage ? Le commentaire et les réactions partent avec.')).toBeInTheDocument()
       expect(effacements).toBe(0)
+      // Le focus va au geste sans risque, puis revient à « Supprimer » : la confirmation se montre, et le
+      // clavier ne se perd pas.
+      expect(screen.getByRole('button', { name: 'Annuler' })).toHaveFocus()
       fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
       expect(screen.queryByText(/Supprimer ce visionnage/)).toBeNull()
+      expect(screen.getByRole('button', { name: 'Supprimer' })).toHaveFocus()
       expect(effacements).toBe(0)
       fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
       fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))

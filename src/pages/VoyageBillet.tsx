@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
@@ -162,6 +162,16 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
   const candidat = cible.type === 'creation' ? cible.candidat : undefined
   const [brouillon, setBrouillon] = useState(() => brouillonInitial(item, candidat))
   const [confirmer, setConfirmer] = useState(false)
+  // Le focus suit la confirmation : « Annuler » (le geste sans risque) à son ouverture, qui la montre
+  // au-dessus de la barre d'onglets ; « Supprimer » à sa fermeture. Rien au montage.
+  const annuler = useRef<HTMLButtonElement>(null)
+  const demander = useRef<HTMLButtonElement>(null)
+  const ouverte = useRef(false)
+  useEffect(() => {
+    if (confirmer) annuler.current?.focus()
+    else if (ouverte.current) demander.current?.focus()
+    ouverte.current = confirmer
+  }, [confirmer])
 
   const reactions = useQuery({ queryKey: cles.reactions, queryFn: ({ signal }) => lireReactions(signal) })
 
@@ -323,6 +333,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
             ) : null}
             <div className={styles.choix}>
               <button
+                ref={annuler}
                 type="button"
                 className={styles.discret}
                 onClick={() => {
@@ -338,7 +349,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
             </div>
           </div>
         ) : (
-          <button type="button" className={styles.discret} onClick={() => setConfirmer(true)}>
+          <button ref={demander} type="button" className={styles.discret} onClick={() => setConfirmer(true)}>
             Supprimer
           </button>
         )
