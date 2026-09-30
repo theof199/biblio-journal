@@ -8,6 +8,7 @@ import { vuePage } from './vuePage'
 import { c } from './couleur'
 import { avancerManege, departDuManege, dessinerMonument } from './monument'
 import { dessinerGuichet } from './guichetPage'
+import { MEDAILLES } from '../../carte/dessin/cases'
 import type { VueBandeau, VueEstrade, VueGuichet, VueMonument, VueScene } from '../types'
 
 const CASES = [1895, 1896, 1897, 1898, 1899].map((annee, i) => ({
@@ -454,6 +455,79 @@ describe('le manège des années', () => {
     const image = (cases: VueMonument['cases']) => JSON.stringify(monument({ nuit: 1, cases }).appels.map((a) => [a.nom, a.args]))
     expect(image([])).toBe(image(casesDe('verrou', 'verrou')))
   })
+
+  // Relecture. Mutation : chaque figure inscrite sous l'année du cheval voisin (`v.annees[(k.i + 1) % 10]`) :
+  // dix années distinctes, dix positions justes, et le doigt posé sur 1895 ouvrirait 1896.
+  it('inscrit chaque figure sous l’année que porte la plaque de son cheval', () => {
+    for (const o of [{}, { vivant: true, t: 1.3 }]) {
+      const { appels, zones } = monument(o)
+      let lues = 0
+      for (const z of zones) {
+        const plaque = appels.find((a) => a.nom === 'fillText' && a.args[0] === String(z.annee))
+        if (!plaque) continue
+        lues++
+        expect(plaque.args.slice(1, 3)).toEqual([z.x, z.y + 33])
+      }
+      expect(lues).toBeGreaterThanOrEqual(5)
+    }
+  })
+
+  // Relecture. Mutation : le pilier peint après les chevaux de devant (il les cacherait, et les
+  // chevaux de derrière, qu'il doit cacher, resteraient seuls touchables à travers lui).
+  it('cache les chevaux de derrière sous le pilier, jamais ceux de devant', () => {
+    for (const o of [{}, { vivant: true, t: 1.3 }]) {
+      const { appels, zones } = monument(o)
+      const pilier = appels.findIndex((a) => a.nom === 'fillRect' && a.args.join() === '177,132,36,140')
+      expect(pilier).toBeGreaterThan(-1)
+      // La barre d'un cheval, à l'abscisse de sa figure ; son pied : `base − 6 + z × ry`, soit 274 + 20 z.
+      const barres = zones.map((z) => {
+        const i = appels.findIndex((a) => a.nom === 'lineTo' && a.strokeStyle === c('#B8862B') && a.args[0] === z.x)
+        return { a: appels[i]!, i }
+      })
+      const derriere = barres.filter(({ a }) => (a.args[1] as number) < 274)
+      expect(derriere.length).toBeGreaterThan(0)
+      expect(derriere.length).toBeLessThan(10)
+      for (const { a, i } of barres) expect(i < pilier).toBe((a.args[1] as number) < 274)
+    }
+  })
+
+  // Relecture. Mutation : la médaille de la Palme sur chaque cheval récompensé (`medaille(g, 'palme', …)`) :
+  // le Lion et l'Ours en perdraient la leur, le compte resterait juste.
+  it('médaille chaque cheval de sa propre récompense', () => {
+    const { appels, zones } = monument()
+    const filets = appels.map((a, i) => ({ a, i })).filter(({ a }) => a.nom === 'arc' && a.args.slice(0, 3).join() === '0,0,10.8')
+    expect(filets).toHaveLength(3)
+    const vues = filets.map(({ a, i }) => {
+      // La médaille se pose en `translate(x, y − 26)` au-dessus de son cheval, puis se dessine en son repère.
+      const pose = appels.slice(0, i).reverse().find((p) => p.nom === 'translate' && p.args.join() !== '0,0')!
+      const z = zones.find((q) => q.x === pose.args[0] && q.y - 26 === pose.args[1])!
+      const etat = ANNEES.find((n) => n.annee === z.annee)!.etat
+      return { etat, filet: a.strokeStyle }
+    })
+    expect(new Set(vues.map((m) => m.etat))).toEqual(new Set(['palme', 'lion', 'ours']))
+    for (const m of vues) expect(m.filet).toBe(c(MEDAILLES[m.etat]![2]))
+  })
+
+  // Relecture. Mutation : au calme, le toucher n'est pas retenu (`{ ...etat, t: o.t }`) : un toucher
+  // fait au calme emballerait le manège au retour des animations.
+  it('un toucher vu au calme n’emballe pas le manège au retour des animations', () => {
+    const calme = avancerManege(departDuManege(0), { t: 0, touche: 0.5, vivant: false })
+    const vivant = avancerManege(calme, { t: 0.1, touche: 0.5, vivant: true })
+    const temoin = avancerManege(departDuManege(0), { t: 0.1, touche: -9, vivant: true })
+    expect(vivant.a).toBeCloseTo(temoin.a, 12)
+  })
+
+  // Relecture. Mutation : le toucher comparé par `>` au précédent. L'horloge de la toile repart de
+  // zéro quand le calme est coupé puis rendu (`Toile`, la boucle relancée) : un toucher plus tôt
+  // sur la nouvelle horloge que le dernier vu sur l'ancienne doit emballer quand même.
+  it('s’emballe encore après une horloge repartie de zéro', () => {
+    let e = departDuManege(0)
+    for (let k = 1; k <= 100; k++) e = avancerManege(e, { t: k * 0.05, touche: 4, vivant: true })
+    e = avancerManege(e, { t: 0, touche: 4, vivant: true })
+    const sans = avancerManege(e, { t: 0.1, touche: 4, vivant: true })
+    const avecToucher = avancerManege(e, { t: 0.1, touche: 0.05, vivant: true })
+    expect(avecToucher.a - e.a).toBeGreaterThan(2 * (sans.a - e.a))
+  })
 })
 
 describe('le guichet de la recherche', () => {
@@ -467,5 +541,26 @@ describe('le guichet de la recherche', () => {
   it('le guichetier se penche après une lettre, pas au calme', () => {
     expect(guichet({ frappe: 4.9 })).not.toBe(guichet({ frappe: -9 }))
     expect(guichet({ vivant: false, frappe: 4.9 })).toBe(guichet({ vivant: false, frappe: -9 }))
+  })
+
+  // Relecture. Mutations : la lampe laissée à son éclat (`guichet(g, vm, p, 1)`) ; le guichetier
+  // qui ne se penche plus (`guichet(g, vm, 0, 1 + p × 0,9)`). Chacune laissait l'autre faire différer
+  // les appels, et le test précédent vert.
+  it('à une lettre, la lampe se ravive et le guichetier se penche', () => {
+    const image = (frappe: number) => {
+      const { ctx, appels } = contexteFactice()
+      dessinerGuichet({ ctx, W: 390, H: 170, t: 5, vivant: true, nuit: 0, frappe })
+      return appels
+    }
+    // La vitre éclairée (`fillRect(x − 20, y − 46, 40, 24)`, x = 84, y = 608) : son opacité suit la lampe.
+    const eclat = (appels: ReturnType<typeof image>) => {
+      const s = String(appels.find((a) => a.nom === 'fillRect' && a.args.join() === '64,562,40,24')!.fillStyle)
+      return s.startsWith('rgba') ? Number(s.slice(s.lastIndexOf(',') + 1, -1)) : 1
+    }
+    // Le guichetier tourne autour de son épaule de `penche × 0,35`.
+    const penche = (appels: ReturnType<typeof image>) => appels.find((a) => a.nom === 'rotate')?.args[0] ?? 0
+    expect(eclat(image(4.9))).toBeGreaterThan(eclat(image(-9)))
+    expect(penche(image(4.9))).toBeGreaterThan(0)
+    expect(penche(image(-9))).toBe(0)
   })
 })
