@@ -1,19 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import PageRealisateur from './PageRealisateur'
 import { createQueryClient } from '../api/queryClient'
 import { cles } from '../api/cles'
 import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
+import { monterVoyage } from '../test/pageVoyage'
+import { fichePrete, filmDeSalle, salle, voyage1890 } from '../test/voyage'
+import { oublierLeRetour } from '../voyage/annee/retour'
+import type { JournalItem } from '../api/journal'
 import type { RealisateurPage } from '../api/realisateurs'
+import type { ReactionsCatalogue } from '../api/reactions'
 
 const PAGE_SUIVI = exemple<RealisateurPage>('/me/realisateurs/{tmdbId}/page', 'get', 200)
 const PAGE_NON_SUIVI: RealisateurPage = { ...PAGE_SUIVI, suivi: false }
 const PERDU = { ...PAGE_SUIVI.films[0]!, tmdb_id: 999, title: 'Film perdu', year: 2001, vu: null, introuvable: true }
 const PAGE_AVEC_PERDU: RealisateurPage = { ...PAGE_SUIVI, films: [PAGE_SUIVI.films[0]!, PERDU] }
 const PAGE_SANS_FILMS: RealisateurPage = { ...PAGE_SUIVI, films: [] }
+/** Inception, que l'exemple du contrat place dans une salle de 2010 (`voyage`). */
+const INCEPTION = PAGE_SUIVI.films[0]!
+/** Le même film, dans aucune salle du Voyage. */
+const PAGE_HORS_VOYAGE: RealisateurPage = { ...PAGE_SUIVI, films: [{ ...INCEPTION, voyage: null }, ...PAGE_SUIVI.films.slice(1)] }
+
+/** La fiche d'un film des Suivis, réduite à l'état de navigation qu'elle reçoit. */
+function SondeFicheFilm() {
+  return <pre data-testid="etat-fiche-film">{JSON.stringify(useLocation().state)}</pre>
+}
 
 function monter(tmdbId = 525, client = createQueryClient()) {
   return render(
@@ -21,6 +35,7 @@ function monter(tmdbId = 525, client = createQueryClient()) {
       <MemoryRouter initialEntries={[`/suivis/realisateurs/${tmdbId}`]}>
         <Routes>
           <Route path="/suivis/realisateurs/:tmdbId" element={<PageRealisateur />} />
+          <Route path="/suivis/films/:tmdbId" element={<SondeFicheFilm />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -99,12 +114,41 @@ describe('la page d’un réalisateur', () => {
     expect(await screen.findByText('Aucun film connu pour ce réalisateur.')).toBeInTheDocument()
   })
 
-  it('un film ouvre la fiche du film, avec le film et le réalisateur déjà connu en état de navigation', async () => {
-    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_SUIVI) })
+  // Mutations : le lien toujours vers le Voyage (`film.voyage!` lève sur un film hors du Voyage) ;
+  // l'état de navigation oublié (la fiche des Suivis relirait le film et son réalisateur).
+  it('un film hors du Voyage ouvre la fiche du film, avec le film et le réalisateur déjà connu en état de navigation', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_HORS_VOYAGE) })
     monter()
 
     const lien = await screen.findByRole('link', { name: (n) => n.includes('Inception') })
     expect(lien).toHaveAttribute('href', '/suivis/films/27205')
+    fireEvent.click(lien)
+    const etat = JSON.parse((await screen.findByTestId('etat-fiche-film')).textContent ?? 'null') as {
+      film: { tmdb_id: number }
+      realisateur: { tmdb_id: number; name: string }
+    }
+    expect(etat.film.tmdb_id).toBe(27205)
+    expect(etat.realisateur).toEqual({ tmdb_id: 525, name: 'Christopher Nolan' })
+  })
+
+  // Décision D5 du plan 2b (`DestinationFilm.Voyage`, Android). Mutations : le lien toujours vers les
+  // Suivis ; l'année de sortie (`year`) au lieu de celle du Voyage ; le `tmdb_id` au lieu de la ligne de salle.
+  it('un film d’une salle du Voyage ouvre sa fiche du Voyage, à l’année et à la ligne de salle de `voyage`', async () => {
+    // Sorti fin 1895 chez TMDB, projeté dans une salle de 1896 : l'année du Voyage n'est pas celle de sortie.
+    const TRAIN = {
+      ...INCEPTION,
+      tmdb_id: 12345,
+      title: 'L’Arrivée d’un train',
+      year: 1895,
+      release_date: '1895-12-28',
+      voyage: { annee: 1896, salle_id: 'salle-1896', film_id: 'film-1896' },
+    }
+    servir({ 'GET /api/me/realisateurs/525/page': () => json({ ...PAGE_SUIVI, films: [...PAGE_SUIVI.films, TRAIN] }) })
+    monter()
+
+    const lien = await screen.findByRole('link', { name: (n) => n.includes('Inception') })
+    expect(lien).toHaveAttribute('href', '/voyage/2010/films/22222222-0000-4000-8000-000000000002')
+    expect(screen.getByRole('link', { name: (n) => n.includes('L’Arrivée d’un train') })).toHaveAttribute('href', '/voyage/1896/films/film-1896')
   })
 
   it('ne plus suivre invalide le cache : la page relue montre « Suivre »', async () => {
@@ -160,5 +204,97 @@ describe('la page d’un réalisateur', () => {
     fireEvent.click(bouton)
 
     expect(await screen.findByText(message)).toBeInTheDocument()
+  })
+})
+
+describe('depuis la page d’un réalisateur, le Voyage', () => {
+  /** La ligne de salle de l'exemple du contrat : Inception, à voir, dans les essentiels de 2010. */
+  const FILM_2010 = filmDeSalle({
+    id: INCEPTION.voyage!.film_id,
+    tmdb_id: 27205,
+    title: 'Inception',
+    original_title: 'Inception',
+    year: 2010,
+    realisateur: 'Christopher Nolan',
+    raison: null,
+    etat: 'a_demander',
+    note: null,
+    plex_url: null,
+  })
+  const FICHE_2010 = fichePrete({
+    annee: 2010,
+    salles: [salle({ id: INCEPTION.voyage!.salle_id, nom: 'Les essentiels', films: [FILM_2010] })],
+    podium: [null, null, null],
+    ticket: null,
+    maturite: null,
+    generique: null,
+    seances: [],
+    seance_en_cours: false,
+    pistes: [],
+    demande_salle: null,
+  })
+  // Hors IA : aucun guet du verdict ne se mêle au retour.
+  const VOYAGE_2010 = voyage1890(2010, [{ annee: 2010, statut: 'en_cours', visitee: true, recompense: null }], {
+    ia: false,
+    source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: 2010 },
+    rattrape_la_source: false,
+  })
+  const PAGE_A_VOIR: RealisateurPage = { ...PAGE_SUIVI, films: [{ ...INCEPTION, vu: null }] }
+  const ROUTES = {
+    'GET /api/me/realisateurs/525/page': () => json(PAGE_A_VOIR),
+    'GET /api/me/voyage': () => json(VOYAGE_2010),
+    'GET /api/me/voyage/annees/2010': () => json(FICHE_2010),
+    'GET /api/reference/films/27205/realisateurs': () => json({ realisateurs: [{ tmdb_id: 525, name: 'Christopher Nolan' }] }),
+    'GET /api/reference/reactions': () => json(exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)),
+    'POST /api/media': () => json(exemple('/media', 'post', 201), 201),
+    'POST /api/me/journal': () => json({ ...exemple<JournalItem>('/me/journal', 'post', 201), media: { ...exemple<JournalItem>('/me/journal', 'post', 201).media, year: 2010 } }, 201),
+  }
+  const ouvrirInception = async () => fireEvent.click(await screen.findByRole('link', { name: (n) => n.includes('Inception') }))
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    oublierLeRetour(2010)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Points de vigilance 10 et D5. Mutations : le lien vers les Suivis (l'onglet Suivis resterait
+  // marqué) ; un lien qui remplace la page du réalisateur (« Retour » mènerait à l'année 2010).
+  it('ouvre la fiche du film sous l’onglet Voyage, de sa seule année, et « Retour » ramène au réalisateur', async () => {
+    const { requetes } = monterVoyage('/suivis/realisateurs/525', ROUTES)
+    await ouvrirInception()
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Inception' })).toBeInTheDocument()
+    expect(screen.getByText('Salle · Les essentiels')).toBeInTheDocument()
+    const onglets = screen.getByRole('navigation', { name: 'Onglets' })
+    expect(within(onglets).getByRole('link', { name: 'Voyage' })).toHaveAttribute('aria-current', 'page')
+    expect(requetes.filter((r) => r.includes('/me/voyage/annees/'))).toEqual(['GET /api/me/voyage/annees/2010'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Christopher Nolan' })).toBeInTheDocument()
+  })
+
+  // Le ledger de la tâche 11 : composter remplace le billet par l'année, jamais par le réalisateur ;
+  // l'historique devient [réalisateur, film, année]. Mutations : le lien du réalisateur qui remplace
+  // (le réalisateur perdu derrière le film) ; le billet qui recule au lieu de revenir à l'année.
+  it('« Je l’ai vu » puis composter revient à l’année, avec le film puis le réalisateur derrière elle', async () => {
+    let creations = 0
+    monterVoyage('/suivis/realisateurs/525', {
+      ...ROUTES,
+      'POST /api/me/journal': () => ((creations += 1), ROUTES['POST /api/me/journal']()),
+    })
+    await ouvrirInception()
+    fireEvent.click(await screen.findByRole('link', { name: /Je l’ai vu/ }))
+    fireEvent.click(await screen.findByRole('button', { name: '7 sur 10' }))
+    // 2010 est habillée par le monde « à venir » : son bouton de billet dit « Je l’ai vu » (`mots.billet.valider`).
+    fireEvent.click(screen.getByRole('button', { name: /Je l’ai vu/ }))
+
+    expect(await screen.findByRole('region', { name: 'L’année 2010' })).toBeInTheDocument()
+    expect(creations).toBe(1)
+    fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+    expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+    // La fiche du film, pas le billet rouvert.
+    expect(screen.queryByRole('button', { name: '7 sur 10' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Christopher Nolan' })).toBeInTheDocument()
   })
 })

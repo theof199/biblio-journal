@@ -34,8 +34,11 @@ const libelleSuivi = (suivi: boolean, genre: 'homme' | 'femme' | null): string =
 /**
  * La page d'un réalisateur (reprise de `RealisateurScreen.kt`) : sa fiche, suivre/ne plus suivre,
  * et sa filmographie — films seulement, les séries écartées comme sur Android (`filmsSansSeries`) :
- * le journal ne connaît que des films. Un film cliqué ouvre sa fiche (`FicheFilm`), qu'il soit vu
- * ou à voir.
+ * le journal ne connaît que des films. Un film cliqué ouvre sa fiche, qu'il soit vu ou à voir : celle
+ * du Voyage s'il figure dans une salle (`voyage`, la plus ancienne année ; décision D5 du plan 2b,
+ * `DestinationFilm.Voyage` sur Android), l'onglet Voyage alors marqué et « Retour » qui recule
+ * jusqu'ici ; sinon celle des Suivis (`FicheFilm`), avec le film et le réalisateur en état de
+ * navigation.
  */
 export default function PageRealisateur() {
   const { tmdbId } = useParams<{ tmdbId: string }>()
@@ -140,8 +143,8 @@ export default function PageRealisateur() {
           {filmsAffiches.map((film) => (
             <li key={film.tmdb_id}>
               <Link
-                to={`/suivis/films/${film.tmdb_id}`}
-                state={{ film, realisateur: { tmdb_id: id, name: fiche.name } }}
+                to={film.voyage ? `/voyage/${film.voyage.annee}/films/${film.voyage.film_id}` : `/suivis/films/${film.tmdb_id}`}
+                state={film.voyage ? undefined : { film, realisateur: { tmdb_id: id, name: fiche.name } }}
                 className={styles.film}
               >
                 <Affiche src={film.cover_url} titre={film.title} taille="ligne" />
