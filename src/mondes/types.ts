@@ -321,7 +321,8 @@ export interface VueMonument {
   touche: number
   /**
    * Inscrit, pour cette image, où se tient la figure d'une année, en unités de la toile : la page y
-   * cherche le toucher (la figure la plus proche, sous son rayon) et ouvre l'année.
+   * cherche le toucher achevé (`Toile.onChoisir`, jamais le premier contact, qui commence aussi un
+   * défilement), la figure la plus proche sous son rayon, et ouvre l'année.
    */
   zone: (annee: number, x: number, y: number, r: number) => void
 }

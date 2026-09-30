@@ -7,11 +7,13 @@ import { contexteFactice } from '../test/contexteFactice'
 const calme = (oui: boolean) =>
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: oui, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
 
-function monter(dessiner: Dessin, options: { hauteur?: number; onToucher?: (p: { x: number; y: number }) => void } = {}) {
+type Point = { x: number; y: number }
+
+function monter(dessiner: Dessin, options: { hauteur?: number; onToucher?: (p: Point) => void; onChoisir?: (p: Point) => void } = {}) {
   const { ctx, appels } = contexteFactice()
   const vue = render(
     <FabriqueContexteToile.Provider value={() => ctx}>
-      <Toile hauteur={options.hauteur ?? 250} dessiner={dessiner} libelle="La baraque" onToucher={options.onToucher} />
+      <Toile hauteur={options.hauteur ?? 250} dessiner={dessiner} libelle="La baraque" onToucher={options.onToucher} onChoisir={options.onChoisir} />
     </FabriqueContexteToile.Provider>,
   )
   const toile = vue.container.querySelector('canvas')!
@@ -201,10 +203,30 @@ describe('la toile d’une page', () => {
     calme(true)
     const onToucher = vi.fn()
     const { toile } = monter(vi.fn<Dessin>(), { hauteur: 250, onToucher })
-    // Une toile affichée à moitié de sa largeur logique, décalée de (10, 20).
-    vi.spyOn(toile, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 20, width: 195, height: 125, right: 205, bottom: 145, x: 10, y: 20, toJSON: () => ({}) })
-    fireEvent.pointerDown(toile, { clientX: 107.5, clientY: 82.5 })
+    // Une toile affichée à moitié de sa largeur logique et à sa hauteur logique (deux échelles
+    // différentes : la hauteur lue sur la largeur tombe aussi), décalée de (10, 20).
+    vi.spyOn(toile, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 20, width: 195, height: 250, right: 205, bottom: 270, x: 10, y: 20, toJSON: () => ({}) })
+    fireEvent.pointerDown(toile, { clientX: 107.5, clientY: 145 })
     expect(onToucher).toHaveBeenCalledWith({ x: 195, y: 125 })
+  })
+
+  // Le jumeau du toucher bref de la carte (`carte/geste.ts` : bouger annule tout, c'est un
+  // défilement). Un défilement commence par un `pointerdown` : ouvrir une année dès le premier
+  // contact ouvrirait celle du cheval sous le doigt qui voulait faire défiler la page. Le choix
+  // attend le `click`, que le navigateur ne donne pas après avoir pris le geste pour défiler.
+  // Mutations : `onChoisir` branché sur `onPointerDown` ; le choix rendu sans l'échelle ; sa hauteur
+  // lue sur la largeur.
+  it('ne choisit qu’au toucher achevé, en unités de la toile', () => {
+    calme(true)
+    const onChoisir = vi.fn()
+    const { toile } = monter(vi.fn<Dessin>(), { hauteur: 250, onChoisir })
+    vi.spyOn(toile, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 20, width: 195, height: 250, right: 205, bottom: 270, x: 10, y: 20, toJSON: () => ({}) })
+    fireEvent.pointerDown(toile, { clientX: 107.5, clientY: 145 })
+    fireEvent.pointerCancel(toile, { clientX: 107.5, clientY: 60 })
+    expect(onChoisir).not.toHaveBeenCalled()
+    fireEvent.click(toile, { clientX: 107.5, clientY: 145 })
+    expect(onChoisir).toHaveBeenCalledTimes(1)
+    expect(onChoisir).toHaveBeenCalledWith({ x: 195, y: 125 })
   })
 
   // Mutation : l'échelle prise sans garder la toile de taille nulle (une division par zéro) : sans

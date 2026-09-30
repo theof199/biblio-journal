@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef } from 'react'
+import { createContext, useContext, useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react'
 import { useMouvementReduit } from '../ui/mouvement'
 import styles from './Toile.module.css'
 
@@ -18,19 +18,38 @@ interface Props {
   hauteur: number
   dessiner: Dessin
   libelle: string
-  /** Le toucher, en unités logiques de la toile (390 de large, `hauteur` de haut) : de quoi trouver ce qui est touché. */
+  /**
+   * Le premier contact (`pointerdown`), en unités logiques de la toile (390 de large, `hauteur` de
+   * haut) : de quoi relancer une animation (le carrosse, le train, le manège qui s'emballe). Jamais
+   * de quoi naviguer : un défilement de la page commence aussi par là.
+   */
   onToucher?: (p: { x: number; y: number }) => void
+  /**
+   * Un toucher achevé, sans défilement (le `click`, que le navigateur ne donne pas après avoir pris
+   * le geste pour défiler), dans les mêmes unités : de quoi ouvrir ce qui est sous le doigt (un
+   * cheval du manège). Le jumeau du toucher bref de la carte (`carte/geste.ts`).
+   */
+  onChoisir?: (p: { x: number; y: number }) => void
   className?: string
 }
 
+/** Un point de l'écran en unités logiques de la toile, depuis son coin. */
+function enUnites(e: ReactMouseEvent<HTMLCanvasElement>, hauteur: number): { x: number; y: number } {
+  // Sans mise en page (jsdom), la toile mesure zéro : les coordonnées restent celles du toucher.
+  const r = e.currentTarget.getBoundingClientRect()
+  const sx = r.width > 0 ? LARGEUR_LOGIQUE / r.width : 1
+  const sy = r.height > 0 ? hauteur / r.height : 1
+  return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy }
+}
+
 /**
- * Une toile d'une page du Voyage (bandeau, scène, estrade) : une boucle `requestAnimationFrame` à
+ * Une toile d'une page du Voyage (bandeau, scène, estrade, monument, guichet) : une boucle `requestAnimationFrame` à
  * elle, coupée hors de l'écran quand le navigateur sait le dire (`IntersectionObserver`), et une
  * seule image, immobile, quand le visiteur demande moins d'animations — repeinte à chaque rendu,
  * pour qu'un changement de données se voie. Le repère est mis à l'échelle de la largeur réelle :
  * le monde dessine en 390 unités ; la densité de l'écran est bornée à 2.
  */
-export default function Toile({ hauteur, dessiner, libelle, onToucher, className }: Props) {
+export default function Toile({ hauteur, dessiner, libelle, onToucher, onChoisir, className }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
   const calme = useMouvementReduit()
   const fabrique = useContext(FabriqueContexteToile)
@@ -96,17 +115,8 @@ export default function Toile({ hauteur, dessiner, libelle, onToucher, className
       style={{ aspectRatio: `${LARGEUR_LOGIQUE} / ${hauteur}` }}
       role="img"
       aria-label={libelle}
-      onPointerDown={
-        onToucher
-          ? (e) => {
-              // Sans mise en page (jsdom), la toile mesure zéro : les coordonnées restent celles du toucher.
-              const r = e.currentTarget.getBoundingClientRect()
-              const sx = r.width > 0 ? LARGEUR_LOGIQUE / r.width : 1
-              const sy = r.height > 0 ? hauteur / r.height : 1
-              onToucher({ x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy })
-            }
-          : undefined
-      }
+      onPointerDown={onToucher ? (e) => onToucher(enUnites(e, hauteur)) : undefined}
+      onClick={onChoisir ? (e) => onChoisir(enUnites(e, hauteur)) : undefined}
     />
   )
 }
