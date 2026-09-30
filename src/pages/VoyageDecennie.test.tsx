@@ -283,4 +283,15 @@ describe('la page d’une décennie', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
     expect(await screen.findByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
   })
+
+  // Le jumeau : ouverte d'un lien, sans rien de l'app derrière. Mutation : toujours reculer
+  // (`navigate(-1)` au lieu de `useRevenir` : rien ne se passerait).
+  it('« Retour à la carte » mène à la carte quand rien n’est derrière', async () => {
+    monterVoyage('/voyage/decennies/1890', ROUTES)
+    await decennie()
+    const retour = screen.getByRole('link', { name: 'Retour à la carte' })
+    expect(retour).toHaveAttribute('href', '/voyage')
+    fireEvent.click(retour)
+    expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
+  })
 })
