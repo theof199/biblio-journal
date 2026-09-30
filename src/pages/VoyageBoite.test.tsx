@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import App from '../App'
@@ -12,6 +12,8 @@ import { SESSION } from '../test/pageVoyage'
 import { json, servir } from '../test/serveur'
 import { fichePrete, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import { oublierLeBillet, rangerLeBillet } from '../voyage/billet/range'
+import { anneeCivile } from '../voyage/decennie'
+import { decennieDe } from '../voyage/regles'
 import stylesDuCasier from '../voyage/boite/Casier.module.css'
 import FEUILLE_DU_CASIER from '../voyage/boite/Casier.module.css?raw'
 
@@ -109,7 +111,7 @@ describe('la boîte à billets', () => {
   })
 
   // Mutation : `decennieDeLAdresse` contournée (`Number(param)`).
-  it.each(['1895', '1880', 'abc'])('ramène à la carte une adresse qui n’est pas une décennie (%s)', async (d) => {
+  it.each(['1895', '1880', 'abc', String(decennieDe(anneeCivile()) + 10)])('ramène à la carte une adresse qui n’est pas une décennie (%s)', async (d) => {
     monter(`/voyage/decennies/${d}/billets`, { ...ROUTES, 'GET /api/me/voyage/tickets': () => json({ tickets: [] }) })
     expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
     expect(adresse()).toBe('/voyage')
@@ -228,17 +230,25 @@ describe('la boîte à billets', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  // Mutations : le lien offert sans fiche en cache (vers un film deviné) ; le lien jamais offert.
+  // Mutations : le lien offert sans fiche en cache (vers un film deviné) ; le lien jamais offert ;
+  // le lien sans l'entrée dans son état (le billet de correction n'aurait rien à corriger : il
+  // n'existe pas de `GET /me/journal/{id}`).
   it('offre de corriger un billet seulement quand la fiche de son année est déjà lue', async () => {
-    const fiche = fichePrete({ annee: 1897, salles: [salle({ id: 's1', films: [filmDeSalle({ id: 'f-train', tmdb_id: 776 })] })] })
-    const avec = monter('/voyage/decennies/1890/billets?billet=e3', ROUTES, (client) => client.setQueryData(cles.annee(1897), fiche))
+    const fiche = fichePrete({ annee: 1897, salles: [salle({ id: 's1', films: [filmDeSalle({ id: 'f-train', tmdb_id: 776, title: 'L’Arrivée d’un train' })] })] })
+    monter('/voyage/decennies/1890/billets?billet=e3')
+    const dialogue = await screen.findByRole('dialog', { name: 'L’Arrivée d’un train' })
+    expect(within(dialogue).getByText('9 sur 10')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Corriger le billet' })).not.toBeInTheDocument()
+    cleanup()
+
+    monter('/voyage/decennies/1890/billets?billet=e3', { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(fiche), 'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)) }, (client) =>
+      client.setQueryData(cles.annee(1897), fiche),
+    )
     const corriger = await screen.findByRole('link', { name: 'Corriger le billet' })
     expect(corriger).toHaveAttribute('href', '/voyage/1897/films/f-train/billet/corriger')
-    avec.unmount()
-
-    monter('/voyage/decennies/1890/billets?billet=e3')
-    await screen.findByRole('dialog', { name: 'L’Arrivée d’un train' })
-    expect(screen.queryByRole('link', { name: 'Corriger le billet' })).not.toBeInTheDocument()
+    fireEvent.click(corriger)
+    expect(await screen.findByRole('heading', { level: 1, name: 'L’Arrivée d’un train' })).toBeInTheDocument()
+    expect(screen.queryByText('Ce visionnage n’est plus disponible.')).not.toBeInTheDocument()
   })
 
   // Mutations : un message générique à la place de celui de l'API ; « Réessayer » sans effet.

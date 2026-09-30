@@ -51,10 +51,14 @@ describe('le film d’un visionnage dans la fiche de son année', () => {
     expect(filmDuVisionnage(FICHE, vu(300))).toBeNull()
   })
 
-  // Mutation : la garde de la source retirée (un livre dont l'identifiant vaudrait 200 passerait).
+  // Mutations : la garde de la source retirée (un livre dont l'identifiant vaudrait 200 passerait) ;
+  // celle du type (une série de TMDB, dont les identifiants ne sont pas ceux des films).
   it('ne prend qu’un film de TMDB', () => {
     const livre = vu(200)
     livre.media.source = 'openlibrary'
     expect(filmDuVisionnage(FICHE, livre)).toBeNull()
+    const serie = vu(200)
+    serie.media.type = 'tv'
+    expect(filmDuVisionnage(FICHE, serie)).toBeNull()
   })
 })
