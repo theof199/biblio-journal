@@ -206,4 +206,14 @@ describe('la toile d’une page', () => {
     fireEvent.pointerDown(toile, { clientX: 107.5, clientY: 82.5 })
     expect(onToucher).toHaveBeenCalledWith({ x: 195, y: 125 })
   })
+
+  // Mutation : l'échelle prise sans garder la toile de taille nulle (une division par zéro) : sans
+  // mise en page, chaque toucher partirait à l'infini et aucune figure ne serait jamais touchée.
+  it('rend le toucher tel quel quand la toile n’a pas de taille', () => {
+    calme(true)
+    const onToucher = vi.fn()
+    const { toile } = monter(vi.fn<Dessin>(), { hauteur: 250, onToucher })
+    fireEvent.pointerDown(toile, { clientX: 120, clientY: 80 })
+    expect(onToucher).toHaveBeenCalledWith({ x: 120, y: 80 })
+  })
 })
