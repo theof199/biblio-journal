@@ -276,10 +276,14 @@ describe('depuis la page d’un réalisateur, le Voyage', () => {
   // Le ledger de la tâche 11 : composter remplace le billet par l'année, jamais par le réalisateur ;
   // l'historique devient [réalisateur, film, année]. Mutations : le lien du réalisateur qui remplace
   // (le réalisateur perdu derrière le film) ; le billet qui recule au lieu de revenir à l'année.
+  // Le réalisateur retrouvé se relit : mutation, `cles.realisateurs` retiré des péremptions du billet
+  // (la page gardée en cache 30 s dirait encore « À voir »).
   it('« Je l’ai vu » puis composter revient à l’année, avec le film puis le réalisateur derrière elle', async () => {
     let creations = 0
     monterVoyage('/suivis/realisateurs/525', {
       ...ROUTES,
+      // Avant le compostage, Inception est à voir ; après, l'API le rend vu (l'exemple du contrat, 9/10).
+      'GET /api/me/realisateurs/525/page': () => json(creations === 0 ? PAGE_A_VOIR : PAGE_SUIVI),
       'POST /api/me/journal': () => ((creations += 1), ROUTES['POST /api/me/journal']()),
     })
     await ouvrirInception()
@@ -296,5 +300,7 @@ describe('depuis la page d’un réalisateur, le Voyage', () => {
     expect(screen.queryByRole('button', { name: '7 sur 10' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Christopher Nolan' })).toBeInTheDocument()
+    expect(await screen.findByText('Vu · 9/10')).toBeInTheDocument()
+    expect(screen.queryByText('À voir')).toBeNull()
   })
 })
