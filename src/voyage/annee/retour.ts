@@ -33,18 +33,26 @@ export interface EtatBillet {
  * reculer vers l'année (`navigate(-1)`) n'en porte aucun, et le consommer par un `replace` ferait
  * repartir la page du haut (`coque/defilement.ts`). Pris une fois par la fiche de cette année : ni un
  * rechargement ni le retour suivant ne le rejouent.
+ *
+ * L'année se monte dans la foulée du billet ; un retour que rien n'a pris (une navigation qui n'a pas
+ * mené à l'année) ne doit pas se jouer plus tard, ni chez un autre membre connecté entre-temps sur le
+ * même onglet : il ne vaut que pour le membre qui a composté, et `DUREE_DU_RETOUR_MS` au plus.
  */
-let confie: { annee: number; retour: Retour } | null = null
+let confie: { annee: number; membre: string; le: number; retour: Retour } | null = null
 
-export function confierLeRetour(annee: number, retour: Retour): void {
-  confie = { annee, retour }
+/** Le temps laissé à l'année pour se monter après le billet : large devant une navigation, court devant une visite. */
+export const DUREE_DU_RETOUR_MS = 30_000
+
+export function confierLeRetour(annee: number, membre: string, retour: Retour): void {
+  confie = { annee, membre, le: Date.now(), retour }
 }
 
 /**
  * Lu sans être pris : l'initialiseur d'un `useState` peut s'appeler deux fois (`StrictMode`), et le
  * second ne doit pas lire un retour déjà effacé. La page l'oublie une fois montée (`oublierLeRetour`).
  */
-export const retourConfie = (annee: number): Retour | null => (confie !== null && confie.annee === annee ? confie.retour : null)
+export const retourConfie = (annee: number, membre: string): Retour | null =>
+  confie !== null && confie.annee === annee && confie.membre === membre && Date.now() - confie.le <= DUREE_DU_RETOUR_MS ? confie.retour : null
 
 export function oublierLeRetour(annee: number): void {
   if (confie !== null && confie.annee === annee) confie = null

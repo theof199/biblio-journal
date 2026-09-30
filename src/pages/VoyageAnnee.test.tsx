@@ -431,7 +431,7 @@ describe('la fiche d’une année', () => {
   // cache, rien n'aurait bougé, et la relecture ne rejouerait plus).
   it('un retour confié se joue sur la fiche relue, pas sur celle du cache', async () => {
     const progression = { essentiels_vus: 0, essentiels_total: 2, salles_completes: 0, salles_autres: 1 }
-    confierLeRetour(1897, { avant: { profondeur: 2, progression }, guet: null })
+    confierLeRetour(1897, SESSION.user.id, { avant: { profondeur: 2, progression }, guet: null })
     monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(nue({ profondeur: 3, progression })) }, (c) =>
       c.setQueryData(cles.annee(1897), nue({ profondeur: 2, progression })),
     )
@@ -441,12 +441,24 @@ describe('la fiche d’une année', () => {
 
   // Le jumeau : sans billet, une fiche ne roule rien. Mutation : le retour confié pour une autre année lu ici.
   it('sans retour confié pour elle, la fiche ne roule rien', async () => {
-    confierLeRetour(1896, { avant: { profondeur: 0, progression: null }, guet: null })
+    confierLeRetour(1896, SESSION.user.id, { avant: { profondeur: 0, progression: null }, guet: null })
     monterVoyage('/voyage/1897', ROUTES)
     await screen.findByRole('heading', { level: 1, name: '1897' })
     await new Promise((r) => setTimeout(r, 50))
     expect(screen.queryByText(/^\+\d/)).toBeNull()
     oublierLeRetour(1896)
+  })
+
+  // Une déconnexion, puis un autre membre sur le même onglet. Mutation : la page lit le retour sans son
+  // membre (ou le billet le confie sans le sien).
+  it('un retour confié par un autre membre ne se joue pas', async () => {
+    const progression = { essentiels_vus: 0, essentiels_total: 2, salles_completes: 0, salles_autres: 1 }
+    confierLeRetour(1897, 'un-autre-membre', { avant: { profondeur: 2, progression }, guet: null })
+    monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(nue({ profondeur: 3, progression })) })
+    await screen.findByRole('listitem', { name: '3 films vus' })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.queryByText(/^\+\d/)).toBeNull()
+    oublierLeRetour(1897)
   })
 
   // Mutation : le programme rendu pour une année bouclée ; les trous pris à la mauvaise valeur.

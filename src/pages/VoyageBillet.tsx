@@ -218,7 +218,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     suppression.reset()
     ecrire.mutate(brouillon, {
       onSuccess: (retour) => {
-        confierLeRetour(annee, retour)
+        confierLeRetour(annee, user.id, retour)
         // Depuis l'année, reculer : la remplacer par elle-même la doublerait dans l'historique.
         if (depuisLAnnee && historiqueDerriere(key)) navigate(-1)
         else navigate(`/voyage/${annee}`, { replace: true })

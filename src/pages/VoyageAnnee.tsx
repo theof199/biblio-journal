@@ -8,6 +8,7 @@ import { estPrete, lireGenerique, lireVoyage, utiliserTicket, type FicheAnnee, t
 import { ambianceDeLHeure } from '../carte/heure'
 import { creerRegistre } from '../mondes'
 import type { Monde, VueBandeau } from '../mondes/types'
+import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
 import { useMouvementReduit } from '../ui/mouvement'
@@ -90,7 +91,8 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   // Le retour d'un billet (tâche 11) : confié par le billet, pris une fois par cette page. Une fois la
   // fiche relue après le montage, ce qui a été gagné roule sur la corde, se dit, et le téléphone vibre
   // au palier ; puis plus rien, ni à la relecture suivante, ni au retour suivant, ni au rechargement.
-  const [retour] = useState(() => retourConfie(annee))
+  const { user } = useSession()
+  const [retour] = useState(() => retourConfie(annee, user.id))
   useEffect(() => {
     oublierLeRetour(annee)
   }, [annee])
@@ -103,8 +105,9 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     const liste = avancees(retour.avant, { profondeur: prete.profondeur, progression: prete.progression })
     if (liste.length === 0) return
     setGains(liste)
-    if (franchitUnPalier(liste, prete.progression)) vibrer([18, 40, 70])
-  }, [retour, relue, prete])
+    // Au calme, le téléphone ne vibre pas (la maquette, `initNotation`) : l'annonce et la corde suffisent.
+    if (!calme && franchitUnPalier(liste, prete.progression)) vibrer([18, 40, 70])
+  }, [retour, relue, prete, calme])
   // Le verdict du jury, guetté au compte IA après une création (le billet l'a décidé) : la fiche se
   // relit toutes les cinq secondes, douze fois au plus, jusqu'à un verdict changé ou un ticket ; la
   // minuterie s'arrête en quittant la page.

@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Progression } from '../../api/voyage'
-import { annonceDesAvancees, confierLeRetour, franchitUnPalier, oublierLeRetour, retourConfie } from './retour'
+import { DUREE_DU_RETOUR_MS, annonceDesAvancees, confierLeRetour, franchitUnPalier, oublierLeRetour, retourConfie } from './retour'
 
 const PROGRESSION: Progression = { essentiels_vus: 2, essentiels_total: 2, salles_completes: 1, salles_autres: 3 }
 const RETOUR = { avant: { profondeur: 2, progression: null }, guet: null }
+const MOI = 'membre-1'
+const AUTRE = 'membre-2'
 
 describe('le retour d’un billet', () => {
   afterEach(() => {
@@ -37,13 +39,36 @@ describe('le retour d’un billet', () => {
   // Mutations : le retour lu pour n'importe quelle année ; la lecture qui l'efface (le second appel
   // de l'initialiseur, sous `StrictMode`, ne le trouverait plus) ; l'oubli d'une autre année.
   it('se confie pour une année, se relit sans s’effacer, et ne s’oublie que pour elle', () => {
-    confierLeRetour(1897, RETOUR)
-    expect(retourConfie(1898)).toBeNull()
-    expect(retourConfie(1897)).toBe(RETOUR)
-    expect(retourConfie(1897)).toBe(RETOUR)
+    confierLeRetour(1897, MOI, RETOUR)
+    expect(retourConfie(1898, MOI)).toBeNull()
+    expect(retourConfie(1897, MOI)).toBe(RETOUR)
+    expect(retourConfie(1897, MOI)).toBe(RETOUR)
     oublierLeRetour(1898)
-    expect(retourConfie(1897)).toBe(RETOUR)
+    expect(retourConfie(1897, MOI)).toBe(RETOUR)
     oublierLeRetour(1897)
-    expect(retourConfie(1897)).toBeNull()
+    expect(retourConfie(1897, MOI)).toBeNull()
+  })
+
+  // Un retour que rien n'a pris ne se joue pas chez un autre membre connecté ensuite sur le même onglet.
+  // Mutation : le membre ignoré.
+  it('ne se rend qu’au membre qui a composté', () => {
+    confierLeRetour(1897, MOI, RETOUR)
+    expect(retourConfie(1897, AUTRE)).toBeNull()
+    expect(retourConfie(1897, MOI)).toBe(RETOUR)
+  })
+
+  // Ni plus tard : l'année se monte dans la foulée du billet. Mutations : la durée ignorée ; la durée
+  // comptée depuis la lecture.
+  it('ne se rend plus passé sa durée', () => {
+    vi.useFakeTimers()
+    try {
+      confierLeRetour(1897, MOI, RETOUR)
+      vi.advanceTimersByTime(DUREE_DU_RETOUR_MS)
+      expect(retourConfie(1897, MOI)).toBe(RETOUR)
+      vi.advanceTimersByTime(1)
+      expect(retourConfie(1897, MOI)).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

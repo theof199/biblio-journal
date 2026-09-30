@@ -28,9 +28,9 @@ function Plus({ n }: { n: number }) {
   useEffect(() => {
     const vol = ref.current?.animate(
       [
-        { transform: 'translateY(-34px) scale(0.6)', opacity: 0 },
-        { transform: 'translateY(-8px) scale(1.15)', opacity: 1, offset: 0.45 },
-        { transform: 'translateY(6px) scale(1)', opacity: 0 },
+        { transform: 'translate(-50%, -38px) scale(0.6)', opacity: 0 },
+        { transform: 'translate(-50%, -12px) scale(1.2)', opacity: 1, offset: 0.45 },
+        { transform: 'translate(-50%, 20px) scale(0.9)', opacity: 0 },
       ],
       { duration: 1100, delay: 250, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'both' },
     )
@@ -63,7 +63,8 @@ export default function Corde({ billets, nom = 'La progression de l’année', g
         const gain = calme ? undefined : gains.find((g) => g.cle === b.cle && g.apres === b.valeur)
         return (
           <li key={b.cle} className={styles.billet} aria-label={nomDuBillet(b)}>
-            <span aria-hidden="true">
+            {/* Le papier porte le masque des encoches : le « +1 », hors de lui, n'est pas rogné en vol. */}
+            <span className={styles.papier} aria-hidden="true">
               {b.tete ? <span className={styles.num}>{b.tete}</span> : null}
               {b.valeur !== null ? (
                 <b>

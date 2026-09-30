@@ -388,6 +388,20 @@ describe('le billet de séance', () => {
       expect(vibrate).toHaveBeenCalledTimes(1)
     })
 
+    // Au calme, rien ne bouge, le téléphone non plus (décision du 30 septembre : la maquette). Mutation :
+    // la garde du calme retirée de la vibration.
+    it('au calme, le palier ne fait pas vibrer, et l’annonce reste', async () => {
+      calme()
+      const vibrate = vibreur()
+      const { routes } = serveur({ voyage: HORS_IA })
+      monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      expect(await screen.findByText('+1 film vu')).toHaveAttribute('role', 'status')
+      await new Promise((r) => setTimeout(r, 50))
+      expect(vibrate).not.toHaveBeenCalled()
+    })
+
     // Le jumeau du palier. Mutation : vibrer à chaque avancée.
     it('une avancée sans palier ne fait pas vibrer', async () => {
       const vibrate = vibreur()

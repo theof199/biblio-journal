@@ -22,21 +22,30 @@
 
 .billet {
   position: relative;
+  display: flex;
   flex: 0 1 104px;
+  flex-direction: column;
   min-width: 0;
+  transform-origin: 50% -14px;
+  animation: balance 3.4s ease-in-out infinite alternate;
+}
+
+/* Le papier du billet et ses encoches. Le masque rogne tout ce que l'élément contient, débords compris :
+   il est ici, et non sur le billet, pour que le « +1 » tombe de la corde sans être coupé à son bord. */
+.papier {
+  display: block;
+  flex: 1 1 auto;
   padding: 14px 8px 10px;
   border-radius: 3px;
   background: var(--m-papier2);
   color: var(--m-encre);
   text-align: center;
-  transform-origin: 50% -14px;
   -webkit-mask:
     radial-gradient(circle 6px at 0 58%, transparent 97%, var(--m-encre)) left / 51% 100% no-repeat,
     radial-gradient(circle 6px at 100% 58%, transparent 97%, var(--m-encre)) right / 51% 100% no-repeat;
   mask:
     radial-gradient(circle 6px at 0 58%, transparent 97%, var(--m-encre)) left / 51% 100% no-repeat,
     radial-gradient(circle 6px at 100% 58%, transparent 97%, var(--m-encre)) right / 51% 100% no-repeat;
-  animation: balance 3.4s ease-in-out infinite alternate;
 }
 
 .billet:nth-child(2) {
@@ -113,13 +122,16 @@
   }
 }
 
-/* Le « +1 » qui tombe de la corde sur le billet (animé par la page, Web Animations). */
+/* Le « +1 » qui tombe de la corde sur le compteur du billet (animé par la page, Web Animations ; la
+   maquette le pose au centre du billet, `voler`). */
 .plus {
   position: absolute;
-  top: 10px;
-  right: 6px;
-  font: 400 17px/1 var(--m-f-affiche);
+  top: 0;
+  left: 50%;
+  font: 400 22px/1 var(--m-f-affiche);
   color: var(--corail);
+  text-shadow: 1px 1px 0 var(--m-encre);
+  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
 }
