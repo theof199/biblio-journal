@@ -236,6 +236,20 @@ describe('la fiche d’un film du Voyage', () => {
     expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([JOURNAL])
   })
 
+  // Mutation : `isFetchNextPageError` ignoré : une page suivante en panne se redemanderait en boucle.
+  it('une page suivante du journal en panne ne se redemande pas en boucle, et la fiche se prive de « Corriger »', async () => {
+    const { requetes } = monterVoyage(page(KANE), {
+      ...ROUTES,
+      [JOURNAL]: () => json({ ...PAGE, items: [vuDe('e-autre', 27205)], next_cursor: 'c2' }),
+      [`${JOURNAL}&cursor=c2`]: () => json({ code: 'INTERNAL', message: 'Panne.', retryable: false }, 500),
+    })
+    await screen.findByRole('button', { name: 'Mettre sur le podium' })
+    await waitFor(() => expect(compte(requetes, `${JOURNAL}&cursor=c2`)).toBe(1))
+    await new Promise((r) => setTimeout(r, 100))
+    expect(compte(requetes, `${JOURNAL}&cursor=c2`)).toBe(1)
+    expect(screen.queryByRole('link', { name: /Corriger/ })).toBeNull()
+  })
+
   // Mutation : la garde `etat === 'vu'` retirée (le journal lu pour tout film, deux appels inutiles).
   it('le journal n’est pas lu pour un film à voir', async () => {
     const { requetes } = monterVoyage(page(FAUCON), { ...ROUTES, [JOURNAL]: () => json({ ...PAGE, items: [], next_cursor: null }) })
@@ -301,13 +315,19 @@ describe('la fiche d’un film du Voyage', () => {
     expect(client.getQueryState([...cles.sagas, 1])?.isInvalidated).toBe(true)
   })
 
-  // Mutation : « Le remettre à voir » qui marque au lieu de retirer.
-  it('« Le remettre à voir » retire la marque, puis relit la fiche', async () => {
-    const { requetes } = monterVoyage(page(PERDU), { ...ROUTES, 'DELETE /api/me/introuvables/701': vide })
+  // Mutations : « Le remettre à voir » qui marque au lieu de retirer ; `PERIMES.remettre` réduit à
+  // `cles.voyage` (le jumeau de la marque).
+  it('« Le remettre à voir » retire la marque, relit la fiche et périme les Suivis', async () => {
+    const { requetes, client } = monterVoyage(page(PERDU), { ...ROUTES, 'DELETE /api/me/introuvables/701': vide }, (c) => {
+      c.setQueryData(cles.pageRealisateur(3996), { films: [] })
+      c.setQueryData([...cles.sagas, 1], [])
+    })
     fireEvent.click(await screen.findByRole('button', { name: 'Le remettre à voir' }))
     await waitFor(() => expect(compte(requetes, ANNEE)).toBe(2))
     expect(requetes).toContain('DELETE /api/me/introuvables/701')
     expect(screen.queryByRole('button', { name: 'Introuvable' })).toBeNull()
+    expect(client.getQueryState(cles.pageRealisateur(3996))?.isInvalidated).toBe(true)
+    expect(client.getQueryState([...cles.sagas, 1])?.isInvalidated).toBe(true)
   })
 
   // Mutations : la demande sans relire la fiche ; les filmographies et le Plex non périmés (jumeau de `FicheFilm.tsx`).
@@ -332,19 +352,25 @@ describe('la fiche d’un film du Voyage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Ce film ne se marque pas.')
   })
 
-  // Mutation : la cible toujours un film (`{ tmdb_id }` pour un programme, que l'API refuserait).
-  it('« Mettre sur le podium » d’un programme pose `{ programme_id }`, puis ferme le feuillet et relit la fiche', async () => {
+  // Mutations : la cible toujours un film (`{ tmdb_id }` pour un programme, que l'API refuserait) ;
+  // l'invalidation réduite à la fiche (la carte garderait l'affiche de l'ancien n°1).
+  it('« Mettre sur le podium » d’un programme pose `{ programme_id }`, puis ferme le feuillet et relit la fiche et la carte', async () => {
     let pose: unknown
-    const { requetes } = monterVoyage(page(PROG_VU), {
-      ...ROUTES,
-      'PUT /api/me/voyage/annees/1897/podium/2': (init) => ((pose = corps(init)), json(exemple('/me/voyage/annees/{annee}/podium/{place}', 'put', 200))),
-    })
+    const { requetes, client } = monterVoyage(
+      page(PROG_VU),
+      {
+        ...ROUTES,
+        'PUT /api/me/voyage/annees/1897/podium/2': (init) => ((pose = corps(init)), json(exemple('/me/voyage/annees/{annee}/podium/{place}', 'put', 200))),
+      },
+      (c) => c.setQueryData(cles.voyage, exemple('/me/voyage', 'get', 200)),
+    )
     fireEvent.click(await screen.findByRole('button', { name: 'Mettre sur le podium' }))
     const feuillet = await screen.findByRole('dialog', { name: 'Mettre sur le podium' })
     fireEvent.click(within(feuillet).getByRole('button', { name: /^2/ }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(pose).toEqual({ programme_id: 'p-vu' })
     await waitFor(() => expect(compte(requetes, ANNEE)).toBe(2))
+    expect(client.getQueryState(cles.voyage)?.isInvalidated).toBe(true)
   })
 
   // Le jumeau : un film pose `{ tmdb_id }`, et la marche qui le porte déjà est cochée. Mutation : la
@@ -364,6 +390,25 @@ describe('la fiche d’un film du Voyage', () => {
     expect(within(feuillet).getByRole('button', { name: /^3/ })).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(within(feuillet).getByRole('button', { name: /^3/ }))
     await waitFor(() => expect(pose).toEqual({ tmdb_id: 15 }))
+  })
+
+  // Le jumeau du refus du guichet, dans le feuillet ; et deux touchers n'écrivent qu'une fois.
+  // Mutations : le message réécrit ; la garde du double toucher retirée ; le feuillet fermé sur un refus.
+  it('un refus du podium s’affiche dans le feuillet tel que l’API l’a écrit, après une seule écriture', async () => {
+    let poses = 0
+    monterVoyage(page(PROG_VU), {
+      ...ROUTES,
+      'PUT /api/me/voyage/annees/1897/podium/1': () => (
+        (poses += 1), json({ code: 'VALIDATION_ERROR', message: 'Ce film n’est pas dans ton journal pour cette année.', retryable: false }, 400)
+      ),
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Mettre sur le podium' }))
+    const feuillet = await screen.findByRole('dialog', { name: 'Mettre sur le podium' })
+    const marche = within(feuillet).getByRole('button', { name: /^1/ })
+    fireEvent.click(marche)
+    fireEvent.click(marche)
+    expect(await within(feuillet).findByRole('alert')).toHaveTextContent('Ce film n’est pas dans ton journal pour cette année.')
+    expect(poses).toBe(1)
   })
 
   // Le piège du rappel qui survit (ledger, tâches 8 et 9). Mutation : la fermeture du feuillet dans
@@ -493,6 +538,21 @@ describe('la fiche d’un film du Voyage', () => {
       expect(compte(requetes, CARTON(963))).toBe(RELECTURES.carton.plafond + 2)
     })
 
+    // Le jumeau des refus du guichet. Mutations : le message réécrit ; « Réessayer » sans relire.
+    it('un refus de l’API s’affiche tel qu’il est écrit, et « Réessayer » relit', async () => {
+      let n = 0
+      const { requetes } = monterVoyage(page(FAUCON), {
+        ...ROUTES,
+        [CARTON(963)]: () => (++n === 1 ? json({ code: 'VALIDATION_ERROR', message: 'Ce film n’a pas de carton.', retryable: false }, 400) : json(CARTON_PRET)),
+      })
+      fireEvent.click(await screen.findByRole('button', { name: /Le film/ }))
+      const feuille = await screen.findByRole('dialog', { name: `Le film ${FAUCON.title}` })
+      expect(await within(feuille).findByText('Ce film n’a pas de carton.')).toBeInTheDocument()
+      fireEvent.click(within(feuille).getByRole('button', { name: 'Réessayer' }))
+      expect(await screen.findByRole('dialog', { name: `Le film ${CARTON_PRET.titre}` })).toBeInTheDocument()
+      expect(compte(requetes, CARTON(963))).toBe(2)
+    })
+
     // Mutation : `{ configure: false }` pris pour une attente (la feuille taperait pour toujours).
     it('sans chroniqueur : le dit, sans attendre', async () => {
       monterVoyage(page(FAUCON), { ...ROUTES, [CARTON(963)]: () => json({ configure: false }) })
@@ -529,6 +589,23 @@ describe('la fiche d’un film du Voyage', () => {
       expect(derniere().image).toBeNull()
       act(() => image!.onload?.())
       await waitFor(() => expect(derniere().image).toBe(image))
+    })
+
+    // Le jumeau du toucher du bandeau (`VoyageAnnee.test.tsx`). Mutation : le toucher de l'écran oublié
+    // (le train ne repartirait plus).
+    it('toucher l’écran relance la projection, à l’instant de la toile', async () => {
+      vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] })
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => contexteFactice().ctx as never)
+      const scene = vi.spyOn(PAGES_1890, 'dessinerScene').mockImplementation(() => undefined)
+      const dernier = () => scene.mock.calls[scene.mock.calls.length - 1]![0]
+      monterVoyage(page(FAUCON), ROUTES)
+      await screen.findByRole('heading', { level: 1, name: FAUCON.title })
+      act(() => void vi.advanceTimersByTime(2_000))
+      expect(dernier().touche).toBe(-9)
+      fireEvent.pointerDown(screen.getByRole('img', { name: `L’écran projette ${FAUCON.title}.` }))
+      act(() => void vi.advanceTimersByTime(20))
+      expect(dernier().touche).toBeGreaterThan(1.9)
+      expect(dernier().touche).toBeLessThan(dernier().t)
     })
 
     // Le jumeau : sans fond, l'affiche. Mutation : le fond seul (l'écran resterait blanc).
