@@ -123,6 +123,24 @@ describe('la coque à onglets', () => {
     expect(marques).toEqual([parent.libelle])
   })
 
+  // Mutation : la route `voyage/decennies/:decennie` déclarée à côté de `<Coque />` dans `App.tsx`
+  // au lieu de dedans : la barre disparaîtrait.
+  it('la page d’une décennie garde la barre, l’onglet Voyage seul marqué', async () => {
+    servir({
+      'GET /api/auth/me': () => json(SESSION),
+      ...CARTE,
+      'GET /api/me/journal?limit=100&sortie_min=1890&sortie_max=1899': () => json({ items: [], next_cursor: null }),
+    })
+    monter('/voyage/decennies/1890')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Années 1890' })).toBeInTheDocument()
+    const marques = within(barre())
+      .getAllByRole('link')
+      .filter((lien) => lien.getAttribute('aria-current') === 'page')
+      .map((lien) => lien.textContent)
+    expect(marques).toEqual(['Voyage'])
+  })
+
   it.each(['/nulle-part', '/voyage/1898/salles', '/profil/reglages'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {
     servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
     monter(inconnue)

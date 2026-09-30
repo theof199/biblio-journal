@@ -9,6 +9,7 @@ import Fiche from './pages/Fiche'
 import MesFilms from './pages/MesFilms'
 import Carte from './pages/Carte'
 import VoyageAnnee from './pages/VoyageAnnee'
+import VoyageDecennie from './pages/VoyageDecennie'
 import VoyageFilm from './pages/VoyageFilm'
 import VoyageBillet from './pages/VoyageBillet'
 import Suivis from './pages/Suivis'
@@ -35,6 +36,8 @@ export default function App() {
           <Route path="journal/:id/corriger" element={<Formulaire />} />
           <Route path="voyage" element={<Carte />} />
           <Route path="voyage/:annee" element={<VoyageAnnee />} />
+          {/* La page d'une décennie (plan 2c, décision D5) : on y entre par la plaque du chapitre. */}
+          <Route path="voyage/decennies/:decennie" element={<VoyageDecennie />} />
           {/* La fiche d'un film du Voyage (décision D5) : l'onglet Voyage reste marqué, d'où qu'on vienne. */}
           <Route path="voyage/:annee/films/:filmId" element={<VoyageFilm />} />
           {/* Le billet de séance : un visionnage à enregistrer (`?bobine=` pour une bobine), ou à corriger (`state.item`). */}

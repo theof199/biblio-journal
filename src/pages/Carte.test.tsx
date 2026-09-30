@@ -113,6 +113,27 @@ describe('la carte', () => {
     expect(voyage()).toHaveAttribute('aria-current', 'page')
   })
 
+  // Mutation : le lien vers `PREMIERE_DECENNIE` en dur (la carte de 1903 ouvrirait les années 1890).
+  it.each([
+    { anneeEnCours: 1898, nom: 'Chapitre I · Les origines', decennie: 1890 },
+    { anneeEnCours: 1903, nom: 'Chapitre II · Années 1900', decennie: 1900 },
+  ])('le chapitre ouvre la décennie de l’année en cours ($anneeEnCours)', async ({ anneeEnCours, nom, decennie }) => {
+    const annees = Array.from({ length: anneeEnCours - 1894 }, (_, i) => ({
+      annee: 1895 + i,
+      statut: 1895 + i === anneeEnCours ? ('en_cours' as const) : ('ouverte' as const),
+      visitee: true,
+      recompense: null,
+      progression: P,
+    }))
+    monter(voyage1890(anneeEnCours, annees), {
+      [`GET /api/me/journal?limit=100&sortie_min=${decennie}&sortie_max=${decennie + 9}`]: () => json({ items: [], next_cursor: null }),
+    })
+    const chapitre = await screen.findByRole('link', { name: nom })
+    expect(chapitre).toHaveAttribute('href', `/voyage/decennies/${decennie}`)
+    fireEvent.click(chapitre)
+    expect(await screen.findByRole('heading', { level: 1, name: `Années ${decennie}` })).toBeInTheDocument()
+  })
+
   it('toucher une case ouvre la fiche de son année', async () => {
     const { rappels, etats } = monter(VOYAGE, { 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896 })) })
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))

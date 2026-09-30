@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { chevaux, decennieDeLAdresse, figureTouchee, palissade, registre } from './decennie'
+import { describe, expect, it, vi } from 'vitest'
+import { anneeCivile, chevaux, decennieDeLAdresse, figureTouchee, palissade, registre } from './decennie'
 import { voyage1890 } from '../test/voyage'
 import { visionnage } from '../test/journal'
 
@@ -29,6 +29,18 @@ describe('l’adresse d’une décennie', () => {
     expect(decennieDeLAdresse('1880', 2026)).toBeNull()
     expect(decennieDeLAdresse('années', 2026)).toBeNull()
     expect(decennieDeLAdresse(undefined, 2026)).toBeNull()
+  })
+
+  // Mutation : `maintenant.getFullYear()` (l'année de l'appareil) : sous UTC, 23 h 30 le 31 décembre
+  // 2029 serait encore 2029, alors qu'à Paris la décennie 2030 est ouverte ; sous Honolulu, de même.
+  it.each(['UTC', 'Pacific/Honolulu'])('lit l’année civile à Paris, pas dans le fuseau de l’appareil (%s)', (fuseau) => {
+    vi.stubEnv('TZ', fuseau)
+    try {
+      expect(anneeCivile(new Date('2029-12-31T23:30:00.000Z'))).toBe(2030)
+      expect(anneeCivile(new Date('2029-12-31T22:30:00.000Z'))).toBe(2029)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 

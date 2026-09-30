@@ -8,7 +8,11 @@
   padding: 16px 16px 30px;
   background: linear-gradient(rgba(10, 7, 5, 0.94), rgba(10, 7, 5, 0.72) 62%, rgba(10, 7, 5, 0));
 }
-.chapitre { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+/* Un lien (la page de la décennie) dans un HUD qui ne reçoit aucun pointeur : il les reprend, et sa
+   cible s'étend à 44 px de haut sans pousser l'année (le HUD a 16 px de marge au-dessus). */
+.chapitre { position: relative; display: block; width: max-content; max-width: 100%; font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); text-decoration: none; pointer-events: auto; }
+.chapitre::before { content: ''; position: absolute; inset: -16px -8px -15px; }
+.chapitre:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .annee { display: block; font: 600 34px/1 'Fraunces', Georgia, serif; font-variant-numeric: lining-nums; }
 .recompenses { display: flex; gap: 10px; margin: 0; font: 600 14px/1 'Fraunces', Georgia, serif; padding-bottom: 3px; }
 .objectif {

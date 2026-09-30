@@ -60,6 +60,10 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/billet/Poincon.module.css',
         '/src/voyage/billet/Cartons.module.css',
         '/src/voyage/passeport/Tampon.module.css',
+        '/src/pages/VoyageDecennie.module.css',
+        '/src/voyage/decennie/Livret.module.css',
+        '/src/voyage/decennie/Palissade.module.css',
+        '/src/voyage/decennie/Registre.module.css',
       ]),
     )
   })

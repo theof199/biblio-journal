@@ -1,0 +1,117 @@
+/* La palissade (maquette 1890 : `.palissade`, `.panneau`, lignes 290 à 301). Les planches sont le bois
+   du monde, assombri vers son fond ; couleurs et polices : les jetons du monde. */
+.palissade {
+  display: flex;
+  margin: 0 14px;
+  padding: 14px 0 0;
+  overflow-x: auto;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--m-bois) 82%, var(--m-fond)) 0 26px,
+    color-mix(in srgb, var(--m-bois) 62%, var(--m-fond)) 26px 27px,
+    color-mix(in srgb, var(--m-bois) 72%, var(--m-fond)) 27px 52px,
+    color-mix(in srgb, var(--m-bois) 48%, var(--m-fond)) 52px 53px
+  );
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.palissade::-webkit-scrollbar {
+  display: none;
+}
+
+.panneau {
+  position: relative;
+  flex: 0 0 150px;
+  padding: 0 10px 8px;
+  text-align: center;
+  color: var(--m-papier);
+  scroll-snap-align: start;
+}
+
+.avance {
+  opacity: 0.7;
+}
+
+.colle {
+  position: relative;
+  display: block;
+  height: 150px;
+}
+
+.colle img {
+  position: absolute;
+  width: 76px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border: 3px solid var(--m-papier);
+  box-shadow: 0 3px 6px var(--m-ombre);
+}
+
+.colle img:nth-child(1) {
+  top: 6px;
+  left: 4px;
+  transform: rotate(-6deg);
+}
+
+.colle img:nth-child(2) {
+  top: 0;
+  right: 6px;
+  transform: rotate(5deg);
+}
+
+.colle img:nth-child(3) {
+  top: 58px;
+  left: 20px;
+  transform: rotate(3deg);
+}
+
+.colle img:nth-child(4) {
+  top: 64px;
+  right: 2px;
+  transform: rotate(-4deg);
+}
+
+.sepia .colle img {
+  filter: sepia(0.4) brightness(0.9);
+}
+
+.gris .colle img {
+  filter: grayscale(1);
+}
+
+.vide {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font: italic 14px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.plus {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  padding: 1px 6px;
+  background: var(--m-encre);
+  font: 12px var(--m-f-capitales);
+  color: var(--m-or2);
+}
+
+.an {
+  display: block;
+  margin-top: 6px;
+  /* La seule graisse embarquée du pochoir (décision D9). */
+  font: 700 22px var(--m-f-pochoir);
+  letter-spacing: 0.06em;
+  color: var(--m-papier);
+  text-shadow: 1px 1px 0 var(--m-encre);
+}
+
+.enAvance {
+  display: block;
+  font: italic 13px var(--m-f-texte);
+  color: var(--m-doux);
+}

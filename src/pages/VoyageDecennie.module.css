@@ -1,8 +1,9 @@
-/* La fiche d'une année (maquette 1890 : `htmlAnnee`, pièces communes lignes 94 à 113). Les couleurs et
-   les polices viennent des jetons du monde, posés sur la racine par la page. */
+/* La page d'une décennie (maquette 1890 : `initDecennie`, écran IV ; le bandeau, le fronton et le
+   titre de section sont ceux de la fiche d'une année, lignes 94 à 113). Les couleurs et les polices
+   viennent des jetons du monde, posés sur la racine par la page. */
 .page {
   min-height: 100%;
-  padding-bottom: 8px;
+  padding-bottom: 30px;
   background: var(--m-tel);
   color: var(--m-papier);
   font: 15px/1.55 var(--m-f-corps);
@@ -43,7 +44,7 @@
 }
 
 .retour:focus-visible,
-.bouton:focus-visible {
+.lien:focus-visible {
   outline: 2px solid var(--m-or2);
   outline-offset: 2px;
 }
@@ -59,7 +60,6 @@
   color: var(--m-encre);
   font: 12.5px/1 var(--m-f-capitales);
   letter-spacing: 0.08em;
-  text-decoration: none;
   box-shadow:
     0 0 0 1px var(--m-bois),
     0 0 0 3px var(--m-papier2),
@@ -67,44 +67,84 @@
     0 4px 10px var(--m-ombre);
 }
 
-/* La plaque est un lien (la page de la décennie) : sa cible s'étend à 44 px de haut sans changer
-   l'allure de la plaque (21,5 px de haut). */
-.plaque::before {
-  content: '';
-  position: absolute;
-  inset: -12px -6px;
+.fronton {
+  padding: 6px 16px 4px;
+  text-align: center;
 }
 
-.plaque:focus-visible {
-  outline: 2px solid var(--m-or2);
-  outline-offset: 5px;
-}
-
-.ruban {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 4px 18px;
-  background: var(--m-velours);
-  color: var(--m-or2);
+.annonce {
+  margin: 0;
   font: 13px var(--m-f-capitales);
-  letter-spacing: 0.16em;
-  clip-path: polygon(0 0, 100% 0, 94% 50%, 100% 100%, 0 100%, 6% 50%);
+  letter-spacing: 0.28em;
+  color: var(--m-or);
 }
 
-/* Le chargement, la panne, l'attente de l'ouverture. */
-.etat {
+.annonce::before,
+.annonce::after {
+  content: ' ✦ ';
+  color: var(--m-pale);
+}
+
+/* Le millésime d'une décennie (maquette : `.millesime.clos`, à 50 px). */
+.millesime {
+  margin: 2px 0 0;
+  font: 400 50px/1 var(--m-f-affiche);
+  letter-spacing: 0.02em;
+  color: var(--m-papier2);
+  text-shadow:
+    3px 3px 0 var(--m-velours),
+    5px 5px 0 var(--m-ombre);
+}
+
+.monde {
+  margin: 4px 0 0;
+  font: italic 17px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.titreSec {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 26px 16px 10px;
+  font: 400 18px var(--m-f-affiche);
+  letter-spacing: 0.04em;
+  color: var(--m-or2);
+}
+
+.titreSec small {
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-pale);
+}
+
+.titreSec::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--m-filet);
+  transform: translateY(-5px);
+}
+
+/* Le chargement, les pannes. */
+.etat,
+.panne {
   margin: 18px 16px;
   text-align: center;
   font: italic 16px/1.5 var(--m-f-texte);
   color: var(--m-doux);
 }
 
-.etat p {
+.etat p,
+.panne p {
   margin: 0 0 12px;
 }
 
-/* Le bouton doré de la maquette (`.bouton-or`), porté à la cible tactile. */
-.bouton {
+.etat button,
+.panne button,
+.lien {
+  display: inline-grid;
+  place-items: center;
   min-height: 44px;
   padding: 10px 18px;
   border: 0;
@@ -112,6 +152,16 @@
   background: linear-gradient(var(--m-or2), var(--m-or3));
   color: var(--m-encre);
   font: 400 15px var(--m-f-affiche);
+  text-align: center;
+  text-decoration: none;
   box-shadow: 0 3px 0 var(--m-bois);
   cursor: pointer;
+}
+
+/* La boîte à billets et le catalogue : deux boutons dorés, côte à côte. */
+.liens {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 22px 14px 0;
 }

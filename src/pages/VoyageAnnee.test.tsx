@@ -145,6 +145,20 @@ describe('la fiche d’une année', () => {
     expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
   })
 
+  // Mutation : le lien vers `PREMIERE_DECENNIE` en dur (la plaque de 1903 ouvrirait les années 1890).
+  it.each([
+    { annee: 1897, plaque: 'Chapitre I', decennie: 1890 },
+    { annee: 1903, plaque: 'Chapitre II', decennie: 1900 },
+  ])('la plaque ouvre la décennie de l’année ($annee)', async ({ annee, plaque, decennie }) => {
+    monterVoyage(`/voyage/${annee}`, {
+      ...ROUTES,
+      'GET /api/me/voyage/annees/1903': () => json(ficheVerrouillee(1903)),
+      [JOURNAL]: journal([]),
+    })
+    await screen.findByRole('heading', { level: 1, name: String(annee) })
+    expect(screen.getByRole('link', { name: plaque })).toHaveAttribute('href', `/voyage/decennies/${decennie}`)
+  })
+
   // Mutation : la page d'une année sans `key` : revenir d'une année à une autre garderait le compte
   // des relectures de la première, et l'abandonnerait d'emblée.
   it('une autre année repart de zéro dans ses relectures', async () => {

@@ -21,6 +21,7 @@ import Tampon from '../voyage/passeport/Tampon'
 import {
   affichesDeColonne,
   compterRecompenses,
+  decennieDe,
   detecterFrontiereAvancee,
   etatDeCase,
   jauge,
@@ -219,7 +220,10 @@ export default function Carte() {
 
       <header className={styles.hud}>
         <div>
-          <span className={styles.chapitre}>{[monde.chapitre, monde.nom].filter(Boolean).join(' · ')}</span>
+          {/* Le chapitre ouvre la page de la décennie en cours (plan 2c, décision D5). */}
+          <Link to={`/voyage/decennies/${decennieDe(v.annee_en_cours)}`} className={styles.chapitre}>
+            {[monde.chapitre, monde.nom].filter(Boolean).join(' · ')}
+          </Link>
           <span className={styles.annee}>{v.annee_en_cours}</span>
         </div>
         <p className={styles.recompenses} aria-label={`${compte.palme} Palmes, ${compte.lion} Lions, ${compte.ours} Ours`}>

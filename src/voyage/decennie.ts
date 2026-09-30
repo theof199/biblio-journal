@@ -22,6 +22,16 @@ export function decennieDeLAdresse(param: string | undefined, anneeCivile: numbe
   return d % 10 === 0 && d >= PREMIERE_DECENNIE && d <= decennieDe(anneeCivile) ? d : null
 }
 
+/**
+ * L'année civile **à Paris**, celle du serveur qui borne la carte (`new Date().getFullYear()` de
+ * l'API, sur le NAS) : jamais celle de l'appareil, qui, réglé ailleurs, fermerait la décennie neuve
+ * quelques heures de trop le 1er janvier, ou l'ouvrirait la veille. Le format se crée à chaque appel :
+ * les tests changent le fuseau de Node.
+ */
+export function anneeCivile(maintenant: Date = new Date()): number {
+  return Number(new Intl.DateTimeFormat('en-CA', { year: 'numeric', timeZone: 'Europe/Paris' }).format(maintenant))
+}
+
 export const anneesDe = (decennie: number): number[] => Array.from({ length: 10 }, (_, i) => decennie + i)
 
 /** Les films de mon journal sortis cette année-là : jamais une série (le Voyage ne compte que des films). */

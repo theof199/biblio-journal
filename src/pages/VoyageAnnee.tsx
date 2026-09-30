@@ -264,7 +264,12 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
         >
           <span aria-hidden="true">‹</span>
         </Link>
-        {monde.chapitre ? <span className={styles.plaque}>{monde.chapitre}</span> : null}
+        {/* La plaque du chapitre ouvre la page de la décennie de l'année (plan 2c, décision D5). */}
+        {monde.chapitre ? (
+          <Link to={`/voyage/decennies/${decennieDe(annee)}`} className={styles.plaque}>
+            {monde.chapitre}
+          </Link>
+        ) : null}
       </div>
       {corps}
     </section>
