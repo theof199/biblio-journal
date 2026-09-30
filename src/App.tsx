@@ -10,6 +10,7 @@ import MesFilms from './pages/MesFilms'
 import Carte from './pages/Carte'
 import VoyageAnnee from './pages/VoyageAnnee'
 import VoyageFilm from './pages/VoyageFilm'
+import VoyageBillet from './pages/VoyageBillet'
 import Suivis from './pages/Suivis'
 import PageRealisateur from './pages/PageRealisateur'
 import PageSaga from './pages/PageSaga'
@@ -36,6 +37,9 @@ export default function App() {
           <Route path="voyage/:annee" element={<VoyageAnnee />} />
           {/* La fiche d'un film du Voyage (décision D5) : l'onglet Voyage reste marqué, d'où qu'on vienne. */}
           <Route path="voyage/:annee/films/:filmId" element={<VoyageFilm />} />
+          {/* Le billet de séance : un visionnage à enregistrer (`?bobine=` pour une bobine), ou à corriger (`state.item`). */}
+          <Route path="voyage/:annee/films/:filmId/billet" element={<VoyageBillet />} />
+          <Route path="voyage/:annee/films/:filmId/billet/corriger" element={<VoyageBillet correction />} />
           <Route path="suivis" element={<Suivis />} />
           <Route path="suivis/realisateurs/:tmdbId" element={<PageRealisateur />} />
           <Route path="suivis/sagas/:tmdbId" element={<PageSaga />} />

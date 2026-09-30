@@ -1,0 +1,96 @@
+/* Les cartons d'intertitre (maquette 1890 : `.cartons`, `.carton-r`, `.compte-cartons`, lignes 370 à
+   377). */
+.cartons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+  perspective: 600px;
+}
+
+.carton {
+  position: relative;
+  min-height: 50px;
+  padding: 8px 8px 8px 30px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--m-fond);
+  color: var(--m-doux);
+  text-align: left;
+  font: italic 500 14px/1.2 var(--m-f-titre);
+  outline: 1px solid color-mix(in srgb, var(--m-papier) 35%, transparent);
+  outline-offset: -4px;
+  transform-style: preserve-3d;
+  transition:
+    background 0.3s,
+    color 0.3s,
+    outline-color 0.3s;
+  cursor: pointer;
+}
+
+.emo {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  margin-top: -9px;
+  font-size: 16px;
+  font-style: normal;
+  line-height: 18px;
+  filter: grayscale(1) sepia(0.7) brightness(1.1);
+}
+
+.carton[aria-pressed='true'] {
+  background: var(--m-encre);
+  color: var(--m-papier);
+  outline: 1px solid var(--m-papier);
+  box-shadow:
+    0 0 0 2px var(--m-encre),
+    0 0 16px color-mix(in srgb, var(--m-or2) 45%, transparent);
+}
+
+.carton[aria-pressed='true'] .emo {
+  filter: grayscale(0.3) sepia(0.4);
+}
+
+.carton:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.tourneA {
+  animation: tourneA 0.45s ease;
+}
+
+.tourneB {
+  animation: tourneB 0.45s ease;
+}
+
+@keyframes tourneA {
+  50% {
+    transform: rotateX(90deg);
+  }
+}
+
+@keyframes tourneB {
+  50% {
+    transform: rotateX(90deg);
+  }
+}
+
+.compte {
+  margin: 6px 0 0;
+  text-align: right;
+  font: italic 13.5px var(--m-f-texte);
+  color: var(--m-encre2);
+}
+
+/* Au calme, un carton change de face sans se retourner. */
+@media (prefers-reduced-motion: reduce) {
+  .carton {
+    transition: none;
+  }
+
+  .tourneA,
+  .tourneB {
+    animation: none;
+  }
+}

@@ -1,0 +1,112 @@
+/* Le dateur à molettes (maquette 1890 : `.dateur`, `.roues`, `.roue`, `.fleche`, `.raccourcis`, lignes
+   354 à 362). Les chiffres de la maquette sont en `monospace` : ici la police d'affiche du monde, à
+   chasse fixe pour les chiffres. */
+.dateur {
+  display: grid;
+  justify-items: center;
+}
+
+.ligne {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.roues {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: linear-gradient(var(--m-or3), color-mix(in srgb, var(--m-or3) 60%, var(--m-bois)));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--m-papier) 40%, transparent),
+    0 3px 0 var(--m-bois);
+}
+
+.roue {
+  position: relative;
+  display: block;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--m-encre);
+  box-shadow:
+    inset 0 6px 8px var(--m-ombre),
+    inset 0 -6px 8px var(--m-ombre);
+}
+
+.piste {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.5s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.piste span {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  padding: 0 8px;
+  font: 400 18px var(--m-f-affiche);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-papier);
+}
+
+.mois .piste span {
+  font: 16px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+}
+
+/* Les flèches de la maquette (34 px), portées à la cible tactile. */
+.fleche {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--m-bois);
+  border-radius: 50%;
+  background: var(--m-papier2);
+  color: var(--m-encre);
+  font: 400 18px var(--m-f-affiche);
+  cursor: pointer;
+}
+
+.fleche:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.raccourcis {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.raccourcis button {
+  min-height: 44px;
+  padding: 3px 12px;
+  border: 1px solid color-mix(in srgb, var(--m-encre2) 45%, transparent);
+  border-radius: 2px;
+  background: none;
+  color: var(--m-encre2);
+  font: 13.5px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.raccourcis button[aria-pressed='true'] {
+  background: var(--m-encre);
+  color: var(--m-papier);
+}
+
+.fleche:focus-visible,
+.raccourcis button:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: 2px;
+}
+
+/* Au calme, les molettes se posent sur leur cran sans rouler. */
+@media (prefers-reduced-motion: reduce) {
+  .piste {
+    transition: none;
+  }
+}

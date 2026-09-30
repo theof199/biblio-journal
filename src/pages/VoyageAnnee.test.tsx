@@ -9,6 +9,7 @@ import { PAGES_1890 } from '../mondes/1890/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { RELECTURES } from '../voyage/relecture'
 import { INSECABLE } from '../voyage/annee/AnneeFermee'
+import { confierLeRetour, oublierLeRetour } from '../voyage/annee/retour'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
 import { visionnage } from '../test/journal'
@@ -423,6 +424,29 @@ describe('la fiche d’une année', () => {
     })
     const corde = await screen.findByRole('list', { name: 'La progression de l’année' })
     expect(within(corde).getAllByRole('listitem').map((b) => b.getAttribute('aria-label'))).toEqual(['3 films vus', '1 essentiel sur 5', '0 salle complète sur 3'])
+  })
+
+  // Le retour d'un billet (tâche 11) se joue sur la fiche **relue** après le montage, jamais sur celle
+  // que le cache garde d'avant l'écriture. Mutation : `isFetchedAfterMount` ignoré (joué sur la fiche en
+  // cache, rien n'aurait bougé, et la relecture ne rejouerait plus).
+  it('un retour confié se joue sur la fiche relue, pas sur celle du cache', async () => {
+    const progression = { essentiels_vus: 0, essentiels_total: 2, salles_completes: 0, salles_autres: 1 }
+    confierLeRetour(1897, { avant: { profondeur: 2, progression }, guet: null })
+    monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(nue({ profondeur: 3, progression })) }, (c) =>
+      c.setQueryData(cles.annee(1897), nue({ profondeur: 2, progression })),
+    )
+    expect(await screen.findByText('+1 film vu')).toHaveAttribute('role', 'status')
+    expect(screen.getByRole('listitem', { name: '3 films vus' })).toBeInTheDocument()
+  })
+
+  // Le jumeau : sans billet, une fiche ne roule rien. Mutation : le retour confié pour une autre année lu ici.
+  it('sans retour confié pour elle, la fiche ne roule rien', async () => {
+    confierLeRetour(1896, { avant: { profondeur: 0, progression: null }, guet: null })
+    monterVoyage('/voyage/1897', ROUTES)
+    await screen.findByRole('heading', { level: 1, name: '1897' })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.queryByText(/^\+\d/)).toBeNull()
+    oublierLeRetour(1896)
   })
 
   // Mutation : le programme rendu pour une année bouclée ; les trous pris à la mauvaise valeur.

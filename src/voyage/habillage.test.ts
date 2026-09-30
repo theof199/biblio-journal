@@ -55,6 +55,10 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/pages/VoyageFilm.module.css',
         '/src/voyage/film/Guichet.module.css',
         '/src/voyage/film/Programme.module.css',
+        '/src/pages/VoyageBillet.module.css',
+        '/src/voyage/billet/Dateur.module.css',
+        '/src/voyage/billet/Poincon.module.css',
+        '/src/voyage/billet/Cartons.module.css',
       ]),
     )
   })

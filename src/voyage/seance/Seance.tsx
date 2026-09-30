@@ -16,6 +16,7 @@ import {
   type Seance as SeanceDeLAnnee,
 } from '../../api/voyage'
 import type { Monde } from '../../mondes/types'
+import type { EtatBillet } from '../annee/retour'
 import { useCalque } from '../calque'
 import Feuillet from '../Feuillet'
 import { RELECTURES, messageEchecComposition } from '../relecture'
@@ -220,7 +221,8 @@ function Partie({ monde, annee, role, film }: { monde: Monde; annee: number; rol
         <b>{film.title}</b>
         <small>{`${film.salle} · ${etat}`}</small>
         {film.etat !== 'vu' ? (
-          <Link to={billetDe(annee, film)} className={styles.vu} aria-label={`Je l’ai vu : ${film.title}`}>
+          // L'année est derrière le billet : il y reculera au lieu de l'empiler une seconde fois.
+          <Link to={billetDe(annee, film)} state={{ depuis: 'annee' } satisfies EtatBillet} className={styles.vu} aria-label={`Je l’ai vu : ${film.title}`}>
             Je l’ai vu
           </Link>
         ) : null}

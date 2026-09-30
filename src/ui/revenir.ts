@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
  * `history.state`, écarte une première entrée remplacée (une redirection à l'ouverture). Un
  * routeur en mémoire (les tests) n'écrit pas `history.state` : la clé seule tranche.
  */
-function historiqueDerriere(cle: string): boolean {
+export function historiqueDerriere(cle: string): boolean {
   if (cle === 'default') return false
   const idx = (window.history.state as { idx?: unknown } | null)?.idx
   return typeof idx !== 'number' || idx > 0

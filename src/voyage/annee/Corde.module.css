@@ -84,6 +84,46 @@
   font: 13px/1.15 var(--m-f-texte);
 }
 
+/* Au retour d'un billet : le compteur roule de l'ancienne valeur à la nouvelle (jamais au calme : la
+   page n'en pose pas). */
+.compteur {
+  display: inline-block;
+  height: 1.05em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.rouleau {
+  display: flex;
+  flex-direction: column;
+  animation: rouler 0.8s 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+.rouleau span {
+  display: block;
+  height: 1.05em;
+}
+
+@keyframes rouler {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+/* Le « +1 » qui tombe de la corde sur le billet (animé par la page, Web Animations). */
+.plus {
+  position: absolute;
+  top: 10px;
+  right: 6px;
+  font: 400 17px/1 var(--m-f-affiche);
+  color: var(--corail);
+  opacity: 0;
+  pointer-events: none;
+}
+
 @keyframes balance {
   from {
     transform: rotate(-2.6deg);
@@ -97,5 +137,10 @@
 @media (prefers-reduced-motion: reduce) {
   .billet {
     animation: none;
+  }
+
+  .rouleau {
+    animation: none;
+    transform: translateY(-50%);
   }
 }

@@ -1,0 +1,96 @@
+/* Le poinçon (maquette 1890 : `.poincon`, `.note-lue`, `.confetti-papier`, lignes 363 à 369). */
+.zone {
+  position: relative;
+}
+
+.poincon {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+
+/* Un trou : son rond pointillé ; la cible tactile garde 44 px de haut, le rond reste celui de la maquette. */
+.poincon button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--m-encre2);
+  font: 400 14px var(--m-f-affiche);
+  cursor: pointer;
+}
+
+.poincon button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  max-width: 30px;
+  aspect-ratio: 1;
+  border: 1.5px dashed color-mix(in srgb, var(--m-encre2) 50%, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Percé : le trou laisse voir le fond ; le chiffre s'en va avec le carton. */
+.poincon button.troue {
+  color: transparent;
+}
+
+.poincon button.troue::before {
+  border: 0;
+  background: radial-gradient(circle, var(--m-tel) 62%, var(--m-fond));
+  box-shadow:
+    inset 0 2px 4px var(--m-ombre),
+    0 1px 0 color-mix(in srgb, var(--m-papier) 35%, transparent);
+}
+
+.poincon button:focus-visible,
+.lue button:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: 2px;
+}
+
+.lue {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.lue b {
+  font: 400 40px/1 var(--m-f-affiche);
+  color: var(--m-rouge);
+}
+
+.lue span {
+  font: italic 16px var(--m-f-texte);
+}
+
+.lue button {
+  min-height: 44px;
+  margin-left: 10px;
+  border: 0;
+  background: none;
+  color: var(--m-encre2);
+  font: italic 14px var(--m-f-texte);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Le carton qui tombe du trou percé (posé et animé par la page, jamais au calme). */
+.confetti {
+  position: absolute;
+  z-index: 2;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--m-papier2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--m-encre2) 30%, transparent);
+  pointer-events: none;
+}

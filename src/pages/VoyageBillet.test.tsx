@@ -1,0 +1,623 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cles } from '../api/cles'
+import type { JournalItem, JournalPage } from '../api/journal'
+import type { ReactionsCatalogue } from '../api/reactions'
+import type { Bobine, FichePrete, Progression, Voyage } from '../api/voyage'
+import { jourLocal } from '../ui/format'
+import { oublierLeRetour } from '../voyage/annee/retour'
+import { decalerJour } from '../voyage/billet'
+import { RELECTURES } from '../voyage/relecture'
+import { exemple } from '../test/contrat'
+import { visionnage } from '../test/journal'
+import { SESSION, monterVoyage } from '../test/pageVoyage'
+import { json } from '../test/serveur'
+import { fichePrete, filmDeSalle, morceau, salle, seance, voyage1890 } from '../test/voyage'
+
+const SOURCE = { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: 1897 }
+const VOYAGE = voyage1890(
+  1897,
+  [
+    { annee: 1896, statut: 'ouverte', visitee: true, recompense: 'lion' },
+    { annee: 1897, statut: 'en_cours', visitee: true, recompense: null },
+    { annee: 1898, statut: 'verrouillee', visitee: false, recompense: null },
+  ],
+  { ia: true, source: null, rattrape_la_source: false },
+)
+const HORS_IA: Voyage = { ...VOYAGE, ia: false, source: SOURCE }
+
+const bobine = (tmdb_id: number, title: string, etat: Bobine['etat']): Bobine => ({ tmdb_id, title, duree_min: 1, cover_url: null, plex_url: null, etat })
+const FAUCON = filmDeSalle({ id: 'f-faucon', tmdb_id: 963, title: 'Le Faucon maltais', year: 1897, realisateur: 'John Huston', etat: 'a_demander', plex_url: null })
+const KANE = filmDeSalle({ id: 'f-kane', tmdb_id: 15, title: 'Citizen Kane', year: 1897, etat: 'vu', note: 9, plex_url: null })
+const PROGRAMME = filmDeSalle({
+  id: 'p-lumiere',
+  tmdb_id: 511,
+  title: 'Programme Lumière',
+  year: 1897,
+  etat: 'sur_le_plex',
+  plex_url: null,
+  programme: { duree_min: 2, bobines: [bobine(511, 'La Sortie de l’usine', 'vu'), bobine(512, 'Le Repas de bébé', 'sur_le_plex')] },
+})
+const ESSENTIELS = salle({ id: 's-ess', nom: 'Les essentiels', films: [FAUCON, KANE, PROGRAMME] })
+
+const PROGRESSION: Progression = { essentiels_vus: 0, essentiels_total: 2, salles_completes: 0, salles_autres: 1 }
+const JUGE = '2026-09-21T21:00:00.000Z'
+const REJUGE = '2026-09-30T08:00:00.000Z'
+/** La fiche de 1897, deux films vus, un verdict « pas encore mûre » : chaque test pose ce qui change. */
+const fiche = (s: Partial<FichePrete> = {}): FichePrete =>
+  fichePrete({
+    annee: 1897,
+    profondeur: 2,
+    progression: PROGRESSION,
+    recompense: null,
+    ticket: null,
+    maturite: { mure: false, motif: 'Encore un peu tôt.', jugee_le: JUGE },
+    generique: null,
+    seances: [],
+    seance_en_cours: false,
+    salles: [ESSENTIELS],
+    pistes: [],
+    demande_salle: null,
+    podium: [null, null, null],
+    ...s,
+  })
+
+const CARTE = 'GET /api/me/voyage'
+const ANNEE = 'GET /api/me/voyage/annees/1897'
+const REACTIONS = 'GET /api/reference/reactions'
+const MEDIA = 'POST /api/media'
+const JOURNAL = 'POST /api/me/journal'
+const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)
+const PAGE = exemple<JournalPage>('/me/journal', 'get', 200)
+/** Une requête sous chaque préfixe que périme une écriture du journal, sans observateur (rien ne les relit). */
+const PERIMABLES = [cles.seances, cles.stats, cles.tickets, cles.realisateurs, cles.sagas]
+
+/** L'entrée que rend `POST /me/journal` : un film sorti en `annee` (l'année que l'API lit pour le jury). */
+function entreeRendue(annee: number | null = 2010): JournalItem {
+  const e = exemple<JournalItem>('/me/journal', 'post', 201)
+  e.media.year = annee
+  return e
+}
+
+/** Mon visionnage de Citizen Kane, sa remarque privée comprise : l'état de navigation du billet de correction. */
+function kaneVu(): JournalItem {
+  const v = visionnage({ id: 'e-kane', media: 'm-kane', titre: 'Citizen Kane', annee: 1897, date: '2026-09-01', note: 9, reactions: ['adore'] })
+  v.media.external_id = '15'
+  v.media.source = 'tmdb'
+  v.media.type = 'movie'
+  v.carnet.comment = 'Une remarque privée, rien qu’à moi.'
+  return v
+}
+
+/**
+ * Le serveur d'un billet : la fiche relue rend `apres` une fois le visionnage écrit (le film vu
+ * compte), `avant` jusque-là. `ecrit` le dit au test.
+ */
+function serveur(o: { voyage?: Voyage; avant?: FichePrete; apres?: () => FichePrete; entree?: JournalItem } = {}) {
+  const etat = { ecrit: false, creations: 0 }
+  const routes = {
+    [CARTE]: () => json(o.voyage ?? VOYAGE),
+    [ANNEE]: () => json(etat.ecrit ? (o.apres?.() ?? fiche({ profondeur: 3 })) : (o.avant ?? fiche())),
+    [REACTIONS]: () => json(CATALOGUE),
+    [MEDIA]: () => json(exemple('/media', 'post', 201), 201),
+    [JOURNAL]: () => {
+      etat.ecrit = true
+      etat.creations += 1
+      return json(o.entree ?? entreeRendue(), 201)
+    },
+  }
+  return { etat, routes }
+}
+
+const billet = (film: { id: string }, suite = '') => `/voyage/1897/films/${film.id}/billet${suite}`
+const compte = (requetes: string[], cle: string) => requetes.filter((r) => r === cle).length
+const corps = (init: RequestInit) => JSON.parse(String(init.body)) as Record<string, unknown>
+const composter = () => screen.findByRole('button', { name: /Composter le billet/ })
+const lAnnee = () => screen.findByRole('region', { name: 'L’année 1897' })
+
+/** `matchMedia` manque à jsdom : le test pose la réponse de « moins d'animations ». */
+const calme = () =>
+  vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+
+/** Web Animations, absent de jsdom : doublé, il note chaque animation lancée. */
+function animer() {
+  const animate = vi.fn(() => ({ cancel: vi.fn(), onfinish: null }) as unknown as Animation)
+  Object.defineProperty(Element.prototype, 'animate', { value: animate, configurable: true, writable: true })
+  return animate
+}
+
+function vibreur() {
+  const vibrate = vi.fn(() => true)
+  Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true })
+  return vibrate
+}
+
+describe('le billet de séance', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    localStorage.clear()
+    oublierLeRetour(1897)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    delete (Element.prototype as { animate?: unknown }).animate
+    delete (navigator as { vibrate?: unknown }).vibrate
+  })
+
+  // Mutations : la garde du double toucher retirée ; le retour à l'année oublié (retour à l'accueil).
+  it('composte une fois, puis revient à l’année relue', async () => {
+    const { etat, routes } = serveur()
+    const { requetes } = monterVoyage(billet(FAUCON), routes)
+    fireEvent.click(await screen.findByRole('button', { name: '7 sur 10' }))
+    const bouton = await composter()
+    fireEvent.click(bouton)
+    fireEvent.click(bouton)
+    expect(await lAnnee()).toBeInTheDocument()
+    expect(etat.creations).toBe(1)
+    expect(compte(requetes, MEDIA)).toBe(1)
+    expect(compte(requetes, ANNEE)).toBeGreaterThan(1)
+  })
+
+  // Mutations : « et revenir à l’année » laissé tel quel (la page ne met pas l'année) ; le nom de la
+  // correction pris aux mots du monde.
+  it('dit « Composter le billet » · « et revenir à 1897 », sans numéro ; « Corriger le billet » en correction', async () => {
+    const { routes } = serveur()
+    const vue = monterVoyage(billet(FAUCON), routes)
+    expect(await composter()).toHaveAccessibleName('Composter le billet et revenir à 1897')
+    expect(screen.getByText('Cinématographe · billet de séance')).toBeInTheDocument()
+    expect(screen.queryByText(/N°/)).toBeNull()
+    vue.unmount()
+    monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, routes)
+    expect(await screen.findByRole('button', { name: /Corriger le billet/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
+  })
+
+  // Mutations : la date d'aujourd'hui toujours ; la note oubliée ; les cartons ou la remarque oubliés.
+  it('le corps de POST /me/journal porte la date du dateur (« Hier »), la note poinçonnée, les cartons, la remarque', async () => {
+    const { routes } = serveur()
+    let envoye: Record<string, unknown> | null = null
+    monterVoyage(billet(FAUCON), {
+      ...routes,
+      [JOURNAL]: (init) => {
+        envoye = corps(init)
+        return routes[JOURNAL]()
+      },
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Hier' }))
+    fireEvent.click(screen.getByRole('button', { name: '8 sur 10' }))
+    // Deux cartons, choisis à rebours : ils partent dans l'ordre du catalogue.
+    const [premier, second] = [CATALOGUE.reactions[0]!, CATALOGUE.reactions[2]!]
+    fireEvent.click(await screen.findByRole('button', { name: second.phrase }))
+    fireEvent.click(screen.getByRole('button', { name: premier.phrase }))
+    expect(screen.getByText('2 cartons choisis')).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Remarque privée' }), { target: { value: '  Le train fonce.  ' } })
+    fireEvent.click(await composter())
+    await lAnnee()
+    expect(envoye).toEqual({
+      media_id: exemple<{ media: { id: string } }>('/media', 'post', 201).media.id,
+      finished_at: decalerJour(jourLocal(), -1),
+      rating: 8,
+      reactions: [premier.cle, second.cle],
+      comment: 'Le train fonce.',
+    })
+  })
+
+  // Mutation : un billet sans note envoie la note d'avant, ou `0` (« sans note » rebouche tout).
+  it('« sans note » rebouche le poinçon et envoie une note nulle', async () => {
+    const { routes } = serveur()
+    let envoye: Record<string, unknown> | null = null
+    monterVoyage(billet(FAUCON), { ...routes, [JOURNAL]: (init) => ((envoye = corps(init)), routes[JOURNAL]()) })
+    fireEvent.click(await screen.findByRole('button', { name: '6 sur 10' }))
+    expect(screen.getByRole('button', { name: '6 sur 10' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'sans note' }))
+    expect(screen.getByRole('button', { name: '6 sur 10' })).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(await composter())
+    await lAnnee()
+    expect(envoye).toMatchObject({ rating: null, finished_at: jourLocal() })
+    expect(envoye).not.toHaveProperty('reactions')
+    expect(envoye).not.toHaveProperty('comment')
+  })
+
+  // Mutations : `peutAvancer` ignoré ; « ‹ » qui n'avance rien ; le raccourci jamais allumé.
+  it('« › » est désactivé à aujourd’hui, s’allume après « ‹ », et les raccourcis suivent la date', async () => {
+    const { routes } = serveur()
+    monterVoyage(billet(FAUCON), routes)
+    const dateur = await screen.findByRole('group', { name: 'Date du visionnage' })
+    const suivant = within(dateur).getByRole('button', { name: 'Jour suivant' })
+    expect(suivant).toBeDisabled()
+    expect(within(dateur).getByRole('button', { name: 'Aujourd’hui' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(dateur).getByRole('button', { name: 'Jour précédent' }))
+    expect(suivant).toBeEnabled()
+    expect(within(dateur).getByRole('button', { name: 'Hier' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(dateur).getByRole('button', { name: 'Jour précédent' }))
+    expect(within(dateur).getByRole('button', { name: 'Hier' })).toHaveAttribute('aria-pressed', 'false')
+    expect(within(dateur).getByRole('button', { name: 'Aujourd’hui' })).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(suivant)
+    fireEvent.click(suivant)
+    expect(suivant).toBeDisabled()
+  })
+
+  // Mutation : le candidat du programme (son `tmdb_id`, celui de la première bobine, déjà vue).
+  it('une bobine : POST /media porte l’identifiant de la bobine, et le billet son titre', async () => {
+    const { routes } = serveur()
+    let media: Record<string, unknown> | null = null
+    monterVoyage(billet(PROGRAMME, '?bobine=512'), { ...routes, [MEDIA]: (init) => ((media = corps(init)), routes[MEDIA]()) })
+    expect(await screen.findByRole('heading', { level: 1, name: 'Le Repas de bébé' })).toBeInTheDocument()
+    fireEvent.click(await composter())
+    await lAnnee()
+    expect(media).toEqual({ source: 'tmdb', external_id: '512', type: 'movie' })
+  })
+
+  // Mutation : la garde de la bobine retirée : le billet d'un programme noterait sa première bobine.
+  it('un programme sans bobine reconnue ne s’offre pas au billet', async () => {
+    const { routes } = serveur()
+    const { requetes } = monterVoyage(billet(PROGRAMME, '?bobine=999'), routes)
+    expect(await screen.findByText('Cette bobine n’est pas au programme de « Programme Lumière ».')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Retour au film' })).toHaveAttribute('href', '/voyage/1897/films/p-lumiere')
+    expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
+    expect(requetes.some((r) => r.startsWith('POST'))).toBe(false)
+  })
+
+  // Mutation : `filmDeLaFiche` au premier film venu.
+  it('dit l’absence d’un film qui n’est pas dans les salles de l’année', async () => {
+    const { routes } = serveur()
+    monterVoyage('/voyage/1897/films/inconnu/billet', routes)
+    expect(await screen.findByText('Ce film n’est pas dans les salles de 1897.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
+  })
+
+  // Le jumeau du formulaire du journal. Mutation : une clé retirée des péremptions (les Suivis
+  // reproposeraient le film, le Profil garderait ses chiffres).
+  it('périme ce que périme le formulaire du journal', async () => {
+    const { routes } = serveur()
+    const vue = monterVoyage(billet(FAUCON), routes, (c) => {
+      for (const cle of PERIMABLES) c.setQueryData(cle, { garde: true })
+    })
+    fireEvent.click(await composter())
+    await lAnnee()
+    expect(PERIMABLES.filter((cle) => !vue.client.getQueryState(cle)?.isInvalidated)).toEqual([])
+  })
+
+  it('un refus s’affiche tel que l’API l’a écrit, et le billet se retente', async () => {
+    const { routes } = serveur()
+    let essais = 0
+    monterVoyage(billet(FAUCON), {
+      ...routes,
+      [JOURNAL]: () => (++essais === 1 ? json({ code: 'CONFLICT', message: 'Déjà noté aujourd’hui.', retryable: false }, 409) : routes[JOURNAL]()),
+    })
+    fireEvent.click(await composter())
+    expect(await screen.findByRole('alert')).toHaveTextContent('Déjà noté aujourd’hui.')
+    fireEvent.click(await composter())
+    expect(await lAnnee()).toBeInTheDocument()
+    expect(essais).toBe(2)
+  })
+
+  // Le piège du rappel qui survit (tâches 8 à 10). Mutation : la navigation dans `onSuccess` de
+  // `useMutation` : quitté pendant l'envoi, le billet ramènerait quand même à l'année.
+  it('quitté pendant l’envoi, le billet ne ramène pas à l’année à la réponse', async () => {
+    const { routes } = serveur()
+    let repondre: () => void = () => undefined
+    const { requetes } = monterVoyage([`/voyage/1897/films/${FAUCON.id}`, billet(FAUCON)], {
+      ...routes,
+      'GET /api/reference/films/963/realisateurs': () => json({ realisateurs: [] }),
+      [JOURNAL]: () => new Promise<Response>((r) => (repondre = () => r(routes[JOURNAL]()))),
+    })
+    fireEvent.click(await composter())
+    await waitFor(() => expect(requetes).toContain(JOURNAL))
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+    // La fiche du film : son enseigne, que le billet n'a pas.
+    expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+    await act(async () => {
+      repondre()
+      await new Promise((r) => setTimeout(r, 50))
+    })
+    expect(screen.getByText('Salle · Les essentiels')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+  })
+
+  describe('le retour à l’année', () => {
+    // Mutations : le retour jamais pris (un second passage le rejoue) ; `avancees` recalculé à chaque
+    // lecture (une relecture qui avance encore revibre) ; le retour joué sur la fiche d'avant (sans
+    // attendre la relecture : rien n'aurait bougé).
+    it('le billet des films passe de 2 à 3, la région d’état dit « +1 film vu », et le téléphone vibre une fois, au palier de l’Ours', async () => {
+      const vibrate = vibreur()
+      let apres = fiche({ profondeur: 3 })
+      const { routes } = serveur({ voyage: HORS_IA, apres: () => apres })
+      const vue = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      const annonce = await screen.findByText('+1 film vu')
+      expect(annonce).toHaveAttribute('role', 'status')
+      const films = screen.getByRole('listitem', { name: '3 films vus' })
+      expect(within(films).getByText('2')).toBeInTheDocument()
+      expect(within(films).getByText('3')).toBeInTheDocument()
+      expect(vibrate).toHaveBeenCalledTimes(1)
+      expect(vibrate).toHaveBeenCalledWith([18, 40, 70])
+
+      // La fiche se relit et a encore avancé (un autre écran, un autre appareil) : rien ne revibre.
+      apres = fiche({ profondeur: 4 })
+      await act(() => vue.client.refetchQueries({ queryKey: ['voyage', 'annee', 1897] }))
+      await screen.findByRole('listitem', { name: '4 films vus' })
+      expect(vibrate).toHaveBeenCalledTimes(1)
+
+      // Plus tard, la même année rouverte : le retour a été pris, rien ne roule ni ne vibre.
+      vue.unmount()
+      monterVoyage('/voyage/1897', routes)
+      await screen.findByRole('listitem', { name: '4 films vus' })
+      await new Promise((r) => setTimeout(r, 50))
+      expect(screen.queryByText('+1 film vu')).toBeNull()
+      expect(vibrate).toHaveBeenCalledTimes(1)
+    })
+
+    // Le jumeau du palier. Mutation : vibrer à chaque avancée.
+    it('une avancée sans palier ne fait pas vibrer', async () => {
+      const vibrate = vibreur()
+      const { routes } = serveur({ voyage: HORS_IA, avant: fiche({ profondeur: 5 }), apres: () => fiche({ profondeur: 6 }) })
+      monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      expect(await screen.findByText('+1 film vu')).toBeInTheDocument()
+      expect(vibrate).not.toHaveBeenCalled()
+    })
+
+    // Mutations : la garde du calme retirée (le « +1 » volerait) ; `peutAnimer` ignoré.
+    it('un « +1 » vole sur le billet gagné, jamais au calme', async () => {
+      const animate = animer()
+      const { routes } = serveur({ voyage: HORS_IA })
+      const vue = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      const films = await screen.findByRole('listitem', { name: '3 films vus' })
+      await waitFor(() => expect(within(films).getByText('+1')).toBeInTheDocument())
+      expect(animate).toHaveBeenCalled()
+      vue.unmount()
+
+      calme()
+      animate.mockClear()
+      monterVoyage(billet(FAUCON), serveur({ voyage: HORS_IA }).routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      expect(await screen.findByText('+1 film vu')).toBeInTheDocument()
+      const posee = screen.getByRole('listitem', { name: '3 films vus' })
+      expect(within(posee).queryByText('+1')).toBeNull()
+      // Le compteur est posé à sa valeur, sans rouler depuis l'ancienne.
+      expect(within(posee).queryByText('2')).toBeNull()
+      expect(animate).not.toHaveBeenCalled()
+    })
+
+    // Mutation : la garde de Web Animations retirée (le « +1 » s'afficherait, immobile, ou lèverait).
+    it('sans Web Animations, rien ne vole, mais le compteur roule', async () => {
+      const { routes } = serveur({ voyage: HORS_IA })
+      monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      const films = await screen.findByRole('listitem', { name: '3 films vus' })
+      await waitFor(() => expect(within(films).getByText('2')).toBeInTheDocument())
+      expect(within(films).queryByText('+1')).toBeNull()
+    })
+
+    // Mutations : `doitGuetterVerdict` contourné (hors IA, la fiche se relirait) ; `verdictAChange`
+    // ignoré (le guet ne s'arrêterait qu'au plafond).
+    it('au compte IA, pour un film de l’année en cours, la fiche se relit toutes les cinq secondes jusqu’au verdict, puis s’arrête', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      let verdict = JUGE
+      const { routes } = serveur({
+        entree: entreeRendue(1897),
+        apres: () => fiche({ profondeur: 3, maturite: { mure: false, motif: 'Encore un peu tôt.', jugee_le: verdict } }),
+      })
+      const { requetes } = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      await vi.advanceTimersByTimeAsync(200)
+      const n = compte(requetes, ANNEE)
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms)
+      expect(compte(requetes, ANNEE)).toBe(n + 1)
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms)
+      expect(compte(requetes, ANNEE)).toBe(n + 2)
+      verdict = REJUGE
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms)
+      expect(compte(requetes, ANNEE)).toBe(n + 3)
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms * 6)
+      expect(compte(requetes, ANNEE)).toBe(n + 3)
+    })
+
+    // Le jumeau. Mutation : `doitGuetterVerdict` contourné.
+    it.each([
+      ['hors IA', HORS_IA, 1897],
+      ['au compte IA, pour un film d’une autre année', VOYAGE, 2010],
+    ] as const)('%s, aucune relecture de guet', async (_cas, voyage, anneeDuFilm) => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ voyage, entree: entreeRendue(anneeDuFilm) })
+      const { requetes } = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      await vi.advanceTimersByTimeAsync(200)
+      const n = compte(requetes, ANNEE)
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms * 4)
+      expect(compte(requetes, ANNEE)).toBe(n)
+    })
+
+    // Mutation : le guet au plafond ignoré (la fiche se relirait tant que le verdict ne change pas).
+    it('le guet s’arrête au douzième essai', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ entree: entreeRendue(1897) })
+      const { requetes } = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      await vi.advanceTimersByTimeAsync(200)
+      const n = compte(requetes, ANNEE)
+      for (let i = 0; i < 20; i += 1) await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms)
+      expect(compte(requetes, ANNEE)).toBe(n + RELECTURES.verdict.plafond)
+    })
+
+    // Mutation : la minuterie non annulée en quittant la page.
+    it('le guet s’arrête en quittant la page', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ entree: entreeRendue(1897) })
+      const { requetes } = monterVoyage(['/voyage/1896', billet(FAUCON)], {
+        ...routes,
+        'GET /api/me/voyage/annees/1896': () => json(fiche({ annee: 1896, recompense: 'lion', maturite: null })),
+      })
+      fireEvent.click(await composter())
+      await lAnnee()
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms + 200)
+      fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+      await screen.findByRole('heading', { level: 1, name: '1896' })
+      const n = compte(requetes, ANNEE)
+      await vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms * 4)
+      expect(compte(requetes, ANNEE)).toBe(n)
+    })
+
+    // Depuis la séance, l'année est derrière le billet. Mutations : le lien de la séance sans son état
+    // (le billet remplacerait l'année par elle-même) ; toujours remplacer. L'historique aurait alors
+    // deux fois 1897, et « Retour à la carte » ramènerait à 1897.
+    it('depuis la séance, le billet recule vers l’année sans la doubler, et les billets roulent', async () => {
+      const { routes } = serveur({ avant: fiche({ seances: [seance({ id: 's-1', rang: 1, long: morceau(FAUCON) })] }) })
+      monterVoyage(['/voyage/1896', '/voyage/1897'], {
+        ...routes,
+        'GET /api/me/voyage/annees/1896': () => json(fiche({ annee: 1896, recompense: 'lion', maturite: null })),
+      })
+      const zone = await screen.findByRole('region', { name: 'Ce soir à la baraque' })
+      fireEvent.click(within(zone).getByRole('link', { name: `Je l’ai vu : ${FAUCON.title}` }))
+      fireEvent.click(await composter())
+      await lAnnee()
+      expect(await screen.findByText('+1 film vu')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+      expect(await screen.findByRole('heading', { level: 1, name: '1896' })).toBeInTheDocument()
+    })
+  })
+
+  describe('la correction', () => {
+    // Mutation : `construirePatch` remplacé par le brouillon entier.
+    it('`PATCH` ne porte que ce qui a changé, et le billet part de l’entrée, remarque privée comprise', async () => {
+      const { routes } = serveur()
+      let envoye: Record<string, unknown> | null = null
+      const { requetes } = monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, {
+        ...routes,
+        'PATCH /api/me/journal/e-kane': (init) => ((envoye = corps(init)), json(kaneVu())),
+      })
+      expect(await screen.findByRole('heading', { level: 1, name: 'Citizen Kane' })).toBeInTheDocument()
+      expect(screen.getByRole('textbox', { name: 'Remarque privée' })).toHaveValue('Une remarque privée, rien qu’à moi.')
+      expect(screen.getByRole('button', { name: '9 sur 10' })).toHaveAttribute('aria-pressed', 'true')
+      fireEvent.click(screen.getByRole('button', { name: '7 sur 10' }))
+      fireEvent.click(screen.getByRole('button', { name: /Corriger le billet/ }))
+      await lAnnee()
+      expect(envoye).toEqual({ rating: 7 })
+      expect(requetes.some((r) => r.startsWith('POST'))).toBe(false)
+    })
+
+    // Mutation : le billet de correction sans son entrée qui tente quand même (il n'y a rien à corriger).
+    it('sans l’entrée dans l’état de navigation, dit que le visionnage n’est plus disponible', async () => {
+      const { routes } = serveur()
+      monterVoyage(billet(KANE, '/corriger'), routes)
+      expect(await screen.findByText('Ce visionnage n’est plus disponible.')).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Retour au film' })).toHaveAttribute('href', '/voyage/1897/films/f-kane')
+      expect(screen.queryByRole('button', { name: /Corriger le billet/ })).toBeNull()
+    })
+
+    // Mutations : la confirmation sautée ; « Annuler » qui supprime ; le billet effacé laissé dans
+    // l'historique (remplacé par la fiche du film : le « Retour » du film ramènerait au film).
+    it('« Supprimer » envoie `DELETE` après confirmation, puis recule vers la fiche du film', async () => {
+      const { routes } = serveur()
+      let effacements = 0
+      monterVoyage(['/voyage/1897', `/voyage/1897/films/${KANE.id}`, { pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }], {
+        ...routes,
+        'GET /api/me/journal?limit=20': () => json({ ...PAGE, items: [kaneVu()], next_cursor: null }),
+        'GET /api/reference/films/15/realisateurs': () => json({ realisateurs: [] }),
+        'DELETE /api/me/journal/e-kane': () => ((effacements += 1), new Response(null, { status: 204 })),
+      })
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+      expect(screen.getByText('Supprimer ce visionnage ? Le commentaire et les réactions partent avec.')).toBeInTheDocument()
+      expect(effacements).toBe(0)
+      fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+      expect(screen.queryByText(/Supprimer ce visionnage/)).toBeNull()
+      expect(effacements).toBe(0)
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+      // La fiche du film : son enseigne, que le billet n'a pas.
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Corriger le billet/ })).toBeNull()
+      expect(effacements).toBe(1)
+      fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+      expect(await lAnnee()).toBeInTheDocument()
+    })
+
+    // Le jumeau des péremptions du compostage. Mutation : « Supprimer » qui ne périme rien.
+    it('« Supprimer » périme ce que périme le formulaire du journal', async () => {
+      const { routes } = serveur()
+      const vue = monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, {
+        ...routes,
+        'GET /api/me/journal?limit=20': () => json({ ...PAGE, items: [], next_cursor: null }),
+        'GET /api/reference/films/15/realisateurs': () => json({ realisateurs: [] }),
+        'DELETE /api/me/journal/e-kane': () => new Response(null, { status: 204 }),
+      }, (c) => {
+        for (const cle of PERIMABLES) c.setQueryData(cle, { garde: true })
+      })
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+      await screen.findByText('Salle · Les essentiels')
+      expect(PERIMABLES.filter((cle) => !vue.client.getQueryState(cle)?.isInvalidated)).toEqual([])
+    })
+
+    // Le jumeau de la garde du compostage. Mutation : la garde de « Supprimer » retirée.
+    it('deux touchers sur « Supprimer » n’effacent qu’une fois', async () => {
+      const { routes } = serveur()
+      let effacements = 0
+      monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, {
+        ...routes,
+        'GET /api/me/journal?limit=20': () => json({ ...PAGE, items: [], next_cursor: null }),
+        'GET /api/reference/films/15/realisateurs': () => json({ realisateurs: [] }),
+        'DELETE /api/me/journal/e-kane': () => ((effacements += 1), new Response(null, { status: 204 })),
+      })
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+      const confirmer = screen.getByRole('button', { name: 'Supprimer' })
+      fireEvent.click(confirmer)
+      fireEvent.click(confirmer)
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(effacements).toBe(1)
+    })
+  })
+
+  describe('le poinçon', () => {
+    // Mutations : la garde du calme retirée (des confettis au calme) ; les confettis comptés depuis 1
+    // (chaque trou déjà percé relâcherait le sien).
+    it('lâche un confetti par trou nouvellement percé, jamais au calme', async () => {
+      const animate = animer()
+      const { routes } = serveur()
+      const vue = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await screen.findByRole('button', { name: '3 sur 10' }))
+      expect(animate).toHaveBeenCalledTimes(3)
+      fireEvent.click(screen.getByRole('button', { name: '5 sur 10' }))
+      expect(animate).toHaveBeenCalledTimes(5)
+      vue.unmount()
+
+      calme()
+      animate.mockClear()
+      monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await screen.findByRole('button', { name: '3 sur 10' }))
+      expect(screen.getByRole('button', { name: '3 sur 10' })).toHaveAttribute('aria-pressed', 'true')
+      expect(animate).not.toHaveBeenCalled()
+    })
+  })
+
+  // Mutation : la route déclarée hors de `<Coque />` (la barre disparaîtrait).
+  it('garde la barre d’onglets, l’onglet Voyage marqué', async () => {
+    const { routes } = serveur()
+    monterVoyage(billet(FAUCON), routes)
+    await composter()
+    const onglets = screen.getByRole('navigation', { name: 'Onglets' })
+    expect(within(onglets).getByRole('link', { name: 'Voyage' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  // Mutation : le cachet de la maquette (« T ») en dur.
+  it('le cachet de cire de la remarque porte l’initiale du membre', async () => {
+    const { routes } = serveur()
+    monterVoyage(billet(FAUCON), routes)
+    const remarque = await screen.findByRole('textbox', { name: 'Remarque privée' })
+    const rubrique = remarque.parentElement!
+    expect(within(rubrique).getByText(SESSION.user.pseudo.charAt(0).toUpperCase())).toBeInTheDocument()
+    expect(within(rubrique).getByText('privée : toi seul la lis')).toBeInTheDocument()
+  })
+})

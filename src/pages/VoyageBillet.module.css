@@ -1,0 +1,345 @@
+/* Le billet de séance (maquette 1890 : `initNotation`, écran VI, styles 338 à 382, sans le marteau,
+   l'encre « Vu », le billet qui sort ni le numéro : décision D2). Couleurs et polices : les jetons du
+   monde, posés sur la racine par la page ; le corail ne marque que « Composter », le geste du joueur. */
+.page {
+  position: relative;
+  min-height: 100%;
+  background: var(--m-tel);
+  color: var(--m-papier);
+  font: 15px/1.55 var(--m-f-corps);
+}
+
+/* Le retour de la maquette (`.retour`), porté à la cible tactile. */
+.retour {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0 0 3px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 60%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-fond) 78%, transparent);
+  color: var(--m-or2);
+  font: 400 24px/1 var(--m-f-affiche);
+  cursor: pointer;
+}
+
+.notation {
+  padding: 62px 14px 34px;
+}
+
+.tete {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.cab {
+  display: block;
+  padding: 3px;
+  border: 1px solid var(--m-or);
+  background: var(--m-fond);
+}
+
+.cab img,
+.sansImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+
+.sansImage {
+  background: color-mix(in srgb, var(--m-or) 15%, var(--m-fond));
+}
+
+.sepia img {
+  filter: sepia(0.4) brightness(0.9);
+}
+
+.gris img {
+  filter: grayscale(1);
+}
+
+.sc {
+  display: block;
+  font: 12.5px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-or);
+}
+
+.titre {
+  margin: 0;
+  font: 600 17px/1.2 var(--m-f-titre);
+  color: var(--m-papier);
+}
+
+.tete small {
+  font: italic 14px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+/* Le billet : le carton grainé, ses deux demi-lunes à hauteur du pointillé. */
+.billet {
+  position: relative;
+  margin-top: 18px;
+  padding: 18px 16px 20px;
+  border-radius: 4px;
+  background-color: var(--m-papier2);
+  background-image: radial-gradient(var(--m-grain) 1px, transparent 1.6px);
+  background-size: 6px 6px;
+  color: var(--m-encre);
+  box-shadow: 0 12px 26px var(--m-ombre);
+  -webkit-mask:
+    radial-gradient(circle 10px at 0 104px, transparent 96%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 10px at 100% 104px, transparent 96%, var(--m-encre)) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 10px at 0 104px, transparent 96%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 10px at 100% 104px, transparent 96%, var(--m-encre)) right / 51% 100% no-repeat;
+}
+
+.billet::before {
+  content: '';
+  position: absolute;
+  top: 103px;
+  right: 14px;
+  left: 14px;
+  border-top: 2px dashed color-mix(in srgb, var(--m-encre2) 40%, transparent);
+}
+
+.entete {
+  text-align: center;
+}
+
+.entete small {
+  display: block;
+  font: 12px var(--m-f-capitales);
+  letter-spacing: 0.26em;
+  color: var(--m-rouge);
+}
+
+.entete strong {
+  display: block;
+  font: 400 24px/1.05 var(--m-f-affiche);
+}
+
+.rubrique {
+  margin-top: 26px;
+}
+
+/* Le dateur sous le pointillé, comme la maquette (`margin-top: 34px`). */
+.rubrique.dateur {
+  margin-top: 34px;
+}
+
+.rubriqueTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-rouge);
+}
+
+.rubriqueTete em {
+  font: italic 13.5px var(--m-f-texte);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--m-encre2);
+}
+
+.attente,
+.erreurCartons {
+  margin: 0;
+  font: italic 14px var(--m-f-texte);
+  color: var(--m-encre2);
+}
+
+.erreurCartons button {
+  min-height: 44px;
+}
+
+/* La remarque : le papier réglé, la marge rouge, l'écriture penchée. */
+.remarque textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 120px;
+  padding: 4px 10px 6px 34px;
+  border: 0;
+  border-radius: 2px;
+  resize: vertical;
+  background-color: var(--m-papier);
+  background-image:
+    linear-gradient(90deg, transparent 26px, color-mix(in srgb, var(--m-rouge) 50%, transparent) 26px 27px, transparent 27px),
+    repeating-linear-gradient(transparent 0 25px, color-mix(in srgb, var(--m-encre2) 30%, transparent) 25px 26px);
+  background-attachment: local;
+  color: var(--m-encre);
+  font: italic 17px/26px var(--m-f-texte);
+  box-shadow: inset 0 1px 4px var(--m-ombre);
+}
+
+.remarque textarea::placeholder {
+  color: color-mix(in srgb, var(--m-encre) 45%, transparent);
+}
+
+.remarque textarea:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: 2px;
+}
+
+/* Le cachet de cire, à l'initiale du membre. */
+.cire {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: radial-gradient(circle at 40% 35%, var(--m-rouge), var(--m-velours) 70%);
+  color: var(--m-or2);
+  font: 400 11px var(--m-f-affiche);
+  letter-spacing: 0;
+}
+
+/* « Composter le billet » : le billet corail du guichet (le geste du joueur), jamais teinté. */
+.valider {
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  align-items: stretch;
+  width: 100%;
+  min-height: 64px;
+  margin-top: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: var(--corail);
+  color: var(--m-encre);
+  text-align: left;
+  cursor: pointer;
+  -webkit-mask:
+    radial-gradient(circle 8px at 0 50%, transparent 96%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, transparent 96%, var(--m-encre)) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 8px at 0 50%, transparent 96%, var(--m-encre)) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, transparent 96%, var(--m-encre)) right / 51% 100% no-repeat;
+}
+
+.valider b {
+  display: block;
+  padding: 12px 0 0 20px;
+  font: 400 21px var(--m-f-affiche);
+}
+
+.valider small {
+  display: block;
+  padding: 0 0 10px 20px;
+  font: italic 14px var(--m-f-texte);
+}
+
+.valider:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.talon {
+  display: grid;
+  place-items: center;
+  border-left: 2px dashed color-mix(in srgb, var(--m-encre) 45%, transparent);
+  font: 400 14px var(--m-f-affiche);
+}
+
+.erreur {
+  margin: 14px 0 0;
+  text-align: center;
+  font: italic 15px var(--m-f-texte);
+  color: var(--m-or2);
+}
+
+/* « Supprimer » (décision D6) : un texte discret sous le billet, puis sa confirmation. */
+.discret,
+.supprimer {
+  display: block;
+  min-height: 44px;
+  margin: 12px auto 0;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--m-pale);
+  font: italic 15px var(--m-f-texte);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.confirmation {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--m-filet);
+  border-radius: 3px;
+  text-align: center;
+  font: italic 15px/1.45 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.confirmation p {
+  margin: 0;
+}
+
+.choix {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+
+.choix .discret,
+.choix .supprimer {
+  margin: 8px 0 0;
+}
+
+.supprimer {
+  color: var(--m-or2);
+}
+
+.supprimer:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.retour:focus-visible,
+.valider:focus-visible,
+.discret:focus-visible,
+.supprimer:focus-visible,
+.lien:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* Le chargement, la panne, un film ou un visionnage absents. */
+.etat {
+  margin: 0;
+  padding: 72px 16px 18px;
+  text-align: center;
+  font: italic 16px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.etat p {
+  margin: 0 0 12px;
+}
+
+.lien {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  color: var(--m-or2);
+}

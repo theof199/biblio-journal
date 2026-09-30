@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
@@ -9,9 +9,13 @@ import { ambianceDeLHeure } from '../carte/heure'
 import { creerRegistre } from '../mondes'
 import type { Monde, VueBandeau } from '../mondes/types'
 import Panne from '../ui/Panne'
+import { vibrer } from '../ui/haptique'
 import { useMouvementReduit } from '../ui/mouvement'
 import { useRevenir } from '../ui/revenir'
-import { afficherGenerique, billetsDeProgression, ligneDuBas, statutDeLAnnee } from '../voyage/annee'
+import { afficherGenerique, avancees, billetsDeProgression, ligneDuBas, statutDeLAnnee, verdictAChange, type Avancee } from '../voyage/annee'
+import { annonceDesAvancees, franchitUnPalier, oublierLeRetour, retourConfie } from '../voyage/annee/retour'
+import { RELECTURES } from '../voyage/relecture'
+import { useGuet } from '../voyage/salles/useFournee'
 import { useCalque } from '../voyage/calque'
 import Feuille from '../voyage/Feuille'
 import { decennieDe, etatDeCase, prochainPas } from '../voyage/regles'
@@ -82,6 +86,30 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     queryFn: ({ signal }) => journalComplet(signal),
     enabled: !!fermee,
   })
+
+  // Le retour d'un billet (tâche 11) : confié par le billet, pris une fois par cette page. Une fois la
+  // fiche relue après le montage, ce qui a été gagné roule sur la corde, se dit, et le téléphone vibre
+  // au palier ; puis plus rien, ni à la relecture suivante, ni au retour suivant, ni au rechargement.
+  const [retour] = useState(() => retourConfie(annee))
+  useEffect(() => {
+    oublierLeRetour(annee)
+  }, [annee])
+  const [gains, setGains] = useState<readonly Avancee[]>([])
+  const joue = useRef(false)
+  const relue = requete.isFetchedAfterMount
+  useEffect(() => {
+    if (joue.current || !retour?.avant || !relue || !prete) return
+    joue.current = true
+    const liste = avancees(retour.avant, { profondeur: prete.profondeur, progression: prete.progression })
+    if (liste.length === 0) return
+    setGains(liste)
+    if (franchitUnPalier(liste, prete.progression)) vibrer([18, 40, 70])
+  }, [retour, relue, prete])
+  // Le verdict du jury, guetté au compte IA après une création (le billet l'a décidé) : la fiche se
+  // relit toutes les cinq secondes, douze fois au plus, jusqu'à un verdict changé ou un ticket ; la
+  // minuterie s'arrête en quittant la page.
+  const guet = retour?.guet ?? null
+  useGuet(annee, guet !== null && !!prete && !verdictAChange(guet.depuis, prete.maturite?.jugee_le ?? null, prete.ticket), RELECTURES.verdict)
 
   const feuille = useCalque('feuille')
   // Le générique s'écrit à sa première lecture ; la route rend ensuite le texte écrit, sans appel.
@@ -199,6 +227,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
         onUtiliser={encaisser}
         occupe={utiliser.isPending}
         erreur={utiliser.error ? (utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.') : null}
+        gains={gains}
       />
     )
   }
@@ -249,10 +278,12 @@ interface PropsPrete {
   onUtiliser: (annee: number) => void
   occupe: boolean
   erreur: string | null
+  /** Ce que le retour d'un billet a gagné : la corde le fait rouler, la région d'état le dit. */
+  gains: readonly Avancee[]
 }
 
 /** La fiche prête (maquette 1890 : `htmlAnnee`, écrans I et II) : l'année en cours, ou bouclée. */
-function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique, onUtiliser, occupe, erreur }: PropsPrete) {
+function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique, onUtiliser, occupe, erreur, gains }: PropsPrete) {
   const m = monde.pages.mots
   const enCours = statutDeLAnnee(annee, v.annee_en_cours) !== 'ouverte'
   const billets = billetsDeProgression(fiche.profondeur, fiche.progression).map((b) => ({
@@ -266,7 +297,11 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
       <Fronton annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde}>
         {enCours ? null : <span className={styles.ruban}>{fiche.recompense ? `Bouclée · ${NOM_DE_RECOMPENSE[fiche.recompense]}` : 'Bouclée'}</span>}
       </Fronton>
-      <Corde billets={billets} />
+      <Corde billets={billets} gains={gains} />
+      {/* Présente dès la fiche montée, vide : une région d'état ne se lit qu'à son changement. */}
+      <p role="status" className="sr-only">
+        {annonceDesAvancees(gains)}
+      </p>
       <Boniment
         monde={monde}
         annee={annee}
