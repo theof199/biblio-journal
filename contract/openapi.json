@@ -27521,7 +27521,7 @@
         "tags": [
           "carnet"
         ],
-        "description": "Mes visionnages, de la plus récente à la plus ancienne date de fin, l’identifiant départageant deux entrées du même jour. C’est la route qui manquait : le journal se lisait film par film (`GET /media/:id/log`), jamais en une liste.\n\nChaque élément joint la fiche réduite de l’œuvre — les champs de `media`, décrits ci-dessous — et la partie privée : absente, elle se lit `{ reactions: [], comment: null }`, le journal partagé et le carnet ayant toujours la même liste d’entrées.\n\n**Films seulement, comme le `POST`.** Le site journalise aussi les livres, les jeux, la musique, les séries et les BD : ces entrées-là existent, et cette liste ne les rend pas.\n\n**Aucun `user_id`.** Cette route ne parle que de toi ; le journal des autres se lit sur `GET /media/:id/log?user_id=`, sans leur carnet.\n\n**`?reaction=`** ne rend que les entrées dont le carnet porte cette réaction — utile pour « Au ciné », qui filtre sur `en_salle`. Le back ne connaît pas le sens de la clé, seulement sa forme.\n\n**Pagination** — `limit` et `cursor`, comme partout.",
+        "description": "Mes visionnages, de la plus récente à la plus ancienne date de fin, l’identifiant départageant deux entrées du même jour. C’est la route qui manquait : le journal se lisait film par film (`GET /media/:id/log`), jamais en une liste.\n\nChaque élément joint la fiche réduite de l’œuvre — les champs de `media`, décrits ci-dessous — et la partie privée : absente, elle se lit `{ reactions: [], comment: null }`, le journal partagé et le carnet ayant toujours la même liste d’entrées.\n\n**Films seulement, comme le `POST`.** Le site journalise aussi les livres, les jeux, la musique, les séries et les BD : ces entrées-là existent, et cette liste ne les rend pas.\n\n**Aucun `user_id`.** Cette route ne parle que de toi ; le journal des autres se lit sur `GET /media/:id/log?user_id=`, sans leur carnet.\n\n**`?reaction=`** ne rend que les entrées dont le carnet porte cette réaction — utile pour « Au ciné », qui filtre sur `en_salle`. Le back ne connaît pas le sens de la clé, seulement sa forme.\n\n**`?sortie_min=` et `?sortie_max=`** ne rendent que les films sortis de l’une à l’autre de ces années, bornes comprises — l’année de `media.year`. Se composent avec le reste ; une fourchette à l’envers répond `400`. La boîte à billets du Journal lit ainsi une décennie sans lire tout le journal.\n\n**Pagination** — `limit` et `cursor`, comme partout.",
         "parameters": [
           {
             "schema": {
@@ -27553,6 +27553,28 @@
             "name": "reaction",
             "required": false,
             "description": "Ne rend que les entrées dont le carnet porte cette réaction"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1800,
+              "maximum": 2200
+            },
+            "in": "query",
+            "name": "sortie_min",
+            "required": false,
+            "description": "Ne rend que les films sortis cette année-là ou après — l’année de `media.year`"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1800,
+              "maximum": 2200
+            },
+            "in": "query",
+            "name": "sortie_max",
+            "required": false,
+            "description": "Ne rend que les films sortis cette année-là ou avant — l’année de `media.year`"
           }
         ],
         "responses": {
@@ -43366,7 +43388,7 @@
         "tags": [
           "voyage"
         ],
-        "description": "`annee_en_cours` sépare les trois statuts : `ouverte` avant elle (je peux toujours y revenir creuser), `en_cours` sur elle, `verrouillee` après (rien ne s’y ouvre encore).\n\n`visitee` dit si une ouverture existe déjà pour cette année, quel que soit son statut. `profondeur` compte les films de mon journal sortis cette année-là, y compris ceux vus avant d’y arriver ; un programme compte un, jamais ses bobines séparément. `affiche_url` est l’affiche du n°1 de mon podium cette année-là, nulle si la marche est vide.\n\n`recompense` vaut `ours` (profondeur ≥ 3, même sans ouverture — un seul film vu, même en avance, ne suffit plus depuis le 28 septembre 2026), `lion` (« Les essentiels » entièrement vus ou introuvables, accordé alors sans appel au chroniqueur) ou `palme` (`lion`, et au moins deux autres salles, à au moins un film, complètes au même sens) — `null` sinon.\n\n`progression` porte `essentiels_vus`/`essentiels_total`/`salles_completes`/`salles_autres`, même forme que sur la fiche (`GET /me/voyage/annees/{annee}`) — `null` pour une année verrouillée ou pas encore ouverte (`visitee: false`).\n\n`tampons` porte le passeport : une ligne par décennie bouclée (`decennie` croissant, `boucle_le`), où chacune de ses années a un `ours` et où le ticket de la première année de la décennie suivante est `utilise_le`.\n\n`seance_prise` porte la dernière séance que j’ai prise (`POST /me/voyage/seances/{id}/prendre`), tant que son long n’est pas encore vu — `null` dès qu’il l’est, ou si aucune séance n’est prise.\n\n`ia` dit si le chroniqueur écrit pour moi : le compte marqué du Voyage, avec une clé posée. `source` porte ce compte quand ce n’est pas moi (`id`, `pseudo`, `annee_en_cours`), `null` pour lui. Les salles, films et ouvertures des années portées ici sont alors lus chez `source`, jamais chez moi, et bornés à mes années lisibles (celles qu’il a déjà ouvertes, jusqu’à la mienne) — au-delà, `visitee` reste faux même si `source` a continué.\n\n`source.annee_en_cours` dit où en est ce Voyage (`1895` s’il n’a jamais encaissé de ticket). Elle peut retarder de soixante secondes : encaisser un ticket n’invalide que le cache de son auteur.\n\nRéponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium et toute écriture sur une séance.",
+        "description": "`annee_en_cours` sépare les trois statuts : `ouverte` avant elle (je peux toujours y revenir creuser), `en_cours` sur elle, `verrouillee` après (rien ne s’y ouvre encore).\n\n`visitee` dit si une ouverture existe déjà pour cette année, quel que soit son statut. `profondeur` compte les films de mon journal sortis cette année-là, y compris ceux vus avant d’y arriver ; un programme compte un, jamais ses bobines séparément. `affiche_url` est l’affiche du n°1 de mon podium cette année-là, nulle si la marche est vide.\n\n`recompense` vaut `ours` (profondeur ≥ 3, même sans ouverture — un seul film vu, même en avance, ne suffit plus depuis le 28 septembre 2026), `lion` (« Les essentiels » entièrement vus ou introuvables, accordé alors sans appel au chroniqueur) ou `palme` (`lion`, et au moins deux autres salles, à au moins un film, complètes au même sens) — `null` sinon.\n\n`progression` porte `essentiels_vus`/`essentiels_total`/`salles_completes`/`salles_autres`, même forme que sur la fiche (`GET /me/voyage/annees/{annee}`) — `null` pour une année verrouillée ou pas encore ouverte (`visitee: false`).\n\n`tampons` porte le passeport : une ligne par décennie bouclée (`decennie` croissant, `boucle_le`), où chacune de ses années porte une récompense (l’Ours au moins) et où le ticket de la première année de la décennie suivante est `utilise_le`. `boucle_le` est la plus tardive entre cet usage et, pour chaque année, le premier visionnage de son troisième film, comptés comme `profondeur` — un programme vaut un film, vu le jour de sa dernière bobine — (de son dernier, si elle en compte moins : une année au Lion peut n’en compter que deux, et sa date dit alors son dernier film vu, même si le Lion est tombé plus tard).\n\n`seance_prise` porte la dernière séance que j’ai prise (`POST /me/voyage/seances/{id}/prendre`), tant que son long n’est pas encore vu — `null` dès qu’il l’est, ou si aucune séance n’est prise.\n\n`ia` dit si le chroniqueur écrit pour moi : le compte marqué du Voyage, avec une clé posée. `source` porte ce compte quand ce n’est pas moi (`id`, `pseudo`, `annee_en_cours`), `null` pour lui. Les salles, films et ouvertures des années portées ici sont alors lus chez `source`, jamais chez moi, et bornés à mes années lisibles (celles qu’il a déjà ouvertes, jusqu’à la mienne) — au-delà, `visitee` reste faux même si `source` a continué.\n\n`source.annee_en_cours` dit où en est ce Voyage (`1895` s’il n’a jamais encaissé de ticket). Elle peut retarder de soixante secondes : encaisser un ticket n’invalide que le cache de son auteur.\n\nRéponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium et toute écriture sur une séance.",
         "responses": {
           "200": {
             "description": "Ma progression dans le Voyage",
@@ -43572,7 +43594,7 @@
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                            "description": "La plus tardive entre l’usage du ticket de la décennie suivante et le dernier premier-film-de-l’année qui manquait à celle-ci"
+                            "description": "La plus tardive entre l’usage du ticket de la décennie suivante et, pour chaque année, le premier visionnage de son troisième film (de son dernier, si elle en compte moins), comptés comme `profondeur` : un programme vaut un film, vu le jour de sa dernière bobine"
                           }
                         },
                         "required": [

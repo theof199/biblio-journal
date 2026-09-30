@@ -3839,6 +3839,8 @@ export interface paths {
      *
      * **`?reaction=`** ne rend que les entrées dont le carnet porte cette réaction — utile pour « Au ciné », qui filtre sur `en_salle`. Le back ne connaît pas le sens de la clé, seulement sa forme.
      *
+     * **`?sortie_min=` et `?sortie_max=`** ne rendent que les films sortis de l’une à l’autre de ces années, bornes comprises — l’année de `media.year`. Se composent avec le reste ; une fourchette à l’envers répond `400`. La boîte à billets du Journal lit ainsi une décennie sans lire tout le journal.
+     *
      * **Pagination** — `limit` et `cursor`, comme partout.
      */
     get: {
@@ -3850,6 +3852,10 @@ export interface paths {
           cursor?: string;
           /** @description Ne rend que les entrées dont le carnet porte cette réaction */
           reaction?: string;
+          /** @description Ne rend que les films sortis cette année-là ou après — l’année de `media.year` */
+          sortie_min?: number;
+          /** @description Ne rend que les films sortis cette année-là ou avant — l’année de `media.year` */
+          sortie_max?: number;
         };
       };
       responses: {
@@ -8716,7 +8722,7 @@ export interface paths {
      *
      * `progression` porte `essentiels_vus`/`essentiels_total`/`salles_completes`/`salles_autres`, même forme que sur la fiche (`GET /me/voyage/annees/{annee}`) — `null` pour une année verrouillée ou pas encore ouverte (`visitee: false`).
      *
-     * `tampons` porte le passeport : une ligne par décennie bouclée (`decennie` croissant, `boucle_le`), où chacune de ses années a un `ours` et où le ticket de la première année de la décennie suivante est `utilise_le`.
+     * `tampons` porte le passeport : une ligne par décennie bouclée (`decennie` croissant, `boucle_le`), où chacune de ses années porte une récompense (l’Ours au moins) et où le ticket de la première année de la décennie suivante est `utilise_le`. `boucle_le` est la plus tardive entre cet usage et, pour chaque année, le premier visionnage de son troisième film, comptés comme `profondeur` — un programme vaut un film, vu le jour de sa dernière bobine — (de son dernier, si elle en compte moins : une année au Lion peut n’en compter que deux, et sa date dit alors son dernier film vu, même si le Lion est tombé plus tard).
      *
      * `seance_prise` porte la dernière séance que j’ai prise (`POST /me/voyage/seances/{id}/prendre`), tant que son long n’est pas encore vu — `null` dès qu’il l’est, ou si aucune séance n’est prise.
      *
@@ -8780,7 +8786,7 @@ export interface paths {
                   decennie: number;
                   /**
                    * Format: date-time
-                   * @description La plus tardive entre l’usage du ticket de la décennie suivante et le dernier premier-film-de-l’année qui manquait à celle-ci
+                   * @description La plus tardive entre l’usage du ticket de la décennie suivante et, pour chaque année, le premier visionnage de son troisième film (de son dernier, si elle en compte moins), comptés comme `profondeur` : un programme vaut un film, vu le jour de sa dernière bobine
                    */
                   boucle_le: string;
                 }[];
