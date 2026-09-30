@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { JournalPage } from '../api/journal'
 import type { Voyage } from '../api/voyage'
 import { PAGES_1890 } from '../mondes/1890/pages'
+import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import type { VueMonument } from '../mondes/types'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
@@ -136,8 +137,8 @@ describe('la page d’une décennie', () => {
     expect(await screen.findByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
   })
 
-  // Mutations : `bouclee: false` en dur ; `cases: []` (la foire ne se remplirait plus) ; les chevaux
-  // d'une autre décennie.
+  // Mutations : `bouclee: false` en dur ; `cases: []` (la foire ne se remplirait plus). Une autre
+  // décennie que celle de l'année en cours : le test suivant.
   it('donne au manège un cheval par année, les cases de la décennie et le tampon', async () => {
     const manege = doublerLeManege()
     const bouclee: Voyage = { ...VOYAGE, tampons: [{ decennie: 1890, boucle_le: '2026-01-14T10:00:00.000Z' }] }
@@ -152,6 +153,45 @@ describe('la page d’une décennie', () => {
     expect(vue.cases.map((c) => `${c.annee} ${c.etat} ${c.profondeur}`)).toEqual(['1895 palme 9', '1896 lion 6', '1897 encours 2', '1898 verrou 3', '1899 verrou 0'])
     expect(vue.bouclee).toBe(true)
     expect(vue.H).toBe(PAGES_1890.hauteurs.monument)
+  })
+
+  // L'API rend toutes les années, du départ à l'année civile : une carte en 1903 porte les années
+  // 1890 et 1900. Mutations : le tampon lu sur la décennie de l'année en cours
+  // (`tamponDe(v.tampons, decennieDe(v.annee_en_cours))`) ; les cases de toutes les décennies (le
+  // filtre retiré) ; les chevaux de la première décennie (`chevaux(v, 1890)`).
+  it('lit la décennie de la page, pas celle de l’année en cours ni la première', async () => {
+    const manege = doublerLeManege()
+    const monument1900 = vi.spyOn(PAGES_A_VENIR, 'dessinerMonument').mockImplementation(() => undefined)
+    const en1903 = voyage1890(
+      1903,
+      [
+        ...VOYAGE.annees.map((a) => ({ ...a, statut: 'ouverte' as const, visitee: true, recompense: a.recompense ?? ('ours' as const), profondeur: 3 })),
+        { annee: 1900, statut: 'ouverte', visitee: true, recompense: 'lion', profondeur: 4 },
+        { annee: 1901, statut: 'ouverte', visitee: true, recompense: 'ours', profondeur: 3 },
+        { annee: 1902, statut: 'ouverte', visitee: true, recompense: null, profondeur: 1 },
+        { annee: 1903, statut: 'en_cours', visitee: true, recompense: null, profondeur: 1 },
+      ],
+      { ia: true, source: null, rattrape_la_source: false, depart: 1895, tampons: [{ decennie: 1890, boucle_le: '2026-01-14T10:00:00.000Z' }] },
+    )
+    const routes = { ...ROUTES, 'GET /api/me/voyage': () => json(en1903), 'GET /api/me/journal?limit=100&sortie_min=1900&sortie_max=1909': journal([]) }
+
+    const quittee = monterVoyage('/voyage/decennies/1890', routes)
+    await decennie()
+    expect(await screen.findByText('14 janvier 2026')).toBeInTheDocument()
+    expect(screen.queryByText('Le tampon se pose ici')).not.toBeInTheDocument()
+    await manege.peint()
+    expect(manege.dernier().cases.map((c) => c.annee)).toEqual([1895, 1896, 1897, 1898, 1899])
+    expect(manege.dernier().bouclee).toBe(true)
+    quittee.unmount()
+
+    monterVoyage('/voyage/decennies/1900', routes)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Années 1900' })).toBeInTheDocument()
+    await waitFor(() => expect(monument1900).toHaveBeenCalled())
+    const vue = monument1900.mock.calls[monument1900.mock.calls.length - 1]![0]
+    expect(vue.annees.map((a) => a.annee)).toEqual([1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909])
+    expect(vue.cases.map((c) => c.annee)).toEqual([1900, 1901, 1902, 1903])
+    expect(vue.bouclee).toBe(false)
+    expect(await screen.findByText('Le tampon se pose ici')).toBeInTheDocument()
   })
 
   // Mutation : la garde `ouvrable` retirée (1893 ouvrirait une page qui n'existe pas au Voyage).
@@ -274,6 +314,18 @@ describe('la page d’une décennie', () => {
     expect(lignes).toHaveLength(10)
     expect(lignes[0]).toHaveTextContent(/^1890—$/)
     expect(lignes[9]).toHaveTextContent(/^1899Prochainement$/)
+  })
+
+  // Mutation : « Prochainement » dit de toute année d'après le départ, même ouvrable
+  // (`if (l.annee >= depart)`) : le registre ne compterait plus rien.
+  it('le registre compte les films vus de chaque année, en cours et en avance compris', async () => {
+    monterVoyage('/voyage/decennies/1890', ROUTES)
+    await decennie()
+    const lignes = registreDeLaPage().getAllByRole('listitem')
+    expect(lignes[5]).toHaveTextContent(/^18959 vus/)
+    expect(lignes[7]).toHaveTextContent(/^18972 vus · en cours/)
+    expect(lignes[8]).toHaveTextContent(/^18983 vus en avance/)
+    expect(lignes[9]).toHaveTextContent(/^1899—$/)
   })
 
   // Mutations : la palissade nourrie d'une liste vide ; la note tue.
