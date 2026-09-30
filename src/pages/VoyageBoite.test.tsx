@@ -261,6 +261,17 @@ describe('la boîte à billets', () => {
     expect(await billets()).toHaveLength(3)
   })
 
+  // Le jumeau, pour la carte (le départ du Voyage fait les intercalaires). Mutations : « Réessayer »
+  // qui ne relit que le journal ; la panne de la carte tue.
+  it('une panne de la carte s’affiche telle que l’API l’a écrite, et se retente', async () => {
+    let refuse = true
+    monter('/voyage/decennies/1890/billets', { ...ROUTES, 'GET /api/me/voyage': () => (refuse ? refus('La carte s’est déchirée.')() : json(VOYAGE)) })
+    expect(await screen.findByText('La carte s’est déchirée.')).toBeInTheDocument()
+    refuse = false
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+    expect(await billets()).toHaveLength(3)
+  })
+
   // Le liseré dit un billet rangé, pas un geste du joueur : l'or du monde, jamais le corail, et rien
   // qui tombe au calme. Mutations : `var(--corail)` dans le liseré ; la règle du calme retirée.
   it('borde le billet rangé de l’or du monde, jamais du corail', () => {
