@@ -112,6 +112,13 @@ describe('les salles d’une année', () => {
     expect(within(complete).getByText('1 vu sur 2')).toBeInTheDocument()
   })
 
+  // Mutation : l'étagère sans le traitement des affiches du monde (1890 : `sepia`).
+  it('les affiches portent le traitement du monde', async () => {
+    monterVoyage('/voyage/1897', ROUTES)
+    const essentiels = await laSalle('Les essentiels')
+    expect(within(essentiels).getByRole('list', { name: 'L’étagère de la salle Les essentiels' }).className).toMatch(/\bsepia\b|_sepia_/)
+  })
+
   // Mutation : les ampoules allumées sans `ampoules(salle)` (toutes, ou l'introuvable compté).
   it('allume une ampoule par film vu, et pas pour un perdu', async () => {
     monterVoyage('/voyage/1897', { ...ROUTES, [ANNEE]: () => json(fiche({ salles: [COMPLETE] })) })
@@ -359,6 +366,27 @@ describe('les salles d’une année', () => {
     expect(client.getQueryData<FichePrete>(cles.annee(1897))?.pistes).toHaveLength(2)
   })
 
+  // Mutation : la feuille refermée par le rappel de la mutation, qui survit au feuillet démonté : le
+  // « retour » du téléphone pendant l'envoi, puis la réponse, reculeraient une seconde fois hors de l'année.
+  it('fermer le feuillet pendant l’envoi, puis la réponse : la page reste sur l’année, et la salle s’écrit', async () => {
+    let repondre: () => void = () => undefined
+    monterVoyage(['/voyage', '/voyage/1897'], {
+      ...ROUTES,
+      'POST /api/me/voyage/annees/1897/salles': () =>
+        new Promise<Response>((r) => (repondre = () => r(json({ statut: 'en_preparation', demande_id: 'd-7' }, 202)))),
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Ouvrir une nouvelle salle' }))
+    const feuillet = await screen.findByRole('dialog', { name: 'Quelle salle ?' })
+    fireEvent.change(within(feuillet).getByRole('textbox'), { target: { value: 'Les films de fantômes' } })
+    fireEvent.click(within(feuillet).getByRole('button', { name: 'Demander' }))
+    fireEvent.click(within(feuillet).getByRole('button', { name: 'Fermer' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await act(async () => repondre())
+    expect(await screen.findByText('La salle s’écrit…')).toBeInTheDocument()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.getByRole('heading', { level: 1, name: '1897' })).toBeInTheDocument()
+  })
+
   // Mutations : la garde du double toucher retirée ; « Demander » actif sur un champ vide.
   it('« Demander » deux fois vite n’ouvre qu’une salle, et rien ne part d’un champ vide', async () => {
     let envois = 0
@@ -433,8 +461,9 @@ describe('les salles d’une année', () => {
     expect(compte(requetes, ANNEE)).toBe(4)
   })
 
-  // Mutation : le guet de la salle nouvelle sans plafond (le jumeau de celui de la fournée).
-  it('abandonne une salle qui s’écrit au plafond, et le dit', async () => {
+  // Mutations : le guet de la salle nouvelle sans plafond (le jumeau de celui de la fournée) ; son
+  // « Réessayer » sans geste (le bouton de la fournée était gardé, pas celui-ci).
+  it('abandonne une salle qui s’écrit au plafond, le dit, et « Réessayer » reprend', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const { requetes } = monterVoyage('/voyage/1897', {
       ...ROUTES,
@@ -444,6 +473,9 @@ describe('les salles d’une année', () => {
     for (let i = 0; i < 45; i += 1) await vi.advanceTimersByTimeAsync(5_000)
     expect(await screen.findByText('Le chroniqueur n’a pas répondu, reviens plus tard.')).toBeInTheDocument()
     expect(compte(requetes, ANNEE)).toBe(1 + RELECTURES.salle.plafond)
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+    await waitFor(() => expect(compte(requetes, ANNEE)).toBe(2 + RELECTURES.salle.plafond))
+    expect(await screen.findByText('La salle s’écrit…')).toBeInTheDocument()
   })
 
   // Mutations : la garde de l'identifiant retirée (un envoi par relecture, ou par réouverture de la

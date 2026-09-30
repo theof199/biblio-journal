@@ -112,14 +112,14 @@ export default function NouvelleSalle({ monde, annee, pistes, demande }: Props) 
           <Formulaire
             annee={annee}
             pistes={pistes}
-            onDemandee={(texte, piste, id) => {
+            onDemandee={(texte, piste, id) =>
               majFiche(client, annee, (f) => ({
                 ...f,
                 pistes: pistesApresUsage(f.pistes, piste),
                 demande_salle: { id, demande: texte, statut: 'en_cours', motif: null, salle_id: null },
               }))
-              feuillet.fermer()
-            }}
+            }
+            onFermer={feuillet.fermer}
             onPistes={(nouvelles) => majFiche(client, annee, (f) => ({ ...f, pistes: nouvelles }))}
           />
         </Feuillet>
@@ -133,6 +133,7 @@ interface PropsFormulaire {
   pistes: readonly Piste[]
   onDemandee: (texte: string, piste: string | null, id: string) => void
   onPistes: (pistes: Piste[]) => void
+  onFermer: () => void
 }
 
 /**
@@ -141,19 +142,23 @@ interface PropsFormulaire {
  * aucune piste, « D’autres pistes » (synchrone) ; « Demander » envoie la piste touchée. Chaque
  * écriture est gardée contre le double toucher.
  */
-function Formulaire({ annee, pistes, onDemandee, onPistes }: PropsFormulaire) {
+function Formulaire({ annee, pistes, onDemandee, onPistes, onFermer }: PropsFormulaire) {
   const [brouillon, setBrouillon] = useState<Brouillon>({ texte: '', piste: null })
   const touchee = pistes.find((p) => p.nom === brouillon.piste)
 
   const envoi = useRef(false)
   const demander = useMutation({
     mutationFn: (b: Brouillon) => ouvrirUneSalle(annee, { demande: b.texte.trim(), ...(b.piste !== null ? { piste: b.piste } : {}) }),
+    // La fiche en cache se marque toujours, même feuillet refermé pendant l'envoi.
     onSuccess: (r, b) => onDemandee(b.texte.trim(), b.piste, r.demande_id),
   })
   const soumettre = () => {
     if (envoi.current || brouillon.texte.trim() === '') return
     envoi.current = true
-    demander.mutate(brouillon, { onSettled: () => void (envoi.current = false) })
+    // Le feuillet ne se referme que s'il est encore là : les rappels de `mutate` se taisent une fois
+    // le formulaire démonté (le « retour » du téléphone pendant l'envoi), alors que ceux de
+    // `useMutation` survivent et reculeraient une seconde fois, hors de l'année.
+    demander.mutate(brouillon, { onSuccess: onFermer, onSettled: () => void (envoi.current = false) })
   }
 
   const cherche = useRef(false)
