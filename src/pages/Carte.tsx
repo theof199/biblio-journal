@@ -16,6 +16,8 @@ import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
 import { useMouvementReduit } from '../ui/mouvement'
+import { tamponDe } from '../voyage/passeport'
+import Tampon from '../voyage/passeport/Tampon'
 import {
   affichesDeColonne,
   compterRecompenses,
@@ -302,10 +304,7 @@ export default function Carte() {
 
       {calque?.type === 'tampon' ? (
         <div className={styles.tampon} role="status">
-          <span>Passeport</span>
-          <strong>{`Années ${calque.decennie}`}</strong>
-          <span>bouclée</span>
-          <em>{mondes(calque.decennie).titreVoyageur}</em>
+          <Tampon monde={mondes(calque.decennie)} decennie={calque.decennie} tampon={tamponDe(v.tampons, calque.decennie)} />
         </div>
       ) : null}
       {calque?.type === 'carton' ? (

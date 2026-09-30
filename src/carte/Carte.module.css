@@ -53,17 +53,9 @@
 .apercuBas { display: flex; justify-content: space-between; gap: 8px; margin: 0; padding-top: 7px; border-top: 1px solid rgba(242, 232, 213, 0.09); font-size: 11.5px; font-weight: 600; color: rgba(242, 232, 213, 0.68); }
 .apercuBas b { color: var(--corail); text-align: right; }
 
-.tampon {
-  position: absolute; z-index: 5; left: 50%; top: 36%; width: 196px; height: 196px; margin-left: -98px;
-  display: grid; place-content: center; border-radius: 50%; text-align: center; color: var(--or);
-  border: 4px solid var(--or); box-shadow: inset 0 0 0 5px transparent, inset 0 0 0 7px var(--or);
-  background: radial-gradient(circle, rgba(21, 16, 9, 0.82) 55%, rgba(21, 16, 9, 0.55));
-  transform: rotate(-14deg); animation: tamponne 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
-}
-@keyframes tamponne { from { opacity: 0; transform: rotate(-14deg) scale(2.3); } }
-.tampon span { font-size: 10px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; }
-.tampon strong { margin: 4px 0; font: 26px/1 'Limelight', Georgia, serif; }
-.tampon em { margin-top: 6px; font: italic 500 12px 'Fraunces', Georgia, serif; color: var(--papier); }
+/* Le calque du tampon : il place le tampon du passeport (`voyage/passeport/Tampon`, qui s'habille et
+   frappe seul) et en fixe la taille par sa police (16 em : 196 px). */
+.tampon { position: absolute; z-index: 5; left: 50%; top: 36%; margin-left: -98px; font-size: 12.25px; pointer-events: none; }
 .carton { position: absolute; inset: 0; z-index: 6; display: grid; place-content: center; gap: 8px; text-align: center; background: rgba(4, 4, 5, 0.62); animation: scintille 1.2s steps(1) both; }
 .carton p { margin: 0; letter-spacing: 0.26em; text-transform: uppercase; font-size: 11.5px; }
 .carton p:nth-child(2) { font-size: 30px; letter-spacing: 0.03em; text-transform: none; color: var(--accent); }
@@ -73,7 +65,7 @@
 .annees:focus-within { z-index: 6; top: 120px; left: 16px; right: 16px; width: auto; height: auto; max-height: 50vh; margin: 0; padding: 12px; overflow: auto; clip: auto; white-space: normal; border-radius: 14px; background: #120d08; border: 1px solid var(--or); }
 
 @media (prefers-reduced-motion: reduce) {
-  .apercu, .tampon, .carton { animation: none; }
+  .apercu, .carton { animation: none; }
 }
 
 /* La petite affiche d'une date vraie (maquette du 29 septembre 2026 : `.affiche-date`). */

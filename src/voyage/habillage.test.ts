@@ -59,6 +59,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/billet/Dateur.module.css',
         '/src/voyage/billet/Poincon.module.css',
         '/src/voyage/billet/Cartons.module.css',
+        '/src/voyage/passeport/Tampon.module.css',
       ]),
     )
   })
