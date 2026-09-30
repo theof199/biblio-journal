@@ -1,0 +1,351 @@
+/* Une salle en baraque (maquette 1890 : `.salle`, `.auvent`, `.cab`, lignes 166 à 198). Les couleurs et
+   les polices viennent des jetons du monde, posés sur la racine par la page ; une teinte de la
+   maquette sans jeton se compose des jetons voisins (`color-mix`). */
+.salle {
+  margin: 26px 0 0;
+}
+
+.auvent {
+  position: relative;
+  height: 44px;
+  margin: 0 14px;
+  border-radius: 6px 6px 0 0;
+  background: repeating-linear-gradient(90deg, var(--m-rouge) 0 22px, var(--m-papier2) 22px 44px);
+  box-shadow: inset 0 10px 14px color-mix(in srgb, var(--m-ombre) 50%, transparent);
+}
+
+/* Le lambrequin festonné sous l'auvent. */
+.auvent::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -11px;
+  left: 0;
+  height: 12px;
+  background:
+    radial-gradient(circle at 11px 0, var(--m-rouge) 10.5px, transparent 11.5px) 0 0 / 44px 12px repeat-x,
+    radial-gradient(circle at 11px 0, var(--m-papier2) 10.5px, transparent 11.5px) 22px 0 / 44px 12px repeat-x;
+}
+
+.enseigne {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  max-width: 84%;
+  margin: 0;
+  padding: 6px 14px 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  font: 400 16px/1.1 var(--m-f-affiche);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  box-shadow:
+    0 0 0 2px var(--m-bois),
+    0 0 0 4px var(--m-or),
+    0 6px 12px var(--m-ombre);
+}
+
+.complete .enseigne {
+  background: linear-gradient(color-mix(in srgb, var(--m-or2) 50%, var(--m-papier)), var(--m-or));
+}
+
+.ampoules {
+  position: absolute;
+  right: 14px;
+  bottom: 7px;
+  left: 14px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.ampoules i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--m-encre2);
+  box-shadow: inset 0 0 0 1px var(--m-ombre);
+  transition:
+    background 0.4s,
+    box-shadow 0.4s;
+}
+
+.ampoules i.on {
+  background: var(--m-or2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--m-or2) 85%, transparent);
+  animation: vacille 2.2s steps(2) infinite;
+}
+
+.ampoules i.on:nth-child(3n) {
+  animation-delay: -0.7s;
+}
+
+@keyframes vacille {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.82;
+  }
+}
+
+/* Le tampon d'une salle complète : l'or du monde (le corail ne signale que ce que le joueur déclenche). */
+.complet {
+  position: absolute;
+  top: 10px;
+  right: 22px;
+  padding: 1px 7px;
+  border: 2px solid var(--m-or2);
+  background: color-mix(in srgb, var(--m-fond) 50%, transparent);
+  color: var(--m-or2);
+  font: 400 14px var(--m-f-affiche);
+  transform: rotate(8deg);
+}
+
+.infos {
+  display: grid;
+  gap: 4px;
+  margin: 14px 14px 0;
+}
+
+.raison {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--m-doux);
+  font: italic 15px/1.4 var(--m-f-texte);
+  text-align: left;
+}
+
+button.raison {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.raison span {
+  display: block;
+  margin-top: 2px;
+  color: var(--m-or);
+  font: normal 13.5px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+}
+
+.compte {
+  color: var(--m-pale);
+  font: 12.5px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+}
+
+/* L'étagère, en défilement horizontal. */
+.rayon {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px 14px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  /* Sans elle, l'aimant colle la première affiche au bord de l'écran, par-dessus la marge. */
+  scroll-padding-inline: 14px;
+  scrollbar-width: none;
+}
+
+.rayon::-webkit-scrollbar {
+  display: none;
+}
+
+.rayon > li {
+  display: grid;
+  flex: 0 0 104px;
+  scroll-snap-align: start;
+}
+
+.cab {
+  position: relative;
+  display: block;
+  min-height: 44px;
+  padding: 5px 5px 6px;
+  border-radius: 4px;
+  background: linear-gradient(var(--m-papier), var(--m-carton));
+  box-shadow:
+    0 4px 10px var(--m-ombre),
+    inset 0 0 0 1px color-mix(in srgb, var(--m-bois) 35%, transparent);
+  color: var(--m-encre);
+  text-decoration: none;
+}
+
+.cab img,
+.sansImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 1px;
+  background: var(--m-carton);
+}
+
+.sepia .cab img {
+  filter: sepia(0.4) brightness(0.9);
+}
+
+.gris .cab img {
+  filter: grayscale(1);
+}
+
+/* Un film perdu : l'affiche éteinte, trouée ; le masque ne lit que l'opacité de sa couleur. */
+.cab.perdu img {
+  filter: brightness(0.55) contrast(1.2);
+  -webkit-mask: radial-gradient(circle at 70% 30%, transparent 14px, var(--m-encre) 26px);
+  mask: radial-gradient(circle at 70% 30%, transparent 14px, var(--m-encre) 26px);
+}
+
+.t {
+  display: -webkit-box;
+  margin-top: 5px;
+  overflow: hidden;
+  font: 12.5px/1.2 var(--m-f-texte);
+  text-align: center;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.e {
+  display: block;
+  margin-top: 2px;
+  color: var(--m-bois);
+  font: 10.5px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.tamponNote {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid color-mix(in srgb, var(--m-rouge) 90%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-papier) 78%, transparent);
+  color: var(--m-rouge);
+  font: 400 17px var(--m-f-affiche);
+  transform: rotate(-12deg);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--m-papier) 80%, transparent),
+    inset 0 0 0 3px color-mix(in srgb, var(--m-rouge) 60%, transparent);
+}
+
+.emaille {
+  position: absolute;
+  top: 10px;
+  left: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--m-tel);
+  color: var(--m-or2);
+  font: 800 9px var(--m-f-corps);
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 0 1px var(--m-or);
+}
+
+.etiquette {
+  position: absolute;
+  bottom: 44px;
+  left: -4px;
+  padding: 1px 8px 2px 10px;
+  background: var(--m-papier);
+  color: var(--m-encre2);
+  font: italic 13px var(--m-f-texte);
+  transform: rotate(-6deg);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--m-ombre) 70%, transparent);
+  clip-path: polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%);
+}
+
+.tamponPerdu {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  padding: 1px 6px;
+  border: 2px solid var(--m-velours);
+  background: color-mix(in srgb, var(--m-papier) 70%, transparent);
+  color: var(--m-velours);
+  font: 400 13px var(--m-f-affiche);
+  text-transform: uppercase;
+  transform: translate(-50%, -50%) rotate(-14deg);
+}
+
+/* La porte au bout de l'étagère : « En voir plus », ou close. */
+.porte {
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  gap: 6px;
+  min-height: 150px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 40px 40px 3px 3px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--m-bois) 70%, var(--m-fond)) 0 48%,
+    color-mix(in srgb, var(--m-bois) 25%, var(--m-fond)) 48% 52%,
+    color-mix(in srgb, var(--m-bois) 70%, var(--m-fond)) 52%
+  );
+  color: var(--m-or2);
+  font: 13.5px/1.2 var(--m-f-capitales);
+  text-align: center;
+  box-shadow: inset 0 0 0 3px var(--m-bois);
+}
+
+button.porte {
+  cursor: pointer;
+}
+
+.porte.close {
+  background: repeating-linear-gradient(90deg, var(--m-velours) 0 6px, color-mix(in srgb, var(--m-velours) 75%, var(--m-fond)) 6px 8px);
+  color: var(--m-papier2);
+}
+
+.raison:focus-visible,
+.cab:focus-visible,
+.porte:focus-visible,
+.reessayer:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* Un refus de l'API, ou le chroniqueur qui n'a pas répondu, sous l'étagère. */
+.message {
+  margin: 0 14px;
+  color: var(--m-doux);
+  font: italic 15px/1.4 var(--m-f-texte);
+}
+
+.message p {
+  margin: 0 0 8px;
+}
+
+.reessayer {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+  font: 400 15px var(--m-f-affiche);
+  box-shadow: 0 3px 0 var(--m-bois);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ampoules i,
+  .ampoules i.on {
+    animation: none;
+    transition: none;
+  }
+}

@@ -24,6 +24,7 @@ import Fronton from '../voyage/annee/Fronton'
 import LigneDuBas from '../voyage/annee/LigneDuBas'
 import Programme from '../voyage/annee/Programme'
 import { useFiche } from '../voyage/annee/useFiche'
+import Salles from '../voyage/salles/Salles'
 import styles from './VoyageAnnee.module.css'
 
 /** Un registre pour la page, comme la carte a le sien : rien de ce qu'un monde tient ne passe de l'une à l'autre. */
@@ -274,7 +275,8 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
         onGenerique={() => feuille.ouvrir('generique')}
       />
       {enCours ? <Programme monde={monde} etapes={prochainPas(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket !== null, v.ia)} progression={fiche.progression} /> : null}
-      {/* La parade (tâche 9), la séance (tâche 9 : en cours, au compte IA), les salles (tâche 8). */}
+      {/* La parade (tâche 9), la séance (tâche 9 : en cours, au compte IA), avant les salles. */}
+      <Salles monde={monde} annee={annee} fiche={fiche} ia={v.ia} />
       {/* Le jury n'appartient qu'au compte IA : jamais promis à un autre membre, quoi que porte la fiche. */}
       <LigneDuBas monde={monde} annee={annee} ligne={ligneDuBas(fiche.ticket, v.ia ? fiche.maturite : null, v.annee_en_cours)} onUtiliser={onUtiliser} occupe={occupe} erreur={erreur} />
 

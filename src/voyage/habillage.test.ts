@@ -48,6 +48,8 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/annee/Fronton.module.css',
         '/src/voyage/annee/LigneDuBas.module.css',
         '/src/voyage/annee/Programme.module.css',
+        '/src/voyage/salles/Salle.module.css',
+        '/src/voyage/salles/NouvelleSalle.module.css',
       ]),
     )
   })
