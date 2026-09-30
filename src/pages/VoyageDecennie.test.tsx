@@ -136,6 +136,24 @@ describe('la page d’une décennie', () => {
     expect(await screen.findByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
   })
 
+  // Mutations : `bouclee: false` en dur ; `cases: []` (la foire ne se remplirait plus) ; les chevaux
+  // d'une autre décennie.
+  it('donne au manège un cheval par année, les cases de la décennie et le tampon', async () => {
+    const manege = doublerLeManege()
+    const bouclee: Voyage = { ...VOYAGE, tampons: [{ decennie: 1890, boucle_le: '2026-01-14T10:00:00.000Z' }] }
+    monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage': () => json(bouclee) })
+    await decennie()
+    await manege.peint()
+    const vue = manege.dernier()
+    expect(vue.annees.map((a) => `${a.annee} ${a.etat}`)).toEqual([
+      '1890 avant', '1891 avant', '1892 avant', '1893 avant', '1894 avant',
+      '1895 palme', '1896 lion', '1897 encours', '1898 avance', '1899 verrou',
+    ])
+    expect(vue.cases.map((c) => `${c.annee} ${c.etat} ${c.profondeur}`)).toEqual(['1895 palme 9', '1896 lion 6', '1897 encours 2', '1898 verrou 3', '1899 verrou 0'])
+    expect(vue.bouclee).toBe(true)
+    expect(vue.H).toBe(PAGES_1890.hauteurs.monument)
+  })
+
   // Mutation : la garde `ouvrable` retirée (1893 ouvrirait une page qui n'existe pas au Voyage).
   it('n’ouvre pas une année sans page', async () => {
     const manege = doublerLeManege()
