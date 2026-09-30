@@ -59,6 +59,29 @@ export async function journalComplet(signal?: AbortSignal): Promise<JournalItem[
 export const curseurSuivant = (page: JournalPage): string | undefined => page.next_cursor ?? undefined
 
 /**
+ * Une page de mes visionnages de films sortis de `de` à `a`, années comprises (`sortie_min`,
+ * `sortie_max`, plan 2c, décision D2) : l'année de sortie est celle que porte `media.year`.
+ */
+export const lireJournalDesAnnees = (de: number, a: number, params: { limit?: number; cursor?: string } = {}, signal?: AbortSignal) =>
+  api.get<JournalPage>('/me/journal', { ...params, sortie_min: de, sortie_max: a }, signal)
+
+/**
+ * Tous mes visionnages de films sortis de `de` à `a`, page après page, dans l'ordre de l'API : la
+ * boîte à billets, la page d'une décennie. Comme `journalComplet`, une page qui échoue fait
+ * échouer l'ensemble : une boîte tronquée numéroterait faux.
+ */
+export async function journalDesAnnees(de: number, a: number, signal?: AbortSignal): Promise<JournalItem[]> {
+  const items: JournalItem[] = []
+  let cursor: string | undefined
+  do {
+    const page = await lireJournalDesAnnees(de, a, { limit: PAGE_MAX, cursor }, signal)
+    items.push(...page.items)
+    cursor = curseurSuivant(page)
+  } while (cursor)
+  return items
+}
+
+/**
  * « J'ai vu ce film », sur un film qui n'est pas encore dans la bibliothèque : deux appels, dans
  * l'ordre — l'ajout à la bibliothèque commune, puis le visionnage. Jamais l'inverse : le second
  * appel a besoin de l'identifiant rendu par le premier.
