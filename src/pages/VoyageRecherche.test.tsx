@@ -292,6 +292,20 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(await titres()).toEqual(['Le Manoir du diable'])
   })
 
+  // Tant qu'une fiche se lit, le guichet ne dit pas « rien à ce nom » : la vue cherchée peut être dans
+  // l'année qui arrive. Mutation : le chargement des fiches ignoré (`enCours` toujours faux).
+  it('ne dit rien d’introuvable tant qu’une fiche se lit', async () => {
+    let lire: (r: Response) => void = () => undefined
+    monter(PAGE, { ...ROUTES, [FICHE(1897)]: () => new Promise<Response>((fin) => void (lire = fin)) })
+    await screen.findByRole('heading', { level: 1, name: 'Catalogue des vues' })
+    taper('cendrillon')
+    expect(await screen.findByText('Le catalogue se charge…')).toBeInTheDocument()
+    expect(screen.queryByText(PAGES_1890.mots.recherche.vide)).not.toBeInTheDocument()
+    lire(json(FICHES[1897]))
+    expect(await titres()).toEqual(['Cendrillon'])
+    expect(screen.queryByText('Le catalogue se charge…')).not.toBeInTheDocument()
+  })
+
   // Une fiche en panne se tait : le catalogue est plus court, une ligne le dit. Mutations : la ligne
   // retirée ; la panne d'une fiche qui tue tout le guichet.
   it('une fiche en panne laisse le reste du catalogue, et le dit', async () => {
