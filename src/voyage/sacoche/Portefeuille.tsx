@@ -1,10 +1,11 @@
 import { useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
 import { lireTickets, lireVoyage, utiliserTicket, type Ticket } from '../../api/voyage'
 import Panne from '../../ui/Panne'
+import { historiqueDerriere } from '../../ui/revenir'
 import { jourDeParis } from '../passeport'
 import { ticketOffert } from '../regles'
 import commun from './Sacoche.module.css'
@@ -20,6 +21,7 @@ import styles from './Portefeuille.module.css'
 export default function Portefeuille() {
   const client = useQueryClient()
   const naviguer = useNavigate()
+  const { key } = useLocation()
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
   const tickets = useQuery({ queryKey: cles.tickets, queryFn: ({ signal }) => lireTickets(signal) })
   const utiliser = useMutation({
@@ -33,8 +35,10 @@ export default function Portefeuille() {
   const encaisser = (annee: number) => {
     if (envoi.current) return
     envoi.current = true
+    // Vers la carte sans empiler la sacoche derrière elle (le retour du téléphone y ramènerait) :
+    // reculer quand l'historique porte la carte (la sacoche s'ouvre d'elle), sinon la remplacer.
     utiliser.mutate(annee, {
-      onSuccess: () => naviguer('/voyage'),
+      onSuccess: () => (historiqueDerriere(key) ? naviguer(-1) : naviguer('/voyage', { replace: true })),
       onSettled: () => void (envoi.current = false),
     })
   }

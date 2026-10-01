@@ -102,7 +102,10 @@ export const RATTRAPE = 'Tu le rattrapes bientôt'
  * encore utilisé. L'API, elle, encaisserait le ticket de n'importe quelle année et y porterait mon
  * année en cours (`POST /me/voyage/tickets/{annee}/utiliser`, qui ne refuse qu'un ticket absent ou
  * déjà utilisé) : c'est ici que le Voyage avance d'une année à la fois. La carte et le portefeuille
- * de la sacoche l'appellent tous deux : la règle ne s'écrit qu'ici.
+ * de la sacoche l'appellent tous deux. La fiche d'une année, elle, a sa propre garde, plus lâche :
+ * `ligneDuBas` (`annee.ts`) offre le ticket que porte la fiche dès qu'il mène au-delà de mon année
+ * en cours (`annee > anneeEnCours`, jumeau du filtre `ticketAMontrer` de l'API), sans exiger
+ * l'année qui suit.
  */
 export const ticketOffert = (anneeEnCours: number, tickets: readonly Ticket[]): Ticket | undefined =>
   tickets.find((t) => t.annee === anneeEnCours + 1 && t.utilise_le === null)

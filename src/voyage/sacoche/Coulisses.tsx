@@ -4,13 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { lireDepenses } from '../../api/voyage'
 import Panne from '../../ui/Panne'
-import { CREDITS, lignesDesDepenses, moisDeParis } from '../sacoche'
+import { CREDITS, lignesDesDepenses, moisEnUTC } from '../sacoche'
 import commun from './Sacoche.module.css'
 import styles from './Coulisses.module.css'
 
 /**
  * Les dépenses au chroniqueur : montées au dépli des Coulisses seulement, donc lues à ce moment-là,
- * jamais à l'ouverture de la sacoche. Masquées quand la liste est vide (tout membre hors du compte IA).
+ * jamais à l'ouverture de la sacoche. Rien ne s'affiche avant la réponse, ni pour une liste vide (tout
+ * membre hors du compte IA) : la ligne ne paraît pas pour disparaître aussitôt. Une panne, elle, se dit.
  */
 function Depenses() {
   const depenses = useQuery({ queryKey: cles.depenses, queryFn: ({ signal }) => lireDepenses(signal) })
@@ -24,24 +25,18 @@ function Depenses() {
       </section>
     )
   }
-  const lignes = depenses.data ? lignesDesDepenses(depenses.data.mois, moisDeParis()) : undefined
-  if (lignes === null) return null
+  const lignes = depenses.data ? lignesDesDepenses(depenses.data.mois, moisEnUTC()) : null
+  if (!lignes) return null
   return (
     <section className={styles.bloc} aria-label="Dépenses">
       <h3 className={styles.titre}>Dépenses</h3>
-      {lignes ? (
-        <>
-          <p className={styles.ligne}>{lignes.courant}</p>
-          {lignes.precedents.map((l) => (
-            <p key={l} className={styles.precedent}>
-              {l}
-            </p>
-          ))}
-          <p className={styles.note}>Une estimation au tarif public d’Anthropic : la facture du compte Anthropic fait foi.</p>
-        </>
-      ) : (
-        <p className={styles.ligne}>…</p>
-      )}
+      <p className={styles.ligne}>{lignes.courant}</p>
+      {lignes.precedents.map((l) => (
+        <p key={l} className={styles.precedent}>
+          {l}
+        </p>
+      ))}
+      <p className={styles.note}>Une estimation au tarif public d’Anthropic : la facture du compte Anthropic fait foi.</p>
     </section>
   )
 }

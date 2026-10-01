@@ -337,9 +337,11 @@ lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans re
   livret), décennie en cours comprise.
 - **Le portefeuille** (`Portefeuille.tsx`) : les tickets à utiliser, puis les utilisés, pâlis, avec
   le jour de Paris où ils l'ont été. « Utiliser » ne s'offre que sur le ticket que la carte offre
-  (`ticketOffert`) ; encaissé, il ramène à la carte, qui joue l'avancée.
+  (`ticketOffert`) ; encaissé, il ramène à la carte, qui joue l'avancée, sans laisser la sacoche
+  derrière elle dans l'historique.
 - **Les Coulisses** (`Coulisses.tsx`), repliées : les dépenses au chroniqueur, lues au dépli
-  seulement et masquées quand la liste est vide, et les crédits des images, lus au build dans les
+  seulement, montrées une fois la liste connue et non vide (le mois courant est celui du serveur, en
+  UTC, où l'API les range), et les crédits des images, lus au build dans les
   `CREDITS.md`.
 
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la

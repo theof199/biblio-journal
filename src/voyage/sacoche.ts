@@ -15,12 +15,15 @@ export function decenniesDuPasseport(v: Pick<Voyage, 'depart' | 'annee_en_cours'
 }
 
 /**
- * Le mois courant (`AAAA-MM`, que `en-CA` écrit ainsi), **à Paris** : le 31 août à 23 h 30 UTC, il
- * est déjà le 1er septembre à Paris. Jamais le fuseau de l'appareil. Le format se crée à chaque
- * appel, comme `jourDeParis` : un format créé au chargement ne verrait pas le fuseau changé par un test.
+ * Le mois courant (`AAAA-MM`), **en UTC** : c'est le fuseau où l'API range les dépenses
+ * (`to_char(appele_le, 'YYYY-MM')` dans le fuseau du serveur, dit le contrat, et Postgres y est en
+ * UTC). Ni Paris ni l'appareil : le 30 septembre à 22 h 30 UTC, il est déjà le 1er octobre à Paris,
+ * mais les appels de cette heure-là comptent encore pour septembre, et « Ce mois-ci » dirait
+ * « aucun appel » en reléguant septembre aux mois précédents. Décision du 1er octobre 2026 : aucune
+ * route ne change, le front compare au mois du serveur.
  */
-export function moisDeParis(maintenant: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Europe/Paris' }).format(maintenant)
+export function moisEnUTC(maintenant: Date = new Date()): string {
+  return maintenant.toISOString().slice(0, 7)
 }
 
 const MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
@@ -107,8 +110,10 @@ export function lireCredits(texte: string): GroupeDeCredits | null {
  */
 const FICHIERS = import.meta.glob('../**/assets/CREDITS.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 
-export const CREDITS: readonly GroupeDeCredits[] = Object.keys(FICHIERS)
-  .sort()
+/** Les `CREDITS.md` lus (leur chemin depuis `src/voyage/`), triés : le test les compare à tous ceux de `src/`. */
+export const FICHIERS_DE_CREDITS: readonly string[] = Object.keys(FICHIERS).sort()
+
+export const CREDITS: readonly GroupeDeCredits[] = FICHIERS_DE_CREDITS
   .flatMap((chemin) => {
     const groupe = lireCredits(FICHIERS[chemin]!)
     return groupe ? [groupe] : []
