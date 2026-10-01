@@ -112,10 +112,10 @@ describe('la manivelle', () => {
     const { requetes } = monterVoyage('/voyage/1898', {
       ...ROUTES,
       'GET /api/me/voyage/annees/1898': () => json(fiche),
-      'GET /api/me/journal?limit=100': () => json({ items: [], next_cursor: null }),
+      'GET /api/me/journal?limit=100&sortie_min=1898&sortie_max=1898': () => json({ items: [], next_cursor: null }),
     })
     const titre = await screen.findByRole('heading', { level: 1, name: '1898' })
-    await waitFor(() => expect(requetes).toContain('GET /api/me/journal?limit=100'))
+    await waitFor(() => expect(requetes).toContain('GET /api/me/journal?limit=100&sortie_min=1898&sortie_max=1898'))
     const n = requetes.length
     tirer(titre, 10, 200)
     expect(await screen.findByText(M.fait)).toBeInTheDocument()

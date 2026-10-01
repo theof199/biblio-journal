@@ -366,8 +366,9 @@ export function dessinerCase(g: CanvasRenderingContext2D, x: number, y: number, 
   g.restore()
   colonne(g, x, y, c, monde, affiche)
   const py = y + ep + ry * 0.3 + 12
-  // Ni jauge ni plaque corail pour l'année en cours : `dessinerCorail` les dessine en dernier.
-  if (c.etat === 'encours') return
+  // Ni jauge ni plaque corail pour l'année en cours : `dessinerCorail` les dessine en dernier. Une
+  // année en cours en attente du Voyage suivi n'en a pas : sa plaque est celle d'une année fermée.
+  if (c.etat === 'encours' && !c.attente) return
   if (commeVerrou) plaque(g, x, py, String(c.annee), monde.couleur('#150F09', 0.72), monde.couleur('#F2E8D5', 0.55), monde.couleur('#F2E8D5', 0.18))
   else plaque(g, x, py, String(c.annee), monde.couleur('#F2E8D5'), p.caseFaite.plaque)
   if ((c.etat === 'palme' || c.etat === 'lion' || c.etat === 'ours') && !c.attente) {

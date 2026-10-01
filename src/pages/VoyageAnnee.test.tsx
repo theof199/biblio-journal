@@ -33,7 +33,8 @@ const FICHE = fichePrete({ annee: 1897 })
 const EN_PREPARATION = exemple<FicheEnPreparation>('/me/voyage/annees/{annee}', 'get', 202)
 const PAGE = exemple<JournalPage>('/me/journal', 'get', 200)
 const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)
-const JOURNAL = 'GET /api/me/journal?limit=100'
+/** Mes films sortis l'année de la fiche, et eux seuls : une année fermée ne lit jamais tout le journal. */
+const JOURNAL = (annee: number | string) => `GET /api/me/journal?limit=100&sortie_min=${annee}&sortie_max=${annee}`
 
 const ROUTES = {
   'GET /api/me/voyage': () => json(VOYAGE),
@@ -153,7 +154,7 @@ describe('la fiche d’une année', () => {
     monterVoyage(`/voyage/${annee}`, {
       ...ROUTES,
       'GET /api/me/voyage/annees/1903': () => json(ficheVerrouillee(1903)),
-      [JOURNAL]: journal([]),
+      [JOURNAL(annee)]: journal([]),
     })
     await screen.findByRole('heading', { level: 1, name: String(annee) })
     expect(screen.getByRole('link', { name: plaque })).toHaveAttribute('href', `/voyage/decennies/${decennie}`)
@@ -221,7 +222,7 @@ describe('la fiche d’une année', () => {
     monterVoyage('/voyage/1898', {
       ...ROUTES,
       'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898, { profondeur: 1 })),
-      [JOURNAL]: journal([vu('e2', 'Un film de 1897', 1897), vu('e1', 'Un film de 1898', 1898)]),
+      [JOURNAL(1898)]: journal([vu('e2', 'Un film de 1897', 1897), vu('e1', 'Un film de 1898', 1898)]),
     })
     expect(await screen.findByText('Encore un ticket : le Lion de 1897, ou plus tôt si le jury le décide.')).toBeInTheDocument()
     expect(screen.getByText('Cette année s’ouvre avec le ticket de 1897.')).toBeInTheDocument()
@@ -237,7 +238,7 @@ describe('la fiche d’une année', () => {
     monterVoyage('/voyage/1899', {
       ...ROUTES,
       'GET /api/me/voyage/annees/1899': () => json(ficheVerrouillee(1899, { profondeur: 2 })),
-      [JOURNAL]: journal([]),
+      [JOURNAL(1899)]: journal([]),
     })
     const route = await screen.findByRole('list', { name: 'Chemin : 1897, tu es ici, puis 1898, puis 1899, fermée' })
     // Ce qui se voit (caché aux lecteurs d'écran, qui ont le nom) dit le même chemin. Mutation : la
@@ -253,7 +254,7 @@ describe('la fiche d’une année', () => {
     monterVoyage('/voyage/1898', {
       ...ROUTES,
       'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898, { profondeur: 1 })),
-      [JOURNAL]: journal([vu('e1', 'Un film de 1898', 1898, 8)]),
+      [JOURNAL(1898)]: journal([vu('e1', 'Un film de 1898', 1898, 8)]),
       'GET /api/reference/reactions': () => json(CATALOGUE),
     })
     fireEvent.click(await screen.findByRole('link', { name: /Un film de 1898/ }))
@@ -265,7 +266,7 @@ describe('la fiche d’une année', () => {
     monterVoyage('/voyage/1898', {
       ...ROUTES,
       'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)),
-      [JOURNAL]: () => json({ code: 'VALIDATION', message: 'Le journal ne se lit pas.', retryable: false }, 400),
+      [JOURNAL(1898)]: () => json({ code: 'VALIDATION', message: 'Le journal ne se lit pas.', retryable: false }, 400),
     })
     expect(await screen.findByText('Le journal ne se lit pas.')).toBeInTheDocument()
     expect(screen.getByText('Cette année s’ouvre avec le ticket de 1897.')).toBeInTheDocument()
@@ -278,6 +279,27 @@ describe('la fiche d’une année', () => {
     expect(requetes.some((r) => r.startsWith('GET /api/me/journal'))).toBe(false)
   })
 
+  // Une année fermée lit ses seuls films (`sortie_min` et `sortie_max` à l'année), sous sa propre clé :
+  // jamais tout le journal, ni le journal entier du profil déjà en cache, qu'elle ne remplace pas.
+  // Mutations : la lecture de toute la décennie (`annee`, `annee + 9`) ; la clé du journal entier
+  // gardée (`cles.journalComplet`) : la page lirait le cache du profil, et le profil, un an de films.
+  it('une année fermée ne lit que ses films, sans toucher au journal entier en cache', async () => {
+    const entier = [vu('e9', 'Un film de 1898 lu par le profil', 1898)]
+    const { requetes, client } = monterVoyage(
+      '/voyage/1898',
+      {
+        ...ROUTES,
+        'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898, { profondeur: 1 })),
+        [JOURNAL(1898)]: journal([vu('e1', 'Un film de 1898', 1898)]),
+      },
+      (c) => c.setQueryData(cles.journalComplet, entier),
+    )
+    expect(await screen.findByRole('link', { name: /Un film de 1898/ })).toHaveAttribute('href', '/journal/e1')
+    expect(screen.queryByText(/lu par le profil/)).toBeNull()
+    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([JOURNAL(1898)])
+    expect(client.getQueryData(cles.journalComplet)).toBe(entier)
+  })
+
   // Mutation : `rattrape` passé nul : le membre qui rattrape croirait n'avoir que son ticket.
   it('au membre qui rattrape, la phrase du chemin nomme le Voyage suivi', async () => {
     const suivi = { ...VOYAGE, ia: false, rattrape_la_source: true, source: { id: SOURCE_ID, pseudo: 'theo', annee_en_cours: 1897 } }
@@ -285,7 +307,7 @@ describe('la fiche d’une année', () => {
       ...ROUTES,
       'GET /api/me/voyage': () => json(suivi),
       'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)),
-      [JOURNAL]: journal([]),
+      [JOURNAL(1898)]: journal([]),
     })
     expect(await screen.findByText('Encore un ticket : le Lion de 1897, ou dès que theo y arrive.')).toBeInTheDocument()
   })
@@ -298,7 +320,7 @@ describe('la fiche d’une année', () => {
       ...ROUTES,
       'GET /api/me/voyage': () => json(suivi),
       'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)),
-      [JOURNAL]: journal([]),
+      [JOURNAL(1898)]: journal([]),
     })
     expect(await screen.findByText('Encore un ticket : le Lion de 1897.')).toBeInTheDocument()
   })
@@ -310,7 +332,7 @@ describe('la fiche d’une année', () => {
       ...ROUTES,
       'GET /api/me/voyage': () => json(horsIa),
       'GET /api/me/voyage/annees/1897': () => json(ficheEnAttente(1897)),
-      [JOURNAL]: journal([vu('e1', 'Un film de 1897', 1897)]),
+      [JOURNAL(1897)]: journal([vu('e1', 'Un film de 1897', 1897)]),
     })
     expect(await screen.findByText('Tu le rattrapes bientôt')).toBeInTheDocument()
     expect(screen.getByText(/theo n’a pas encore ouvert 1897 : sa roulotte est encore en 1896/)).toBeInTheDocument()
@@ -643,7 +665,7 @@ describe('la fiche d’une année', () => {
     monterVoyage(`/voyage/${an}`, {
       ...ROUTES,
       [`GET /api/me/voyage/annees/${an}`]: () => json(an === 1897 ? FICHE : ficheVerrouillee(an)),
-      [JOURNAL]: journal([]),
+      [JOURNAL(an)]: journal([]),
     })
     const page = await screen.findByRole('region', { name: `L’année ${an}` })
     expect(page.style.getPropertyValue('--m-papier')).toBe(papier)
@@ -651,7 +673,7 @@ describe('la fiche d’une année', () => {
 
   // Mutations : le titre du passeport en dur, ou oublié quand le monde en a un.
   it('l’intertitre d’une année fermée annonce le tampon de son monde, s’il en a un', async () => {
-    monterVoyage('/voyage/1898', { ...ROUTES, 'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)), [JOURNAL]: journal([]) })
+    monterVoyage('/voyage/1898', { ...ROUTES, 'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)), [JOURNAL(1898)]: journal([]) })
     const intertitre = await screen.findByText(/Au bout des années 1890, le tampon « Spectateur des origines »\./)
     // Les guillemets tiennent leur mot par une espace insécable (le texte cherché les voit normalisées) :
     // jamais « » seul en début de ligne. Mutation : une espace ordinaire.
@@ -659,7 +681,7 @@ describe('la fiche d’une année', () => {
   })
 
   it('l’intertitre d’un monde à venir n’annonce aucun tampon', async () => {
-    monterVoyage('/voyage/1902', { ...ROUTES, 'GET /api/me/voyage/annees/1902': () => json(ficheVerrouillee(1902)), [JOURNAL]: journal([]) })
+    monterVoyage('/voyage/1902', { ...ROUTES, 'GET /api/me/voyage/annees/1902': () => json(ficheVerrouillee(1902)), [JOURNAL(1902)]: journal([]) })
     await screen.findByText('Un monde à venir.')
     expect(screen.queryByText(/le tampon/)).toBeNull()
   })
@@ -675,10 +697,53 @@ describe('la fiche d’une année', () => {
       calme()
       const dernier = epierLeBandeau()
       const annee = chemin.slice(-4)
-      monterVoyage(chemin, { ...ROUTES, [`GET /api/me/voyage/annees/${annee}`]: fiche, [JOURNAL]: journal([]) })
+      monterVoyage(chemin, { ...ROUTES, [`GET /api/me/voyage/annees/${annee}`]: fiche, [JOURNAL(annee)]: journal([]) })
       await screen.findByRole('heading', { level: 1, name: annee })
       await waitFor(() => expect(dernier().mode).toBe(mode))
       expect(dernier().annee).toBe(Number(annee))
+    })
+
+    // Tant que la fiche se lit, le bandeau suit la carte : pour la lectrice, une année que le Voyage
+    // suivi n'a pas encore ouverte est en attente (`etatDeCase`, le jumeau de la carte), jamais la
+    // baraque en cours. Mutation : le mode tiré du seul statut de l'année (`statutDeLAnnee`).
+    it.each([
+      { cas: 'à la lectrice', ia: false, mode: 'attente' },
+      { cas: 'au compte IA', ia: true, mode: 'encours' },
+    ] as const)('tant que la fiche se lit, une année non ouverte se peint d’après la carte ($cas)', async ({ ia, mode }) => {
+      calme()
+      const dernier = epierLeBandeau()
+      const carte = {
+        ...VOYAGE,
+        ia,
+        source: ia ? null : { id: SOURCE_ID, pseudo: 'theo', annee_en_cours: 1896 },
+        annees: VOYAGE.annees.map((a) => (a.annee === 1897 ? { ...a, visitee: false } : a)),
+      }
+      monterVoyage('/voyage/1897', {
+        ...ROUTES,
+        'GET /api/me/voyage': () => json(carte),
+        // La fiche ne répond jamais : la page reste au chargement.
+        'GET /api/me/voyage/annees/1897': () => new Promise<Response>(() => undefined),
+      })
+      await screen.findByRole('status')
+      await waitFor(() => expect(dernier().mode).toBe(mode))
+      expect(dernier().annee).toBe(1897)
+    })
+
+    // La fiche lue l'emporte sur la carte : theo a ouvert l'année depuis que la carte a été lue.
+    // Mutation : l'attente de la carte prise même quand la fiche est là.
+    it('une fiche prête l’emporte sur une carte qui la croyait en attente', async () => {
+      calme()
+      const dernier = epierLeBandeau()
+      const carte = {
+        ...VOYAGE,
+        ia: false,
+        source: { id: SOURCE_ID, pseudo: 'theo', annee_en_cours: 1897 },
+        annees: VOYAGE.annees.map((a) => (a.annee === 1897 ? { ...a, visitee: false } : a)),
+      }
+      monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage': () => json(carte) })
+      await screen.findByRole('heading', { level: 1, name: '1897' })
+      await screen.findByRole('region', { name: 'Boniment d’ouverture' })
+      await waitFor(() => expect(dernier().mode).toBe('encours'))
     })
 
     // Mutations : la roulotte réservée à l'attente (décision de l'orchestrateur : dans tous les modes) ;
@@ -737,7 +802,7 @@ describe('la fiche d’une année', () => {
         ...ROUTES,
         'GET /api/me/voyage': () => json({ ...VOYAGE, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] }),
         'GET /api/me/voyage/annees/1902': () => json(ficheVerrouillee(1902)),
-        [JOURNAL]: journal([]),
+        [JOURNAL(1902)]: journal([]),
       })
       await screen.findByRole('heading', { level: 1, name: '1902' })
       await waitFor(() => expect(dernier().mode).toBe('fermee'))

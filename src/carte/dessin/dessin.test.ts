@@ -62,6 +62,21 @@ describe('le dessin commun', () => {
     }
   })
 
+  // Une année en cours que le Voyage suivi n'a pas encore ouverte (la lectrice) n'a pas la couche corail
+  // (`moteur.test.ts`) : sa case pose elle-même son millésime, terne comme une année fermée. Celle du
+  // compte IA le laisse à la couche corail. Mutation : la plaque tue pour toute année en cours.
+  it('écrit le millésime terne d’une année en cours en attente, et lui seul', () => {
+    const monde = mondeMarque()
+    const plaque = (attente: boolean) => {
+      const { ctx, appels } = contexteFactice()
+      dessinerCase(ctx, 100, 200, uneCase('encours', attente), monde, 0, true, () => null)
+      const i = appels.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1896')
+      return i < 0 ? null : appels.slice(0, i).filter((a) => a.nom === 'fill').pop()!.fillStyle
+    }
+    expect(plaque(true)).toBe('rampe(#150F09,0.72)')
+    expect(plaque(false)).toBeNull()
+  })
+
   // Mutation : les photogrammes allumés du sol en `rgba(255,222,160,…)` écrit à la main.
   it('passe les photogrammes allumés du sol par la rampe du monde de leur année', () => {
     const monde = mondeMarque()

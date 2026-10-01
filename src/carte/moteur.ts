@@ -756,7 +756,8 @@ export class MoteurCarte {
     this.effets.grain(g, principal?.traitement.grain ?? 0, this.t, !this.calme)
     // 7. Le corail, en dernier : la jauge et le millésime de l'année en cours — celle que la carte
     // dit `encours`, pas celle où se tient l'avatar (pendant une marche, ce ne sont pas les mêmes).
-    const enCours = this.etat.cases.find((c) => c.etat === 'encours')
+    // Jamais une année en attente du Voyage suivi : elle se dessine comme fermée, plaque comprise.
+    const enCours = this.etat.cases.find((c) => c.etat === 'encours' && !c.attente)
     const place = enCours ? this.plan.cases.find((c) => c.annee === enCours.annee) : undefined
     if (enCours && place) dessinerCorail(g, place.x * this.k, place.y - this.camY, enCours, this.t, !this.calme)
   }

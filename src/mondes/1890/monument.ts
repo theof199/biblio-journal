@@ -39,7 +39,7 @@ const RECOMPENSES: readonly string[] = ['palme', 'lion', 'ours']
 /**
  * Le manège des années (maquette 1890 : `dessinManege`, lignes 1958 à 1999) : un cheval de bois par
  * année de la décennie, brut avant le Voyage, médaillé, en cours (le corail, jamais teinté), passé,
- * vu en avance ou bâché ; ses lampions s'allument à la part des années qui portent leur récompense.
+ * vu en avance, en attente du Voyage suivi (terne, le pointillé or de la carte) ou bâché ; ses lampions s'allument à la part des années qui portent leur récompense.
  * Chaque cheval inscrit sa figure (`v.zone`), devant comme derrière.
  */
 export function dessinerMonument(v: VueMonument): void {
@@ -77,8 +77,10 @@ export function dessinerMonument(v: VueMonument): void {
     g.beginPath(); g.moveTo(x, eave + k.z * 8); g.lineTo(x, base - 6 + k.z * ry); g.stroke()
     const e = k.n.etat
     const recompense = RECOMPENSES.includes(e)
-    const terne = e === 'avant' || e === 'verrou'
-    const coul = e === 'avant' || e === 'passee' ? c('#8a6a44') : recompense ? c('#E9DCC0') : e === 'avance' ? c('#D9B382') : e === 'verrou' ? c('#2b1c14') : CORAIL
+    // En attente du Voyage suivi : terne comme une année fermée, sans bâche (la case de la carte,
+    // `dessinerCase`, se dessine de même, sans cadenas) ; jamais le corail de l'année en cours.
+    const terne = e === 'avant' || e === 'verrou' || e === 'attente'
+    const coul = e === 'avant' || e === 'passee' ? c('#8a6a44') : recompense ? c('#E9DCC0') : e === 'avance' ? c('#D9B382') : e === 'verrou' || e === 'attente' ? c('#2b1c14') : CORAIL
     g.save(); g.translate(x, yb + bob); g.scale((k.z > 0 ? -1 : 1) * sc, sc)
     g.fillStyle = g.strokeStyle = coul
     g.globalAlpha = e === 'avant' ? 0.75 : 1
@@ -100,6 +102,12 @@ export function dessinerMonument(v: VueMonument): void {
       g.strokeStyle = CORAIL; g.globalAlpha = 0.9; g.lineWidth = 2
       g.beginPath(); g.ellipse(x, yb + bob + 16, 16, 4, 0, 0, TAU); g.stroke()
       g.globalAlpha = 1
+    }
+    if (e === 'attente') {
+      // Le pointillé or de la carte, à la place de l'anneau corail.
+      g.save(); g.setLineDash([3, 3]); g.strokeStyle = c('#E6B94A', 0.8); g.lineWidth = 1.3
+      g.beginPath(); g.ellipse(x, yb + bob + 16, 16, 4, 0, 0, TAU); g.stroke()
+      g.restore()
     }
     if (k.z > -0.35) {
       const fond = e === 'encours' ? CORAIL : terne ? c('#150F09', 0.75) : c('#F2E8D5')

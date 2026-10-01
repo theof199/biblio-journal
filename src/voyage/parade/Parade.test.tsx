@@ -52,7 +52,8 @@ const fiche = (s: Partial<FichePrete> = {}) =>
   })
 
 const PAGE = exemple<JournalPage>('/me/journal', 'get', 200)
-const JOURNAL = 'GET /api/me/journal?limit=100'
+/** Mes films sortis l'année de la fiche, et eux seuls : le feuillet d'une marche ne lit jamais tout le journal. */
+const JOURNAL = (annee = 1897) => `GET /api/me/journal?limit=100&sortie_min=${annee}&sortie_max=${annee}`
 /** Un film de mon journal, avec son identifiant TMDB : l'exemple du contrat les ferait tous `27205`. */
 const vu = (id: string, titre: string, annee: number, tmdb: number, note: number | null = null): JournalItem => {
   const v = visionnage({ id, titre, annee, date: '2026-09-01', note })
@@ -66,7 +67,7 @@ const CARTE = 'GET /api/me/voyage'
 const ROUTES = {
   [CARTE]: () => json(VOYAGE),
   [ANNEE]: () => json(fiche()),
-  [JOURNAL]: journal(MON_JOURNAL),
+  [JOURNAL()]: journal(MON_JOURNAL),
 }
 
 const corps = (init: RequestInit) => JSON.parse(String(init.body)) as unknown
@@ -135,10 +136,10 @@ describe('la parade du podium', () => {
     const { requetes } = monterVoyage('/voyage/1897', ROUTES)
     await laMarche(1)
     await new Promise((r) => setTimeout(r, 50))
-    expect(compte(requetes, JOURNAL)).toBe(0)
+    expect(compte(requetes, JOURNAL())).toBe(0)
     fireEvent.click(await laMarche(2))
     await within(await screen.findByRole('dialog', { name: 'Marche 2' })).findByRole('button', { name: /Un film de 1897/ })
-    expect(compte(requetes, JOURNAL)).toBe(1)
+    expect(compte(requetes, JOURNAL())).toBe(1)
   })
 
   // Mutations : `viderLaMarche` jamais appelé (« Retirer » poserait) ; l'occupant non coché.
@@ -146,7 +147,7 @@ describe('la parade du podium', () => {
     let videe = 0
     const { requetes } = monterVoyage('/voyage/1897', {
       ...ROUTES,
-      [JOURNAL]: journal([vu('e1', 'Citizen Kane', 1897, 15, 9), ...MON_JOURNAL]),
+      [JOURNAL()]: journal([vu('e1', 'Citizen Kane', 1897, 15, 9), ...MON_JOURNAL]),
       'DELETE /api/me/voyage/annees/1897/podium/1': () => ((videe += 1), new Response(null, { status: 204 })),
     })
     fireEvent.click(await laMarche(1))
@@ -354,22 +355,26 @@ describe('la parade du podium', () => {
   it('la parade d’une année en attente se pose, hors IA', async () => {
     let pose: unknown
     const horsIa: Voyage = { ...VOYAGE, ia: false, annee_en_cours: 1898, source: SOURCE }
-    monterVoyage('/voyage/1898', {
+    const { requetes } = monterVoyage('/voyage/1898', {
       ...ROUTES,
       'GET /api/me/voyage': () => json(horsIa),
       'GET /api/me/voyage/annees/1898': () => json(ficheEnAttente(1898)),
+      [JOURNAL(1898)]: journal(MON_JOURNAL),
       'PUT /api/me/voyage/annees/1898/podium/1': (init) => ((pose = corps(init)), json({ podium: [null, null, null] })),
     })
     fireEvent.click(await laMarche(1))
     const feuillet = await screen.findByRole('dialog', { name: 'Marche 1' })
     fireEvent.click(await within(feuillet).findByRole('button', { name: /Un film de 1898/ }))
     await waitFor(() => expect(pose).toEqual({ tmdb_id: 102 }))
+    // La page (les films vus en avance) et le feuillet lisent les mêmes films, sous la même clé : une
+    // seule lecture. Mutation : le feuillet sur le journal entier, ou sur une autre clé.
+    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([JOURNAL(1898)])
   })
 
   // Le jumeau : une année fermée n'a pas de podium (l'API le rend toujours vide, et refuse d'y poser).
   // Mutation : la parade passée aux deux variantes de l'année fermée.
   it('une année fermée n’a pas de parade', async () => {
-    monterVoyage('/voyage/1898', { ...ROUTES, 'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)) })
+    monterVoyage('/voyage/1898', { ...ROUTES, 'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)), [JOURNAL(1898)]: journal([]) })
     await screen.findByRole('heading', { level: 1, name: '1898' })
     await screen.findByText(/Fermé jusqu’au ticket/)
     expect(screen.queryByRole('button', { name: /^Marche 1/ })).toBeNull()

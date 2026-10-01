@@ -49,15 +49,17 @@ const filmsDe = (items: readonly JournalItem[], annee: number) => items.filter((
  * L'état d'un cheval du manège (maquette : `NACS`) : brut avant le départ du Voyage, l'état de sa
  * case sur la carte ensuite (médaillé, en cours, passé), bâché une fois verrouillé — « en avance »
  * s'il porte déjà des films vus. Une année que la carte ne porte pas encore (après l'année civile)
- * est bâchée.
+ * est bâchée. `attente` : comme sur la carte (`etatDeCase`), une année que le Voyage suivi n'a pas
+ * encore ouverte, pour un membre hors IA ; elle l'emporte sur l'état de la case, jamais « en cours ».
  */
-export type EtatCheval = 'avant' | 'avance' | EtatCase
+export type EtatCheval = 'avant' | 'avance' | 'attente' | EtatCase
 
 export function chevaux(v: Pick<Voyage, 'annees' | 'ia' | 'depart'>, decennie: number): { annee: number; etat: EtatCheval }[] {
   return anneesDe(decennie).map((annee) => {
     const a = v.annees.find((x) => x.annee === annee)
     if (!a) return { annee, etat: annee < v.depart ? 'avant' : 'verrou' }
-    const { etat } = etatDeCase(a, v.ia)
+    const { etat, attente } = etatDeCase(a, v.ia)
+    if (attente) return { annee, etat: 'attente' }
     return { annee, etat: etat === 'verrou' && a.profondeur > 0 ? 'avance' : etat }
   })
 }
@@ -99,7 +101,13 @@ export interface LigneDuRegistre {
   recompense: Recompense | null
   /** Ma meilleure note sur un film sorti cette année-là ; nulle sans film noté. */
   meilleureNote: number | null
+  /** L'année en cours du membre, sauf en attente : elle se dit alors en attente, jamais « en cours ». */
   enCours: boolean
+  /**
+   * Pour un membre hors IA, une année que le Voyage suivi n'a pas encore ouverte (`etatDeCase`, le
+   * jumeau de la carte) : fermée pour lui, « tu le rattrapes bientôt ».
+   */
+  attente: boolean
   /** Verrouillée, mais déjà des films vus. */
   enAvance: boolean
   /**
@@ -109,16 +117,18 @@ export interface LigneDuRegistre {
   ouvrable: boolean
 }
 
-export function registre(v: Pick<Voyage, 'annees' | 'annee_en_cours'>, items: readonly JournalItem[], decennie: number): LigneDuRegistre[] {
+export function registre(v: Pick<Voyage, 'annees' | 'annee_en_cours' | 'ia'>, items: readonly JournalItem[], decennie: number): LigneDuRegistre[] {
   return anneesDe(decennie).map((annee) => {
     const a: AnneeCarte | undefined = v.annees.find((x) => x.annee === annee)
     const notes = filmsDe(items, annee).flatMap((i) => (i.entry.rating === null ? [] : [i.entry.rating]))
+    const attente = !!a && etatDeCase(a, v.ia).attente
     return {
       annee,
       vus: a?.profondeur ?? 0,
       recompense: a?.recompense ?? null,
       meilleureNote: notes.length > 0 ? Math.max(...notes) : null,
-      enCours: annee === v.annee_en_cours,
+      enCours: annee === v.annee_en_cours && !attente,
+      attente,
       enAvance: !!a && a.statut === 'verrouillee' && a.profondeur > 0,
       ouvrable: !!a,
     }

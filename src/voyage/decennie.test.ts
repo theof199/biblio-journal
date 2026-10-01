@@ -64,6 +64,16 @@ describe('le manège', () => {
     // Une année après l'année civile n'est pas encore sur la carte : bâchée, jamais « avant ».
     expect(chevaux(V, 1900)[5]).toEqual({ annee: 1905, etat: 'verrou' })
   })
+
+  // Le jumeau de la carte (`etatDeCase`) : pour la lectrice, l'année que le Voyage suivi n'a pas encore
+  // ouverte est en attente, pas en cours ; au compte IA, elle s'ouvre à la visite. Mutation : l'attente
+  // ignorée (le cheval peint en corail, comme l'année en cours).
+  it('met en attente le cheval d’une année que le Voyage suivi n’a pas encore ouverte', () => {
+    const lectrice = { ...V, ia: false, annees: V.annees.map((a) => (a.annee === 1897 ? { ...a, visitee: false } : a)) }
+    expect(chevaux(lectrice, 1890)[7]).toEqual({ annee: 1897, etat: 'attente' })
+    expect(chevaux(lectrice, 1890)[6]).toEqual({ annee: 1896, etat: 'passee' })
+    expect(chevaux({ ...lectrice, ia: true }, 1890)[7]).toEqual({ annee: 1897, etat: 'encours' })
+  })
 })
 
 describe('le toucher du monument', () => {
@@ -96,8 +106,19 @@ describe('le registre des recettes', () => {
   it('dit pour chaque année les films vus de la carte, sa récompense et ma meilleure note', () => {
     const lignes = registre(V, items, 1890)
     expect(lignes).toHaveLength(10)
-    expect(lignes[7]).toEqual({ annee: 1897, vus: 4, recompense: 'ours', meilleureNote: 9, enCours: true, enAvance: false, ouvrable: true })
-    expect(lignes[6]).toEqual({ annee: 1896, vus: 2, recompense: null, meilleureNote: null, enCours: false, enAvance: false, ouvrable: true })
+    expect(lignes[7]).toEqual({ annee: 1897, vus: 4, recompense: 'ours', meilleureNote: 9, enCours: true, attente: false, enAvance: false, ouvrable: true })
+    expect(lignes[6]).toEqual({ annee: 1896, vus: 2, recompense: null, meilleureNote: null, enCours: false, attente: false, enAvance: false, ouvrable: true })
+  })
+
+  // Pour la lectrice (hors IA), une année que le Voyage suivi n'a pas encore ouverte reste fermée :
+  // elle se dit en attente, jamais en cours (le jumeau de la carte, `etatDeCase`). Mutations : `attente`
+  // jamais vrai ; `enCours` sans la garde de l'attente.
+  it('dit en attente, pas en cours, l’année que le Voyage suivi n’a pas encore ouverte', () => {
+    const lectrice = { ...V, ia: false, annees: V.annees.map((a) => (a.annee === 1897 ? { ...a, visitee: false } : a)) }
+    expect(registre(lectrice, items, 1890)[7]).toMatchObject({ annee: 1897, enCours: false, attente: true, ouvrable: true })
+    expect(registre(lectrice, items, 1890)[6]).toMatchObject({ annee: 1896, attente: false })
+    // Au compte IA, la même année s'ouvre à la visite : en cours.
+    expect(registre({ ...lectrice, ia: true }, items, 1890)[7]).toMatchObject({ annee: 1897, enCours: true, attente: false })
   })
 
   // Mutations : la récompense tue pour une année verrouillée (le tampon, lui, la compte) ; « en avance »

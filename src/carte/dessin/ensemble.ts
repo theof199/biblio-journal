@@ -87,7 +87,8 @@ export function dessinerEnsemble(g: CanvasRenderingContext2D, W: number, H: numb
       for (const c of plan.cases.filter((x) => x.section === i)) {
         const y = geo.versEcran(c.y)
         const e2 = parAnnee.get(c.annee)
-        marquise(g, c.x * k, y, e2?.etat ?? 'verrou', String(c.annee), e, monde.palette.accent)
+        // Une année en attente du Voyage suivi, comme sa case : fermée, jamais le corail de l'année en cours.
+        marquise(g, c.x * k, y, !e2 || e2.attente ? 'verrou' : e2.etat, String(c.annee), e, monde.palette.accent)
       }
     } else {
       marquise(g, W / 2, (bande.y0 + bande.y1) / 2, 'verrou', `${s.decennie} – ${s.decennie + 9}`, e, monde.palette.accent)

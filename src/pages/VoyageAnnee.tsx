@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { journalComplet } from '../api/journal'
+import { journalDesAnnees } from '../api/journal'
 import { estPrete, lireGenerique, lireVoyage, utiliserTicket, type FicheAnnee, type FichePrete, type Voyage } from '../api/voyage'
 import { ambianceDeLHeure } from '../carte/heure'
 import { creerRegistre } from '../mondes'
@@ -55,13 +55,19 @@ export default function VoyageAnnee() {
 type Mode = VueBandeau['mode']
 const MODE_DU_STATUT = { ouverte: 'bouclee', en_cours: 'encours', verrouillee: 'fermee' } as const
 
-/** Le mode du bandeau : la forme de la fiche d'abord, sinon (tant qu'elle charge ou s'écrit) la carte. */
+/**
+ * Le mode du bandeau : la forme de la fiche d'abord, sinon (tant qu'elle charge ou s'écrit) la carte,
+ * qui sait déjà, pour un membre hors IA, qu'une année attend le Voyage suivi (`etatDeCase`).
+ */
 function modeDuBandeau(annee: number, fiche: FicheAnnee | undefined, v: Voyage | undefined): Mode {
   if (fiche && 'statut' in fiche) {
     if (fiche.statut === 'verrouillee') return 'fermee'
     if (fiche.statut === 'en_attente') return 'attente'
   }
-  return v ? MODE_DU_STATUT[statutDeLAnnee(annee, v.annee_en_cours)] : 'encours'
+  if (!v) return 'encours'
+  const a = v.annees.find((x) => x.annee === annee)
+  if (!fiche && a && etatDeCase(a, v.ia).attente) return 'attente'
+  return MODE_DU_STATUT[statutDeLAnnee(annee, v.annee_en_cours)]
 }
 
 function FicheDeLAnnee({ annee }: { annee: number }) {
@@ -82,10 +88,11 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   const prete = estPrete(fiche) ? fiche : undefined
   const fermee = fiche && 'statut' in fiche && (fiche.statut === 'verrouillee' || fiche.statut === 'en_attente') ? fiche : undefined
 
-  // Mon journal : pour les films vus en avance d'une année fermée ou en attente, jamais pour une fiche prête.
+  // Mes films sortis cette année-là : les films vus en avance d'une année fermée ou en attente,
+  // jamais pour une fiche prête, et jamais tout le journal pour quelques films.
   const journal = useQuery({
-    queryKey: cles.journalComplet,
-    queryFn: ({ signal }) => journalComplet(signal),
+    queryKey: cles.journalDesAnnees(annee, annee),
+    queryFn: ({ signal }) => journalDesAnnees(annee, annee, signal),
     enabled: !!fermee,
   })
 

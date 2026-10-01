@@ -12,6 +12,7 @@ import { SESSION, monterVoyage } from '../test/pageVoyage'
 import { json } from '../test/serveur'
 import { fichePrete, voyage1890 } from '../test/voyage'
 import { PAGES_DE_LA_DECENNIE, anneeCivile } from '../voyage/decennie'
+import stylesDuRegistre from '../voyage/decennie/Registre.module.css'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 import { decennieDe } from '../voyage/regles'
 
@@ -338,6 +339,39 @@ describe('la page d’une décennie', () => {
     expect(lignes[7]).toHaveTextContent(/^18972 vus · en cours/)
     expect(lignes[8]).toHaveTextContent(/^18983 vus en avance/)
     expect(lignes[9]).toHaveTextContent(/^1899—$/)
+  })
+
+  // La lectrice (hors IA, option A) : son année en cours que theo n'a pas encore ouverte reste fermée
+  // pour elle. Le manège ne la peint pas en cours (le corail), le registre ne la dit pas en cours ni
+  // ne la marque comme telle : les mots de la carte. Mutations : `chevaux` sans l'attente ; le texte
+  // du registre sans elle ; `enCours` sans sa garde (la ligne marquée « ici »).
+  it.each([
+    { profondeur: 2, texte: /^18972 vus · tu le rattrapes bientôt$/ },
+    { profondeur: 0, texte: /^1897Tu le rattrapes bientôt$/ },
+  ])('montre en attente, pas en cours, l’année que le Voyage suivi n’a pas encore ouverte ($profondeur vus)', async ({ profondeur, texte }) => {
+    const manege = doublerLeManege()
+    const lectrice: Voyage = {
+      ...VOYAGE,
+      ia: false,
+      source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: 1896 },
+      annees: VOYAGE.annees.map((a) => (a.annee === 1897 ? { ...a, visitee: false, profondeur } : a)),
+    }
+    monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage': () => json(lectrice) })
+    await decennie()
+    await manege.peint()
+    expect(manege.dernier().annees.map((a) => `${a.annee} ${a.etat}`).slice(5)).toEqual(['1895 palme', '1896 lion', '1897 attente', '1898 avance', '1899 verrou'])
+    const ligne = registreDeLaPage().getAllByRole('listitem')[7]!
+    expect(ligne).toHaveTextContent(texte)
+    expect(ligne.querySelector('a')).toHaveAttribute('href', '/voyage/1897')
+    expect(ligne.querySelector('a')).not.toHaveClass(stylesDuRegistre.ici!)
+  })
+
+  // Le témoin du précédent : au compte IA, l'année en cours est marquée « ici ». Mutation : la classe
+  // jamais posée (le test précédent passerait sans rien garder).
+  it('marque l’année en cours au registre', async () => {
+    monterVoyage('/voyage/decennies/1890', ROUTES)
+    await decennie()
+    expect(registreDeLaPage().getAllByRole('listitem')[7]!.querySelector('a')).toHaveClass(stylesDuRegistre.ici!)
   })
 
   // Mutations : la palissade nourrie d'une liste vide ; la note tue.

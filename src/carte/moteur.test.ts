@@ -145,6 +145,34 @@ describe('le moteur de la carte', () => {
     expect(millesime?.args[0]).toBe('1898')
   })
 
+  // La lectrice (option A) : son année en cours que le Voyage suivi n'a pas encore ouverte se dessine
+  // en attente (comme fermée, le pointillé or) : jamais le corail de l'année en cours, que le manège
+  // de la page d'une décennie ne lui donne pas non plus (sa plaque terne : `dessin.test.ts`).
+  // Mutation : la couche corail posée sur une année en attente.
+  it('ne marque pas en corail une année en attente du Voyage suivi', () => {
+    const { moteur, appels, cases } = monter()
+    moteur.majEtat({ cases: cases.map((c) => (c.annee === 1898 ? { ...c, attente: true, jauge: null } : c)), anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.image(1000)
+    expect(appels.some((a) => a.fillStyle === CORAIL || a.strokeStyle === CORAIL)).toBe(false)
+  })
+
+  // Le jumeau, dans la vue d'ensemble : la marquise de l'année en cours est corail ; celle d'une année
+  // en attente, comme une année fermée. Mutation : la marquise lue sur le seul état de la case.
+  it.each([
+    { attente: false, corail: true },
+    { attente: true, corail: false },
+  ])('la vue d’ensemble ne marque en corail que l’année en cours ouverte (attente : $attente)', ({ attente, corail }) => {
+    const { moteur, appels, cases } = monter({ calme: true })
+    moteur.majEtat({ cases: cases.map((c) => (c.annee === 1898 ? { ...c, attente, jauge: attente ? null : c.jauge } : c)), anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.image(1000)
+    moteur.basculerEnsemble(true)
+    appels.length = 0
+    moteur.image(1001)
+    const millesimes = appels.filter((a) => a.nom === 'fillText' && a.args[0] === '1898')
+    expect(millesimes.length).toBeGreaterThan(0)
+    expect(millesimes.some((a) => a.fillStyle === CORAIL)).toBe(corail)
+  })
+
   // Mutation : laisser avancer l'horloge quand le visiteur demande moins d'animations.
   it('fige l’image quand le visiteur demande moins d’animations', () => {
     const { moteur, appels } = monter({ calme: true })

@@ -430,6 +430,23 @@ describe('le manège des années', () => {
     expect(devant.slice(0, plaque).filter((a) => a.nom === 'fill').pop()!.fillStyle).toBe('#FF6B57')
   })
 
+  // La lectrice (option A) : une année que le Voyage suivi n'a pas encore ouverte est fermée pour elle.
+  // Son cheval n'est pas celui de l'année en cours : ni corail (le cheval, l'anneau, la plaque), mais le
+  // pointillé or de la case de la carte et une plaque terne. Mutations : le cheval peint en corail ;
+  // l'anneau corail gardé ; le pointillé oublié ; la plaque en corail.
+  it('le cheval d’une année en attente est terne, au pointillé or, sans aucun corail', () => {
+    const { appels } = monument({ nuit: 1, annees: avec({ 1898: 'attente' }) })
+    expect(appels.some((a) => a.fillStyle === '#FF6B57' || a.strokeStyle === '#FF6B57')).toBe(false)
+    expect(corps(appels).filter((a) => a.fillStyle === c('#2b1c14'))).toHaveLength(1)
+    expect(appels.filter((a) => a.nom === 'ellipse' && a.args[2] === 16 && a.args[3] === 4 && a.strokeStyle === c('#E6B94A', 0.8))).toHaveLength(1)
+    // Sans bâche : celle d'un cheval verrouillé est un trapèze sous `#4a3321`.
+    expect(appels.some((a) => a.fillStyle === c('#4a3321'))).toBe(false)
+    const devant = monument({ nuit: 1, annees: avec({ 1892: 'attente', 1898: 'passee' }) }).appels
+    const plaque = devant.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1892')
+    expect(plaque).toBeGreaterThan(-1)
+    expect(devant.slice(0, plaque).filter((a) => a.nom === 'fill').pop()!.fillStyle).toBe(c('#150F09', 0.75))
+  })
+
   // Mutation : la médaille réservée à la Palme, comme la maquette (le Lion et l'Ours perdraient la leur).
   it('médaille chaque cheval récompensé', () => {
     expect(medailles(monument().appels)).toBe(3)

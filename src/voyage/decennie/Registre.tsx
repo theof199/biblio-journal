@@ -22,6 +22,8 @@ export default function Registre({ monde, lignes, depart, notes }: Props) {
   const m = monde.pages.mots
   const texte = (l: LigneDuRegistre) => {
     if (!l.ouvrable && l.annee >= depart) return m.decennie.prochainement
+    // Une année que le Voyage suivi n'a pas encore ouverte : les mots de la carte, jamais « en cours ».
+    if (l.attente) return l.vus === 0 ? 'Tu le rattrapes bientôt' : `${l.vus} vu${l.vus > 1 ? 's' : ''} · tu le rattrapes bientôt`
     if (l.vus === 0) return '—'
     const vus = `${l.vus} vu${l.vus > 1 ? 's' : ''}`
     return l.enAvance ? `${vus} ${m.fermee.enAvance}` : l.enCours ? `${vus} · en cours` : vus
