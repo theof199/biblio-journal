@@ -540,11 +540,12 @@ export class MoteurCarte {
   private ramasser(cle: string, x: number, y: number): void {
     if (this.trouvees.has(cle)) return
     this.trouvees.add(cle)
+    // Celle qui vole encore arrive d'abord : la page ne compterait pas la nouvelle à son arrivée.
+    this.atterrir()
     this.rappels.bobine(cle)
     if (this.calme) {
       this.rappels.bobineArrivee(cle)
     } else {
-      this.atterrir()
       this.envol = { cle, x0: x, y0: y, t0: this.t }
       this.particules.etincelles(x, y, 18, '#F6D98A')
     }

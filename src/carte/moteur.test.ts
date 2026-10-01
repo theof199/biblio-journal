@@ -30,6 +30,9 @@ const BOBINE: BobinePerdue = { cle: 'les-quatre-diables', titre: 'Les Quatre Dia
 const OU_BOBINE = { x: DATE.x + 30, y: DATE.y }
 /** Un point des deux zones à la fois, celle de la bobine et celle de l'affichette. */
 const ENTRE_LES_DEUX = { x: DATE.x + 12, y: DATE.y }
+/** Une seconde bobine, loin de la première, pour le monde qui en cache deux (option `deuxBobines`). */
+const AUTRE_BOBINE: BobinePerdue = { cle: 'la-tete-de-janus', titre: 'La Tête de Janus', qui: 'F. W. Murnau, 1920' }
+const OU_AUTRE_BOBINE = { x: 190, y: DATE.y }
 const MUSIQUE: MusiqueDuMonde = { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }
 /** La couleur de la joue d'une bobine terne (`dessinerBobine`), passée par la rampe du monde d'essai. */
 const JOUE = mondeAVenir(1890).couleur('#6b6258')
@@ -75,6 +78,8 @@ function monter(
     particules?: boolean
     /** Le ciel du monde d'essai n'écrit son horloge que s'il est vivant : l'image ne dépend plus que du dessin commun. */
     cielSage?: boolean
+    /** Le monde d'essai cache une seconde bobine, en `OU_AUTRE_BOBINE`. */
+    deuxBobines?: boolean
   } = {},
 ) {
   vus.length = 0
@@ -102,7 +107,9 @@ function monter(
         palette: options.sansColonne ? { ...m.palette, colonne: null } : m.palette,
         dessinerCiel: options.cielSage ? (v) => (v.vivant ? m.dessinerCiel(v) : void vus.push(v)) : m.dessinerCiel,
         siteDuChantier: (annee) => (chantier1898 !== undefined && annee === 1898 ? chantier1898 : m.siteDuChantier(annee)),
+        bobines: options.deuxBobines && d === 1890 ? [BOBINE, AUTRE_BOBINE] : m.bobines,
         dessinerProche: (v) => {
+          if (options.deuxBobines && d === 1890) v.bobine(1, OU_AUTRE_BOBINE.x * v.k, v.ecranY(OU_AUTRE_BOBINE.y, 1), 8)
           if (!particules) return
           v.etincelles(10, 10, 1, '#abcdef')
           v.confettis(10, 10, ['#abcdef'])
@@ -782,6 +789,24 @@ describe('le moteur de la carte', () => {
       expect(rappels.bobineArrivee).not.toHaveBeenCalled()
       moteur.reglerCalme(true)
       expect(rappels.bobineArrivee).toHaveBeenCalledWith(BOBINE.cle)
+    })
+
+    // Mutation : `atterrir()` appelé après `rappels.bobine` dans `ramasser` : la page compterait la
+    // seconde à l'arrivée de la première (« Bobine retrouvée 2/3 » pour la première, le compteur à 2
+    // la seconde encore en l'air, et les trois annoncées avant que la dernière arrive).
+    it('une bobine ramassée pendant qu’une autre vole fait d’abord arriver celle qui vole', () => {
+      const { moteur, rappels } = monter({ deuxBobines: true })
+      moteur.defiler(MARGE_HAUT)
+      moteur.image(1000)
+      toucher(moteur, OU_BOBINE.x, OU_BOBINE.y)
+      moteur.image(1016)
+      toucher(moteur, OU_AUTRE_BOBINE.x, OU_AUTRE_BOBINE.y)
+      expect(rappels.bobine).toHaveBeenNthCalledWith(2, AUTRE_BOBINE.cle)
+      expect(rappels.bobineArrivee).toHaveBeenCalledTimes(1)
+      expect(rappels.bobineArrivee).toHaveBeenCalledWith(BOBINE.cle)
+      const arrivee = vi.mocked(rappels.bobineArrivee).mock.invocationCallOrder[0]!
+      const seconde = vi.mocked(rappels.bobine).mock.invocationCallOrder[1]!
+      expect(arrivee).toBeLessThan(seconde)
     })
 
     // Mutation : `this.rappels.clap()` retiré de `claquer` : le clap ne sonnerait jamais.
