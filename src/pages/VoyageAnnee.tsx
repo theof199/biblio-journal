@@ -11,6 +11,7 @@ import type { Monde, VueBandeau } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
+import { VIBRATION } from '../voyage/billet'
 import { useMouvementReduit } from '../ui/mouvement'
 import { useRevenir } from '../ui/revenir'
 import { afficherGenerique, avancees, billetsDeProgression, ligneDuBas, statutDeLAnnee, verdictAChange, type Avancee } from '../voyage/annee'
@@ -114,7 +115,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     if (liste.length === 0) return
     setGains(liste)
     // Au calme, le téléphone ne vibre pas (la maquette, `initNotation`) : l'annonce et la corde suffisent.
-    if (!calme && franchitUnPalier(liste, prete.progression)) vibrer([18, 40, 70])
+    if (!calme && franchitUnPalier(liste, prete.progression)) vibrer(VIBRATION)
   }, [retour, relue, prete, calme])
   // Le verdict du jury, guetté au compte IA après une création (le billet l'a décidé) : la fiche se
   // relit toutes les cinq secondes, douze fois au plus, jusqu'à un verdict changé ou un ticket ; la

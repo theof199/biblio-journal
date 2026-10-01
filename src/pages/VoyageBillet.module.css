@@ -94,7 +94,7 @@
 /* La frappe secoue le billet (maquette 1890 : `.ticket-notation.choc`). Le choc dure plus que la
    pause : la règle vaut aussi pendant la remontée, sans quoi il s'arrêterait net. */
 .support:is([data-etape='pose'], [data-etape='remonte']) .billet {
-  animation: choc 0.35s;
+  animation: choc calc(350ms * var(--tempo));
 }
 
 @keyframes choc {
@@ -308,7 +308,7 @@
   font: 13px var(--m-f-texte);
   box-shadow: 0 10px 24px var(--m-ombre);
   pointer-events: none;
-  animation: part 700ms cubic-bezier(0.5, 0, 0.8, 0.4) both;
+  animation: part calc(700ms * var(--tempo)) cubic-bezier(0.5, 0, 0.8, 0.4) both;
 }
 
 .talonQuiPart b {

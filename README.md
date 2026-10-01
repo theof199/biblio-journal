@@ -265,10 +265,14 @@ billet que la séance vient de ranger (`voyage/billet/range.ts`, en mémoire, pa
 avant une fois, son casier ouvert, d'un liseré or.
 
 **Le billet numéroté.** Composter sur le billet de séance (« Tamponner « Vu » » · « et ranger le
-billet ») joue la séquence de la maquette en 2 170 ms (`FRAPPE` et `DUREE_DU_COMPOSTAGE`,
-`voyage/billet.ts`) : le marteau descend (360 ms), l'encre se pose et le téléphone vibre, une pause
-(140), le marteau remonte (320), le numéroteur fait dix tirages (45 chacun), une pause (200), le
-talon part (700) ; puis l'année revient, comme au plan 2b. Le numéro se lit dans la boîte, par la
+billet ») joue la séquence de la maquette (`FRAPPE` et `DUREE_DU_COMPOSTAGE`, `voyage/billet.ts`) :
+le marteau descend (360 ms de base), l'encre se pose et le téléphone vibre, une pause (140), le
+marteau remonte (320), le numéroteur fait dix tirages (45 chacun), une pause (200), le talon part
+(700) ; puis l'année revient, comme au plan 2b, où le compteur roule et le « +1 » vole. **Le tempo**
+(`TEMPO`, `voyage/tempo.ts`) multiplie chaque durée et chaque délai de cette séquence, en JS
+(`auTempo`) comme en CSS (`calc(360ms * var(--tempo))`) : ×2 depuis le 1er octobre 2026, soit
+4 340 ms du toucher au retour à l'année au lieu de 2 170. C'est le seul chiffre à changer ;
+`voyage/tempo.test.ts` refuse une durée de la séquence écrite sans lui. Le numéro se lit dans la boîte, par la
 même requête et la même clé : celui du billet est celui de la boîte. Si elle n'a pas répondu à la fin
 des tirages, le numéroteur s'arrête sur « N° ···· » et la séquence continue. Au calme, rien de tout
 cela : l'année revient aussitôt, et le numéro se lit dans la boîte. Corriger ne tamponne pas : le

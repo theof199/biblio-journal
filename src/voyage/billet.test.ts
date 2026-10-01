@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { DUREE_DU_COMPOSTAGE, FRAPPE, compteDesCartons, decalerJour, initiale, molettes, peutAvancer, raccourci } from './billet'
+import { TEMPO } from './tempo'
 import FEUILLE_DU_TAMPON from './billet/Tampon.module.css?raw'
 import FEUILLE_DU_BILLET from '../pages/VoyageBillet.module.css?raw'
 
@@ -55,10 +56,10 @@ describe('le compostage (décision D4)', () => {
   const sansCommentaires = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
   const TAMPON = sansCommentaires(FEUILLE_DU_TAMPON)
   const BILLET = sansCommentaires(FEUILLE_DU_BILLET)
-  /** La durée d'une animation nommée, en millisecondes, telle qu'une feuille la joue. */
+  /** La durée d'une animation nommée, en millisecondes, telle qu'une feuille la joue au tempo (`calc(360ms * var(--tempo))`). */
   const duree = (css: string, nom: string) => {
-    const m = new RegExp(`animation:\\s*${nom}\\s+([\\d.]+)(ms|s)\\b`).exec(css)
-    return m ? Number(m[1]) * (m[2] === 's' ? 1000 : 1) : Number.NaN
+    const m = new RegExp(`animation:\\s*${nom}\\s+calc\\(\\s*(\\d+)ms\\s*\\*\\s*var\\(--tempo\\)\\s*\\)`).exec(css)
+    return m ? Number(m[1]) * TEMPO : Number.NaN
   }
   /** Le sélecteur de la règle qui lance une animation. */
   const selecteur = (css: string, nom: string) => {
@@ -70,11 +71,11 @@ describe('le compostage (décision D4)', () => {
     return debut < 0 ? '' : css.slice(debut, css.indexOf('}', debut))
   }
 
-  // Le plan dit « environ deux secondes » ; les durées de la maquette en faisaient 3 050, à chaque
-  // film compostée, bouton éteint. Mutation : les durées de la maquette (3 050 ms).
-  it('dure environ deux secondes, du toucher au retour à l’année', () => {
-    expect(DUREE_DU_COMPOSTAGE).toBeGreaterThanOrEqual(1800)
-    expect(DUREE_DU_COMPOSTAGE).toBeLessThanOrEqual(2200)
+  // Les 2 170 ms du plan 2c passaient trop vite (le propriétaire, 1er octobre 2026) : jamais d'y
+  // revenir, et chaque étape au tempo. Mutations : `TEMPO = 1` ; une étape de `FRAPPE` sans `auTempo`.
+  it('dure plus que les 2 170 ms d’avant, chaque étape au tempo', () => {
+    expect(DUREE_DU_COMPOSTAGE).toBeGreaterThan(2170)
+    expect(DUREE_DU_COMPOSTAGE).toBe(2170 * TEMPO)
   })
 
   // Le jumeau : la page attend `FRAPPE`, les feuilles jouent leurs propres durées. Mutations : la

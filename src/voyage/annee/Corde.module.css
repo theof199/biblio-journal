@@ -105,7 +105,7 @@
 .rouleau {
   display: flex;
   flex-direction: column;
-  animation: rouler 0.8s 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  animation: rouler calc(800ms * var(--tempo)) calc(350ms * var(--tempo)) cubic-bezier(0.3, 1.4, 0.5, 1) both;
 }
 
 .rouleau span {

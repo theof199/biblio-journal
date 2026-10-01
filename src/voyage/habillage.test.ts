@@ -21,8 +21,10 @@ const lues = (css: string) => [...sansCommentaires(css).matchAll(/var\(\s*(--[\w
  * Ce qu'une feuille du Voyage lit hors des jetons de son monde : le corail, commun à tous les mondes
  * et jamais teinté (`ui/voyage.css`), la zone sûre au-dessus de la barre d'onglets et les étages
  * (`ui/theme.css`). Jamais le reste de `voyage.css` : c'est la palette de la carte, pas celle du monde.
+ * Et le tempo de ce qui suit le geste « vu », que la page pose elle-même depuis `voyage/tempo.ts`
+ * (`STYLE_DU_TEMPO`) : ni couleur ni police, et défini hors de `theme.css`.
  */
-const PERMISES = (nom: string) => nom === '--corail' || nom === '--coque-bas' || nom.startsWith('--z-')
+const PERMISES = (nom: string) => nom === '--corail' || nom === '--tempo' || nom === '--coque-bas' || nom.startsWith('--z-')
 
 /** Les mots du raccourci `font` qui ne nomment pas une famille : style, variante, graisse, chasse, taille. */
 const MOTS_DU_RACCOURCI = new Set([
@@ -79,7 +81,7 @@ describe('l’habillage des pages du Voyage', () => {
   // doit y être défini, sinon la valeur retombe en silence. Mutation : `var(--z-calqeu)` dans une feuille.
   it.each(Object.entries(FEUILLES))('%s ne lit de theme.css que ce qu’il définit', (_chemin, css) => {
     const definies = new Set([...sansCommentaires(THEME).matchAll(/(--[\w-]+)\s*:/g)].map(([, nom]) => nom!))
-    expect(lues(css).filter((nom) => PERMISES(nom) && nom !== '--corail' && !definies.has(nom))).toEqual([])
+    expect(lues(css).filter((nom) => PERMISES(nom) && nom !== '--corail' && nom !== '--tempo' && !definies.has(nom))).toEqual([])
   })
 
   // Un calque laisse visibles le bandeau « Nouvelle version » et la barre d'onglets. Mutation :

@@ -19,7 +19,8 @@ import { historiqueDerriere, useRevenir } from '../ui/revenir'
 import { doitGuetterVerdict } from '../voyage/annee'
 import { confierLeRetour, type EtatBillet, type Retour } from '../voyage/annee/retour'
 import { useFiche } from '../voyage/annee/useFiche'
-import { FRAPPE, initiale } from '../voyage/billet'
+import { FRAPPE, VIBRATION, initiale } from '../voyage/billet'
+import { STYLE_DU_TEMPO } from '../voyage/tempo'
 import Cartons from '../voyage/billet/Cartons'
 import Dateur from '../voyage/billet/Dateur'
 import Numeroteur from '../voyage/billet/Numeroteur'
@@ -80,7 +81,8 @@ function BilletDuFilm({ annee, filmId, bobine, correction }: { annee: number; fi
   const monde = mondes(decennieDe(annee))
   const { jetons } = monde.pages
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
-  const style: CSSProperties & typeof jetons = { ...jetons }
+  // Le tempo aussi : les feuilles du compostage multiplient leurs durées par `var(--tempo)`.
+  const style: CSSProperties & typeof jetons = { ...jetons, ...STYLE_DU_TEMPO }
   const location = useLocation()
   const etat = location.state as (EtatBillet & { item?: JournalItem }) | null
   // « Retour » recule vers ce qui a ouvert le billet (la fiche du film, ou l'année) ; ouvert d'un lien, le film.
@@ -303,7 +305,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     await attendre(FRAPPE.descend)
     if (!monte.current) return
     setEtape('pose')
-    vibrer([18, 40, 70])
+    vibrer(VIBRATION)
     await attendre(FRAPPE.pause)
     if (!monte.current) return
     setEtape('remonte')

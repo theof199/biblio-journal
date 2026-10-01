@@ -46,7 +46,7 @@
 /* L'encre qui vient d'être posée : un éclat, pendant que le marteau est encore dessus. Il dure plus
    que la pause : la règle vaut aussi pendant la remontée, sans quoi l'éclat s'arrêterait net. */
 .tampon:is([data-frappe='pose'], [data-frappe='remonte']) .encre {
-  animation: eclat 260ms ease-out;
+  animation: eclat calc(260ms * var(--tempo)) ease-out;
 }
 
 @keyframes eclat {
@@ -72,11 +72,11 @@
 }
 
 .tampon[data-frappe='descend'] .marteau {
-  animation: descend 360ms cubic-bezier(0.6, 0, 1, 0.6) both;
+  animation: descend calc(360ms * var(--tempo)) cubic-bezier(0.6, 0, 1, 0.6) both;
 }
 
 .tampon[data-frappe='remonte'] .marteau {
-  animation: remonte 320ms cubic-bezier(0.2, 0.8, 0.4, 1) both;
+  animation: remonte calc(320ms * var(--tempo)) cubic-bezier(0.2, 0.8, 0.4, 1) both;
 }
 
 @keyframes descend {

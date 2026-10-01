@@ -71,7 +71,7 @@ décennie »). Trois règles, que les plans 2b et 2c ont payées :
   doit y passer.
 - **Une séquence lancée d'un rappel de `mutate` vérifie que la page est montée.** TanStack tait ces
   rappels pour un composant démonté à leur appel, pas après les attentes qu'ils lancent : le
-  compostage dure 2 170 ms, et un membre parti entre-temps serait ramené à l'année depuis ailleurs.
+  compostage dure plus de quatre secondes (`voyage/tempo.ts`), et un membre parti entre-temps serait ramené à l'année depuis ailleurs.
   Relire un drapeau `monte` après chaque attente, avant tout `setState`, toute vibration et toute
   navigation (`pages/VoyageBillet.tsx`, `tamponner`). Ce que le cache ou une autre page doit
   apprendre (les péremptions, le retour confié à l'année, le billet rangé) va dans `onSuccess` de

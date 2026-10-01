@@ -6,7 +6,8 @@ import type { ReactionsCatalogue } from '../api/reactions'
 import type { Bobine, FichePrete, Progression, Voyage } from '../api/voyage'
 import { formatDateVisionnage, jourLocal } from '../ui/format'
 import { oublierLeRetour } from '../voyage/annee/retour'
-import { DUREE_DU_COMPOSTAGE, FRAPPE, decalerJour } from '../voyage/billet'
+import { DUREE_DU_COMPOSTAGE, FRAPPE, VIBRATION, decalerJour } from '../voyage/billet'
+import { TEMPO } from '../voyage/tempo'
 import { billetRange, oublierLeBillet } from '../voyage/billet/range'
 import { RELECTURES } from '../voyage/relecture'
 import { exemple } from '../test/contrat'
@@ -468,7 +469,7 @@ describe('le billet de séance', () => {
       expect(within(films).getByText('2')).toBeInTheDocument()
       expect(within(films).getByText('3')).toBeInTheDocument()
       expect(vibrate).toHaveBeenCalledTimes(1)
-      expect(vibrate).toHaveBeenCalledWith([18, 40, 70])
+      expect(vibrate).toHaveBeenCalledWith(VIBRATION)
 
       // La fiche se relit et a encore avancé (un autre écran, un autre appareil) : rien ne revibre.
       apres = fiche({ profondeur: 4 })
@@ -513,6 +514,30 @@ describe('le billet de séance', () => {
       await lAnnee()
       expect(await screen.findByText('+1 film vu')).toBeInTheDocument()
       expect(vibrate).not.toHaveBeenCalled()
+    })
+
+    // Le compostage ralenti (le tempo, `voyage/tempo.ts`) : l'année ne revient ni au bout des 2 170 ms
+    // d'avant, ni avant la fin de la séquence au tempo ; la page et la corde posent le tempo que leurs
+    // feuilles lisent. Mutations : `TEMPO = 1` ; l'attente du talon retirée (l'année reviendrait avant
+    // la fin) ; `STYLE_DU_TEMPO` retiré de la page ou de la corde (leur `calc` tomberait).
+    it('l’année ne revient qu’à la fin du compostage au tempo, jamais au bout des 2 170 ms d’avant', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ voyage: HORS_IA })
+      monterVoyage(billet(FAUCON), routes)
+      const bouton = await composter()
+      expect(screen.getByRole('region', { name: 'Le billet de séance' }).style.getPropertyValue('--tempo')).toBe(String(TEMPO))
+      fireEvent.click(bouton)
+      // Le départ de la séquence : le marteau descend.
+      await waitFor(() => expect(document.querySelector('[data-etape="descend"]')).not.toBeNull())
+      await vi.advanceTimersByTimeAsync(2170 + 100)
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+      await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE - 2170 - 100 - 300)
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+      expect(screen.getByRole('region', { name: 'Le billet de séance' })).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(300)
+      await lAnnee()
+      const corde = await screen.findByRole('list', { name: 'La progression de l’année' })
+      expect(corde.style.getPropertyValue('--tempo')).toBe(String(TEMPO))
     })
 
     // Mutations : la garde du calme retirée (le « +1 » volerait) ; `peutAnimer` ignoré.
@@ -870,7 +895,7 @@ describe('le billet de séance', () => {
       // La boîte a répondu, mais le numéro attend le numéroteur.
       expect(compte(requetes, BOITE)).toBe(1)
       expect(screen.getByText('N° ····')).toBeInTheDocument()
-      expect(vibrate).toHaveBeenCalledWith([18, 40, 70])
+      expect(vibrate).toHaveBeenCalledWith(VIBRATION)
       expect(amener).toHaveBeenCalled()
       // La pause, le marteau qui remonte, les tirages : le numéro est posé, l'année pas encore là.
       await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + 20)

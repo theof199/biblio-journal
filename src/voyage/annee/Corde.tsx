@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useMouvementReduit } from '../../ui/mouvement'
 import type { Avancee, Billet } from '../annee'
+import { STYLE_DU_TEMPO, auTempo } from '../tempo'
 import styles from './Corde.module.css'
 
 /** Le nom complet d'un billet, pour qui ne le voit pas : « 3 films vus », « 1 essentiel sur 5 », « Aucun essentiel encore ». */
@@ -32,7 +33,7 @@ function Plus({ n }: { n: number }) {
         { transform: 'translate(-50%, -12px) scale(1.2)', opacity: 1, offset: 0.45 },
         { transform: 'translate(-50%, 20px) scale(0.9)', opacity: 0 },
       ],
-      { duration: 1100, delay: 250, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'both' },
+      { duration: auTempo(1100), delay: auTempo(250), easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'both' },
     )
     return () => vol?.cancel()
   }, [])
@@ -57,7 +58,8 @@ interface Props {
 export default function Corde({ billets, nom = 'La progression de l’année', gains = [] }: Props) {
   const calme = useMouvementReduit()
   return (
-    <ul className={styles.corde} aria-label={nom}>
+    // Le tempo du retour d'un billet : le compteur roule à `var(--tempo)` (`voyage/tempo.ts`).
+    <ul className={styles.corde} aria-label={nom} style={STYLE_DU_TEMPO}>
       {billets.map((b) => {
         // Un gain ne vaut que pour la valeur qu'il annonce : relue plus tard, la fiche l'a dépassé.
         const gain = calme ? undefined : gains.find((g) => g.cle === b.cle && g.apres === b.valeur)

@@ -1,4 +1,5 @@
 import { jourLocal } from '../ui/format'
+import { auTempo } from './tempo'
 
 /**
  * Le billet de séance (maquette 1890, écran VI), sans rendu : le dateur à molettes, le compte des
@@ -43,13 +44,25 @@ export const initiale = (pseudo: string): string => pseudo.trim().charAt(0).toUp
 
 /**
  * Le compostage de l'idée 5 (décision D4), en millisecondes : le marteau descend, l'encre se pose (son
- * éclat de 260 ms court pendant la pause et la remontée), le marteau remonte, le numéroteur fait ses
- * tirages, une pause, puis le talon part. L'ordre et les gestes sont ceux de la maquette 1890
- * (`tamponner`, lignes 2683 à 2708), les durées raccourcies : les siennes faisaient 3 050 ms, à chaque
- * film, bouton éteint ; le plan en voulait deux. Les feuilles du tampon et du billet jouent les mêmes
- * durées (`billet.test.ts`).
+ * éclat court pendant la pause et la remontée), le marteau remonte, le numéroteur fait ses tirages,
+ * une pause, puis le talon part. L'ordre et les gestes sont ceux de la maquette 1890 (`tamponner`,
+ * lignes 2683 à 2708). Les valeurs de base sont celles du plan 2c (2 170 ms en tout, celles de la
+ * maquette en faisaient 3 050) ; toutes passent par le tempo (`tempo.ts`), qui les double depuis le
+ * 1er octobre 2026. Les feuilles du tampon et du billet jouent les mêmes durées (`billet.test.ts`).
+ * `tirages` est un compte, pas une durée.
  */
-export const FRAPPE = { descend: 360, pause: 140, remonte: 320, tirage: 45, tirages: 10, avantTalon: 200, talon: 700 } as const
+export const FRAPPE = {
+  descend: auTempo(360),
+  pause: auTempo(140),
+  remonte: auTempo(320),
+  tirage: auTempo(45),
+  tirages: 10,
+  avantTalon: auTempo(200),
+  talon: auTempo(700),
+} as const
 
-/** Le compostage entier, du toucher au retour à l'année : environ deux secondes. */
+/** La vibration de la frappe, reprise au palier sur l'année : vibrer, se taire, vibrer, au tempo. */
+export const VIBRATION = [18, 40, 70].map(auTempo)
+
+/** Le compostage entier, du toucher au retour à l'année : 2 170 ms de base, au tempo. */
 export const DUREE_DU_COMPOSTAGE = FRAPPE.descend + FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + FRAPPE.avantTalon + FRAPPE.talon
