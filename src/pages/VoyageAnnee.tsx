@@ -27,6 +27,7 @@ import Corde from '../voyage/annee/Corde'
 import { NOM_DE_RECOMPENSE } from '../voyage/annee/Embleme'
 import Fronton from '../voyage/annee/Fronton'
 import LigneDuBas from '../voyage/annee/LigneDuBas'
+import Manivelle from '../voyage/annee/Manivelle'
 import Programme from '../voyage/annee/Programme'
 import { useFiche } from '../voyage/annee/useFiche'
 import Parade from '../voyage/parade/Parade'
@@ -235,43 +236,55 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     )
   }
 
+  // La manivelle (plan 2c, décision D8) relit la fiche et la carte, elles seules : `exact`, sinon le
+  // préfixe `voyage` relirait toutes les fiches en cache (et, au compte IA, ouvrirait une année non
+  // visitée chez le chroniqueur). Jamais le journal ni le générique.
+  const recharger = () =>
+    Promise.all([
+      client.refetchQueries({ queryKey: cles.annee(annee), exact: true }, { throwOnError: true }),
+      client.refetchQueries({ queryKey: cles.voyage, exact: true }, { throwOnError: true }),
+    ])
+
   return (
     <section className={styles.page} aria-label={`L’année ${annee}`} style={style}>
-      <div className={styles.bandeau}>
-        <Toile
-          hauteur={hauteurs.bandeau}
-          libelle={`Le décor de ${annee}.`}
-          onToucher={() => {
-            if (!calme) touche.current = dernierT.current
-          }}
-          dessiner={(ctx, t, vivant) => {
-            dernierT.current = t
-            monde.pages.dessinerBandeau({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.bandeau, t, vivant, nuit, mode, annee, recompense, cases, bouclee, roulotte, touche: touche.current })
-          }}
-        />
-        {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
-            quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
-        <Link
-          to="/voyage"
-          className={styles.retour}
-          aria-label="Retour à la carte"
-          onClick={(e) => {
-            // Ouvrir dans un autre onglet reste au navigateur.
-            if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-            e.preventDefault()
-            revenir()
-          }}
-        >
-          <span aria-hidden="true">‹</span>
-        </Link>
-        {/* La plaque du chapitre ouvre la page de la décennie de l'année (plan 2c, décision D5). */}
-        {monde.chapitre ? (
-          <Link to={`/voyage/decennies/${decennieDe(annee)}`} className={styles.plaque}>
-            {monde.chapitre}
+      {/* Autour de toute fiche : prête, fermée, en attente, en préparation, en panne. */}
+      <Manivelle monde={monde} onRecharger={recharger}>
+        <div className={styles.bandeau}>
+          <Toile
+            hauteur={hauteurs.bandeau}
+            libelle={`Le décor de ${annee}.`}
+            onToucher={() => {
+              if (!calme) touche.current = dernierT.current
+            }}
+            dessiner={(ctx, t, vivant) => {
+              dernierT.current = t
+              monde.pages.dessinerBandeau({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.bandeau, t, vivant, nuit, mode, annee, recompense, cases, bouclee, roulotte, touche: touche.current })
+            }}
+          />
+          {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
+              quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
+          <Link
+            to="/voyage"
+            className={styles.retour}
+            aria-label="Retour à la carte"
+            onClick={(e) => {
+              // Ouvrir dans un autre onglet reste au navigateur.
+              if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+              e.preventDefault()
+              revenir()
+            }}
+          >
+            <span aria-hidden="true">‹</span>
           </Link>
-        ) : null}
-      </div>
-      {corps}
+          {/* La plaque du chapitre ouvre la page de la décennie de l'année (plan 2c, décision D5). */}
+          {monde.chapitre ? (
+            <Link to={`/voyage/decennies/${decennieDe(annee)}`} className={styles.plaque}>
+              {monde.chapitre}
+            </Link>
+          ) : null}
+        </div>
+        {corps}
+      </Manivelle>
     </section>
   )
 }
