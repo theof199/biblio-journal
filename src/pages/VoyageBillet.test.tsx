@@ -13,7 +13,7 @@ import { exemple } from '../test/contrat'
 import { visionnage } from '../test/journal'
 import { SESSION, monterVoyage } from '../test/pageVoyage'
 import { json } from '../test/serveur'
-import { fichePrete, filmDeSalle, morceau, salle, seance, voyage1890 } from '../test/voyage'
+import { fichePrete, ficheVerrouillee, filmDeSalle, morceau, salle, seance, voyage1890 } from '../test/voyage'
 
 const SOURCE = { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: 1897 }
 const VOYAGE = voyage1890(
@@ -343,6 +343,24 @@ describe('le billet de séance', () => {
     monterVoyage('/voyage/1897/films/inconnu/billet', routes)
     expect(await screen.findByText('Ce film n’est pas dans les salles de 1897.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
+  })
+
+  // Le jumeau de la fiche du film : une adresse tapée vers une année après la mienne (un ticket gagné
+  // pas encore utilisé) mène à la page de l'année fermée, jamais à « pas dans les salles ». Le film
+  // absent d'une année ouverte garde son message : le test précédent. Mutation : le renvoi retiré.
+  it('une année fermée renvoie à sa page, qui dit pourquoi, au lieu de « pas dans les salles »', async () => {
+    const { routes } = serveur()
+    const { requetes } = monterVoyage('/voyage/1898/films/f-kane/billet', {
+      ...routes,
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)),
+      'GET /api/me/journal?limit=100&sortie_min=1898&sortie_max=1898': () => json({ ...PAGE, items: [], next_cursor: null }),
+    })
+    expect(await screen.findByText('Cette année s’ouvre avec le ticket de 1897.')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'L’année 1898' })).toBeInTheDocument()
+    expect(screen.queryByText(/pas dans les salles/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
+    expect(requetes.some((r) => r.startsWith('POST'))).toBe(false)
   })
 
   // Le jumeau du formulaire du journal. Mutation : une clé retirée des péremptions (les Suivis

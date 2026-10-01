@@ -15,7 +15,7 @@ import { contexteFactice } from '../test/contexteFactice'
 import { visionnage } from '../test/journal'
 import { monterVoyage } from '../test/pageVoyage'
 import { json, servir } from '../test/serveur'
-import { fichePrete, filmDeSalle, salle } from '../test/voyage'
+import { fichePrete, ficheVerrouillee, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import VoyageFilm from './VoyageFilm'
 
 const bobine = (tmdb_id: number, title: string, etat: Bobine['etat']): Bobine => ({ tmdb_id, title, duree_min: 1, cover_url: null, plex_url: null, etat })
@@ -181,6 +181,26 @@ describe('la fiche d’un film du Voyage', () => {
     expect(screen.getByRole('link', { name: 'L’année 1897' })).toHaveAttribute('href', '/voyage/1897')
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(requetes.filter((r) => r.includes('/annees/'))).toEqual([ANNEE])
+  })
+
+  // Une adresse tapée vers une année après la mienne (un ticket gagné pas encore utilisé) : la page de
+  // l'année fermée, jamais « pas dans les salles », juste mais trompeur. Le film absent d'une année
+  // ouverte garde son message : le test précédent. Mutation : le renvoi retiré (le message revient,
+  // l'année ne s'affiche pas).
+  it('une année fermée renvoie à sa page, qui dit pourquoi, au lieu de « pas dans les salles »', async () => {
+    const voyage = voyage1890(1897, [
+      { annee: 1897, statut: 'en_cours', visitee: true, recompense: null },
+      { annee: 1898, statut: 'verrouillee', visitee: false, recompense: null },
+    ])
+    monterVoyage('/voyage/1898/films/f-kane', {
+      'GET /api/me/voyage': () => json(voyage),
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)),
+      'GET /api/me/journal?limit=100&sortie_min=1898&sortie_max=1898': () => json({ ...PAGE, items: [], next_cursor: null }),
+    })
+    expect(await screen.findByText('Cette année s’ouvre avec le ticket de 1897.')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'L’année 1898' })).toBeInTheDocument()
+    expect(screen.queryByText(/pas dans les salles/)).toBeNull()
   })
 
   // Le jumeau : le film trouvé est celui de l'adresse, pas le premier de la salle.

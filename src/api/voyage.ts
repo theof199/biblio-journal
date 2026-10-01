@@ -88,6 +88,12 @@ export const regler = (rattrapeLaSource: boolean) =>
 /** `{ configure: false }` n'a pas de `statut` : la seule façon sûre de reconnaître une fiche prête. */
 export const estPrete = (f: FicheAnnee | undefined): f is FichePrete => !!f && 'statut' in f && f.statut === 'prete'
 
+/**
+ * Une année après mon année en cours, ticket gagné en main ou non : l'API n'y sert rien, même quand
+ * son ouverture existe déjà chez le compte IA.
+ */
+export const estVerrouillee = (f: FicheAnnee | undefined): f is FicheVerrouillee => !!f && 'statut' in f && f.statut === 'verrouillee'
+
 export const poserSurLePodium = (annee: number, place: number, corps: CorpsPodium) =>
   api.put<ReponsePodium>(`/me/voyage/annees/${annee}/podium/${place}`, corps)
 
