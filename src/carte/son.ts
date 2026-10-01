@@ -272,17 +272,26 @@ export class Ambiance {
 }
 
 let deLaPage: Ambiance | null = null
+let duMembre: string | null = null
 
 /**
  * L'ambiance de la page : une seule, qui ne crée rien tant que « Son » n'a pas été touché, et qui
- * survit au démontage de la carte (une fiche d'année ouverte puis refermée retrouve le son).
+ * survit au démontage de la carte (une fiche d'année ouverte puis refermée retrouve le son). Elle
+ * appartient au membre qui l'a allumée : la déconnexion ne recharge pas la page, et le membre
+ * suivant dans le même onglet la trouve coupée (son contexte, suspendu, resservira à son geste).
  */
-export function ambianceDeLaPage(): Ambiance {
-  return (deLaPage ??= new Ambiance())
+export function ambianceDeLaPage(membre: string): Ambiance {
+  deLaPage ??= new Ambiance()
+  if (duMembre !== membre) {
+    deLaPage.couper()
+    duMembre = membre
+  }
+  return deLaPage
 }
 
 /** Pour les tests : la prochaine page repart d'une ambiance neuve, coupée et sans contexte. */
 export function oublierAmbianceDeLaPage(): void {
   deLaPage?.couper()
   deLaPage = null
+  duMembre = null
 }

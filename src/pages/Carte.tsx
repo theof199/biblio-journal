@@ -85,7 +85,7 @@ export default function Carte() {
 
   // Le son (plan 2d) : une ambiance par page, qui ne crée rien avant le bouton « Son ». Le réglage
   // retenu ne rallume rien de lui-même : il dit seulement au bouton de proposer de le reprendre.
-  const [ambiance] = useState(ambianceDeLaPage)
+  const [ambiance] = useState(() => ambianceDeLaPage(user.id))
   const [sonEnMarche, setSonEnMarche] = useState(() => ambiance.enMarche)
   const [sonVoulu, setSonVoulu] = useState(() => lireSon(user.id))
   useEffect(() => {

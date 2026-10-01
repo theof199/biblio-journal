@@ -124,7 +124,8 @@ d'une bobine retrouvée, et la musique de chaque monde à l'écran, au volume de
 venir »). Tout est synthétisé par WebAudio, sans fichier. Coupé par défaut : **seul le bouton
 « Son »** (la pastille du haut, en bas à droite) crée le contexte audio, dans son geste, et le reprend
 s'il naît suspendu (Safari d'iOS). Une fois né, il vit autant que la page (`ambianceDeLaPage`) : une
-fiche ouverte puis refermée retrouve le son. Il se tait quand la page passe en arrière-plan ou que la
+fiche ouverte puis refermée retrouve le son. Il appartient au membre qui l'a allumé : la déconnexion
+ne recharge pas la page, et le membre suivant dans le même onglet le trouve coupé. Il se tait quand la page passe en arrière-plan ou que la
 carte est quittée. Le choix se garde sur l'appareil, par membre (`journal.carte.son.<membre>`,
 `carte/memoire.ts`) ; il ne rallume rien au rechargement, il fait seulement proposer au bouton de
 « reprendre » le son.

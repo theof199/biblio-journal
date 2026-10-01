@@ -668,6 +668,35 @@ describe('le son et les bobines perdues (plan 2d)', () => {
     expect(ctx.state).toBe('running')
   })
 
+  // Mutation : `ambiance.taire(true)` retiré du démontage : l'orgue suivrait le membre sur la fiche
+  // d'une année ou dans un autre onglet.
+  it('se tait quand la carte est quittée, et reprend sans nouveau contexte à son retour', async () => {
+    monter()
+    fireEvent.click(await screen.findByRole('button', { name: 'Son' }))
+    const ctx = DoublureAudio.crees[0]!
+    cleanup()
+    expect(ctx.state).toBe('suspended')
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('aria-pressed', 'true')
+    expect(ctx.state).toBe('running')
+    expect(DoublureAudio.crees).toHaveLength(1)
+  })
+
+  // Mutation : l'ambiance de la page rendue sans regarder le membre : déconnecté puis reconnecté
+  // sous un autre pseudo dans le même onglet, le suivant entendrait le son du précédent sans avoir
+  // touché « Son », contre son propre réglage.
+  it('ne passe pas le son d’un membre au suivant, dans le même onglet', async () => {
+    monter()
+    fireEvent.click(await screen.findByRole('button', { name: 'Son' }))
+    const ctx = DoublureAudio.crees[0]!
+    cleanup()
+    const autre = { ...SESSION, user: { ...SESSION.user, id: `${SESSION.user.id}-autre`, pseudo: 'autre' } }
+    monter(VOYAGE, { 'GET /api/auth/me': () => json(autre) })
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('aria-pressed', 'false')
+    expect(son()).toHaveAttribute('title', 'Son : coupé')
+    expect(ctx.state).toBe('suspended')
+  })
+
   // Mutations : le compteur montré sans trouvaille (`hidden` retiré) ; compté dès le toucher (sans
   // attendre l'arrivée) ; la trouvaille ni retenue sur l'appareil ni rendue au moteur.
   it('ne montre le compteur qu’à la première trouvaille, et la compte à son arrivée', async () => {
