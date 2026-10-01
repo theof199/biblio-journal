@@ -11,6 +11,7 @@ import { fichePrete, voyage1890 } from '../test/voyage'
 import { exemple } from '../test/contrat'
 import { cles } from '../api/cles'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
+import FEUILLE_DE_LA_CARTE from '../carte/Carte.module.css?raw'
 
 const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)
 const P = { essentiels_vus: 1, essentiels_total: 3, salles_completes: 0, salles_autres: 2 }
@@ -515,5 +516,16 @@ describe('le ticket', () => {
     const dialogue = await screen.findByRole('dialog', { name: 'Le Grand Café' })
     expect(dialogue.querySelector('img')?.getAttribute('src')).toBe(image.url)
     expect(dialogue).toHaveTextContent(image.legende)
+  })
+})
+
+describe('l’encre de la carte', () => {
+  // Le HUD (le millésime en cours, les récompenses, l’objectif) n’a pas d’encre à lui : il héritait
+  // `--couleur-texte` du thème général, sombre en thème clair, sur son dégradé presque noir. La
+  // maquette (`carte-v2.html`) pose `var(--papier)` sur son `body`. Mutation : la couleur retirée de `.ecran`.
+  it('pose le papier sur l’écran, sans rien hériter du thème général', () => {
+    const regle = /(?:^|\n)\.ecran\s*\{([^}]*)\}/.exec(FEUILLE_DE_LA_CARTE)?.[1]
+    expect(regle, 'la règle .ecran').toBeDefined()
+    expect(/(?:^|[;\s])color:\s*([^;]+);/.exec(regle!)?.[1]?.trim()).toBe('var(--papier)')
   })
 })

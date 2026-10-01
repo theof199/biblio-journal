@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { contexteFactice, type Appel } from '../../test/contexteFactice'
 import { mondeAVenir } from '../../mondes/avenir'
+import { creerRegistre } from '../../mondes'
 import type { Monde } from '../../mondes/types'
 import type { CaseCarte, EtatCarte } from '../moteur'
 import { placerCarte } from '../placement'
@@ -75,6 +76,44 @@ describe('le dessin commun', () => {
     }
     expect(plaque(true)).toBe('rampe(#150F09,0.72)')
     expect(plaque(false)).toBeNull()
+  })
+
+  // Le millésime d'une année faite s'écrivait de la couleur même de sa plaque (encre et fond tous deux
+  // `#F2E8D5` en 1890) : une pastille vide sous chaque case, depuis le premier dessin (b1834c8). La maquette
+  // (`ecrans-1890.html`, `carte-v2.html` : `plaque`) pose la couleur du monde en fond et `#151009` en
+  // encre. Les mondes du registre, pas un monde marqué : c'est leur palette qui doit se lire.
+  // Mutation : l'encre de nouveau `p.caseFaite.plaque` ; ou le fond pris pour l'encre.
+  it('écrit le millésime de toute case sur sa plaque d’une encre qui s’en détache', () => {
+    const composantes = (s: unknown): number[] => {
+      const t = String(s)
+      if (t.startsWith('#')) return [1, 3, 5].map((k) => parseInt(t.slice(k, k + 2), 16))
+      return t.replace(/^rgba?\(|\)$/g, '').split(',').slice(0, 3).map(Number)
+    }
+    const luminance = (s: unknown) => {
+      const [r, g, b] = composantes(s).map((v) => {
+        const x = v / 255
+        return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
+      })
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
+    }
+    const contraste = (a: unknown, b: unknown) => {
+      const [h, l] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+      return (h! + 0.05) / (l! + 0.05)
+    }
+    const mondes = creerRegistre()
+    const cases: CaseCarte[] = [...(['verrou', 'passee', 'palme', 'lion', 'ours'] as const).map((e) => uneCase(e)), uneCase('passee', true), uneCase('encours', true)]
+    for (const decennie of [1890, 1900]) {
+      for (const c of cases) {
+        const { ctx, appels } = contexteFactice()
+        dessinerCase(ctx, 100, 200, c, mondes(decennie), 0, true, () => null)
+        const i = appels.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1896')
+        const quoi = `${decennie}, ${c.etat}${c.attente ? ' en attente' : ''}`
+        expect(i, quoi).toBeGreaterThan(-1)
+        const fond = appels.slice(0, i).filter((a) => a.nom === 'fill').pop()!.fillStyle
+        // 3 : le seuil d'un grand texte (WCAG) ; la plaque terne d'une année fermée le passe déjà.
+        expect(contraste(appels[i]!.fillStyle, fond), quoi).toBeGreaterThanOrEqual(3)
+      }
+    }
   })
 
   // Mutation : les photogrammes allumés du sol en `rgba(255,222,160,…)` écrit à la main.

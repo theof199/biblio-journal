@@ -1,6 +1,7 @@
 /* Repris de la maquette v2 (docs/maquettes/carte-v2.html, lignes 53-179 et 231-238). */
 /* Dans `.contenu` de la coque (`position: relative`), au-dessus de sa barre, jamais dessous. */
-.ecran { position: absolute; inset: 0; overflow: hidden; isolation: isolate; background: var(--fond); }
+/* Le papier pour encre, comme le `body` de la maquette : le HUD n'hérite rien du thème général. */
+.ecran { position: absolute; inset: 0; overflow: hidden; isolation: isolate; background: var(--fond); color: var(--papier); }
 
 .hud {
   position: absolute; top: 0; left: 0; right: 0; z-index: 3; pointer-events: none;
