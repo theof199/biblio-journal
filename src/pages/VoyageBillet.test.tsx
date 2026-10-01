@@ -863,6 +863,24 @@ describe('le billet de séance', () => {
       expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
     })
 
+    // Le jumeau de `rangerLeBillet` dès l'écriture : le retour ne se confiait qu'à la fin de la
+    // séquence. Un membre venu de la séance qui touche « Retour » pendant le tampon reculait vers une
+    // année muette : ni « +1 », ni billets qui roulent, ni verdict guetté. Mutation : le retour confié
+    // seulement au bout de la séquence.
+    it('« Retour » vers l’année pendant la séquence : l’année dit quand même « +1 film vu »', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ voyage: HORS_IA, entree: NEUVE, boite: BOITE_DE_TROIS })
+      monterVoyage(['/voyage/1897', { pathname: billet(FAUCON), state: { depuis: 'annee' } }], routes)
+      fireEvent.click(await composter())
+      await tamponne()
+      fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(await screen.findByText('+1 film vu')).toHaveAttribute('role', 'status')
+      // La séquence quittée ne navigue plus : l'année reste, seule.
+      await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE)
+      expect(screen.getAllByRole('region', { name: 'L’année 1897' })).toHaveLength(1)
+    })
+
     // Mutation : la garde « montée » ignorée après la descente du marteau (le téléphone vibrerait pour
     // un billet quitté).
     it('quitté pendant que le marteau descend, le téléphone ne vibre pas', async () => {

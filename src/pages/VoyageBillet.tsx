@@ -239,7 +239,15 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
       const guetter = doitGuetterVerdict({ ia: v.ia, creation: !item, anneeDuFilm: entree.media.year, anneeEnCours: v.annee_en_cours })
       return { retour: { avant, guet: guetter ? { depuis } : null }, entree }
     },
-    onSuccess: perimer,
+    // Confiés dès l'écriture, même billet quitté : le membre qui recule vers l'année pendant l'envoi
+    // ou le tampon y trouve son « +1 » et son verdict guetté, puis son billet mis en avant dans la
+    // boîte. Ce n'est pas une navigation : elle seule attend les rappels de `mutate`. Corriger ne
+    // range rien (le billet a déjà son numéro).
+    onSuccess: ({ retour, entree }) => {
+      perimer()
+      confierLeRetour(annee, user.id, retour)
+      if (!item) rangerLeBillet(user.id, entree.entry.id)
+    },
   })
 
   const suppression = useMutation({
@@ -262,9 +270,8 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     setGarde(false)
   }
 
-  const revenirALAnnee = (retour: Retour) => {
-    confierLeRetour(annee, user.id, retour)
-    // Depuis l'année, reculer : la remplacer par elle-même la doublerait dans l'historique.
+  const revenirALAnnee = () => {
+    // Le retour est déjà confié (`onSuccess` de l'écriture). Depuis l'année, reculer : la remplacer par elle-même la doublerait dans l'historique.
     if (depuisLAnnee && historiqueDerriere(key)) navigate(-1)
     else navigate(`/voyage/${annee}`, { replace: true })
   }
@@ -274,7 +281,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
    * puis l'année revient. Le numéro se lit dans la boîte de la décennie, lue dès le succès : si elle n'a
    * pas répondu à la fin des tirages, le numéroteur s'arrête sur « N° ···· » et la séquence continue.
    */
-  const tamponner = async (retour: Retour, entree: JournalItem) => {
+  const tamponner = async (entree: JournalItem) => {
     let lu: number | null = null
     client.fetchQuery(laBoite(decennie)).then(
       (items) => void (lu = numeroDe(billetsDeLaDecennie(items, decennie), entree.entry.id)),
@@ -303,7 +310,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     setEtape('talon')
     await attendre(FRAPPE.talon)
     if (!monte.current) return
-    revenirALAnnee(retour)
+    revenirALAnnee()
   }
 
   const composter = () => {
@@ -311,14 +318,11 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     lever()
     suppression.reset()
     ecrire.mutate(brouillon, {
-      onSuccess: ({ retour, entree }) => {
-        // Corriger ne tamponne pas : le billet a déjà son numéro, lu en tête.
-        if (item) return revenirALAnnee(retour)
-        // Rangé dès l'écriture : un membre qui quitte le billet pendant le tampon le retrouve dans la boîte.
-        rangerLeBillet(user.id, entree.entry.id)
-        // Au calme, ni tampon, ni numéroteur, ni talon, ni vibration : l'année revient aussitôt.
-        if (calme) revenirALAnnee(retour)
-        else void tamponner(retour, entree)
+      onSuccess: ({ entree }) => {
+        // Corriger ne tamponne pas : le billet a déjà son numéro, lu en tête. Au calme, ni tampon, ni
+        // numéroteur, ni talon, ni vibration : l'année revient aussitôt.
+        if (item || calme) revenirALAnnee()
+        else void tamponner(entree)
       },
       onError: relacher,
     })
