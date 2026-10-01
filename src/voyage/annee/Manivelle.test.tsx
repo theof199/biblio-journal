@@ -280,6 +280,13 @@ describe('la manivelle', () => {
     expect(recharger).toHaveBeenCalledTimes(2)
   })
 
+  // Mutation : une panne sans réponse de l'API (le réseau) passée sous silence.
+  it('une panne du réseau se dit aussi', async () => {
+    monterSeule(() => Promise.reject(new TypeError('Failed to fetch')))
+    fireEvent.click(screen.getByRole('button', { name: M.bouton }))
+    expect(await screen.findByText('La bobine n’a pas pu se recharger. Réessaie.')).toBeInTheDocument()
+  })
+
   // Mutation : le lâcher d'un `touchcancel` traité comme un lâcher (le navigateur a repris le geste).
   it('un geste repris par le navigateur ne recharge rien', () => {
     const recharger = vi.fn(async () => undefined)
