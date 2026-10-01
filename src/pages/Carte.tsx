@@ -30,6 +30,7 @@ import {
   prochainPas,
   recompensesJusquaAnneeEnCours,
   rattrapeBientot,
+  ticketOffert,
   tropLent,
   type FrontiereAvancee,
 } from '../voyage/regles'
@@ -223,7 +224,7 @@ export default function Carte() {
     }
   }, [v, anneeAvatar, fiches, user.pseudo])
 
-  const ticket = v ? tickets.data?.tickets.find((t) => t.annee === v.annee_en_cours + 1 && t.utilise_le === null) : undefined
+  const ticket = v && tickets.data ? ticketOffert(v.annee_en_cours, tickets.data.tickets) : undefined
   const utiliser = useMutation({
     mutationFn: (annee: number) => utiliserTicket(annee),
     onSuccess: () => {

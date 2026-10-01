@@ -8,6 +8,7 @@ import {
   jauge,
   prochainPas,
   recompensesJusquaAnneeEnCours,
+  ticketOffert,
 } from './regles'
 import { annee, fichePrete } from '../test/voyage'
 
@@ -141,5 +142,17 @@ describe('la frontière qui avance', () => {
   it('ne passe la porte qu’en changeant de décennie', () => {
     expect(detecterFrontiereAvancee(1897, 1898)).toEqual({ anneeQuittee: 1897, decennieQuittee: null })
     expect(detecterFrontiereAvancee(1899, 1900)).toEqual({ anneeQuittee: 1899, decennieQuittee: 1890 })
+  })
+})
+
+describe('le ticket offert', () => {
+  const t = (annee: number, utiliseLe: string | null = null) => ({ annee, motif: '', emis_le: '2026-09-01T00:00:00.000Z', montre_le: null, utilise_le: utiliseLe })
+
+  // Mutations : la garde `utilise_le === null` retirée ; `anneeEnCours + 1` remplacé par tout ticket non utilisé.
+  it('n’est que celui de l’année qui suit, pas encore utilisé', () => {
+    expect(ticketOffert(1897, [t(1898), t(1899)])?.annee).toBe(1898)
+    expect(ticketOffert(1897, [t(1898, '2026-09-02T00:00:00.000Z')])).toBeUndefined()
+    expect(ticketOffert(1897, [t(1899)])).toBeUndefined()
+    expect(ticketOffert(1897, [t(1897)])).toBeUndefined()
   })
 })

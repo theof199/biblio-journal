@@ -1,4 +1,4 @@
-import type { AnneeCarte, FichePrete, Progression, Recompense, Voyage } from '../api/voyage'
+import type { AnneeCarte, FichePrete, Progression, Recompense, Ticket, Voyage } from '../api/voyage'
 
 /** Jumeau d'`OURS_FILMS_MIN` (`packages/shared/src/voyage.ts`) : trois films vus donnent l'Ours. */
 export const OURS_FILMS_MIN = 3
@@ -96,6 +96,16 @@ export function rattrapeBientot(v: Pick<Voyage, 'ia' | 'source' | 'annee_en_cour
 }
 
 export const RATTRAPE = 'Tu le rattrapes bientôt'
+
+/**
+ * Le seul ticket qui s'offre à « Utiliser » : celui de l'année qui suit mon année en cours, pas
+ * encore utilisé. L'API, elle, encaisserait le ticket de n'importe quelle année et y porterait mon
+ * année en cours (`POST /me/voyage/tickets/{annee}/utiliser`, qui ne refuse qu'un ticket absent ou
+ * déjà utilisé) : c'est ici que le Voyage avance d'une année à la fois. La carte et le portefeuille
+ * du profil l'appellent tous deux : la règle ne s'écrit qu'ici.
+ */
+export const ticketOffert = (anneeEnCours: number, tickets: readonly Ticket[]): Ticket | undefined =>
+  tickets.find((t) => t.annee === anneeEnCours + 1 && t.utilise_le === null)
 
 /**
  * Faut-il lire la fiche pour l'aperçu d'une année ? Seulement si elle est déjà écrite

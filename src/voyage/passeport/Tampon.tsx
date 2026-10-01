@@ -1,8 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { Monde } from '../../mondes/types'
-import { formatDateVisionnage } from '../../ui/format'
 import { useMouvementReduit } from '../../ui/mouvement'
-import type { Tampon as TamponDuPasseport } from '../passeport'
+import { jourDeParis, type Tampon as TamponDuPasseport } from '../passeport'
 import styles from './Tampon.module.css'
 
 interface Props {
@@ -18,22 +17,6 @@ interface Props {
    * défaut : le livret l'ouvre posé depuis des mois, et ne le refrappe pas à chaque visite.
    */
   frappe?: boolean
-}
-
-/**
- * Le jour où la décennie a été bouclée, en toutes lettres, **à Paris** : `boucle_le` est tantôt un
- * minuit UTC (le jour d'un visionnage, une date sans heure), tantôt l'instant où le ticket de la
- * décennie suivante a été utilisé (`calculerTampons`, la plus tardive des deux). Un minuit UTC est le
- * même jour à Paris ; un ticket utilisé à 0 h 30 à Paris l'est le jour même, pas la veille comme en
- * UTC. Jamais le fuseau de l'appareil : un téléphone réglé ailleurs reculerait d'un jour. Le jour de
- * Paris (`AAAA-MM-JJ`, que `en-CA` écrit ainsi) se dit ensuite comme un visionnage
- * (`formatDateVisionnage` : « 1er janvier 2000 », que `Intl` écrirait « 1 janvier »). Le format se
- * crée à chaque appel : les tests changent le fuseau de Node, et un format créé au chargement ne le
- * verrait pas (le retrait du fuseau passerait alors inaperçu).
- */
-function jourDe(iso: string): string {
-  const jour = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Paris' }).format(new Date(iso))
-  return formatDateVisionnage(jour)
 }
 
 /**
@@ -68,7 +51,7 @@ export default function Tampon({ monde, decennie, tampon, place = false, frappe 
       <span className={styles.mot}>bouclée</span>
       {titre ? <em className={styles.titre}>{titre}</em> : null}
       <time className={styles.jour} dateTime={tampon.boucle_le}>
-        {jourDe(tampon.boucle_le)}
+        {jourDeParis(tampon.boucle_le)}
       </time>
     </div>
   )
