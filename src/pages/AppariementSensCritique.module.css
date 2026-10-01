@@ -1,0 +1,53 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* La même page que le rapport de l'import Letterboxd, où l'on tranche aussi entre des candidats : ses règles sont reprises telles quelles. */
+
+.page {
+  composes: page from './ImportLetterboxd.module.css';
+}
+
+.entete {
+  composes: entete from './ImportLetterboxd.module.css';
+}
+
+.titre {
+  composes: titre from './ImportLetterboxd.module.css';
+}
+
+.doux {
+  composes: doux from './ImportLetterboxd.module.css';
+}
+
+.erreur {
+  composes: erreur from './ImportLetterboxd.module.css';
+}
+
+.ligne {
+  composes: ligne from './ImportLetterboxd.module.css';
+}
+
+.ligne p {
+  margin: 0;
+}
+
+.nom {
+  composes: nom from './ImportLetterboxd.module.css';
+  font-weight: var(--graisse-semi-forte);
+}
+
+.candidat {
+  composes: candidat from './ImportLetterboxd.module.css';
+}
+
+.candidatTexte {
+  composes: candidatTexte from './ImportLetterboxd.module.css';
+}
+
+.secondaire {
+  composes: secondaire from './ImportLetterboxd.module.css';
+}
+
+.secondaire:disabled {
+  cursor: progress;
+  opacity: var(--opacite-inactif);
+}

@@ -1,0 +1,95 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.titreSection {
+  composes: entete from './Recu.module.css';
+}
+
+.bloc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-2);
+  color: var(--papier-encre);
+  font-size: var(--taille-s);
+}
+
+.bloc p {
+  margin: 0;
+}
+
+/* La ligne d'ouverture : « Relier mon compte ······ → », son aide dessous. */
+.entree {
+  composes: ligne from './Recu.module.css';
+  flex-wrap: wrap;
+}
+
+/* « Compte relié ······ pseudo » : une ligne de caisse qui ne se touche pas. */
+.compte {
+  composes: ligne from './Recu.module.css';
+  cursor: default;
+}
+
+.entreeTitre {
+  composes: libelle from './Recu.module.css';
+}
+
+.pointilles {
+  composes: pointilles from './Recu.module.css';
+}
+
+.fleche {
+  composes: valeur from './Recu.module.css';
+}
+
+.aide {
+  composes: aide from './Recu.module.css';
+  margin-top: 0;
+}
+
+/* Sous la ligne d'ouverture, l'aide passe à la ligne sur toute la largeur. */
+.entree .aide {
+  flex-basis: 100%;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  width: 100%;
+  font-weight: var(--graisse-moyenne);
+}
+
+/* Une case de formulaire imprimée : le trait du ticket, le papier au travers. */
+.saisie {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--papier-trait) solid var(--papier-encre);
+  border-radius: var(--rayon-s);
+  background: none;
+  color: var(--papier-encre);
+  font: inherit;
+  font-size: var(--taille-m);
+}
+
+.saisie:focus-visible {
+  outline: var(--trait) solid var(--couleur-accent);
+  outline-offset: var(--espace-1);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.action {
+  composes: bouton from './Recu.module.css';
+}
+
+.secondaire {
+  composes: discret from './Recu.module.css';
+}
+
+.erreur {
+  composes: erreur from './Recu.module.css';
+}

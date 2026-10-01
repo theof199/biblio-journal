@@ -22,6 +22,7 @@ import AuCine from './pages/AuCine'
 import Profil from './pages/Profil'
 import Caisse from './pages/Caisse'
 import ImportLetterboxd from './pages/ImportLetterboxd'
+import AppariementSensCritique from './pages/AppariementSensCritique'
 
 export default function App() {
   return (
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="profil/mes-films" element={<MesFilms />} />
           <Route path="profil/reglages" element={<Caisse />} />
           <Route path="profil/import-letterboxd" element={<ImportLetterboxd />} />
+          <Route path="profil/senscritique" element={<AppariementSensCritique />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
