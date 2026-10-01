@@ -91,6 +91,8 @@ suivi et l'adieu d'un monde. Où vit quoi :
   les mondes (`dessin/`).
 - `src/mondes/` : l'interface d'un monde (`types.ts`), le registre (`index.ts`), un dossier par
   décennie (`1890/`) et le monde « à venir » (`avenir/`) des décennies sans chantier.
+- `src/carte/son.ts` : l'ambiance sonore ; `src/carte/dessin/bobines.ts` : le dessin des bobines
+  perdues et de leur envol.
 
 **Voir la carte sans API de dev.** Le proxy peut viser l'instance en ligne :
 `VITE_API_TARGET=https://mini-mediatheque.fr/api npm run dev`, puis se connecter avec le pseudo et
@@ -106,14 +108,36 @@ change pendant un chantier, il s'achève.
 1895 (à 150 px du haut de son monde) tombait sous le bandeau. `placement.ts` laisse donc `MARGE_HAUT`
 au-dessus de la première section, que le ciel du monde remplit ; la caméra, à l'ouverture, met
 l'avatar vers le milieu de l'écran quelle que soit l'année (`carte/depart.test.ts`). En bas à droite,
-deux pastilles rondes à icône (nom dans `aria-label`) : la vue d'ensemble, et « Tu es ici », qui ne
-s'offre que quand le moteur dit l'avatar hors de l'écran (rappel `avatarVisible`).
+des pastilles rondes à icône (nom dans `aria-label`) : « Son » (plus bas), la vue d'ensemble, et
+« Tu es ici », qui ne s'offre que quand le moteur dit l'avatar hors de l'écran (rappel
+`avatarVisible`).
 
 **Quand la foire se bâtit.** À l'ouverture d'une année, au bout de la marche de l'avatar, la
 caméra allant chercher le chantier s'il est hors de l'écran ; la séance de 1895, elle, à la toute
 première visite d'un membre (aucune année vue, l'avatar au départ du Voyage). Jamais au
 rechargement ni au retour sur la carte : l'appareil garde la dernière année montrée, par membre
 (`journal.carte.annee-vue.<membre>`, `carte/memoire.ts`).
+
+**Le son** (plan 2d ; `carte/son.ts`, `Ambiance`). Le ronron du projecteur, le clap, le carillon
+d'une bobine retrouvée, et la musique de chaque monde à l'écran, au volume de sa présence
+(`Monde.musique` : l'orgue de barbarie de 1890, `mondes/1890/orgue.ts` ; rien pour le monde « à
+venir »). Tout est synthétisé par WebAudio, sans fichier. Coupé par défaut : **seul le bouton
+« Son »** (la pastille du haut, en bas à droite) crée le contexte audio, dans son geste, et le reprend
+s'il naît suspendu (Safari d'iOS). Une fois né, il vit autant que la page (`ambianceDeLaPage`) : une
+fiche ouverte puis refermée retrouve le son. Il se tait quand la page passe en arrière-plan ou que la
+carte est quittée. Le choix se garde sur l'appareil, par membre (`journal.carte.son.<membre>`,
+`carte/memoire.ts`) ; il ne rallume rien au rechargement, il fait seulement proposer au bouton de
+« reprendre » le son.
+
+**Les bobines perdues** (plan 2d). Trois films réellement perdus cachés dans le décor de 1890
+(`Monde.bobines`, `mondes/1890/bobines.ts`) : derrière le pied d'un bec de gaz, dans la brume au bas
+de la section (un éclat la trahit de temps en temps), au pied de la tour Eiffel au loin. Le monde les
+pose par `VueMonde.bobine`, le moteur les dessine et inscrit leur zone, qui passe devant le reste du
+décor. Un toucher la ramasse : elle vole vers le compteur du HUD (`DUREE_DE_L_ENVOL`, au tempo), qui
+n'apparaît qu'à la première trouvaille ; un message dit le film, puis, à la troisième, que les trois
+sont retrouvées. Au calme, elle arrive d'un coup. Les trouvailles se gardent sur l'appareil, par
+membre (`journal.carte.bobines.<membre>`) : une bobine trouvée ne se dessine plus, sa zone ne se
+touche plus. Un stockage illisible vaut « coupé » et « aucune ».
 
 **Les images.** Chaque dossier `assets/` (`src/carte/assets/` pour les images communes,
 `src/mondes/<décennie>/assets/`) a son `CREDITS.md`, où chaque fichier porte son œuvre, sa source,
