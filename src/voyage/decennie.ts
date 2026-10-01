@@ -23,9 +23,9 @@ export function decennieDeLAdresse(param: string | undefined, anneeCivile: numbe
 }
 
 /**
- * L'année civile **à Paris**, celle du serveur qui borne la carte (`new Date().getFullYear()` de
- * l'API, sur le NAS) : jamais celle de l'appareil, qui, réglé ailleurs, fermerait la décennie neuve
- * quelques heures de trop le 1er janvier, ou l'ouvrirait la veille. Le format se crée à chaque appel :
+ * L'année civile **à Paris**, celle qui borne la carte côté API (`anneeLocale(…, FUSEAU_PARIS)`,
+ * `apps/api/src/fuseau.ts`, lue à chaque requête) : jamais celle de l'appareil, qui, réglé ailleurs,
+ * fermerait la décennie neuve quelques heures de trop le 1er janvier, ou l'ouvrirait la veille. Le format se crée à chaque appel :
  * les tests changent le fuseau de Node.
  */
 export function anneeCivile(maintenant: Date = new Date()): number {
