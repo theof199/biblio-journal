@@ -810,6 +810,8 @@ describe('le billet de séance', () => {
       fireEvent.click(bouton)
       const encre = await tamponne()
       expect(encre).toHaveAccessibleName(`VU : Cinématographe · séance du ${formatDateVisionnage(jourLocal())}`)
+      // Sur l'anneau, en capitales, comme la maquette (`encreVu`).
+      expect(encre.querySelector('textPath')).toHaveTextContent(`CINÉMATOGRAPHE · SÉANCE DU ${formatDateVisionnage(jourLocal()).toUpperCase()} ·`)
       // La boîte a répondu, mais le numéro attend le numéroteur.
       expect(compte(requetes, BOITE)).toBe(1)
       expect(screen.getByText('N° ····')).toBeInTheDocument()
