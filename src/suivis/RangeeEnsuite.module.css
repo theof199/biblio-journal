@@ -1,0 +1,75 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.ensuite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.titre {
+  margin: 0;
+  color: var(--couleur-accent);
+  font-family: var(--police-fronton);
+  font-size: var(--libelle-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--libelle-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+/*
+ * La rangée défile de côté et se cale sur ses affiches ; sa marge droite négative la mène au bord de
+ * l'écran (la marge de la page), comme les bandes de l'accueil. Sans barre de défilement.
+ */
+.defile {
+  display: flex;
+  gap: var(--espace-3);
+  margin: 0 var(--debord-page) 0 0;
+  padding: 0 var(--gouttiere-page) var(--espace-1) 0;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.defile::-webkit-scrollbar {
+  display: none;
+}
+
+.element {
+  flex: none;
+  width: var(--ensuite-largeur);
+  scroll-snap-align: start;
+}
+
+.lien {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.affiche {
+  box-shadow: var(--ensuite-ombre);
+}
+
+.film {
+  display: -webkit-box;
+  -webkit-line-clamp: var(--lignes-titre);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: var(--espace-demi) 0 0;
+  font-family: var(--police-titre);
+  font-size: var(--ensuite-titre-taille);
+  font-weight: var(--graisse-semi-forte);
+  line-height: var(--ensuite-titre-interligne);
+}
+
+.de {
+  margin: 0;
+  overflow: hidden;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

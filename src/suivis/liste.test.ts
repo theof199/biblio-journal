@@ -6,9 +6,8 @@ import {
   compteCarte,
   derniereActivite,
   entiteBouclee,
-  formatRelatif,
+  ligneBouclee,
   repartirSuivis,
-  sousLigneCarte,
   trierParActivite,
   type EtatFilmographie,
 } from './liste'
@@ -23,33 +22,6 @@ const film = (id: number, options: { vu?: string; introuvable?: boolean } = {}):
 const entite = (id: number, ajouteLe: string) => ({ tmdb_id: id, ajoute_le: ajouteLe })
 const pret = (...films: FilmSuivi[]): EtatFilmographie<FilmSuivi> => ({ statut: 'pret', films })
 const ATTENTE: EtatFilmographie<FilmSuivi> = { statut: 'attente' }
-
-describe('formatRelatif', () => {
-  const jeudi = '2026-09-24'
-  it('aujourd’hui, hier, puis des jours jusqu’à six', () => {
-    expect(formatRelatif('2026-09-24', jeudi)).toBe('aujourd’hui')
-    expect(formatRelatif('2026-09-23', jeudi)).toBe('hier')
-    expect(formatRelatif('2026-09-22', jeudi)).toBe('il y a 2 jours')
-    expect(formatRelatif('2026-09-18', jeudi)).toBe('il y a 6 jours')
-  })
-  it('une date à venir se lit « aujourd’hui »', () => {
-    expect(formatRelatif('2026-09-25', jeudi)).toBe('aujourd’hui')
-  })
-  it('des semaines de sept jours, jusqu’à quatre', () => {
-    expect(formatRelatif('2026-09-17', jeudi)).toBe('il y a 1 semaine')
-    expect(formatRelatif('2026-09-10', jeudi)).toBe('il y a 2 semaines')
-    expect(formatRelatif('2026-08-21', jeudi)).toBe('il y a 4 semaines')
-  })
-  it('des mois entiers dès trente-cinq jours, jamais moins d’un', () => {
-    expect(formatRelatif('2026-08-20', jeudi)).toBe('il y a 1 mois')
-    // Février a 28 jours : 35 jours écoulés, mais le mois entier n'est pas révolu (le 27 > le 3).
-    expect(formatRelatif('2026-01-27', '2026-03-03')).toBe('il y a 1 mois')
-    expect(formatRelatif('2026-04-02', jeudi)).toBe('il y a 5 mois')
-  })
-  it('lit le jour d’un instant complet, sans conversion de fuseau', () => {
-    expect(formatRelatif('2026-09-23T23:59:00.000Z', jeudi)).toBe('hier')
-  })
-})
 
 describe('trierParActivite', () => {
   it('du plus récemment actif au plus ancien : le dernier film vu, sinon le jour de l’ajout', () => {
@@ -93,29 +65,16 @@ describe('repartirSuivis', () => {
   })
 })
 
-describe('sousLigneCarte', () => {
-  const aujourdHui = '2026-09-24'
-  it('vu récemment : le compte et le jour du dernier visionnage', () => {
-    expect(sousLigneCarte('realisateurs', 4, 12, '2026-09-21', '2026-09-01T00:00:00.000Z', aujourdHui, false)).toBe(
-      '4 sur 12 · vu il y a 3 jours',
-    )
+describe('ligneBouclee', () => {
+  it('accordée à la source, datée du dernier visionnage, le premier du mois ordinalisé', () => {
+    expect(ligneBouclee('realisateurs', '2026-08-02', '2026-07-01T00:00:00.000Z')).toBe('bouclée le 2 août 2026')
+    expect(ligneBouclee('sagas', '2026-08-01', '2026-07-01T00:00:00.000Z')).toBe('bouclé le 1er août 2026')
   })
-  it('rien de vu : la date d’ajout, le premier du mois ordinalisé', () => {
-    expect(sousLigneCarte('sagas', 0, 12, null, '2026-09-01T18:22:41.000Z', aujourdHui, false)).toBe(
-      '0 sur 12 · ajouté le 1er septembre 2026',
-    )
+  it('sans visionnage, datée de l’ajout', () => {
+    expect(ligneBouclee('sagas', null, '2026-07-15T00:00:00.000Z')).toBe('bouclé le 15 juillet 2026')
   })
-  it('bouclée : accordée à la source, datée du dernier visionnage, sinon de l’ajout', () => {
-    expect(sousLigneCarte('realisateurs', 6, 6, '2026-08-02', '2026-07-01T00:00:00.000Z', aujourdHui, true)).toBe(
-      '6 sur 6 · bouclée le 2 août 2026',
-    )
-    expect(sousLigneCarte('sagas', 2, 2, null, '2026-07-15T00:00:00.000Z', aujourdHui, true)).toBe(
-      '2 sur 2 · bouclé le 15 juillet 2026',
-    )
-  })
-  it('sans aucune date, le compte seul', () => {
-    expect(sousLigneCarte('realisateurs', 3, 5, null, '', aujourdHui, false)).toBe('3 sur 5')
-    expect(sousLigneCarte('realisateurs', 3, 5, null, '', aujourdHui, true)).toBe('3 sur 5')
+  it('sans aucune date, nulle', () => {
+    expect(ligneBouclee('realisateurs', null, '')).toBeNull()
   })
 })
 

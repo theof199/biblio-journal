@@ -1,0 +1,168 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Un cycle : une planche pleine largeur, ses films en affiches. */
+.planche {
+  composes: papier from './Papier.module.css';
+  padding: var(--planche-marge);
+  list-style: none;
+}
+
+.planche:nth-child(2n + 1) {
+  transform: rotate(var(--planche-penche-a));
+}
+
+.planche:nth-child(2n + 2) {
+  transform: rotate(var(--planche-penche-b));
+}
+
+.punaise {
+  composes: punaise from './Papier.module.css';
+}
+
+.tete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--planche-tete-ecart);
+  margin-bottom: var(--planche-tete-air);
+  padding-bottom: var(--planche-tete-filet);
+  border-bottom: var(--papier-trait) solid var(--papier-encre);
+}
+
+.titre {
+  min-width: 0;
+}
+
+.genre {
+  composes: genre from './Papier.module.css';
+  margin-bottom: var(--espace-1);
+}
+
+/* Seul le nom nomme le lien ; il s'étend sur toute la planche (`::after`) : la rangée de films se lit case par case, pas en un nom interminable. */
+.lien {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lien::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.nom {
+  font-family: var(--police-fronton);
+  font-size: var(--nom-taille);
+  letter-spacing: var(--nom-interlettre);
+  line-height: var(--nom-interligne);
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.nomLong {
+  font-size: var(--nom-taille-longue);
+  line-height: var(--interligne-serre);
+}
+
+.seances {
+  composes: seances from './Papier.module.css';
+  margin: 0;
+  white-space: nowrap;
+}
+
+.attente {
+  composes: attente from './Papier.module.css';
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Les films d'un cycle, six par rangée, la dernière plus courte, alignée à gauche. */
+.bande {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: var(--grille-bande-colonnes);
+  gap: var(--espace-2) var(--espace-demi);
+}
+
+.case {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--trait);
+  min-width: 0;
+}
+
+.afficheCase {
+  position: relative;
+  display: block;
+  box-shadow: var(--planche-affiche-ombre);
+}
+
+/* Cerclé de rouge au crayon : le prochain. */
+.case[data-etat='prochain'] .afficheCase {
+  outline: var(--papier-trait) solid var(--papier-danger);
+  outline-offset: var(--planche-case-prochain-decalage);
+}
+
+/* Atténuée, l'affiche seule : le mot « perdu » reste lisible par-dessus. */
+.case[data-etat='pas-encore'] .afficheCase > :first-child,
+.case[data-etat='introuvable'] .afficheCase > :first-child {
+  opacity: var(--opacite-attenue);
+  filter: grayscale(100%);
+}
+
+.coche {
+  position: absolute;
+  top: var(--coche-haut);
+  right: var(--coche-droite);
+  width: var(--coche-taille);
+  height: var(--coche-taille);
+  color: var(--papier-danger);
+  filter: var(--coche-halo);
+  pointer-events: none;
+  stroke-width: var(--crayon-trait);
+}
+
+.perdu {
+  position: absolute;
+  top: var(--perdu-haut);
+  right: 0;
+  left: 0;
+  color: var(--papier-danger);
+  font-family: var(--police-crayon);
+  font-size: var(--perdu-taille);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-serre);
+  text-align: center;
+  transform: rotate(var(--perdu-inclinaison));
+  pointer-events: none;
+}
+
+.anneeCase {
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.bandeau {
+  composes: bandeau from './Papier.module.css';
+  top: var(--bandeau-planche-haut);
+  right: var(--bandeau-planche-debord);
+  left: var(--bandeau-planche-debord);
+  transform: rotate(var(--bandeau-planche-inclinaison));
+}
+
+.suite {
+  composes: suite from './Papier.module.css';
+  margin-top: var(--espace-2);
+  font-size: var(--suite-planche-taille);
+}
+
+.suite b {
+  display: inline;
+  font-size: var(--suite-planche-titre-taille);
+}

@@ -1,0 +1,103 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Ce que partagent l'affichette d'une rétrospective et la planche d'un cycle : le papier, la punaise, le genre, le compte, le bandeau « Complet ». */
+
+/* Le papier des billets du profil ; il ne change pas du jour à la nuit, seules l'ombre et la lampe qui l'éclaire changent. */
+.papier {
+  position: relative;
+  min-width: 0;
+  background: var(--affichette-lampe), var(--ticket-papier);
+  color: var(--papier-encre);
+  filter: var(--ticket-ombre);
+}
+
+/* Punaise, bandeau et vignette ne prennent pas le toucher : il revient au lien, qui couvre toute l'affichette. */
+.punaise {
+  position: absolute;
+  z-index: var(--z-punaise);
+  top: var(--espace-moins-demi);
+  left: var(--punaise-gauche);
+  width: var(--punaise-diametre);
+  height: var(--punaise-diametre);
+  border-radius: var(--rayon-plein);
+  background: var(--punaise-fond);
+  box-shadow: var(--punaise-ombre);
+  pointer-events: none;
+}
+
+.genre {
+  margin: 0;
+  color: var(--ticket-bande-vive);
+  font-family: var(--police-fronton);
+  font-size: var(--affichette-genre-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--affichette-genre-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+/* Le compte : « 9 séances sur 22 », le nombre vu en rouge d'imprimerie. Sa marge est celle de chacun : un `p` en porte une par défaut. */
+.seances {
+  font-family: var(--police-fronton);
+  font-size: var(--seances-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--seances-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.seances b {
+  color: var(--ticket-bande-vive);
+  font-weight: var(--graisse-normale);
+}
+
+/* En attente ou en panne : le nom, et ceci, rien d'autre. */
+.attente {
+  margin: var(--espace-1) 0 0;
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-s);
+}
+
+.suite {
+  margin: 0;
+  color: var(--papier-encre-douce);
+  font-size: var(--suite-taille);
+  line-height: var(--suite-interligne);
+}
+
+.suite b {
+  display: -webkit-box;
+  -webkit-line-clamp: var(--lignes-titre);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--papier-encre);
+  font-family: var(--police-titre);
+  font-size: var(--suite-titre-taille);
+  font-style: italic;
+  font-weight: var(--graisse-semi-forte);
+  line-height: var(--suite-titre-interligne);
+}
+
+/* Le tampon d'une affichette bouclée : un bandeau rouge posé de travers. */
+.bandeau {
+  position: absolute;
+  z-index: var(--z-complet);
+  top: var(--bandeau-haut);
+  right: var(--bandeau-debord);
+  left: var(--bandeau-debord);
+  margin: 0;
+  padding: var(--bandeau-marge);
+  background: var(--ticket-bande-vive);
+  box-shadow: var(--bandeau-ombre);
+  color: var(--papier-clair);
+  font-family: var(--police-fronton);
+  font-size: var(--bandeau-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--bandeau-interlettre);
+  line-height: var(--interligne-serre);
+  text-align: center;
+  text-indent: var(--bandeau-interlettre);
+  text-transform: uppercase;
+  transform: rotate(var(--bandeau-inclinaison));
+  pointer-events: none;
+}

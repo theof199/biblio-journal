@@ -1,0 +1,85 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Posé sous l'en-tête, sur la surface des champs : on cherche, on suit, on referme. */
+.recherche {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  padding: var(--espace-3);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+}
+
+.champ {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface-2);
+  color: inherit;
+  font-size: var(--taille-m);
+}
+
+.groupe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.titreGroupe {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-family: var(--police-fronton);
+  font-size: var(--libelle-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--libelle-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.resultat {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+}
+
+.nom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--graisse-moyenne);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boutonSuivre {
+  flex-shrink: 0;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--trait) solid var(--couleur-accent);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-accent);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}
+
+.boutonSuivre:disabled {
+  opacity: var(--opacite-inactif);
+  cursor: default;
+}
+
+.vide {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}

@@ -1,0 +1,40 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Deux intercalaires de classeur, un seul ouvert à la fois : l'ouvert prend le papier de la page qui suit. */
+.intercalaires {
+  display: flex;
+  gap: var(--espace-1);
+  border-bottom: var(--papier-trait) solid var(--intercalaire-papier);
+}
+
+.intercalaire {
+  /* Chacun prend la largeur de son libellé : à 320 px, « Rétrospectives 17 » ne passe pas sur deux lignes. */
+  flex: 1 1 auto;
+  min-height: var(--cible-tactile);
+  padding: var(--espace-1) var(--intercalaire-marge) 0;
+  white-space: nowrap;
+  border: none;
+  border-radius: var(--intercalaire-rayon);
+  background: var(--intercalaire-fond);
+  color: var(--couleur-texte-doux);
+  font-family: var(--police-fronton);
+  font-size: var(--intercalaire-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--intercalaire-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.intercalaire[aria-selected='true'] {
+  background: var(--intercalaire-papier);
+  color: var(--papier-encre);
+}
+
+.compte {
+  font-family: var(--police-texte);
+  font-size: var(--taille-meta);
+  font-weight: var(--graisse-semi-forte);
+  letter-spacing: 0;
+  opacity: var(--intercalaire-compte-opacite);
+}

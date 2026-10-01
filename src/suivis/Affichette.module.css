@@ -1,0 +1,173 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.affichette {
+  composes: papier from './Papier.module.css';
+  padding: var(--affichette-marge);
+  list-style: none;
+}
+
+/* Penchées chacune à leur tour, quatre angles en boucle. */
+.affichette:nth-child(4n + 1) {
+  transform: rotate(var(--affichette-penche-a));
+}
+
+.affichette:nth-child(4n + 2) {
+  transform: rotate(var(--affichette-penche-b));
+}
+
+.affichette:nth-child(4n + 3) {
+  transform: rotate(var(--affichette-penche-c));
+}
+
+.affichette:nth-child(4n + 4) {
+  transform: rotate(var(--affichette-penche-d));
+}
+
+.punaise {
+  composes: punaise from './Papier.module.css';
+}
+
+.genre {
+  composes: genre from './Papier.module.css';
+  text-align: center;
+}
+
+.cadreCliche {
+  position: relative;
+  display: block;
+  margin: var(--cliche-marge);
+}
+
+/* Le portrait imprimé à l'encre bleue : une image en niveaux de gris, éclaircie sur le bleu (`screen`), puis le papier multiplié par-dessus. */
+.cliche {
+  position: relative;
+  display: block;
+  aspect-ratio: var(--cliche-ratio);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--cliche-fond);
+}
+
+.cliche img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--cliche-cadrage);
+  filter: var(--cliche-filtre);
+  mix-blend-mode: screen;
+}
+
+.cliche::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--cliche-voile);
+  mix-blend-mode: multiply;
+}
+
+/* L'affiche du prochain film, collée au coin du cliché : un décor, le texte dit déjà le titre. */
+.vignette {
+  position: absolute;
+  z-index: var(--z-complet);
+  right: var(--vignette-droite);
+  bottom: var(--vignette-bas);
+  width: var(--vignette-largeur);
+  border: var(--vignette-bord-largeur) solid var(--papier-clair);
+  box-shadow: var(--vignette-ombre);
+  transform: rotate(var(--vignette-inclinaison));
+  pointer-events: none;
+}
+
+.afficheVignette {
+  width: 100%;
+  border-radius: 0;
+}
+
+.bandeau {
+  composes: bandeau from './Papier.module.css';
+}
+
+/* Seul le nom nomme le lien ; il s'étend sur toute l'affichette (`::after`) pour que tout l'objet se touche. */
+.lien {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lien::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.prenom {
+  display: block;
+  color: var(--papier-encre-moyenne);
+  font-family: var(--police-fronton);
+  font-size: var(--prenom-taille);
+  letter-spacing: var(--prenom-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.nom {
+  display: block;
+  font-family: var(--police-fronton);
+  font-size: var(--nom-taille);
+  letter-spacing: var(--nom-interlettre);
+  line-height: var(--nom-interligne);
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.nomLong {
+  font-size: var(--nom-taille-longue);
+  line-height: var(--interligne-serre);
+}
+
+.seances {
+  composes: seances from './Papier.module.css';
+  margin: var(--espace-demi) 0 0;
+  padding-top: var(--espace-demi);
+  border-top: var(--papier-trait) solid var(--papier-encre);
+}
+
+/* Un trou poinçonné par film (de la couleur des perforations des pellicules : lisible sur le papier, de jour comme de nuit) : vu, le prochain cerclé de rouge, introuvable en pointillés, les autres vides. */
+.trous {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--trou-ecart);
+  margin: var(--trou-marge);
+}
+
+.trou {
+  width: var(--trou-diametre);
+  height: var(--trou-diametre);
+  border: var(--trait) solid var(--papier-encre-douce);
+  border-radius: var(--rayon-plein);
+}
+
+.trou[data-etat='vu'] {
+  border-color: transparent;
+  background: var(--pellicule-trou);
+  box-shadow: var(--trou-relief);
+}
+
+.trou[data-etat='prochain'] {
+  border: var(--papier-trait) solid var(--ticket-bande-vive);
+}
+
+.trou[data-etat='introuvable'] {
+  border-style: dashed;
+  opacity: var(--opacite-attenue);
+}
+
+.attente {
+  composes: attente from './Papier.module.css';
+}
+
+.suite {
+  composes: suite from './Papier.module.css';
+}

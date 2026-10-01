@@ -3,8 +3,8 @@ import { filmsVus, prochainAVoir, type FilmSuivi } from './prochain'
 
 /**
  * Les règles pures de la liste des Suivis (reprise de `SuivisEtats.kt` et `BandeEtats.kt`, appli
- * Android, « rétrospectives et cycles » du 25 septembre 2026) : le compte sous un nom, l'ordre des
- * cartes, la section « complets » du bas. Testées sans réseau ni rendu.
+ * Android, « rétrospectives et cycles » du 25 septembre 2026) : le compte d'un suivi, l'ordre des
+ * affichettes, les archives du bas. Testées sans réseau ni rendu.
  *
  * Les dates se comparent en chaînes ISO sur leurs **dix premiers caractères** : `finished_at` est
  * une date (`2026-09-22`), `ajoute_le` un instant (`2026-09-15T18:22:41.000Z`) ; tronqués au jour,
@@ -18,15 +18,15 @@ export type EtatFilmographie<F> =
   | { statut: 'pret'; films: F[] }
   | { statut: 'indisponible' }
 
-/** Un réalisateur (« rétrospective ») ou une saga (« cycle ») : ses libellés propres. */
+/** Un réalisateur (« rétrospective ») ou une saga (« cycle »). */
 export type SourceSuivi = 'realisateurs' | 'sagas'
 
-export const LIBELLES_SUIVI: Record<SourceSuivi, { titreComplets: string; participeBoucle: string }> = {
-  realisateurs: { titreComplets: 'Rétrospectives complètes', participeBoucle: 'bouclée' },
-  sagas: { titreComplets: 'Cycles complets', participeBoucle: 'bouclé' },
+const PARTICIPE_BOUCLE: Record<SourceSuivi, string> = {
+  realisateurs: 'bouclée',
+  sagas: 'bouclé',
 }
 
-/** Un film tel qu'une carte le montre : sa bande (un cycle) et sa ligne « Ensuite ». */
+/** Un film tel qu'une affichette le montre : la planche d'un cycle et son « Ensuite ». */
 export interface FilmCarte extends FilmSuivi {
   title: string
   year: number | null
@@ -78,15 +78,14 @@ export function trierParActivite<E extends EntiteSuiviListe, F extends FilmSuivi
 
 /**
  * Une rétrospective ou un cycle bouclé : au moins un film, et chacun vu ou marqué introuvable. Une
- * liste vide n'est pas bouclée ici : une carte sans aucun film n'a rien à célébrer dans la section
- * du bas.
+ * liste vide n'est pas bouclée ici : un suivi sans aucun film n'a rien à célébrer aux archives.
  */
 export function entiteBouclee(films: readonly FilmSuivi[]): boolean {
   return films.length > 0 && films.every((film) => film.introuvable || film.vu != null)
 }
 
 /**
- * La liste, en deux : en cours d'abord, bouclées ensuite (la section « complets »), chacune triée
+ * La liste, en deux : en cours d'abord, bouclées ensuite (les archives), chacune triée
  * par activité. Une filmographie pas encore prête reste en cours.
  */
 export function repartirSuivis<E extends EntiteSuiviListe, F extends FilmSuivi>(
@@ -101,62 +100,15 @@ export function repartirSuivis<E extends EntiteSuiviListe, F extends FilmSuivi>(
   return { enCours: triees.filter((e) => !estBouclee(e)), bouclees: triees.filter(estBouclee) }
 }
 
-const JOUR_MS = 86_400_000
-function parties(jour: string): [number, number, number] {
-  const [annee, mois, quantieme] = jour.slice(0, 10).split('-').map(Number)
-  return [annee!, mois!, quantieme!]
-}
-
 /**
- * Le temps écoulé depuis `iso` jusqu'à `aujourdHui` (`AAAA-MM-JJ`), en mots : « aujourd’hui »,
- * « hier », « il y a 3 jours » (jusqu'à 6), « il y a 2 semaines » (1 à 4), puis « il y a 5 mois »
- * (au moins 1, mois entiers). Une date à venir se lit « aujourd’hui ». Reprise de `formatRelatif`
- * (Android, `ui/Format.kt`).
+ * La ligne d'un suivi rangé aux archives (reprise de `sousLigneCarte`, Android, réduite à son cas
+ * bouclé : le compte vit sur l'affichette, « 6 séances sur 6 ») : « bouclée le 2 août 2026 », ou
+ * « bouclé » pour un cycle, datée de son dernier visionnage, sinon de son ajout. Nulle sans aucune
+ * date (`ajouteLe` vide).
  */
-export function formatRelatif(iso: string, aujourdHui: string): string {
-  const [a, m, j] = parties(iso)
-  const [aa, am, aj] = parties(aujourdHui)
-  const jours = Math.round((Date.UTC(aa, am - 1, aj) - Date.UTC(a, m - 1, j)) / JOUR_MS)
-  if (jours <= 0) return 'aujourd’hui'
-  if (jours === 1) return 'hier'
-  if (jours < 7) return `il y a ${jours} jours`
-  if (jours < 35) {
-    const semaines = Math.floor(jours / 7)
-    return semaines === 1 ? 'il y a 1 semaine' : `il y a ${semaines} semaines`
-  }
-  const mois = (aa - a) * 12 + (am - m) - (aj < j ? 1 : 0)
-  return `il y a ${Math.max(mois, 1)} mois`
-}
-
-/**
- * La ligne sous le nom d'une carte (reprise de `sousLigneCarte`) :
- * - « 4 sur 12 · vu il y a 3 jours » quand un film est vu (`activite`, le jour du dernier) ;
- * - « 0 sur 12 · ajouté le 12 septembre 2026 » sinon ;
- * - « 6 sur 6 · bouclée le 2 août 2026 » (ou « bouclé ») pour une entité bouclée, datée de son
- *   dernier visionnage, sinon de son ajout.
- * Sans aucune date (`ajouteLe` vide), le compte seul.
- */
-export function sousLigneCarte(
-  source: SourceSuivi,
-  vus: number,
-  total: number,
-  activite: string | null,
-  ajouteLe: string,
-  aujourdHui: string,
-  bouclee: boolean,
-): string {
-  const compte = `${vus} sur ${total}`
-  const ajout = ajouteLe.slice(0, 10) || null
-  let suite: string | null
-  if (bouclee) {
-    const jour = activite ?? ajout
-    suite = jour ? `${LIBELLES_SUIVI[source].participeBoucle} le ${formatDateVisionnage(jour)}` : null
-  } else if (activite != null) {
-    suite = `vu ${formatRelatif(activite, aujourdHui)}`
-  } else {
-    suite = ajout ? `ajouté le ${formatDateVisionnage(ajout)}` : null
-  }
-  return suite == null ? compte : `${compte} · ${suite}`
+export function ligneBouclee(source: SourceSuivi, activite: string | null, ajouteLe: string): string | null {
+  const jour = activite ?? (ajouteLe.slice(0, 10) || null)
+  return jour ? `${PARTICIPE_BOUCLE[source]} le ${formatDateVisionnage(jour)}` : null
 }
 
 /**

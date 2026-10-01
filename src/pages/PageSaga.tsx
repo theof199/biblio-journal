@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { chercherFilms } from '../api/recherche'
 import { ajouterFilmSaga, lireFilmsSaga, lireSagas, neplusSuivreSaga, retirerFilmSaga } from '../api/sagas'
+import { destinationFilmSaga } from '../suivis/destination'
 import { basculerMasquerIntrouvables, useMasquerIntrouvables } from '../suivis/masquer'
 import { filmsVus } from '../suivis/prochain'
 import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
@@ -243,11 +244,7 @@ export default function PageSaga() {
         <ul className={styles.liste}>
           {filmsAffiches.map((film) => (
             <li key={film.tmdb_id} className={styles.ligneFilm}>
-              <Link
-                to={`/suivis/films/${film.tmdb_id}`}
-                state={{ film, realisateur: null }}
-                className={styles.film}
-              >
+              <Link {...destinationFilmSaga(film)} className={styles.film}>
                 <Affiche src={film.cover_url} titre={film.title} taille="ligne" />
                 <div className={styles.infosFilm}>
                   <p className={styles.titreFilm}>

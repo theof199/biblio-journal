@@ -22,11 +22,11 @@ fichier-ci ne porte que les intentions.
 | Profil | Le portefeuille | Ma carte d'adhérent (mon monogramme, ma couleur, mon pseudo, mes chiffres) ; dessous, mes graphiques dessinés comme des objets (notes, réactions, décennies, mois) ; en bas, le ticket de caisse |
 | Réglages (`profil/reglages`) | La caisse | Un ticket de caisse : jour ou nuit, mes films, l'import Letterboxd, le rattrapage, les doublons, la déconnexion, la mention TMDB et la version en pied de ticket |
 | Au ciné | Le hall et la caisse | Mes billets de séance, les affiches « prochainement » des sorties en salle |
-| Suivis | Le bureau de la programmation | Les réalisateurs et les sagas que je suis, comme des dossiers qu'on garde sous la main |
+| Suivis | Le bureau de la programmation | Un mur d'affichettes punaisées : une par réalisateur que je suis (son portrait imprimé à l'encre bleue, un trou poinçonné par film vu), une planche par saga ; au-dessus, le prochain film de chacun ; les suivis bouclés rangés aux archives |
 | Fiche d'un film (`journal/:id`) | La boîte de la bobine | L'étiquette du film : l'affiche, la date, la note, ce que j'en ai écrit |
 | Recherche, nouveau film | Le guichet | On demande un titre, on prend son billet |
 
-Les trois dernières lignes sont des propositions : elles se confirment avant leur maquette.
+Les deux dernières lignes sont des propositions : elles se confirment avant leur maquette.
 
 ## Les objets, jamais les cartes
 

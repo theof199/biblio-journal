@@ -5,6 +5,10 @@ import coque from '../coque/Coque.module.css?raw'
 import affiche from './Affiche.module.css?raw'
 import auCine from '../pages/AuCine.module.css?raw'
 import suivis from '../pages/Suivis.module.css?raw'
+import planche from '../suivis/PlancheCycle.module.css?raw'
+import papier from '../suivis/Papier.module.css?raw'
+import affichette from '../suivis/Affichette.module.css?raw'
+import intercalaires from '../suivis/Intercalaires.module.css?raw'
 import pellicule from '../accueil/Pellicule.module.css?raw'
 
 /** Tous les `*.module.css` de l'app, par chemin (`/src/…`). */
@@ -234,7 +238,7 @@ describe('le défilement', () => {
 describe('les grilles', () => {
   // `1fr` vaut `minmax(auto, 1fr)` : le minimum est le contenu, un titre long ou une image gonfle la
   // piste et la page défile de côté. `minmax(0, 1fr)` la borne.
-  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes', '--grille-planche-colonnes'])(
+  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes', '--grille-planche-colonnes', '--grille-mur-colonnes'])(
     '%s borne ses pistes à zéro',
     (jeton) => {
       const valeur = regle(theme, ':root').match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]
@@ -254,7 +258,8 @@ describe('les grilles', () => {
   /** Chaque grille de l'app et la classe de ses éléments, qui doivent pouvoir rétrécir sous leur contenu. */
   const ELEMENTS_DE_GRILLE = [
     ['/src/pages/AuCine.module.css', auCine, '.tuile'],
-    ['/src/pages/Suivis.module.css', suivis, '.case'],
+    ['/src/pages/Suivis.module.css', suivis, '.mur > *'],
+    ['/src/suivis/PlancheCycle.module.css', planche, '.case'],
     ['/src/accueil/Pellicule.module.css', pellicule, '.planche .vignette'],
   ] as const
 
@@ -280,5 +285,69 @@ describe('l’affiche', () => {
     const image = regle(affiche, '.image')
     expect(image).toMatch(/position:\s*absolute/)
     expect(image).toMatch(/object-fit:\s*cover/)
+  })
+})
+
+describe('les affichettes des Suivis', () => {
+  const BLOC_JOUR = regle(theme, ':root')
+  const BLOCS_SOMBRES = [regle(theme, ":root:not([data-theme='clair'])"), regle(theme, ":root[data-theme='sombre']")]
+  const valeurDe = (bloc: string, jeton: string) => bloc.match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]?.trim()
+  /** Ce qui change du jour à la nuit : la lampe qui éclaire le papier, et le fond des intercalaires en retrait. */
+  const DE_NUIT = ['--affichette-lampe', '--intercalaire-fond']
+  /** Le papier, l'encre et le cliché sont ceux du bâtiment, jour et nuit. */
+  const IMMUABLES = ['--ticket-papier', '--papier-encre', '--papier-clair', '--cliche-fond', '--cliche-voile', '--punaise-fond', '--intercalaire-papier']
+  const DES_SUIVIS = Object.entries(MODULES).filter(([chemin]) => /\/(suivis\/(Affichette|Papier|PlancheCycle|RangeeEnsuite|Intercalaires|Archives|RechercheSuivi)|pages\/Suivis)\.module\.css$/.test(chemin))
+
+  it('trouve les feuilles qu’il garde', () => {
+    expect(DES_SUIVIS).toHaveLength(8)
+  })
+
+  it.each(DE_NUIT)('%s est posé le jour et dans les deux blocs sombres, de la même valeur la nuit', (jeton) => {
+    expect(sansCommentaires(theme).match(new RegExp(`${jeton}:`, 'g'))).toHaveLength(3)
+    const [suivantLeTelephone, force] = BLOCS_SOMBRES.map((bloc) => valeurDe(bloc, jeton))
+    expect(suivantLeTelephone).toBeDefined()
+    expect(suivantLeTelephone).not.toBe(valeurDe(BLOC_JOUR, jeton))
+    expect(force).toBe(suivantLeTelephone)
+  })
+
+  it('la lampe est éteinte le jour', () => {
+    expect(valeurDe(BLOC_JOUR, '--affichette-lampe')).toBe('none')
+  })
+
+  it.each(IMMUABLES)('%s est le même de jour et de nuit', (jeton) => {
+    expect(valeurDe(BLOC_JOUR, jeton)).toBeDefined()
+    for (const bloc of BLOCS_SOMBRES) expect(valeurDe(bloc, jeton)).toBeUndefined()
+  })
+
+  it('le papier des affichettes est celui des billets, sous la lampe, avec leur ombre du jour et de la nuit', () => {
+    expect(regle(papier, '.papier')).toMatch(/background:\s*var\(--affichette-lampe\),\s*var\(--ticket-papier\)/)
+    expect(regle(papier, '.papier')).toMatch(/filter:\s*var\(--ticket-ombre\)/)
+  })
+
+  it('le trou poinçonné a la couleur des perforations des pellicules, lisible sur le papier de jour comme de nuit', () => {
+    const trou = regle(affichette, ".trou[data-etat='vu']")
+    expect(trou).toMatch(/background:\s*var\(--pellicule-trou\)/)
+    expect(trou).not.toMatch(/--barre-onglets-fond/)
+  })
+
+  it('un intercalaire ne passe jamais sur deux lignes et prend la largeur de son libellé', () => {
+    const intercalaire = regle(intercalaires, '.intercalaire')
+    expect(intercalaire).toMatch(/white-space:\s*nowrap/)
+    expect(intercalaire).toMatch(/(^|[\s;])flex:\s*1 1 auto/)
+    expect(intercalaire).toMatch(/padding:[^;]*var\(--intercalaire-marge\)/)
+  })
+
+  it('la vignette est une part du cliché, pas une largeur fixe', () => {
+    expect(valeurDe(BLOC_JOUR, '--vignette-largeur')).toMatch(/^\d+%$/)
+    expect(regle(affichette, '.vignette')).toMatch(/width:\s*var\(--vignette-largeur\)/)
+  })
+
+  it('la coche du crayon a son halo de la couleur du papier', () => {
+    expect(regle(planche, '.coche')).toMatch(/filter:\s*var\(--coche-halo\)/)
+    expect(valeurDe(BLOC_JOUR, '--coche-halo')).toMatch(/^drop-shadow\(/)
+  })
+
+  it('rien n’y bouge : ni transition ni animation', () => {
+    for (const [, css] of DES_SUIVIS) expect(sansCommentaires(css)).not.toMatch(/\b(transition|animation|@keyframes)\b/)
   })
 })

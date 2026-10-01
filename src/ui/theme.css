@@ -509,11 +509,99 @@
 
   /* États */
   --opacite-inactif: 0.6; /* un bouton désactivé */
-  --opacite-attenue: 0.45; /* une case de la bande d'un cycle, pas encore vue ou introuvable */
-  --opacite-bouclee: 0.85; /* une carte de Suivis bouclée, rangée sous « complets » */
+  --opacite-attenue: 0.45; /* ce qui s'efface : un film pas encore vu ou introuvable sur une planche, un trou introuvable, les pointillés des archives, la jauge */
 
   /* Mouvement */
   --duree: 150ms;
+
+  /* Les Suivis, au mur de la programmation : des affichettes de papier crème punaisées, le même papier
+     de jour comme de nuit (`--ticket-papier`) ; seules l'ombre (`--ticket-ombre`) et la lampe qui
+     l'éclaire changent. Le cliché imprime le portrait à l'encre bleue, les trous sont poinçonnés, un par
+     film ; le crayon rouge n'écrit que ce que le membre a fait (coché, perdu). */
+  --affichette-marge: 0.875rem 0.5625rem 0.625rem;
+  --affichette-ecart: 1.375rem 0.875rem; /* du mur : entre deux rangées, entre deux colonnes */
+  --affichette-penche-a: -0.9deg; /* les affichettes penchent chacune à leur tour, quatre angles en boucle */
+  --affichette-penche-b: 0.7deg;
+  --affichette-penche-c: 0.5deg;
+  --affichette-penche-d: -0.6deg;
+  --planche-marge: 1rem 0.75rem 0.75rem;
+  --planche-penche-a: -0.4deg; /* une planche sur deux penche de ce côté, l'autre de l'inverse */
+  --planche-penche-b: 0.35deg;
+  --papier-clair: #fbf3dc; /* le bord d'une vignette collée, le texte du bandeau */
+  --punaise-diametre: 0.875rem;
+  --punaise-gauche: calc(50% - 0.4375rem); /* centrée : la moitié du diamètre */
+  --punaise-fond: radial-gradient(circle at 35% 30%, #ff9aa3, #c92a3e 55%, #7d0f1f);
+  --punaise-ombre: 0 3px 3px rgba(0, 0, 0, 0.45);
+  --affichette-genre-taille: 0.75rem;
+  --affichette-genre-interlettre: 0.32em;
+  --cliche-marge: 0.4375rem 0 0.5rem;
+  --cliche-ratio: 1 / 1;
+  --cliche-fond: #1b2472; /* le bleu d'encre du cliché */
+  --cliche-voile: #f6ecd2; /* le papier, multiplié sur l'image : l'encre prend la teinte du papier */
+  --cliche-filtre: grayscale(1) contrast(1.15);
+  --cliche-cadrage: 50% 18%; /* le visage, plutôt que le centre du portrait */
+  --vignette-largeur: 30%; /* l'affiche du prochain film, collée au coin du cliché : un tiers environ de sa largeur, quelle que soit celle de l'écran */
+  --vignette-bord-largeur: 2px;
+  --vignette-droite: -5px;
+  --vignette-bas: -6px;
+  --vignette-inclinaison: 5deg;
+  --vignette-ombre: 0 3px 6px rgba(20, 12, 2, 0.5);
+  --prenom-taille: 0.9375rem;
+  --prenom-interlettre: 0.14em;
+  --nom-taille: 1.9375rem;
+  --nom-taille-longue: 1.4375rem;
+  --nom-interligne: 0.95;
+  --nom-interlettre: 0.02em;
+  --seances-taille: 0.875rem;
+  --seances-interlettre: 0.12em;
+  --trou-diametre: 0.5rem;
+  --trou-ecart: 0.1875rem;
+  --trou-marge: 0.375rem 0;
+  --trou-relief: inset 0 1px 2px rgba(0, 0, 0, 0.5); /* le trou poinçonné laisse voir le ciel derrière */
+  --suite-taille: 0.75rem;
+  --suite-interligne: 1.25;
+  --suite-titre-taille: 0.875rem;
+  --suite-titre-interligne: 1.15;
+  --suite-planche-taille: 0.8125rem;
+  --suite-planche-titre-taille: 0.9375rem;
+  --lignes-titre: 2; /* un titre de film passe sur deux lignes au plus, puis s'abrège */
+  --bandeau-taille: 1.3125rem;
+  --bandeau-interlettre: 0.34em;
+  --bandeau-marge: 0.3125rem 0 0.1875rem;
+  --bandeau-haut: 30%;
+  --bandeau-debord: -4%;
+  --bandeau-inclinaison: -11deg;
+  --bandeau-ombre: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --bandeau-planche-haut: 44%; /* sur une planche, plus large et moins penché */
+  --bandeau-planche-debord: -2%;
+  --bandeau-planche-inclinaison: -4deg;
+  --planche-tete-ecart: 0.625rem;
+  --planche-tete-air: 0.6875rem;
+  --planche-tete-filet: 0.375rem;
+  --planche-affiche-ombre: 0 1px 3px rgba(40, 25, 5, 0.4);
+  --planche-case-prochain-decalage: 1px; /* le cercle rouge du prochain, à un trait de l'affiche */
+  --crayon-trait: 4; /* l'épaisseur du trait de la coche, au crayon gras */
+  --coche-halo: drop-shadow(0 0 2px #fffdf6) drop-shadow(0 0 2px #fffdf6); /* un halo de la couleur du papier : la coche se lit sur une affiche sombre */
+  --coche-taille: 1.875rem;
+  --coche-haut: -0.75rem;
+  --coche-droite: -0.4375rem;
+  --perdu-taille: 1rem;
+  --perdu-haut: 30%;
+  --perdu-inclinaison: -12deg;
+  --ensuite-largeur: 5.75rem; /* une affiche de la rangée « Ensuite » */
+  --ensuite-ombre: 0 6px 12px rgba(1, 2, 16, 0.45);
+  --ensuite-titre-taille: 0.875rem;
+  --ensuite-titre-interligne: 1.15;
+  --intercalaire-taille: 1.1875rem; /* le libellé d'un intercalaire, et le lien « + Suivre » */
+  --intercalaire-interlettre: 0.14em;
+  --intercalaire-marge: 0.5rem; /* de chaque côté du libellé : à 320 px, deux intercalaires de plus de deux chiffres tiennent sur une ligne */
+  --intercalaire-rayon: 0.5625rem 0.5625rem 0 0;
+  --intercalaire-papier: #f4ecd7; /* l'intercalaire choisi, le papier du bâtiment */
+  --intercalaire-fond: rgba(16, 19, 58, 0.1); /* les autres, en retrait */
+  --intercalaire-compte-opacite: 0.7;
+  --affichette-lampe: none; /* la lampe qui éclaire le papier : éteinte le jour */
+  --z-complet: 1; /* le bandeau, la vignette : au-dessus du papier */
+  --z-punaise: 2;
 
   /* Gabarits : ils touchent à l'ergonomie, à garder raisonnables. */
   --cible-tactile: 44px; /* la plus petite zone touchable */
@@ -528,6 +616,7 @@
   --grille-sorties-colonnes: repeat(3, minmax(0, 1fr)); /* les grilles de sorties d'Au ciné, trois colonnes */
   --grille-bande-colonnes: repeat(6, minmax(0, 1fr)); /* la bande d'un cycle, six affiches par rangée */
   --grille-planche-colonnes: repeat(3, minmax(0, 1fr)); /* la planche-contact d'un mois du journal, trois vignettes par rangée */
+  --grille-mur-colonnes: repeat(2, minmax(0, 1fr)); /* le mur des affichettes de Suivis, deux par rangée */
   --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, filmographies, Au ciné) */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */
   --cote-tuile-note: 1.5rem; /* la tuile de note posée sur une affiche : au moins ce carré */
@@ -636,6 +725,8 @@
     --fente-voyant-fond: currentColor;
     --fente-voyant-lueur: 0 0 7px currentColor;
     --caisse-ombre: drop-shadow(0 16px 16px rgba(1, 2, 16, 0.85)) drop-shadow(0 2px 2px rgba(1, 2, 16, 0.4));
+    --affichette-lampe: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 244, 214, 0.5), rgba(255, 244, 214, 0) 70%);
+    --intercalaire-fond: rgba(244, 236, 215, 0.16);
   }
 }
 
@@ -721,6 +812,8 @@
   --fente-voyant-fond: currentColor;
   --fente-voyant-lueur: 0 0 7px currentColor;
   --caisse-ombre: drop-shadow(0 16px 16px rgba(1, 2, 16, 0.85)) drop-shadow(0 2px 2px rgba(1, 2, 16, 0.4));
+  --affichette-lampe: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 244, 214, 0.5), rgba(255, 244, 214, 0) 70%);
+  --intercalaire-fond: rgba(244, 236, 215, 0.16);
 }
 
 /* ------------------------------------------------------------------ La carte d'adhérent */

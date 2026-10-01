@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { lirePageRealisateur, neplusSuivreRealisateur, suivreRealisateur } from '../api/realisateurs'
+import { destinationFilmRealisateur } from '../suivis/destination'
 import { filmsSansSeries, filmsVus } from '../suivis/prochain'
 import { IconAward } from '@tabler/icons-react'
 import Affiche from '../ui/Affiche'
@@ -142,11 +143,7 @@ export default function PageRealisateur() {
         <ul className={styles.liste}>
           {filmsAffiches.map((film) => (
             <li key={film.tmdb_id}>
-              <Link
-                to={film.voyage ? `/voyage/${film.voyage.annee}/films/${film.voyage.film_id}` : `/suivis/films/${film.tmdb_id}`}
-                state={film.voyage ? undefined : { film, realisateur: { tmdb_id: id, name: fiche.name } }}
-                className={styles.film}
-              >
+              <Link {...destinationFilmRealisateur(film, { tmdb_id: id, name: fiche.name })} className={styles.film}>
                 <Affiche src={film.cover_url} titre={film.title} taille="ligne" />
                 <div className={styles.infosFilm}>
                   <p className={styles.titreFilm}>
