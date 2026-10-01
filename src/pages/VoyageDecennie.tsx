@@ -14,7 +14,7 @@ import Livret from '../voyage/decennie/Livret'
 import Palissade from '../voyage/decennie/Palissade'
 import Registre from '../voyage/decennie/Registre'
 import { anneauDuPasseport, ceQuiManque, phraseDuPasseport, tamponDe } from '../voyage/passeport'
-import { decennieDe, etatDeCase, tropLent } from '../voyage/regles'
+import { decennieDe, etatDeCase, rattrapeBientot, tropLent } from '../voyage/regles'
 import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
 import styles from './VoyageDecennie.module.css'
 
@@ -182,7 +182,7 @@ function PageDeLaDecennie({ decennie: d }: { decennie: number }) {
       )}
 
       {/* Sans mon journal, le registre se lit sans ses notes : la panne se dit une fois, sur la palissade. */}
-      <Registre monde={monde} lignes={lignes} depart={v.depart} notes={!!journal.data} tropLent={tropLent(v.source)} />
+      <Registre monde={monde} lignes={lignes} depart={v.depart} notes={!!journal.data} tropLent={tropLent(v.source)} rattrape={rattrapeBientot(v)} />
 
       {/* Seulement les pages qui ont leur route : sans elle, le lien ramènerait à l'accueil. */}
       {PAGES_DE_LA_DECENNIE.length > 0 ? (

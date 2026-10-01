@@ -27,6 +27,7 @@ import {
   jauge,
   prochainPas,
   recompensesJusquaAnneeEnCours,
+  rattrapeBientot,
   tropLent,
   type FrontiereAvancee,
 } from '../voyage/regles'
@@ -190,6 +191,8 @@ export default function Carte() {
   const ticketConnu = !!tickets.data?.tickets.some((t) => t.annee === v.annee_en_cours + 1)
   // Une année en attente du Voyage suivi le dit de lui (`tropLent`), nulle part ailleurs.
   const lent = tropLent(v.source)
+  // La lectrice derrière le voyageur suivi : son année en cours le dit, nulle autre.
+  const rattrape = rattrapeBientot(v)
   // Sans progression, l'année n'est pas encore ouverte : « Tout est vu » y serait faux.
   const objectif = !enCours
     ? null
@@ -238,14 +241,14 @@ export default function Carte() {
             {j ? <b>{`${j.vus}/${j.total}`}</b> : null}
           </p>
         ) : null}
-        {v.source ? <p className={styles.source}>Tu suis le Voyage de {v.source.pseudo}</p> : null}
+        {v.source ? <p className={styles.source}>{`Tu suis le Voyage de ${v.source.pseudo}${rattrape ? ' · tu le rattrapes bientôt' : ''}`}</p> : null}
       </header>
 
       <nav className={`sr-only ${styles.annees}`} aria-label="Les années du Voyage">
         <ul>
           {etat?.cases.map((c) => (
             <li key={c.annee}>
-              <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}`}</Link>
+              <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}${rattrape && c.annee === v.annee_en_cours ? ', tu le rattrapes bientôt' : ''}`}</Link>
             </li>
           ))}
         </ul>
@@ -283,7 +286,7 @@ export default function Carte() {
       ) : null}
 
       {apercu && apercuAnnee ? (
-        <Apercu annee={apercuAnnee} anneeEnCours={v.annee_en_cours} ia={v.ia} attente={etatDeCase(apercuAnnee, v.ia).attente} tropLent={lent} ancre={apercu.ancre} />
+        <Apercu annee={apercuAnnee} anneeEnCours={v.annee_en_cours} ia={v.ia} attente={etatDeCase(apercuAnnee, v.ia).attente} tropLent={lent} rattrape={rattrape} ancre={apercu.ancre} />
       ) : null}
 
       {date ? (

@@ -241,6 +241,9 @@ Pour un membre hors IA, une année que le Voyage suivi n'a pas encore ouverte (`
 `attente`) n'est jamais « en cours » : son cheval est terne au pointillé or, comme sa case de la
 carte, qui ne porte plus de corail ; le registre dit « Théo est trop lent » (`tropLent`). Le compte IA,
 ou un compte qui ne suit personne, ne le dit de personne.
+Derrière le voyageur suivi (son `annee_en_cours` plus loin que la mienne), mon année en cours, elle
+seule, ajoute « tu le rattrapes bientôt » à son état : le HUD, l'aperçu, le lien de la carte et le
+registre (`rattrapeBientot`, `voyage/regles.ts`) ; jamais sur une année en attente.
 
 **Le tampon du passeport** (`voyage/passeport/Tampon.tsx`), le même sur la carte et dans le livret :
 un rond de papier à l'encre rouge du monde (jamais le corail), « Passeport », « Années 1890 » au

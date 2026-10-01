@@ -1,4 +1,4 @@
-import type { AnneeCarte, FichePrete, Progression, Recompense } from '../api/voyage'
+import type { AnneeCarte, FichePrete, Progression, Recompense, Voyage } from '../api/voyage'
 
 /** Jumeau d'`OURS_FILMS_MIN` (`packages/shared/src/voyage.ts`) : trois films vus donnent l'Ours. */
 export const OURS_FILMS_MIN = 3
@@ -81,6 +81,21 @@ export function etatDeCase(a: AnneeCarte, ia: boolean): { etat: EtatCase; attent
  * qui ne suit personne) : rien ne se dit alors. Chaque site y ajoute sa ponctuation.
  */
 export const tropLent = (source: { pseudo: string } | null): string | null => (source ? `${source.pseudo} est trop lent` : null)
+
+/**
+ * La lectrice derrière le voyageur qu'elle suit (décision du propriétaire du 1er octobre 2026,
+ * option a) : son année en cours, et elle seule, dit « Tu le rattrapes bientôt » quand le Voyage
+ * suivi est déjà plus loin (`source.annee_en_cours`, qui peut retarder de soixante secondes). Jamais
+ * pour le compte IA ni sans `source` ; jamais sur une année en attente, qui dit `tropLent` : les deux
+ * phrases ne se croisent pas. Chaque site l'ajoute à l'état de l'année (« en cours »), sans le remplacer.
+ */
+export function rattrapeBientot(v: Pick<Voyage, 'ia' | 'source' | 'annee_en_cours' | 'annees'>): boolean {
+  if (v.ia || !v.source || v.source.annee_en_cours <= v.annee_en_cours) return false
+  const enCours = v.annees.find((a) => a.annee === v.annee_en_cours)
+  return !!enCours && !etatDeCase(enCours, v.ia).attente
+}
+
+export const RATTRAPE = 'Tu le rattrapes bientôt'
 
 /**
  * Faut-il lire la fiche pour l'aperçu d'une année ? Seulement si elle est déjà écrite

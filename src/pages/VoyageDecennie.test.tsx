@@ -359,6 +359,23 @@ describe('la page d’une décennie', () => {
   // pour elle. Le manège ne la peint pas en cours (le corail), le registre ne la dit pas en cours ni
   // ne la marque comme telle : les mots de la carte. Mutations : `chevaux` sans l'attente ; le texte
   // du registre sans elle ; `enCours` sans sa garde (la ligne marquée « ici »).
+  // Décision du propriétaire du 1er octobre 2026 (2c-5, option a) : derrière le voyageur suivi
+  // (1898), la ligne de l'année en cours (1897) l'ajoute à son état, aucune autre ; à la même année,
+  // rien. Mutations : la phrase sur toutes les lignes (`enCours` ignoré) ; l'état « en cours » remplacé ;
+  // `>` changé en `>=`.
+  it.each([
+    { source: 1898, texte: /^18972 vus · en cours · tu le rattrapes bientôt$/ },
+    { source: 1897, texte: /^18972 vus · en cours$/ },
+  ])('le registre dit « tu le rattrapes bientôt » sur l’année en cours seule (source en $source)', async ({ source, texte }) => {
+    const lectrice: Voyage = { ...VOYAGE, ia: false, source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: source } }
+    monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage': () => json(lectrice) })
+    await decennie()
+    const lignes = registreDeLaPage().getAllByRole('listitem')
+    expect(lignes[7]).toHaveTextContent(texte)
+    expect(lignes.filter((l) => /rattrapes/.test(l.textContent ?? ''))).toHaveLength(source > 1897 ? 1 : 0)
+    expect(screen.queryByText(/trop lent/)).toBeNull()
+  })
+
   // Un compte hors IA qui ne suit personne (`source` nul) : rien ne se dit de personne, la ligne ne
   // compte que ses films. Mutation : la phrase sans pseudo (« null est trop lent », ou l'ancien texte).
   it('sans voyageur suivi, le registre ne dit de personne qu’il est trop lent', async () => {

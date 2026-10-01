@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import type { Monde } from '../../mondes/types'
 import Embleme from '../annee/Embleme'
 import type { LigneDuRegistre } from '../decennie'
+import { RATTRAPE } from '../regles'
 import styles from './Registre.module.css'
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
   notes: boolean
   /** Ce que dit une année en attente du Voyage suivi (`tropLent`) ; nul sans voyageur suivi. */
   tropLent: string | null
+  /** L'année en cours de la lectrice, derrière le voyageur suivi (`rattrapeBientot`) : sa ligne le dit. */
+  rattrape: boolean
 }
 
 /**
@@ -20,15 +23,17 @@ interface Props {
  * année de la décennie, ses films vus, sa récompense, ma meilleure note. Une année qui a sa page est
  * un lien vers elle : le chemin du clavier et du lecteur d'écran, que le manège n'offre pas.
  */
-export default function Registre({ monde, lignes, depart, notes, tropLent }: Props) {
+export default function Registre({ monde, lignes, depart, notes, tropLent, rattrape }: Props) {
   const m = monde.pages.mots
   const texte = (l: LigneDuRegistre) => {
     if (!l.ouvrable && l.annee >= depart) return m.decennie.prochainement
     // Une année que le Voyage suivi n'a pas encore ouverte : les mots de la carte, jamais « en cours ».
     if (l.attente && tropLent) return l.vus === 0 ? tropLent : `${l.vus} vu${l.vus > 1 ? 's' : ''} · ${tropLent}`
-    if (l.vus === 0) return '—'
+    // Derrière le voyageur suivi, l'année en cours l'ajoute à son état, sans le remplacer.
+    const derriere = l.enCours && rattrape ? ' · tu le rattrapes bientôt' : ''
+    if (l.vus === 0) return derriere ? RATTRAPE : '—'
     const vus = `${l.vus} vu${l.vus > 1 ? 's' : ''}`
-    return l.enAvance ? `${vus} ${m.fermee.enAvance}` : l.enCours ? `${vus} · en cours` : vus
+    return l.enAvance ? `${vus} ${m.fermee.enAvance}` : l.enCours ? `${vus} · en cours${derriere}` : vus
   }
 
   return (

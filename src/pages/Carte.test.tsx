@@ -208,6 +208,45 @@ describe('la carte', () => {
     annees: VOYAGE.annees.map((a) => (a.annee === 1898 ? { ...a, visitee: true, recompense: 'palme' as const, progression: P, profondeur: 6 } : a)),
   }
 
+  // Décision du propriétaire du 1er octobre 2026 (2c-5, option a) : la lectrice dont l'année en cours
+  // (1898, ouverte) est derrière le voyageur suivi (1899) le lit sur cette année seule, ajouté à son
+  // état : le HUD, l'aperçu (sous « En cours »), le lien du lecteur d'écran (« 1898, en cours, … »).
+  // Jamais sur une autre année. Mutations : la condition `>` changée en `>=` (la source à la même
+  // année) ; l'année ignorée au lien ou à l'aperçu (la phrase sur 1897) ; l'état remplacé au lien.
+  const SUIT = (annee: number) => ({ id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: annee })
+  it('derrière le voyageur suivi, l’année en cours dit « Tu le rattrapes bientôt », elle seule', async () => {
+    const { rappels, etats } = monter({ ...OUVERTE, ia: false, source: SUIT(1899) })
+    expect(await screen.findByText('Tu suis le Voyage de Théo · tu le rattrapes bientôt')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '1898, en cours, tu le rattrapes bientôt' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /rattrapes/ })).toHaveLength(1)
+    expect(screen.queryByText(/trop lent/)).not.toBeInTheDocument()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().apercu(1898, { x: 10, y: 10 }))
+    const apercu = await screen.findByText('Tu le rattrapes bientôt.')
+    expect(apercu.closest('[role="status"]')).toHaveTextContent('En cours')
+    act(() => rappels().finApercu())
+    act(() => rappels().apercu(1897, { x: 10, y: 10 }))
+    await waitFor(() => expect(screen.queryByText('Tu le rattrapes bientôt.')).not.toBeInTheDocument())
+  })
+
+  // La source à la même année, le compte IA, un compte sans source : rien ne se rattrape. Et une année
+  // en cours que la source, pourtant devant, n'a pas encore ouverte dit « … est trop lent », jamais
+  // les deux. Mutations : la garde `ia`, `source` ou `attente` retirée de `rattrapeBientot`.
+  it.each([
+    ['la source à la même année', { ...OUVERTE, ia: false, source: SUIT(1898) }, false],
+    ['le compte IA', { ...OUVERTE, ia: true, source: SUIT(1899) }, false],
+    ['un compte sans source', { ...OUVERTE, ia: false, source: null }, false],
+    ['une année en attente, la source devant', { ...VOYAGE, ia: false, source: SUIT(1899) }, true],
+  ] as const)('%s : jamais « Tu le rattrapes bientôt »', async (_cas, voyage, lent) => {
+    const { rappels, etats } = monter(voyage)
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().apercu(1898, { x: 10, y: 10 }))
+    expect(await screen.findByRole('link', { name: /^1898, / })).toBeInTheDocument()
+    expect(screen.queryByText(/rattrapes/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /rattrapes/i })).not.toBeInTheDocument()
+    if (lent) expect(screen.getByRole('link', { name: '1898, Théo est trop lent' })).toBeInTheDocument()
+  })
+
   // Relecture de la tâche 9. Mutations : `v.ia` remplacé par `true` dans l'objectif du HUD, ou
   // dans l'aperçu (un membre hors IA lirait le jury).
   it('pour un membre hors IA, l’objectif d’une année ouverte ne parle jamais du jury', async () => {
