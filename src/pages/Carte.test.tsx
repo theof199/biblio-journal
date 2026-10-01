@@ -796,15 +796,19 @@ describe('le rattrapage de l’année bouclée', () => {
   // déjà fêté retirée (un `/montre` qui n'a pas pris — la carte relue le rend encore — rejouerait la
   // scène en boucle).
   it('un ticket à montrer joue l’année bouclée une fois, et « Le garder » le marque montré, une seule fois', async () => {
+    // La carte relue après `/montre` rend encore le ticket, et une Palme de plus en 1897 : le HUD qui
+    // la compte dit que cette relecture est rendue.
     let lectures = 0
-    const { requetes } = monter(A_MONTRER, { 'GET /api/me/voyage': () => ((lectures += 1), json(A_MONTRER)), [MONTRE]: montre })
+    const relu = { ...A_MONTRER, annees: A_MONTRER.annees.map((a) => (a.annee === 1897 ? { ...a, recompense: 'palme' as const } : a)) }
+    const { requetes } = monter(A_MONTRER, { 'GET /api/me/voyage': () => ((lectures += 1), json(lectures === 1 ? A_MONTRER : relu)), [MONTRE]: montre })
     expect(await screen.findByRole('dialog', { name: '1898 est bouclée' })).toBeInTheDocument()
     expect(screen.getByLabelText('Bon pour 1899')).toBeInTheDocument()
     const garder = screen.getByRole('button', { name: 'Le garder' })
     toucher(garder, garder)
     expect(screen.queryByRole('dialog')).toBeNull()
-    await waitFor(() => expect(lectures).toBeGreaterThanOrEqual(2))
-    await new Promise((r) => setTimeout(r, 50))
+    expect(await screen.findByLabelText('2 Palmes, 1 Lions, 0 Ours')).toBeInTheDocument()
+    await act(async () => undefined)
+    expect(lectures).toBeGreaterThanOrEqual(2)
     expect(requetes.filter((r) => r === MONTRE)).toHaveLength(1)
     expect(requetes.filter((r) => r === UTILISER)).toEqual([])
     expect(screen.queryByRole('dialog')).toBeNull()
@@ -812,11 +816,12 @@ describe('le rattrapage de l’année bouclée', () => {
 
   // Mutations : `/montre` oublié de « L’utiliser » ; l'encaissement non branché sur la carte.
   it('« L’utiliser » le marque montré une seule fois, et l’encaisse', async () => {
-    const { requetes } = monter(A_MONTRER, { [MONTRE]: montre, [UTILISER]: () => json({ annee_en_cours: 1899 }) })
+    const { requetes, client } = monter(A_MONTRER, { [MONTRE]: montre, [UTILISER]: () => json({ annee_en_cours: 1899 }) })
     const utiliser = await screen.findByRole('button', { name: 'L’utiliser' })
     toucher(utiliser, utiliser, screen.getByRole('button', { name: 'Le garder' }))
     await waitFor(() => expect(requetes).toContain(UTILISER))
-    await new Promise((r) => setTimeout(r, 50))
+    // Les touchers sont du même instant : ce qu'ils envoient part ensemble. Plus rien n'est en vol.
+    await waitFor(() => expect(client.isMutating() + client.isFetching()).toBe(0))
     expect(requetes.filter((r) => r === MONTRE)).toHaveLength(1)
     expect(requetes.filter((r) => r === UTILISER)).toHaveLength(1)
   })
@@ -831,8 +836,34 @@ describe('le rattrapage de l’année bouclée', () => {
   // Mutation : la scène jouée sans ticket à montrer.
   it('sans ticket à montrer, rien ne se joue', async () => {
     const { etats } = monter()
+    // L'état donné au moteur dit l'avatar posé : c'est le rendu où le rattrapage se décide.
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
-    await new Promise((r) => setTimeout(r, 50))
+    await act(async () => undefined)
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  // La fête ne couvre pas la marche : l'appareil a montré 1897, mon année en cours est 1898, et le
+  // ticket de 1899 attend. Mutation : `anneeAvatar !== v.annee_en_cours` retiré de la garde
+  // (`avancee` seule est encore nulle dans le rendu où la frontière la pose).
+  it('pendant une avancée, la fête attend la fin de la marche', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1897')
+    let arriver: () => void = () => undefined
+    const f = moteurFactice()
+    vi.mocked(f.moteur.marcher).mockImplementation(() => new Promise<void>((fin) => void (arriver = () => fin())))
+    servir({ 'GET /api/auth/me': () => json(SESSION), 'GET /api/me/voyage': () => json(A_MONTRER), 'GET /api/me/voyage/tickets': () => json({ tickets: [] }), [MONTRE]: montre })
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <FabriqueMoteurContexte.Provider value={f.fabrique}>
+          <MemoryRouter initialEntries={['/voyage']}>
+            <App />
+          </MemoryRouter>
+        </FabriqueMoteurContexte.Provider>
+      </QueryClientProvider>,
+    )
+    await waitFor(() => expect(f.moteur.marcher).toHaveBeenCalledWith(1898))
+    await act(async () => undefined)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await act(async () => arriver())
+    expect(await screen.findByRole('dialog', { name: '1898 est bouclée' })).toBeInTheDocument()
   })
 })

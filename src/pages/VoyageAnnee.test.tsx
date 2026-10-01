@@ -559,12 +559,16 @@ describe('la fiche d’une année', () => {
       expect(screen.getByRole('dialog', { name: 'Le Lion : les essentiels de 1897' })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
       expect(screen.getByRole('dialog', { name: '1897 est bouclée' })).toBeInTheDocument()
+      const lectures = () => requetes.filter((r) => r === 'GET /api/me/voyage').length
+      const avant = lectures()
       toucher(screen.getByRole('button', { name: 'Le garder' }), screen.getByRole('button', { name: 'Le garder' }))
       await waitFor(() => expect(requetes).toContain(MONTRE))
       expect(screen.queryByRole('dialog')).toBeNull()
       // La fiche reste là, son ticket en bas : le garder n'encaisse rien.
       expect(screen.getByText('Ton ticket pour 1898 t’attend')).toBeInTheDocument()
-      await new Promise((r) => setTimeout(r, 50))
+      // Les deux touchers sont du même instant : un second `/montre` serait parti avec le premier. La
+      // relecture de la carte, qui suit sa réponse, clôt l'attente.
+      await waitFor(() => expect(lectures()).toBeGreaterThan(avant))
       expect(requetes.filter((r) => r === MONTRE)).toHaveLength(1)
       expect(requetes.filter((r) => r.includes('/utiliser'))).toEqual([])
     })
@@ -591,8 +595,10 @@ describe('la fiche d’une année', () => {
         guet: null,
       })
       monter()
+      // Les gains et les célébrations se comparent dans le même rendu, sur la même relecture : l'annonce
+      // dite, la fête se serait montrée avec elle. `act` vide ce qui resterait à rendre.
       expect(await screen.findByText('+1 film vu')).toBeInTheDocument()
-      await new Promise((r) => setTimeout(r, 50))
+      await act(async () => undefined)
       expect(screen.queryByRole('dialog')).toBeNull()
     })
 
@@ -609,7 +615,9 @@ describe('la fiche d’une année', () => {
       confierLeRetour(1897, SESSION.user.id, { avant: { ...AVANT, fete: { ...AVANT.fete, sallesCompletes: 1, recompense: 'lion' } }, guet })
       const { client } = monter({
         ...routes,
-        'GET /api/me/voyage/annees/1897': () => ((lectures += 1), json(lectures === 1 ? { ...APRES, ticket: null } : APRES)),
+        // La relecture qui apporte le ticket apporte aussi la Palme (un autre appareil) : pendant le
+        // guet, l'année seule se fête. Mutation : le filtre `s.type === 'annee'` retiré.
+        'GET /api/me/voyage/annees/1897': () => ((lectures += 1), json(lectures === 1 ? { ...APRES, ticket: null } : { ...APRES, recompense: 'palme' })),
       })
       expect(await screen.findByText(/^\+1 film vu/)).toBeInTheDocument()
       expect(screen.queryByRole('dialog')).toBeNull()
@@ -619,6 +627,27 @@ describe('la fiche d’une année', () => {
       expect(await screen.findByText('Ton ticket pour 1898 t’attend')).toBeInTheDocument()
       if (fete) expect(screen.getByRole('dialog', { name: '1897 est bouclée' })).toBeInTheDocument()
       else expect(screen.queryByRole('dialog')).toBeNull()
+    })
+
+    // Une relecture en panne laisse la fiche du cache à l'écran : rien n'y a bougé, et la comparer
+    // consommerait le retour. Mutation : `!requete.isError` retiré de `relue` (la relecture réussie
+    // qui suit ne fêterait ni n'annoncerait plus rien).
+    it('une relecture en panne ne consomme pas le retour : la suivante, réussie, fête et annonce', async () => {
+      calme()
+      let lectures = 0
+      confierLeRetour(1897, SESSION.user.id, { avant: AVANT, guet: null })
+      const { client } = monter({
+        ...routes,
+        'GET /api/me/voyage/annees/1897': () =>
+          (lectures += 1) === 1 ? json({ code: 'INTERNAL', message: 'Le service a un souci.', retryable: false }, 500) : json(APRES),
+      })
+      await waitFor(() => expect(client.getQueryState(cles.annee(1897))?.status).toBe('error'))
+      await act(async () => undefined)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(screen.queryByText(/^\+1 film vu/)).toBeNull()
+      await act(() => client.refetchQueries({ queryKey: cles.annee(1897), exact: true }))
+      expect(await screen.findByRole('dialog', { name: 'Salle complète : Une salle' })).toBeInTheDocument()
+      expect(screen.getByText(/^\+1 film vu/)).toBeInTheDocument()
     })
   })
 

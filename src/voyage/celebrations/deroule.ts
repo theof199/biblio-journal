@@ -22,6 +22,12 @@ export const ANNEE = [auTempo(300), auTempo(175), auTempo(175), auTempo(175), au
 /** Les pas de l'année bouclée, par leur nom : la cinquième ampoule, la médaille, le titre, le guichet, le choix. */
 export const PAS_DE_L_ANNEE = { ampoules: 5, medaille: 6, titre: 7, guichet: 8, choix: 9 } as const
 
+/**
+ * Le temps où le choix de l'année bouclée reste inerte après être apparu : le toucher qui termine la
+ * scène, redoublé au même endroit, ne doit pas tomber sur « L’utiliser » et dépenser le billet.
+ */
+export const GARDE_DU_CHOIX = auTempo(300)
+
 /** La vibration d'une fête (Android) : un plus, jamais le seul signal. */
 export const VIBRATION_DE_FETE = [auTempo(18), auTempo(40), auTempo(70)]
 

@@ -109,7 +109,10 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   }, [annee])
   const [gains, setGains] = useState<readonly Avancee[]>([])
   const joue = useRef(false)
-  const relue = requete.isFetchedAfterMount
+  // Relue **avec succès** : `isFetchedAfterMount` devient vrai aussi sur une panne, la fiche du cache
+  // encore à l'écran ; la comparer consommerait le retour sans rien avoir à jouer, et la relecture
+  // réussie suivante ne jouerait plus rien.
+  const relue = requete.isFetchedAfterMount && !requete.isError
   useEffect(() => {
     if (joue.current || !retour?.avant || !relue || !prete) return
     joue.current = true

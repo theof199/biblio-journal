@@ -115,6 +115,11 @@
   box-shadow: 0 3px 0 var(--m-velours);
 }
 
+/* Le choix qui vient d'apparaître, encore inerte (`GARDE_DU_CHOIX`). */
+.bouton[aria-disabled='true'] {
+  opacity: 0.6;
+}
+
 .bouton:focus-visible {
   outline: 2px solid var(--m-papier);
   outline-offset: 2px;

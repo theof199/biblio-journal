@@ -1,11 +1,11 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Particules } from '../../carte/dessin/particules'
 import { vibrer } from '../../ui/haptique'
 import Toile, { LARGEUR_LOGIQUE } from '../Toile'
 import Embleme, { NOM_DE_RECOMPENSE } from '../annee/Embleme'
 import Fronton from '../annee/Fronton'
 import Cadre from './Cadre'
-import { ANNEE, PAS_DE_L_ANNEE, VIBRATION_DE_FETE, useDeroule } from './deroule'
+import { ANNEE, GARDE_DU_CHOIX, PAS_DE_L_ANNEE, VIBRATION_DE_FETE, useDeroule } from './deroule'
 import { motifDeRecompense, type Scene } from './scenes'
 import type { PropsDeScene } from './Celebrations'
 import styles from './Celebrations.module.css'
@@ -42,10 +42,20 @@ export default function AnneeBouclee({ scene, monde, calme, son, onSuite, onMont
     vibrer(VIBRATION_DE_FETE)
   })
 
+  // Le choix n'apparaît pas sous le doigt : hors du calme, ses boutons restent inertes un instant
+  // (`GARDE_DU_CHOIX`), que la scène ait fini seule ou d'un toucher. Le toucher qui la termine,
+  // redoublé au même endroit, ne dépense donc pas le billet.
+  const [arme, setArme] = useState(calme)
+  useEffect(() => {
+    if (!fini || arme) return
+    const j = setTimeout(() => setArme(true), GARDE_DU_CHOIX)
+    return () => clearTimeout(j)
+  }, [fini, arme])
+
   // Deux touchers rapprochés (ou « Le garder » puis « L’utiliser ») ne montrent ni n'encaissent deux
   // fois : le premier seul montre le ticket (`useMontrerLeTicket`), les suivants ne comptent pas.
   const choisir = (utiliser: boolean) => {
-    if (!onMontre(scene.ticket)) return
+    if (!arme || !onMontre(scene.ticket)) return
     if (utiliser) onUtiliser?.(scene.ticket)
     onSuite()
   }
@@ -61,11 +71,11 @@ export default function AnneeBouclee({ scene, monde, calme, son, onSuite, onMont
       pied={
         fini ? (
           <>
-            <button type="button" className={styles.bouton} onClick={() => choisir(false)}>
+            <button type="button" className={styles.bouton} aria-disabled={!arme} onClick={() => choisir(false)}>
               Le garder
             </button>
             {onUtiliser ? (
-              <button type="button" className={`${styles.bouton} ${styles.utiliser}`} onClick={() => choisir(true)}>
+              <button type="button" className={`${styles.bouton} ${styles.utiliser}`} aria-disabled={!arme} onClick={() => choisir(true)}>
                 L’utiliser
               </button>
             ) : null}

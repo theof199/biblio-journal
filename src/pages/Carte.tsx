@@ -245,16 +245,18 @@ export default function Carte() {
   // Le rattrapage de l'année bouclée : un ticket gagné et pas encore montré (`ticket_a_montrer`, le
   // verdict du jury tombé loin de la fiche) joue sa scène à l'ouverture de la carte, une fois ; le
   // choix le marque montré. Jamais pendant une avancée, ni deux fois pour le même ticket tant que la
-  // carte est ouverte (un `/montre` refusé le rendrait à la relecture).
+  // carte est ouverte (un `/montre` refusé le rendrait à la relecture). L'avatar rendu à mon année en
+  // cours dit qu'aucune avancée n'attend : `avancee` seule ne le dit pas, l'effet de la frontière la
+  // pose dans le rendu même où celui-ci la lirait encore nulle.
   const [fete, setFete] = useState<Extract<Scene, { type: 'annee' }> | null>(null)
   const ticketFete = useRef<number | null>(null)
   useEffect(() => {
-    if (!v || avancee) return
+    if (!v || avancee || anneeAvatar !== v.annee_en_cours) return
     const scene = sceneDuRattrapage(v)
     if (!scene || ticketFete.current === scene.ticket) return
     ticketFete.current = scene.ticket
     setFete(scene)
-  }, [v, avancee])
+  }, [v, avancee, anneeAvatar])
 
   if (voyage.isPending) return <p role="status">Chargement…</p>
   if (voyage.error || !v) return <Panne erreur={voyage.error} onReessayer={() => void voyage.refetch()} />

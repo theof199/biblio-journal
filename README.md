@@ -213,17 +213,21 @@ suivante.
   (`Particules`), puis le guichet tend le billet. « Le garder » ferme ; « L’utiliser » encaisse le
   ticket comme le « Utiliser » du bas de la fiche, et mène à la carte, qui joue l'avancée. Les deux
   appellent `POST /me/voyage/tickets/{annee}/montre`, une seule fois (`useMontrerLeTicket`). Un
-  toucher pendant la scène pose son état final ; elle ne se quitte que par un choix.
+  toucher pendant la scène pose son état final ; elle ne se quitte que par un choix, dont les
+  boutons restent inertes un instant après être apparus (`GARDE_DU_CHOIX`) : le toucher redoublé ne
+  dépense pas le billet.
 
 Rien ne se mémorise : ni un rechargement ni le retour suivant ne rejouent une scène. Seule l'année
 bouclée se **rattrape** : tant que le verdict du jury est guetté sur la fiche, le ticket qu'il
 accorde la joue à son arrivée ; sinon, à l'ouverture de la carte, `ticket_a_montrer` de
-`GET /me/voyage` la joue une fois (`sceneDuRattrapage`), « L’utiliser » ne s'y offrant que pour le
-ticket de l'année qui suit mon année en cours.
+`GET /me/voyage` la joue une fois (`sceneDuRattrapage`), après la marche s'il y en a une,
+« L’utiliser » ne s'y offrant que pour le ticket de l'année qui suit mon année en cours. Une
+relecture en panne ne consomme rien : la fête et les gains attendent la relecture réussie.
 
 Le séquenceur (`Celebrations.tsx`) pose les jetons du monde et le tempo sur son calque. Chaque pas
 attend au tempo (`deroule.ts`, `useDeroule`), et **une scène démontée n'écrit plus rien** : ni état,
-ni son, ni vibration. Le son est celui de la carte, `clap()` et `carillon()`, et seulement si le
+ni son, ni vibration. Chaque scène est un dialogue qui garde le focus (`Cadre.tsx` : Tab tourne entre
+ses boutons). Le son est celui de la carte, `clap()` et `carillon()`, et seulement si le
 membre l'a allumé (son réglage, et l'ambiance en marche : `celebrations/son.ts`) ; hors de la carte,
 où l'ambiance est tue, la fête la réveille le temps de ses scènes (l'orgue reprend avec elle), puis
 la rend au silence. Le téléphone vibre avec le clap ou le carillon, jamais seul.

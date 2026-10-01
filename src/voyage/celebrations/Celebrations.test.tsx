@@ -11,7 +11,7 @@ import { DoublureAudio, oublierDoublures } from '../../test/audioFactice'
 import { json, servir } from '../../test/serveur'
 import { voyage1890 } from '../../test/voyage'
 import Celebrations from './Celebrations'
-import { ANNEE, RECOMPENSE, SALLE } from './deroule'
+import { ANNEE, GARDE_DU_CHOIX, RECOMPENSE, SALLE } from './deroule'
 import type { Scene } from './scenes'
 
 const MONDE = creerRegistre()(1890)
@@ -87,6 +87,78 @@ describe('les célébrations du Voyage', () => {
     fireEvent.click(screen.getByRole('dialog'))
     expect(screen.getByRole('dialog', { name: '1896 est bouclée' })).toBeInTheDocument()
     expect(onFin).not.toHaveBeenCalled()
+  })
+
+  // Mutation : `setRang((r) => r + 1)`, sans regarder d'où part le toucher (deux touchers avant le
+  // rendu sauteraient la récompense, jamais vue).
+  it('deux touchers dans le même instant ne sautent pas la scène suivante', () => {
+    monter([SALLE_BOUCLEE, LION, ANNEE_BOUCLEE])
+    const continuer = screen.getByRole('button', { name: 'Continuer' })
+    toucher(continuer, continuer)
+    expect(screen.getByRole('dialog', { name: 'Le Lion : les essentiels de 1896' })).toBeInTheDocument()
+  })
+
+  // Le toucher impatient arrête le déroulé : ses attentes en cours ne ramènent pas la scène en
+  // arrière, et les pas sautés ne vibrent pas. Mutation : `arrete.current` retiré de `useDeroule`.
+  it('une scène finie d’un toucher ne reprend pas son déroulé', async () => {
+    const { container } = monter([ANNEE_BOUCLEE])
+    await passer(ANNEE[0] + ANNEE[1])
+    fireEvent.click(screen.getByRole('dialog'))
+    await passer(somme(ANNEE))
+    expect(container.querySelectorAll('[data-allumee="true"]')).toHaveLength(5)
+    expect(screen.getByRole('button', { name: 'Le garder' })).toBeInTheDocument()
+    expect(vibrate).not.toHaveBeenCalled()
+  })
+
+  // Le toucher qui termine la scène fait apparaître le choix ; redoublé au même endroit, il ne doit
+  // pas dépenser le billet. Mutation : le choix armé dès son apparition (`useState(true)`).
+  it('le choix reste inerte un instant après être apparu, puis répond', async () => {
+    const onUtiliser = vi.fn()
+    const { requetes, onFin } = monter([ANNEE_BOUCLEE], { onUtiliser })
+    fireEvent.click(screen.getByRole('dialog'))
+    const utiliser = screen.getByRole('button', { name: 'L’utiliser' })
+    expect(utiliser).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(utiliser)
+    fireEvent.click(screen.getByRole('button', { name: 'Le garder' }))
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await passer(GARDE_DU_CHOIX - 1)
+    fireEvent.click(utiliser)
+    expect(onUtiliser).not.toHaveBeenCalled()
+    expect(onFin).not.toHaveBeenCalled()
+    expect(montres(requetes)).toEqual([])
+    await passer(1)
+    expect(utiliser).toHaveAttribute('aria-disabled', 'false')
+    fireEvent.click(utiliser)
+    expect(onUtiliser).toHaveBeenCalledWith(1897)
+    expect(montres(requetes)).toHaveLength(1)
+  })
+
+  // Le focus reste dans le calque : la page couverte ne se parcourt pas au clavier. Mutation :
+  // `onKeyDown` retiré du cadre (Tab ne serait plus retenu, et sortirait du dialogue).
+  it('le dialogue prend le focus, et Tab tourne entre ses boutons sans en sortir', () => {
+    calme()
+    monter([ANNEE_BOUCLEE], { onUtiliser: () => undefined })
+    const dialogue = screen.getByRole('dialog')
+    const garder = screen.getByRole('button', { name: 'Le garder' })
+    const utiliser = screen.getByRole('button', { name: 'L’utiliser' })
+    expect(dialogue).toHaveFocus()
+    expect(fireEvent.keyDown(dialogue, { key: 'Tab' })).toBe(false)
+    expect(garder).toHaveFocus()
+    fireEvent.keyDown(garder, { key: 'Tab' })
+    expect(utiliser).toHaveFocus()
+    expect(fireEvent.keyDown(utiliser, { key: 'Tab' })).toBe(false)
+    expect(garder).toHaveFocus()
+    fireEvent.keyDown(garder, { key: 'Tab', shiftKey: true })
+    expect(utiliser).toHaveFocus()
+  })
+
+  // Le jumeau : sans bouton encore (l'année bouclée en cours de scène), Tab reste sur le dialogue.
+  it('sans bouton, Tab ne quitte pas le dialogue', () => {
+    monter([ANNEE_BOUCLEE])
+    const dialogue = screen.getByRole('dialog')
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(fireEvent.keyDown(dialogue, { key: 'Tab' })).toBe(false)
+    expect(dialogue).toHaveFocus()
   })
 
   // L'année bouclée ne se quitte que par un choix, offert au bout de la scène ; un toucher impatient
@@ -238,6 +310,28 @@ describe('les célébrations du Voyage', () => {
       expect(DoublureAudio.crees).toHaveLength(1)
       unmount()
       expect(ctx.state).toBe('suspended')
+    })
+
+    // La page de l'année ne tait pas l'ambiance d'elle-même (la carte le fait pour elle-même) : la
+    // fête la tait en arrière-plan, et la reprend au retour. Mutation : l'écouteur de
+    // `visibilitychange` retiré (l'orgue jouerait téléphone verrouillé).
+    it('réveillée hors de la carte, l’ambiance se tait quand la page passe en arrière-plan', () => {
+      allumer()
+      const ctx = DoublureAudio.crees[0]!
+      monter([LION], { horsCarte: true })
+      expect(ctx.state).toBe('running')
+      const cacher = (cachee: boolean) => {
+        Object.defineProperty(document, 'hidden', { value: cachee, configurable: true })
+        act(() => void document.dispatchEvent(new Event('visibilitychange')))
+      }
+      try {
+        cacher(true)
+        expect(ctx.state).toBe('suspended')
+        cacher(false)
+        expect(ctx.state).toBe('running')
+      } finally {
+        delete (document as { hidden?: boolean }).hidden
+      }
     })
   })
 
