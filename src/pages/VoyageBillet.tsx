@@ -18,6 +18,7 @@ import Panne from '../ui/Panne'
 import { historiqueDerriere, useRevenir } from '../ui/revenir'
 import { doitGuetterVerdict } from '../voyage/annee'
 import { confierLeRetour, type EtatBillet, type Retour } from '../voyage/annee/retour'
+import { etatDeFete } from '../voyage/celebrations/scenes'
 import { useFiche } from '../voyage/annee/useFiche'
 import { FRAPPE, VIBRATION, initiale } from '../voyage/billet'
 import { STYLE_DU_TEMPO } from '../voyage/tempo'
@@ -230,7 +231,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     mutationFn: async (b: FormulaireBrouillon): Promise<{ retour: Retour; entree: JournalItem }> => {
       // L'avant : la fiche en cache avant l'écriture, que l'année compare à sa relecture.
       const f = client.getQueryData<FicheAnnee>(cles.annee(annee))
-      const avant = estPrete(f) ? { profondeur: f.profondeur, progression: f.progression } : null
+      const avant = estPrete(f) ? { profondeur: f.profondeur, progression: f.progression, fete: etatDeFete(f, v.annee_en_cours) } : null
       const depuis = estPrete(f) ? (f.maturite?.jugee_le ?? null) : null
       const entree = item
         ? await corrigerVisionnage(item.entry.id, construirePatch(item, b))

@@ -18,6 +18,8 @@ import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
 import { useMouvementReduit } from '../ui/mouvement'
+import Celebrations from '../voyage/celebrations/Celebrations'
+import { sceneDuRattrapage, type Scene } from '../voyage/celebrations/scenes'
 import { tamponDe } from '../voyage/passeport'
 import Tampon from '../voyage/passeport/Tampon'
 import {
@@ -240,6 +242,20 @@ export default function Carte() {
     utiliser.mutate(annee, { onSettled: () => void (envoi.current = false) })
   }
 
+  // Le rattrapage de l'année bouclée : un ticket gagné et pas encore montré (`ticket_a_montrer`, le
+  // verdict du jury tombé loin de la fiche) joue sa scène à l'ouverture de la carte, une fois ; le
+  // choix le marque montré. Jamais pendant une avancée, ni deux fois pour le même ticket tant que la
+  // carte est ouverte (un `/montre` refusé le rendrait à la relecture).
+  const [fete, setFete] = useState<Extract<Scene, { type: 'annee' }> | null>(null)
+  const ticketFete = useRef<number | null>(null)
+  useEffect(() => {
+    if (!v || avancee) return
+    const scene = sceneDuRattrapage(v)
+    if (!scene || ticketFete.current === scene.ticket) return
+    ticketFete.current = scene.ticket
+    setFete(scene)
+  }, [v, avancee])
+
   if (voyage.isPending) return <p role="status">Chargement…</p>
   if (voyage.error || !v) return <Panne erreur={voyage.error} onReessayer={() => void voyage.refetch()} />
 
@@ -448,6 +464,16 @@ export default function Carte() {
         <div className={styles.tampon} role="status">
           <Tampon monde={mondes(calque.decennie)} decennie={calque.decennie} tampon={tamponDe(v.tampons, calque.decennie)} frappe />
         </div>
+      ) : null}
+      {fete ? (
+        <Celebrations
+          monde={mondes(decennieDe(fete.annee))}
+          membre={user.id}
+          scenes={[fete]}
+          // Le ticket ne s'utilise que s'il ouvre l'année qui suit mon année en cours (`ticketOffert`).
+          onUtiliser={fete.ticket === v.annee_en_cours + 1 ? encaisser : undefined}
+          onFin={() => setFete(null)}
+        />
       ) : null}
       {calque?.type === 'carton' ? (
         <div className={styles.carton} role="status">

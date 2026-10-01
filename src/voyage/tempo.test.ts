@@ -12,13 +12,17 @@ const FEUILLES: Record<string, string> = {
   ...import.meta.glob<string>('/src/voyage/billet/Tampon.module.css', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob<string>('/src/pages/VoyageBillet.module.css', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob<string>('/src/voyage/annee/Corde.module.css', { query: '?raw', import: 'default', eager: true }),
+  ...import.meta.glob<string>('/src/voyage/celebrations/Celebrations.module.css', { query: '?raw', import: 'default', eager: true }),
 }
 const SOURCES: Record<string, string> = {
   ...import.meta.glob<string>('/src/pages/VoyageBillet.tsx', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob<string>('/src/pages/VoyageAnnee.tsx', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob<string>('/src/voyage/annee/Corde.tsx', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob<string>('/src/voyage/billet.ts', { query: '?raw', import: 'default', eager: true }),
+  // Les célébrations, qui suivent le même geste : leur déroulé, leur séquenceur, leurs scènes.
+  ...import.meta.glob<string>(['/src/voyage/celebrations/*.{ts,tsx}', '!**/*.test.*'], { query: '?raw', import: 'default', eager: true }),
 }
+const DEROULE = '/src/voyage/celebrations/deroule.ts'
 const source = (chemin: string) => SOURCES[chemin] ?? ''
 
 const sansCommentaires = (code: string) => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -36,6 +40,7 @@ const ANIMATIONS: Record<string, string[]> = {
   '/src/voyage/billet/Tampon.module.css': ['eclat', 'descend', 'remonte'],
   '/src/pages/VoyageBillet.module.css': ['choc', 'part'],
   '/src/voyage/annee/Corde.module.css': ['rouler'],
+  '/src/voyage/celebrations/Celebrations.module.css': ['leve', 'parait', 'fermeGauche', 'fermeDroite', 'efface', 'lance', 'frappe', 'eclair', 'sort', 'allume', 'tombe', 'tend'],
 }
 
 /**
@@ -52,7 +57,21 @@ const selecteur = (css: string, i: number) => css.slice(css.lastIndexOf('}', i) 
 describe('le tempo de ce qui suit le geste « vu »', () => {
   it('trouve les fichiers qu’il garde', () => {
     expect(Object.keys(FEUILLES).sort()).toEqual(Object.keys(ANIMATIONS).sort())
-    expect(Object.keys(SOURCES)).toHaveLength(4)
+    expect(Object.keys(SOURCES)).toEqual(
+      expect.arrayContaining([
+        '/src/pages/VoyageBillet.tsx',
+        '/src/pages/VoyageAnnee.tsx',
+        '/src/voyage/annee/Corde.tsx',
+        '/src/voyage/billet.ts',
+        DEROULE,
+        '/src/voyage/celebrations/Celebrations.tsx',
+        '/src/voyage/celebrations/Cadre.tsx',
+        '/src/voyage/celebrations/SalleBouclee.tsx',
+        '/src/voyage/celebrations/PresseAMedailles.tsx',
+        '/src/voyage/celebrations/AnneeBouclee.tsx',
+      ]),
+    )
+    expect(Object.keys(SOURCES).filter((chemin) => chemin.includes('.test.'))).toEqual([])
   })
 
   // Mutations : `animation: eclat 260ms` (ou `choc 0.35s`, `part 700ms`, `rouler 0.8s 0.35s`) remis
@@ -86,6 +105,21 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     const corde = sansCommentaires(source('/src/voyage/annee/Corde.tsx'))
     expect(corde).toMatch(/duration:\s*auTempo\(/)
     expect(corde).toMatch(/delay:\s*auTempo\(/)
+  })
+
+  // Le déroulé des célébrations : chaque attente et la vibration sont au tempo. Mutations : un pas
+  // écrit `700` au lieu d'`auTempo(700)` ; la vibration à ses valeurs de base (`[18, 40, 70]`).
+  it('chaque pas des célébrations et leur vibration sont au tempo', () => {
+    const code = sansCommentaires(source(DEROULE))
+    const blocs = [...code.matchAll(/export const (\w+) = \[([^\]]*)\]/g)].map(([, nom, corps]) => [nom!, corps!] as const)
+    expect(blocs.map(([nom]) => nom)).toEqual(['SALLE', 'RECOMPENSE', 'ANNEE', 'VIBRATION_DE_FETE'])
+    for (const [, corps] of blocs) {
+      const valeurs = corps.split(',').map((v) => v.trim()).filter(Boolean)
+      expect(valeurs.length).toBeGreaterThan(0)
+      expect(valeurs.filter((v) => !/^auTempo\(\d+\)$/.test(v))).toEqual([])
+    }
+    // Hors de ces tableaux, le module n'écrit aucune durée : ses seuls nombres sont des rangs de pas.
+    expect(code.replace(/auTempo\(\d+\)/g, '').match(/\d{2,}/g) ?? []).toEqual([])
   })
 
   // Mutations : une étape de `FRAPPE` écrite sans `auTempo` ; la vibration à ses valeurs de base.

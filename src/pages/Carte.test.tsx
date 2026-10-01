@@ -774,3 +774,65 @@ describe('le son et les bobines perdues (plan 2d)', () => {
     expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
   })
 })
+
+describe('le rattrapage de l’année bouclée', () => {
+  const TICKET = { annee: 1899, motif: 'Tu as fait le tour de 1898.', emis_le: '2026-09-21T21:00:00.000Z' }
+  const A_MONTRER = { ...VOYAGE, ticket_a_montrer: TICKET }
+  const MONTRE = 'POST /api/me/voyage/tickets/1899/montre'
+  const UTILISER = 'POST /api/me/voyage/tickets/1899/utiliser'
+  const montre = () => new Response(null, { status: 204 })
+  /** Des touchers dans le même instant, avant que React n'ait retiré les boutons de la scène. */
+  const toucher = (...boutons: HTMLElement[]) => act(() => boutons.forEach((b) => b.click()))
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    // Au calme, la scène est posée d'un coup : le choix s'offre sans attendre ses pas.
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    localStorage.clear()
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Mutations : le rattrapage retiré de la carte ; « Le garder » sans `/montre` ; la garde du ticket
+  // déjà fêté retirée (un `/montre` qui n'a pas pris — la carte relue le rend encore — rejouerait la
+  // scène en boucle).
+  it('un ticket à montrer joue l’année bouclée une fois, et « Le garder » le marque montré, une seule fois', async () => {
+    let lectures = 0
+    const { requetes } = monter(A_MONTRER, { 'GET /api/me/voyage': () => ((lectures += 1), json(A_MONTRER)), [MONTRE]: montre })
+    expect(await screen.findByRole('dialog', { name: '1898 est bouclée' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Bon pour 1899')).toBeInTheDocument()
+    const garder = screen.getByRole('button', { name: 'Le garder' })
+    toucher(garder, garder)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await waitFor(() => expect(lectures).toBeGreaterThanOrEqual(2))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(requetes.filter((r) => r === MONTRE)).toHaveLength(1)
+    expect(requetes.filter((r) => r === UTILISER)).toEqual([])
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  // Mutations : `/montre` oublié de « L’utiliser » ; l'encaissement non branché sur la carte.
+  it('« L’utiliser » le marque montré une seule fois, et l’encaisse', async () => {
+    const { requetes } = monter(A_MONTRER, { [MONTRE]: montre, [UTILISER]: () => json({ annee_en_cours: 1899 }) })
+    const utiliser = await screen.findByRole('button', { name: 'L’utiliser' })
+    toucher(utiliser, utiliser, screen.getByRole('button', { name: 'Le garder' }))
+    await waitFor(() => expect(requetes).toContain(UTILISER))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(requetes.filter((r) => r === MONTRE)).toHaveLength(1)
+    expect(requetes.filter((r) => r === UTILISER)).toHaveLength(1)
+  })
+
+  // Mutation : « L’utiliser » offert pour un ticket qui n'ouvre pas l'année suivante (`ticketOffert`).
+  it('un ticket qui n’ouvre pas l’année suivante ne s’offre qu’à garder', async () => {
+    monter({ ...VOYAGE, annee_en_cours: 1897, ticket_a_montrer: TICKET }, { [MONTRE]: montre })
+    expect(await screen.findByRole('button', { name: 'Le garder' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'L’utiliser' })).toBeNull()
+  })
+
+  // Mutation : la scène jouée sans ticket à montrer.
+  it('sans ticket à montrer, rien ne se joue', async () => {
+    const { etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})

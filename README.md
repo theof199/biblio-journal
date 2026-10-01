@@ -198,6 +198,36 @@ palier (Android ; Safari n'a pas de vibration). Au compte IA, après une créati
 l'année en cours, la fiche se relit toutes les cinq secondes, douze fois au plus, pour le verdict du
 jury. Ni un rechargement ni le retour suivant ne rejouent rien.
 
+**Les célébrations** (`voyage/celebrations/` ; maquette 1890, écran IX). Au même retour, sur la fiche
+relue, ce que le billet a bouclé se fête en plein écran, dans le costume du monde, au-dessus de la
+barre d'onglets : `scenesDuRetour` (`scenes.ts`, sans rendu) compare l'avant, que le billet confie
+avec le reste (`Avant.fete`), à l'après, et rend les scènes dans l'ordre. Un toucher passe à la
+suivante.
+
+- **La salle bouclée** (`SalleBouclee.tsx`) : le compte de l'API a monté (`salles_completes`, hors
+  essentiels) ; la salle se referme en rideau, le carton la nomme quand la fiche le dit.
+- **La récompense** (`PresseAMedailles.tsx`) : l'Ours, le Lion ou la Palme vient d'être gagné ; le
+  balancier lance la vis, la presse frappe, l'emblème (`Embleme.tsx`) sort en tournant.
+- **L'année bouclée** (`AnneeBouclee.tsx`) : le ticket de l'année suivante vient d'être gagné ; les
+  cinq ampoules du fronton (`Fronton.tsx`), la médaille sous les confettis de la carte
+  (`Particules`), puis le guichet tend le billet. « Le garder » ferme ; « L’utiliser » encaisse le
+  ticket comme le « Utiliser » du bas de la fiche, et mène à la carte, qui joue l'avancée. Les deux
+  appellent `POST /me/voyage/tickets/{annee}/montre`, une seule fois (`useMontrerLeTicket`). Un
+  toucher pendant la scène pose son état final ; elle ne se quitte que par un choix.
+
+Rien ne se mémorise : ni un rechargement ni le retour suivant ne rejouent une scène. Seule l'année
+bouclée se **rattrape** : tant que le verdict du jury est guetté sur la fiche, le ticket qu'il
+accorde la joue à son arrivée ; sinon, à l'ouverture de la carte, `ticket_a_montrer` de
+`GET /me/voyage` la joue une fois (`sceneDuRattrapage`), « L’utiliser » ne s'y offrant que pour le
+ticket de l'année qui suit mon année en cours.
+
+Le séquenceur (`Celebrations.tsx`) pose les jetons du monde et le tempo sur son calque. Chaque pas
+attend au tempo (`deroule.ts`, `useDeroule`), et **une scène démontée n'écrit plus rien** : ni état,
+ni son, ni vibration. Le son est celui de la carte, `clap()` et `carillon()`, et seulement si le
+membre l'a allumé (son réglage, et l'ambiance en marche : `celebrations/son.ts`) ; hors de la carte,
+où l'ambiance est tue, la fête la réveille le temps de ses scènes (l'orgue reprend avec elle), puis
+la rend au silence. Le téléphone vibre avec le clap ou le carillon, jamais seul.
+
 **L'historique.** Depuis la fiche d'un film, composter **remplace** le billet par l'année ; depuis la
 séance de l'année, il recule vers elle. La page d'un réalisateur (onglet Suivis) mène un film qui
 figure dans une salle à sa fiche du Voyage (la plus ancienne année où il figure), l'onglet Voyage
@@ -211,7 +241,8 @@ coup sans minuterie, la corde ne se balance plus, les compteurs sont à leur val
 ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas. Le billet ne se
 tamponne pas (l'année revient aussitôt), la manivelle ne tourne pas, le guichetier ne bouge pas, le
 manège se fige à un angle où aucun cheval n'est derrière le pilier (`ANGLE_AU_CALME`,
-`mondes/1890/monument.ts`), et aucun tampon du passeport ne frappe.
+`mondes/1890/monument.ts`), et aucun tampon du passeport ne frappe. Une célébration pose son état
+final d'un coup : le carton et son bouton, sans minuterie, sans confettis ni vibration.
 
 **La manivelle** (`voyage/annee/Manivelle.tsx`, règles dans `voyage/manivelle.ts`) enveloppe la
 fiche de toute année, quelle que soit sa forme. Tout en haut de la page (le `<main>` de la coque à
@@ -294,7 +325,8 @@ billet ») joue la séquence de la maquette (`FRAPPE` et `DUREE_DU_COMPOSTAGE`, 
 le marteau descend (360 ms de base), l'encre se pose et le téléphone vibre, une pause (140), le
 marteau remonte (320), le numéroteur fait dix tirages (45 chacun), une pause (200), le talon part
 (700) ; puis l'année revient, comme au plan 2b, où le compteur roule et le « +1 » vole. **Le tempo**
-(`TEMPO`, `voyage/tempo.ts`) multiplie chaque durée et chaque délai de cette séquence, en JS
+(`TEMPO`, `voyage/tempo.ts`) multiplie chaque durée et chaque délai de cette séquence, et des
+célébrations qui la suivent, en JS
 (`auTempo`) comme en CSS (`calc(360ms * var(--tempo))`) : ×2 depuis le 1er octobre 2026, soit
 4 340 ms du toucher au retour à l'année au lieu de 2 170. C'est le seul chiffre à changer ;
 `voyage/tempo.test.ts` refuse une durée de la séquence écrite sans lui. Le numéro se lit dans la boîte, par la
@@ -347,7 +379,7 @@ lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans re
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
 carte, et au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`) : **jamais une fiche
 d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties). Pas de générique au toucher
-d'un tampon : il viendra avec les célébrations. Le Profil n'en porte rien.
+d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
 
 ## Le thème
 
@@ -378,7 +410,8 @@ Le journal de l'accueil est une pellicule 35 mm par mois (`src/accueil/Pellicule
 Le profil est le portefeuille du membre : une carte d'adhérent, puis chaque graphique dessiné comme un objet (la jauge et les diodes sur laiton, des billets pour les réactions, une pellicule pour les décennies, des ampoules pour les mois), et le ticket de caisse. Ses valeurs (`--carte-*`, `--panneau-*`, `--ticket-*`, `--perforation-*`, `--ampoule-*`, `--papier-*`, et le rythme `--rythme-*`) sont dans `theme.css` : celles du jour dans `:root`, celles de la nuit dans les deux blocs sombres, les lueurs éteintes le jour. La couleur du membre (`identity_color`) est posée par la page dans `--identite` et ne touche que ses marques à lui. Le ciel de l'accueil s'appelle désormais `--fond-ciel` : c'est le ciel du bâtiment, partagé par l'accueil, le profil et la caisse. Le réglage jour / nuit / auto de la caisse (`src/ui/theme.ts`) se garde dans ce navigateur et pose ou ôte `data-theme` sur `<html>` dès le démarrage (`main.tsx`).
 
 Le Voyage a son habillage à lui, par décennie : `src/ui/voyage.css` (les quatre couleurs de
-`../biblio-android/docs/design.md`, la classe `.celebration`). Le thème général ne les lit pas.
+`../biblio-android/docs/design.md`, la classe `.celebration`, que portent le carton d'un nouveau monde
+et les titres des célébrations). Le thème général ne les lit pas.
 
 ## Le contrat
 

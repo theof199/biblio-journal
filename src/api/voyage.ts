@@ -87,6 +87,9 @@ export const lireAnnee = (annee: number, signal?: AbortSignal) =>
 
 export const utiliserTicket = (annee: number) => api.post<TicketUtilise>(`/me/voyage/tickets/${annee}/utiliser`)
 
+/** Le ticket qui ouvre `annee` s'est montré (`204`, idempotent) : `ticket_a_montrer` redevient nul sur la carte. */
+export const montrerLeTicket = (annee: number) => api.post<void>(`/me/voyage/tickets/${annee}/montre`)
+
 export const regler = (rattrapeLaSource: boolean) =>
   api.patch<Reglages>('/me/voyage/reglages', { rattrape_la_source: rattrapeLaSource })
 
