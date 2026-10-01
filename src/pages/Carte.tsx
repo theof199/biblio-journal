@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { IconCurrentLocation, IconMap2, IconVolume, IconVolumeOff } from '@tabler/icons-react'
+import { IconBriefcase, IconCurrentLocation, IconMap2, IconVolume, IconVolumeOff } from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
@@ -372,6 +372,10 @@ export default function Carte() {
         >
           {sonEnMarche || sonVoulu ? <IconVolume size={20} aria-hidden="true" /> : <IconVolumeOff size={20} aria-hidden="true" />}
         </button>
+        {/* La sacoche du voyageur : le passeport, le portefeuille et les coulisses, sur leur page. */}
+        <Link to="/voyage/sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur">
+          <IconBriefcase size={20} aria-hidden="true" />
+        </Link>
         {!avatarVu && !ensemble ? (
           <button type="button" aria-label="Tu es ici" title="Tu es ici" onClick={() => moteur?.allerIci()}>
             <IconCurrentLocation size={20} aria-hidden="true" />

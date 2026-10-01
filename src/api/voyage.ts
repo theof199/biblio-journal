@@ -17,6 +17,9 @@ export type Tickets = Json<paths['/me/voyage/tickets']['get']['responses'][200]>
 export type Ticket = Tickets['tickets'][number]
 /** « Rattraper le Voyage suivi » : ouvre toutes les années jusqu'à celle de la source, jamais au-delà. Réversible. */
 export type Reglages = Json<paths['/me/voyage/reglages']['patch']['responses'][200]>
+/** Mes appels au chroniqueur, mois par mois (du plus ancien au plus récent) ; vide hors du compte IA. */
+export type Depenses = Json<paths['/me/voyage/depenses']['get']['responses'][200]>
+export type DepenseDuMois = Depenses['mois'][number]
 export type TicketUtilise = Json<paths['/me/voyage/tickets/{annee}/utiliser']['post']['responses'][200]>
 
 /** Les quatre formes du `200` et celle du `202` (« en préparation »), distinguées par `statut`. */
@@ -71,6 +74,8 @@ export const DELAI_CHRONIQUEUR_MS = 80_000
 
 export const lireVoyage = (signal?: AbortSignal) => api.get<Voyage>('/me/voyage', undefined, signal)
 export const lireTickets = (signal?: AbortSignal) => api.get<Tickets>('/me/voyage/tickets', undefined, signal)
+/** N'agrège que des appels déjà passés : aucune lecture ici n'enfile rien chez le chroniqueur. */
+export const lireDepenses = (signal?: AbortSignal) => api.get<Depenses>('/me/voyage/depenses', undefined, signal)
 
 /**
  * `202` n'est pas une erreur (`client.ts` rend son corps) : l'appelant distingue par `statut`.

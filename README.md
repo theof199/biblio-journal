@@ -38,7 +38,7 @@ session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
 | Onglet | Chemin | Icône Tabler | Page |
 |---|---|---|---|
 | Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` : le fronton, « Ce soir », « Ensuite », le journal en pellicules (une par mois) |
-| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`), `voyage/decennies/:decennie` (`pages/VoyageDecennie.tsx`, la page d'une décennie), `…/billets` (`pages/VoyageBoite.tsx`, la boîte à billets), `…/recherche` (`pages/VoyageRecherche.tsx`, le guichet) : « Les pages du Voyage » et « Les pages d'une décennie », plus bas |
+| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`), `voyage/decennies/:decennie` (`pages/VoyageDecennie.tsx`, la page d'une décennie), `…/billets` (`pages/VoyageBoite.tsx`, la boîte à billets), `…/recherche` (`pages/VoyageRecherche.tsx`, le guichet), `voyage/sacoche` (`pages/VoyageSacoche.tsx`, la sacoche du voyageur) : « Les pages du Voyage », « Les pages d'une décennie » et « La sacoche du voyageur », plus bas |
 | Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` : réalisateurs et sagas suivis ; sous-pages `suivis/realisateurs/:tmdbId`, `suivis/sagas/:tmdbId`, `suivis/films/:tmdbId` |
 | Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` : mes séances et les sorties en salle |
 | Profil | `/profil` | `armchair` | `pages/Profil.tsx` : la carte d’adhérent (le pseudo, la couleur du membre, les films et les heures de `/stats`, « Mes films »), puis les graphiques du journal entier dessinés en objets de cinéma (`profil/` : notes, réactions, décennies, mois) et, en bas, le ticket de caisse qui mène à la sous-page `/profil/reglages` (`pages/Caisse.tsx` : thème jour / nuit, « Mes films », l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), le rattrapage, les doublons, « Se déconnecter », la mention TMDB, la version) |
@@ -270,7 +270,7 @@ Derrière le voyageur suivi (son `annee_en_cours` plus loin que la mienne), mon 
 seule, ajoute « tu le rattrapes bientôt » à son état : le HUD, l'aperçu, le lien de la carte et le
 registre (`rattrapeBientot`, `voyage/regles.ts`) ; jamais sur une année en attente.
 
-**Le tampon du passeport** (`voyage/passeport/Tampon.tsx`), le même sur la carte et dans le livret :
+**Le tampon du passeport** (`voyage/passeport/Tampon.tsx`), le même sur la carte, dans le livret et dans la sacoche :
 un rond de papier à l'encre rouge du monde (jamais le corail), « Passeport », « Années 1890 » au
 pochoir, « bouclée », le titre du voyageur, et le jour où la décennie a été bouclée, **à Paris**
 (`boucle_le`, « 1er janvier 2000 »). Il ne frappe que posé à l'instant (`frappe`) : sur la carte, au
@@ -321,6 +321,31 @@ recherche ; `manivelle.ts` ; `billet/range.ts` : le billet rangé) ; les morceau
 `voyage/decennie/`, `voyage/boite/`, `voyage/passeport/`, `voyage/billet/` (`Tampon.tsx`,
 `Numeroteur.tsx`) et `voyage/recherche/` ; le monument et le guichet de 1890 dans
 `mondes/1890/monument.ts` et `mondes/1890/guichetPage.ts`.
+
+## La sacoche du voyageur
+
+**La sacoche** (`/voyage/sacoche`, `pages/VoyageSacoche.tsx`) regroupe ce que j'ai accompli dans le
+Voyage, repris du profil de l'appli Android, au costume du Voyage : habillée par le monde de mon
+année en cours, sous l'onglet Voyage. On l'ouvre par la pastille « Sacoche du voyageur » de la
+carte (l'icône de la mallette, à côté du son) ; le retour ramène à la carte. Trois blocs, chacun
+lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans rendu dans
+`voyage/sacoche.ts`) :
+
+- **Le passeport** (`Passeport.tsx`) : une page par décennie, du départ à celle de mon année en
+  cours, chacune habillée par son monde et menant à la page de la décennie. Bouclée, son tampon
+  (posé, il ne frappe pas) ; sinon, son anneau (`voyage/passeport/Anneau.tsx`, le même que le
+  livret), décennie en cours comprise.
+- **Le portefeuille** (`Portefeuille.tsx`) : les tickets à utiliser, puis les utilisés, pâlis, avec
+  le jour de Paris où ils l'ont été. « Utiliser » ne s'offre que sur le ticket que la carte offre
+  (`ticketOffert`) ; encaissé, il ramène à la carte, qui joue l'avancée.
+- **Les Coulisses** (`Coulisses.tsx`), repliées : les dépenses au chroniqueur, lues au dépli
+  seulement et masquées quand la liste est vide, et les crédits des images, lus au build dans les
+  `CREDITS.md`.
+
+Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
+carte, et au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`) : **jamais une fiche
+d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties). Pas de générique au toucher
+d'un tampon : il viendra avec les célébrations. Le Profil n'en porte rien.
 
 ## Le thème
 

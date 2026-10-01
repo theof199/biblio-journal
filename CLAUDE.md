@@ -66,9 +66,9 @@ décennie »). Trois règles, que les plans 2b et 2c ont payées :
   correction) ; le billet ne lit que celle de son année, d'où l'on vient ; le guichet, la recherche
   du journal et l'aperçu de la carte ne lisent que les fiches déjà écrites et ouvertes
   (`apercuLitLaFiche`, `src/voyage/regles.ts`) ; la manivelle ne relit que la fiche ouverte et la
-  carte, en `exact`. La décennie, la boîte, le guichet, la recherche du journal, l'aperçu de la
-  carte et la manivelle ont chacun un test qui compte les requêtes parties : une lecture ajoutée
-  doit y passer.
+  carte, en `exact` ; la sacoche (passeport, portefeuille, coulisses) n'en lit aucune. La décennie,
+  la boîte, le guichet, la recherche du journal, l'aperçu de la carte, la manivelle et la sacoche ont
+  chacun un test qui compte les requêtes parties : une lecture ajoutée doit y passer.
 - **Une séquence lancée d'un rappel de `mutate` vérifie que la page est montée.** TanStack tait ces
   rappels pour un composant démonté à leur appel, pas après les attentes qu'ils lancent : le
   compostage dure plus de quatre secondes (`voyage/tempo.ts`), et un membre parti entre-temps serait ramené à l'année depuis ailleurs.

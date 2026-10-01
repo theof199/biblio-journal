@@ -20,25 +20,6 @@
   align-items: center;
 }
 
-.anneau {
-  width: 64px;
-  height: 64px;
-}
-
-.anneau circle {
-  fill: none;
-  stroke-width: 6;
-}
-
-.piste {
-  stroke: color-mix(in srgb, var(--m-or2) 25%, transparent);
-}
-
-.plein {
-  stroke: var(--m-or2);
-  stroke-linecap: round;
-}
-
 .titre {
   margin: 0;
   font: 400 17px var(--m-f-affiche);

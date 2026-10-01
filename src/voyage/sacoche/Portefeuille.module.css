@@ -1,0 +1,53 @@
+/* Les tickets du portefeuille : le papier d'un billet de la boîte (le carton du monde, l'encre, deux
+   encoches), le millésime au pochoir. Un ticket utilisé pâlit, comme un billet poinçonné. Couleurs
+   et polices : les jetons du monde, posés sur la racine de la page. */
+.liste {
+  display: grid;
+  gap: 12px;
+  margin: 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.ticket {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 22px;
+  background: linear-gradient(var(--m-papier), var(--m-carton));
+  color: var(--m-encre);
+  box-shadow: 0 4px 10px var(--m-ombre);
+  -webkit-mask:
+    radial-gradient(circle at 0 50%, transparent 9px, var(--m-encre) 9.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 9px, var(--m-encre) 9.5px) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at 0 50%, transparent 9px, var(--m-encre) 9.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 9px, var(--m-encre) 9.5px) right / 51% 100% no-repeat;
+}
+
+.utilise {
+  opacity: 0.55;
+  filter: saturate(0.3);
+}
+
+.texte {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.sur {
+  font: 12px var(--m-f-capitales);
+  letter-spacing: 0.18em;
+  color: var(--m-encre2);
+}
+
+.annee {
+  font: 400 26px/1.1 var(--m-f-pochoir);
+}
+
+.detail {
+  font: italic 14px/1.35 var(--m-f-texte);
+  color: var(--m-encre2);
+}

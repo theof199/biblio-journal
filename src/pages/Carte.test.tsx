@@ -103,6 +103,18 @@ describe('la carte', () => {
     expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
   })
 
+  // Mutations : la pastille retirée, ou menant à `/voyage/:annee` ; la sacoche qui lirait la fiche de
+  // l'année en cours (`lireAnnee`), même venue de la carte, où les fiches ne sont qu'en cache.
+  it('la pastille « Sacoche du voyageur » ouvre la sacoche, qui ne lit aucune fiche d’année', async () => {
+    const { requetes } = monter()
+    fireEvent.click(await screen.findByRole('link', { name: 'Sacoche du voyageur' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'La sacoche du voyageur' })).toBeInTheDocument()
+    await within(await screen.findByRole('region', { name: 'Passeport' })).findAllByRole('link')
+    await within(await screen.findByRole('region', { name: 'Portefeuille' })).findByText('Aucun ticket')
+    await new Promise((r) => setTimeout(r, 50))
+    expect(requetes.filter((r) => r.includes('/annees'))).toEqual([])
+  })
+
   // Mutations (coque) : la route `voyage`, ou `voyage/:annee`, déclarée à côté de `<Coque />`
   // dans `App.tsx` au lieu de dedans (la barre disparaîtrait) ; la fiche en `annee/:annee` sous
   // `<Coque />` (la barre resterait, l'onglet Voyage ne serait plus marqué).

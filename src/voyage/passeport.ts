@@ -72,7 +72,7 @@ export function phraseDuPasseport(manque: Manque, tampon: Tampon | null): string
 
 /**
  * Le jour d'un instant, en toutes lettres, **à Paris** : celui où une décennie a été bouclée (le
- * tampon, le passeport du profil), celui où un ticket a été utilisé (le portefeuille). `boucle_le`
+ * tampon, le passeport de la sacoche), celui où un ticket a été utilisé (le portefeuille). `boucle_le`
  * est tantôt un minuit UTC (le jour d'un visionnage, une date sans heure), tantôt l'instant où le ticket de la
  * décennie suivante a été utilisé (`calculerTampons`, la plus tardive des deux). Un minuit UTC est le
  * même jour à Paris ; un ticket utilisé à 0 h 30 à Paris l'est le jour même, pas la veille comme en

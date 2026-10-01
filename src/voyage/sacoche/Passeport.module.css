@@ -1,0 +1,69 @@
+/* Les pages du passeport, chacune au livret de sa décennie (maquette 1890 : `.livret`, ligne 285) :
+   le velours, l'anneau en tête, le tampon dessous. Les jetons sont ceux du monde de la décennie,
+   posés sur la page elle-même. */
+.liste {
+  display: grid;
+  gap: 14px;
+  margin: 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.page {
+  display: block;
+  padding: 14px 12px 16px 20px;
+  border-radius: 3px 8px 8px 3px;
+  background: var(--m-velours);
+  color: var(--m-papier);
+  text-decoration: none;
+  box-shadow:
+    inset 8px 0 0 color-mix(in srgb, var(--m-velours) 70%, var(--m-fond)),
+    0 8px 18px var(--m-ombre);
+}
+
+.page:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.tete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.texte {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.decennie {
+  font: 400 19px var(--m-f-affiche);
+  color: var(--m-or2);
+}
+
+.monde {
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  color: var(--m-pale);
+}
+
+.annees {
+  margin-top: 2px;
+  font: 15px var(--m-f-texte);
+}
+
+.fleche {
+  font: 400 26px/1 var(--m-f-affiche);
+  color: var(--m-or);
+}
+
+/* Le tampon garde sa taille (16 em, jamais sous 196 px) : la police du conteneur la fixe. */
+.tampon {
+  display: grid;
+  justify-items: center;
+  margin-top: 12px;
+  font-size: 12.25px;
+}
