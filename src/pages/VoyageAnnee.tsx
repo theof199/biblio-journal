@@ -19,6 +19,8 @@ import { annonceDesAvancees, franchitUnPalier, oublierLeRetour, retourConfie } f
 import { RELECTURES } from '../voyage/relecture'
 import { useGuet } from '../voyage/salles/useFournee'
 import { useCalque } from '../voyage/calque'
+import Celebrations from '../voyage/celebrations/Celebrations'
+import { etatDeFete, scenesDuRetour, type EtatDeFete, type Scene } from '../voyage/celebrations/scenes'
 import Feuille from '../voyage/Feuille'
 import { decennieDe, etatDeCase, prochainPas } from '../voyage/regles'
 import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
@@ -107,7 +109,10 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   }, [annee])
   const [gains, setGains] = useState<readonly Avancee[]>([])
   const joue = useRef(false)
-  const relue = requete.isFetchedAfterMount
+  // Relue **avec succès** : `isFetchedAfterMount` devient vrai aussi sur une panne, la fiche du cache
+  // encore à l'écran ; la comparer consommerait le retour sans rien avoir à jouer, et la relecture
+  // réussie suivante ne jouerait plus rien.
+  const relue = requete.isFetchedAfterMount && !requete.isError
   useEffect(() => {
     if (joue.current || !retour?.avant || !relue || !prete) return
     joue.current = true
@@ -121,6 +126,23 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   // relit toutes les cinq secondes, douze fois au plus, jusqu'à un verdict changé ou un ticket ; la
   // minuterie s'arrête en quittant la page.
   const guet = retour?.guet ?? null
+  // Les célébrations : ce que le billet a bouclé (une salle, la récompense, l'année), comparé une fois
+  // sur la fiche relue, comme les gains. Rien ne se mémorise : ni un rechargement ni le retour suivant
+  // ne les rejouent. Tant que le verdict est guetté, le ticket que le jury accorde boucle l'année à
+  // son tour, lui seul ; un ticket que personne n'a regardé arriver se rattrape sur la carte.
+  const [fete, setFete] = useState<readonly Scene[]>([])
+  const compare = useRef<EtatDeFete | null>(retour?.avant?.fete ?? null)
+  const fetee = useRef(false)
+  const anneeEnCours = v?.annee_en_cours
+  useEffect(() => {
+    if (!compare.current || !relue || !prete || anneeEnCours === undefined) return
+    if (fetee.current && guet === null) return
+    const apres = etatDeFete(prete, anneeEnCours)
+    const scenes = scenesDuRetour(annee, compare.current, apres).filter((s) => !fetee.current || s.type === 'annee')
+    compare.current = apres
+    fetee.current = true
+    if (scenes.length > 0) setFete((f) => [...f, ...scenes])
+  }, [annee, relue, prete, anneeEnCours, guet])
   useGuet(annee, guet !== null && !!prete && !verdictAChange(guet.depuis, prete.maturite?.jugee_le ?? null, prete.ticket), RELECTURES.verdict)
 
   const feuille = useCalque('feuille')
@@ -293,6 +315,8 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
         </div>
         {corps}
       </Manivelle>
+      {/* Hors de la manivelle : la fête couvre la page, et ne se tire pas. */}
+      {fete.length > 0 ? <Celebrations monde={monde} membre={user.id} scenes={fete} onUtiliser={encaisser} onFin={() => setFete([])} horsCarte /> : null}
     </section>
   )
 }

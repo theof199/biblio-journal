@@ -500,6 +500,19 @@ describe('le billet de séance', () => {
       expect(vibrate).not.toHaveBeenCalled()
     })
 
+    // Les célébrations : le billet confie à l'année ce que la fiche portait de quoi fêter. Mutation :
+    // `fete` oublié de l'avant (l'année n'aurait rien à comparer, et l'Ours passerait sans sa scène).
+    it('le billet qui fait gagner l’Ours le fête sur l’année relue', async () => {
+      calme()
+      const { routes } = serveur({ voyage: HORS_IA, apres: () => fiche({ profondeur: 3, recompense: 'ours' }) })
+      monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await lAnnee()
+      expect(await screen.findByRole('dialog', { name: 'L’Ours : trois films de 1897' })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
+
     // Le jumeau du palier. Mutation : vibrer à chaque avancée.
     it('une avancée sans palier ne fait pas vibrer', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })

@@ -1,11 +1,9 @@
 import type { Monde } from '../../mondes/types'
 import Panne from '../../ui/Panne'
 import type { Tampon as TamponDuPasseport } from '../passeport'
+import Anneau, { anneesSur } from '../passeport/Anneau'
 import Tampon from '../passeport/Tampon'
 import styles from './Livret.module.css'
-
-/** La circonférence de l'anneau (maquette : `2π × 29`, dans un repère de 70). */
-const CIRCONFERENCE = 2 * Math.PI * 29
 
 interface Props {
   monde: Monde
@@ -28,24 +26,12 @@ interface Props {
  * pas ici : il est posé depuis la décennie bouclée, la page ne fait que le montrer.
  */
 export default function Livret({ monde, decennie, tampon, anneau, manque }: Props) {
-  const part = anneau.total > 0 ? anneau.faites / anneau.total : 0
-  const annees = `${anneau.faites} ${anneau.faites > 1 ? 'années' : 'année'} sur ${anneau.total}`
+  const annees = anneesSur(anneau)
 
   return (
     <section className={styles.livret} aria-labelledby="livret-titre">
       <div className={styles.tete}>
-        <svg className={styles.anneau} viewBox="0 0 70 70" aria-hidden="true">
-          <circle className={styles.piste} cx="35" cy="35" r="29" />
-          <circle
-            className={styles.plein}
-            cx="35"
-            cy="35"
-            r="29"
-            strokeDasharray={CIRCONFERENCE.toFixed(1)}
-            strokeDashoffset={(CIRCONFERENCE * (1 - part)).toFixed(1)}
-            transform="rotate(-90 35 35)"
-          />
-        </svg>
+        <Anneau {...anneau} />
         <div>
           <h2 id="livret-titre" className={styles.titre}>{`${monde.pages.mots.decennie.passeport} · années ${decennie}`}</h2>
           <p className={styles.annees}>{annees}</p>

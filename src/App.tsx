@@ -14,6 +14,7 @@ import VoyageBoite from './pages/VoyageBoite'
 import VoyageRecherche from './pages/VoyageRecherche'
 import VoyageFilm from './pages/VoyageFilm'
 import VoyageBillet from './pages/VoyageBillet'
+import VoyageSacoche from './pages/VoyageSacoche'
 import Suivis from './pages/Suivis'
 import PageRealisateur from './pages/PageRealisateur'
 import PageSaga from './pages/PageSaga'
@@ -39,6 +40,9 @@ export default function App() {
           <Route path="journal/:id" element={<Fiche />} />
           <Route path="journal/:id/corriger" element={<Formulaire />} />
           <Route path="voyage" element={<Carte />} />
+          {/* La sacoche du voyageur (passeport, portefeuille, coulisses) : on y entre par une pastille
+              de la carte. Un segment fixe : React Router le préfère à `voyage/:annee`, et un test le garde. */}
+          <Route path="voyage/sacoche" element={<VoyageSacoche />} />
           <Route path="voyage/:annee" element={<VoyageAnnee />} />
           {/* La page d'une décennie (plan 2c, décision D5) : on y entre par la plaque du chapitre. */}
           <Route path="voyage/decennies/:decennie" element={<VoyageDecennie />} />

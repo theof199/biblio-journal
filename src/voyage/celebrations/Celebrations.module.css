@@ -1,0 +1,582 @@
+/* Les célébrations du Voyage (maquette 1890, écran IX : `.celeb`, `sceneAnnee`, `sceneBadge`) : trois
+   scènes plein écran, sur le velours du monde. Les couleurs et les polices viennent des jetons du
+   monde, posés sur `.calque` ; chaque durée suit le tempo (`voyage/tempo.ts`), posé au même endroit.
+   Le style posé d'un élément est son état final : son animation y mène, et le calme la retire. */
+
+/* Par-dessus la page, sous le bandeau « Nouvelle version » et la barre d'onglets, qui restent visibles. */
+.calque {
+  position: fixed;
+  z-index: var(--z-calque);
+  top: 0;
+  right: 0;
+  bottom: var(--coque-bas);
+  left: 0;
+  padding-top: env(safe-area-inset-top);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: radial-gradient(ellipse at 50% 34%, var(--m-velours), var(--m-fond) 72%);
+  color: var(--m-papier);
+  text-align: center;
+  cursor: pointer;
+  animation: leve calc(180ms * var(--tempo)) ease-out both;
+}
+
+.colonne {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 480px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 18px 16px 22px;
+  box-sizing: border-box;
+}
+
+@keyframes leve {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- Les mots d'une scène ---------- */
+
+.sur {
+  margin: 18px 0 0;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--m-or);
+  animation: parait calc(250ms * var(--tempo)) ease-out both;
+}
+
+/* La police vient de `.celebration` (`ui/voyage.css`) : la feuille n'en pose que la taille. */
+.titre {
+  margin: 6px 0 0;
+  font-size: 40px;
+  line-height: 1.05;
+  font-weight: 400;
+  color: var(--m-or2);
+  text-shadow:
+    2px 2px 0 var(--m-velours),
+    4px 4px 0 var(--m-ombre);
+  overflow-wrap: anywhere;
+  animation: parait calc(250ms * var(--tempo)) ease-out both;
+}
+
+.sous {
+  margin: 8px 0 0;
+  font: italic 18px/1.3 var(--m-f-texte);
+  color: var(--m-papier);
+  animation: parait calc(250ms * var(--tempo)) ease-out both;
+}
+
+@keyframes parait {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pied {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+/* Le bouton doré de la maquette (`.bouton-or`), porté à la cible tactile. */
+.bouton {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+  font: 400 16px var(--m-f-affiche);
+  box-shadow: 0 3px 0 var(--m-bois);
+  cursor: pointer;
+}
+
+/* Le corail ne signale que ce que le joueur déclenche : utiliser le ticket ouvre l'année suivante. */
+.utiliser {
+  background: var(--corail);
+  box-shadow: 0 3px 0 var(--m-velours);
+}
+
+/* Le choix qui vient d'apparaître, encore inerte (`GARDE_DU_CHOIX`). */
+.bouton[aria-disabled='true'] {
+  opacity: 0.6;
+}
+
+.bouton:focus-visible {
+  outline: 2px solid var(--m-papier);
+  outline-offset: 2px;
+}
+
+/* ---------- La salle bouclée : la salle se referme en rideau ---------- */
+
+.salle {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  margin-top: 26px;
+  overflow: hidden;
+  border-radius: 4px;
+  /* L'écran de la salle, encore éclairé derrière le rideau. */
+  background: radial-gradient(ellipse at 50% 55%, var(--m-papier2), var(--m-carton) 60%, var(--m-bois));
+  box-shadow:
+    0 0 0 2px var(--m-or3),
+    0 14px 30px var(--m-ombre);
+}
+
+.pan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 51%;
+  background: repeating-linear-gradient(90deg, var(--m-velours) 0 12px, var(--m-rouge) 12px 20px, var(--m-velours) 20px 30px);
+  box-shadow: inset 0 -18px 18px var(--m-ombre);
+}
+
+.gauche {
+  left: 0;
+  animation: fermeGauche calc(700ms * var(--tempo)) cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+
+.droite {
+  right: 0;
+  animation: fermeDroite calc(700ms * var(--tempo)) cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+
+@keyframes fermeGauche {
+  from {
+    transform: translateX(-92%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes fermeDroite {
+  from {
+    transform: translateX(92%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* Le lambrequin : la frise d'or au-dessus du rideau. */
+.lambrequin {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 30px;
+  background:
+    radial-gradient(circle at 50% 0, var(--m-or2) 0 68%, transparent 70%) 0 12px / 30px 22px repeat-x,
+    linear-gradient(var(--m-or2), var(--m-or3)) 0 0 / 100% 14px no-repeat;
+}
+
+/* ---------- La récompense : la presse à médailles ---------- */
+
+.presse {
+  position: relative;
+  width: 220px;
+  height: 300px;
+  margin-top: 26px;
+}
+
+.machine {
+  position: absolute;
+  inset: 0;
+}
+
+.efface {
+  opacity: 0;
+  animation: efface calc(400ms * var(--tempo)) ease-in both;
+}
+
+@keyframes efface {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.montant {
+  position: absolute;
+  top: 46px;
+  bottom: 22px;
+  width: 16px;
+  background: var(--m-bois);
+}
+
+.montantGauche {
+  left: 14px;
+}
+
+.montantDroit {
+  right: 14px;
+}
+
+.traverse {
+  position: absolute;
+  top: 36px;
+  right: 4px;
+  left: 4px;
+  height: 26px;
+  border-radius: 3px;
+  background: var(--m-bois);
+}
+
+.socle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 24px;
+  border-radius: 3px;
+  background: var(--m-bois);
+  box-shadow: 0 8px 18px var(--m-ombre);
+}
+
+/* Le balancier et ses deux boules, qui tourne en lançant la vis. */
+.balancier {
+  position: absolute;
+  top: 6px;
+  right: -14px;
+  left: -14px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--m-or3);
+  transform: rotateY(72deg);
+  animation: lance calc(550ms * var(--tempo)) ease-in both;
+}
+
+.balancier::before,
+.balancier::after {
+  content: '';
+  position: absolute;
+  top: -11px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--m-encre);
+  box-shadow: inset 3px 3px 0 var(--m-bois);
+}
+
+.balancier::before {
+  left: -6px;
+}
+
+.balancier::after {
+  right: -6px;
+}
+
+@keyframes lance {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(792deg);
+  }
+}
+
+/* La vis et son coin, qui descendent frapper le flan. */
+.vis {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 12px;
+  height: 150px;
+  margin-left: -6px;
+  background: var(--m-pale);
+  transform: translateY(74px);
+  animation: frappe calc(550ms * var(--tempo)) cubic-bezier(0.6, 0, 0.9, 0.4) both;
+}
+
+.vis::after {
+  content: '';
+  position: absolute;
+  bottom: -16px;
+  left: -19px;
+  width: 50px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--m-or3);
+}
+
+@keyframes frappe {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(74px);
+  }
+}
+
+.enclume {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  width: 70px;
+  height: 30px;
+  margin-left: -35px;
+  background: var(--m-encre2);
+}
+
+/* L'éclair de la frappe. */
+.eclair {
+  position: absolute;
+  top: 248px;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  margin: -160px 0 0 -160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--m-papier2), transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+  animation: eclair calc(260ms * var(--tempo)) ease-out both;
+}
+
+@keyframes eclair {
+  from {
+    opacity: 0.85;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+/* L'emblème sort de la presse en tournant sur lui-même. */
+.sortie {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  width: 150px;
+  height: 195px;
+  margin-left: -75px;
+  filter: drop-shadow(0 10px 18px var(--m-ombre));
+  animation: sort calc(900ms * var(--tempo)) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes sort {
+  from {
+    opacity: 0;
+    transform: translateY(96px) scale(0.3) rotateY(0deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateY(1080deg);
+  }
+}
+
+/* ---------- L'année bouclée : le fronton, la médaille, le guichet ---------- */
+
+.confettis {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.fronton {
+  position: relative;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.ampoules {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 12px 0 0;
+}
+
+.ampoule {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-papier) 15%, var(--m-fond));
+  box-shadow: 0 0 0 3px var(--m-fond);
+}
+
+.allumee {
+  background: radial-gradient(circle at 40% 35%, var(--m-papier2), var(--m-or2) 60%, var(--m-or3));
+  box-shadow:
+    0 0 0 3px var(--m-fond),
+    0 0 18px 6px color-mix(in srgb, var(--m-or2) 60%, transparent);
+  animation: allume calc(200ms * var(--tempo)) ease-out both;
+}
+
+@keyframes allume {
+  from {
+    transform: scale(0.6);
+    filter: brightness(2.2);
+  }
+  to {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* La médaille tombe au bout de son ruban. */
+.pendue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 4px;
+  transform-origin: 50% 0;
+  animation: tombe calc(450ms * var(--tempo)) cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+.ruban {
+  width: 4px;
+  height: 22px;
+  background: var(--m-rouge);
+}
+
+.medaille {
+  width: 84px;
+  height: 109px;
+  margin-top: -4px;
+  filter: drop-shadow(0 8px 14px var(--m-ombre));
+}
+
+@keyframes tombe {
+  from {
+    opacity: 0;
+    transform: translateY(-120px) rotate(-14deg);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Le guichet : son auvent, sa fenêtre, et le billet qu'il tend. */
+.guichet {
+  position: relative;
+  width: 200px;
+  height: 150px;
+  margin-top: 20px;
+  animation: parait calc(250ms * var(--tempo)) ease-out both;
+}
+
+.auvent {
+  position: absolute;
+  top: 58px;
+  right: 0;
+  left: 0;
+  height: 24px;
+  background: var(--m-rouge);
+  clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+}
+
+.caisse {
+  position: absolute;
+  top: 82px;
+  right: 10px;
+  bottom: 0;
+  left: 10px;
+  background: var(--m-bois);
+  box-shadow: inset 0 -30px 0 color-mix(in srgb, var(--m-encre) 35%, transparent);
+}
+
+.fenetre {
+  position: absolute;
+  top: 12px;
+  right: 34px;
+  left: 34px;
+  height: 30px;
+  background: color-mix(in srgb, var(--m-or2) 80%, var(--m-papier));
+}
+
+.billet {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  width: 160px;
+  height: 64px;
+  margin-left: -80px;
+  border-radius: 4px;
+  background: var(--m-papier2);
+  color: var(--m-encre);
+  box-shadow: 0 6px 14px var(--m-ombre);
+  transform: rotate(-3deg);
+  animation: tend calc(400ms * var(--tempo)) cubic-bezier(0.3, 1.3, 0.5, 1) both;
+}
+
+.bon {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px;
+}
+
+.bon small {
+  font: 11px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  color: var(--m-rouge);
+}
+
+.bon b {
+  font: 400 28px/1 var(--m-f-affiche);
+}
+
+.talon {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  padding: 0 8px;
+  border-left: 1px dashed color-mix(in srgb, var(--m-bois) 60%, transparent);
+  font: 9px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-bois);
+}
+
+@keyframes tend {
+  from {
+    opacity: 0;
+    transform: translateY(86px) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-3deg);
+  }
+}
+
+/* Au calme : l'état final posé, sans animation (un carton fixe et son bouton). */
+.calque.calme,
+.calque.calme *,
+.calque.calme *::before,
+.calque.calme *::after {
+  animation: none;
+}

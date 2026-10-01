@@ -1,0 +1,96 @@
+/* Les Coulisses de la sacoche : repliées sous leur titre de section, puis les dépenses et les
+   crédits, en petit, sur le fond de la page. Couleurs et polices : les jetons du monde. */
+.bascule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.bascule:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.contenu {
+  display: grid;
+  gap: 18px;
+  margin: 0 16px;
+}
+
+.bloc {
+  display: grid;
+  gap: 4px;
+}
+
+.titre {
+  margin: 0;
+  font: 14px var(--m-f-capitales);
+  letter-spacing: 0.12em;
+  color: var(--m-or);
+}
+
+.ligne {
+  margin: 0;
+  font: 15.5px/1.45 var(--m-f-texte);
+  color: var(--m-papier);
+}
+
+.precedent,
+.note {
+  margin: 0;
+  font: 14px/1.4 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.note {
+  font-style: italic;
+}
+
+.groupe {
+  display: grid;
+  gap: 8px;
+}
+
+.sousTitre {
+  margin: 0;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  color: var(--m-pale);
+}
+
+.liste {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credit {
+  display: grid;
+  gap: 2px;
+}
+
+.oeuvre {
+  font: 15px/1.4 var(--m-f-texte);
+  color: var(--m-papier);
+}
+
+.source {
+  font: 13.5px var(--m-f-texte);
+  color: var(--m-or2);
+  overflow-wrap: anywhere;
+}
+
+.source:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}

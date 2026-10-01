@@ -1,0 +1,50 @@
+/* La sacoche du voyageur : le cadre de la boîte à billets (son retour, sa tête), au monde de l'année
+   en cours. Les couleurs et les polices viennent des jetons du monde, posés sur la racine par la page. */
+.page {
+  position: relative;
+  min-height: 100%;
+  padding-bottom: 30px;
+  background: var(--m-tel);
+  color: var(--m-papier);
+  font: 15px/1.55 var(--m-f-corps);
+}
+
+/* Le retour de la page d'une décennie, son jumeau. */
+.retour {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding-bottom: 3px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 60%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-fond) 78%, transparent);
+  color: var(--m-or2);
+  font: 400 24px/1 var(--m-f-affiche);
+  text-decoration: none;
+}
+
+.retour:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.tete {
+  padding: 58px 16px 0;
+  text-align: center;
+}
+
+.sur {
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.2em;
+  color: var(--m-or);
+}
+
+.titre {
+  margin: 2px 0 0;
+  font: 400 32px/1 var(--m-f-affiche);
+}

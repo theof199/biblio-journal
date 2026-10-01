@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { IconCurrentLocation, IconMap2, IconVolume, IconVolumeOff } from '@tabler/icons-react'
+import { IconBriefcase, IconCurrentLocation, IconMap2, IconVolume, IconVolumeOff } from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
@@ -18,6 +18,8 @@ import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
 import { useMouvementReduit } from '../ui/mouvement'
+import Celebrations from '../voyage/celebrations/Celebrations'
+import { sceneDuRattrapage, type Scene } from '../voyage/celebrations/scenes'
 import { tamponDe } from '../voyage/passeport'
 import Tampon from '../voyage/passeport/Tampon'
 import {
@@ -30,6 +32,7 @@ import {
   prochainPas,
   recompensesJusquaAnneeEnCours,
   rattrapeBientot,
+  ticketOffert,
   tropLent,
   type FrontiereAvancee,
 } from '../voyage/regles'
@@ -223,7 +226,7 @@ export default function Carte() {
     }
   }, [v, anneeAvatar, fiches, user.pseudo])
 
-  const ticket = v ? tickets.data?.tickets.find((t) => t.annee === v.annee_en_cours + 1 && t.utilise_le === null) : undefined
+  const ticket = v && tickets.data ? ticketOffert(v.annee_en_cours, tickets.data.tickets) : undefined
   const utiliser = useMutation({
     mutationFn: (annee: number) => utiliserTicket(annee),
     onSuccess: () => {
@@ -238,6 +241,22 @@ export default function Carte() {
     envoi.current = true
     utiliser.mutate(annee, { onSettled: () => void (envoi.current = false) })
   }
+
+  // Le rattrapage de l'année bouclée : un ticket gagné et pas encore montré (`ticket_a_montrer`, le
+  // verdict du jury tombé loin de la fiche) joue sa scène à l'ouverture de la carte, une fois ; le
+  // choix le marque montré. Jamais pendant une avancée, ni deux fois pour le même ticket tant que la
+  // carte est ouverte (un `/montre` refusé le rendrait à la relecture). L'avatar rendu à mon année en
+  // cours dit qu'aucune avancée n'attend : `avancee` seule ne le dit pas, l'effet de la frontière la
+  // pose dans le rendu même où celui-ci la lirait encore nulle.
+  const [fete, setFete] = useState<Extract<Scene, { type: 'annee' }> | null>(null)
+  const ticketFete = useRef<number | null>(null)
+  useEffect(() => {
+    if (!v || avancee || anneeAvatar !== v.annee_en_cours) return
+    const scene = sceneDuRattrapage(v)
+    if (!scene || ticketFete.current === scene.ticket) return
+    ticketFete.current = scene.ticket
+    setFete(scene)
+  }, [v, avancee, anneeAvatar])
 
   if (voyage.isPending) return <p role="status">Chargement…</p>
   if (voyage.error || !v) return <Panne erreur={voyage.error} onReessayer={() => void voyage.refetch()} />
@@ -371,6 +390,10 @@ export default function Carte() {
         >
           {sonEnMarche || sonVoulu ? <IconVolume size={20} aria-hidden="true" /> : <IconVolumeOff size={20} aria-hidden="true" />}
         </button>
+        {/* La sacoche du voyageur : le passeport, le portefeuille et les coulisses, sur leur page. */}
+        <Link to="/voyage/sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur">
+          <IconBriefcase size={20} aria-hidden="true" />
+        </Link>
         {!avatarVu && !ensemble ? (
           <button type="button" aria-label="Tu es ici" title="Tu es ici" onClick={() => moteur?.allerIci()}>
             <IconCurrentLocation size={20} aria-hidden="true" />
@@ -443,6 +466,16 @@ export default function Carte() {
         <div className={styles.tampon} role="status">
           <Tampon monde={mondes(calque.decennie)} decennie={calque.decennie} tampon={tamponDe(v.tampons, calque.decennie)} frappe />
         </div>
+      ) : null}
+      {fete ? (
+        <Celebrations
+          monde={mondes(decennieDe(fete.annee))}
+          membre={user.id}
+          scenes={[fete]}
+          // Le ticket ne s'utilise que s'il ouvre l'année qui suit mon année en cours (`ticketOffert`).
+          onUtiliser={fete.ticket === v.annee_en_cours + 1 ? encaisser : undefined}
+          onFin={() => setFete(null)}
+        />
       ) : null}
       {calque?.type === 'carton' ? (
         <div className={styles.carton} role="status">

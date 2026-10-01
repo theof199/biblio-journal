@@ -526,6 +526,131 @@ describe('la fiche d’une année', () => {
     oublierLeRetour(1897)
   })
 
+  // Les célébrations : au retour d'un billet, ce qu'il a bouclé se fête sur la fiche relue, dans
+  // l'ordre, et le choix du billet le marque montré. Mutations : l'effet des célébrations retiré de
+  // la page ; `relue` ignoré (la fiche du cache, où rien n'a bougé) ; `fete` oublié de l'avant ;
+  // « Le garder » sans `/montre`.
+  describe('les célébrations au retour d’un billet', () => {
+    const P0 = { essentiels_vus: 1, essentiels_total: 2, salles_completes: 0, salles_autres: 2 }
+    const P1 = { essentiels_vus: 2, essentiels_total: 2, salles_completes: 1, salles_autres: 2 }
+    const AVANT = { profondeur: 3, progression: P0, fete: { sallesCompletes: 0, salles: [], recompense: 'ours' as const, ticket: null } }
+    const APRES = nue({ profondeur: 4, progression: P1, recompense: 'lion', ticket: ticket(1898) })
+    const MONTRE = 'POST /api/me/voyage/tickets/1898/montre'
+    const routes = {
+      ...ROUTES,
+      'GET /api/me/voyage/annees/1897': () => json(APRES),
+      [MONTRE]: () => new Response(null, { status: 204 }),
+    }
+    // Comme en venant du billet : la carte et la fiche d'avant l'écriture sont en cache.
+    const monter = (r: typeof routes = routes) =>
+      monterVoyage('/voyage/1897', r, (c) => {
+        c.setQueryData(cles.voyage, VOYAGE)
+        c.setQueryData(cles.annee(1897), nue({ profondeur: 3, progression: P0, recompense: 'ours' }))
+      })
+    /** Des touchers dans le même instant, avant que React n'ait retiré les boutons de la scène. */
+    const toucher = (...boutons: HTMLElement[]) => act(() => boutons.forEach((b) => b.click()))
+
+    it('joue la salle bouclée, la récompense, puis l’année bouclée, et « Le garder » montre le ticket une seule fois', async () => {
+      calme()
+      confierLeRetour(1897, SESSION.user.id, { avant: AVANT, guet: null })
+      const { requetes } = monter()
+      expect(await screen.findByRole('dialog', { name: 'Salle complète : Une salle' })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+      expect(screen.getByRole('dialog', { name: 'Le Lion : les essentiels de 1897' })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+      expect(screen.getByRole('dialog', { name: '1897 est bouclée' })).toBeInTheDocument()
+      const lectures = () => requetes.filter((r) => r === 'GET /api/me/voyage').length
+      const avant = lectures()
+      toucher(screen.getByRole('button', { name: 'Le garder' }), screen.getByRole('button', { name: 'Le garder' }))
+      await waitFor(() => expect(requetes).toContain(MONTRE))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      // La fiche reste là, son ticket en bas : le garder n'encaisse rien.
+      expect(screen.getByText('Ton ticket pour 1898 t’attend')).toBeInTheDocument()
+      // Les deux touchers sont du même instant : un second `/montre` serait parti avec le premier. La
+      // relecture de la carte, qui suit sa réponse, clôt l'attente.
+      await waitFor(() => expect(lectures()).toBeGreaterThan(avant))
+      expect(requetes.filter((r) => r === MONTRE)).toHaveLength(1)
+      expect(requetes.filter((r) => r.includes('/utiliser'))).toEqual([])
+    })
+
+    // Correction du brief : « L’utiliser » encaisse le ticket comme le « Utiliser » du bas de la fiche,
+    // et mène à la carte. Mutations : `/montre` oublié de « L’utiliser » ; l'encaissement non branché.
+    it('« L’utiliser » montre le ticket une seule fois, l’encaisse, et mène à la carte', async () => {
+      calme()
+      confierLeRetour(1897, SESSION.user.id, { avant: { ...AVANT, fete: { ...AVANT.fete, sallesCompletes: 1, recompense: 'lion' } }, guet: null })
+      const { requetes } = monter({ ...routes, 'POST /api/me/voyage/tickets/1898/utiliser': () => json({ annee_en_cours: 1898 }) } as typeof routes)
+      expect(await screen.findByRole('dialog', { name: '1897 est bouclée' })).toBeInTheDocument()
+      toucher(screen.getByRole('button', { name: 'L’utiliser' }), screen.getByRole('button', { name: 'L’utiliser' }), screen.getByRole('button', { name: 'Le garder' }))
+      expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
+      expect(requetes.filter((r) => r === MONTRE)).toHaveLength(1)
+      expect(requetes.filter((r) => r === 'POST /api/me/voyage/tickets/1898/utiliser')).toHaveLength(1)
+    })
+
+    // Mutation : la fiche fêtée pour ce qu'elle porte, non pour ce qui a changé (elle se fêterait à
+    // chaque billet).
+    it('rien ne se joue quand le billet n’a rien bouclé', async () => {
+      calme()
+      confierLeRetour(1897, SESSION.user.id, {
+        avant: { profondeur: 3, progression: P1, fete: { sallesCompletes: 1, salles: [], recompense: 'lion', ticket: 1898 } },
+        guet: null,
+      })
+      monter()
+      // Les gains et les célébrations se comparent dans le même rendu, sur la même relecture : l'annonce
+      // dite, la fête se serait montrée avec elle. `act` vide ce qui resterait à rendre.
+      expect(await screen.findByText('+1 film vu')).toBeInTheDocument()
+      await act(async () => undefined)
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
+
+    // Le ticket du jury arrive après le billet, pendant le guet : l'année se boucle alors, elle seule.
+    // Mutations : la comparaison arrêtée à la première relecture, même le verdict guetté ; le jumeau,
+    // la comparaison poursuivie sans guet (une relecture quelconque ferait la fête).
+    it.each([
+      ['guetté, le ticket du jury boucle l’année quand il arrive', { depuis: null }, true],
+      ['sans guet, une relecture plus tard ne fête rien', null, false],
+    ] as const)('%s', async (_nom, guet, fete) => {
+      calme()
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      let lectures = 0
+      confierLeRetour(1897, SESSION.user.id, { avant: { ...AVANT, fete: { ...AVANT.fete, sallesCompletes: 1, recompense: 'lion' } }, guet })
+      const { client } = monter({
+        ...routes,
+        // La relecture qui apporte le ticket apporte aussi la Palme (un autre appareil) : pendant le
+        // guet, l'année seule se fête. Mutation : le filtre `s.type === 'annee'` retiré.
+        'GET /api/me/voyage/annees/1897': () => ((lectures += 1), json(lectures === 1 ? { ...APRES, ticket: null } : { ...APRES, recompense: 'palme' })),
+      })
+      expect(await screen.findByText(/^\+1 film vu/)).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).toBeNull()
+      await act(() => vi.advanceTimersByTimeAsync(RELECTURES.verdict.ms))
+      if (!guet) await act(() => client.refetchQueries({ queryKey: cles.annee(1897), exact: true }))
+      await waitFor(() => expect(lectures).toBeGreaterThanOrEqual(2))
+      expect(await screen.findByText('Ton ticket pour 1898 t’attend')).toBeInTheDocument()
+      if (fete) expect(screen.getByRole('dialog', { name: '1897 est bouclée' })).toBeInTheDocument()
+      else expect(screen.queryByRole('dialog')).toBeNull()
+    })
+
+    // Une relecture en panne laisse la fiche du cache à l'écran : rien n'y a bougé, et la comparer
+    // consommerait le retour. Mutation : `!requete.isError` retiré de `relue` (la relecture réussie
+    // qui suit ne fêterait ni n'annoncerait plus rien).
+    it('une relecture en panne ne consomme pas le retour : la suivante, réussie, fête et annonce', async () => {
+      calme()
+      let lectures = 0
+      confierLeRetour(1897, SESSION.user.id, { avant: AVANT, guet: null })
+      const { client } = monter({
+        ...routes,
+        'GET /api/me/voyage/annees/1897': () =>
+          (lectures += 1) === 1 ? json({ code: 'INTERNAL', message: 'Le service a un souci.', retryable: false }, 500) : json(APRES),
+      })
+      await waitFor(() => expect(client.getQueryState(cles.annee(1897))?.status).toBe('error'))
+      await act(async () => undefined)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(screen.queryByText(/^\+1 film vu/)).toBeNull()
+      await act(() => client.refetchQueries({ queryKey: cles.annee(1897), exact: true }))
+      expect(await screen.findByRole('dialog', { name: 'Salle complète : Une salle' })).toBeInTheDocument()
+      expect(screen.getByText(/^\+1 film vu/)).toBeInTheDocument()
+    })
+  })
+
   // Mutation : le programme rendu pour une année bouclée ; les trous pris à la mauvaise valeur.
   it('le programme de l’année en cours perce les trous des essentiels et des salles', async () => {
     monterVoyage('/voyage/1897', {

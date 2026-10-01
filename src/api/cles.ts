@@ -2,6 +2,8 @@ export const cles = {
   session: ['session'] as const,
   voyage: ['voyage'] as const,
   tickets: ['voyage', 'tickets'] as const,
+  /** Mes dépenses au chroniqueur (les Coulisses de la sacoche) : sous le préfixe `voyage`, périmées avec lui. */
+  depenses: ['voyage', 'depenses'] as const,
   annee: (annee: number) => ['voyage', 'annee', annee] as const,
   /**
    * Le carton d'un film (`GET /reference/chroniques/films/{tmdbId}`) : hors du préfixe `voyage`, un

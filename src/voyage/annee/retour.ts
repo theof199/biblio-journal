@@ -1,5 +1,6 @@
 import type { Progression } from '../../api/voyage'
 import { estUnPalier, type Avancee, type CleBillet } from '../annee'
+import type { EtatDeFete } from '../celebrations/scenes'
 
 /**
  * Le retour d'un billet sur la fiche de son année (plan 2b, tâche 11) : ce que le billet confie à
@@ -11,6 +12,11 @@ import { estUnPalier, type Avancee, type CleBillet } from '../annee'
 export interface Avant {
   profondeur: number
   progression: Progression | null
+  /**
+   * Ce que la fiche portait de quoi fêter (ses salles complètes, sa récompense, son ticket) : l'année
+   * relue le compare au sien et joue les célébrations (`celebrations/scenes.ts`). Absent : rien à fêter.
+   */
+  fete?: EtatDeFete
 }
 
 /** Ce que le billet confie à l'année : l'avant, et le verdict à guetter (au compte IA, après une création). */

@@ -1,0 +1,73 @@
+/* Les pièces communes aux blocs de la sacoche du voyageur : le titre de section de la page d'une
+   décennie (`.titreSec`, maquette 1890 lignes 94 à 113), l'attente, la panne et le bouton doré.
+   Couleurs et polices : les jetons du monde, posés sur la racine de la page. */
+.bloc {
+  margin: 0;
+}
+
+.titreSec {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 26px 16px 10px;
+  font: 400 18px var(--m-f-affiche);
+  letter-spacing: 0.04em;
+  color: var(--m-or2);
+}
+
+.titreSec small {
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-pale);
+}
+
+.titreSec::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--m-filet);
+  transform: translateY(-5px);
+}
+
+.vide {
+  margin: 4px 16px 10px;
+  font: italic 15.5px/1.45 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.panne {
+  margin: 8px 16px;
+  text-align: center;
+  font: italic 15px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.panne p {
+  margin: 0 0 10px;
+}
+
+.panne button,
+.bouton {
+  display: inline-grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+  font: 400 15px var(--m-f-affiche);
+  box-shadow: 0 3px 0 var(--m-bois);
+  cursor: pointer;
+}
+
+.bouton:disabled {
+  filter: saturate(0.3) brightness(0.8);
+  cursor: default;
+}
+
+.panne button:focus-visible,
+.bouton:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}

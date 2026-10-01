@@ -38,7 +38,7 @@ session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
 | Onglet | Chemin | Icône Tabler | Page |
 |---|---|---|---|
 | Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` : le fronton, « Ce soir », « Ensuite », le journal en pellicules (une par mois) |
-| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`), `voyage/decennies/:decennie` (`pages/VoyageDecennie.tsx`, la page d'une décennie), `…/billets` (`pages/VoyageBoite.tsx`, la boîte à billets), `…/recherche` (`pages/VoyageRecherche.tsx`, le guichet) : « Les pages du Voyage » et « Les pages d'une décennie », plus bas |
+| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`), `voyage/decennies/:decennie` (`pages/VoyageDecennie.tsx`, la page d'une décennie), `…/billets` (`pages/VoyageBoite.tsx`, la boîte à billets), `…/recherche` (`pages/VoyageRecherche.tsx`, le guichet), `voyage/sacoche` (`pages/VoyageSacoche.tsx`, la sacoche du voyageur) : « Les pages du Voyage », « Les pages d'une décennie » et « La sacoche du voyageur », plus bas |
 | Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` : réalisateurs et sagas suivis ; sous-pages `suivis/realisateurs/:tmdbId`, `suivis/sagas/:tmdbId`, `suivis/films/:tmdbId` |
 | Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` : mes séances et les sorties en salle |
 | Profil | `/profil` | `armchair` | `pages/Profil.tsx` : la carte d’adhérent (le pseudo, la couleur du membre, les films et les heures de `/stats`, « Mes films »), puis les graphiques du journal entier dessinés en objets de cinéma (`profil/` : notes, réactions, décennies, mois) et, en bas, le ticket de caisse qui mène à la sous-page `/profil/reglages` (`pages/Caisse.tsx` : thème jour / nuit, « Mes films », l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), la liaison SensCritique (`profil/SensCritique.tsx` : relier son compte, voir ce qui attend, le délier ; masquée tant que l’API n’a pas sa `SENSCRITIQUE_CLE` ; ses films à apparier se tranchent sur `pages/AppariementSensCritique.tsx`, sous `/profil/senscritique`), le rattrapage, les doublons, « Se déconnecter », la mention TMDB, la version) |
@@ -198,6 +198,40 @@ palier (Android ; Safari n'a pas de vibration). Au compte IA, après une créati
 l'année en cours, la fiche se relit toutes les cinq secondes, douze fois au plus, pour le verdict du
 jury. Ni un rechargement ni le retour suivant ne rejouent rien.
 
+**Les célébrations** (`voyage/celebrations/` ; maquette 1890, écran IX). Au même retour, sur la fiche
+relue, ce que le billet a bouclé se fête en plein écran, dans le costume du monde, au-dessus de la
+barre d'onglets : `scenesDuRetour` (`scenes.ts`, sans rendu) compare l'avant, que le billet confie
+avec le reste (`Avant.fete`), à l'après, et rend les scènes dans l'ordre. Un toucher passe à la
+suivante.
+
+- **La salle bouclée** (`SalleBouclee.tsx`) : le compte de l'API a monté (`salles_completes`, hors
+  essentiels) ; la salle se referme en rideau, le carton la nomme quand la fiche le dit.
+- **La récompense** (`PresseAMedailles.tsx`) : l'Ours, le Lion ou la Palme vient d'être gagné ; le
+  balancier lance la vis, la presse frappe, l'emblème (`Embleme.tsx`) sort en tournant.
+- **L'année bouclée** (`AnneeBouclee.tsx`) : le ticket de l'année suivante vient d'être gagné ; les
+  cinq ampoules du fronton (`Fronton.tsx`), la médaille sous les confettis de la carte
+  (`Particules`), puis le guichet tend le billet. « Le garder » ferme ; « L’utiliser » encaisse le
+  ticket comme le « Utiliser » du bas de la fiche, et mène à la carte, qui joue l'avancée. Les deux
+  appellent `POST /me/voyage/tickets/{annee}/montre`, une seule fois (`useMontrerLeTicket`). Un
+  toucher pendant la scène pose son état final ; elle ne se quitte que par un choix, dont les
+  boutons restent inertes un instant après être apparus (`GARDE_DU_CHOIX`) : le toucher redoublé ne
+  dépense pas le billet.
+
+Rien ne se mémorise : ni un rechargement ni le retour suivant ne rejouent une scène. Seule l'année
+bouclée se **rattrape** : tant que le verdict du jury est guetté sur la fiche, le ticket qu'il
+accorde la joue à son arrivée ; sinon, à l'ouverture de la carte, `ticket_a_montrer` de
+`GET /me/voyage` la joue une fois (`sceneDuRattrapage`), après la marche s'il y en a une,
+« L’utiliser » ne s'y offrant que pour le ticket de l'année qui suit mon année en cours. Une
+relecture en panne ne consomme rien : la fête et les gains attendent la relecture réussie.
+
+Le séquenceur (`Celebrations.tsx`) pose les jetons du monde et le tempo sur son calque. Chaque pas
+attend au tempo (`deroule.ts`, `useDeroule`), et **une scène démontée n'écrit plus rien** : ni état,
+ni son, ni vibration. Chaque scène est un dialogue qui garde le focus (`Cadre.tsx` : Tab tourne entre
+ses boutons). Le son est celui de la carte, `clap()` et `carillon()`, et seulement si le
+membre l'a allumé (son réglage, et l'ambiance en marche : `celebrations/son.ts`) ; hors de la carte,
+où l'ambiance est tue, la fête la réveille le temps de ses scènes (l'orgue reprend avec elle), puis
+la rend au silence. Le téléphone vibre avec le clap ou le carillon, jamais seul.
+
 **L'historique.** Depuis la fiche d'un film, composter **remplace** le billet par l'année ; depuis la
 séance de l'année, il recule vers elle. La page d'un réalisateur (onglet Suivis) mène un film qui
 figure dans une salle à sa fiche du Voyage (la plus ancienne année où il figure), l'onglet Voyage
@@ -211,7 +245,8 @@ coup sans minuterie, la corde ne se balance plus, les compteurs sont à leur val
 ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas. Le billet ne se
 tamponne pas (l'année revient aussitôt), la manivelle ne tourne pas, le guichetier ne bouge pas, le
 manège se fige à un angle où aucun cheval n'est derrière le pilier (`ANGLE_AU_CALME`,
-`mondes/1890/monument.ts`), et aucun tampon du passeport ne frappe.
+`mondes/1890/monument.ts`), et aucun tampon du passeport ne frappe. Une célébration pose son état
+final d'un coup : le carton et son bouton, sans minuterie, sans confettis ni vibration.
 
 **La manivelle** (`voyage/annee/Manivelle.tsx`, règles dans `voyage/manivelle.ts`) enveloppe la
 fiche de toute année, quelle que soit sa forme. Tout en haut de la page (le `<main>` de la coque à
@@ -270,7 +305,7 @@ Derrière le voyageur suivi (son `annee_en_cours` plus loin que la mienne), mon 
 seule, ajoute « tu le rattrapes bientôt » à son état : le HUD, l'aperçu, le lien de la carte et le
 registre (`rattrapeBientot`, `voyage/regles.ts`) ; jamais sur une année en attente.
 
-**Le tampon du passeport** (`voyage/passeport/Tampon.tsx`), le même sur la carte et dans le livret :
+**Le tampon du passeport** (`voyage/passeport/Tampon.tsx`), le même sur la carte, dans le livret et dans la sacoche :
 un rond de papier à l'encre rouge du monde (jamais le corail), « Passeport », « Années 1890 » au
 pochoir, « bouclée », le titre du voyageur, et le jour où la décennie a été bouclée, **à Paris**
 (`boucle_le`, « 1er janvier 2000 »). Il ne frappe que posé à l'instant (`frappe`) : sur la carte, au
@@ -294,7 +329,8 @@ billet ») joue la séquence de la maquette (`FRAPPE` et `DUREE_DU_COMPOSTAGE`, 
 le marteau descend (360 ms de base), l'encre se pose et le téléphone vibre, une pause (140), le
 marteau remonte (320), le numéroteur fait dix tirages (45 chacun), une pause (200), le talon part
 (700) ; puis l'année revient, comme au plan 2b, où le compteur roule et le « +1 » vole. **Le tempo**
-(`TEMPO`, `voyage/tempo.ts`) multiplie chaque durée et chaque délai de cette séquence, en JS
+(`TEMPO`, `voyage/tempo.ts`) multiplie chaque durée et chaque délai de cette séquence, et des
+célébrations qui la suivent, en JS
 (`auTempo`) comme en CSS (`calc(360ms * var(--tempo))`) : ×2 depuis le 1er octobre 2026, soit
 4 340 ms du toucher au retour à l'année au lieu de 2 170. C'est le seul chiffre à changer ;
 `voyage/tempo.test.ts` refuse une durée de la séquence écrite sans lui. Le numéro se lit dans la boîte, par la
@@ -321,6 +357,33 @@ recherche ; `manivelle.ts` ; `billet/range.ts` : le billet rangé) ; les morceau
 `voyage/decennie/`, `voyage/boite/`, `voyage/passeport/`, `voyage/billet/` (`Tampon.tsx`,
 `Numeroteur.tsx`) et `voyage/recherche/` ; le monument et le guichet de 1890 dans
 `mondes/1890/monument.ts` et `mondes/1890/guichetPage.ts`.
+
+## La sacoche du voyageur
+
+**La sacoche** (`/voyage/sacoche`, `pages/VoyageSacoche.tsx`) regroupe ce que j'ai accompli dans le
+Voyage, repris du profil de l'appli Android, au costume du Voyage : habillée par le monde de mon
+année en cours, sous l'onglet Voyage. On l'ouvre par la pastille « Sacoche du voyageur » de la
+carte (l'icône de la mallette, à côté du son) ; le retour ramène à la carte. Trois blocs, chacun
+lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans rendu dans
+`voyage/sacoche.ts`) :
+
+- **Le passeport** (`Passeport.tsx`) : une page par décennie, du départ à celle de mon année en
+  cours, chacune habillée par son monde et menant à la page de la décennie. Bouclée, son tampon
+  (posé, il ne frappe pas) ; sinon, son anneau (`voyage/passeport/Anneau.tsx`, le même que le
+  livret), décennie en cours comprise.
+- **Le portefeuille** (`Portefeuille.tsx`) : les tickets à utiliser, puis les utilisés, pâlis, avec
+  le jour de Paris où ils l'ont été. « Utiliser » ne s'offre que sur le ticket que la carte offre
+  (`ticketOffert`) ; encaissé, il ramène à la carte, qui joue l'avancée, sans laisser la sacoche
+  derrière elle dans l'historique.
+- **Les Coulisses** (`Coulisses.tsx`), repliées : les dépenses au chroniqueur, lues au dépli
+  seulement, montrées une fois la liste connue et non vide (le mois courant est celui du serveur, en
+  UTC, où l'API les range), et les crédits des images, lus au build dans les
+  `CREDITS.md`.
+
+Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
+carte, et au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`) : **jamais une fiche
+d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties). Pas de générique au toucher
+d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
 
 ## Le thème
 
@@ -357,7 +420,8 @@ Le journal de l'accueil est une pellicule 35 mm par mois (`src/accueil/Pellicule
 Le profil est le portefeuille du membre : une carte d'adhérent, puis chaque graphique dessiné comme un objet (la jauge et les diodes sur laiton, des billets pour les réactions, une pellicule pour les décennies, des ampoules pour les mois), et le ticket de caisse. Ses valeurs (`--carte-*`, `--panneau-*`, `--ticket-*`, `--perforation-*`, `--ampoule-*`, `--papier-*`, et le rythme `--rythme-*`) sont dans `theme.css` : celles du jour dans `:root`, celles de la nuit dans les deux blocs sombres, les lueurs éteintes le jour. La couleur du membre (`identity_color`) est posée par la page dans `--identite` et ne touche que ses marques à lui. Le ciel de l'accueil s'appelle désormais `--fond-ciel` : c'est le ciel du bâtiment, partagé par l'accueil, le profil et la caisse. Le réglage jour / nuit / auto de la caisse (`src/ui/theme.ts`) se garde dans ce navigateur et pose ou ôte `data-theme` sur `<html>` dès le démarrage (`main.tsx`).
 
 Le Voyage a son habillage à lui, par décennie : `src/ui/voyage.css` (les quatre couleurs de
-`../biblio-android/docs/design.md`, la classe `.celebration`). Le thème général ne les lit pas.
+`../biblio-android/docs/design.md`, la classe `.celebration`, que portent le carton d'un nouveau monde
+et les titres des célébrations). Le thème général ne les lit pas.
 
 ## Le contrat
 
