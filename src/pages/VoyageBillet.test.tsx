@@ -825,8 +825,12 @@ describe('le billet de séance', () => {
       expect(billetRange(SESSION.user.id)).toBe(NEUVE.entry.id)
     })
 
-    // Mutation : la garde « montée » retirée (la séquence finie ramènerait à l'année).
-    it('ne ramène pas à l’année un membre parti pendant la séquence', async () => {
+    // Mutations : la garde « montée » retirée (la séquence finie ramènerait à l'année) ; sa dernière
+    // lecture seule retirée (parti pendant le talon, ramené quand même).
+    it.each([
+      ['le numéroteur', FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * 3, false],
+      ['le talon', FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + FRAPPE.avantTalon + FRAPPE.talon / 2, true],
+    ] as const)('ne ramène pas à l’année un membre parti pendant %s', async (_moment, apres, talon) => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       const { routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
       monterVoyage([`/voyage/1897/films/${FAUCON.id}`, billet(FAUCON)], {
@@ -835,15 +839,34 @@ describe('le billet de séance', () => {
       })
       fireEvent.click(await composter())
       await tamponne()
-      // Pendant le numéroteur.
-      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * 3)
+      await vi.advanceTimersByTimeAsync(apres)
+      // Le numéroteur roule : ni l'attente, ni le numéro ; le talon part : il porte le numéro.
+      expect(screen.queryAllByText('N° 0003')).toHaveLength(talon ? 2 : 0)
       expect(screen.queryByText('N° ····')).toBeNull()
-      expect(screen.queryByText('N° 0003')).toBeNull()
       fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
       // La fiche du film : son enseigne, que le billet n'a pas.
       expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
       await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE)
       expect(screen.getByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+    })
+
+    // Mutation : la garde « montée » ignorée après la descente du marteau (le téléphone vibrerait pour
+    // un billet quitté).
+    it('quitté pendant que le marteau descend, le téléphone ne vibre pas', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const vibrate = vibreur()
+      const { routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      monterVoyage([`/voyage/1897/films/${FAUCON.id}`, billet(FAUCON)], {
+        ...routes,
+        'GET /api/reference/films/963/realisateurs': () => json({ realisateurs: [] }),
+      })
+      fireEvent.click(await composter())
+      await waitFor(() => expect(document.querySelector('[data-frappe="descend"]')).not.toBeNull())
+      fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE)
+      expect(vibrate).not.toHaveBeenCalled()
       expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
     })
 
