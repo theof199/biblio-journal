@@ -51,5 +51,8 @@ export function creerMonde1890(): Monde {
     dessinerAdieu,
     reagir,
     pages: PAGES_1890,
+    // Plan 2d : la musique et les bobines perdues viennent avec le décor qui les porte.
+    musique: null,
+    bobines: [],
   }
 }

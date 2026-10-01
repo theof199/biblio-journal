@@ -9,8 +9,8 @@ import type { Recompense } from '../api/voyage'
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
  * son monument, son traitement d'image. Le moteur de la carte (`src/carte/`) ne connaît que
  * cette interface ; ajouter les années 1900 crée `src/mondes/1900/` et une ligne dans
- * `src/mondes/index.ts`, rien d'autre. Le papier, les cadres et les sons s'y ajouteront avec les
- * pages qui les demandent (plans 2b et 2c).
+ * `src/mondes/index.ts`, rien d'autre. Le papier et les cadres sont venus avec les pages (plans 2b
+ * et 2c) ; la musique et les bobines perdues avec le plan 2d.
  */
 export interface Palette {
   /** Le fond, en haut, au milieu et en bas du ciel (maquette : `ciel`, `fond`, et le bas de `scene`). */
@@ -134,6 +134,44 @@ export interface VueMonde {
   ouverte: { annee: number; t0: number }
   /** Le haut de la brume de l'avenir, en `y` du repère de la section ; négatif : toute la section y est. */
   brume: number
+  /**
+   * Cache la bobine perdue `i` (`Monde.bobines`) dans le repère courant, centrée en `lx`, `ly`, de
+   * rayon `r` : le moteur la dessine et inscrit sa zone. Rien, ni dessin ni zone, pour une bobine
+   * déjà trouvée sur cet appareil (plan 2d).
+   */
+  bobine: (i: number, lx: number, ly: number, r: number) => void
+  /** Vrai pour une bobine déjà trouvée (ou inconnue) : ce qui la trahit (une lueur dans la brume) se tait. */
+  bobineTrouvee: (i: number) => boolean
+}
+
+/**
+ * Une bobine perdue (plan 2d ; maquette carte v2 : `BOBINES`) : un film réellement perdu, caché
+ * dans le décor d'un monde, à ramasser d'un toucher. L'appareil la garde trouvée sous sa `cle`.
+ */
+export interface BobinePerdue {
+  /** Stable d'une version à l'autre : c'est elle que l'appareil retient, pas le rang. */
+  cle: string
+  titre: string
+  /** « F. W. Murnau, 1928 ». */
+  qui: string
+}
+
+/**
+ * La musique d'un monde (plan 2d ; maquette carte v2 : l'orgue de barbarie de 1890, `PAR_TEMPS`,
+ * `noteOrgue`, `planifier`). L'ambiance de la carte (`carte/son.ts`) la joue temps après temps,
+ * au volume de la présence du monde à l'écran ; elle seule crée le contexte audio, au geste « Son ».
+ */
+export interface MusiqueDuMonde {
+  /** La durée d'un temps, en secondes (maquette : `BATTUE`). */
+  battue: number
+  /** Le nombre de temps de l'air ; il reprend au premier ensuite. */
+  temps: number
+  /** Le volume à pleine présence (maquette : 0,5 pour l'orgue). */
+  volume: number
+  /** La coupure du passe-bas de sa sortie, en Hz (maquette : 2300 pour l'orgue). */
+  filtre: number
+  /** Joue le temps `pas` (de 0 à `temps` − 1), à l'instant `t0` du contexte, dans `sortie`. */
+  jouer: (ctx: BaseAudioContext, sortie: AudioNode, pas: number, t0: number) => void
 }
 
 export interface Monde {
@@ -180,6 +218,10 @@ export interface Monde {
   reagir: (id: string, data: number | null, v: VueMonde, ou: { x: number; y: number }) => void
   /** Les pages du Voyage de ce monde : la fiche d'une année, la fiche d'un film, le billet, la feuille (plan 2b). */
   pages: HabillagePages
+  /** La musique du monde quand le son est allumé ; nulle : le monde ne joue rien (le monde « à venir »). */
+  musique: MusiqueDuMonde | null
+  /** Les bobines perdues que cache le décor, que le monde pose par `VueMonde.bobine` ; aucune pour un monde à venir. */
+  bobines: readonly BobinePerdue[]
 }
 
 /**

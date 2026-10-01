@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { creerRegistre } from '.'
 import type { VueMonde, VueMonument } from './types'
 import { contexteFactice } from '../test/contexteFactice'
+import { vueFactice } from '../test/vueFactice'
 
 describe('le registre des mondes', () => {
   // Relecture de la tâche 5. Mutations : le cache sorti de `creerRegistre` (deux cartes montées
@@ -40,5 +41,21 @@ describe('le registre des mondes', () => {
     }
     expect(inscrites(1890)).toBe(10)
     expect(inscrites(1950)).toBe(0)
+  })
+
+  // Plan 2d. Mutations : une musique ou une bobine donnée au monde « à venir », ou un `v.bobine(…)`
+  // dans l'un de ses plans (la porte).
+  it('ne fait jouer ni ne cache rien au monde « à venir »', () => {
+    const monde = creerRegistre()(1950)
+    expect(monde.musique).toBeNull()
+    expect(monde.bobines).toEqual([])
+    const { vue } = vueFactice()
+    monde.dessinerCiel(vue)
+    monde.dessinerLointain(vue)
+    monde.dessinerMoyen(vue)
+    monde.dessinerSol(vue, { x: 195, y: 400 })
+    monde.dessinerProche(vue)
+    monde.dessinerSurLaBrume(vue)
+    expect(vue.bobine).not.toHaveBeenCalled()
   })
 })

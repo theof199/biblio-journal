@@ -33,6 +33,8 @@ export function vueFactice(surcharge: Partial<VueMonde> = {}) {
     // Idée 8 : toute la foire ouverte et déjà bâtie, la brume sous la section.
     ouverte: { annee: 1899, t0: -9 },
     brume: 1240,
+    bobine: vi.fn(),
+    bobineTrouvee: () => false,
     ...surcharge,
   }
   return { vue, appels, zones }

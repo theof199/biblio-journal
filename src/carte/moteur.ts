@@ -640,6 +640,9 @@ export class MoteurCarte {
       adieu: this.adieu && this.adieu.decennie === s.decennie ? this.t - this.adieu.t0 : -1,
       ouverte: this.ouverte,
       brume: this.fogY - s.y0,
+      // Plan 2d : le moteur ne cache encore aucune bobine.
+      bobine: () => undefined,
+      bobineTrouvee: () => true,
     }
   }
 
