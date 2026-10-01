@@ -19,6 +19,17 @@ export interface EtatManege {
 export const departDuManege = (t: number): EtatManege => ({ a: 0.4, v: 1, t, touche: -9 })
 
 /**
+ * L'angle du manège au calme (décision du propriétaire du 1er octobre 2026, 2c-2) : à l'angle de
+ * départ de la maquette, le cheval de 1897 restait pour toujours derrière le pilier. À un demi-tour
+ * moins un degré, aucun cheval n'est derrière le pilier : 1895 et 1890 aux flancs, les quatre autres
+ * années du Voyage devant, avec leur plaque, et 1891 à 1894 derrière, entre le pilier et les flancs,
+ * où le haut de chacun reste à découvert sous le doigt. Le degré retiré écarte les flancs du plan
+ * médian (un cheval à `z` nul serait de devant ou de derrière selon l'arrondi) et décale chaque
+ * cheval de derrière de celui de devant qui partagerait son abscisse.
+ */
+export const ANGLE_AU_CALME = (179 * Math.PI) / 180
+
+/**
  * Un pas du manège (maquette : `dessinManege`, `D.a += D.v × dt × 0,3`, la vitesse rappelée vers 1 ;
  * `D.v = 6` au toucher). Pas à pas, jamais une formule close depuis le dernier toucher : un second
  * toucher y ramènerait le manège en arrière. `dt` est borné à un dixième de seconde, pour qu'une toile
@@ -47,7 +58,7 @@ export function dessinerMonument(v: VueMonument): void {
   const h = v.H
   const etat = avancerManege(ETATS.get(g) ?? departDuManege(v.t), { t: v.t, touche: v.touche, vivant: v.vivant })
   ETATS.set(g, etat)
-  const angle = etat.a
+  const angle = v.vivant ? etat.a : ANGLE_AU_CALME
   const vm = vuePage({ ctx: g, W: v.W, H: v.H, t: v.t, vivant: v.vivant, nuit: v.nuit, touche: -9, annee: v.annees[0]!.annee })
   const ratio = v.cases.length ? v.cases.filter((k) => RECOMPENSES.includes(k.etat)).length / v.cases.length : 0
 

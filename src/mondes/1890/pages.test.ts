@@ -7,6 +7,7 @@ import { bonimenteur } from './moyen'
 import { vuePage } from './vuePage'
 import { c } from './couleur'
 import { avancerManege, departDuManege, dessinerMonument } from './monument'
+import { figureTouchee } from '../../voyage/decennie'
 import { dessinerGuichet } from './guichetPage'
 import { MEDAILLES } from '../../carte/dessin/cases'
 import type { VueBandeau, VueEstrade, VueGuichet, VueMonument, VueScene } from '../types'
@@ -434,16 +435,43 @@ describe('le manège des années', () => {
     expect(hauteurs({ vivant: true, t: 1.3 })).toBeGreaterThan(1)
   })
 
+  // Décision du propriétaire du 1er octobre 2026 (2c-2) : au calme, le manège se fige à un angle où
+  // aucun cheval ne se tient derrière le pilier (à l'angle de départ, 1897 y restait pour toujours,
+  // sans plaque), et où chacun garde un endroit qui l'ouvre sous le doigt, le cheval de devant
+  // l'emportant sur la zone commune (`figureTouchee`). Le corps d'un cheval (`cheval`, `moyen.ts`) va
+  // de la queue, à −12,5, au bout de la tête, à 16,2, à l'échelle de son `scale`. Mutation : l'angle
+  // de l'état gardé au calme (`const angle = etat.a`, l'angle de départ de la maquette).
+  it('au calme, ne cache aucun cheval derrière le pilier, et chacun se touche', () => {
+    const { appels, zones } = monument()
+    const pilier = appels.find((a) => a.nom === 'fillRect' && a.fillStyle === c('#6b4a2a'))!
+    const [px, py, pw, ph] = pilier.args as [number, number, number, number]
+    expect(zones).toHaveLength(10)
+    expect(zones.find((z) => z.annee === 1897)!.devant).toBe(true)
+    for (const z of zones.filter((x) => !x.devant)) {
+      const pose = appels.findIndex((a) => a.nom === 'translate' && a.args[0] === z.x && a.args[1] === z.y)
+      const sx = appels.slice(pose).find((a) => a.nom === 'scale')!.args[0] as number
+      const [gauche, droite] = [z.x - 12.5 * sx, z.x + 16.2 * sx].sort((a, b) => a - b) as [number, number]
+      expect(droite <= px || gauche >= px + pw, `${z.annee} derrière le pilier`).toBe(true)
+    }
+    const sousLePilier = (x: number, y: number) => x >= px && x <= px + pw && y >= py && y <= py + ph
+    for (const z of zones) {
+      let touche = false
+      for (let x = z.x - z.r; x <= z.x + z.r && !touche; x += 1)
+        for (let y = z.y - z.r; y <= z.y + z.r && !touche; y += 1)
+          touche = (z.devant || !sousLePilier(x, y)) && figureTouchee(zones, { x, y }) === z.annee
+      expect(touche, `${z.annee} sous le doigt`).toBe(true)
+    }
+  })
+
   // Mutations : le corail passé par `c()`, sur le cheval, sur son anneau, sur sa plaque.
   it('le cheval de l’année en cours est corail, non teinté', () => {
     const { appels } = monument({ nuit: 1 })
     expect(corps(appels).filter((a) => a.fillStyle === '#FF6B57')).toHaveLength(1)
     expect(appels.some((a) => a.nom === 'ellipse' && a.args[2] === 16 && a.args[3] === 4 && a.strokeStyle === '#FF6B57')).toBe(true)
-    // La plaque ne se lit que devant : 1892 y est à l'angle de départ.
-    const devant = monument({ nuit: 1, annees: avec({ 1892: 'encours', 1898: 'passee' }) }).appels
-    const plaque = devant.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1892')
+    // La plaque ne se lit que devant : 1898 y est au calme (`ANGLE_AU_CALME`).
+    const plaque = appels.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1898')
     expect(plaque).toBeGreaterThan(-1)
-    expect(devant.slice(0, plaque).filter((a) => a.nom === 'fill').pop()!.fillStyle).toBe('#FF6B57')
+    expect(appels.slice(0, plaque).filter((a) => a.nom === 'fill').pop()!.fillStyle).toBe('#FF6B57')
   })
 
   // La lectrice (option A) : une année que le Voyage suivi n'a pas encore ouverte est fermée pour elle.
@@ -457,10 +485,9 @@ describe('le manège des années', () => {
     expect(appels.filter((a) => a.nom === 'ellipse' && a.args[2] === 16 && a.args[3] === 4 && a.strokeStyle === c('#E6B94A', 0.8))).toHaveLength(1)
     // Sans bâche : celle d'un cheval verrouillé est un trapèze sous `#4a3321`.
     expect(appels.some((a) => a.fillStyle === c('#4a3321'))).toBe(false)
-    const devant = monument({ nuit: 1, annees: avec({ 1892: 'attente', 1898: 'passee' }) }).appels
-    const plaque = devant.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1892')
+    const plaque = appels.findIndex((a) => a.nom === 'fillText' && a.args[0] === '1898')
     expect(plaque).toBeGreaterThan(-1)
-    expect(devant.slice(0, plaque).filter((a) => a.nom === 'fill').pop()!.fillStyle).toBe(c('#150F09', 0.75))
+    expect(appels.slice(0, plaque).filter((a) => a.nom === 'fill').pop()!.fillStyle).toBe(c('#150F09', 0.75))
   })
 
   // Mutation : la médaille réservée à la Palme, comme la maquette (le Lion et l'Ours perdraient la leur).

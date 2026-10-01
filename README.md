@@ -182,8 +182,9 @@ réalisateur.
 (repeinte au rendu et quand une police finit de charger), la feuille du chroniqueur se pose d'un
 coup sans minuterie, la corde ne se balance plus, les compteurs sont à leur valeur, aucun « +1 »
 ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas. Le billet ne se
-tamponne pas (l'année revient aussitôt), la manivelle ne tourne pas, le manège et le guichetier ne
-bougent pas, et aucun tampon du passeport ne frappe.
+tamponne pas (l'année revient aussitôt), la manivelle ne tourne pas, le guichetier ne bouge pas, le
+manège se fige à un angle où aucun cheval n'est derrière le pilier (`ANGLE_AU_CALME`,
+`mondes/1890/monument.ts`), et aucun tampon du passeport ne frappe.
 
 **La manivelle** (`voyage/annee/Manivelle.tsx`, règles dans `voyage/manivelle.ts`) enveloppe la
 fiche de toute année, quelle que soit sa forme. Tout en haut de la page (le `<main>` de la coque à
