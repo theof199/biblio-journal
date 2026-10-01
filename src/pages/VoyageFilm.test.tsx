@@ -513,6 +513,50 @@ describe('la fiche d’un film du Voyage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: '1897' })).toBeInTheDocument()
   })
 
+  // Décision du propriétaire du 1er octobre 2026 (2b-3) : un programme porte le `tmdb_id` de sa
+  // première bobine (l'API), ici déjà vue ; vu en partie, ses gestes visent la première bobine qui
+  // reste à voir (512), jamais la première (511). « Corriger » ne s'offre pas tant qu'il en reste une.
+  // Mutation : `tmdbVise` rendu au seul `film.tmdb_id` (les gestes repartent vers 511).
+  describe('sur un programme vu en partie, les gestes visent la bobine qui reste à voir', () => {
+    const programme = (id: string, etat: Bobine['etat']) =>
+      filmDeSalle({
+        id,
+        tmdb_id: 511,
+        title: 'Programme Lumière n°2',
+        etat,
+        note: null,
+        plex_url: null,
+        programme: { duree_min: 3, bobines: [bobine(511, 'La Sortie de l’usine', 'vu'), bobine(512, 'Le Repas de bébé', etat), bobine(513, 'La Pêche aux poissons rouges', etat)] },
+      })
+    const A_DEMANDER = programme('p-demander', 'a_demander')
+    const PERDUE = programme('p-perdue', 'introuvable')
+    const routes = {
+      ...ROUTES,
+      [ANNEE]: () => json({ ...FICHE, salles: [salle({ id: 's-ess', nom: 'Les essentiels', films: [...FILMS, A_DEMANDER, PERDUE] })] }),
+      [REALISATEURS(511)]: () => json({ realisateurs: [] }),
+    }
+
+    it.each([
+      ['Demander sur Sir', A_DEMANDER, 'POST /api/me/voyage/demander/512', () => json({ demande: true }, 201)],
+      ['Introuvable', A_DEMANDER, 'PUT /api/me/introuvables/512', vide],
+      ['Le remettre à voir', PERDUE, 'DELETE /api/me/introuvables/512', vide],
+    ] as const)('« %s » vise la bobine 512', async (nom, film, requete, reponse) => {
+      const { requetes } = monterVoyage(page(film), { ...routes, [requete]: reponse })
+      fireEvent.click(await screen.findByRole('button', { name: nom }))
+      await waitFor(() => expect(requetes).toContain(requete))
+      expect(requetes.filter((r) => r.includes('/511'))).toEqual([REALISATEURS(511)])
+      expect(screen.queryByRole('link', { name: /Corriger/ })).toBeNull()
+    })
+
+    it('« Le film » lit le carton de la bobine 512', async () => {
+      const { requetes } = monterVoyage(page(A_DEMANDER), { ...routes, [CARTON(512)]: () => json(CARTON_PRET) })
+      fireEvent.click(await screen.findByRole('button', { name: /Le film/ }))
+      await screen.findByRole('dialog', { name: `Le film ${CARTON_PRET.titre}` })
+      expect(requetes).toContain(CARTON(512))
+      expect(requetes).not.toContain(CARTON(511))
+    })
+  })
+
   describe('le carton du chroniqueur', () => {
     // Mutation : le titre du carton ignoré (la feuille garderait le titre du film).
     it('prêt : son titre et son texte, sur la feuille du film', async () => {

@@ -16,7 +16,7 @@ import { useRevenir } from '../ui/revenir'
 import { useFiche } from '../voyage/annee/useFiche'
 import { useCalque } from '../voyage/calque'
 import Feuille from '../voyage/Feuille'
-import { derniereEntree, dureeLisible, filmDeLaFiche } from '../voyage/film'
+import { derniereEntree, dureeLisible, filmDeLaFiche, tmdbVise } from '../voyage/film'
 import Guichet from '../voyage/film/Guichet'
 import Programme from '../voyage/film/Programme'
 import { urlProjetee, useImageDuFilm } from '../voyage/film/useImageDuFilm'
@@ -106,7 +106,9 @@ interface PropsFilm {
 function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
   const { hauteurs } = monde.pages
   const calme = useMouvementReduit()
-  const tmdb = film.tmdb_id
+  // Ce que visent l'entrée à corriger et le carton : un programme vu en partie, la bobine qui reste à
+  // voir (`tmdbVise`) ; le réalisateur et la projection restent ceux du film de la salle.
+  const tmdb = tmdbVise(film)
   const vu = film.etat === 'vu'
 
   // Mon journal, **seulement pour un film vu** : la note, la date et les réactions de mon dernier
@@ -134,8 +136,8 @@ function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
 
   // Le réalisateur se résout sur TMDB (la même clé que la fiche d'un film des Suivis) ; le nom de la salle sinon.
   const realisateurs = useQuery({
-    queryKey: ['realisateurs-du-film', String(tmdb)],
-    queryFn: ({ signal }) => lireRealisateursDuFilm(tmdb, signal),
+    queryKey: ['realisateurs-du-film', String(film.tmdb_id)],
+    queryFn: ({ signal }) => lireRealisateursDuFilm(film.tmdb_id, signal),
   })
   const resolus = realisateurs.data?.realisateurs ?? []
 

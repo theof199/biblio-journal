@@ -61,6 +61,17 @@ export function dureeLisible(minutes: number): string {
   return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`
 }
 
+/** La première bobine d'un programme qui reste à voir ; nulle pour un film, ou un programme tout vu. */
+export const bobineAVoir = (film: FilmDeSalle): Bobine | undefined => film.programme?.bobines.find((b) => b.etat !== 'vu')
+
+/**
+ * Le film TMDB que visent les gestes d'une fiche (« Demander sur Sir », « Introuvable », « Le
+ * remettre à voir », « Le film », « Corriger ») : un programme porte l'identifiant de sa première
+ * bobine (l'API), qui peut être déjà vue ; vu en partie, il vise donc la première bobine qui reste à
+ * voir (décision du propriétaire du 1er octobre 2026). Tout vu, ou un film seul : son identifiant.
+ */
+export const tmdbVise = (film: FilmDeSalle): number => bobineAVoir(film)?.tmdb_id ?? film.tmdb_id
+
 /** Une bobine du programme d'un film, par son identifiant TMDB. */
 export const bobineDuFilm = (film: FilmDeSalle, tmdbId: number): Bobine | undefined =>
   film.programme?.bobines.find((b) => b.tmdb_id === tmdbId)

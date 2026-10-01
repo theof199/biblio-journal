@@ -131,7 +131,8 @@ du soir, les salles, le ticket), une année fermée (la pancarte, le chemin, mes
 une année qui attend le Voyage suivi (« Tu le rattrapes bientôt »), ou l'ouverture qui s'écrit
 (relue toutes les cinq secondes, trente-six fois au plus, puis « Réessayer »). Une affiche de salle
 ouvre la fiche du film, `/voyage/:annee/films/:filmId` (`filmId` est la ligne de salle, pas un
-identifiant TMDB) : la projection, le guichet, le programme et ses bobines. « Je l’ai vu » ouvre le
+identifiant TMDB) : la projection, le guichet, le programme et ses bobines (vu en partie, ses
+gestes et « Le film » visent la première bobine qui reste à voir, `tmdbVise`). « Je l’ai vu » ouvre le
 billet de séance (`…/billet`, `?bobine=<tmdb_id>` pour une bobine d'un programme), « Corriger » le
 billet de correction (`…/billet/corriger`, l'entrée du journal dans l'état de navigation) ;
 composter enregistre le visionnage comme le formulaire du journal (`creerVisionnage`, ou
