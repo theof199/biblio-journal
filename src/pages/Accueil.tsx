@@ -17,6 +17,7 @@ import { cartesEventail } from '../accueil/eventail'
 import { compteAccueil, etatFronton } from '../accueil/fronton'
 import { journalParMois } from '../accueil/journalParMois'
 import { useChargementInfini } from '../accueil/useChargementInfini'
+import { useMoisDeroules } from '../accueil/useMoisDeroules'
 import Panne from '../ui/Panne'
 import BandeVoyage from '../accueil/BandeVoyage'
 import Eventail from '../accueil/Eventail'
@@ -47,6 +48,7 @@ function filmsPrets<F>(etats: ReadonlyMap<number, EtatFilmographie<F>>): Map<num
  */
 export default function Accueil() {
   const naviguer = useNavigate()
+  const [deroules, basculer] = useMoisDeroules()
 
   const journal = useInfiniteQuery({
     queryKey: cles.journal,
@@ -118,14 +120,19 @@ export default function Accueil() {
         ) : (
           <section className={styles.journal} aria-labelledby="titre-journal">
             <div className={styles.entete}>
-              <h2 id="titre-journal" className={styles.titre}>
-                Le journal
-              </h2>
-              {compte ? <p className={styles.compte}>{compte}</p> : null}
+              <div className={styles.intitule}>
+                <h2 id="titre-journal" className={styles.titre}>
+                  Le journal
+                </h2>
+                {compte ? <p className={styles.compte}>{compte}</p> : null}
+              </div>
+              <Link to="/profil/mes-films" className={styles.mesFilms}>
+                Mes films <span aria-hidden="true">→</span>
+              </Link>
             </div>
 
             {mois.map((groupe) => (
-              <Pellicule key={groupe.cle} mois={groupe} />
+              <Pellicule key={groupe.cle} mois={groupe} deroulee={deroules.has(groupe.cle)} onBasculer={() => basculer(groupe.cle)} />
             ))}
 
             {journal.hasNextPage ? (

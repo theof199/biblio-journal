@@ -209,6 +209,7 @@
   --pellicule-trou-haut: 0.375rem;
   --pellicule-trou-pas: calc((var(--pellicule-cadre-largeur) + var(--pellicule-ecart)) / 8);
   --pellicule-trou-decalage: calc((var(--pellicule-trou-pas) - var(--pellicule-trou-largeur)) / 2);
+  --pellicule-base: linear-gradient(180deg, #221c17 0%, #15110e 22%, #15110e 78%, #0f0c0a 100%); /* la base noire chaude, seule sous la planche-contact */
   --pellicule-film: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.05) 18%, transparent 34%),
     repeating-linear-gradient(
         90deg,
@@ -224,7 +225,7 @@
         transparent calc(var(--pellicule-trou-decalage) + var(--pellicule-trou-largeur)) var(--pellicule-trou-pas)
       )
       0 var(--pellicule-trou-haut) / 100% var(--pellicule-trou-hauteur) no-repeat,
-    linear-gradient(180deg, #221c17 0%, #15110e 22%, #15110e 78%, #0f0c0a 100%);
+    var(--pellicule-base);
   --pellicule-fin: polygon(0 0, 100% 0, calc(100% - 7px) 7.14%, calc(100% - 3px) 14.29%, calc(100% - 9px) 21.43%, calc(100% - 2px) 28.57%, calc(100% - 8px) 35.71%, calc(100% - 4px) 42.86%, calc(100% - 10px) 50%, calc(100% - 1px) 57.14%, calc(100% - 8px) 64.29%, calc(100% - 3px) 71.43%, calc(100% - 9px) 78.57%, calc(100% - 2px) 85.71%, calc(100% - 7px) 92.86%, 100% 100%, 0 100%); /* le bout déchiré */
   --pellicule-amorce-largeur: 3.625rem; /* l'amorce : une vignette de compte à rebours, puis le bout déchiré */
   --pellicule-amorce-fond: #221c16;
@@ -233,6 +234,7 @@
   --pellicule-anneau: 0.4375rem;
   --pellicule-anneau-opacite: 0.7;
   --signe-echelle: 0.5;
+  --bascule-retrait: calc((var(--cible-tactile) - var(--taille-meta) * var(--interligne-serre)) / -2); /* le bouton « Dérouler » touchable sur toute la cible sans grandir l'en-tête du mois */
 
   /* Le profil : le portefeuille. Une carte d'adhérent, puis des objets de cinéma (jauge, diodes,
      billets, pellicule, ampoules) et le ticket de caisse. Le jour est la même scène, ses lumières
@@ -498,6 +500,7 @@
      image) : la piste déborderait de l'écran et la page défilerait de côté. */
   --grille-sorties-colonnes: repeat(3, minmax(0, 1fr)); /* les grilles de sorties d'Au ciné, trois colonnes */
   --grille-bande-colonnes: repeat(6, minmax(0, 1fr)); /* la bande d'un cycle, six affiches par rangée */
+  --grille-planche-colonnes: repeat(3, minmax(0, 1fr)); /* la planche-contact d'un mois du journal, trois vignettes par rangée */
   --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, filmographies, Au ciné) */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */
   --cote-tuile-note: 1.5rem; /* la tuile de note posée sur une affiche : au moins ce carré */

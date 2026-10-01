@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import Pellicule from './Pellicule'
@@ -24,10 +24,15 @@ const SEPTEMBRE: MoisDuJournal = {
   ],
 }
 
-function monter(mois: MoisDuJournal = SEPTEMBRE) {
+const QUATRE_FILMS: MoisDuJournal = {
+  ...SEPTEMBRE,
+  items: [...SEPTEMBRE.items, film('d', { titre: 'Faust', date: '2026-09-01', note: 7, annee: 1926, realisateur: 'F. W. Murnau' })],
+}
+
+function monter(mois: MoisDuJournal = SEPTEMBRE, { deroulee = false, onBasculer = () => {} }: { deroulee?: boolean; onBasculer?: () => void } = {}) {
   return render(
     <MemoryRouter>
-      <Pellicule mois={mois} />
+      <Pellicule mois={mois} deroulee={deroulee} onBasculer={onBasculer} />
     </MemoryRouter>,
   )
 }
@@ -64,7 +69,7 @@ describe('la pellicule d’un mois', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <Routes>
-          <Route path="/" element={<Pellicule mois={SEPTEMBRE} />} />
+          <Route path="/" element={<Pellicule mois={SEPTEMBRE} deroulee={false} onBasculer={() => {}} />} />
           <Route path="/journal/:id" element={<Arrivee />} />
         </Routes>
       </MemoryRouter>,
@@ -145,6 +150,79 @@ describe('la pellicule d’un mois', () => {
   })
 })
 
+describe('le bouton qui déroule un mois', () => {
+  it('n’est pas proposé pour un mois de trois films ou moins', () => {
+    monter()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('est proposé, enroulé, dès quatre films, et nomme son mois', () => {
+    monter(QUATRE_FILMS)
+    const bouton = screen.getByRole('button', { name: 'Dérouler Septembre 2026' })
+    expect(bouton).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('prévient l’appelant à chaque clic, une fois', () => {
+    const onBasculer = vi.fn()
+    monter(QUATRE_FILMS, { onBasculer })
+    fireEvent.click(screen.getByRole('button', { name: /Dérouler/ }))
+    expect(onBasculer).toHaveBeenCalledTimes(1)
+  })
+
+  it('propose de rembobiner un mois déroulé', () => {
+    monter(QUATRE_FILMS, { deroulee: true })
+    const bouton = screen.getByRole('button', { name: 'Rembobiner Septembre 2026' })
+    expect(bouton).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('désigne le conteneur de la liste des films', () => {
+    monter(QUATRE_FILMS, { deroulee: true })
+    const bouton = screen.getByRole('button')
+    expect(screen.getByRole('list').parentElement).toHaveAttribute('id', bouton.getAttribute('aria-controls'))
+  })
+})
+
+describe('la planche-contact d’un mois déroulé', () => {
+  it('garde un lien par film, dans l’ordre du mois', () => {
+    monter(QUATRE_FILMS, { deroulee: true })
+    const liens = within(screen.getByRole('list')).getAllByRole('link')
+    expect(liens.map((lien) => lien.getAttribute('href'))).toEqual(['/journal/a', '/journal/b', '/journal/c', '/journal/d'])
+  })
+
+  it('n’a pas d’amorce : une entrée de liste par film, pas une de plus', () => {
+    monter(QUATRE_FILMS, { deroulee: true })
+    expect(screen.getByRole('list').children).toHaveLength(QUATRE_FILMS.items.length)
+  })
+
+  it('n’imprime pas le jour où chaque film a été vu', () => {
+    monter(QUATRE_FILMS, { deroulee: true })
+    expect(screen.queryByText(/SEPT/)).not.toBeInTheDocument()
+  })
+
+  it('garde le rang de chaque vignette', () => {
+    monter(QUATRE_FILMS, { deroulee: true })
+    expect(vignettes().map((vignette) => vignette.firstElementChild?.textContent)).toEqual(['1', '2', '3', '4'])
+  })
+
+  it('garde sous chaque film son réalisateur et son année', () => {
+    monter(QUATRE_FILMS, { deroulee: true })
+    expect(screen.getByText('Fritz Lang · 1927')).toBeInTheDocument()
+    expect(screen.getByText('F. W. Murnau · 1926')).toBeInTheDocument()
+  })
+
+  it('reste une bande, avec son amorce, quand le mois est tombé à trois films', () => {
+    monter(SEPTEMBRE, { deroulee: true })
+    expect(screen.getByRole('list').lastElementChild).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('reste une bande, avec son amorce, tant que le mois n’est pas déroulé', () => {
+    monter(QUATRE_FILMS)
+    expect(screen.getByRole('list').children).toHaveLength(QUATRE_FILMS.items.length + 1)
+    expect(screen.getByText('28 SEPT')).toBeInTheDocument()
+  })
+})
+
 /** Le corps de la règle d'un sélecteur, tel qu'écrit. */
 function regle(css: string, selecteur: string): string {
   const debut = css.indexOf(`${selecteur} {`)
@@ -176,5 +254,22 @@ describe('la bande de la pellicule', () => {
 
   it('déchire le bout de la bande', () => {
     expect(regle(feuille, '.film::before')).toMatch(/clip-path:\s*var\(--pellicule-fin\);/)
+  })
+})
+
+describe('la planche de la pellicule', () => {
+  it('pose les vignettes à plat sur trois colonnes', () => {
+    const film = regle(feuille, '.planche .film')
+    expect(film).toMatch(/display:\s*grid;/)
+    expect(film).toMatch(/grid-template-columns:\s*var\(--grille-planche-colonnes\);/)
+  })
+
+  it('ne déchire pas le bout de la base noire', () => {
+    expect(regle(feuille, '.planche .film::before')).toMatch(/clip-path:\s*none;/)
+  })
+
+  it('pose sur toute la planche la base noire, sans les perforations de la bande', () => {
+    expect(regle(feuille, '.planche .film::before')).toMatch(/background:\s*var\(--pellicule-base\);/)
+    expect(theme).toMatch(/--pellicule-film:[^;]*var\(--pellicule-base\);/)
   })
 })

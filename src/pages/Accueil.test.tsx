@@ -80,9 +80,9 @@ const pannePassagere = async () => {
 const pagesDe = (requetes: string[]) => requetes.filter((r) => r.includes('cursor=page-2')).length
 const patienter = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-function monter() {
+function monter(client = createQueryClient()) {
   return render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter>
         <Accueil />
       </MemoryRouter>
@@ -330,10 +330,24 @@ describe('la façade de l’accueil', () => {
     expect(liens.map((lien) => lien.getAttribute('href'))).toEqual(['/journal/a', '/journal/b'])
   })
 
-  it('écrit le compte de l’année à côté du titre du journal', async () => {
+  it('écrit le compte de l’année sous le titre du journal', async () => {
     servirJournal(JOURNAL)
     monter()
     expect(await screen.findByText('3 films cette année')).toBeInTheDocument()
+  })
+
+  it('mène à la liste complète des films depuis l’en-tête du journal', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    const journal = (await screen.findByRole('heading', { level: 2, name: 'Le journal' })).closest('section')!
+    expect(within(journal).getByRole('link', { name: 'Mes films' })).toHaveAttribute('href', '/profil/mes-films')
+  })
+
+  it('ne propose pas « Mes films » quand le journal est vide', async () => {
+    servirJournal([])
+    monter()
+    await screen.findByText('La vitrine attend sa première affiche.')
+    expect(screen.queryByRole('link', { name: 'Mes films' })).not.toBeInTheDocument()
   })
 
   it('propose « J’ai vu un film », qui mène à la recherche', async () => {
@@ -348,5 +362,77 @@ describe('la façade de l’accueil', () => {
     expect(await screen.findByText('La vitrine attend sa première affiche.')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 2, name: 'Le journal' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'J’ai vu un film' })).not.toBeInTheDocument()
+  })
+})
+
+describe('les mois déroulés de l’accueil', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('IntersectionObserver', FauxObservateur)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 30, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  const JOURNAL_DENSE = [
+    ...['a', 'b', 'c', 'd'].map((id, rang) => visionnage({ id: `sept-${id}`, titre: `Film de septembre ${id}`, date: `2026-09-2${rang}` })),
+    ...['a', 'b', 'c', 'd'].map((id, rang) => visionnage({ id: `aout-${id}`, titre: `Film d’août ${id}`, date: `2026-08-2${rang}` })),
+  ]
+  const servirDense = () =>
+    servir({
+      ...ROUTES_ACCUEIL,
+      'GET /api/me/journal?limit=20': () => json(page(JOURNAL_DENSE, null)),
+      'GET /api/stats': () => json(STATS_VIDES),
+      'GET /api/me/voyage': () => json(VOYAGE_VIDE),
+    })
+  const derouler = async (mois: string) => fireEvent.click(await screen.findByRole('button', { name: `Dérouler ${mois}` }))
+
+  it('déroule un mois sans toucher aux autres', async () => {
+    servirDense()
+    monter()
+    await derouler('Septembre 2026')
+    expect(screen.getByRole('button', { name: 'Rembobiner Septembre 2026' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Dérouler Août 2026' })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('rembobine un mois déroulé', async () => {
+    servirDense()
+    monter()
+    await derouler('Septembre 2026')
+    fireEvent.click(screen.getByRole('button', { name: 'Rembobiner Septembre 2026' }))
+    expect(screen.getByRole('button', { name: 'Dérouler Septembre 2026' })).toBeInTheDocument()
+  })
+
+  it('ne lance aucune requête pour dérouler un mois', async () => {
+    const requetes = servirDense()
+    monter()
+    const bouton = await screen.findByRole('button', { name: 'Dérouler Septembre 2026' })
+    const avant = [...requetes]
+    fireEvent.click(bouton)
+    await patienter(20)
+    expect(requetes).toEqual(avant)
+  })
+
+  it('retrouve le mois déroulé quand la page revient avec le même client de requêtes', async () => {
+    servirDense()
+    const client = createQueryClient()
+    const premiere = monter(client)
+    await derouler('Septembre 2026')
+    premiere.unmount()
+    monter(client)
+    expect(await screen.findByRole('button', { name: 'Rembobiner Septembre 2026' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dérouler Août 2026' })).toBeInTheDocument()
+  })
+
+  it('repart de mois enroulés avec un client de requêtes neuf', async () => {
+    servirDense()
+    const premiere = monter()
+    await derouler('Septembre 2026')
+    premiere.unmount()
+    monter()
+    expect(await screen.findByRole('button', { name: 'Dérouler Septembre 2026' })).toBeInTheDocument()
   })
 })

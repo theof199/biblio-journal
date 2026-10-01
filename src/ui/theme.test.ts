@@ -5,6 +5,7 @@ import coque from '../coque/Coque.module.css?raw'
 import affiche from './Affiche.module.css?raw'
 import auCine from '../pages/AuCine.module.css?raw'
 import suivis from '../pages/Suivis.module.css?raw'
+import pellicule from '../accueil/Pellicule.module.css?raw'
 
 /** Tous les `*.module.css` de l'app, par chemin (`/src/…`). */
 const MODULES = import.meta.glob<string>('/src/**/*.module.css', { query: '?raw', import: 'default', eager: true })
@@ -127,7 +128,7 @@ describe('le défilement', () => {
 describe('les grilles', () => {
   // `1fr` vaut `minmax(auto, 1fr)` : le minimum est le contenu, un titre long ou une image gonfle la
   // piste et la page défile de côté. `minmax(0, 1fr)` la borne.
-  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes'])(
+  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes', '--grille-planche-colonnes'])(
     '%s borne ses pistes à zéro',
     (jeton) => {
       const valeur = regle(theme, ':root').match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]
@@ -148,6 +149,7 @@ describe('les grilles', () => {
   const ELEMENTS_DE_GRILLE = [
     ['/src/pages/AuCine.module.css', auCine, '.tuile'],
     ['/src/pages/Suivis.module.css', suivis, '.case'],
+    ['/src/accueil/Pellicule.module.css', pellicule, '.planche .vignette'],
   ] as const
 
   it('chaque feuille qui pose une grille d’affiches a son élément dans la table', () => {

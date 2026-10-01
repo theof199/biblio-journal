@@ -22,14 +22,18 @@
   margin-top: var(--espace-4);
 }
 
-/* Sur un écran étroit, le compte passe sous le titre plutôt que de le couper en deux lignes. */
+/* Le titre et son compte l'un sous l'autre à gauche, le lien vers la liste complète à droite. */
 .entete {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 0 var(--espace-3);
+  gap: var(--espace-3);
   white-space: nowrap;
+}
+
+.intitule {
+  display: flex;
+  flex-direction: column;
 }
 
 .titre {
@@ -43,7 +47,20 @@
   margin: 0;
   color: var(--couleur-texte-doux);
   font-size: var(--taille-meta);
-  text-align: right;
+}
+
+/* Même lettre que « Dérouler » (`Pellicule.module.css`) : un lien de plus sur la page, pas un bouton. */
+.mesFilms {
+  display: flex;
+  align-items: center;
+  min-height: var(--cible-tactile);
+  color: var(--couleur-accent);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-meta);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-serre);
+  text-decoration: none;
+  text-transform: uppercase;
 }
 
 .sentinelle {

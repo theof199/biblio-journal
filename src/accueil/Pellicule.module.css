@@ -16,7 +16,7 @@
 }
 
 .titre {
-  margin: 0;
+  margin: 0 auto 0 0;
   font-family: var(--police-fronton);
   font-size: var(--taille-mois);
   font-weight: var(--graisse-normale);
@@ -29,6 +29,22 @@
   margin: 0;
   color: var(--couleur-texte-doux);
   font-size: var(--taille-meta);
+}
+
+/* « Dérouler » : en lettres du mois, couleur des liens ; la cible fait `--cible-tactile` sans grandir l'en-tête. */
+.bascule {
+  min-height: var(--cible-tactile);
+  margin-block: var(--bascule-retrait);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--couleur-accent);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-meta);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 /*
@@ -76,6 +92,43 @@
   flex: none;
   width: var(--pellicule-cadre-largeur);
   scroll-snap-align: start;
+}
+
+/*
+ * La planche-contact : le même film posé à plat, trois colonnes dans les marges de la page. Sa base
+ * noire couvre toute la planche ; sans perforations, sans bout déchiré, sans défilement.
+ */
+.planche .film {
+  display: grid;
+  grid-template-columns: var(--grille-planche-colonnes);
+  gap: var(--pellicule-ecart);
+  width: auto;
+  padding: var(--pellicule-marge-cote);
+}
+
+.planche .film::before {
+  inset: 0;
+  height: auto;
+  border-radius: var(--pellicule-rayon);
+  background: var(--pellicule-base);
+  clip-path: none;
+}
+
+.planche .vignette {
+  width: auto;
+  min-width: 0;
+}
+
+.planche .numero {
+  position: static;
+  width: auto;
+  text-align: left;
+}
+
+/* Sur la base noire, pas sur le ciel : l'ambre, comme l'impression du bord (`--couleur-texte-doux` est sombre le jour). */
+.planche .legende {
+  margin-top: var(--espace-1);
+  color: var(--pellicule-ambre);
 }
 
 /* Ce qui est imprimé sur le bord du film : la date vue, et le rang de la vignette dans le mois, centré sur l'écart qui la suit. */
