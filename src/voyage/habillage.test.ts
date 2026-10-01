@@ -69,6 +69,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/pages/VoyageBoite.module.css',
         '/src/voyage/boite/Casier.module.css',
         '/src/voyage/boite/Visionneuse.module.css',
+        '/src/pages/VoyageRecherche.module.css',
       ]),
     )
   })

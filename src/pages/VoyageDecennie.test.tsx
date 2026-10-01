@@ -377,6 +377,16 @@ describe('la page d’une décennie', () => {
     expect(screen.getByRole('region', { name: 'La boîte à billets, années 1890' })).toBeInTheDocument()
   })
 
+  // Le guichet a sa page (tâche 9) : la page de la décennie l'offre, sans liste doublée. Mutations :
+  // `recherche` retiré de `PAGES_DE_LA_DECENNIE` ; le lien vers une autre adresse que le guichet.
+  it('le guichet est à un toucher, et s’ouvre', async () => {
+    monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage/annees/1895': () => json(fichePrete({ annee: 1895, salles: [] })), 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896, salles: [] })), 'GET /api/me/voyage/annees/1897': () => json(fichePrete({ annee: 1897, salles: [] })) })
+    await decennie()
+    fireEvent.click(screen.getByRole('link', { name: 'Catalogue des vues' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Catalogue des vues' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Catalogue des vues, années 1890' })).toBeInTheDocument()
+  })
+
   // Un lien sans route tombe sur la route inconnue, qui ramène à l'accueil, hors du Voyage : le
   // joueur qui touche « La boîte à billets » se retrouverait sur son journal. Mutation : la boîte et
   // le guichet offerts avant que leur page n'existe (`PAGES_DE_LA_DECENNIE` qui les nomme sans leur

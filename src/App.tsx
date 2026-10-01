@@ -11,6 +11,7 @@ import Carte from './pages/Carte'
 import VoyageAnnee from './pages/VoyageAnnee'
 import VoyageDecennie from './pages/VoyageDecennie'
 import VoyageBoite from './pages/VoyageBoite'
+import VoyageRecherche from './pages/VoyageRecherche'
 import VoyageFilm from './pages/VoyageFilm'
 import VoyageBillet from './pages/VoyageBillet'
 import Suivis from './pages/Suivis'
@@ -41,6 +42,8 @@ export default function App() {
           <Route path="voyage/decennies/:decennie" element={<VoyageDecennie />} />
           {/* La boîte à billets d'une décennie (idée 5) : on y entre par la page de la décennie. */}
           <Route path="voyage/decennies/:decennie/billets" element={<VoyageBoite />} />
+          {/* Le guichet d'une décennie (décision D7) : on y entre par la page de la décennie. */}
+          <Route path="voyage/decennies/:decennie/recherche" element={<VoyageRecherche />} />
           {/* La fiche d'un film du Voyage (décision D5) : l'onglet Voyage reste marqué, d'où qu'on vienne. */}
           <Route path="voyage/:annee/films/:filmId" element={<VoyageFilm />} />
           {/* Le billet de séance : un visionnage à enregistrer (`?bobine=` pour une bobine), ou à corriger (`state.item`). */}

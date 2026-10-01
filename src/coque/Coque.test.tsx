@@ -158,6 +158,19 @@ describe('la coque à onglets', () => {
     expect(marques).toEqual(['Voyage'])
   })
 
+  // Mutation : la route `voyage/decennies/:decennie/recherche` déclarée à côté de `<Coque />`.
+  it('le guichet garde la barre, l’onglet Voyage seul marqué', async () => {
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...CARTE })
+    monter('/voyage/decennies/1890/recherche')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Catalogue des vues' })).toBeInTheDocument()
+    const marques = within(barre())
+      .getAllByRole('link')
+      .filter((lien) => lien.getAttribute('aria-current') === 'page')
+      .map((lien) => lien.textContent)
+    expect(marques).toEqual(['Voyage'])
+  })
+
   it.each(['/nulle-part', '/voyage/1898/salles', '/profil/reglages'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {
     servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
     monter(inconnue)
