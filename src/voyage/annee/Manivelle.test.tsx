@@ -10,7 +10,7 @@ import { creerRegistre } from '../../mondes'
 import { monterVoyage } from '../../test/pageVoyage'
 import { json } from '../../test/serveur'
 import { ficheEnAttente, fichePrete, ficheVerrouillee, voyage1890 } from '../../test/voyage'
-import Manivelle, { DUREE_DU_FAIT, TENUE } from './Manivelle'
+import Manivelle, { APRES_TIRAGE, DUREE_DU_FAIT, TENUE, UN_TOUR } from './Manivelle'
 import styles from './Manivelle.module.css'
 
 const M = PAGES_1890.mots.manivelle
@@ -203,7 +203,8 @@ describe('la manivelle', () => {
     expect(recharger).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: M.bouton })).toBeDisabled()
     await act(async () => finir())
-    expect(screen.getByRole('button', { name: M.bouton })).toBeEnabled()
+    // Tirée, la bobine finit son tour (`UN_TOUR`) avant de se retirer.
+    await waitFor(() => expect(screen.getByRole('button', { name: M.bouton })).toBeEnabled())
     tirer(contenu, 10, 200)
     expect(recharger).toHaveBeenCalledTimes(2)
   })
@@ -237,6 +238,10 @@ describe('la manivelle', () => {
     expect(contenu.style.transform).toBe('')
     expect(fireEvent.touchMove(contenu, { touches: [{ clientY: 400 }] })).toBe(false)
     expect(contenu.style.transform).toBe('translateY(50px)')
+    // Remonté au-dessus de son départ, le doigt fait défiler la page : le contenu ne reste pas tiré.
+    // Mutation : la course gardée quand l'écart n'est plus positif.
+    expect(fireEvent.touchMove(contenu, { touches: [{ clientY: 250 }] })).toBe(true)
+    expect(contenu.style.transform).toBe('')
   })
 
   // Mutations : le bouton sans effet ; le statut tu.
@@ -317,7 +322,7 @@ describe('la manivelle', () => {
     expect(manivelle).toHaveClass(styles.tourne!)
     expect(manivelle).toHaveTextContent(M.charge)
     await act(async () => finir())
-    expect(contenu.style.transform).toBe('')
+    await waitFor(() => expect(contenu.style.transform).toBe(''))
     expect(manivelle).not.toHaveClass(styles.tourne!)
   })
 
@@ -358,6 +363,66 @@ describe('la manivelle', () => {
     fireEvent.click(plaque)
     await waitFor(() => expect(screen.queryByRole('heading', { level: 1, name: '1897' })).toBeNull())
     expect(requetes).toContain('GET /api/me/voyage/tickets')
+  })
+
+  // Safari et Firefox donnent les `touchmove` d'un doigt qui tremble (Chrome les tait sous sa marge).
+  // Mutation : tout écart positif tenu pour un tirage (le `touchend` empêché, le `click` avalé).
+  it('un toucher dont le doigt glisse de quelques pixels ouvre toujours', () => {
+    const ouvrir = vi.fn()
+    monterSeule(async () => undefined, <button type="button" onClick={ouvrir}>La plaque</button>)
+    const plaque = screen.getByRole('button', { name: 'La plaque' })
+    expect(tirer(plaque, 10, 13, 18).fin).toBe(true)
+    fireEvent.click(plaque)
+    expect(ouvrir).toHaveBeenCalledTimes(1)
+  })
+
+  // Le navigateur tait le `click` d'un tirage : la fenêtre ne doit avaler que lui. Mutations : le départ
+  // d'un geste qui ne referme pas la fenêtre (le toucher suivant n'ouvrirait rien) ; la fenêtre sans
+  // durée (un clic au clavier, bien plus tard, n'ouvrirait rien).
+  it('n’avale ni le toucher qui suit un tirage, ni un clic venu plus tard', () => {
+    vi.useFakeTimers()
+    const ouvrir = vi.fn()
+    monterSeule(async () => undefined, <button type="button" onClick={ouvrir}>La plaque</button>)
+    const plaque = screen.getByRole('button', { name: 'La plaque' })
+    expect(tirer(plaque, 10, 60).fin).toBe(false)
+    expect(tirer(plaque, 10).fin).toBe(true)
+    fireEvent.click(plaque)
+    expect(ouvrir).toHaveBeenCalledTimes(1)
+    expect(tirer(plaque, 10, 60).fin).toBe(false)
+    act(() => {
+      vi.advanceTimersByTime(APRES_TIRAGE + 1)
+    })
+    fireEvent.click(plaque)
+    expect(ouvrir).toHaveBeenCalledTimes(2)
+  })
+
+  // Mutation : aucun tour imposé (une réponse immédiate : le contenu remonte aussitôt, la manivelle
+  // tressaille à peine, rien ne dit que la bobine s'est rechargée là où le doigt a tiré).
+  it('tirée, la manivelle fait un tour entier, même quand la bobine revient aussitôt', async () => {
+    vi.useFakeTimers()
+    const { contenu } = monterSeule(async () => undefined)
+    tirer(contenu, 10, 200)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(UN_TOUR - 1)
+    })
+    expect(contenu.style.transform).toBe(`translateY(${TENUE}px)`)
+    expect(screen.getByTestId('manivelle')).toHaveClass(styles.tourne!)
+    expect(screen.getByRole('status')).toHaveTextContent(M.charge)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+    })
+    expect(contenu.style.transform).toBe('')
+    expect(screen.getByRole('status')).toHaveTextContent(M.fait)
+  })
+
+  // Rien ne tourne quand on ne tire pas : rien à attendre. Mutation : le tour imposé aussi au bouton
+  // (au calme : « au calme, le contenu ne suit pas le doigt… »).
+  it('le bouton n’attend aucun tour', async () => {
+    vi.useFakeTimers()
+    monterSeule(async () => undefined)
+    fireEvent.click(screen.getByRole('button', { name: M.bouton }))
+    await act(async () => undefined)
+    expect(screen.getByRole('status')).toHaveTextContent(M.fait)
   })
 
   // La position retenue par la coque n'est pas la sienne. Mutation : la page ramenée en haut au

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../../api/client'
+import { BOUGE_PX } from '../../carte/geste'
 import type { Monde } from '../../mondes/types'
 import { useMouvementReduit } from '../../ui/mouvement'
 import { aLaLachee, angleDuBras, peutTirer, tirage } from '../manivelle'
@@ -14,6 +15,12 @@ export const DUREE_DU_FAIT = 4000
  * toucher : il n'ouvre rien (un lien, une année, une salle sous le doigt).
  */
 export const APRES_TIRAGE = 500
+/**
+ * Un tour de manivelle (`Manivelle.module.css`, `.tourne .bras`, 0,5 s) : tirée, la bobine tourne au
+ * moins ce temps. Une réponse immédiate (le cache de l'API) la ferait seulement tressaillir, le contenu
+ * remontant aussitôt comme un tirage en deçà du seuil : le geste ne dirait plus qu'il a rechargé.
+ */
+export const UN_TOUR = 500
 
 /** Une saisie : le clavier ouvert, un geste vers le bas déplace le texte, il ne recharge rien. */
 const SAISIE = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
@@ -56,7 +63,9 @@ export default function Manivelle({ monde, onRecharger, children }: Props) {
     enCours.current = true
     setEtat({ type: 'charge', tiree })
     try {
-      await onRecharger()
+      // Au calme, ou par le bouton, rien ne tourne : rien à attendre.
+      const tour = tiree && !calme ? new Promise((r) => window.setTimeout(r, UN_TOUR)) : null
+      await Promise.all([onRecharger(), tour])
       setEtat({ type: 'fait' })
     } catch (e) {
       setEtat({ type: 'erreur', message: e instanceof ApiError ? e.message : PANNE })
@@ -80,11 +89,14 @@ export default function Manivelle({ monde, onRecharger, children }: Props) {
     const zone = () => el.closest('main') ?? document.scrollingElement
     let depart: number | null = null
     let dy = 0
+    // Le doigt est descendu au-delà du toucher : c'est un tirage, plus un toucher qui tremble.
+    let tire = false
     let finDuTirage = -Infinity
 
     const abandonner = () => {
       depart = null
       dy = 0
+      tire = false
       setDoigt(false)
       setCourse(0)
     }
@@ -99,6 +111,7 @@ export default function Manivelle({ monde, onRecharger, children }: Props) {
       if (!t) return
       depart = t.clientY
       dy = 0
+      tire = false
       setDoigt(true)
     }
     const bouge = (e: TouchEvent) => {
@@ -114,14 +127,18 @@ export default function Manivelle({ monde, onRecharger, children }: Props) {
         return
       }
       if (e.cancelable) e.preventDefault()
+      if (ecart > BOUGE_PX) tire = true
       dy = tirage(ecart)
       setCourse(dy)
     }
     const fin = (e: TouchEvent) => {
       if (depart === null) return
       const lache = dy
+      const etaitTire = tire
       abandonner()
-      if (lache <= 0) return
+      // Un toucher dont le doigt a glissé de quelques pixels (Safari et Firefox donnent ces `touchmove`,
+      // que Chrome tait) reste un toucher : son `click` part, comme sur la carte (`BOUGE_PX`).
+      if (lache <= 0 || !etaitTire) return
       // Le doigt qui a tiré ne touche rien en se levant : ni le `click` que le navigateur
       // donnerait, ni celui qui arriverait quand même (`avaler`).
       if (e.cancelable) e.preventDefault()
