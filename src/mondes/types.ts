@@ -322,9 +322,11 @@ export interface VueMonument {
   /**
    * Inscrit, pour cette image, où se tient la figure d'une année, en unités de la toile : la page y
    * cherche le toucher achevé (`Toile.onChoisir`, jamais le premier contact, qui commence aussi un
-   * défilement), la figure la plus proche sous son rayon, et ouvre l'année.
+   * défilement), la figure la plus proche sous son rayon, et ouvre l'année. `devant` : la figure est
+   * peinte au premier plan (devant le pilier du manège) ; sous un doigt qui tombe à la fois sur une
+   * figure de devant et sur une de derrière, celle de devant l'emporte toujours (`figureTouchee`).
    */
-  zone: (annee: number, x: number, y: number, r: number) => void
+  zone: (annee: number, x: number, y: number, r: number, devant: boolean) => void
 }
 
 /** Le bandeau du guichet, sur la recherche du Voyage (maquette 1890 : `dessinGuichet`). */

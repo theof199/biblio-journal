@@ -78,8 +78,8 @@ describe('le manège', () => {
 
 describe('le toucher du monument', () => {
   const figures = [
-    { annee: 1895, x: 100, y: 200, r: 30 },
-    { annee: 1896, x: 140, y: 200, r: 30 },
+    { annee: 1895, x: 100, y: 200, r: 30, devant: true },
+    { annee: 1896, x: 140, y: 200, r: 30, devant: true },
   ]
 
   // Mutations : la première figure qui contient le toucher plutôt que la plus proche ; le rayon ignoré
@@ -89,6 +89,22 @@ describe('le toucher du monument', () => {
     expect(figureTouchee(figures, { x: 112, y: 200 })).toBe(1895)
     expect(figureTouchee(figures, { x: 100, y: 20 })).toBeNull()
     expect(figureTouchee([], { x: 100, y: 200 })).toBeNull()
+  })
+
+  // Décision du propriétaire du 1er octobre 2026 (2c-3) : sur la zone commune, le cheval de devant
+  // l'emporte, même quand le doigt est plus près de celui de derrière, dans un sens comme dans
+  // l'autre de la liste ; hors de la zone commune, celui de derrière se touche encore. Mutations : le
+  // plan ignoré (le plus proche, 1897) ; le premier inscrit qui l'emporte.
+  it('préfère toujours le cheval de devant au cheval de derrière', () => {
+    const derriere = { annee: 1897, x: 100, y: 200, r: 30, devant: false }
+    const devant = { annee: 1892, x: 100, y: 225, r: 30, devant: true }
+    for (const liste of [[derriere, devant], [devant, derriere]]) {
+      expect(figureTouchee(liste, { x: 100, y: 202 })).toBe(1892)
+      expect(figureTouchee(liste, { x: 100, y: 180 })).toBe(1897)
+      expect(figureTouchee(liste, { x: 100, y: 250 })).toBe(1892)
+    }
+    // Deux chevaux de derrière : le plus proche, comme devant.
+    expect(figureTouchee([derriere, { ...derriere, annee: 1898, x: 140 }], { x: 128, y: 200 })).toBe(1898)
   })
 })
 

@@ -40,7 +40,7 @@ const RECOMPENSES: readonly string[] = ['palme', 'lion', 'ours']
  * Le manège des années (maquette 1890 : `dessinManege`, lignes 1958 à 1999) : un cheval de bois par
  * année de la décennie, brut avant le Voyage, médaillé, en cours (le corail, jamais teinté), passé,
  * vu en avance, en attente du Voyage suivi (terne, le pointillé or de la carte) ou bâché ; ses lampions s'allument à la part des années qui portent leur récompense.
- * Chaque cheval inscrit sa figure (`v.zone`), devant comme derrière.
+ * Chaque cheval inscrit sa figure (`v.zone`), devant comme derrière, et dit son plan.
  */
 export function dessinerMonument(v: VueMonument): void {
   const g = v.ctx
@@ -113,7 +113,8 @@ export function dessinerMonument(v: VueMonument): void {
       const fond = e === 'encours' ? CORAIL : terne ? c('#150F09', 0.75) : c('#F2E8D5')
       plaque(g, x, yb + bob + 20, String(k.n.annee), fond, terne ? c('#F2E8D5', 0.6) : c('#151009'))
     }
-    v.zone(k.n.annee, x, yb + bob, 30)
+    // Devant : peint après le pilier, comme `chevaux.filter((k) => k.z >= 0)` plus bas.
+    v.zone(k.n.annee, x, yb + bob, 30, k.z >= 0)
   }
 
   chevaux.filter((k) => k.z < 0).forEach(unCheval)

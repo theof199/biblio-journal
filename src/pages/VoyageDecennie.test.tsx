@@ -67,16 +67,18 @@ const ROUTES = {
 }
 
 /**
- * Le manège doublé : trois figures, 1893 (sans page : avant le départ) d'abord, puis 1898 et 1897 ;
+ * Le manège doublé : quatre figures, 1893 (sans page : avant le départ) d'abord, puis 1898 (derrière),
+ * 1897, et 1896 devant 1898, leurs rayons chevauchés ;
  * la toile peint sur un contexte factice (jsdom n'a pas de canvas ; sans rectangle, la toile rend
  * les coordonnées du toucher telles quelles).
  */
 function doublerLeManege() {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => contexteFactice().ctx as never)
   const dessin = vi.spyOn(PAGES_1890, 'dessinerMonument').mockImplementation((v: VueMonument) => {
-    v.zone(1893, 330, 200, 30)
-    v.zone(1898, 200, 60, 30)
-    v.zone(1897, 60, 60, 30)
+    v.zone(1893, 330, 200, 30, true)
+    v.zone(1898, 200, 60, 30, false)
+    v.zone(1897, 60, 60, 30, true)
+    v.zone(1896, 200, 84, 30, true)
   })
   return {
     peint: () => waitFor(() => expect(dessin).toHaveBeenCalled()),
@@ -148,6 +150,18 @@ describe('la page d’une décennie', () => {
 
     fireEvent.click(toile, { clientX: 62, clientY: 58 })
     expect(await screen.findByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
+  })
+
+  // Le doigt tombe sur 1898 (derrière, à 4 unités) et sur 1896 (devant, à 20) : celui de devant
+  // l'emporte (décision du propriétaire du 1er octobre 2026, 2c-3). Mutations : le plan `devant`
+  // perdu par la page (`zone` sans lui) ; `figureTouchee` revenue au seul plus proche.
+  it('ouvre le cheval de devant quand le doigt tombe aussi sur un cheval de derrière', async () => {
+    const manege = doublerLeManege()
+    monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896 })) })
+    await decennie()
+    await manege.peint()
+    fireEvent.click(screen.getByRole('img', { name: MANEGE }), { clientX: 200, clientY: 64 })
+    expect(await screen.findByRole('region', { name: 'L’année 1896' })).toBeInTheDocument()
   })
 
   // Mutations : `bouclee: false` en dur ; `cases: []` (la foire ne se remplirait plus). Une autre

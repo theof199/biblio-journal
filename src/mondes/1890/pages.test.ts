@@ -329,11 +329,11 @@ const casesDe = (...etats: VueMonument['cases'][number]['etat'][]) => etats.map(
 const CASES_MONUMENT = casesDe('palme', 'lion', 'ours', 'encours', 'verrou')
 
 function monument(o: Partial<VueMonument> = {}, toile = contexteFactice()) {
-  const zones: { annee: number; x: number; y: number; r: number }[] = []
+  const zones: { annee: number; x: number; y: number; r: number; devant: boolean }[] = []
   const debut = toile.appels.length
   dessinerMonument({
     ctx: toile.ctx, W: 390, H: 330, t: 0, vivant: false, nuit: 0, annees: ANNEES, cases: CASES_MONUMENT, bouclee: false, touche: -9,
-    zone: (annee, x, y, r) => void zones.push({ annee, x, y, r }),
+    zone: (annee, x, y, r, devant) => void zones.push({ annee, x, y, r, devant }),
     ...o,
   })
   return { appels: toile.appels.slice(debut), zones }
@@ -352,6 +352,22 @@ describe('le manège des années', () => {
       expect(zones).toHaveLength(10)
       expect(new Set(zones.map((z) => z.annee))).toEqual(new Set(ANNEES.map((a) => a.annee)))
       expect(zones.every((z) => z.r === 30)).toBe(true)
+    }
+  })
+
+  // Le plan d'une figure est celui de sa peinture : devant, les chevaux peints après le pilier
+  // (`figureTouchee` les préfère). Mutations : toutes les figures devant ; aucune ; le plan inversé.
+  it('dit devant les chevaux peints après le pilier, derrière les autres', () => {
+    for (const o of [{}, { vivant: true, t: 1.3 }, { vivant: true, t: 4.1 }]) {
+      const { appels, zones } = monument(o)
+      const pilier = appels.findIndex((a) => a.nom === 'fillRect' && a.fillStyle === c('#6b4a2a'))
+      expect(pilier).toBeGreaterThan(-1)
+      for (const z of zones) {
+        const pose = appels.findIndex((a) => a.nom === 'translate' && a.args[0] === z.x && a.args[1] === z.y)
+        expect(pose > pilier).toBe(z.devant)
+      }
+      expect(zones.some((z) => z.devant)).toBe(true)
+      expect(zones.some((z) => !z.devant)).toBe(true)
     }
   })
 

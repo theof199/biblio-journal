@@ -218,7 +218,9 @@ le titre du HUD de la carte (la décennie de l'année en cours) et la plaque du 
   (`mondes/1890/monument.ts`). Le toucher achevé (`Toile.onChoisir`, le `click`) ouvre l'année du
   cheval le plus proche sous le doigt, si elle a sa page ; le premier contact (`onToucher`,
   `pointerdown`) n'ouvre jamais rien, puisqu'un défilement commence aussi par lui, et emballe le
-  manège hors d'un cheval qui s'ouvre. Les chevaux de derrière se touchent aussi. Le monde « à
+  manège hors d'un cheval qui s'ouvre. Les chevaux de derrière se touchent aussi, mais un doigt qui
+  tombe à la fois sur un cheval de devant et sur un de derrière ouvre toujours celui de devant
+  (`figureTouchee`, le plan que chaque figure inscrit). Le monde « à
   venir » ne dessine qu'un fond, sans rien à toucher.
 - **Le passeport** (`voyage/decennie/Livret.tsx`) : l'anneau des années de la décennie qui portent
   leur récompense, puis ce qui manque en clair (« Il manque une récompense en 1897 et 1899, et le

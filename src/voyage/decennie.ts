@@ -70,22 +70,23 @@ export interface Figure {
   x: number
   y: number
   r: number
+  /** Peinte au premier plan (devant le pilier du manège). */
+  devant: boolean
 }
 
 /**
  * La figure sous le doigt (maquette : le cheval le plus proche, à moins de 30 unités) : la plus
  * proche dont le rayon contient le toucher ; nulle à côté de toutes — le monument s'emballe alors.
+ * Un toucher qui tombe à la fois sur une figure de devant et sur une de derrière ouvre toujours
+ * celle de devant, même plus loin du doigt : c'est elle qu'on voit (décision du propriétaire du
+ * 1er octobre 2026). Entre figures d'un même plan, la plus proche.
  */
 export function figureTouchee(figures: readonly Figure[], p: { x: number; y: number }): number | null {
+  const d2 = (f: Figure) => (f.x - p.x) ** 2 + (f.y - p.y) ** 2
+  const sous = figures.filter((f) => d2(f) <= f.r * f.r)
+  const plan = sous.some((f) => f.devant) ? sous.filter((f) => f.devant) : sous
   let meilleure: Figure | null = null
-  let d2 = Infinity
-  for (const f of figures) {
-    const d = (f.x - p.x) ** 2 + (f.y - p.y) ** 2
-    if (d <= f.r * f.r && d < d2) {
-      meilleure = f
-      d2 = d
-    }
-  }
+  for (const f of plan) if (!meilleure || d2(f) < d2(meilleure)) meilleure = f
   return meilleure?.annee ?? null
 }
 

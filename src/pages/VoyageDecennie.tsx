@@ -123,7 +123,7 @@ function PageDeLaDecennie({ decennie: d }: { decennie: number }) {
               cases,
               bouclee: tampon !== null,
               touche: touche.current,
-              zone: (annee, x, y, r) => void figures.current.push({ annee, x, y, r }),
+              zone: (annee, x, y, r, devant) => void figures.current.push({ annee, x, y, r, devant }),
             })
           }}
         />
