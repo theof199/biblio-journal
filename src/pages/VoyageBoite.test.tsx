@@ -339,6 +339,37 @@ describe('la boîte à billets', () => {
     expect(screen.queryByText('Ce visionnage n’est plus disponible.')).not.toBeInTheDocument()
   })
 
+  // Le parcours de deux tâches (la boîte, le billet de correction) : effacé, le billet recule vers la
+  // boîte, sur l'adresse qui l'ouvrait en grand (`?billet=e3`). La boîte ne doit pas l'y rouvrir
+  // depuis son cache, le temps que le journal soit relu (ici, jamais : la relecture ne répond pas).
+  // Mutation : l'entrée effacée laissée dans les listes du journal en cache.
+  it('un billet effacé depuis la boîte n’y reparaît pas en grand, même avant que le journal soit relu', async () => {
+    const fiche = fichePrete({ annee: 1897, salles: [salle({ id: 's1', films: [filmDeSalle({ id: 'f-train', tmdb_id: 776, title: 'L’Arrivée d’un train' })] })] })
+    let lectures = 0
+    let effacements = 0
+    monter(
+      '/voyage/decennies/1890/billets',
+      {
+        ...ROUTES,
+        [JOURNAL]: () => ((lectures += 1), lectures === 1 ? journal(TROIS)() : new Promise<Response>(() => undefined)),
+        'GET /api/me/voyage/annees/1897': () => json(fiche),
+        'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
+        'DELETE /api/me/journal/e3': () => ((effacements += 1), new Response(null, { status: 204 })),
+      },
+      (client) => client.setQueryData(cles.annee(1897), fiche),
+    )
+    await billets()
+    fireEvent.click(billet(/L’Arrivée d’un train/))
+    fireEvent.click(await screen.findByRole('link', { name: 'Corriger le billet' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    await boite()
+    await waitFor(() => expect(adresse()).toBe('/voyage/decennies/1890/billets'))
+    expect(effacements).toBe(1)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect((await billets()).map((b) => b.textContent)).not.toContainEqual(expect.stringContaining('L’Arrivée d’un train'))
+  })
+
   // Mutations : un message générique à la place de celui de l'API ; « Réessayer » sans effet.
   it('une panne du journal s’affiche telle que l’API l’a écrite, et se retente', async () => {
     let refuse = true

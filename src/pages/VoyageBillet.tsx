@@ -252,7 +252,13 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
 
   const suppression = useMutation({
     mutationFn: (id: string) => supprimerVisionnage(id),
-    onSuccess: perimer,
+    onSuccess: (_rien, id) => {
+      // Ouvert de la boîte à billets, le billet effacé recule vers elle, sur l'adresse qui l'ouvrait en
+      // grand (`?billet=`) : sans l'entrée retirée de ses listes en cache, la boîte l'y rouvrirait le
+      // temps que le journal soit relu. Retirée d'abord, puis périmée : la relecture part quand même.
+      client.setQueriesData<JournalItem[]>({ queryKey: ['journal', 'annees'] }, (items) => items?.filter((i) => i.entry.id !== id))
+      perimer()
+    },
   })
 
   // `isPending` ne se voit qu'au rendu suivant : deux touchers rapprochés écriraient deux fois. Une
