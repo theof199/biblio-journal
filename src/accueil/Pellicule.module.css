@@ -1,0 +1,166 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.mois {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-3);
+  padding-bottom: var(--espace-1);
+  border-bottom: var(--trait) solid var(--couleur-bordure);
+}
+
+.titre {
+  margin: 0;
+  font-family: var(--police-fronton);
+  font-size: var(--taille-mois);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--interlettre-mois);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.compte {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-meta);
+}
+
+/*
+ * La bande défile de côté et se cale sur ses vignettes ; sa marge droite négative la mène au bord de
+ * l'écran (la marge de la page). Sans barre de défilement, comme le rayon d'une salle.
+ */
+.defilement {
+  margin-right: var(--debord-page);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--pellicule-marge-cote);
+  scrollbar-width: none;
+}
+
+.defilement::-webkit-scrollbar {
+  display: none;
+}
+
+/* Le film : un pas de vignette entre deux perforations, sa base noire chaude derrière (posée une fois pour toute la longueur, bout déchiré compris). */
+.film {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pellicule-ecart);
+  width: max-content;
+  margin: 0;
+  padding: var(--pellicule-marge-haut) var(--pellicule-marge-cote) 0;
+  list-style: none;
+}
+
+.film::before {
+  content: '';
+  position: absolute;
+  z-index: var(--z-derriere);
+  inset: 0 0 auto;
+  height: var(--pellicule-hauteur);
+  border-radius: var(--pellicule-rayon) 0 0 var(--pellicule-rayon);
+  background: var(--pellicule-film);
+  clip-path: var(--pellicule-fin);
+}
+
+.vignette {
+  flex: none;
+  width: var(--pellicule-cadre-largeur);
+  scroll-snap-align: start;
+}
+
+/* Ce qui est imprimé sur le bord du film : la date vue, et le rang de la vignette dans le mois, centré sur l'écart qui la suit. */
+.impression {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--pellicule-impression);
+  padding-inline: var(--pellicule-impression-retrait);
+  color: var(--pellicule-ambre);
+  font-size: var(--pellicule-impression-taille);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--pellicule-impression-interlettre);
+  line-height: var(--interligne-serre);
+  white-space: nowrap;
+}
+
+.numero {
+  position: absolute;
+  top: 0;
+  right: var(--pellicule-numero-decalage);
+  width: var(--pellicule-numero-largeur);
+  text-align: center;
+}
+
+.lien {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lien .affiche {
+  width: 100%;
+  border-radius: var(--pellicule-rayon);
+  background: var(--pellicule-amorce-fond);
+}
+
+.legende {
+  margin: calc(var(--pellicule-marge-bas) + var(--espace-2)) 0 0;
+  overflow: hidden;
+  color: var(--couleur-texte-doux);
+  font-size: var(--pellicule-legende-taille);
+  font-weight: var(--graisse-moyenne);
+  line-height: var(--interligne-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amorce {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pellicule-amorce-largeur);
+  height: var(--pellicule-cadre-hauteur);
+  margin-top: var(--pellicule-impression);
+  border-radius: var(--pellicule-rayon);
+  background: linear-gradient(var(--pellicule-ambre-ligne), var(--pellicule-ambre-ligne)) center / 100% var(--trait) no-repeat,
+    linear-gradient(var(--pellicule-ambre-ligne), var(--pellicule-ambre-ligne)) center / var(--trait) 100% no-repeat,
+    var(--pellicule-amorce-fond);
+  scroll-snap-align: end;
+}
+
+.decompte {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pellicule-decompte);
+  height: var(--pellicule-decompte);
+  border: var(--trait) solid var(--pellicule-ambre);
+  border-radius: var(--rayon-plein);
+  background: var(--pellicule-amorce-fond);
+  color: var(--pellicule-ambre);
+  font-family: var(--police-fronton);
+  font-size: var(--pellicule-decompte-taille);
+  line-height: var(--interligne-serre);
+}
+
+.decompte::before {
+  content: '';
+  position: absolute;
+  inset: var(--pellicule-anneau);
+  box-sizing: border-box;
+  border: var(--trait) solid var(--pellicule-ambre);
+  border-radius: var(--rayon-plein);
+  opacity: var(--pellicule-anneau-opacite);
+}

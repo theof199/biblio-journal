@@ -1,0 +1,94 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.panneau {
+  composes: panneau from './Panneau.module.css';
+}
+
+.colonnes {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.colonne {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--vumetre-colonne);
+}
+
+.compte,
+.note {
+  color: var(--panneau-encre);
+  font-family: var(--police-fronton);
+  line-height: var(--interligne-serre);
+}
+
+.compte {
+  margin-bottom: var(--espace-demi);
+  font-size: var(--taille-s);
+}
+
+.compte[data-vide] {
+  color: var(--panneau-encre-eteinte);
+}
+
+.note {
+  margin-top: var(--espace-demi);
+  color: var(--panneau-encre-douce);
+  font-size: var(--taille-xs);
+}
+
+/* Les logements : vingt pas sombres, que la barre de diodes allume de bas en haut. */
+.logements {
+  position: relative;
+  align-self: stretch;
+  height: var(--vumetre-hauteur);
+}
+
+.logements::before,
+.diodes {
+  content: '';
+  position: absolute;
+  inset: 0;
+  mask-image: var(--vumetre-masque);
+  -webkit-mask-image: var(--vumetre-masque);
+}
+
+.logements::before {
+  background: var(--vumetre-socle);
+}
+
+/* La lueur est un filtre sur le parent : sur l'élément masqué, elle serait découpée avec lui. */
+.lueur {
+  position: absolute;
+  inset: 0;
+  filter: var(--vumetre-lueur);
+}
+
+[data-pic] .lueur {
+  filter: var(--vumetre-lueur-pic);
+}
+
+.diodes {
+  top: auto;
+  height: calc(var(--part) * 100%);
+  background: var(--vumetre-diode);
+}
+
+[data-pic] .diodes {
+  background: var(--couleur-accent);
+}
+
+.legende {
+  margin: var(--espace-2) 0 0;
+  padding-left: var(--libelle-interlettre);
+  color: var(--panneau-encre-douce);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-xs);
+  letter-spacing: var(--libelle-interlettre);
+  text-align: center;
+  text-transform: uppercase;
+}

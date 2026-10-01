@@ -6,19 +6,30 @@ export function sousTitre(realisateur: string | null | undefined, annee: number 
 const MOIS = new Intl.DateTimeFormat('fr-FR', { month: 'long' })
 
 /**
+ * Une date seule (`AAAA-MM-JJ`, `entry.finished_at`) en date locale : découpée en chiffres plutôt
+ * que passée à `new Date(iso)`, qui la lirait à minuit UTC — un jour différent selon le fuseau du lecteur.
+ */
+export function dateLocale(iso: string): Date {
+  const [annee, mois, jour] = iso.split('-').map(Number)
+  return new Date(annee!, mois! - 1, jour!)
+}
+
+/**
  * « 11 juillet 2026 », mais « 1er juillet 2026 » : reprise de `formatDate()` (Android,
- * `ui/Format.kt`), qui ordinalise le premier jour du mois, jamais les suivants. `iso` est une date
- * seule (`AAAA-MM-JJ`, `entry.finished_at`) : découpée en chiffres plutôt que passée à `new
- * Date(iso)`, qui la lirait à minuit UTC — un jour différent selon le fuseau du lecteur.
+ * `ui/Format.kt`), qui ordinalise le premier jour du mois, jamais les suivants.
  */
 export function formatDateVisionnage(iso: string): string {
-  const parties = iso.split('-').map(Number)
-  const annee = parties[0]!
-  const mois = parties[1]!
-  const jour = parties[2]!
-  const date = new Date(annee, mois - 1, jour)
-  const jourTexte = jour === 1 ? '1er' : String(jour)
-  return `${jourTexte} ${MOIS.format(date)} ${annee}`
+  const date = dateLocale(iso)
+  const jourTexte = date.getDate() === 1 ? '1er' : String(date.getDate())
+  return `${jourTexte} ${MOIS.format(date)} ${date.getFullYear()}`
+}
+
+const MOIS_COURT = new Intl.DateTimeFormat('fr-FR', { month: 'short' })
+
+/** « 28 SEPT », « 16 AOÛT » : le jour et le mois abrégé d'une date seule, sans point, pour le bord d'une pellicule. */
+export function formatJourBref(iso: string): string {
+  const date = dateLocale(iso)
+  return `${date.getDate()} ${MOIS_COURT.format(date).replace('.', '').toUpperCase()}`
 }
 
 /**
@@ -42,4 +53,13 @@ export function jourLocal(date: Date = new Date()): string {
   const mois = String(date.getMonth() + 1).padStart(2, '0')
   const jour = String(date.getDate()).padStart(2, '0')
   return `${date.getFullYear()}-${mois}-${jour}`
+}
+
+/** « 7.4 » en « 7,4 » : la virgule décimale du français, sans passer par l'`Intl` (« 8 » reste « 8 », jamais « 8,0 »). */
+export const virgule = (nombre: number): string => String(nombre).replace('.', ',')
+
+/** « 01/10/2026 » : une date seule (`AAAA-MM-JJ`) en jour, mois, année, comme on la tamponne sur un ticket. */
+export function formatDateCourte(iso: string): string {
+  const [annee, mois, jour] = iso.split('-')
+  return `${jour}/${mois}/${annee}`
 }

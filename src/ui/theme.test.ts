@@ -4,7 +4,6 @@ import voyage from './voyage.css?raw'
 import coque from '../coque/Coque.module.css?raw'
 import affiche from './Affiche.module.css?raw'
 import auCine from '../pages/AuCine.module.css?raw'
-import accueil from '../pages/Accueil.module.css?raw'
 import suivis from '../pages/Suivis.module.css?raw'
 
 /** Tous les `*.module.css` de l'app, par chemin (`/src/…`). */
@@ -46,7 +45,7 @@ describe('le thème', () => {
   it('trouve les feuilles qu’il garde', () => {
     // Sans ce plancher, un glob qui ne trouverait plus rien rendrait les gardes suivantes muettes.
     expect(HORS_VOYAGE.map(([chemin]) => chemin)).toEqual(
-      expect.arrayContaining(['/src/coque/Coque.module.css', '/src/pages/Connexion.module.css', '/src/ui/Page.module.css']),
+      expect.arrayContaining(['/src/coque/Coque.module.css', '/src/pages/Connexion.module.css', '/src/pages/Accueil.module.css']),
     )
   })
 
@@ -108,7 +107,7 @@ describe('le défilement', () => {
 describe('les grilles', () => {
   // `1fr` vaut `minmax(auto, 1fr)` : le minimum est le contenu, un titre long ou une image gonfle la
   // piste et la page défile de côté. `minmax(0, 1fr)` la borne.
-  it.each(['--grille-affiches-colonnes', '--grille-sorties-colonnes', '--grille-bande-colonnes'])(
+  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes'])(
     '%s borne ses pistes à zéro',
     (jeton) => {
       const valeur = regle(theme, ':root').match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]
@@ -128,7 +127,6 @@ describe('les grilles', () => {
   /** Chaque grille de l'app et la classe de ses éléments, qui doivent pouvoir rétrécir sous leur contenu. */
   const ELEMENTS_DE_GRILLE = [
     ['/src/pages/AuCine.module.css', auCine, '.tuile'],
-    ['/src/pages/Accueil.module.css', accueil, '.entree'],
     ['/src/pages/Suivis.module.css', suivis, '.case'],
   ] as const
 

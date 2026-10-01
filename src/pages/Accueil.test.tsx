@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import Accueil from './Accueil'
 import { createQueryClient } from '../api/queryClient'
 import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
+import { ROUTES_ACCUEIL } from '../test/routesAccueil'
+import { visionnage } from '../test/journal'
 import type { JournalPage } from '../api/journal'
 import type { Realisateur, RealisateurPage } from '../api/realisateurs'
 
@@ -163,7 +165,7 @@ describe('la pagination infinie de l’accueil', () => {
   })
 })
 
-describe('les filmographies de « Ensuite · … »', () => {
+describe('les filmographies du réalisateur en cours', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
     vi.stubGlobal('IntersectionObserver', FauxObservateur)
@@ -217,7 +219,7 @@ describe('les filmographies de « Ensuite · … »', () => {
     expect(maximum).toBe(1)
   })
 
-  it('la carte « Ensuite · … » reste celle du réalisateur qui a le plus de films vus', async () => {
+  it('la pastille de l’éventail reste celle du réalisateur qui a le plus de films vus', async () => {
     servir({
       ...base,
       'GET /api/me/realisateurs': () => json([realisateur(1), realisateur(2)]),
@@ -226,9 +228,125 @@ describe('les filmographies de « Ensuite · … »', () => {
     })
     monter()
 
-    // Le 2 a deux films vus contre un : son prochain film (23) est celui proposé.
-    expect(await screen.findByText('Ensuite · Réalisateur 2')).toBeInTheDocument()
-    expect(screen.getByText('Film 23 (2023)')).toBeInTheDocument()
-    expect(screen.queryByText('Ensuite · Réalisateur 1')).not.toBeInTheDocument()
+    // Le 2 a deux films vus contre un : son prochain film (23) est celui proposé, sous le nom du réalisateur.
+    expect(await screen.findByText('Réalisateur 2')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Film 23' })).toHaveAttribute('href', '/journal/nouveau')
+    expect(screen.queryByText('Réalisateur 1')).not.toBeInTheDocument()
+  })
+})
+
+describe('la façade de l’accueil', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('IntersectionObserver', FauxObservateur)
+    // Seule l'horloge est fausse : les délais du réseau doublé et de la requête restent réels.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 30, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  const SEANCE = { id: 'a0000000-0000-4000-8000-000000000001', annee: 1927, long: { title: 'Metropolis', cover_url: null }, court: null }
+  const JOURNAL = [
+    visionnage({ id: 'a', titre: 'L’Aurore', date: '2026-09-26', note: 9 }),
+    visionnage({ id: 'b', titre: 'Le Kid', date: '2026-09-20', note: 8 }),
+    visionnage({ id: 'c', titre: 'Sherlock Junior', date: '2026-08-31', note: 8 }),
+    visionnage({ id: 'd', titre: 'Charade', date: '2025-12-31', note: 7 }),
+  ]
+  const servirJournal = (items: JournalPage['items'], voyage: object = VOYAGE_VIDE) =>
+    servir({
+      ...ROUTES_ACCUEIL,
+      'GET /api/me/journal?limit=20': () => json(page(items, null)),
+      'GET /api/stats': () => json(STATS_VIDES),
+      'GET /api/me/voyage': () => json(voyage),
+    })
+
+  it('met le jour en titre de la page', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Mercredi 30 septembre')
+  })
+
+  it('annonce la séance prise sur le fronton, qui mène au Voyage', async () => {
+    servirJournal(JOURNAL, { ...VOYAGE_VIDE, seance_prise: SEANCE })
+    monter()
+    const fronton = (await screen.findByRole('heading', { level: 1 })).closest('a')
+    expect(fronton).toHaveAttribute('href', '/voyage')
+    expect(fronton).toHaveTextContent('Ce soir')
+    expect(fronton).toHaveTextContent('Metropolis')
+  })
+
+  it('annonce la dernière séance sur le fronton quand rien n’attend', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    const fronton = (await screen.findByRole('heading', { level: 1 })).closest('a')
+    expect(fronton).toHaveAttribute('href', '/journal/a')
+    expect(fronton).toHaveTextContent('Dernière séance')
+  })
+
+  it('met la séance prise devant, dans l’éventail', async () => {
+    servirJournal(JOURNAL, { ...VOYAGE_VIDE, seance_prise: SEANCE })
+    monter()
+    expect(await screen.findByRole('link', { name: 'Metropolis' })).toHaveAttribute('href', '/voyage')
+  })
+
+  it('ne montre pas d’éventail sans séance ni film à voir', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByRole('button', { name: /Mettre en avant/ })).not.toBeInTheDocument()
+  })
+
+  it('montre la bande du Voyage quand il a répondu', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    expect(await screen.findByRole('link', { name: /Le Voyage/ })).toHaveAttribute('href', '/voyage')
+  })
+
+  it('ne met plus la dernière séance en avant : elle est dans la pellicule de son mois, une seule fois', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    await screen.findByRole('heading', { level: 2, name: 'Le journal' })
+    expect(screen.getAllByAltText('L’Aurore')).toHaveLength(1)
+    expect(screen.queryByText('Dernière séance', { selector: 'span' })).not.toBeInTheDocument()
+    const septembre = screen.getByRole('heading', { level: 3, name: 'Septembre 2026' }).closest('section')!
+    expect(within(septembre).getByAltText('L’Aurore')).toBeInTheDocument()
+  })
+
+  it('range le journal par mois, sous un titre chacun', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    const mois = await screen.findAllByRole('heading', { level: 3 })
+    expect(mois.map((titre) => titre.textContent)).toEqual(['Septembre 2026', 'Août 2026', 'Décembre 2025'])
+  })
+
+  it('met chaque entrée dans la pellicule de son mois, vers sa fiche', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    const septembre = (await screen.findByRole('heading', { level: 3, name: 'Septembre 2026' })).closest('section')!
+    const liens = within(septembre).getAllByRole('link')
+    expect(liens.map((lien) => lien.getAttribute('href'))).toEqual(['/journal/a', '/journal/b'])
+  })
+
+  it('écrit le compte de l’année à côté du titre du journal', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    expect(await screen.findByText('3 films cette année')).toBeInTheDocument()
+  })
+
+  it('propose « J’ai vu un film », qui mène à la recherche', async () => {
+    servirJournal(JOURNAL)
+    monter()
+    expect(await screen.findByRole('link', { name: 'J’ai vu un film' })).toHaveAttribute('href', '/recherche')
+  })
+
+  it('invite à remplir la vitrine quand le journal est vide, sans titre de journal ni bouton flottant', async () => {
+    servirJournal([])
+    monter()
+    expect(await screen.findByText('La vitrine attend sa première affiche.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: 'Le journal' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'J’ai vu un film' })).not.toBeInTheDocument()
   })
 })

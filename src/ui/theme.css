@@ -1,7 +1,8 @@
 /*
  * Le thème général du Journal : tout l'habillage de l'app, hors le Voyage.
  *
- * Une base neutre et sobre, posée pour être redessinée. Pour changer l'apparence, on touche à ce
+ * La façade d'un cinéma : bleu nuit ou bleu jour, et trois faces Art déco (League Gothic pour le
+ * fronton, Bodoni Moda pour les titres, Jost pour le texte). Pour changer l'apparence, on touche à ce
  * fichier (les variables ci-dessous et les quelques styles de base qui les lisent) et aux
  * `*.module.css` des composants, qui ne portent aucune valeur en dur : ils lisent ces variables.
  * Rien ici n'a d'effet sur le fonctionnement.
@@ -19,19 +20,421 @@
   color-scheme: light dark;
 
   /* Couleurs */
-  --couleur-fond: #f6f6f4; /* le fond de page */
+  --couleur-fond: #eef1ff; /* le fond de page */
   --couleur-surface: #ffffff; /* cartes, barre d'onglets, champs */
-  --couleur-surface-2: #ececea; /* survol, zones en retrait */
-  --couleur-texte: #1d1d1f;
-  --couleur-texte-doux: #6b6b70; /* légendes, onglets inactifs */
-  --couleur-bordure: #dcdcd8;
-  --couleur-accent: #2f5bd3; /* onglet actif, liens, focus */
+  --couleur-surface-2: #d3dbff; /* survol, zones en retrait */
+  --couleur-texte: #10133a;
+  --couleur-texte-doux: #474e8f; /* légendes, onglets inactifs */
+  --couleur-bordure: #aab6f2;
+  --couleur-accent: #d1122f; /* onglet actif, liens, focus */
   --couleur-sur-accent: #ffffff; /* texte posé sur l'accent */
   --couleur-danger: #b3261e; /* erreurs */
 
+  /* Le bloc cobalt : la bande du Voyage sur l'accueil */
+  --couleur-bloc: #2a3fd6;
+  --couleur-sur-bloc: #ffffff;
+  --couleur-sur-bloc-doux: #d5dbff;
+  --ombre-bloc: 0 12px 24px rgba(42, 63, 214, 0.3);
+
+  /* Le ciel du bâtiment (l'accueil, le profil, la caisse) et la lueur des boutons d'accent */
+  --fond-ciel: linear-gradient(180deg, #aebcff 0px, #d3dcff 300px, #e9edff 640px, #f3f5ff 1100px);
+  --lueur-accent: 0 8px 20px rgba(209, 18, 47, 0.35);
+
+  /* Le fronton : panneau crème, lettres, rail, cadre et ampoules */
+  --fronton-panneau: #fffdf6;
+  --fronton-lettre: #10133a;
+  --fronton-lettre-rouge: #d1122f;
+  --fronton-rail: rgba(16, 19, 58, 0.13);
+  --fronton-cadre: #10133a;
+  --fronton-ampoule: #f4ead0;
+  --fronton-halo: rgba(0, 0, 0, 0);
+  --fronton-lueur: 0 14px 30px rgba(16, 19, 58, 0.28);
+  /* Le fond du panneau, en `background` complet (couleur en dernière couche) : le rail du panneau à
+     lettres. Chaque décennie le remplace (voir « Les enseignes », plus bas). */
+  --fronton-panneau-fond: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--fronton-pas-rail) - var(--fronton-trait-rail)),
+      var(--fronton-rail) calc(var(--fronton-pas-rail) - var(--fronton-trait-rail)),
+      var(--fronton-rail) var(--fronton-pas-rail)
+    ),
+    var(--fronton-panneau);
+  --fronton-lettre-ombre: none; /* l'ombre des petites lignes, que seules certaines enseignes posent */
+
+  /* L'éventail d'affiches : celles de l'arrière-plan s'estompent */
+  --eventail-estompe: saturate(0.5) contrast(0.82) brightness(1.06);
+  --eventail-ombre: 0 10px 22px rgba(16, 19, 58, 0.3);
+
+  /* Le fronton : la géométrie du panneau à lettres. Les lettres se calent sur un rail de 28px ; le
+     titre se réduit à la largeur du panneau selon sa longueur (`--fronton-chasse` : l'avance moyenne
+     d'une capitale de League Gothic, interlettre compris, en em ; `--fronton-chasse-espacee` pour les
+     lignes plus espacées). À régler à l'œil si les titres flottent ou touchent le cadre. */
+  --largeur-conteneur: 100cqw; /* la largeur du conteneur de requête : `theme.test.ts` n'admet en dur que 0, 100% et 100dvh */
+  --fronton-cadre-largeur: 0.1875rem;
+  --fronton-pas-rail: 1.75rem;
+  --fronton-trait-rail: 0.125rem;
+  --fronton-hauteur-titre: 5.25rem; /* trois pas de rail */
+  --fronton-hauteur-titre-compact: 3.5rem; /* deux pas de rail */
+  --fronton-ampoules-hauteur: 1.125rem;
+  --fronton-ampoule-pas: 0.895rem;
+  --fronton-ampoule-rayon: 0.15rem;
+  --fronton-ampoule-bord: 0.2rem;
+  --fronton-halo-rayon: 0.4375rem;
+  --fronton-taille-date: 1.4375rem; /* le jour et l'étiquette */
+  --fronton-taille-titre: 5.375rem;
+  --fronton-taille-titre-compact: 3.5rem;
+  --fronton-taille-detail: 1.25rem;
+  --fronton-interlettre-date: 0.14em;
+  --fronton-interlettre-titre: 0.015em;
+  --fronton-interlettre-detail: 0.12em;
+  --fronton-chasse: 0.4;
+  --fronton-chasse-espacee: 0.5;
+  --longueur: 1; /* le nombre de lettres d'une ligne du fronton : chaque ligne pose le sien, en ligne (`Fronton.tsx`) */
+
+  /* Les enseignes : ce que le cadre du fronton entoure change avec la décennie du film annoncé
+     (`data-decennie` sur le lien, un bloc par décennie plus bas) ; le cadre et ses ampoules ne
+     changent pas. Ici les valeurs neutres : chaque bloc n'en pose que ce qui lui est propre, et
+     celui de 1940 est l'enseigne de la maison. La feuille du composant ne lit que ces variables.
+     La chasse (`--fronton-chasse`) est l'avance d'une capitale de la police, interlettre compris,
+     au 95e centile de titres de films ; `--enseigne-retrait` retire de la largeur ce que le relief,
+     le cadre intérieur et les jambages débordants prennent au titre. */
+  --police-enseigne: var(--police-fronton); /* la police du titre : les petites lignes restent en League Gothic */
+  --enseigne-graisse: var(--graisse-normale);
+  --enseigne-titre-couleur: var(--fronton-lettre); /* le corps des lettres, sous la face */
+  --enseigne-relief: 0 0 0 transparent; /* l'extrusion des lettres, en `text-shadow` */
+  --enseigne-lueur: 0 0 0 transparent; /* la lueur d'un titre, en `text-shadow` : de nuit seulement */
+  --enseigne-filtre: none; /* la lueur d'un titre en `filter` : de nuit seulement */
+  --enseigne-extrusion: 0;
+  --enseigne-retrait: 0;
+  --enseigne-compensation: 0; /* l'interlettre de fin de ligne, rendu à gauche pour recentrer les lettres espacées */
+  --enseigne-air: 0; /* l'air au-dessus et au-dessous d'une ligne de titre à hauteur libre */
+  --enseigne-face-affichage: none; /* la face : une seconde couche, peinte dans les lettres */
+  --enseigne-face-image: none;
+  --enseigne-face-taille: auto;
+  --enseigne-face-repet: repeat;
+  --enseigne-face-couleur: transparent;
+  --enseigne-face-contour: 0 transparent;
+  --enseigne-allumage-duree: 0s; /* les lettres à ampoules qui s'allument à l'ouverture de la page */
+  --enseigne-bord-affichage: none; /* le cadre intérieur du panneau */
+  --enseigne-bord-marge: 0;
+  --enseigne-bord: 0 solid transparent;
+  --enseigne-bord-rayon: 0;
+  --enseigne-bord-ombre: 0 0 0 transparent;
+  --enseigne-bord-fond: none;
+  --enseigne-trait-affichage: none; /* les traits chromés de part et d'autre d'un titre */
+  --enseigne-trait-haut: 0;
+  --enseigne-trait-fond: none;
+  --enseigne-trait-masque: none;
+  --enseigne-barre-affichage: none; /* la barre de couleur entre le titre et la ligne suivante */
+  --enseigne-barre-haut: 0;
+  --enseigne-barre-fond: none;
+  --enseigne-barre-marge: 0;
+  --enseigne-apres-titre: 0;
+
+  /* Ce qui change du jour à la nuit. Le jour, l'enseigne est la même, seules les lueurs sont éteintes
+     (les ampoules des lettres de 1940, le néon de 1950, les halos de 1910 et de 1980). */
+  --enseigne-dos-1940: #4f0814; /* le flanc des lettres à ampoules */
+  --enseigne-ombre-portee: 10px 13px 3px rgba(16, 19, 58, 0.4); /* 1940 : l'ombre dure du jour */
+  --enseigne-lettres-ampoules: radial-gradient(circle at center, var(--fronton-ampoule) 0, var(--fronton-ampoule) 1.4px, transparent 1.9px);
+  --enseigne-nuit-1910: 0 0 0 transparent;
+  --enseigne-nuit-1940: none;
+  --enseigne-nuit-1950: 0 0 0 transparent;
+  --enseigne-nuit-1950-lettre: none;
+  --enseigne-nuit-1980: none;
+
+  /* L'éventail : une scène de 358 sur 250 dont chaque carte se place en pourcentages, pour tenir sur un petit écran */
+  --eventail-largeur-max: 22.375rem;
+  --eventail-ratio: 358 / 250;
+  --eventail-avant-largeur: 42.458%;
+  --eventail-avant-haut: 8.8%;
+  --eventail-avant-gauche: 28.771%;
+  --eventail-avant-gauche-duo: 15.642%; /* deux cartes seulement : la première se décale à gauche */
+  --eventail-cote-largeur: 34.637%;
+  --eventail-cote-haut: 16%;
+  --eventail-droite-gauche: 63.687%;
+  --eventail-droite-gauche-duo: 51.955%;
+  --eventail-gauche-gauche: 1.676%;
+  --eventail-derriere-largeur: 36.872%;
+  --eventail-derriere-gauche: 31.564%;
+  --eventail-rotation-droite: 8deg;
+  --eventail-rotation-gauche: -8deg;
+  --eventail-rotation-derriere: -4deg;
+  --eventail-cadre-trait: 0.125rem; /* le cadre de la carte de face */
+  --eventail-cadre-marge: 0.1875rem;
+  --eventail-z-derriere: 1;
+  --eventail-z-cote: 2;
+  --eventail-z-avant: 3;
+  --eventail-duree: 300ms; /* une carte qui change de place */
+  --eventail-point: 0.5rem; /* les points sous la scène */
+  --eventail-point-trait: 1.5px;
+  --eventail-puce-hauteur: 1.5rem;
+  --eventail-titre-taille: 2.625rem;
+
+  /* La bande du Voyage, sur l'accueil */
+  --bande-voyage-gap: 1.125rem;
+  --bande-voyage-marge: 1rem 0.75rem 1rem 1.125rem;
+  --bande-voyage-annee-taille: 2.75rem;
+  --bande-voyage-annee-interligne: 0.9;
+  --bande-voyage-case: 0.875rem; /* une case d'essentiel */
+  --bande-voyage-case-trait: 0.125rem;
+  --bande-voyage-cases-gap: 0.3125rem;
+
+  /* La pellicule du journal : un mois, une bande de 35 mm qui défile de côté. Les mesures en rem sont
+     celles de la maquette à 390 px (`--pellicule-hauteur` : les trous et l'impression du haut, la
+     vignette, le bas) ; `--signe-echelle` réduit l'enseigne d'un film sans affiche à la taille d'une vignette. */
+  --gouttiere-page: 1rem; /* la marge de la page, que la pellicule dépasse à droite pour aller au bord de l'écran */
+  --debord-page: calc(-1 * var(--gouttiere-page));
+  --pellicule-cadre-largeur: 8.25rem;
+  --pellicule-cadre-hauteur: calc(var(--pellicule-cadre-largeur) * 3 / 2); /* le ratio d'une affiche, `--ratio-affiche` */
+  --pellicule-ecart: 0.625rem;
+  --pellicule-marge-cote: 0.625rem;
+  --pellicule-marge-haut: 1.25rem;
+  --pellicule-impression: 0.625rem; /* la ligne imprimée sur le bord, au-dessus de la vignette */
+  --pellicule-marge-bas: 1.125rem;
+  --pellicule-hauteur: calc(var(--pellicule-marge-haut) + var(--pellicule-impression) + var(--pellicule-cadre-hauteur) + var(--pellicule-marge-bas));
+  --pellicule-rayon: 0.125rem;
+  --pellicule-ambre: #e0a63a;
+  --pellicule-ambre-ligne: rgba(224, 166, 58, 0.75);
+  --pellicule-impression-taille: 0.4375rem;
+  --pellicule-impression-interlettre: 0.14em;
+  --pellicule-impression-retrait: 0.375rem;
+  --pellicule-numero-largeur: 1.75rem;
+  --pellicule-numero-decalage: calc(var(--pellicule-ecart) / -2 - var(--pellicule-numero-largeur) / 2); /* centré sur l'écart qui suit la vignette */
+  --pellicule-legende-taille: 0.6875rem;
+  --pellicule-trou: var(--couleur-bordure); /* les perforations laissent voir le ciel */
+  --pellicule-trou-largeur: 0.5625rem;
+  --pellicule-trou-hauteur: 0.375rem;
+  --pellicule-trou-haut: 0.375rem;
+  --pellicule-trou-pas: calc((var(--pellicule-cadre-largeur) + var(--pellicule-ecart)) / 8);
+  --pellicule-trou-decalage: calc((var(--pellicule-trou-pas) - var(--pellicule-trou-largeur)) / 2);
+  --pellicule-film: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.05) 18%, transparent 34%),
+    repeating-linear-gradient(
+        90deg,
+        transparent 0 var(--pellicule-trou-decalage),
+        var(--pellicule-trou) var(--pellicule-trou-decalage) calc(var(--pellicule-trou-decalage) + var(--pellicule-trou-largeur)),
+        transparent calc(var(--pellicule-trou-decalage) + var(--pellicule-trou-largeur)) var(--pellicule-trou-pas)
+      )
+      0 calc(var(--pellicule-hauteur) - var(--pellicule-trou-haut) - var(--pellicule-trou-hauteur)) / 100% var(--pellicule-trou-hauteur) no-repeat,
+    repeating-linear-gradient(
+        90deg,
+        transparent 0 var(--pellicule-trou-decalage),
+        var(--pellicule-trou) var(--pellicule-trou-decalage) calc(var(--pellicule-trou-decalage) + var(--pellicule-trou-largeur)),
+        transparent calc(var(--pellicule-trou-decalage) + var(--pellicule-trou-largeur)) var(--pellicule-trou-pas)
+      )
+      0 var(--pellicule-trou-haut) / 100% var(--pellicule-trou-hauteur) no-repeat,
+    linear-gradient(180deg, #221c17 0%, #15110e 22%, #15110e 78%, #0f0c0a 100%);
+  --pellicule-fin: polygon(0 0, 100% 0, calc(100% - 7px) 7.14%, calc(100% - 3px) 14.29%, calc(100% - 9px) 21.43%, calc(100% - 2px) 28.57%, calc(100% - 8px) 35.71%, calc(100% - 4px) 42.86%, calc(100% - 10px) 50%, calc(100% - 1px) 57.14%, calc(100% - 8px) 64.29%, calc(100% - 3px) 71.43%, calc(100% - 9px) 78.57%, calc(100% - 2px) 85.71%, calc(100% - 7px) 92.86%, 100% 100%, 0 100%); /* le bout déchiré */
+  --pellicule-amorce-largeur: 3.625rem; /* l'amorce : une vignette de compte à rebours, puis le bout déchiré */
+  --pellicule-amorce-fond: #221c16;
+  --pellicule-decompte: 2.625rem;
+  --pellicule-decompte-taille: 1.875rem;
+  --pellicule-anneau: 0.4375rem;
+  --pellicule-anneau-opacite: 0.7;
+  --signe-echelle: 0.5;
+
+  /* Le profil : le portefeuille. Une carte d'adhérent, puis des objets de cinéma (jauge, diodes,
+     billets, pellicule, ampoules) et le ticket de caisse. Le jour est la même scène, ses lumières
+     éteintes : les valeurs d'ici sont celles du jour, celles de la nuit sont dans les deux blocs
+     sombres. `--identite` est la couleur du membre (`identity_color`), posée par la page ; elle ne
+     touche que ses marques à lui. */
+  --identite: var(--couleur-accent);
+  --part: 0; /* la part du maximum, de 0 à 1 : chaque colonne de diodes et chaque billet pose la sienne, en ligne (`Vumetre.tsx`, `Tickets.tsx`) */
+  --profil-largeur-max: 22.375rem; /* une colonne à la taille d'un téléphone : les écrans larges ne l'étirent pas */
+  --rythme-section: 3.5rem; /* entre deux sections */
+  --rythme-libelle: 1.25rem; /* de l'étiquette d'une section à son objet */
+  --rythme-objet: 1.5rem; /* d'un objet à celui qui le suit dans la même section */
+  --rythme-souche: 4rem; /* du dernier objet au ticket de caisse */
+  --rythme-panneau: 1.5rem; /* le fond d'un panneau de laiton, de pellicule ou de ticket */
+  --libelle-taille: 1rem;
+  --libelle-interlettre: 0.24em;
+  --libelle-ecart: 0.625rem;
+  --libelle-regle-opacite: 0.35;
+  --espace-demi: 0.375rem;
+  --police-crayon: 'Caveat', cursive; /* ce que le membre écrit lui-même, au crayon gras : jamais le décor */
+
+  /* Un panneau de laiton : le cadre de la jauge, des diodes et des ampoules */
+  --panneau-fond: linear-gradient(180deg, #2a2420, #1b1612);
+  --panneau-relief: 0 0 0 3px #8c6f3d, 0 0 0 4px #3b2c14, 0 0 0 5px #d1b26d, inset 0 2px 8px rgba(0, 0, 0, 0.7), 0 12px 22px rgba(3, 4, 20, 0.5);
+  --panneau-reflet: linear-gradient(125deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 35%);
+  --panneau-vis: radial-gradient(circle at 35% 30%, #d1b26d, #5c4a22 70%, transparent 72%) left 5px top 5px / 7px 7px no-repeat,
+    radial-gradient(circle at 35% 30%, #d1b26d, #5c4a22 70%, transparent 72%) right 5px top 5px / 7px 7px no-repeat,
+    radial-gradient(circle at 35% 30%, #d1b26d, #5c4a22 70%, transparent 72%) left 5px bottom 5px / 7px 7px no-repeat,
+    radial-gradient(circle at 35% 30%, #d1b26d, #5c4a22 70%, transparent 72%) right 5px bottom 5px / 7px 7px no-repeat;
+  --panneau-rayon: 10px;
+  --panneau-encre: #f4efe4; /* ce qui est gravé ou allumé sur le laiton */
+  --panneau-encre-douce: rgba(244, 239, 228, 0.62);
+  --panneau-encre-eteinte: rgba(244, 239, 228, 0.38);
+  --panneau-noir: #15110e;
+
+  /* La carte d'adhérent */
+  --carte-fond: linear-gradient(135deg, #fbf4de 0%, #f1e7c9 55%, #e6dab5 100%);
+  --carte-encre: #1a2266;
+  --carte-encre-douce: rgba(26, 34, 102, 0.72);
+  --carte-relief: 1px 1px 0 rgba(255, 255, 255, 0.95), -1px -1px 1px rgba(10, 14, 70, 0.35), 0 0 1px rgba(10, 14, 70, 0.25); /* le gaufrage du texte */
+  --carte-boite: 0 14px 24px rgba(16, 19, 58, 0.35), 0 2px 5px rgba(16, 19, 58, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(120, 100, 50, 0.35);
+  --carte-ombre: 0 14px 24px rgba(16, 19, 58, 0.35), 0 2px 5px rgba(16, 19, 58, 0.3);
+  --carte-guilloche: repeating-radial-gradient(circle at 78% 30%, rgba(16, 19, 90, 0.09) 0 1px, transparent 1px 4px),
+    repeating-radial-gradient(circle at 22% 90%, rgba(16, 19, 90, 0.06) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(45deg, rgba(16, 19, 90, 0.06) 0 1px, transparent 1px 3px);
+  --carte-reflet: linear-gradient(115deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.45) 45%, rgba(255, 255, 255, 0) 60%);
+  --carte-dos: #d9cfae; /* la carte qu'on devine derrière */
+  --carte-sceau-fond: radial-gradient(circle at 35% 30%, #fffaf0, #e4d8b4);
+  --carte-sceau-relief: inset 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.9), 0 0 0 2px rgba(26, 34, 102, 0.25);
+  --carte-sceau-pointille: rgba(26, 34, 102, 0.45);
+  --carte-sceau-lueur: 0 1px 0 rgba(0, 0, 0, 0.45);
+  --carte-bande-stries: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 3px);
+  --carte-bande-ombre: inset -1px 0 0 rgba(0, 0, 0, 0.25), 2px 0 4px rgba(0, 0, 0, 0.25);
+  --carte-scene: 15.25rem;
+  --carte-hauteur: 14.125rem;
+  --carte-rayon: 14px;
+  --carte-bande-largeur: 1.875rem;
+  --carte-retrait: 3rem; /* la bande et sa marge : le texte commence après */
+  --carte-marge: 1.125rem;
+  --carte-sceau: 3.625rem;
+  --carte-inclinaison: -1.2deg;
+  --carte-dos-inclinaison: 2.4deg;
+  --carte-dos-retrait: 0.875rem;
+  --carte-etiquette-taille: 0.875rem;
+  --carte-etiquette-interlettre: 0.3em;
+  --carte-pseudo-taille: 3.125rem;
+  --carte-chiffres-taille: 1.9375rem;
+  --carte-chiffres-interlettre: 0.14em;
+  --carte-note-taille: 0.6875rem;
+  --carte-monogramme-taille: 2.375rem;
+
+  /* La jauge de la note moyenne */
+  --jauge-piste: rgba(255, 255, 255, 0.16);
+  --jauge-arc-opacite: 0.6;
+  --jauge-halo-opacite: 0;
+  --jauge-valeur-taille: 3.75rem;
+
+  /* Les diodes : vingt pas par colonne, la plus haute rouge. Le masque découpe les pas dans une
+     barre pleine, ce qui garde la hauteur strictement proportionnelle. */
+  --vumetre-segment: 4px;
+  --vumetre-pas: 6px;
+  --vumetre-hauteur: 7.5rem; /* vingt pas */
+  --vumetre-colonne: 1.5rem;
+  --vumetre-masque: repeating-linear-gradient(to top, #000 0 var(--vumetre-segment), transparent var(--vumetre-segment) var(--vumetre-pas));
+  --vumetre-socle: rgba(255, 255, 255, 0.08);
+  --vumetre-diode: rgba(244, 239, 228, 0.88);
+  --vumetre-lueur: none;
+  --vumetre-lueur-pic: none;
+
+  /* Les billets de réaction : un papier crème, une souche à déchirer, une bande rouge au dos */
+  --ticket-papier: linear-gradient(180deg, #fbf3dc, #efe3c2);
+  --ticket-encre: #1d1a2e;
+  --ticket-encre-douce: rgba(29, 26, 46, 0.55);
+  --ticket-bande: #b8483a;
+  --ticket-bande-vive: #c92a3e; /* le premier billet, le plus vu */
+  --ticket-souche-fond: rgba(160, 120, 60, 0.1);
+  --ticket-pointille: rgba(26, 20, 10, 0.4);
+  --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.3));
+  --ticket-hauteur: 2.875rem;
+  --ticket-souche: 4.125rem;
+  --ticket-encoche: 6px;
+  --ticket-bande-largeur: 0.375rem;
+  --ticket-pointille-trait: 2px;
+  --ticket-largeur-base: 70.4%; /* le billet le moins posé ; le plus posé prend base + gain */
+  --ticket-largeur-gain: 27.9%;
+  --ticket-inclinaison: -0.5deg; /* un billet sur deux penche de ce côté, l'autre de l'inverse */
+  --ticket-inclinaison-inverse: 0.5deg;
+  --ticket-compte-taille: 1.625rem;
+  --ticket-fois-taille: 0.40625rem;
+  --ticket-masque: radial-gradient(circle var(--ticket-encoche) at calc(100% - var(--ticket-souche)) 0, #0000 96%, #000),
+    radial-gradient(circle var(--ticket-encoche) at calc(100% - var(--ticket-souche)) 100%, #0000 96%, #000),
+    radial-gradient(circle var(--ticket-encoche) at 0 50%, #0000 96%, #000),
+    radial-gradient(circle var(--ticket-encoche) at 100% 50%, #0000 96%, #000);
+
+  /* La pellicule des décennies : quatorze repères, allumés quand un film y est sorti */
+  --perforations-fond: linear-gradient(90deg, #1b1511, #15110e 10%, #15110e 90%, #1b1511);
+  --perforations-relief: 0 10px 18px rgba(3, 4, 20, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --perforation-trou: #fffef7; /* les perforations du bord */
+  --perforation-repere: #ffecc2; /* un repère allumé */
+  --perforation-repere-lueur: inset 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.25);
+  --perforation-repere-eteint: rgba(255, 255, 255, 0.2);
+  --perforation-largeur: 8px;
+  --perforation-hauteur: 6px;
+  --perforation-pas: 17px;
+  --perforation-decalage: 6px;
+  --perforation-marge: 5px;
+  --perforation-bord: repeating-linear-gradient(90deg, transparent 0 var(--perforation-decalage), var(--perforation-trou) var(--perforation-decalage) calc(var(--perforation-decalage) + var(--perforation-largeur)), transparent calc(var(--perforation-decalage) + var(--perforation-largeur)) var(--perforation-pas));
+  --repere-largeur: min(1.125rem, 85%);
+  --repere-hauteur: 1.25rem;
+  --repere-rayon: 3px;
+
+  /* Les mois : douze colonnes d'ampoules, une par film (onze visibles) */
+  --ampoule-diametre: 0.8125rem;
+  --ampoule-allumee: radial-gradient(circle at 38% 32%, #fff7dc, #ffd88a 55%, #e0a63a);
+  --ampoule-halo: inset 0 0 3px rgba(255, 255, 255, 0.6), 0 0 0 1px rgba(120, 90, 30, 0.4);
+  --ampoule-eteinte: radial-gradient(circle at 38% 32%, #3a352e, #1a1612);
+  --ampoule-eteinte-bord: rgba(255, 255, 255, 0.08);
+  --ampoule-mois-lueur: none;
+  --ampoule-trait-largeur: 1.25rem;
+  --ampoule-trait-hauteur: 3px;
+
+  /* Le papier du ticket de caisse : le même crème de jour comme de nuit */
+  --papier-fond: repeating-linear-gradient(0deg, rgba(90, 70, 30, 0.035) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .2 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E"),
+    linear-gradient(90deg, rgba(150, 120, 60, 0.1), rgba(255, 255, 255, 0) 12%, rgba(255, 255, 255, 0) 88%, rgba(150, 120, 60, 0.1)), #f4ecd7;
+  --papier-encre: #2a2622;
+  --papier-encre-douce: #6d6455;
+  --papier-encre-moyenne: #4a4339;
+  --papier-pointille: rgba(42, 38, 34, 0.45);
+  --papier-tiret: rgba(42, 38, 34, 0.4);
+  --papier-coupe: rgba(42, 38, 34, 0.55);
+  --papier-danger: #b3261e;
+  --papier-case: 1.25rem; /* la case à cocher du rattrapage */
+  --papier-coche: 45deg;
+  --papier-interlettre: 0.3em;
+  --papier-trait: 2px;
+  --papier-aide-largeur: 92%;
+  --souche-dechire: polygon(0.00% 1.8px, 3.57% 9.0px, 7.14% 8.1px, 10.71% 9.0px, 14.29% 8.1px, 17.86% 8.1px, 21.43% 8.1px, 25.00% 1.8px, 28.57% 0.0px, 32.14% 6.3px, 35.71% 3.6px, 39.29% 8.1px, 42.86% 0.0px, 46.43% 3.6px, 50.00% 0.0px, 53.57% 9.0px, 57.14% 6.3px, 60.71% 3.6px, 64.29% 6.3px, 67.86% 1.8px, 71.43% 0.0px, 75.00% 1.8px, 78.57% 3.6px, 82.14% 0.0px, 85.71% 8.1px, 89.29% 3.6px, 92.86% 6.3px, 96.43% 9.0px, 100.00% 3.6px, 100% 100%, 0 100%);
+  --souche-ombre: drop-shadow(0 -3px 5px rgba(2, 3, 20, 0.25));
+  --souche-largeur: 80%;
+  --souche-hauteur: 10.5rem;
+  --souche-scene: 12.625rem; /* le papier, la fente et ce qui les sépare */
+  --souche-titre-taille: 2.875rem;
+  --souche-titre-largeur: 12cqw; /* le titre se réduit avec la scène, pour tenir sur un écran étroit */
+  --souche-fente: 1.875rem;
+  --souche-recouvrement: 1.25rem;
+  --souche-debord: 0.875rem; /* la fente dépasse le papier de chaque côté */
+  --souche-marge: calc((100% - var(--souche-largeur)) / 2); /* le papier est centré dans la scène */
+  --souche-marge-fente: calc(var(--souche-marge) - var(--souche-debord));
+  --fente-fond: linear-gradient(180deg, #3a352f, #16130f 60%, #2a2520);
+  --fente-relief: 0 8px 14px rgba(2, 3, 20, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --fente-ouverture-fond: #050403;
+  --fente-ouverture-relief: inset 0 2px 3px #000, 0 1px 0 rgba(255, 255, 255, 0.12);
+  --fente-voyant-fond: #a8896b; /* éteint le jour ; la nuit, la couleur du membre */
+  --fente-voyant-lueur: none;
+  --caisse-largeur: 20rem;
+  --caisse-titre-taille: 3.5rem;
+  --caisse-titre-largeur: 19cqw; /* le titre se réduit avec le ticket */
+  --caisse-inclinaison: -0.5deg;
+  --caisse-dechire: polygon(0.00% 3.6px, 2.78% 1.8px, 5.56% 1.8px, 8.33% 3.6px, 11.11% 9.0px, 13.89% 1.8px, 16.67% 6.3px, 19.44% 8.1px, 22.22% 1.8px, 25.00% 0.0px, 27.78% 1.8px, 30.56% 0.0px, 33.33% 6.3px, 36.11% 9.0px, 38.89% 1.8px, 41.67% 3.6px, 44.44% 3.6px, 47.22% 8.1px, 50.00% 6.3px, 52.78% 1.8px, 55.56% 1.8px, 58.33% 6.3px, 61.11% 6.3px, 63.89% 8.1px, 66.67% 3.6px, 69.44% 3.6px, 72.22% 8.1px, 75.00% 3.6px, 77.78% 1.8px, 80.56% 6.3px, 83.33% 8.1px, 86.11% 0.0px, 88.89% 8.1px, 91.67% 0.0px, 94.44% 3.6px, 97.22% 1.8px, 100.00% 0.0px, 100.00% calc(100% - 9.0px), 97.22% calc(100% - 8.1px), 94.44% calc(100% - 0.0px), 91.67% calc(100% - 8.1px), 88.89% calc(100% - 6.3px), 86.11% calc(100% - 6.3px), 83.33% calc(100% - 6.3px), 80.56% calc(100% - 1.8px), 77.78% calc(100% - 9.0px), 75.00% calc(100% - 8.1px), 72.22% calc(100% - 0.0px), 69.44% calc(100% - 3.6px), 66.67% calc(100% - 6.3px), 63.89% calc(100% - 0.0px), 61.11% calc(100% - 6.3px), 58.33% calc(100% - 3.6px), 55.56% calc(100% - 1.8px), 52.78% calc(100% - 6.3px), 50.00% calc(100% - 6.3px), 47.22% calc(100% - 6.3px), 44.44% calc(100% - 6.3px), 41.67% calc(100% - 6.3px), 38.89% calc(100% - 0.0px), 36.11% calc(100% - 8.1px), 33.33% calc(100% - 6.3px), 30.56% calc(100% - 3.6px), 27.78% calc(100% - 1.8px), 25.00% calc(100% - 3.6px), 22.22% calc(100% - 3.6px), 19.44% calc(100% - 0.0px), 16.67% calc(100% - 0.0px), 13.89% calc(100% - 8.1px), 11.11% calc(100% - 3.6px), 8.33% calc(100% - 3.6px), 5.56% calc(100% - 6.3px), 2.78% calc(100% - 9.0px), 0.00% calc(100% - 3.6px));
+  --caisse-ombre: drop-shadow(0 16px 16px rgba(1, 2, 16, 0.32)) drop-shadow(0 2px 2px rgba(1, 2, 16, 0.4));
+
+  /* Titres de l'accueil et petites étiquettes */
+  --taille-titre-section: 2.25rem; /* « Le journal » */
+  --taille-mois: 1.5rem; /* le mois d'une pellicule, en League Gothic */
+  --interlettre-mois: 0.2em;
+  --taille-meta: 0.8125rem; /* la ligne sous un titre */
+  --interligne-meta: 1.4;
+  --graisse-semi-forte: 600;
+  --graisse-noire: 800;
+  --interlettre-puce: 0.18em;
+
+  /* Le bouton « J'ai vu un film » */
+  --bouton-hauteur: 3.25rem;
+  --bouton-marge: 0 1.25rem 0 1rem;
+  --bouton-gap: 0.625rem;
+  --bouton-taille: 1.0625rem;
+  --bouton-interlettre: 0.02em;
+  --bouton-icone-trait: 2.25;
+
   /* Polices : celles de `polices.ts`, chargées hors ligne. */
-  --police-texte: 'Manrope', system-ui, sans-serif;
-  --police-titre: 'Manrope', system-ui, sans-serif;
+  --police-texte: 'Jost', system-ui, sans-serif;
+  --police-titre: 'Bodoni Moda', Georgia, serif;
+  --police-fronton: 'League Gothic', 'Arial Narrow', sans-serif; /* les lettres du fronton et de la tuile de note */
   --graisse-normale: 400;
   --graisse-moyenne: 500;
   --graisse-forte: 700;
@@ -54,6 +457,10 @@
   --espace-4: 1rem;
   --espace-5: 1.5rem;
   --espace-6: 2.5rem;
+  /* Les mêmes en négatif, pour les débords : une feuille n'écrit pas `-1 *`, un nombre en dur. */
+  --espace-moins-demi: -0.375rem;
+  --espace-moins-2: -0.5rem;
+  --espace-moins-3: -0.75rem;
 
   /* Rayons */
   --rayon-s: 0.375rem;
@@ -87,12 +494,13 @@
   --ratio-affiche: 2 / 3; /* la jaquette d'un film */
   /* Les grilles : `minmax(0, 1fr)` et non `1fr`, dont le minimum est le contenu (un titre long, une
      image) : la piste déborderait de l'écran et la page défilerait de côté. */
-  --grille-affiches-colonnes: repeat(2, minmax(0, 1fr)); /* la grille du journal, deux colonnes */
   --grille-sorties-colonnes: repeat(3, minmax(0, 1fr)); /* les grilles de sorties d'Au ciné, trois colonnes */
   --grille-bande-colonnes: repeat(6, minmax(0, 1fr)); /* la bande d'un cycle, six affiches par rangée */
-  --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, « Ensuite », « Ce soir ») */
-  --taille-bouton-rond: 3.5rem; /* le bouton d'ajout flottant */
+  --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, filmographies, Au ciné) */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */
+  --cote-tuile-note: 1.5rem; /* la tuile de note posée sur une affiche : au moins ce carré */
+  --taille-tuile-note: 1.3125rem; /* le chiffre de cette tuile, en League Gothic */
+  --trait-tuile-note: 1.5px; /* son cadre */
   --largeur-vitrine-vide: 40%; /* le cadre d'affiche vide, avant le premier film */
   --hauteur-remarque: 6rem; /* la remarque privée du carnet, dans le formulaire */
   --largeur-affiche-fiche: 7rem; /* la jaquette de la fiche d'un visionnage */
@@ -103,41 +511,530 @@
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));
 
   /* Empilement */
+  --z-derriere: -1; /* derrière le contenu de son parent, qui forme alors un contexte d'empilement (`isolation: isolate`) */
   --z-calque: 5; /* un calque du Voyage (la feuille du chroniqueur, un feuillet) : sous le bandeau et la barre, qu'il laisse visibles */
   --z-bandeau: 10; /* le bandeau « Nouvelle version » : au-dessus de la carte, sous la barre d'onglets */
   --z-barre-onglets: 20;
 }
 
 /* ------------------------------------------------------------------ Sombre */
-/* Suit le réglage du téléphone ; `data-theme` sur <html> force l'un ou l'autre. */
+/* Suit le réglage du téléphone ; `data-theme` sur <html> force l'un ou l'autre. Les deux blocs portent
+   les mêmes valeurs. La nuit est relevée : un ciel qui ne s'assombrit plus vers le bas, des ombres
+   portées franches, des étiquettes crème et des lueurs plus fortes. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='clair']) {
-    --couleur-fond: #121214;
-    --couleur-surface: #1c1c1f;
-    --couleur-surface-2: #29292d;
-    --couleur-texte: #ececee;
-    --couleur-texte-doux: #9a9aa2;
-    --couleur-bordure: #323237;
-    --couleur-accent: #8aa9ff;
-    --couleur-sur-accent: #10131c;
+    --couleur-fond: #080a26;
+    --couleur-surface: #121647;
+    --couleur-surface-2: #1b2160;
+    --couleur-texte: #f6f0e2;
+    --couleur-texte-doux: #e6dcc4;
+    --couleur-bordure: #2a3180;
+    --couleur-accent: #ff3b4e;
+    --couleur-sur-accent: #19040a;
     --couleur-danger: #f2b8b5;
-    --ombre-s: 0 1px 2px rgb(0 0 0 / 0.4);
-    --ombre-m: 0 4px 16px rgb(0 0 0 / 0.5);
+    --ombre-s: 0 1px 2px rgb(0 0 0 / 0.6);
+    --ombre-m: 0 10px 20px -2px rgba(1, 2, 16, 0.8), 0 3px 6px rgba(1, 2, 16, 0.55);
+    --couleur-sur-bloc: #fffaf0;
+    --couleur-sur-bloc-doux: #e6dcc4;
+    --ombre-bloc: 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4);
+    --fond-ciel: radial-gradient(ellipse 300px 260px at 50% 170px, rgba(255, 196, 120, 0.14), rgba(255, 196, 120, 0) 72%),
+      linear-gradient(180deg, #1b2472 0%, #1e2a80 40%, #22328e 100%);
+    --lueur-accent: 0 0 26px rgba(255, 59, 78, 0.5), 0 8px 22px rgba(0, 0, 0, 0.45);
+    --fronton-panneau: #fbf3dc;
+    --fronton-rail: rgba(16, 19, 58, 0.16);
+    --fronton-cadre: #04051a;
+    --fronton-ampoule: #fff8e0;
+    --fronton-halo: rgba(255, 214, 140, 0.85);
+    --fronton-lueur: 0 0 110px rgba(255, 206, 130, 0.5), 0 0 26px rgba(255, 226, 170, 0.75);
+    --eventail-estompe: brightness(0.55) saturate(0.85);
+    --eventail-ombre: 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6);
+    --enseigne-ombre-portee: 9px 11px 9px rgba(60, 35, 0, 0.38);
+    --enseigne-lettres-ampoules: radial-gradient(circle at center, #fffbe8 0, #fff0c2 1.3px, rgba(255, 222, 150, 0.5) 2.1px, transparent 3px);
+    --enseigne-nuit-1910: 0 0 12px rgba(242, 234, 216, 0.45);
+    --enseigne-nuit-1940: drop-shadow(0 0 3px rgba(255, 214, 140, 0.75)) drop-shadow(0 0 14px var(--fronton-halo));
+    --enseigne-nuit-1950: 0 0 2px #fff, 0 0 4px #ff4f9a, 0 0 12px #ff4f9a, 0 0 28px #ff4f9a;
+    --enseigne-nuit-1950-lettre: 0 0 6px rgba(31, 181, 173, 0.8);
+    --enseigne-nuit-1980: drop-shadow(0 0 8px rgba(255, 47, 208, 0.75));
+    --panneau-fond: radial-gradient(ellipse 80% 70% at 50% 85%, rgba(255, 190, 110, 0.2), transparent 75%), linear-gradient(180deg, #3a2d24, #2a2018);
+    --panneau-relief: 0 0 0 3px #c9a35a, 0 0 0 4px #5a431a, 0 0 0 5px #f6dc96, 0 -2px 0 5px rgba(255, 240, 200, 0.55), inset 0 2px 8px rgba(0, 0, 0, 0.7), 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6);
+    --panneau-encre: #fffaf0;
+    --panneau-encre-douce: #e6dcc4;
+    --panneau-encre-eteinte: #c9bfa6;
+    --carte-fond: linear-gradient(135deg, #18227a 0%, #10186a 45%, #0a1050 100%);
+    --carte-encre: #f8f2e2;
+    --carte-encre-douce: #e0d9c4;
+    --carte-relief: -1px -1px 0 rgba(255, 255, 255, 0.5), 1px 1px 1px rgba(0, 0, 0, 0.75), 0 0 1px rgba(0, 0, 0, 0.4);
+    --carte-boite: 0 20px 28px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.7), 0 0 0 1px rgba(190, 205, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.2);
+    --carte-ombre: 0 20px 28px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.7);
+    --carte-guilloche: repeating-radial-gradient(circle at 78% 30%, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 4px),
+      repeating-radial-gradient(circle at 22% 90%, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+    --carte-reflet: linear-gradient(115deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.09) 45%, rgba(255, 255, 255, 0) 60%);
+    --carte-dos: #4a5fd0;
+    --carte-sceau-fond: radial-gradient(circle at 35% 30%, #2a3598, #0e1450);
+    --carte-sceau-relief: inset 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.3), 0 0 0 2px rgba(255, 255, 255, 0.18);
+    --carte-sceau-pointille: rgba(236, 229, 209, 0.5);
+    --carte-sceau-lueur: 0 1px 0 rgba(0, 0, 0, 0.45), 0 0 8px currentColor;
+    --jauge-arc-opacite: 0.95;
+    --jauge-halo-opacite: 0.95;
+    --vumetre-diode: #fffaf0;
+    --vumetre-lueur: drop-shadow(0 0 5px rgba(255, 244, 214, 0.7));
+    --vumetre-lueur-pic: drop-shadow(0 0 5px rgba(255, 59, 78, 0.95));
+    --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.85));
+    --perforations-fond: linear-gradient(90deg, #3a2d24, #2e241c 10%, #2e241c 90%, #3a2d24);
+    --perforations-relief: 0 18px 24px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4), 0 0 0 1px rgba(255, 235, 200, 0.28);
+    --perforation-trou: #ffe9b8;
+    --perforation-repere: #fff6dc;
+    --perforation-repere-lueur: 0 0 18px 6px rgba(255, 214, 140, 0.8), inset 0 0 4px rgba(255, 255, 255, 0.95);
+    --ampoule-allumee: radial-gradient(circle at 38% 32%, #ffffff, #ffe9b0 55%, #f0b84a);
+    --ampoule-halo: 0 0 14px 3px rgba(255, 214, 140, 0.85), inset 0 0 3px rgba(255, 255, 255, 0.9);
+    --ampoule-eteinte: radial-gradient(circle at 38% 32%, #4d4338, #231c16);
+    --ampoule-eteinte-bord: rgba(255, 255, 255, 0.14);
+    --ampoule-mois-lueur: 0 0 6px currentColor;
+    --souche-ombre: drop-shadow(0 -2px 3px rgba(255, 235, 200, 0.35)) drop-shadow(0 -4px 8px rgba(1, 2, 16, 0.5));
+    --fente-fond: linear-gradient(180deg, #6a6258, #2c2822 60%, #4a443c);
+    --fente-relief: 0 12px 16px -2px rgba(1, 2, 16, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    --fente-voyant-fond: currentColor;
+    --fente-voyant-lueur: 0 0 7px currentColor;
+    --caisse-ombre: drop-shadow(0 16px 16px rgba(1, 2, 16, 0.85)) drop-shadow(0 2px 2px rgba(1, 2, 16, 0.4));
   }
 }
 
 :root[data-theme='sombre'] {
-  --couleur-fond: #121214;
-  --couleur-surface: #1c1c1f;
-  --couleur-surface-2: #29292d;
-  --couleur-texte: #ececee;
-  --couleur-texte-doux: #9a9aa2;
-  --couleur-bordure: #323237;
-  --couleur-accent: #8aa9ff;
-  --couleur-sur-accent: #10131c;
+  --couleur-fond: #080a26;
+  --couleur-surface: #121647;
+  --couleur-surface-2: #1b2160;
+  --couleur-texte: #f6f0e2;
+  --couleur-texte-doux: #e6dcc4;
+  --couleur-bordure: #2a3180;
+  --couleur-accent: #ff3b4e;
+  --couleur-sur-accent: #19040a;
   --couleur-danger: #f2b8b5;
-  --ombre-s: 0 1px 2px rgb(0 0 0 / 0.4);
-  --ombre-m: 0 4px 16px rgb(0 0 0 / 0.5);
+  --ombre-s: 0 1px 2px rgb(0 0 0 / 0.6);
+  --ombre-m: 0 10px 20px -2px rgba(1, 2, 16, 0.8), 0 3px 6px rgba(1, 2, 16, 0.55);
+  --couleur-sur-bloc: #fffaf0;
+  --couleur-sur-bloc-doux: #e6dcc4;
+  --ombre-bloc: 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4);
+  --fond-ciel: radial-gradient(ellipse 300px 260px at 50% 170px, rgba(255, 196, 120, 0.14), rgba(255, 196, 120, 0) 72%),
+    linear-gradient(180deg, #1b2472 0%, #1e2a80 40%, #22328e 100%);
+  --lueur-accent: 0 0 26px rgba(255, 59, 78, 0.5), 0 8px 22px rgba(0, 0, 0, 0.45);
+  --fronton-panneau: #fbf3dc;
+  --fronton-rail: rgba(16, 19, 58, 0.16);
+  --fronton-cadre: #04051a;
+  --fronton-ampoule: #fff8e0;
+  --fronton-halo: rgba(255, 214, 140, 0.85);
+  --fronton-lueur: 0 0 110px rgba(255, 206, 130, 0.5), 0 0 26px rgba(255, 226, 170, 0.75);
+  --eventail-estompe: brightness(0.55) saturate(0.85);
+  --eventail-ombre: 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6);
+  --enseigne-ombre-portee: 9px 11px 9px rgba(60, 35, 0, 0.38);
+  --enseigne-lettres-ampoules: radial-gradient(circle at center, #fffbe8 0, #fff0c2 1.3px, rgba(255, 222, 150, 0.5) 2.1px, transparent 3px);
+  --enseigne-nuit-1910: 0 0 12px rgba(242, 234, 216, 0.45);
+  --enseigne-nuit-1940: drop-shadow(0 0 3px rgba(255, 214, 140, 0.75)) drop-shadow(0 0 14px var(--fronton-halo));
+  --enseigne-nuit-1950: 0 0 2px #fff, 0 0 4px #ff4f9a, 0 0 12px #ff4f9a, 0 0 28px #ff4f9a;
+  --enseigne-nuit-1950-lettre: 0 0 6px rgba(31, 181, 173, 0.8);
+  --enseigne-nuit-1980: drop-shadow(0 0 8px rgba(255, 47, 208, 0.75));
+  --panneau-fond: radial-gradient(ellipse 80% 70% at 50% 85%, rgba(255, 190, 110, 0.2), transparent 75%), linear-gradient(180deg, #3a2d24, #2a2018);
+  --panneau-relief: 0 0 0 3px #c9a35a, 0 0 0 4px #5a431a, 0 0 0 5px #f6dc96, 0 -2px 0 5px rgba(255, 240, 200, 0.55), inset 0 2px 8px rgba(0, 0, 0, 0.7), 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6);
+  --panneau-encre: #fffaf0;
+  --panneau-encre-douce: #e6dcc4;
+  --panneau-encre-eteinte: #c9bfa6;
+  --carte-fond: linear-gradient(135deg, #18227a 0%, #10186a 45%, #0a1050 100%);
+  --carte-encre: #f8f2e2;
+  --carte-encre-douce: #e0d9c4;
+  --carte-relief: -1px -1px 0 rgba(255, 255, 255, 0.5), 1px 1px 1px rgba(0, 0, 0, 0.75), 0 0 1px rgba(0, 0, 0, 0.4);
+  --carte-boite: 0 20px 28px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.7), 0 0 0 1px rgba(190, 205, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.2);
+  --carte-ombre: 0 20px 28px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.7);
+  --carte-guilloche: repeating-radial-gradient(circle at 78% 30%, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 4px),
+    repeating-radial-gradient(circle at 22% 90%, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+  --carte-reflet: linear-gradient(115deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.09) 45%, rgba(255, 255, 255, 0) 60%);
+  --carte-dos: #4a5fd0;
+  --carte-sceau-fond: radial-gradient(circle at 35% 30%, #2a3598, #0e1450);
+  --carte-sceau-relief: inset 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.3), 0 0 0 2px rgba(255, 255, 255, 0.18);
+  --carte-sceau-pointille: rgba(236, 229, 209, 0.5);
+  --carte-sceau-lueur: 0 1px 0 rgba(0, 0, 0, 0.45), 0 0 8px currentColor;
+  --jauge-arc-opacite: 0.95;
+  --jauge-halo-opacite: 0.95;
+  --vumetre-diode: #fffaf0;
+  --vumetre-lueur: drop-shadow(0 0 5px rgba(255, 244, 214, 0.7));
+  --vumetre-lueur-pic: drop-shadow(0 0 5px rgba(255, 59, 78, 0.95));
+  --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.85));
+  --perforations-fond: linear-gradient(90deg, #3a2d24, #2e241c 10%, #2e241c 90%, #3a2d24);
+  --perforations-relief: 0 18px 24px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4), 0 0 0 1px rgba(255, 235, 200, 0.28);
+  --perforation-trou: #ffe9b8;
+  --perforation-repere: #fff6dc;
+  --perforation-repere-lueur: 0 0 18px 6px rgba(255, 214, 140, 0.8), inset 0 0 4px rgba(255, 255, 255, 0.95);
+  --ampoule-allumee: radial-gradient(circle at 38% 32%, #ffffff, #ffe9b0 55%, #f0b84a);
+  --ampoule-halo: 0 0 14px 3px rgba(255, 214, 140, 0.85), inset 0 0 3px rgba(255, 255, 255, 0.9);
+  --ampoule-eteinte: radial-gradient(circle at 38% 32%, #4d4338, #231c16);
+  --ampoule-eteinte-bord: rgba(255, 255, 255, 0.14);
+  --ampoule-mois-lueur: 0 0 6px currentColor;
+  --souche-ombre: drop-shadow(0 -2px 3px rgba(255, 235, 200, 0.35)) drop-shadow(0 -4px 8px rgba(1, 2, 16, 0.5));
+  --fente-fond: linear-gradient(180deg, #6a6258, #2c2822 60%, #4a443c);
+  --fente-relief: 0 12px 16px -2px rgba(1, 2, 16, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  --fente-voyant-fond: currentColor;
+  --fente-voyant-lueur: 0 0 7px currentColor;
+  --caisse-ombre: drop-shadow(0 16px 16px rgba(1, 2, 16, 0.85)) drop-shadow(0 2px 2px rgba(1, 2, 16, 0.4));
+}
+
+/* ------------------------------------------------------------------ La carte d'adhérent */
+/* La bande de la carte est taillée dans la couleur du membre : une variable qui lit `--identite` ne se
+   résout qu'où elle est posée, d'où ce bloc sur la carte elle-même (`data-adherent`, `profil/CarteAdherent.tsx`)
+   et non sur `:root`, qui n'aurait que la valeur par défaut. */
+[data-adherent] {
+  --carte-bande: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--identite) 72%, #000) 0%,
+    var(--identite) 30%,
+    color-mix(in srgb, var(--identite) 55%, #fff) 48%,
+    var(--identite) 62%,
+    color-mix(in srgb, var(--identite) 88%, #000) 100%
+  );
+}
+
+/* ------------------------------------------------------------------ Les enseignes */
+/* Une enseigne par décennie de 1890 à 2020, posée sur le lien du fronton (`data-decennie`, voir
+   `accueil/fronton.ts`). Chaque bloc re-pose les variables `--fronton-*` et `--enseigne-*` du panneau ;
+   les mesures viennent du dessin des enseignes (`--enseigne-retrait` : le relief, le cadre intérieur
+   et les jambages qui mordent sur la largeur du titre). Le bloc de 1940, l'enseigne de la maison,
+   garde le panneau crème et le rail, et allume ses lettres à ampoules. */
+[data-decennie='1890'] {
+  --police-enseigne: 'Rye', Georgia, serif;
+  --fronton-panneau-fond: radial-gradient(ellipse farthest-corner at 50% 50%, transparent 62%, rgba(130, 85, 20, 0.35) 100%), #f3e6c4;
+  --fronton-lettre: #1d1a16;
+  --fronton-lettre-rouge: #1d1a16;
+  --enseigne-bord-affichage: block;
+  --enseigne-bord-marge: 5px;
+  --enseigne-bord: 4px double #1d1a16;
+  --enseigne-bord-rayon: 0;
+  --enseigne-bord-ombre: 0 0 0 transparent;
+  --enseigne-bord-fond: none;
+  --enseigne-titre-couleur: #9b1c1c;
+  --enseigne-relief: 3px 3px 0 #000;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0.1875rem;
+  --enseigne-retrait: 1.8125rem;
+  --fronton-chasse: 0.8;
+}
+
+[data-decennie='1900'] {
+  --police-enseigne: 'Ribeye', Georgia, serif;
+  --fronton-panneau-fond: radial-gradient(circle at 12% 22%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 28% 68%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 46% 18%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 63% 74%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 81% 26%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 90% 62%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 20% 86%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 72% 10%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 54% 50%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 6% 52%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 95% 14%, #f9e89a 0, #f9e89a 1.4px, rgba(249, 232, 154, 0.35) 2px, transparent 3px),
+    linear-gradient(180deg, #0f3b3a, #0a2230);
+  --fronton-lettre: #f1dc8f;
+  --fronton-lettre-rouge: #f1dc8f;
+  --enseigne-bord-affichage: block;
+  --enseigne-bord-marge: 6px;
+  --enseigne-bord: 1.5px solid #d4a017;
+  --enseigne-bord-rayon: 16px;
+  --enseigne-bord-ombre: 0 0 0 transparent;
+  --enseigne-bord-fond: none;
+  --enseigne-titre-couleur: #061a1a;
+  --enseigne-relief: 1px 1px 0 #061a1a, 2px 2px 0 #061a1a, 3px 3px 0 #061a1a, 4px 4px 0 #061a1a;
+  --enseigne-face-affichage: flex;
+  --enseigne-face-image: linear-gradient(180deg, #f9e89a 0%, #d4a017 50%, #8a5a00 100%);
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0.25rem;
+  --enseigne-retrait: 1.75rem;
+  --fronton-chasse: 0.83;
+}
+
+[data-decennie='1910'] {
+  --police-enseigne: 'Abril Fatface', Georgia, serif;
+  --fronton-panneau-fond: radial-gradient(ellipse 75% 85% at 50% 50%, #1c1c1c 0%, #0b0b0b 62%, #000 100%);
+  --fronton-lettre: #f2ead8;
+  --fronton-lettre-rouge: #f2ead8;
+  --enseigne-bord-affichage: block;
+  --enseigne-bord-marge: 7px;
+  --enseigne-bord: 4px double rgba(242, 234, 216, 0.85);
+  --enseigne-bord-rayon: 0;
+  --enseigne-bord-ombre: 0 0 0 transparent;
+  --enseigne-bord-fond: none;
+  --enseigne-titre-couleur: #f2ead8;
+  --enseigne-lueur: var(--enseigne-nuit-1910);
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0;
+  --enseigne-retrait: 2rem;
+  --fronton-chasse: 0.73;
+}
+
+[data-decennie='1920'] {
+  --police-enseigne: 'Rammetto One', Impact, sans-serif;
+  --fronton-panneau-fond: linear-gradient(#c9982f, #c9982f) left 8px top 8px / 24px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) left 8px top 8px / 1.5px 24px no-repeat,
+    linear-gradient(#c9982f, #c9982f) left 14px top 14px / 14px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) left 14px top 14px / 1.5px 14px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 8px top 8px / 24px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 8px top 8px / 1.5px 24px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 14px top 14px / 14px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 14px top 14px / 1.5px 14px no-repeat,
+    linear-gradient(#c9982f, #c9982f) left 8px bottom 8px / 24px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) left 8px bottom 8px / 1.5px 24px no-repeat,
+    linear-gradient(#c9982f, #c9982f) left 14px bottom 14px / 14px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) left 14px bottom 14px / 1.5px 14px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 8px bottom 8px / 24px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 8px bottom 8px / 1.5px 24px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 14px bottom 14px / 14px 1.5px no-repeat,
+    linear-gradient(#c9982f, #c9982f) right 14px bottom 14px / 1.5px 14px no-repeat,
+    repeating-conic-gradient(from 0deg at 50% 100%, rgba(224, 177, 58, 0.17) 0deg 5deg, transparent 5deg 10deg),
+    #000;
+  --fronton-lettre: #e6c15a;
+  --fronton-lettre-rouge: #e6c15a;
+  --enseigne-titre-couleur: #000;
+  --enseigne-relief: 1px 1px 0 #000, 2px 2px 0 #000, 3px 3px 0 #000;
+  --enseigne-face-affichage: flex;
+  --enseigne-face-image: linear-gradient(180deg, #fff3b0 0%, #e0b13a 40%, #7a5200 65%, #e8c55a 100%);
+  --enseigne-face-contour: 1px #000;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0.1875rem;
+  --enseigne-retrait: 0.8125rem;
+  --fronton-chasse: 0.94;
+}
+
+[data-decennie='1930'] {
+  --police-enseigne: 'Bowlby One SC', Impact, sans-serif;
+  --fronton-panneau-fond: linear-gradient(180deg, #4a0d18, #2a060d);
+  --fronton-lettre: #eef2fa;
+  --fronton-lettre-rouge: #eef2fa;
+  --enseigne-titre-couleur: #0a0f18;
+  --enseigne-relief: 1px 1px 0 #0a0f18, 2px 2px 0 #0a0f18, 3px 3px 0 #0a0f18, 4px 4px 0 #0a0f18;
+  --enseigne-face-affichage: flex;
+  --enseigne-face-image: linear-gradient(180deg, #ffffff 0%, #c9d3e3 25%, #5d6a80 50%, #1f2a3c 52%, #aab6cc 75%, #f2f6ff 100%);
+  --enseigne-face-contour: 1px #10151f;
+  --enseigne-trait-affichage: block;
+  --enseigne-trait-haut: 1.1875rem;
+  --enseigne-trait-fond: repeating-linear-gradient(180deg, #d8dfec 0 2px, transparent 2px 8px);
+  --enseigne-trait-masque: linear-gradient(90deg, #000 0, #000 9%, transparent 15%, transparent 85%, #000 91%, #000 100%);
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0.25rem;
+  --enseigne-retrait: 0.875rem;
+  --fronton-chasse: 0.83;
+}
+
+[data-decennie='1940'] {
+  --police-enseigne: 'League Gothic', 'Arial Narrow', sans-serif;
+  --enseigne-titre-couleur: var(--enseigne-dos-1940);
+  --enseigne-relief: 1px 1px 0 var(--enseigne-dos-1940), 2px 2px 0 var(--enseigne-dos-1940), 3px 3px 0 var(--enseigne-dos-1940), 4px 4px 0 var(--enseigne-dos-1940), 5px 5px 0 var(--enseigne-dos-1940), 6px 6px 0 var(--enseigne-dos-1940), 7px 7px 0 var(--enseigne-dos-1940), 8px 8px 0 var(--enseigne-dos-1940), var(--enseigne-ombre-portee);
+  --enseigne-filtre: var(--enseigne-nuit-1940);
+  --enseigne-face-affichage: flex;
+  --enseigne-face-image: var(--enseigne-lettres-ampoules);
+  --enseigne-face-taille: 6.5px 6.5px;
+  --enseigne-face-couleur: var(--fronton-lettre-rouge);
+  --enseigne-allumage-duree: 0.9s;
+  --enseigne-extrusion: 0.5rem;
+  --enseigne-retrait: 1.125rem;
+  --fronton-chasse: 0.4;
+}
+
+[data-decennie='1950'] {
+  --police-enseigne: 'Lobster', cursive;
+  --fronton-panneau-fond: radial-gradient(ellipse 1.2px 7px at 50% 50%, rgba(31, 181, 173, 0.32) 60%, transparent 100%) 0 0 / 44px 44px,
+    radial-gradient(ellipse 7px 1.2px at 50% 50%, rgba(31, 181, 173, 0.32) 60%, transparent 100%) 0 0 / 44px 44px,
+    radial-gradient(ellipse 1.2px 7px at 50% 50%, rgba(31, 181, 173, 0.2) 60%, transparent 100%) 22px 22px / 44px 44px,
+    radial-gradient(ellipse 7px 1.2px at 50% 50%, rgba(31, 181, 173, 0.2) 60%, transparent 100%) 22px 22px / 44px 44px,
+    #06363a;
+  --fronton-lettre: #d6fffb;
+  --fronton-lettre-rouge: #d6fffb;
+  --fronton-lettre-ombre: var(--enseigne-nuit-1950-lettre);
+  --enseigne-titre-couleur: #ffe3ee;
+  --enseigne-lueur: var(--enseigne-nuit-1950);
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0;
+  --enseigne-retrait: 1.5rem;
+  --fronton-chasse: 0.65;
+}
+
+[data-decennie='1960'] {
+  --police-enseigne: 'Shrikhand', cursive;
+  --fronton-panneau-fond: repeating-radial-gradient(circle at 88% 18%, transparent 0 16px, rgba(255, 212, 0, 0.6) 16px 32px),
+    #ff6a00;
+  --fronton-lettre: #4a1470;
+  --fronton-lettre-rouge: #4a1470;
+  --enseigne-titre-couleur: #ff2d87;
+  --enseigne-relief: 1px 1px 0 #ffd400, 2px 2px 0 #ffd400, 3px 3px 0 #ffd400, 4px 4px 0 #ffd400, 5px 5px 0 #5b1a8a, 6px 6px 0 #5b1a8a, 7px 7px 0 #5b1a8a, 8px 8px 0 #5b1a8a;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0.5rem;
+  --enseigne-retrait: 2rem;
+  --fronton-chasse: 0.78;
+}
+
+[data-decennie='1970'] {
+  --police-enseigne: 'Caprasimo', Georgia, serif;
+  --fronton-panneau-fond: #3b2314;
+  --fronton-lettre: #f6e7c8;
+  --fronton-lettre-rouge: #f6e7c8;
+  --enseigne-titre-couleur: #f6e7c8;
+  --enseigne-relief: 3px 3px 0 #e2572b, 6px 6px 0 #f0a23b, 9px 9px 0 #1c0f07;
+  --enseigne-barre-affichage: block;
+  --enseigne-barre-haut: 0.9375rem;
+  --enseigne-barre-fond: linear-gradient(180deg, #e2572b 0 33%, #f0a23b 33% 66%, #f3d9a4 66% 100%);
+  --enseigne-barre-marge: 0.5rem;
+  --enseigne-apres-titre: 2.0625rem;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0.5625rem;
+  --enseigne-retrait: 1.1875rem;
+  --fronton-chasse: 0.8;
+}
+
+[data-decennie='1980'] {
+  --police-enseigne: 'Russo One', Impact, sans-serif;
+  --fronton-panneau-fond: radial-gradient(circle 75px at 50% 100%, rgba(255, 226, 122, 0.5), rgba(255, 138, 60, 0.5) 74px, transparent 75px) center 32% / 150px 75px no-repeat,
+    linear-gradient(90deg, transparent, #ff2fd0 20%, #ff2fd0 80%, transparent) 0 64% / 100% 1px no-repeat,
+    linear-gradient(180deg, #12062b 0%, #2a0845 64%, transparent 64%),
+    repeating-linear-gradient(90deg, rgba(255, 47, 208, 0.6) 0 1.5px, transparent 1.5px 30px),
+    repeating-linear-gradient(180deg, rgba(255, 47, 208, 0.6) 0 1.5px, transparent 1.5px 16px),
+    #1a0538;
+  --fronton-lettre: #7df9ff;
+  --fronton-lettre-rouge: #7df9ff;
+  --fronton-lettre-ombre: 0 0 4px #12062b, 0 0 8px #12062b, 0 1px 2px #12062b;
+  --enseigne-titre-couleur: transparent;
+  --enseigne-filtre: var(--enseigne-nuit-1980);
+  --enseigne-face-affichage: flex;
+  --enseigne-face-image: linear-gradient(180deg, #7df9ff 0%, #2f6bff 49%, #ff2fd0 51%, #ffb347 100%);
+  --enseigne-face-contour: 1px #7df9ff;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-extrusion: 0;
+  --enseigne-retrait: 1.125rem;
+  --fronton-chasse: 0.75;
+}
+
+[data-decennie='1990'] {
+  --police-enseigne: 'Cinzel', Georgia, serif;
+  --fronton-panneau-fond: linear-gradient(90deg, transparent, rgba(210, 230, 255, 0.9) 50%, transparent) 0 52% / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, rgba(160, 200, 255, 0.3) 50%, transparent) 0 52% / 100% 9px no-repeat,
+    radial-gradient(ellipse 62% 48% at 50% 54%, rgba(80, 120, 170, 0.6), transparent 72%),
+    #000;
+  --fronton-lettre: #cfd3d8;
+  --fronton-lettre-rouge: #cfd3d8;
+  --enseigne-titre-couleur: #000;
+  --enseigne-relief: 1px 2px 3px rgba(0, 0, 0, 0.9);
+  --enseigne-face-affichage: flex;
+  --enseigne-face-image: linear-gradient(180deg, #fdf5d0 0%, #c8a44d 40%, #6b5420 68%, #d9bc6a 100%);
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-graisse: 900;
+  --enseigne-extrusion: 0;
+  --enseigne-retrait: 0.625rem;
+  --fronton-chasse: 0.94;
+  --fronton-interlettre-titre: .12em;
+  --enseigne-compensation: .12em;
+  --fronton-interlettre-date: .3em;
+  --fronton-interlettre-detail: .3em;
+  --fronton-chasse-espacee: 0.7;
+}
+
+[data-decennie='2000'] {
+  --police-enseigne: 'Orbitron', Impact, sans-serif;
+  --fronton-panneau-fond: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0 1px, rgba(0, 0, 0, 0.05) 1px 2px),
+    #dfe5ec;
+  --fronton-lettre: #2c3a4a;
+  --fronton-lettre-rouge: #2c3a4a;
+  --enseigne-bord-affichage: block;
+  --enseigne-bord-marge: 6px;
+  --enseigne-bord: 2px solid #b4bdca;
+  --enseigne-bord-rayon: 16px;
+  --enseigne-bord-ombre: inset 0 3px 6px rgba(0, 0, 0, 0.28), 0 1px 0 #fff;
+  --enseigne-bord-fond: none;
+  --enseigne-titre-couleur: #5a6472;
+  --enseigne-relief: 2px 3px 5px rgba(0, 30, 80, 0.5);
+  --enseigne-face-affichage: flex;
+  --enseigne-face-image: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.08) 100%),
+    linear-gradient(180deg, #9be8ff 0%, #1e8bff 50%, #0a3fd1 100%);
+  --enseigne-face-taille: 100% 50%, 100% 100%;
+  --enseigne-face-repet: no-repeat;
+  --enseigne-face-contour: 1.5px #5a6472;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-graisse: 900;
+  --enseigne-extrusion: 0;
+  --enseigne-retrait: 1.625rem;
+  --fronton-chasse: 0.84;
+}
+
+[data-decennie='2010'] {
+  --police-enseigne: 'Montserrat', Arial, sans-serif;
+  --fronton-panneau-fond: #0fa3a3;
+  --fronton-lettre: #ffffff;
+  --fronton-lettre-rouge: #ffffff;
+  --enseigne-titre-couleur: #fff;
+  --enseigne-relief: 1px 1px 0 #0b7f7f, 2px 2px 0 #0b7f7f, 3px 3px 0 #0b7f7f, 4px 4px 0 #0b7f7f, 5px 5px 0 #0b7f7f, 6px 6px 0 #0b7f7f, 7px 7px 0 #0b7f7f, 8px 8px 0 #0b7f7f, 9px 9px 0 #0b7f7f, 10px 10px 0 #0b7f7f, 11px 11px 0 #0b7f7f, 12px 12px 0 #0b7f7f, 13px 13px 0 #0b7f7f, 14px 14px 0 #0b7f7f, 15px 15px 0 #0b7f7f, 16px 16px 0 #0b7f7f, 17px 17px 0 #0b7f7f, 18px 18px 0 #0b7f7f, 19px 19px 0 #0b7f7f, 20px 20px 0 #0b7f7f, 21px 21px 0 #0b7f7f, 22px 22px 0 #0b7f7f, 23px 23px 0 #0b7f7f, 24px 24px 0 #0b7f7f, 25px 25px 0 #0b7f7f, 26px 26px 0 #0b7f7f, 27px 27px 0 #0b7f7f, 28px 28px 0 #0b7f7f;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-graisse: 900;
+  --enseigne-extrusion: 1.75rem;
+  --enseigne-retrait: 2.375rem;
+  --fronton-chasse: 0.81;
+}
+
+[data-decennie='2020'] {
+  --police-enseigne: 'Unbounded', Arial, sans-serif;
+  --fronton-panneau-fond: #0a0d38;
+  --fronton-lettre: #121212;
+  --fronton-lettre-rouge: #121212;
+  --enseigne-bord-affichage: block;
+  --enseigne-bord-marge: 6px;
+  --enseigne-bord: 0 solid transparent;
+  --enseigne-bord-rayon: 26px;
+  --enseigne-bord-ombre: 0 0 0 transparent;
+  --enseigne-bord-fond: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 4px),
+    radial-gradient(circle at 12% 18%, #b9a3ff 0, rgba(185, 163, 255, 0) 48%),
+    radial-gradient(circle at 92% 30%, #ff8a4c 0, rgba(255, 138, 76, 0) 46%),
+    radial-gradient(circle at 55% 105%, #c8ff5a 0, rgba(200, 255, 90, 0) 55%),
+    #ece7ff;
+  --enseigne-titre-couleur: #121212;
+  --fronton-hauteur-titre: auto;
+  --fronton-hauteur-titre-compact: auto;
+  --fronton-taille-titre-compact: var(--fronton-taille-titre);
+  --enseigne-air: 0.25rem;
+  --enseigne-graisse: 900;
+  --enseigne-extrusion: 0;
+  --enseigne-retrait: 2.125rem;
+  --fronton-chasse: 0.96;
+  --fronton-interlettre-titre: -0.02em;
 }
 
 /* ------------------------------------------------------------------ Styles de base */

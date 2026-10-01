@@ -3,31 +3,56 @@
 .bloc {
   display: flex;
   flex-direction: column;
-  gap: var(--espace-2);
 }
 
+.titreSection {
+  composes: entete from './Recu.module.css';
+}
+
+/* Le texte à gauche, la case à cocher à droite, comme sur un formulaire de caisse. */
 .entree {
   display: flex;
-  align-items: center;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--espace-3);
-  min-height: var(--cible-tactile);
-  padding: var(--espace-2) var(--espace-4);
-  border: var(--trait) solid var(--couleur-bordure);
-  border-radius: var(--rayon-m);
-  background: var(--couleur-surface);
-  color: var(--couleur-texte);
+  color: var(--papier-encre);
   cursor: pointer;
 }
 
-.entree:hover {
-  background: var(--couleur-surface-2);
+.entree:focus-within {
+  outline: var(--trait) solid var(--couleur-accent);
+  outline-offset: var(--espace-1);
 }
 
+/* La case, tracée au trait ; cochée, la couleur du membre y passe un trait de crayon. */
 .interrupteur {
+  appearance: none;
+  position: relative;
   flex: none;
-  width: var(--espace-5);
-  height: var(--espace-5);
-  accent-color: var(--couleur-accent);
+  width: var(--papier-case);
+  min-height: 0;
+  height: var(--papier-case);
+  margin: var(--espace-1) 0 0;
+  border: var(--papier-trait) solid var(--papier-encre);
+  background: none;
+  cursor: pointer;
+}
+
+.interrupteur:checked::after {
+  content: '';
+  position: absolute;
+  top: var(--espace-moins-2);
+  left: var(--espace-1);
+  width: var(--espace-2);
+  height: var(--espace-4);
+  border: solid var(--identite);
+  border-width: 0 var(--espace-1) var(--espace-1) 0;
+  transform: rotate(var(--papier-coche));
+}
+
+.interrupteur:disabled {
+  opacity: var(--opacite-inactif);
 }
 
 .texte {
@@ -36,15 +61,19 @@
 }
 
 .titre {
-  font-weight: var(--graisse-moyenne);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-semi-forte);
+  line-height: var(--interligne-titre);
 }
 
 .aide {
-  font-size: var(--taille-s);
-  color: var(--couleur-texte-doux);
+  margin-top: var(--espace-3);
+  max-width: var(--papier-aide-largeur);
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-xs);
+  line-height: var(--interligne-meta);
 }
 
 .erreur {
-  margin: 0;
-  color: var(--couleur-danger);
+  composes: erreur from './Recu.module.css';
 }

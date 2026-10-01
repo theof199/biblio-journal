@@ -1,0 +1,103 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.imprimante {
+  position: relative;
+  display: block;
+  height: var(--souche-scene);
+  container-type: inline-size;
+  color: var(--papier-encre);
+  text-decoration: none;
+}
+
+/* Le papier : l'ombre est portée par le conteneur, le papier lui-même est découpé en dents au sommet. */
+.souche {
+  position: absolute;
+  bottom: var(--souche-recouvrement);
+  left: var(--souche-marge);
+  width: var(--souche-largeur);
+  height: var(--souche-hauteur);
+  filter: var(--souche-ombre);
+}
+
+.papier {
+  position: absolute;
+  inset: 0;
+  background: var(--papier-fond);
+  clip-path: var(--souche-dechire);
+}
+
+.texte {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--espace-5) var(--espace-4) 0;
+  text-align: center;
+}
+
+.journal,
+.titre {
+  padding-left: var(--papier-interlettre);
+  font-family: var(--police-fronton);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.journal {
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-s);
+  letter-spacing: var(--papier-interlettre);
+}
+
+.titre {
+  padding-bottom: var(--espace-1);
+  border-bottom: var(--papier-trait) dashed var(--papier-tiret);
+  font-size: min(var(--souche-titre-taille), var(--souche-titre-largeur));
+  white-space: nowrap;
+  letter-spacing: var(--carte-chiffres-interlettre);
+}
+
+.aide {
+  margin-top: var(--espace-2);
+  color: var(--papier-encre-moyenne);
+  font-size: var(--taille-xs);
+  line-height: var(--interligne-meta);
+  text-wrap: balance;
+}
+
+.fleche {
+  margin-top: var(--espace-demi);
+  font-size: var(--taille-m);
+}
+
+/* La fente de l'imprimante, plus large que le papier. */
+.fente {
+  position: absolute;
+  inset: auto var(--souche-marge-fente) 0;
+  height: var(--souche-fente);
+  border-radius: var(--rayon-plein);
+  background: var(--fente-fond);
+  box-shadow: var(--fente-relief);
+  color: var(--identite);
+}
+
+.ouverture {
+  position: absolute;
+  inset: var(--espace-demi) var(--souche-debord) auto;
+  height: var(--espace-2);
+  border-radius: var(--rayon-plein);
+  background: var(--fente-ouverture-fond);
+  box-shadow: var(--fente-ouverture-relief);
+}
+
+.voyant {
+  position: absolute;
+  right: var(--espace-5);
+  bottom: var(--espace-demi);
+  width: var(--espace-demi);
+  height: var(--espace-demi);
+  border-radius: var(--rayon-plein);
+  background: var(--fente-voyant-fond);
+  box-shadow: var(--fente-voyant-lueur);
+}

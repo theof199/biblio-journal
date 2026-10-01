@@ -1,34 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import {
   DECENNIES_DU_VOYAGE,
-  bilanJournal,
-  bilanSuivi,
-  decenniesCouvertes,
-  decenniesCouvertesGrille,
+  REACTIONS_MONTREES,
+  anneeDAdhesion,
+  filmographieTerminee,
+  filmsParDecennie,
   filmsParMois,
+  heuresDeFilms,
+  noteMoyenne,
+  reactionsComptees,
   repartitionNotes,
 } from './bilan'
 import { visionnage as v } from '../test/journal'
+import type { FilmSuivi } from '../suivis/prochain'
 
-describe('bilanJournal', () => {
-  it('sur un journal vide : rien, jamais un zéro qui prétendrait à une moyenne', () => {
-    expect(bilanJournal([], 2026)).toEqual({
-      seancesEnSalle: 0,
-      seancesEnSalleCetteAnnee: 0,
-      noteMoyenne: null,
-      decennies: null,
-      plusAncien: null,
-    })
+describe('noteMoyenne', () => {
+  it('sur un journal sans note : nulle, jamais un zéro qui prétendrait à une moyenne', () => {
+    expect(noteMoyenne([])).toBeNull()
+    expect(noteMoyenne([v({ id: 'a', date: '2026-01-05' })])).toBeNull()
   })
 
-  it('un seul film, sans note : pas de moyenne, une décennie sur une', () => {
-    const b = bilanJournal([v({ id: 'a', titre: 'Alien', annee: 1979, date: '2026-01-05' })], 2026)
-    expect(b.noteMoyenne).toBeNull()
-    expect(b.decennies).toEqual({ premiere: 1970, derniere: 1970, couvertes: 1, total: 1 })
-    expect(b.plusAncien).toEqual({ titre: 'Alien', annee: 1979 })
-  })
-
-  it('la moyenne ne compte que les films notés, à une décimale, 8,25 arrondi à 8,3', () => {
+  it('ne compte que les films notés, à une décimale, 8,25 arrondi à 8,3', () => {
     const j = [
       v({ id: 'a', date: '2026-01-01', note: 8 }),
       v({ id: 'b', date: '2026-01-02', note: 9 }),
@@ -36,105 +28,78 @@ describe('bilanJournal', () => {
       v({ id: 'd', date: '2026-01-04', note: 8 }),
       v({ id: 'e', date: '2026-01-05', note: null }),
     ]
-    expect(bilanJournal(j, 2026).noteMoyenne).toBe(8.3)
-  })
-
-  it('les séances en salle : la réaction en_salle, revoyures comprises, dont celles de l’année donnée', () => {
-    const j = [
-      v({ id: 'a', media: 'm1', date: '2026-03-01', reactions: ['en_salle'] }),
-      v({ id: 'b', media: 'm1', date: '2025-12-31', reactions: ['adore', 'en_salle'] }),
-      v({ id: 'c', media: 'm2', date: '2026-01-01', reactions: ['adore'] }),
-    ]
-    const b = bilanJournal(j, 2026)
-    expect(b.seancesEnSalle).toBe(2)
-    expect(b.seancesEnSalleCetteAnnee).toBe(1)
-  })
-
-  it('une année sans séance : zéro cette année, sans toucher au total', () => {
-    const j = [v({ id: 'a', date: '2025-06-01', reactions: ['en_salle'] })]
-    expect(bilanJournal(j, 2026)).toMatchObject({ seancesEnSalle: 1, seancesEnSalleCetteAnnee: 0 })
-  })
-
-  it('le plus ancien ignore les films sans année, et garde le premier rencontré à année égale', () => {
-    const j = [
-      v({ id: 'a', titre: 'Sans année', annee: null, date: '2026-01-01' }),
-      v({ id: 'b', titre: 'Récent', annee: 2010, date: '2026-01-02' }),
-      v({ id: 'c', titre: 'Premier', annee: 1931, date: '2026-01-03' }),
-      v({ id: 'd', titre: 'Second', annee: 1931, date: '2026-01-04' }),
-    ]
-    expect(bilanJournal(j, 2026).plusAncien).toEqual({ titre: 'Premier', annee: 1931 })
-  })
-
-  it('aucune année connue : pas de décennies', () => {
-    expect(bilanJournal([v({ id: 'a', annee: null, date: '2026-01-01' })], 2026).decennies).toBeNull()
+    expect(noteMoyenne(j)).toBe(8.3)
   })
 })
 
-describe('decenniesCouvertes', () => {
-  it('« 1920 → 2020, 9 décennies sur 11 » : les vides de la fourchette ne comptent pas', () => {
-    const annees = [1920, 1935, 1945, 1950, 1960, 1975, 1980, 1995, 2020]
-    expect(decenniesCouvertes(annees)).toEqual({ premiere: 1920, derniere: 2020, couvertes: 9, total: 11 })
+describe('heuresDeFilms', () => {
+  it('arrondit les minutes à l’heure la plus proche', () => {
+    expect(heuresDeFilms(12780)).toBe(213)
+    expect(heuresDeFilms(12749)).toBe(212)
+    expect(heuresDeFilms(0)).toBe(0)
+  })
+})
+
+describe('anneeDAdhesion', () => {
+  it('est l’année du visionnage le plus ancien, quel que soit l’ordre du journal', () => {
+    const j = [v({ id: 'a', date: '2026-03-01' }), v({ id: 'b', date: '2019-12-31' }), v({ id: 'c', date: '2021-01-01' })]
+    expect(anneeDAdhesion(j)).toBe(2019)
   })
 
-  it('plusieurs films d’une même décennie ne la comptent qu’une fois', () => {
-    expect(decenniesCouvertes([1980, 1981, 1989])).toEqual({ premiere: 1980, derniere: 1980, couvertes: 1, total: 1 })
-  })
-
-  it('refuse une liste vide plutôt que d’inventer une fourchette', () => {
-    expect(() => decenniesCouvertes([])).toThrow()
+  it('est nulle pour un journal vide', () => {
+    expect(anneeDAdhesion([])).toBeNull()
   })
 })
 
 describe('filmsParMois', () => {
-  it('douze mois glissants, le plus ancien d’abord, le mois courant en dernier', () => {
+  it('douze comptes, janvier d’abord, ceux de l’année demandée seulement', () => {
     const j = [
       v({ id: 'a', date: '2026-09-29' }),
       v({ id: 'b', date: '2026-09-01' }),
-      v({ id: 'c', date: '2025-10-15' }),
-      v({ id: 'd', date: '2025-09-30' }), // hors fenêtre : treize mois avant
+      v({ id: 'c', date: '2026-01-15' }),
+      v({ id: 'd', date: '2025-09-30' }),
+      v({ id: 'e', date: '2027-09-30' }),
     ]
-    expect(filmsParMois(j, '2026-09')).toEqual([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2])
+    expect(filmsParMois(j, 2026)).toEqual([1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0])
   })
 
-  it('la fenêtre franchit le changement d’année', () => {
-    const j = [v({ id: 'a', date: '2025-12-24' }), v({ id: 'b', date: '2026-01-02' })]
-    const mois = filmsParMois(j, '2026-02')
-    // 2025-03 … 2026-02 : décembre est en 10e position (index 9), janvier en 11e.
-    expect(mois).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0])
+  it('décembre est le douzième', () => {
+    expect(filmsParMois([v({ id: 'a', date: '2026-12-31' })], 2026)[11]).toBe(1)
   })
 
   it('chaque entrée compte, une revoyure le même mois aussi', () => {
     const j = [v({ id: 'a', media: 'm', date: '2026-09-02' }), v({ id: 'b', media: 'm', date: '2026-09-20' })]
-    expect(filmsParMois(j, '2026-09')[11]).toBe(2)
+    expect(filmsParMois(j, 2026)[8]).toBe(2)
   })
 
   it('un journal vide : douze zéros', () => {
-    expect(filmsParMois([], '2026-09')).toEqual(new Array(12).fill(0))
+    expect(filmsParMois([], 2026)).toEqual(new Array(12).fill(0))
   })
 })
 
-describe('decenniesCouvertesGrille', () => {
-  it('quatorze cases, de 1890 à 2020', () => {
+describe('filmsParDecennie', () => {
+  it('quatorze décennies, de 1890 à 2020', () => {
     expect(DECENNIES_DU_VOYAGE).toHaveLength(14)
     expect(DECENNIES_DU_VOYAGE[0]).toBe(1890)
     expect(DECENNIES_DU_VOYAGE[13]).toBe(2020)
   })
 
-  it('pleine là où un film est sorti, vide ailleurs, et sans année ne compte pour rien', () => {
+  it('compte les films de chaque décennie, et sans année ne compte pour rien', () => {
     const j = [
       v({ id: 'a', annee: 1899, date: '2026-01-01' }),
       v({ id: 'b', annee: 2024, date: '2026-01-02' }),
-      v({ id: 'c', annee: null, date: '2026-01-03' }),
+      v({ id: 'c', annee: 2021, date: '2026-01-03' }),
+      v({ id: 'd', annee: null, date: '2026-01-04' }),
     ]
-    const g = decenniesCouvertesGrille(j)
-    expect(g).toHaveLength(14)
-    expect(g.filter(Boolean)).toHaveLength(2)
-    expect(g[0]).toBe(true) // 1890
-    expect(g[13]).toBe(true) // 2020
+    const comptes = filmsParDecennie(j)
+    expect(comptes).toHaveLength(14)
+    expect(comptes[0]).toBe(1)
+    expect(comptes[13]).toBe(2)
+    expect(comptes.reduce((a, b) => a + b, 0)).toBe(3)
   })
 
-  it('une année d’avant 1890 ne tombe dans aucune case', () => {
-    expect(decenniesCouvertesGrille([v({ id: 'a', annee: 1888, date: '2026-01-01' })]).some(Boolean)).toBe(false)
+  it('une année d’avant 1890 ne tombe dans aucune décennie', () => {
+    expect(filmsParDecennie([v({ id: 'a', annee: 1888, date: '2026-01-01' })]).some(Boolean)).toBe(false)
   })
 })
 
@@ -154,31 +119,55 @@ describe('repartitionNotes', () => {
   })
 })
 
-describe('bilanSuivi', () => {
+describe('reactionsComptees', () => {
+  const catalogue = [
+    { cle: 'adore', emoji: '😍', phrase: 'Coup de cœur' },
+    { cle: 'en_salle', emoji: '🍿', phrase: 'Vu en salle' },
+    { cle: 'claque', emoji: '🤯', phrase: 'Claque' },
+  ]
+
+  it('la plus posée d’abord, avec son emoji, sa phrase et son compte', () => {
+    const j = [
+      v({ id: 'a', date: '2026-01-01', reactions: ['adore', 'en_salle'] }),
+      v({ id: 'b', date: '2026-01-02', reactions: ['en_salle'] }),
+    ]
+    expect(reactionsComptees(j, catalogue)).toEqual([
+      { cle: 'en_salle', emoji: '🍿', phrase: 'Vu en salle', nombre: 2 },
+      { cle: 'adore', emoji: '😍', phrase: 'Coup de cœur', nombre: 1 },
+    ])
+  })
+
+  it('ignore une clé que le catalogue ne connaît pas, et une réaction jamais posée', () => {
+    const j = [v({ id: 'a', date: '2026-01-01', reactions: ['inconnue', 'adore'] })]
+    expect(reactionsComptees(j, catalogue).map((r) => r.cle)).toEqual(['adore'])
+  })
+
+  it('à égalité, garde l’ordre du catalogue', () => {
+    const j = [v({ id: 'a', date: '2026-01-01', reactions: ['claque', 'adore'] })]
+    expect(reactionsComptees(j, catalogue).map((r) => r.cle)).toEqual(['adore', 'claque'])
+  })
+
+  it('n’en garde que six', () => {
+    const large = Array.from({ length: 8 }, (_, i) => ({ cle: `r${i}`, emoji: '🎬', phrase: `R${i}` }))
+    const j = [v({ id: 'a', date: '2026-01-01', reactions: large.map((r) => r.cle) })]
+    expect(reactionsComptees(j, large)).toHaveLength(REACTIONS_MONTREES)
+  })
+})
+
+describe('filmographieTerminee', () => {
   const vu = { entry_id: 'e', rating: null, finished_at: '2026-01-01' }
-  const film = (tmdb_id: number, etat: 'vu' | 'a-voir' | 'introuvable') => ({
+  const film = (tmdb_id: number, etat: 'vu' | 'a-voir' | 'introuvable'): FilmSuivi => ({
     tmdb_id,
     vu: etat === 'vu' ? vu : null,
     introuvable: etat === 'introuvable',
   })
 
-  it('une filmographie est terminée quand tout ce qui se trouve est vu : un introuvable ne compte pas contre', () => {
-    const table = new Map([
-      [1, [film(10, 'vu'), film(11, 'introuvable')]],
-      [2, [film(20, 'vu'), film(21, 'a-voir')]],
-    ])
-    expect(bilanSuivi([{ tmdb_id: 1 }, { tmdb_id: 2 }], table)).toEqual({ suivis: 2, termines: 1 })
+  it('est terminée quand tout ce qui se trouve est vu : un introuvable ne compte pas contre', () => {
+    expect(filmographieTerminee([film(10, 'vu'), film(11, 'introuvable')])).toBe(true)
+    expect(filmographieTerminee([film(20, 'vu'), film(21, 'a-voir')])).toBe(false)
   })
 
   it('une filmographie vide est terminée : rien n’y reste à voir', () => {
-    expect(bilanSuivi([{ tmdb_id: 1 }], new Map([[1, []]]))).toEqual({ suivis: 1, termines: 1 })
-  })
-
-  it('une entité dont la filmographie manque est comptée suivie, jamais terminée', () => {
-    expect(bilanSuivi([{ tmdb_id: 1 }], new Map())).toEqual({ suivis: 1, termines: 0 })
-  })
-
-  it('aucune entité suivie : zéro et zéro', () => {
-    expect(bilanSuivi([], new Map())).toEqual({ suivis: 0, termines: 0 })
+    expect(filmographieTerminee([])).toBe(true)
   })
 })

@@ -29,7 +29,7 @@ const ATTENDUS = [
   { libelle: 'Voyage', chemin: '/voyage', icone: 'route', titre: `Le Voyage de ${SESSION.user.pseudo}` },
   { libelle: 'Suivis', chemin: '/suivis', icone: 'chair-director', titre: 'Suivis' },
   { libelle: 'Au ciné', chemin: '/au-cine', icone: 'ticket', titre: 'Au ciné' },
-  { libelle: 'Profil', chemin: '/profil', icone: 'armchair', titre: SESSION.user.pseudo },
+  { libelle: 'Profil', chemin: '/profil', icone: 'armchair', titre: `Profil de ${SESSION.user.pseudo}` },
 ] as const
 
 /** Le chemin courant, lu par le test : une redirection se constate, elle ne se devine pas. */
@@ -123,7 +123,7 @@ describe('la coque à onglets', () => {
     expect(marques).toEqual([parent.libelle])
   })
 
-  it.each(['/nulle-part', '/voyage/1898/salles', '/profil/reglages'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {
+  it.each(['/nulle-part', '/voyage/1898/salles', '/profil/inconnu'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {
     servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
     monter(inconnue)
 

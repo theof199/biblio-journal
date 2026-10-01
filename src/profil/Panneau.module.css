@@ -1,0 +1,25 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Le panneau de laiton : la jauge, les diodes et les ampoules y sont vissées. */
+.panneau {
+  position: relative;
+  padding: var(--rythme-panneau);
+  border-radius: var(--panneau-rayon);
+  background: var(--panneau-fond);
+  box-shadow: var(--panneau-relief);
+}
+
+/* Le reflet d'une vitre, sur tout le panneau et sous son contenu. */
+.panneau::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--panneau-reflet);
+  pointer-events: none;
+}
+
+/* Quatre vis de laiton aux coins : les ampoules sont vissées sur leur panneau. */
+.vissee {
+  background: var(--panneau-vis), var(--panneau-fond);
+}

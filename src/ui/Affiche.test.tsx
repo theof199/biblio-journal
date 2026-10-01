@@ -18,4 +18,17 @@ describe('Affiche', () => {
     expect(container.firstElementChild).toHaveClass(styles.cadre!)
     expect(container.querySelector('img')).toHaveClass(styles.image!)
   })
+
+  it('sans image, montre son substitut à la place du titre caché', () => {
+    const { container } = render(<Affiche src={null} titre="Alien" substitut={<p>Enseigne</p>} />)
+
+    expect(container).toHaveTextContent('Enseigne')
+    expect(container.querySelector('.sr-only')).toBeNull()
+  })
+
+  it('avec image, ignore son substitut', () => {
+    const { container } = render(<Affiche src="/a.jpg" titre="Alien" substitut={<p>Enseigne</p>} />)
+
+    expect(container).not.toHaveTextContent('Enseigne')
+  })
 })

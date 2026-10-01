@@ -1,6 +1,10 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Le numéro de version, imprimé en pied de ticket. */
 .version {
-  margin-top: var(--espace-3);
-  text-align: center;
+  margin: var(--espace-3) 0 0;
+  color: var(--papier-encre);
   font-size: var(--taille-xs);
-  color: var(--couleur-texte-doux);
+  letter-spacing: var(--interlettre-puce);
+  text-align: center;
 }

@@ -1,0 +1,44 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/*
+ * L'enseigne est dessinée à la largeur de la vignette divisée par l'échelle, puis réduite : le relief,
+ * le cadre et les ornements gardent leurs proportions du fronton. Le conteneur de requête donne aux
+ * lignes la largeur dont elles mesurent leurs lettres.
+ */
+.echelle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% / var(--signe-echelle));
+  aspect-ratio: var(--ratio-affiche);
+  transform: scale(var(--signe-echelle));
+  transform-origin: 0 0;
+  container-type: inline-size;
+}
+
+.panneau {
+  composes: fond from './Enseigne.module.css';
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.titre {
+  composes: lettres from './Enseigne.module.css';
+}
+
+.grande {
+  font-size: min(
+    var(--fronton-taille-titre),
+    calc((var(--largeur-conteneur) - var(--enseigne-retrait)) / (var(--longueur) * var(--fronton-chasse)))
+  );
+}
+
+.compacte {
+  font-size: min(
+    var(--fronton-taille-titre-compact),
+    calc((var(--largeur-conteneur) - var(--enseigne-retrait)) / (var(--longueur) * var(--fronton-chasse)))
+  );
+}

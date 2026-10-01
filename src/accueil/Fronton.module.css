@@ -1,0 +1,158 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.fronton {
+  display: flex;
+  flex-direction: column;
+  color: var(--fronton-lettre);
+  text-decoration: none;
+}
+
+/* Les ampoules se répètent en `round` : le motif s'étire pour tomber juste, aucune n'est coupée au bord du panneau. */
+.ampoules {
+  height: var(--fronton-ampoules-hauteur);
+  background-color: var(--fronton-cadre);
+  background-image: radial-gradient(
+      circle at center,
+      var(--fronton-ampoule) 0,
+      var(--fronton-ampoule) var(--fronton-ampoule-rayon),
+      transparent var(--fronton-ampoule-bord)
+    ),
+    radial-gradient(circle at center, var(--fronton-halo) 0, transparent var(--fronton-halo-rayon));
+  background-size: var(--fronton-ampoule-pas) 100%;
+  background-repeat: round;
+}
+
+/*
+ * Un conteneur de requête : les lignes mesurent leur largeur en `cqw` pour ne jamais dépasser du
+ * panneau. Son fond et son cadre intérieur sont ceux de l'enseigne de la décennie (`Enseigne.module.css`).
+ */
+.panneau {
+  composes: fond from './Enseigne.module.css';
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  padding-block: var(--fronton-pas-rail);
+  border-inline: var(--fronton-cadre-largeur) solid var(--fronton-cadre);
+  box-shadow: var(--fronton-lueur);
+  font-family: var(--police-fronton);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/*
+ * Une ligne pèse un pas de rail (le titre en pèse deux ou trois) et se cale sur lui. Les petites
+ * lignes tirent leur taille du plus petit de leur plafond et de ce qui tient dans le panneau : la
+ * largeur divisée par le nombre de lettres (`--longueur`, posé par le composant) et par l'avance
+ * d'une lettre. Le titre fait de même, dans la police de l'enseigne.
+ */
+.ligne {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--fronton-pas-rail);
+  margin: 0;
+  line-height: var(--interligne-serre);
+  white-space: nowrap;
+}
+
+.jour,
+.etiquette,
+.detail,
+.accent {
+  padding-bottom: var(--fronton-trait-rail);
+  font-family: var(--police-fronton);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--fronton-interlettre-date);
+  text-shadow: var(--fronton-lettre-ombre);
+}
+
+.jour,
+.etiquette {
+  font-size: min(
+    var(--fronton-taille-date),
+    calc(var(--largeur-conteneur) / (var(--longueur) * var(--fronton-chasse-espacee)))
+  );
+}
+
+.jour {
+  color: var(--fronton-lettre-rouge);
+}
+
+.etiquette {
+  color: var(--fronton-lettre);
+}
+
+/* Le titre : les lettres de l'enseigne (`Enseigne.module.css`), à la taille que la largeur du panneau permet. */
+.titre {
+  composes: lettres from './Enseigne.module.css';
+  height: var(--fronton-hauteur-titre);
+  font-size: min(
+    var(--fronton-taille-titre),
+    calc((var(--largeur-conteneur) - var(--enseigne-retrait)) / (var(--longueur) * var(--fronton-chasse)))
+  );
+}
+
+.titreCompact {
+  composes: lettres from './Enseigne.module.css';
+  height: var(--fronton-hauteur-titre-compact);
+  font-size: min(
+    var(--fronton-taille-titre-compact),
+    calc((var(--largeur-conteneur) - var(--enseigne-retrait)) / (var(--longueur) * var(--fronton-chasse)))
+  );
+}
+
+.titre::after,
+.titreCompact::after {
+  animation: allumage var(--enseigne-allumage-duree) steps(var(--longueur)) backwards;
+}
+
+/* Les lettres à ampoules s'allument de gauche à droite, une lettre par pas, une fois à l'ouverture. */
+@keyframes allumage {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .titre::after,
+  .titreCompact::after {
+    animation: none;
+  }
+}
+
+/* La barre de couleur entre le titre et la ligne qui le suit, et la place qu'elle prend. */
+:is(.titre, .titreCompact) + :is(.detail, .accent) {
+  margin-top: var(--enseigne-apres-titre);
+}
+
+:is(.titre, .titreCompact) + :is(.detail, .accent)::before {
+  content: '';
+  display: var(--enseigne-barre-affichage);
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: var(--enseigne-barre-haut);
+  margin-bottom: var(--enseigne-barre-marge);
+  background: var(--enseigne-barre-fond);
+}
+
+.detail,
+.accent {
+  font-size: min(
+    var(--fronton-taille-detail),
+    calc(var(--largeur-conteneur) / (var(--longueur) * var(--fronton-chasse-espacee)))
+  );
+  letter-spacing: var(--fronton-interlettre-detail);
+}
+
+.detail {
+  color: var(--fronton-lettre);
+}
+
+.accent {
+  color: var(--fronton-lettre-rouge);
+}

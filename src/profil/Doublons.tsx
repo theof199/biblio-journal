@@ -4,7 +4,6 @@ import { apercuDoublons, retirerDoublons, type CasLimite } from '../api/doublons
 import { cles } from '../api/cles'
 import { supprimerVisionnage } from '../api/journal'
 import { formatDateVisionnage } from '../ui/format'
-import cartes from '../ui/Page.module.css'
 import styles from './Doublons.module.css'
 
 const doublons = (n: number, participe: string) => (n === 1 ? `1 doublon ${participe}` : `${n} doublons ${participe}s`)
@@ -46,7 +45,7 @@ export default function Doublons() {
       <div className={styles.bloc}>
         <p role="status">{retrait.data.total === 0 ? 'Aucun doublon à retirer.' : `${doublons(retrait.data.total, 'retiré')}.`}</p>
         <CasLimites cas={retrait.data.cas_limites} />
-        <button type="button" className={cartes.bouton} onClick={annuler}>
+        <button type="button" className={styles.action} onClick={annuler}>
           Fermer
         </button>
       </div>
@@ -86,7 +85,7 @@ export default function Doublons() {
           {total > 0 ? (
             <button
               type="button"
-              className={cartes.bouton}
+              className={styles.action}
               disabled={retrait.isPending}
               onClick={() => retrait.mutate()}
             >
@@ -105,6 +104,10 @@ export default function Doublons() {
     <div className={styles.bloc}>
       <button type="button" className={styles.entree} disabled={apercu.isPending} onClick={() => apercu.mutate()}>
         <span className={styles.entreeTitre}>Retirer les doublons</span>
+        <span className={styles.pointilles} aria-hidden="true" />
+        <span className={styles.fleche} aria-hidden="true">
+          →
+        </span>
         <span className={styles.aide}>
           {apercu.isPending ? 'Recherche des doublons…' : 'Les visionnages écrits deux fois par un import'}
         </span>

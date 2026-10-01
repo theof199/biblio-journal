@@ -1,0 +1,88 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.bande {
+  position: relative;
+  padding: var(--rythme-panneau);
+  background: var(--perforations-fond);
+  box-shadow: var(--perforations-relief);
+}
+
+/* Les perforations des deux bords : un motif de trous qui se répète sur toute la largeur. */
+.bande::before,
+.bande::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  height: var(--perforation-hauteur);
+  background: var(--perforation-bord);
+}
+
+.bande::before {
+  top: var(--perforation-marge);
+}
+
+.bande::after {
+  bottom: var(--perforation-marge);
+}
+
+/*
+ * Un conteneur de requête : sous sa largeur de quatre chiffres, l'année perd son siècle. La condition
+ * est un nombre en dur, ce que `@container` n'a pas le droit de lire dans une variable.
+ */
+.cellules {
+  container-type: inline-size;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cellule {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  color: var(--panneau-encre);
+  font-family: var(--police-fronton);
+  line-height: var(--interligne-serre);
+}
+
+.compte {
+  margin-bottom: var(--espace-3);
+  font-size: var(--taille-xs);
+}
+
+.repere {
+  width: var(--repere-largeur);
+  height: var(--repere-hauteur);
+  border: var(--trait) solid var(--perforation-repere-eteint);
+  border-radius: var(--repere-rayon);
+}
+
+.annee {
+  margin-top: var(--espace-demi);
+  font-size: var(--taille-xs);
+  white-space: nowrap;
+}
+
+.cellule:not([data-allume]) .compte,
+.cellule:not([data-allume]) .annee {
+  color: var(--panneau-encre-eteinte);
+}
+
+.cellule[data-allume] .repere {
+  border-color: transparent;
+  background: var(--perforation-repere);
+  box-shadow: var(--perforation-repere-lueur);
+}
+
+@container (max-width: 18rem) {
+  .siecle {
+    display: none;
+  }
+
+  .fin::before {
+    content: '’';
+  }
+}

@@ -1,47 +1,52 @@
 /* Aucune valeur en dur : tout vient de `ui/theme.css`. */
 
+/* Le ciel couvre toute la zone de la page, sur la largeur de l'écran ; le contenu, lui, est borné. */
+.fond {
+  min-height: 100%;
+  background-color: var(--couleur-fond);
+  background-image: var(--fond-ciel);
+  background-repeat: no-repeat;
+}
+
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--espace-4);
+  gap: var(--espace-5);
   max-width: var(--largeur-contenu);
   margin: 0 auto;
-  padding: var(--espace-4) var(--espace-4) var(--espace-6);
+  /* Le bas laisse libre le bouton flottant, qui n'a pas à cacher la dernière rangée. */
+  padding: var(--espace-4) var(--gouttiere-page) calc(var(--bouton-hauteur) + var(--espace-6));
 }
 
-.fronton {
+.journal {
   display: flex;
+  flex-direction: column;
+  gap: var(--espace-5);
+  margin-top: var(--espace-4);
+}
+
+/* Sur un écran étroit, le compte passe sous le titre plutôt que de le couper en deux lignes. */
+.entete {
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--espace-3);
+  gap: 0 var(--espace-3);
+  white-space: nowrap;
 }
 
-.jour {
+.titre {
   margin: 0;
-  font-size: var(--taille-l);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--taille-titre-section);
+  font-weight: var(--graisse-noire);
+  line-height: var(--interligne-serre);
 }
 
 .compte {
   margin: 0;
   color: var(--couleur-texte-doux);
-  font-size: var(--taille-s);
-  white-space: nowrap;
-}
-
-.grille {
-  display: grid;
-  grid-template-columns: var(--grille-affiches-colonnes);
-  gap: var(--espace-3);
-}
-
-.entree {
-  min-width: 0;
-  display: block;
-  text-decoration: none;
-  color: inherit;
+  font-size: var(--taille-meta);
+  text-align: right;
 }
 
 .sentinelle {
@@ -55,6 +60,7 @@
   color: var(--couleur-texte-doux);
 }
 
+/* Au-dessus de la barre d'onglets : `--coque-bas` est sa hauteur et celle de la zone sûre. */
 .boutonAjouter {
   position: fixed;
   right: var(--espace-4);
@@ -62,20 +68,22 @@
   z-index: var(--z-barre-onglets);
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: var(--taille-bouton-rond);
-  height: var(--taille-bouton-rond);
-  border: none;
-  border-radius: var(--rayon-plein);
+  gap: var(--bouton-gap);
+  height: var(--bouton-hauteur);
+  padding: var(--bouton-marge);
   background: var(--couleur-accent);
   color: var(--couleur-sur-accent);
-  box-shadow: var(--ombre-m);
-  cursor: pointer;
+  box-shadow: var(--lueur-accent);
+  font-size: var(--bouton-taille);
+  font-weight: var(--graisse-semi-forte);
+  letter-spacing: var(--bouton-interlettre);
+  text-decoration: none;
 }
 
 .icone {
   width: var(--barre-onglets-icone);
   height: var(--barre-onglets-icone);
+  stroke-width: var(--bouton-icone-trait);
 }
 
 .erreur {

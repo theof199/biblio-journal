@@ -1,0 +1,80 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.panneau {
+  composes: panneau vissee from './Panneau.module.css';
+}
+
+.colonnes {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.colonne {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.compte,
+.mois {
+  font-family: var(--police-fronton);
+  line-height: var(--interligne-serre);
+}
+
+.compte {
+  margin-bottom: var(--espace-3);
+  color: var(--panneau-encre);
+  font-size: var(--taille-s);
+}
+
+.compte[data-vide] {
+  color: var(--panneau-encre-eteinte);
+}
+
+.ampoules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+}
+
+.ampoule {
+  width: var(--ampoule-diametre);
+  height: var(--ampoule-diametre);
+  box-sizing: border-box;
+  border: var(--trait) solid var(--ampoule-eteinte-bord);
+  border-radius: var(--rayon-plein);
+  background: var(--ampoule-eteinte);
+}
+
+.ampoule[data-allumee] {
+  border-color: transparent;
+  background: var(--ampoule-allumee);
+  box-shadow: var(--ampoule-halo);
+}
+
+.mois {
+  margin-top: var(--espace-demi);
+  color: var(--panneau-encre-douce);
+  font-size: var(--taille-xs);
+  letter-spacing: var(--interlettre-capitales);
+}
+
+.trait {
+  width: var(--ampoule-trait-largeur);
+  height: var(--ampoule-trait-hauteur);
+  margin-top: var(--espace-1);
+}
+
+.colonne[data-courant] .mois {
+  color: var(--identite);
+}
+
+.colonne[data-courant] .trait {
+  background: var(--identite);
+  color: var(--identite);
+  box-shadow: var(--ampoule-mois-lueur);
+}

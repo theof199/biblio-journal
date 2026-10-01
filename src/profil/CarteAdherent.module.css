@@ -1,0 +1,136 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.scene {
+  position: relative;
+  display: block;
+  height: var(--carte-scene);
+  color: var(--carte-encre);
+  text-decoration: none;
+}
+
+/* La carte qu'on devine derrière, un peu de travers. */
+.dos {
+  position: absolute;
+  inset: 0 var(--carte-dos-retrait) auto;
+  height: var(--carte-hauteur);
+  border-radius: var(--carte-rayon);
+  background: var(--carte-dos);
+  box-shadow: var(--carte-ombre);
+  transform: rotate(var(--carte-dos-inclinaison));
+}
+
+.face {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  height: var(--carte-hauteur);
+  padding: var(--espace-4) var(--carte-marge) var(--espace-3) var(--carte-retrait);
+  overflow: hidden;
+  border-radius: var(--carte-rayon);
+  background: var(--carte-reflet), var(--carte-guilloche), var(--carte-fond);
+  box-shadow: var(--carte-boite);
+  transform: rotate(var(--carte-inclinaison));
+}
+
+/* La bande dans la couleur du membre, rayée comme une bande magnétique. */
+.bande {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--carte-bande-largeur);
+  background: var(--carte-bande-stries), var(--carte-bande);
+  box-shadow: var(--carte-bande-ombre);
+}
+
+.sceau {
+  position: absolute;
+  top: var(--carte-marge);
+  right: var(--carte-marge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--carte-sceau);
+  height: var(--carte-sceau);
+  border-radius: var(--rayon-plein);
+  background: var(--carte-sceau-fond);
+  box-shadow: var(--carte-sceau-relief);
+  color: var(--identite);
+  font-family: var(--police-fronton);
+  font-size: var(--carte-monogramme-taille);
+  line-height: var(--interligne-serre);
+  text-shadow: var(--carte-sceau-lueur);
+}
+
+.sceau::before {
+  content: '';
+  position: absolute;
+  inset: var(--espace-1);
+  border: var(--trait) dashed var(--carte-sceau-pointille);
+  border-radius: inherit;
+}
+
+.etiquette,
+.chiffres {
+  font-family: var(--police-fronton);
+  line-height: var(--interligne-serre);
+  text-shadow: var(--carte-relief);
+  text-transform: uppercase;
+}
+
+.etiquette {
+  color: var(--carte-encre-douce);
+  font-size: var(--carte-etiquette-taille);
+  letter-spacing: var(--carte-etiquette-interlettre);
+}
+
+/* Le pseudo laisse la place du sceau, et s'abrège plutôt que de passer dessous. */
+.pseudo {
+  max-width: calc(100% - var(--carte-sceau));
+  margin-top: var(--espace-3);
+  overflow: hidden;
+  font-family: var(--police-titre);
+  font-size: var(--carte-pseudo-taille);
+  font-weight: var(--graisse-noire);
+  line-height: var(--interligne-serre);
+  text-overflow: ellipsis;
+  text-shadow: var(--carte-relief);
+  white-space: nowrap;
+}
+
+.depuis {
+  margin-top: var(--espace-3);
+  color: var(--carte-encre-douce);
+  font-size: var(--taille-xs);
+  letter-spacing: var(--interlettre-capitales);
+}
+
+.chiffres {
+  margin-top: var(--espace-3);
+  font-size: var(--carte-chiffres-taille);
+  letter-spacing: var(--carte-chiffres-interlettre);
+  white-space: nowrap;
+}
+
+.pied {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espace-3);
+  margin-top: auto;
+  color: var(--carte-encre-douce);
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--carte-note-taille);
+  line-height: var(--interligne-meta);
+}
+
+.lien {
+  margin-left: auto;
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--interlettre-capitales);
+  white-space: nowrap;
+}

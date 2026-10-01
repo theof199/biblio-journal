@@ -30,6 +30,7 @@ export default function Rattrapage() {
 
   return (
     <div className={styles.bloc}>
+      <h2 className={styles.titreSection}>Rattrapage</h2>
       <label className={styles.entree}>
         <input
           type="checkbox"

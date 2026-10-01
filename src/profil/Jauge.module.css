@@ -1,0 +1,75 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.panneau {
+  composes: panneau from './Panneau.module.css';
+}
+
+.cadran {
+  display: block;
+  width: 100%;
+}
+
+.piste {
+  stroke: var(--jauge-piste);
+}
+
+.arc,
+.aiguille {
+  stroke: var(--couleur-accent);
+}
+
+.arc {
+  stroke-opacity: var(--jauge-arc-opacite);
+}
+
+/* La lueur de l'arc ne s'allume que la nuit. */
+.halo {
+  stroke: var(--couleur-accent);
+  opacity: var(--jauge-halo-opacite);
+}
+
+.graduation,
+.demiGraduation {
+  stroke: var(--panneau-encre);
+}
+
+.demiGraduation {
+  opacity: var(--opacite-attenue);
+}
+
+.chiffre {
+  fill: var(--panneau-encre-douce);
+  font-family: var(--police-fronton);
+}
+
+.pivot {
+  fill: var(--couleur-accent);
+}
+
+.axe {
+  fill: var(--panneau-noir);
+}
+
+.lecture {
+  margin-top: var(--espace-moins-demi);
+  text-align: center;
+}
+
+.valeur,
+.legende,
+.vide {
+  margin: 0;
+}
+
+.valeur {
+  color: var(--panneau-encre);
+  font-family: var(--police-fronton);
+  font-size: var(--jauge-valeur-taille);
+  line-height: var(--interligne-serre);
+}
+
+.legende,
+.vide {
+  color: var(--panneau-encre-douce);
+  font-size: var(--taille-xs);
+}

@@ -1,0 +1,188 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.fond {
+  min-height: 100%;
+  padding: var(--espace-4) var(--gouttiere-page) var(--espace-6);
+  background-color: var(--couleur-fond);
+  background-image: var(--fond-ciel);
+  background-repeat: no-repeat;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  max-width: var(--caisse-largeur);
+  margin: 0 auto;
+}
+
+/* Le retour à gauche, sur le ciel. */
+.page > button {
+  align-self: flex-start;
+}
+
+/* Le ticket : l'ombre est portée par l'ensemble, le papier est découpé en dents en haut et en bas. */
+.ticket {
+  position: relative;
+  filter: var(--caisse-ombre);
+  transform: rotate(var(--caisse-inclinaison));
+}
+
+.papier {
+  position: absolute;
+  inset: 0;
+  background: var(--papier-fond);
+  clip-path: var(--caisse-dechire);
+}
+
+.corps {
+  position: relative;
+  padding: calc(var(--espace-6) + var(--espace-1)) var(--espace-5) calc(var(--espace-6) + var(--espace-3));
+  color: var(--papier-encre);
+}
+
+.entete {
+  container-type: inline-size;
+  text-align: center;
+}
+
+.journal,
+.titre {
+  margin: 0;
+  padding-left: var(--papier-interlettre);
+  font-family: var(--police-fronton);
+  font-weight: var(--graisse-normale);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.journal {
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-s);
+  letter-spacing: var(--papier-interlettre);
+}
+
+.titre {
+  font-size: min(var(--caisse-titre-taille), var(--caisse-titre-largeur));
+  white-space: nowrap;
+  letter-spacing: var(--carte-chiffres-interlettre);
+}
+
+.date {
+  margin: var(--espace-1) 0 0;
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-xs);
+  letter-spacing: var(--interlettre-puce);
+}
+
+.etoiles {
+  margin: var(--espace-3) 0 0;
+  overflow: hidden;
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-xs);
+  letter-spacing: var(--papier-interlettre);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.etoilesBas {
+  margin-top: var(--espace-6);
+}
+
+/* Le thème : trois mots imprimés, celui qui est retenu est entouré au crayon gras. */
+.choix {
+  display: flex;
+  justify-content: space-between;
+}
+
+.option {
+  position: relative;
+  padding: var(--espace-demi) var(--espace-3);
+  cursor: pointer;
+}
+
+.mot {
+  font-family: var(--police-fronton);
+  font-size: var(--taille-l);
+  letter-spacing: var(--interlettre-capitales);
+  text-transform: uppercase;
+}
+
+.option:has(input:checked) .mot {
+  font-family: var(--police-crayon);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0;
+}
+
+.option:has(input:focus-visible) {
+  outline: var(--trait) solid var(--couleur-accent);
+  outline-offset: var(--espace-1);
+}
+
+.cercle {
+  position: absolute;
+  inset: var(--espace-moins-demi) var(--espace-moins-2);
+  width: calc(100% + var(--espace-4));
+  height: calc(100% + var(--espace-3));
+  overflow: visible;
+  stroke: var(--identite);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option:has(input:checked) .cercle {
+  opacity: 100%;
+}
+
+.tiret {
+  margin: var(--espace-5) 0 0;
+  border: 0;
+  border-top: var(--papier-trait) dashed var(--papier-tiret);
+}
+
+/* La ligne de coupe : les ciseaux au bord gauche, qui dépassent du ticket. */
+.coupe {
+  position: relative;
+  margin: var(--espace-5) var(--espace-moins-3);
+  border-top: var(--papier-trait) dashed var(--papier-coupe);
+}
+
+.ciseaux {
+  position: absolute;
+  top: var(--espace-moins-3);
+  left: 0;
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-m);
+  line-height: var(--interligne-serre);
+}
+
+.mentionTmdb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-2);
+  margin-top: var(--espace-4);
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-xs);
+  line-height: var(--interligne-meta);
+  text-align: center;
+}
+
+.mentionTmdb p {
+  margin: 0;
+}
+
+.logoTmdb {
+  width: var(--largeur-logo-tmdb);
+}
+
+.merci {
+  margin: var(--espace-2) 0 0;
+  padding-left: var(--papier-interlettre);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-l);
+  letter-spacing: var(--papier-interlettre);
+  text-align: center;
+  text-transform: uppercase;
+}

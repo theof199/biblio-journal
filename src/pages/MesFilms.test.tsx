@@ -543,7 +543,7 @@ describe('l’entrée de « Mes films » depuis le profil', () => {
       </QueryClientProvider>,
     )
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Mes films' }))
+    fireEvent.click(await screen.findByRole('link', { name: /^Mes films, carte de / }))
 
     expect(await screen.findByRole('heading', { name: 'Mes films' })).toBeInTheDocument()
     expect(screen.getByTestId('chemin')).toHaveTextContent('/profil/mes-films')

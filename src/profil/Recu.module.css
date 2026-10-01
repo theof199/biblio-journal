@@ -1,0 +1,102 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Les lignes du ticket de caisse, communes à la page (`pages/Caisse.module.css`) et aux blocs qu'elle accueille (rattrapage, doublons). */
+
+.entete {
+  margin: calc(var(--espace-5) + var(--espace-1)) 0 var(--espace-2);
+  color: var(--papier-encre);
+  font-family: var(--police-fronton);
+  font-size: var(--libelle-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--papier-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+/* « Libellé ······ valeur » : la ligne d'une caisse, la valeur calée à droite par ses pointillés. */
+.ligne {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-demi);
+  width: 100%;
+  min-height: var(--cible-tactile);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--papier-encre);
+  font: inherit;
+  font-size: var(--taille-s);
+  line-height: var(--interligne);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ligne:focus-within {
+  outline: var(--trait) solid var(--couleur-accent);
+  outline-offset: var(--espace-1);
+}
+
+.libelle {
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--interlettre-capitales);
+}
+
+.fort {
+  font-weight: var(--graisse-semi-forte);
+}
+
+.pointilles {
+  flex: 1;
+  min-width: var(--espace-3);
+  border-bottom: var(--papier-trait) dotted var(--papier-pointille);
+  transform: translateY(var(--espace-moins-demi));
+}
+
+.valeur {
+  font-weight: var(--graisse-semi-forte);
+}
+
+.aide {
+  max-width: var(--papier-aide-largeur);
+  margin: var(--espace-3) 0 0;
+  color: var(--papier-encre-douce);
+  font-size: var(--taille-xs);
+  line-height: var(--interligne-meta);
+}
+
+.erreur {
+  margin: var(--espace-2) 0 0;
+  color: var(--papier-danger);
+}
+
+/* Une action sous une ligne : un bouton au trait, comme un tampon. */
+.bouton {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--papier-trait) solid var(--papier-encre);
+  border-radius: var(--rayon-s);
+  background: none;
+  color: var(--papier-encre);
+  font: inherit;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-semi-forte);
+  cursor: pointer;
+}
+
+.bouton:disabled {
+  opacity: var(--opacite-inactif);
+  cursor: default;
+}
+
+.discret {
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: 0;
+  background: none;
+  color: var(--papier-encre-douce);
+  font: inherit;
+  font-size: var(--taille-s);
+  text-decoration: underline;
+  cursor: pointer;
+}

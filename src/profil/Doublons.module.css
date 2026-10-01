@@ -4,56 +4,64 @@
   display: flex;
   flex-direction: column;
   gap: var(--espace-2);
+  color: var(--papier-encre);
+  font-size: var(--taille-s);
 }
 
-/* La même entrée que « Mes films » et l'import, au profil. */
+.bloc p {
+  margin: 0;
+}
+
+/* La ligne d'ouverture : « Retirer les doublons ······ → », son aide dessous. */
 .entree {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: var(--cible-tactile);
-  padding: var(--espace-2) var(--espace-4);
-  border: var(--trait) solid var(--couleur-bordure);
-  border-radius: var(--rayon-m);
-  background: var(--couleur-surface);
-  color: var(--couleur-texte);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  composes: ligne from './Recu.module.css';
+  flex-wrap: wrap;
 }
 
-.entree:hover {
-  background: var(--couleur-surface-2);
+.entree:disabled {
+  opacity: var(--opacite-inactif);
+  cursor: default;
 }
 
 .entreeTitre {
-  font-weight: var(--graisse-moyenne);
+  composes: libelle from './Recu.module.css';
+}
+
+.pointilles {
+  composes: pointilles from './Recu.module.css';
+}
+
+.fleche {
+  composes: valeur from './Recu.module.css';
 }
 
 .aide {
-  margin: 0;
-  font-size: var(--taille-s);
-  color: var(--couleur-texte-doux);
+  composes: aide from './Recu.module.css';
+  margin-top: 0;
+}
+
+/* Sous la ligne d'ouverture, l'aide passe à la ligne sur toute la largeur. */
+.entree .aide {
+  flex-basis: 100%;
 }
 
 .liste {
   margin: 0;
   padding-left: var(--espace-4);
-  font-size: var(--taille-s);
+  font-size: var(--taille-xs);
 }
 
 .sousTitre {
   margin: 0;
-  font-size: var(--taille-m);
-  font-weight: var(--graisse-moyenne);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-semi-forte);
 }
 
 /* Les cas limites : chacun avec ce à quoi il ressemble, et de quoi le retirer à la main. */
 .cas {
   display: flex;
   flex-direction: column;
-  gap: var(--espace-2);
+  gap: var(--espace-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -64,7 +72,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--espace-1);
-  font-size: var(--taille-s);
+  font-size: var(--taille-xs);
 }
 
 .actions {
@@ -73,17 +81,14 @@
   gap: var(--espace-2);
 }
 
+.action {
+  composes: bouton from './Recu.module.css';
+}
+
 .secondaire {
-  min-height: var(--cible-tactile);
-  padding: 0 var(--espace-4);
-  border: none;
-  background: none;
-  color: var(--couleur-texte-doux);
-  font-size: var(--taille-m);
-  cursor: pointer;
+  composes: discret from './Recu.module.css';
 }
 
 .erreur {
-  margin: 0;
-  color: var(--couleur-danger);
+  composes: erreur from './Recu.module.css';
 }

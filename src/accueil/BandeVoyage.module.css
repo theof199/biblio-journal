@@ -1,0 +1,83 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.bande {
+  display: flex;
+  align-items: center;
+  gap: var(--bande-voyage-gap);
+  padding: var(--bande-voyage-marge);
+  background: var(--couleur-bloc);
+  color: var(--couleur-sur-bloc);
+  box-shadow: var(--ombre-bloc);
+  text-decoration: none;
+}
+
+.annee {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+}
+
+.etiquette {
+  color: var(--couleur-sur-bloc-doux);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-semi-forte);
+  letter-spacing: var(--interlettre-puce);
+  text-transform: uppercase;
+}
+
+.chiffre {
+  font-family: var(--police-titre);
+  font-size: var(--bande-voyage-annee-taille);
+  font-weight: var(--graisse-noire);
+  line-height: var(--bande-voyage-annee-interligne);
+}
+
+/* `min-width: 0` : la colonne rétrécit au lieu de pousser la flèche hors de l'écran. */
+.suivi {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--espace-2);
+  min-width: 0;
+}
+
+.cases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bande-voyage-cases-gap);
+}
+
+.pleine,
+.vide {
+  box-sizing: border-box;
+  width: var(--bande-voyage-case);
+  height: var(--bande-voyage-case);
+}
+
+.pleine {
+  background: var(--couleur-sur-bloc);
+}
+
+.vide {
+  border: var(--bande-voyage-case-trait) solid var(--couleur-sur-bloc-doux);
+}
+
+.compte {
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-meta);
+}
+
+.source {
+  color: var(--couleur-sur-bloc-doux);
+  font-size: var(--taille-meta);
+  line-height: var(--interligne-meta);
+}
+
+.chevron {
+  flex: none;
+  width: var(--barre-onglets-icone);
+  height: var(--barre-onglets-icone);
+  color: var(--couleur-sur-bloc-doux);
+  stroke-width: var(--barre-onglets-icone-trait);
+}

@@ -1,0 +1,93 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La largeur suit la part du compte (`--part`, posée par le composant) ; chaque billet penche à son tour d'un côté. */
+.ticket {
+  width: calc(var(--ticket-largeur-base) + var(--ticket-largeur-gain) * var(--part));
+  height: var(--ticket-hauteur);
+  filter: var(--ticket-ombre);
+  transform: rotate(var(--ticket-inclinaison));
+}
+
+.ticket:nth-child(even) {
+  transform: rotate(var(--ticket-inclinaison-inverse));
+}
+
+/* Le papier est découpé (l'encoche de la souche, les deux bords) : l'ombre, elle, est portée par le billet entier. */
+.papier {
+  position: relative;
+  display: flex;
+  height: 100%;
+  background: var(--ticket-papier);
+  color: var(--ticket-encre);
+  mask-image: var(--ticket-masque);
+  -webkit-mask-image: var(--ticket-masque);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+
+.papier::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ticket-bande-largeur);
+  background: var(--ticket-bande-vive);
+}
+
+.ticket:not(:first-child) .papier::before {
+  background: var(--ticket-bande);
+}
+
+.corps {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--espace-2);
+  min-width: 0;
+  padding: 0 var(--espace-2) 0 var(--espace-4);
+}
+
+.emoji {
+  flex: none;
+  font-size: var(--taille-l);
+  line-height: var(--interligne-serre);
+}
+
+.phrase {
+  font-size: var(--taille-meta);
+  font-weight: var(--graisse-moyenne);
+  line-height: var(--interligne-serre);
+}
+
+.souche {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--ticket-souche);
+  border-left: var(--ticket-pointille-trait) dotted var(--ticket-pointille);
+  background: var(--ticket-souche-fond);
+}
+
+.compte {
+  font-family: var(--police-fronton);
+  font-size: var(--ticket-compte-taille);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-serre);
+}
+
+.fois {
+  color: var(--ticket-encre-douce);
+  font-size: var(--ticket-fois-taille);
+  letter-spacing: var(--interlettre-puce);
+  text-transform: uppercase;
+}

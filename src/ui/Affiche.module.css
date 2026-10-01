@@ -32,13 +32,17 @@
   position: absolute;
   right: var(--espace-1);
   bottom: var(--espace-1);
-  min-width: var(--espace-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--cote-tuile-note);
+  min-height: var(--cote-tuile-note);
   padding: 0 var(--espace-1);
-  border-radius: var(--rayon-plein);
-  background: var(--couleur-accent);
-  color: var(--couleur-sur-accent);
-  font-size: var(--taille-xs);
-  font-weight: var(--graisse-forte);
+  border: var(--trait-tuile-note) solid var(--fronton-lettre);
+  background: var(--fronton-panneau);
+  color: var(--fronton-lettre);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-tuile-note);
+  line-height: var(--interligne-serre);
   text-align: center;
-  line-height: var(--espace-5);
 }

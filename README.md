@@ -37,11 +37,11 @@ session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
 
 | Onglet | Chemin | Icône Tabler | Page |
 |---|---|---|---|
-| Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` : le fronton, « Ce soir », « Ensuite », la grille du journal |
+| Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` : le fronton, « Ce soir », « Ensuite », le journal en pellicules (une par mois) |
 | Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`) : « Les pages du Voyage », plus bas |
 | Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` : réalisateurs et sagas suivis ; sous-pages `suivis/realisateurs/:tmdbId`, `suivis/sagas/:tmdbId`, `suivis/films/:tmdbId` |
 | Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` : mes séances et les sorties en salle |
-| Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, les chiffres de `/stats`, le bilan (dont les réalisateurs et sagas suivis) et les graphiques (`profil/`), « Mes films » (`pages/MesFilms.tsx`, sous `/profil/mes-films`), l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), « Se déconnecter », la mention TMDB |
+| Profil | `/profil` | `armchair` | `pages/Profil.tsx` : la carte d’adhérent (le pseudo, la couleur du membre, les films et les heures de `/stats`, « Mes films »), puis les graphiques du journal entier dessinés en objets de cinéma (`profil/` : notes, réactions, décennies, mois) et, en bas, le ticket de caisse qui mène à la sous-page `/profil/reglages` (`pages/Caisse.tsx` : thème jour / nuit, « Mes films », l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), le rattrapage, les doublons, « Se déconnecter », la mention TMDB, la version) |
 
 Hors des onglets, la barre restant visible : `recherche`, `journal/nouveau`, `journal/:id` et
 `journal/:id/corriger` (`Recherche`, `Formulaire`, `Fiche`).
@@ -185,9 +185,10 @@ ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas.
 ## Le thème
 
 `src/ui/theme.css` porte tout l'habillage de l'app hors du Voyage, en variables CSS : couleurs,
-polices, tailles de texte, espacements, rayons, ombres, gabarits. Une base neutre, en clair et en
-sombre (le réglage du téléphone ; `data-theme="clair"` ou `"sombre"` sur `<html>` force l'un ou
-l'autre). Les `*.module.css` des composants ne portent aucune valeur en dur : redessiner l'app,
+polices, tailles de texte, espacements, rayons, ombres, gabarits. Une façade de cinéma : une palette
+de bleus, de jour et de nuit (le réglage du téléphone ; `data-theme="clair"` ou `"sombre"` sur
+`<html>` force l'un ou l'autre), et trois faces, League Gothic pour le fronton, Bodoni Moda pour les
+titres et Jost pour le texte. Les `*.module.css` des composants ne portent aucune valeur en dur : redessiner l'app,
 c'est changer ces variables, puis au besoin les styles des composants, sans toucher au code.
 `src/ui/theme.test.ts` y veille : hors du Voyage (dossiers `carte/`, `mondes/`, `voyage/`, fichiers
 `Voyage*.module.css`), une feuille qui porte une couleur ou un nombre en dur (hormis `0`, `100%`,
@@ -195,6 +196,19 @@ c'est changer ces variables, puis au besoin les styles des composants, sans touc
 fichier garde la zone sûre de la barre d'onglets.
 Seuls `theme-color` (`index.html`) et les couleurs du manifeste (`vite.config.ts`) restent à
 accorder à la main.
+
+Le fronton de l'accueil change d'enseigne avec la décennie du film qu'il annonce (`data-decennie`
+sur son lien, `decennieDeAnnee` dans `src/accueil/fronton.ts`) : le cadre et ses ampoules restent, le
+panneau, l'encre et la police du titre sont ceux de la décennie, un bloc `[data-decennie='…']` par
+décennie de 1890 à 2020 dans `theme.css` qui re-pose les variables `--fronton-*` et `--enseigne-*`.
+Sans année, avant 1890 ou journal vide, c'est l'enseigne de 1940 (celle de la maison) ; après 2029,
+celle de 2020. Le jour, seules les lueurs s'éteignent (`--enseigne-nuit-*`, posées dans les deux blocs
+sombres). Une décennie de plus : son bloc, sa police dans `polices.ts`, sa ligne dans `DECENNIES`
+(`src/accueil/enseignes.test.ts` les rapproche).
+
+Le journal de l'accueil est une pellicule 35 mm par mois (`src/accueil/Pellicule.tsx`) : une bande qui défile de côté, sans barre, jusqu'au bord droit de l'écran (`--debord-page`), terminée par l'amorce et le bout déchiré. Un film sans affiche y prend l'enseigne de sa décennie (`SigneDeFilm.tsx`), dessinée à la taille du fronton puis réduite (`--signe-echelle`), avec le même découpage du titre que lui (`titre.ts`).
+
+Le profil est le portefeuille du membre : une carte d'adhérent, puis chaque graphique dessiné comme un objet (la jauge et les diodes sur laiton, des billets pour les réactions, une pellicule pour les décennies, des ampoules pour les mois), et le ticket de caisse. Ses valeurs (`--carte-*`, `--panneau-*`, `--ticket-*`, `--perforation-*`, `--ampoule-*`, `--papier-*`, et le rythme `--rythme-*`) sont dans `theme.css` : celles du jour dans `:root`, celles de la nuit dans les deux blocs sombres, les lueurs éteintes le jour. La couleur du membre (`identity_color`) est posée par la page dans `--identite` et ne touche que ses marques à lui. Le ciel de l'accueil s'appelle désormais `--fond-ciel` : c'est le ciel du bâtiment, partagé par l'accueil, le profil et la caisse. Le réglage jour / nuit / auto de la caisse (`src/ui/theme.ts`) se garde dans ce navigateur et pose ou ôte `data-theme` sur `<html>` dès le démarrage (`main.tsx`).
 
 Le Voyage a son habillage à lui, par décennie : `src/ui/voyage.css` (les quatre couleurs de
 `../biblio-android/docs/design.md`, la classe `.celebration`). Le thème général ne les lit pas.

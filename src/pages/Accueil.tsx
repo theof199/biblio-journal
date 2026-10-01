@@ -13,14 +13,16 @@ import { entiteEnCours } from '../suivis/prochain'
 import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
 import type { EtatFilmographie } from '../suivis/liste'
 import { cartesEnsuite } from '../accueil/ensuite'
-import { candidatDepuisFilmSuivi, candidatDepuisPlex } from '../formulaire/candidat'
-import Affiche from '../ui/Affiche'
-import Panne from '../ui/Panne'
-import CarteCeSoir from '../accueil/CarteCeSoir'
-import CarrouselEnsuite from '../accueil/CarrouselEnsuite'
-import VitrineVide from '../accueil/VitrineVide'
+import { cartesEventail } from '../accueil/eventail'
+import { compteAccueil, etatFronton } from '../accueil/fronton'
+import { journalParMois } from '../accueil/journalParMois'
 import { useChargementInfini } from '../accueil/useChargementInfini'
-import { compteAccueil, formatJour } from '../accueil/fronton'
+import Panne from '../ui/Panne'
+import BandeVoyage from '../accueil/BandeVoyage'
+import Eventail from '../accueil/Eventail'
+import Pellicule from '../accueil/Pellicule'
+import Fronton from '../accueil/Fronton'
+import VitrineVide from '../accueil/VitrineVide'
 import styles from './Accueil.module.css'
 import type { FilmRealisateur, Realisateur } from '../api/realisateurs'
 import type { FilmSaga, Saga } from '../api/sagas'
@@ -37,11 +39,11 @@ function filmsPrets<F>(etats: ReadonlyMap<number, EtatFilmographie<F>>): Map<num
 }
 
 /**
- * « Accueil · la porte d'entrée » (reprise de `HomeScreen.kt`) : le fronton, « Ce soir », « Ensuite »
- * et la grille du journal, en pagination infinie. « Ensuite » montre aussi, à défaut ou en plus de
- * Plex, le réalisateur et la saga suivis dont il reste le plus à voir (`accueil/ensuite.ts`,
- * reprise de `HomeRoute.kt`) ; « Ce soir » et la carte du Voyage renvoient vers l'onglet Voyage,
- * dont la fiche d'année vit dans un autre lot.
+ * « Accueil · la porte d'entrée » (reprise de `HomeScreen.kt`) : la façade d'un cinéma. Le fronton
+ * annonce la séance du soir, à défaut le prochain film à voir, à défaut la dernière entrée ; sous lui
+ * l'éventail des affiches à voir, la bande du Voyage, puis le journal : une pellicule par mois, en
+ * pagination infinie. « Ensuite » vient de Plex et, en plus ou à défaut, du réalisateur et de la saga
+ * suivis dont il reste le plus à voir (`accueil/ensuite.ts`, reprise de `HomeRoute.kt`). « Ce soir » et la bande du Voyage renvoient vers l'onglet Voyage.
  */
 export default function Accueil() {
   const naviguer = useNavigate()
@@ -98,68 +100,58 @@ export default function Accueil() {
   const items = journal.data.pages.flatMap((page) => page.items)
   const vide = items.length === 0 && !journal.hasNextPage
 
+  const maintenant = new Date()
   const compte = compteAccueil(stats.data?.dashboard.periods.year.counts.finished_by_type.movie)
   const seance = voyage.data?.seance_prise
   const cartes = cartesEnsuite(plex.data?.films[0], ensuiteRealisateur, ensuiteSaga)
+  const mois = journalParMois(items)
 
   return (
-    <div className={styles.page}>
-      <div className={styles.fronton}>
-        <h1 className={styles.jour}>{formatJour(new Date())}</h1>
-        {compte ? <p className={styles.compte}>{compte}</p> : null}
-      </div>
+    <div className={styles.fond}>
+      <div className={styles.page}>
+        <Fronton etat={etatFronton(maintenant, seance, cartes, items[0])} />
+        <Eventail cartes={cartesEventail(seance, cartes)} />
+        {voyage.data ? <BandeVoyage voyage={voyage.data} /> : null}
 
-      {seance ? <CarteCeSoir seance={seance} /> : null}
-      {cartes.map((carte) => {
-        if (carte.source === 'plex') {
-          return <CarrouselEnsuite key="plex" candidat={candidatDepuisPlex(carte.film)} libelle="Ensuite" />
-        }
-        const nom = carte.encours.entite.name
-        const candidat =
-          carte.source === 'realisateur'
-            ? candidatDepuisFilmSuivi(carte.encours.prochain, nom)
-            : candidatDepuisFilmSuivi(carte.encours.prochain, null)
-        return <CarrouselEnsuite key={carte.source} candidat={candidat} libelle={`Ensuite · ${nom}`} />
-      })}
-
-      {vide ? (
-        <VitrineVide onAjouter={() => naviguer('/recherche')} />
-      ) : (
-        <>
-          <div className={styles.grille}>
-            {items.map((item) => (
-              <Link
-                key={item.entry.id}
-                to={`/journal/${item.entry.id}`}
-                state={{ item }}
-                className={styles.entree}
-              >
-                <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} />
-              </Link>
-            ))}
-          </div>
-          {journal.hasNextPage ? (
-            <div ref={sentinelle} data-testid="sentinelle-journal" className={styles.sentinelle} />
-          ) : null}
-          {journal.isFetchingNextPage && !isFetchNextPageError ? (
-            <p className={styles.chargement}>Chargement…</p>
-          ) : null}
-          {isFetchNextPageError ? (
-            <div className={styles.erreur} role="alert">
-              <p className={styles.erreurTexte}>{journal.error?.message}</p>
-              <button type="button" className={styles.bouton} onClick={() => void fetchNextPage()}>
-                Réessayer
-              </button>
+        {vide ? (
+          <VitrineVide onAjouter={() => naviguer('/recherche')} />
+        ) : (
+          <section className={styles.journal} aria-labelledby="titre-journal">
+            <div className={styles.entete}>
+              <h2 id="titre-journal" className={styles.titre}>
+                Le journal
+              </h2>
+              {compte ? <p className={styles.compte}>{compte}</p> : null}
             </div>
-          ) : null}
-        </>
-      )}
 
-      {!vide ? (
-        <Link to="/recherche" className={styles.boutonAjouter} aria-label="Ajouter un film">
-          <IconPlus aria-hidden="true" className={styles.icone} />
-        </Link>
-      ) : null}
+            {mois.map((groupe) => (
+              <Pellicule key={groupe.cle} mois={groupe} />
+            ))}
+
+            {journal.hasNextPage ? (
+              <div ref={sentinelle} data-testid="sentinelle-journal" className={styles.sentinelle} />
+            ) : null}
+            {journal.isFetchingNextPage && !isFetchNextPageError ? (
+              <p className={styles.chargement}>Chargement…</p>
+            ) : null}
+            {isFetchNextPageError ? (
+              <div className={styles.erreur} role="alert">
+                <p className={styles.erreurTexte}>{journal.error?.message}</p>
+                <button type="button" className={styles.bouton} onClick={() => void fetchNextPage()}>
+                  Réessayer
+                </button>
+              </div>
+            ) : null}
+          </section>
+        )}
+
+        {!vide ? (
+          <Link to="/recherche" className={styles.boutonAjouter}>
+            <IconPlus aria-hidden="true" className={styles.icone} />
+            <span>J’ai vu un film</span>
+          </Link>
+        ) : null}
+      </div>
     </div>
   )
 }

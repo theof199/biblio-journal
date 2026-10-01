@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { formatDateVisionnage, jourLocal, normaliser, sousTitre } from './format'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { formatDateCourte, formatDateVisionnage, formatJourBref, jourLocal, normaliser, sousTitre, virgule } from './format'
 
 describe('sousTitre', () => {
   it('joint le réalisateur et l’année', () => {
@@ -58,5 +58,39 @@ describe('normaliser', () => {
   // Mutation : sans `.toLowerCase()` après `.replace`, « CAFÉ » et « café » resteraient distincts.
   it('« miya » retrouve « Hayao Miyazaki »', () => {
     expect(normaliser('Hayao Miyazaki').includes(normaliser('miya'))).toBe(true)
+  })
+})
+
+describe('formatJourBref', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('écrit le jour et le mois abrégé en capitales, sans point', () => {
+    expect(formatJourBref('2026-09-28')).toBe('28 SEPT')
+  })
+
+  it('garde l’accent du mois', () => {
+    expect(formatJourBref('2026-08-16')).toBe('16 AOÛT')
+  })
+
+  it('n’ordinalise pas le premier du mois', () => {
+    expect(formatJourBref('2026-07-01')).toBe('1 JUIL')
+  })
+
+  it('lit le jour dans la date elle-même, quel que soit le fuseau', () => {
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    expect(formatJourBref('2026-08-01')).toBe('1 AOÛT')
+  })
+})
+
+describe('virgule', () => {
+  it('met la virgule décimale du français, sans ajouter de zéro', () => {
+    expect(virgule(7.4)).toBe('7,4')
+    expect(virgule(8)).toBe('8')
+  })
+})
+
+describe('formatDateCourte', () => {
+  it('écrit jour, mois, année avec leurs zéros', () => {
+    expect(formatDateCourte('2026-10-01')).toBe('01/10/2026')
   })
 })

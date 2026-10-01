@@ -17,6 +17,7 @@ import PageSaga from './pages/PageSaga'
 import FicheFilm from './pages/FicheFilm'
 import AuCine from './pages/AuCine'
 import Profil from './pages/Profil'
+import Caisse from './pages/Caisse'
 import ImportLetterboxd from './pages/ImportLetterboxd'
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
           {/* Sous-page du profil (README, « La coque à onglets ») : l'onglet Profil reste marqué,
               comme sur l'appli Android où « Mes films » ne se pousse que depuis lui. */}
           <Route path="profil/mes-films" element={<MesFilms />} />
+          <Route path="profil/reglages" element={<Caisse />} />
           <Route path="profil/import-letterboxd" element={<ImportLetterboxd />} />
         </Route>
       </Route>

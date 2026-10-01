@@ -8,6 +8,10 @@ import MiseAJour from './pwa/MiseAJour'
 import './ui/polices'
 import './ui/theme.css'
 import './ui/voyage.css'
+import { appliquerTheme, lireTheme } from './ui/theme'
+
+// Avant le premier rendu : sinon la page s'ouvre dans le thème du téléphone, puis bascule.
+appliquerTheme(lireTheme())
 
 // Créé une fois, hors du rendu : un `createQueryClient()` par rendu viderait
 // le cache (et donc la session) à chaque remontage.

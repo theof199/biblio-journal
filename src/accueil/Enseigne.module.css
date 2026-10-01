@@ -1,0 +1,84 @@
+/*
+ * Ce que le fronton de l'accueil et la vignette d'un film sans affiche ont en commun : le fond de
+ * l'enseigne de la décennie et ses lettres. Tout vient de `ui/theme.css` (`[data-decennie]`).
+ */
+
+/* Le fond du panneau et son cadre intérieur (filet, double filet ou plaque arrondie), sous les lettres, posées après lui en `relative`. */
+.fond {
+  position: relative;
+  overflow: hidden;
+  background: var(--fronton-panneau-fond);
+}
+
+.fond::before {
+  content: '';
+  display: var(--enseigne-bord-affichage);
+  position: absolute;
+  inset: var(--enseigne-bord-marge);
+  border: var(--enseigne-bord);
+  border-radius: var(--enseigne-bord-rayon);
+  box-shadow: var(--enseigne-bord-ombre);
+  background: var(--enseigne-bord-fond);
+}
+
+/*
+ * Une ligne de titre, dans la police et le relief de l'enseigne. Le corps des lettres est le texte de
+ * la ligne (relief et lueur en `text-shadow`) ; leur face lumineuse ou dorée est un `::after` qui
+ * relit le texte dans `data-texte`, avec une alternative vide pour que les lecteurs d'écran ne le
+ * lisent qu'une fois. Une enseigne sans face ne montre que le corps. La taille des lettres est
+ * l'affaire de chaque feuille : le plafond n'est pas le même, la formule l'est.
+ */
+.lettres {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: var(--enseigne-air) var(--enseigne-extrusion) calc(var(--fronton-trait-rail) + var(--enseigne-air) + var(--enseigne-extrusion))
+    var(--enseigne-compensation);
+  color: var(--enseigne-titre-couleur);
+  font-family: var(--police-enseigne);
+  font-weight: var(--enseigne-graisse);
+  letter-spacing: var(--fronton-interlettre-titre);
+  line-height: var(--interligne-serre);
+  text-align: center;
+  text-shadow: var(--enseigne-relief), var(--enseigne-lueur);
+  text-transform: uppercase;
+  white-space: nowrap;
+  filter: var(--enseigne-filtre);
+}
+
+.lettres::after {
+  content: attr(data-texte);
+  content: attr(data-texte) / '';
+  display: var(--enseigne-face-affichage);
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  padding: inherit;
+  box-sizing: border-box;
+  color: transparent;
+  text-shadow: none;
+  -webkit-text-stroke: var(--enseigne-face-contour);
+  background-color: var(--enseigne-face-couleur);
+  background-image: var(--enseigne-face-image);
+  background-size: var(--enseigne-face-taille);
+  background-repeat: var(--enseigne-face-repet);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* Les traits chromés de part et d'autre du titre : le masque les efface au milieu, sous les lettres. */
+.lettres::before {
+  content: '';
+  display: var(--enseigne-trait-affichage);
+  position: absolute;
+  inset-inline: 0;
+  inset-block: 0;
+  height: var(--enseigne-trait-haut);
+  margin-block: auto;
+  background: var(--enseigne-trait-fond);
+  -webkit-mask-image: var(--enseigne-trait-masque);
+  mask-image: var(--enseigne-trait-masque);
+}

@@ -1,0 +1,168 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.eventail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Une scène à ratio fixe : les cartes se placent en pourcentages, elle se réduit avec l'écran. */
+.scene {
+  position: relative;
+  width: 100%;
+  max-width: var(--eventail-largeur-max);
+  aspect-ratio: var(--eventail-ratio);
+}
+
+/* La carte reste le même élément d'une place à l'autre : c'est ce qui laisse la transition jouer. */
+.carte {
+  position: absolute;
+  border: 0 solid var(--couleur-texte);
+  background: var(--couleur-surface);
+  box-shadow: var(--eventail-ombre);
+  transition-property: left, top, width, transform, filter, padding, border-width;
+  transition-duration: var(--eventail-duree);
+  transition-timing-function: ease;
+}
+
+.avant {
+  top: var(--eventail-avant-haut);
+  left: var(--eventail-avant-gauche);
+  width: var(--eventail-avant-largeur);
+  padding: var(--eventail-cadre-marge);
+  border-width: var(--eventail-cadre-trait);
+  z-index: var(--eventail-z-avant);
+}
+
+.ceSoir {
+  border-color: var(--couleur-accent);
+}
+
+.droite,
+.gauche {
+  top: var(--eventail-cote-haut);
+  width: var(--eventail-cote-largeur);
+  z-index: var(--eventail-z-cote);
+  filter: var(--eventail-estompe);
+}
+
+.droite {
+  left: var(--eventail-droite-gauche);
+  transform: rotate(var(--eventail-rotation-droite));
+}
+
+.gauche {
+  left: var(--eventail-gauche-gauche);
+  transform: rotate(var(--eventail-rotation-gauche));
+}
+
+.derriere {
+  top: 0;
+  left: var(--eventail-derriere-gauche);
+  width: var(--eventail-derriere-largeur);
+  transform: rotate(var(--eventail-rotation-derriere));
+  z-index: var(--eventail-z-derriere);
+  filter: var(--eventail-estompe);
+}
+
+/* Deux cartes : celle de face se décale pour laisser la place à l'autre. */
+.duo .avant {
+  left: var(--eventail-avant-gauche-duo);
+}
+
+.duo .droite {
+  left: var(--eventail-droite-gauche-duo);
+}
+
+.lien {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.affiche {
+  width: 100%;
+}
+
+.points {
+  display: flex;
+  justify-content: center;
+  gap: var(--espace-2);
+  margin-top: var(--espace-4);
+}
+
+.point {
+  width: var(--eventail-point);
+  height: var(--eventail-point);
+  border: var(--eventail-point-trait) solid var(--couleur-texte-doux);
+  border-radius: var(--rayon-plein);
+}
+
+.actif {
+  border-color: var(--couleur-accent);
+  background: var(--couleur-accent);
+}
+
+.legende {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-2);
+  max-width: 100%;
+  margin-top: var(--espace-3);
+  text-align: center;
+}
+
+.puce {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: var(--eventail-puce-hauteur);
+  padding: 0 var(--espace-3);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-semi-forte);
+  letter-spacing: var(--interlettre-puce);
+  line-height: var(--interligne-serre);
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.puceCeSoir {
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.puceEnsuite {
+  border: var(--trait) solid var(--couleur-texte-doux);
+  color: var(--couleur-texte);
+}
+
+.titre {
+  margin: 0;
+  max-width: 100%;
+  font-family: var(--police-titre);
+  font-size: var(--eventail-titre-taille);
+  font-style: italic;
+  font-weight: var(--graisse-noire);
+  line-height: var(--interligne-serre);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.meta {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-meta);
+  line-height: var(--interligne-meta);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carte {
+    transition: none;
+  }
+}

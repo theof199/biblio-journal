@@ -1,54 +1,29 @@
 /* Aucune valeur en dur : tout vient de `ui/theme.css`. */
 
-.chiffres {
-  margin: 0;
-  color: var(--couleur-texte-doux);
+/* Le ciel du bâtiment couvre toute la zone de la page ; le portefeuille, lui, est une colonne de la taille d'un téléphone. */
+.fond {
+  min-height: 100%;
+  padding: var(--espace-5) var(--gouttiere-page) var(--espace-6);
+  background-color: var(--couleur-fond);
+  background-image: var(--fond-ciel);
+  background-repeat: no-repeat;
 }
 
-.chiffre {
-  font-size: var(--taille-xl);
-  font-weight: var(--graisse-forte);
-  color: var(--couleur-texte);
-}
-
-.entree {
+.page {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-height: var(--cible-tactile);
-  padding: var(--espace-2) var(--espace-4);
-  border: var(--trait) solid var(--couleur-bordure);
-  border-radius: var(--rayon-m);
-  background: var(--couleur-surface);
-  color: var(--couleur-texte);
-  text-decoration: none;
-  cursor: pointer;
+  gap: var(--rythme-section);
+  max-width: var(--profil-largeur-max);
+  margin: 0 auto;
 }
 
-.entree:hover {
-  background: var(--couleur-surface-2);
-}
-
-.entreeTitre {
-  font-weight: var(--graisse-moyenne);
-}
-
-.entreeAide {
-  font-size: var(--taille-s);
-  color: var(--couleur-texte-doux);
-}
-
-.mentionTmdb {
+.objets {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--espace-2);
-  margin-top: var(--espace-5);
-  text-align: center;
-  font-size: var(--taille-s);
-  color: var(--couleur-texte-doux);
+  gap: var(--rythme-objet);
 }
 
-.logoTmdb {
-  width: var(--largeur-logo-tmdb);
+/* Le ticket se pose plus bas que les sections : l'écart des sections en a déjà pris une part. */
+.souche {
+  margin-top: calc(var(--rythme-souche) - var(--rythme-section));
 }
