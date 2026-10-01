@@ -228,17 +228,15 @@ describe('la manivelle', () => {
     expect(bouges[0]).toBe(false)
   })
 
-  // Le doigt est remonté, la page a défilé. Mutation : la relecture de la position retirée du
-  // `touchmove` (le doigt redescendu tirerait une page qui n'est plus en haut).
-  it('un tirage qui laisse la page défiler n’en est plus un', () => {
-    const recharger = vi.fn(async () => undefined)
-    const { contenu } = monterSeule(recharger)
-    const main = document.querySelector('main')!
+  // En haut de la page, le doigt qui remonte la fait défiler comme d'habitude. Mutation : le
+  // `preventDefault` posé aussi quand l'écart n'est pas positif (la page ne défilerait plus vers le bas).
+  it('le doigt qui remonte fait défiler la page, il ne tire qu’au-dessous du départ', () => {
+    const { contenu } = monterSeule(async () => undefined)
     fireEvent.touchStart(contenu, { touches: [{ clientY: 300 }] })
-    main.scrollTop = 40
-    expect(fireEvent.touchMove(contenu, { touches: [{ clientY: 500 }] })).toBe(true)
-    fireEvent.touchEnd(contenu, { touches: [] })
-    expect(recharger).not.toHaveBeenCalled()
+    expect(fireEvent.touchMove(contenu, { touches: [{ clientY: 250 }] })).toBe(true)
+    expect(contenu.style.transform).toBe('')
+    expect(fireEvent.touchMove(contenu, { touches: [{ clientY: 400 }] })).toBe(false)
+    expect(contenu.style.transform).toBe('translateY(50px)')
   })
 
   // Mutations : le bouton sans effet ; le statut tu.

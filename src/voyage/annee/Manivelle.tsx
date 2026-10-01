@@ -105,8 +105,8 @@ export default function Manivelle({ monde, onRecharger, children }: Props) {
       if (depart === null) return
       const t = e.touches[0]
       if (!t) return
-      // Le doigt est remonté, la page a défilé : ce n'est plus un tirage.
-      if ((zone()?.scrollTop ?? 0) > 0) return abandonner()
+      // Remonté au-dessus du départ, le doigt fait défiler la page ; il ne la tire qu'au-dessous, où
+      // la page, qui l'a suivi, est de nouveau tout en haut.
       const ecart = t.clientY - depart
       if (ecart <= 0) {
         dy = 0
