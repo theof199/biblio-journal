@@ -335,7 +335,13 @@ c'est changer ces variables, puis au besoin les styles des composants, sans touc
 `100dvh`, `flex: 1`) ou lit une variable absente de `theme.css` fait échouer les tests ; le même
 fichier garde la zone sûre de la barre d'onglets.
 Seuls `theme-color` (`index.html`) et les couleurs du manifeste (`vite.config.ts`) restent à
-accorder à la main.
+accorder à la main : ils prennent le haut du ciel, jour et nuit.
+
+Le ciel (`--fond-ciel`) est le fond de tout le bâtiment, zones sûres comprises : `theme.css` le peint
+sur le corps, que le document passe à sa toile, et les pages sont transparentes. La barre d'onglets
+prend la couleur du bas du ciel (`--barre-onglets-fond`), pour que la zone sûre du bas prolonge la
+page. Le Voyage n'en reçoit rien : la coque pose `data-lieu="ecran"` sur `<html>` tant qu'il est à
+l'écran, et le corps garde alors son fond plat.
 
 Le fronton de l'accueil change d'enseigne avec la décennie du film qu'il annonce (`data-decennie`
 sur son lien, `decennieDeAnnee` dans `src/accueil/fronton.ts`) : le cadre et ses ampoules restent, le

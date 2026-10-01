@@ -86,6 +86,26 @@ describe('la zone sûre du téléphone', () => {
   })
 })
 
+describe('le ciel du bâtiment', () => {
+  it('le corps le peint, sauf quand le Voyage est à l’écran', () => {
+    expect(regle(theme, ":root:not([data-lieu='ecran']) body")).toMatch(/background-image:\s*var\(--fond-ciel\)/)
+    expect(regle(theme, 'body')).not.toMatch(/background-image/)
+  })
+
+  it('l’accueil, le profil et la caisse le laissent passer : leur page ne peint pas son propre fond', () => {
+    const peintres = ['Accueil', 'Profil', 'Caisse'].filter((nom) => {
+      const css = MODULES[`/src/pages/${nom}.module.css`]!
+      return regle(css, '.fond').match(/background/) !== null
+    })
+    expect(peintres).toEqual([])
+  })
+
+  it('la barre d’onglets prend le bas du ciel, de jour comme de nuit', () => {
+    expect(regle(coque, '.barre')).toMatch(/background:\s*var\(--barre-onglets-fond\)/)
+    expect(sansCommentaires(theme).match(/--barre-onglets-fond:/g)).toHaveLength(3)
+  })
+})
+
 describe('le défilement', () => {
   it('seule la zone de contenu de la coque défile, bornée au-dessus de la barre', () => {
     expect(regle(coque, '.coque')).toMatch(/position:\s*fixed/)

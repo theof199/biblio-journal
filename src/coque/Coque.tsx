@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   IconArmchair,
@@ -37,7 +37,18 @@ export const ONGLETS: readonly Onglet[] = [
  */
 export default function Coque() {
   const contenu = useRef<HTMLElement>(null)
-  useDefilementMemorise(contenu, useLocation().key)
+  const { key, pathname } = useLocation()
+  useDefilementMemorise(contenu, key)
+
+  // Le Voyage a son propre fond : sans cet attribut sur `<html>`, `theme.css` peint le ciel du bâtiment.
+  const auVoyage = pathname === '/voyage' || pathname.startsWith('/voyage/')
+  useLayoutEffect(() => {
+    if (!auVoyage) return
+    document.documentElement.dataset.lieu = 'ecran'
+    return () => {
+      delete document.documentElement.dataset.lieu
+    }
+  }, [auVoyage])
 
   return (
     <div className={styles.coque}>

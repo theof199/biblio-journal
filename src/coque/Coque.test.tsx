@@ -75,6 +75,25 @@ describe('la coque à onglets', () => {
     }
   })
 
+  it('sur le Voyage, la coque pose le lieu « écran » sur <html>, que le ciel du bâtiment n’atteint pas', async () => {
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
+    monter('/voyage')
+
+    expect(await screen.findByRole('heading', { level: 1, name: ATTENDUS[1].titre })).toBeInTheDocument()
+    expect(document.documentElement.dataset.lieu).toBe('ecran')
+  })
+
+  it('en quittant le Voyage pour l’accueil, <html> perd son lieu', async () => {
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
+    monter('/voyage')
+    await within(await screen.findByRole('navigation', { name: 'Onglets' })).findAllByRole('link')
+
+    fireEvent.click(within(barre()).getByRole('link', { name: 'Accueil' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: ATTENDUS[0].titre })).toBeInTheDocument()
+    expect(document.documentElement).not.toHaveAttribute('data-lieu')
+  })
+
   it('changer d’onglet remet la zone de contenu en haut', async () => {
     servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
     monter('/profil')

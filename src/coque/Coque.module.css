@@ -28,7 +28,7 @@
   right: 0;
   bottom: 0;
   padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  background: var(--couleur-surface);
+  background: var(--barre-onglets-fond);
   box-shadow: var(--ombre-barre);
 }
 

@@ -3,9 +3,6 @@
 /* Le ciel couvre toute la zone de la page, sur la largeur de l'écran ; le contenu, lui, est borné. */
 .fond {
   min-height: 100%;
-  background-color: var(--couleur-fond);
-  background-image: var(--fond-ciel);
-  background-repeat: no-repeat;
 }
 
 .page {

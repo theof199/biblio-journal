@@ -28,8 +28,10 @@ export default defineConfig(({ mode }) => {
           scope: '/journal/',
           display: 'standalone',
           orientation: 'portrait',
-          theme_color: '#080a26',
-          background_color: '#080a26',
+          // Le haut du ciel de nuit (`--fond-ciel`, `src/ui/theme.css`) : le manifeste ne lit pas les
+          // variables, à accorder à la main s'il change.
+          theme_color: '#1b2472',
+          background_color: '#1b2472',
           icons: [
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
             { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

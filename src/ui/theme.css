@@ -36,8 +36,10 @@
   --couleur-sur-bloc-doux: #d5dbff;
   --ombre-bloc: 0 12px 24px rgba(42, 63, 214, 0.3);
 
-  /* Le ciel du bâtiment (l'accueil, le profil, la caisse) et la lueur des boutons d'accent */
-  --fond-ciel: linear-gradient(180deg, #aebcff 0px, #d3dcff 300px, #e9edff 640px, #f3f5ff 1100px);
+  /* Le ciel du bâtiment, peint sur l'écran entier (`body`, hors Voyage) : des étapes en pourcentage,
+     pour que son bas atteigne toujours la couleur de la barre d'onglets, quelle que soit la hauteur */
+  --fond-ciel: linear-gradient(180deg, #aebcff 0%, #d3dcff 30%, #e9edff 65%, #f3f5ff 100%);
+  --barre-onglets-fond: #f3f5ff; /* la dernière étape du ciel : la barre prolonge la page jusqu'au bord */
   --lueur-accent: 0 8px 20px rgba(209, 18, 47, 0.35);
 
   /* Le fronton : panneau crème, lettres, rail, cadre et ampoules */
@@ -539,6 +541,7 @@
     --ombre-bloc: 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4);
     --fond-ciel: radial-gradient(ellipse 300px 260px at 50% 170px, rgba(255, 196, 120, 0.14), rgba(255, 196, 120, 0) 72%),
       linear-gradient(180deg, #1b2472 0%, #1e2a80 40%, #22328e 100%);
+    --barre-onglets-fond: #22328e;
     --lueur-accent: 0 0 26px rgba(255, 59, 78, 0.5), 0 8px 22px rgba(0, 0, 0, 0.45);
     --fronton-panneau: #fbf3dc;
     --fronton-rail: rgba(16, 19, 58, 0.16);
@@ -617,6 +620,7 @@
   --ombre-bloc: 0 18px 26px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4);
   --fond-ciel: radial-gradient(ellipse 300px 260px at 50% 170px, rgba(255, 196, 120, 0.14), rgba(255, 196, 120, 0) 72%),
     linear-gradient(180deg, #1b2472 0%, #1e2a80 40%, #22328e 100%);
+  --barre-onglets-fond: #22328e;
   --lueur-accent: 0 0 26px rgba(255, 59, 78, 0.5), 0 8px 22px rgba(0, 0, 0, 0.45);
   --fronton-panneau: #fbf3dc;
   --fronton-rail: rgba(16, 19, 58, 0.16);
@@ -1060,6 +1064,15 @@ body {
   /* La barre d'état est translucide sur iOS (voir index.html) : le contenu ne passe pas dessous.
      Le bas est laissé à la coque, dont la barre d'onglets porte la zone sûre. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* Le ciel est le fond de tout le bâtiment, zones sûres comprises : le corps le peint, et il le passe
+   à la toile du document (le `html` n'a pas de fond), qui couvre aussi la barre d'état et le bas
+   derrière la barre d'onglets. Les pages sont transparentes. Le Voyage n'en reçoit rien : la coque
+   pose `data-lieu='ecran'` sur `<html>` tant qu'il est à l'écran, et le corps garde son fond plat. */
+:root:not([data-lieu='ecran']) body {
+  background-image: var(--fond-ciel);
+  background-repeat: no-repeat;
 }
 
 h1,

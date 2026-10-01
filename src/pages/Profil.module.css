@@ -4,9 +4,6 @@
 .fond {
   min-height: 100%;
   padding: var(--espace-5) var(--gouttiere-page) var(--espace-6);
-  background-color: var(--couleur-fond);
-  background-image: var(--fond-ciel);
-  background-repeat: no-repeat;
 }
 
 .page {
