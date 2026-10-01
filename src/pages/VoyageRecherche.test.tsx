@@ -15,6 +15,7 @@ import { fichePrete, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import { anneeCivile } from '../voyage/decennie'
 import { decennieDe } from '../voyage/regles'
 import styles from './VoyageRecherche.module.css'
+import FEUILLE from './VoyageRecherche.module.css?raw'
 
 /**
  * La carte : 1895 et 1896 écrites et ouvertes, 1897 en cours (écrite), 1898 et 1899 verrouillées.
@@ -330,6 +331,16 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(racine.style.getPropertyValue('--m-f-affiche')).toBe(pages.jetons['--m-f-affiche'])
     expect(screen.getByRole('searchbox', { name: pages.mots.recherche.champ })).toHaveAttribute('placeholder', pages.mots.recherche.champ)
     expect(screen.getByRole('link', { name: pages.mots.recherche.partout })).toBeInTheDocument()
+  })
+
+  // Le corail ne signale que ce que le joueur déclenche dans le jeu : chercher n'en est pas, ni le
+  // lien hors du Voyage. Au calme, les lignes se posent sans glisser. Mutations : `var(--corail)` sur
+  // le passage souligné ; la règle du calme retirée.
+  it('ne porte pas le corail, et pose ses lignes sans glisser au calme', () => {
+    const feuille = FEUILLE.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(feuille).not.toContain('--corail')
+    const calme = feuille.slice(feuille.indexOf('@media (prefers-reduced-motion: reduce)'))
+    expect(calme).toMatch(/\.entree\s*\{\s*animation:\s*none;?\s*\}/)
   })
 
   // La recherche du journal, hors du catalogue (décision D7).
