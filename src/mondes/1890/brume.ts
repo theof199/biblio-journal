@@ -5,6 +5,7 @@ import { remplissage } from './foire'
 import { guichetEtat, LARGEUR, plaque } from './moyen'
 import { guirlandesLampions } from './proches'
 import { clamp, lisse } from '../../carte/outils'
+import { lueurDeLaBrume } from './bobines'
 
 const COULEURS_CONFETTIS: readonly string[] = [c('#A8452F'), c('#E6B94A'), c('#F2E8D5'), c('#3E5360'), c('#DE7A45')]
 
@@ -12,7 +13,8 @@ const COULEURS_CONFETTIS: readonly string[] = [c('#A8452F'), c('#E6B94A'), c('#F
  * Ce qu'une année ouverte montre par-dessus la brume de l'avenir (idée 8, maquette : les lignes
  * « Le guichet ouvert en 1897 perce la brume », `ecriteau`, et les confettis de fin de chantier de
  * `dessinCarte`) : le guichet de 1897 quand la brume le couvre encore, l'écriteau du chantier en
- * cours, et les confettis de sa fin — une année posée bâtie (`t0 < 0`) n'en fête aucune.
+ * cours, et les confettis de sa fin — une année posée bâtie (`t0 < 0`) n'en fête aucune. Et
+ * l'éclat de la bobine perdue que la brume cache (plan 2d).
  */
 export function dessinerSurLaBrume(v: VueMonde): void {
   if (v.presence <= 0.01) return
@@ -45,4 +47,5 @@ export function dessinerSurLaBrume(v: VueMonde): void {
     v.marquer(`chantier:${e.annee}`)
     v.confettis(e.site[0] * v.k, v.ecranY(e.site[1] - 30, 1), COULEURS_CONFETTIS)
   }
+  lueurDeLaBrume(v)
 }

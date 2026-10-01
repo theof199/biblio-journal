@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { IconCurrentLocation, IconMap2 } from '@tabler/icons-react'
+import { IconCurrentLocation, IconMap2, IconVolume, IconVolumeOff } from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
@@ -9,7 +9,9 @@ import CarteCanvas, { type Moteur } from '../carte/CarteCanvas'
 import Apercu from '../carte/Apercu'
 import type { EtatCarte } from '../carte/moteur'
 import { jouerAvancee } from '../carte/avancee'
-import { ecrireAnneeVue, lireAnneeVue } from '../carte/memoire'
+import { ecrireAnneeVue, ecrireBobines, ecrireSon, lireAnneeVue, lireBobines, lireSon } from '../carte/memoire'
+import { ambianceDeLaPage } from '../carte/son'
+import { STYLE_DU_TEMPO } from '../voyage/tempo'
 import { creerRegistre } from '../mondes'
 import type { DateVraie } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
@@ -40,6 +42,13 @@ const mondes = creerRegistre()
  * referait l'état de la carte, et le moteur jetterait ses tuiles à chaque rendu de la page (un aperçu, une petite affiche).
  */
 const donneesDesFiches = (r: Array<{ data: FicheAnnee | undefined }>) => r.map((q) => q.data)
+/**
+ * Le message d'une bobine qui arrive au compteur s'efface après trois secondes ; celui des trois
+ * retrouvées vient après lui (maquette : `toast`, et le `setTimeout` de 3300 ms d'`arriver`). Des
+ * temps de lecture, pas d'animation : ils ne suivent pas le tempo.
+ */
+const LECTURE_MS = 3000
+const APRES_LA_DERNIERE_MS = 3300
 const LIBELLE = { palme: 'Palme', lion: 'Lion', ours: 'Ours', encours: 'en cours', passee: 'passée', verrou: 'à tourner' } as const
 
 export default function Carte() {
@@ -74,6 +83,52 @@ export default function Carte() {
   const [roulotteDite, setRoulotteDite] = useState(false)
   const [calque, setCalque] = useState<{ type: 'tampon'; decennie: number } | { type: 'carton'; annee: number } | null>(null)
 
+  // Le son (plan 2d) : une ambiance par page, qui ne crée rien avant le bouton « Son ». Le réglage
+  // retenu ne rallume rien de lui-même : il dit seulement au bouton de proposer de le reprendre.
+  const [ambiance] = useState(ambianceDeLaPage)
+  const [sonEnMarche, setSonEnMarche] = useState(() => ambiance.enMarche)
+  const [sonVoulu, setSonVoulu] = useState(() => lireSon(user.id))
+  useEffect(() => {
+    const cache = () => ambiance.taire(document.hidden)
+    cache()
+    document.addEventListener('visibilitychange', cache)
+    return () => {
+      document.removeEventListener('visibilitychange', cache)
+      ambiance.taire(true)
+    }
+  }, [ambiance])
+  const basculerSon = () => {
+    if (ambiance.enMarche) {
+      ambiance.couper()
+      setSonEnMarche(false)
+      setSonVoulu(false)
+      ecrireSon(user.id, false)
+    } else if (ambiance.allumer()) {
+      setSonEnMarche(true)
+      setSonVoulu(true)
+      ecrireSon(user.id, true)
+    } else {
+      setMessage({ titre: 'Le son n’est pas disponible dans ce navigateur.', texte: null })
+    }
+  }
+
+  // Les bobines perdues (plan 2d) : trouvées sur cet appareil, par membre. Celle qui vole vers le
+  // compteur n'y est comptée qu'à son arrivée.
+  const [trouvees, setTrouvees] = useState(() => lireBobines(user.id))
+  const trouveesRef = useRef(trouvees)
+  const [enVol, setEnVol] = useState<string | null>(null)
+  const [pulsation, setPulsation] = useState(0)
+  const [message, setMessage] = useState<{ titre: string; texte: string | null } | null>(null)
+  const compteurRef = useRef<HTMLParagraphElement>(null)
+  const ecranRef = useRef<HTMLDivElement>(null)
+  const derniereRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => void (derniereRef.current !== null && clearTimeout(derniereRef.current)), [])
+  useEffect(() => {
+    if (!message) return
+    const j = setTimeout(() => setMessage(null), LECTURE_MS)
+    return () => clearTimeout(j)
+  }, [message])
+
   // La frontière : à l'ouverture, depuis la dernière année que cet appareil a montrée ; ensuite,
   // depuis là où se tient l'avatar.
   useEffect(() => {
@@ -98,6 +153,8 @@ export default function Carte() {
     moteur.ouvrirSousLesYeux(chantierDuDepart)
     setChantierDuDepart(null)
   }, [moteur, chantierDuDepart])
+
+  const bobinesDuVoyage = useMemo(() => [...new Set((v?.annees ?? []).map((a) => decennieDe(a.annee)))].flatMap((d) => mondes(d).bobines), [v])
 
   const attendre = useCallback((ms: number) => new Promise<void>((fin) => setTimeout(fin, ms)), [])
 
@@ -203,14 +260,43 @@ export default function Carte() {
       : prochainPas(enCours.profondeur, enCours.progression, enCours.recompense, ticketConnu, v.ia)[0] ?? 'Tout est vu'
   const j = enCours ? jauge(enCours.progression, enCours.recompense) : null
   const apercuAnnee = apercu ? v.annees.find((a) => a.annee === apercu.annee) : undefined
+  const comptees = (cles: readonly string[], sauf: string | null) => bobinesDuVoyage.filter((b) => cles.includes(b.cle) && b.cle !== sauf).length
+  const nBobines = comptees(trouvees, enVol)
+  const ramassee = (cle: string) => {
+    if (!trouveesRef.current.includes(cle)) trouveesRef.current = [...trouveesRef.current, cle]
+    setTrouvees(trouveesRef.current)
+    ecrireBobines(user.id, trouveesRef.current)
+    setEnVol(cle)
+    ambiance.carillon()
+  }
+  const arrivee = (cle: string) => {
+    setEnVol(null)
+    setPulsation((p) => p + 1)
+    const b = bobinesDuVoyage.find((x) => x.cle === cle)
+    const n = comptees(trouveesRef.current, null)
+    const total = bobinesDuVoyage.length
+    if (b) setMessage({ titre: `Bobine retrouvée ${n}/${total}`, texte: `« ${b.titre} », ${b.qui} : un film perdu.` })
+    if (b && n === total) {
+      if (derniereRef.current !== null) clearTimeout(derniereRef.current)
+      derniereRef.current = setTimeout(() => setMessage({ titre: total === 3 ? 'Les trois bobines perdues sont retrouvées.' : 'Toutes les bobines perdues sont retrouvées.', texte: null }), APRES_LA_DERNIERE_MS)
+    }
+  }
+  // Maquette : `cibleHud`. Le compteur caché (avant la première trouvaille), le coin haut droit.
+  const cibleBobines = () => {
+    const e = ecranRef.current?.getBoundingClientRect()
+    const r = compteurRef.current?.getBoundingClientRect()
+    if (e && r && r.width) return { x: r.left - e.left + 14, y: r.top - e.top + r.height / 2 }
+    return { x: (e?.width || 390) - 40, y: 40 }
+  }
 
   return (
-    <div className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent }}>
+    <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }}>
       <h1 className="sr-only">Le Voyage de {user.pseudo}</h1>
       {etat ? (
         <CarteCanvas
           etat={etat}
           calme={calme}
+          bobines={trouvees}
           surMoteur={setMoteur}
           rappels={{
             toucherAnnee: (a) => navigate(`/voyage/${a}`),
@@ -220,6 +306,11 @@ export default function Carte() {
             date: setDate,
             roulotte: () => setRoulotteDite(true),
             avatarVisible: setAvatarVu,
+            bobine: ramassee,
+            bobineArrivee: arrivee,
+            cibleBobines,
+            clap: () => ambiance.clap(),
+            presences: (liste) => ambiance.presences(liste),
           }}
         />
       ) : null}
@@ -242,6 +333,22 @@ export default function Carte() {
           </p>
         ) : null}
         {v.source ? <p className={styles.source}>{`Tu suis le Voyage de ${v.source.pseudo}${rattrape ? ' · tu le rattrapes bientôt' : ''}`}</p> : null}
+        {/* Le compteur des bobines perdues : discret, il n'apparaît qu'à la première (maquette : `#hudBob`). */}
+        <p ref={compteurRef} key={pulsation} className={`${styles.bobines}${pulsation ? ` ${styles.pulse}` : ''}`} hidden={nBobines === 0 && enVol === null}>
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="8.6" fill="currentColor" />
+            <circle cx="10" cy="10" r="6.8" fill="#3a2a12" />
+            <g fill="currentColor">
+              <circle cx="10" cy="5.9" r="1.7" />
+              <circle cx="13.9" cy="8.7" r="1.7" />
+              <circle cx="12.4" cy="13.3" r="1.7" />
+              <circle cx="7.6" cy="13.3" r="1.7" />
+              <circle cx="6.1" cy="8.7" r="1.7" />
+            </g>
+            <circle cx="10" cy="10" r="1.1" fill="currentColor" />
+          </svg>
+          <span>{`Bobines retrouvées ${nBobines}/${bobinesDuVoyage.length}`}</span>
+        </p>
       </header>
 
       <nav className={`sr-only ${styles.annees}`} aria-label="Les années du Voyage">
@@ -255,6 +362,15 @@ export default function Carte() {
       </nav>
 
       <div className={styles.boutons}>
+        <button
+          type="button"
+          aria-label="Son"
+          title={sonEnMarche ? 'Son : allumé' : sonVoulu ? 'Son : touche pour le reprendre' : 'Son : coupé'}
+          aria-pressed={sonEnMarche}
+          onClick={basculerSon}
+        >
+          {sonEnMarche || sonVoulu ? <IconVolume size={20} aria-hidden="true" /> : <IconVolumeOff size={20} aria-hidden="true" />}
+        </button>
         {!avatarVu && !ensemble ? (
           <button type="button" aria-label="Tu es ici" title="Tu es ici" onClick={() => moteur?.allerIci()}>
             <IconCurrentLocation size={20} aria-hidden="true" />
@@ -305,6 +421,17 @@ export default function Carte() {
             Refermer
           </button>
         </div>
+      ) : null}
+      {message ? (
+        <p role="status" className={styles.message}>
+          <b>{message.titre}</b>
+          {message.texte ? (
+            <>
+              <br />
+              {message.texte}
+            </>
+          ) : null}
+        </p>
       ) : null}
       {roulotteDite && v.source ? (
         <p role="status" className={styles.roulotte}>

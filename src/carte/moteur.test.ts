@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CORAIL, MAX_TUILES, MoteurCarte, type CaseCarte, type Dependances, type EtatCarte, type Rappels } from './moteur'
+import { CORAIL, DUREE_DE_L_ENVOL, MAX_TUILES, MoteurCarte, type CaseCarte, type Dependances, type EtatCarte, type Rappels } from './moteur'
 import { contexteFactice, type Appel } from '../test/contexteFactice'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { DateVraie, Monde, VueMonde } from '../mondes/types'
+import type { BobinePerdue, DateVraie, Monde, MusiqueDuMonde, VueMonde } from '../mondes/types'
+import { TEMPO } from '../voyage/tempo'
 
 const W = 390
 const H = 700
@@ -20,6 +21,18 @@ const DATE: DateVraie = { an: 1895, x: 60, y: 90, court: '22 mars', lieu: 'Paris
 const SITE_1899 = 200
 /** Un manège du monde d'essai, loin des cases et de l'affichette : un toucher le fait réagir. */
 const MANEGE = { x: 300, y: 90 }
+/**
+ * Plan 2d : la bobine perdue du monde d'essai, posée à côté de l'affichette, sa zone mordant sur
+ * la sienne : un toucher entre les deux qui ne trouve plus la bobine tombe sur l'affichette. Et sa
+ * musique.
+ */
+const BOBINE: BobinePerdue = { cle: 'les-quatre-diables', titre: 'Les Quatre Diables', qui: 'F. W. Murnau, 1928' }
+const OU_BOBINE = { x: DATE.x + 30, y: DATE.y }
+/** Un point des deux zones à la fois, celle de la bobine et celle de l'affichette. */
+const ENTRE_LES_DEUX = { x: DATE.x + 12, y: DATE.y }
+const MUSIQUE: MusiqueDuMonde = { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }
+/** La couleur de la joue d'une bobine terne (`dessinerBobine`), passée par la rampe du monde d'essai. */
+const JOUE = mondeAVenir(1890).couleur('#6b6258')
 /** Les réactions demandées au monde d'essai, par zone touchée. */
 const reactions: string[] = []
 function mondeDEssai(decennie: number): Monde {
@@ -28,6 +41,8 @@ function mondeDEssai(decennie: number): Monde {
     ...base,
     traitement: { cadence: 16, tremblement: 0.8, scintillement: 0.03, grain: 0.09, virage: { couleur: [150, 104, 58], alpha: 0.13 }, affiches: 'sepia' },
     dates: decennie === 1890 ? [DATE] : [],
+    bobines: decennie === 1890 ? [BOBINE] : [],
+    musique: decennie === 1890 ? MUSIQUE : null,
     adieu: decennie === 1890 ? 2 : 0,
     dessinerCiel: (v) => {
       vus.push(v)
@@ -37,6 +52,7 @@ function mondeDEssai(decennie: number): Monde {
       base.dessinerSol(v, porte)
       if (decennie === 1890) v.zone('date', DATE.x * v.k, v.ecranY(DATE.y, 1), 20, 0)
       if (decennie === 1890) v.zone('manege', MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 20)
+      if (decennie === 1890) v.bobine(0, OU_BOBINE.x * v.k, v.ecranY(OU_BOBINE.y, 1), 8)
     },
     reagir: (id) => void reactions.push(id),
     // Idée 8 : un repère dans la suite des appels, pour lire où le moteur place ce plan.
@@ -95,7 +111,7 @@ function monter(
       }
     },
   }
-  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn() }
+  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn() }
   const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(options.calme ?? false)
@@ -681,5 +697,109 @@ describe('le moteur de la carte', () => {
     const { moteur, deps } = monter()
     moteur.detruire()
     expect(deps.annulerImage).toHaveBeenCalledWith(1)
+  })
+
+  describe('les bobines perdues et le son (plan 2d)', () => {
+    const toucher = (moteur: MoteurCarte, x: number, y: number) => {
+      moteur.pointeur('bas', x, y, false)
+      moteur.pointeur('haut', x, y, false)
+    }
+    const joues = (appels: Appel[]) => appels.filter((a) => a.fillStyle === JOUE).length
+
+    // Mutations : la garde `trouvee(i)` retirée de `VueMonde.bobine` (la bobine trouvée resterait
+    // dessinée et sa zone prendrait le toucher) ; la zone inscrite même pour une bobine trouvée (le
+    // toucher ne tomberait plus sur l'affichette en dessous) ; `trouvees.add` retiré de `ramasser`.
+    it('une bobine trouvée n’est plus dessinée, et sa zone ne se touche plus', () => {
+      const { moteur, appels, rappels } = monter({ calme: true })
+      moteur.defiler(MARGE_HAUT)
+      moteur.image(1000)
+      expect(joues(appels)).toBeGreaterThan(0)
+      toucher(moteur, ENTRE_LES_DEUX.x, ENTRE_LES_DEUX.y)
+      expect(rappels.bobine).toHaveBeenCalledWith(BOBINE.cle)
+      expect(rappels.date).not.toHaveBeenCalled()
+      appels.length = 0
+      moteur.image(1050)
+      expect(joues(appels)).toBe(0)
+      toucher(moteur, ENTRE_LES_DEUX.x, ENTRE_LES_DEUX.y)
+      expect(rappels.bobine).toHaveBeenCalledTimes(1)
+      expect(rappels.date).toHaveBeenCalledWith(DATE)
+    })
+
+    // Mutation : `reglerBobines` qui n'alimente pas `trouvees` : une bobine trouvée la veille
+    // reviendrait au rechargement.
+    it('ne cache plus ce que l’appareil a déjà trouvé', () => {
+      const { moteur, appels, rappels } = monter()
+      moteur.reglerBobines([BOBINE.cle])
+      moteur.defiler(MARGE_HAUT)
+      moteur.image(1000)
+      expect(joues(appels)).toBe(0)
+      toucher(moteur, OU_BOBINE.x, OU_BOBINE.y)
+      expect(rappels.bobine).not.toHaveBeenCalled()
+    })
+
+    // Mutation : la bobine traitée après `if (this.calme) return` : qui demande moins d'animations
+    // ne pourrait plus la ramasser ; ou `bobineArrivee` jamais appelé au calme (le compteur resterait).
+    it('au calme, la bobine se ramasse et arrive d’un coup, sans envol', () => {
+      const { moteur, appels, rappels } = monter({ calme: true })
+      moteur.defiler(MARGE_HAUT)
+      moteur.image(1000)
+      toucher(moteur, OU_BOBINE.x, OU_BOBINE.y)
+      expect(rappels.bobine).toHaveBeenCalledWith(BOBINE.cle)
+      expect(rappels.bobineArrivee).toHaveBeenCalledWith(BOBINE.cle)
+      appels.length = 0
+      moteur.image(1050)
+      expect(appels.some((a) => a.fillStyle === '#b8862b')).toBe(false)
+    })
+
+    // Mutations : `DUREE_DE_L_ENVOL = 1` (sans le tempo) ; l'arrivée dite au toucher ; un envol qui
+    // n'arrive jamais ; l'envol non achevé quand le visiteur demande moins d'animations en route.
+    it('la bobine vole vers le compteur au tempo, puis y arrive', () => {
+      expect(DUREE_DE_L_ENVOL).toBe(TEMPO)
+      const { moteur, appels, rappels } = monter()
+      moteur.defiler(MARGE_HAUT)
+      moteur.image(1000)
+      toucher(moteur, OU_BOBINE.x, OU_BOBINE.y)
+      expect(rappels.bobine).toHaveBeenCalledWith(BOBINE.cle)
+      let ms = 1000
+      const filer = (s: number) => {
+        for (const fin = ms + s * 1000; ms < fin; ) moteur.image((ms += 16))
+      }
+      filer(DUREE_DE_L_ENVOL - 0.5)
+      expect(rappels.bobineArrivee).not.toHaveBeenCalled()
+      expect(rappels.cibleBobines).toHaveBeenCalled()
+      expect(appels.some((a) => a.fillStyle === '#b8862b')).toBe(true)
+      filer(0.6)
+      expect(rappels.bobineArrivee).toHaveBeenCalledWith(BOBINE.cle)
+    })
+
+    // Mutation : `atterrir()` retiré d'`achever` : la bobine resterait en l'air, l'horloge figée.
+    it('une bobine en vol arrive d’un coup quand le visiteur demande moins d’animations', () => {
+      const { moteur, rappels } = monter()
+      moteur.defiler(MARGE_HAUT)
+      moteur.image(1000)
+      toucher(moteur, OU_BOBINE.x, OU_BOBINE.y)
+      moteur.image(1016)
+      expect(rappels.bobineArrivee).not.toHaveBeenCalled()
+      moteur.reglerCalme(true)
+      expect(rappels.bobineArrivee).toHaveBeenCalledWith(BOBINE.cle)
+    })
+
+    // Mutation : `this.rappels.clap()` retiré de `claquer` : le clap ne sonnerait jamais.
+    it('dit le clap à l’ambiance', () => {
+      const { moteur, rappels } = monter()
+      moteur.claquer()
+      expect(rappels.clap).toHaveBeenCalledTimes(1)
+    })
+
+    // Mutations : la musique d'un autre monde, ou un poids pris à la mauvaise section.
+    it('donne à l’ambiance la musique de chaque monde et sa présence à l’écran', () => {
+      const { moteur, rappels } = monter()
+      moteur.defiler(MARGE_HAUT)
+      moteur.image(1000)
+      const liste = vi.mocked(rappels.presences).mock.lastCall![0]
+      const de1890 = liste.find((p) => p.musique === MUSIQUE)
+      expect(de1890?.poids).toBeGreaterThan(0.9)
+      expect(liste.filter((p) => p.musique !== MUSIQUE).every((p) => p.musique === null && p.poids < 0.1)).toBe(true)
+    })
   })
 })

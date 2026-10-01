@@ -12,6 +12,8 @@ import { exemple } from '../test/contrat'
 import { cles } from '../api/cles'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 import FEUILLE_DE_LA_CARTE from '../carte/Carte.module.css?raw'
+import { DoublureAudio, oublierDoublures } from '../test/audioFactice'
+import { oublierAmbianceDeLaPage } from '../carte/son'
 
 const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)
 const P = { essentiels_vus: 1, essentiels_total: 3, salles_completes: 0, salles_autres: 2 }
@@ -587,5 +589,147 @@ describe('l’encre de la carte', () => {
     const regle = /(?:^|\n)\.ecran\s*\{([^}]*)\}/.exec(FEUILLE_DE_LA_CARTE)?.[1]
     expect(regle, 'la règle .ecran').toBeDefined()
     expect(/(?:^|[;\s])color:\s*([^;]+);/.exec(regle!)?.[1]?.trim()).toBe('var(--papier)')
+  })
+})
+
+describe('le son et les bobines perdues (plan 2d)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('AudioContext', DoublureAudio)
+    oublierDoublures()
+    localStorage.clear()
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  const son = () => screen.getByRole('button', { name: 'Son' })
+  const compteur = () => screen.getByText(/^Bobines retrouvées/)
+  /** Un rechargement : la page démontée, l'ambiance de la page oubliée, aucun contexte construit. */
+  const recharger = () => {
+    cleanup()
+    oublierAmbianceDeLaPage()
+    oublierDoublures()
+  }
+  const CLE_SON = `journal.carte.son.${SESSION.user.id}`
+  const CLE_BOBINES = `journal.carte.bobines.${SESSION.user.id}`
+
+  // Mutations : l'ambiance qui construit son contexte au montage, au clap, aux présences ou au
+  // carillon d'une bobine ; le bouton qui ne l'allume pas.
+  it('ne construit aucun contexte audio tant que « Son » n’a pas été touché', async () => {
+    const { rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => {
+      rappels().clap()
+      rappels().presences([{ musique: { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }, poids: 1 }])
+      rappels().bobine('les-quatre-diables')
+      rappels().bobineArrivee('les-quatre-diables')
+    })
+    expect(DoublureAudio.crees).toHaveLength(0)
+    expect(son()).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(son())
+    expect(DoublureAudio.crees).toHaveLength(1)
+    expect(son()).toHaveAttribute('aria-pressed', 'true')
+    expect(son()).toHaveAttribute('title', 'Son : allumé')
+  })
+
+  // Mutations : `lireSon` remplacé par `false` (le choix oublié) ; `ecrireSon` retiré du bouton ;
+  // le réglage retenu qui rallume le son de lui-même au rechargement (un contexte sans geste).
+  it('est coupé par défaut, et son choix se relit au rechargement sans rien rallumer', async () => {
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('title', 'Son : coupé')
+    fireEvent.click(son())
+    expect(localStorage.getItem(CLE_SON)).toBe('allume')
+    recharger()
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('title', 'Son : touche pour le reprendre')
+    expect(son()).toHaveAttribute('aria-pressed', 'false')
+    expect(DoublureAudio.crees).toHaveLength(0)
+    fireEvent.click(son())
+    expect(DoublureAudio.crees).toHaveLength(1)
+    fireEvent.click(son())
+    expect(son()).toHaveAttribute('aria-pressed', 'false')
+    recharger()
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('title', 'Son : coupé')
+  })
+
+  // Mutation : l'écouteur `visibilitychange` retiré de la page : l'orgue jouerait l'app en arrière-plan.
+  it('se tait quand la page passe en arrière-plan', async () => {
+    monter()
+    fireEvent.click(await screen.findByRole('button', { name: 'Son' }))
+    const ctx = DoublureAudio.crees[0]!
+    const cache = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    act(() => void document.dispatchEvent(new Event('visibilitychange')))
+    expect(ctx.state).toBe('suspended')
+    cache.mockReturnValue(false)
+    act(() => void document.dispatchEvent(new Event('visibilitychange')))
+    expect(ctx.state).toBe('running')
+  })
+
+  // Mutations : le compteur montré sans trouvaille (`hidden` retiré) ; compté dès le toucher (sans
+  // attendre l'arrivée) ; la trouvaille ni retenue sur l'appareil ni rendue au moteur.
+  it('ne montre le compteur qu’à la première trouvaille, et la compte à son arrivée', async () => {
+    const { rappels, etats, moteur } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(compteur()).not.toBeVisible()
+    act(() => rappels().bobine('les-quatre-diables'))
+    expect(compteur()).toBeVisible()
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 0/3')
+    expect(JSON.parse(localStorage.getItem(CLE_BOBINES)!)).toEqual(['les-quatre-diables'])
+    expect(moteur.reglerBobines).toHaveBeenLastCalledWith(['les-quatre-diables'])
+    act(() => rappels().bobineArrivee('les-quatre-diables'))
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
+    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/3« Les Quatre Diables », F. W. Murnau, 1928 : un film perdu.')
+  })
+
+  // Mutation : `lireBobines` remplacé par `[]` : les bobines trouvées la veille reviendraient.
+  it('relit les bobines déjà trouvées sur l’appareil', async () => {
+    localStorage.setItem(CLE_BOBINES, JSON.stringify(['les-quatre-diables', 'la-tete-de-janus']))
+    const { etats, moteur } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(moteur.reglerBobines).toHaveBeenLastCalledWith(['les-quatre-diables', 'la-tete-de-janus'])
+    expect(compteur()).toBeVisible()
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 2/3')
+  })
+
+  // Mutations : le message des trois jamais programmé, ou programmé avant la troisième.
+  it('dit, après la troisième, que les trois bobines perdues sont retrouvées', async () => {
+    localStorage.setItem(CLE_BOBINES, JSON.stringify(['les-quatre-diables']))
+    const { rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => {
+      rappels().bobine('la-tete-de-janus')
+      rappels().bobineArrivee('la-tete-de-janus')
+    })
+    await new Promise((fin) => setTimeout(fin, 3500))
+    expect(screen.queryByText('Les trois bobines perdues sont retrouvées.')).not.toBeInTheDocument()
+    act(() => {
+      rappels().bobine('londres-apres-minuit')
+      rappels().bobineArrivee('londres-apres-minuit')
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 3/3')
+    expect(await screen.findByText('Les trois bobines perdues sont retrouvées.', {}, { timeout: 4500 })).toBeInTheDocument()
+  }, 15000)
+
+  // Mutations : un `try` retiré de `carte/memoire.ts` (son ou bobines) : un stockage bloqué
+  // (navigation privée) ferait tomber la carte, le bouton ou la trouvaille.
+  it('un stockage qui lève ne casse ni la carte, ni le son, ni les bobines', async () => {
+    const bloque = () => {
+      throw new DOMException('Le stockage est bloqué.', 'SecurityError')
+    }
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(bloque)
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(bloque)
+    const { rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(son()).toHaveAttribute('title', 'Son : coupé')
+    fireEvent.click(son())
+    expect(son()).toHaveAttribute('aria-pressed', 'true')
+    act(() => {
+      rappels().bobine('les-quatre-diables')
+      rappels().bobineArrivee('les-quatre-diables')
+    })
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
   })
 })

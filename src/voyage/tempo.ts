@@ -9,6 +9,10 @@ import type { CSSProperties } from 'react'
  *
  * ×2 depuis le 1er octobre 2026 (le propriétaire : on avait à peine le temps de les voir). C'est le
  * seul chiffre à changer. Au calme, rien ne s'anime, quel que soit le tempo.
+ *
+ * Les animations venues depuis le suivent aussi : sur la carte, l'envol d'une bobine perdue vers son
+ * compteur (`DUREE_DE_L_ENVOL`, `carte/moteur.ts`), la pulsation du compteur et l'apparition de son
+ * message (`carte/Carte.module.css`, sous `.ecran` qui porte la variable).
  */
 export const TEMPO = 2
 

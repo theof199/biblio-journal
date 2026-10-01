@@ -23,6 +23,7 @@ export function moteurFactice() {
     claquer: vi.fn(),
     ouvrirSousLesYeux: vi.fn(),
     ecranDeLAnnee: vi.fn(() => ({ x: 100, y: 100 })),
+    reglerBobines: vi.fn(),
     detruire: vi.fn(),
   }
   const fabrique: FabriqueMoteur = (_canvas, r) => {

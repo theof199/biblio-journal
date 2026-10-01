@@ -4,6 +4,7 @@ import { chantier, avancement } from './chantier'
 import { remplissage } from './foire'
 import { AMPOULE_Y, cercle, guirlande, halo, plaque, rr, silhouette, texte } from './moyen'
 import { clamp, ease, hash, lisse, TAU } from '../../carte/outils'
+import { becDeGaz } from './bobines'
 
 const COULEURS_CONFETTIS: readonly string[] = [c('#A8452F'), c('#E6B94A'), c('#F2E8D5'), c('#3E5360'), c('#DE7A45')]
 /** Une onde triangulaire, 0 aux bords, 1 au centre (maquette : `tri`). */
@@ -91,10 +92,11 @@ function recompense(g: CanvasRenderingContext2D, v: VueMonde): void {
   g.restore()
 }
 
-/** Le plan proche : les guirlandes de 1897, la promeneuse, le feu d'artifice à la décennie bouclée, le billet qui vole. */
+/** Le plan proche : le bec de gaz, les guirlandes de 1897, la promeneuse, le feu d'artifice à la décennie bouclée, le billet qui vole. */
 export function dessinerProche(v: VueMonde): void {
   if (v.presence <= 0.01) return
   const g = v.ctx
+  becDeGaz(v)
   const k97 = avancement(chantier(1897, v.ouverte, v.t, v.vivant))
   const r = remplissage(v.cases, v.bouclee)
   g.save(); g.translate(0, v.ecranY(0, 1)); g.scale(v.k, 1)

@@ -8,7 +8,7 @@ import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, tremblement } from './traitement'
 import { Geste, lirePincement } from './geste'
-import type { DateVraie, Monde, VueMonde } from '../mondes/types'
+import type { DateVraie, Monde, MusiqueDuMonde, VueMonde } from '../mondes/types'
 import type { EtatCase } from '../voyage/regles'
 import { dessinerCase, dessinerCorail } from './dessin/cases'
 import { dessinerAvatar } from './dessin/avatar'
@@ -19,9 +19,13 @@ import { Effets, type Feu } from './dessin/effets'
 import { afficheTraitee } from './dessin/affiches'
 import { dessinerPlaqueRoulotte, dessinerRoulotte } from './dessin/roulotte'
 import { imageCommune } from './images'
+import { dessinerBobinePerdue, dessinerEnvol } from './dessin/bobines'
+import { auTempo } from '../voyage/tempo'
 
 /** Le corail : ce que le joueur déclenche. Jamais sous un voile, jamais teinté (spec, « Le rendu »). */
 export const CORAIL = '#FF6B57'
+/** L'envol d'une bobine ramassée vers le compteur, en secondes : une seconde de base, au tempo (`voyage/tempo.ts`). */
+export const DUREE_DE_L_ENVOL = auTempo(1000) / 1000
 /** Les tuiles du sol gardées en mémoire (voir `Lru`). */
 export const MAX_TUILES = 6
 
@@ -61,6 +65,19 @@ export interface Rappels {
   roulotte: () => void
   /** L'avatar entre dans l'écran, ou en sort : la page ne propose « Tu es ici » que tant qu'il est hors de vue. */
   avatarVisible: (visible: boolean) => void
+  /**
+   * Une bobine perdue vient d'être ramassée (plan 2d) : la page la retient sur l'appareil et sonne
+   * le carillon. Elle vole alors vers le compteur, et `bobineArrivee` dit qu'elle y est ; les deux
+   * d'un coup quand le visiteur demande moins d'animations.
+   */
+  bobine: (cle: string) => void
+  bobineArrivee: (cle: string) => void
+  /** Où vole la bobine ramassée, à l'écran : le compteur du HUD (maquette : `cibleHud`). Relu à chaque image. */
+  cibleBobines: () => { x: number; y: number }
+  /** Le clap a claqué (maquette : `claquer`, `sonClap`). */
+  clap: () => void
+  /** Les mondes à l'écran et leur présence, de 0 à 1 : l'ambiance y règle le volume de chaque musique (maquette : `majSon`). */
+  presences: (liste: ReadonlyArray<{ musique: MusiqueDuMonde | null; poids: number }>) => void
 }
 /** Sous cette hauteur d'écran, l'avatar est sous le bandeau du haut (le HUD de la page) : il n'est pas vu. */
 export const HAUT_MASQUE = 110
@@ -137,6 +154,10 @@ export class MoteurCarte {
   private ouverte = { annee: 0, t0: -9 }
   /** Où la caméra glisse pour montrer un chantier qui commence hors de l'écran (idée 8) ; nulle sinon. */
   private visee: number | null = null
+  /** Les bobines perdues trouvées sur cet appareil (plan 2d), par clé : ni dessinées, ni touchables. */
+  private trouvees = new Set<string>()
+  /** La bobine qui vole vers le compteur, d'où elle part et depuis quand ; nulle sinon. */
+  private envol: { cle: string; x0: number; y0: number; t0: number } | null = null
   private readonly geste: Geste
   private readonly ctx: CanvasRenderingContext2D | null
   private readonly canvas: Toile
@@ -238,6 +259,13 @@ export class MoteurCarte {
     this.demander()
   }
 
+  /** Les bobines perdues que l'appareil a déjà trouvées (plan 2d) : elles ne se dessinent plus, leur zone non plus. */
+  reglerBobines(cles: readonly string[]): void {
+    this.trouvees = new Set(cles)
+    if (this.envol) this.trouvees.add(this.envol.cle)
+    this.demander()
+  }
+
   reglerVisible(visible: boolean): void {
     this.visible = visible
     this.demander()
@@ -330,6 +358,7 @@ export class MoteurCarte {
 
   claquer(): void {
     this.avatar.claque = this.instant()
+    this.rappels.clap()
     this.demander()
   }
 
@@ -399,6 +428,8 @@ export class MoteurCarte {
       this.adieu = null
       a.fin()
     }
+    // La bobine en vol arrive d'un coup : l'horloge figée la laisserait en l'air.
+    this.atterrir()
   }
 
   /**
@@ -485,6 +516,12 @@ export class MoteurCarte {
     }
     const section = this.plan.sections.findIndex((s) => this.camY + y >= s.y0 && this.camY + y < s.y0 + s.hauteur)
     const s = this.plan.sections[section]
+    // Une bobine se ramasse aussi quand le visiteur demande moins d'animations : elle arrive d'un coup.
+    if (z.id === 'bobine' && z.data !== null) {
+      const b = s ? this.deps.mondeDe(s.decennie).bobines[z.data] : undefined
+      if (b) this.ramasser(b.cle, z.x, z.y)
+      return
+    }
     // Une date s'ouvre aussi quand le visiteur demande moins d'animations : c'est une lecture, pas un décor.
     if (z.id === 'date' && z.data !== null) {
       const d = s ? this.deps.mondeDe(s.decennie).dates[z.data] : undefined
@@ -497,6 +534,39 @@ export class MoteurCarte {
     if (this.calme) return
     if (s) this.deps.mondeDe(s.decennie).reagir(z.id, z.data, this.vueMonde(section, 1), { x: z.x, y: z.y })
     this.demander()
+  }
+
+  /** Maquette : `ramasser`. La bobine quitte le décor tout de suite ; l'envol dure une seconde au tempo. */
+  private ramasser(cle: string, x: number, y: number): void {
+    if (this.trouvees.has(cle)) return
+    this.trouvees.add(cle)
+    this.rappels.bobine(cle)
+    if (this.calme) {
+      this.rappels.bobineArrivee(cle)
+    } else {
+      this.atterrir()
+      this.envol = { cle, x0: x, y0: y, t0: this.t }
+      this.particules.etincelles(x, y, 18, '#F6D98A')
+    }
+    this.demander()
+  }
+
+  /** La bobine en vol, s'il y en a une, est arrivée. */
+  private atterrir(): void {
+    const v = this.envol
+    if (!v) return
+    this.envol = null
+    this.rappels.bobineArrivee(v.cle)
+  }
+
+  /** Où en est l'envol (maquette : `volPos`) : une parabole vers le compteur, `u` de 0 à 1. */
+  private ouVole(): { x: number; y: number; u: number; e: number } | null {
+    const v = this.envol
+    if (!v) return null
+    const cible = this.rappels.cibleBobines()
+    const u = clamp((this.t - v.t0) / DUREE_DE_L_ENVOL, 0, 1)
+    const e = ease(u)
+    return { x: lerp(v.x0, cible.x, e), y: lerp(v.y0, cible.y, e) - Math.sin(u * Math.PI) * 80, u, e }
   }
 
   /** Le centre de la case de `annee`, à l'écran (l'ancre de l'aperçu). */
@@ -544,7 +614,7 @@ export class MoteurCarte {
     this.raf = 0
     this.image(maintenant)
     const anime = !this.calme && this.visible
-    if (anime || this.avatar.marche || this.adieu || this.suivre || this.ens.q !== this.ens.cible) this.demander()
+    if (anime || this.avatar.marche || this.adieu || this.suivre || this.envol || this.ens.q !== this.ens.cible) this.demander()
     else this.dernier = 0
   }
 
@@ -579,6 +649,12 @@ export class MoteurCarte {
     this.fogY += (this.fogCible - this.fogY) * Math.min(1, dt * 1.6)
     if (this.ens.q !== this.ens.cible) this.ens.q = this.ens.cible > this.ens.q ? Math.min(1, this.ens.q + dt / 0.85) : Math.max(0, this.ens.q - dt / 0.85)
     if (!this.calme) this.particules.maj(dt)
+    const vol = this.ouVole()
+    if (vol) {
+      // La traînée d'étincelles (maquette : la particule poussée à chaque image de `maj`).
+      this.particules.etincelles(vol.x, vol.y, 1, '#F6D98A')
+      if (vol.u >= 1) this.atterrir()
+    }
   }
 
   /** La vue qu'un monde reçoit pour dessiner sa part : son repère, son horloge, ses zones. */
@@ -592,6 +668,16 @@ export class MoteurCarte {
     const etats = new Map(this.etat.cases.map((c) => [c.annee, c]))
     const quittee = (annee: number) => !['verrou', 'encours'].includes(etats.get(annee)?.etat ?? 'verrou')
     const quittees = bati.filter((c) => quittee(c.annee))
+    const zone = (id: string, lx: number, ly: number, lr: number, data?: number, prio = 0) => {
+      const m = ctx.getTransform()
+      const p = ecranDe(m, this.dpr, lx, ly)
+      this.zones.push({ id, x: p.x, y: p.y, r: rayonEcran(m, this.dpr, lr), data: data ?? null, prio })
+    }
+    const t = horlogeDuMonde(this.t, monde.traitement.cadence)
+    const trouvee = (i: number) => {
+      const b = monde.bobines[i]
+      return !b || this.trouvees.has(b.cle)
+    }
     const derniere = quittees.reduce<{ rang: number; t0: number } | null>((acc, c) => {
       const t0 = this.pops.get(c.annee)
       return t0 !== undefined && (!acc || t0 > acc.t0) ? { rang: bati.indexOf(c), t0 } : acc
@@ -601,17 +687,13 @@ export class MoteurCarte {
       W: this.W,
       H: this.H,
       k: this.k,
-      t: horlogeDuMonde(this.t, monde.traitement.cadence),
+      t,
       vivant: !this.calme,
       presence,
       lum: ambiance.lum,
       nuit: ambiance.nuit,
       ecranY: (yLocal, f) => this.H / 2 + (s.y0 + yLocal - camC) * f,
-      zone: (id, lx, ly, lr, data, prio = 0) => {
-        const m = ctx.getTransform()
-        const p = ecranDe(m, this.dpr, lx, ly)
-        this.zones.push({ id, x: p.x, y: p.y, r: rayonEcran(m, this.dpr, lr), data: data ?? null, prio })
-      },
+      zone,
       feu: (x, y, r, c, force) => {
         const m = ctx.getTransform()
         const p = ecranDe(m, this.dpr, x, y)
@@ -640,9 +722,13 @@ export class MoteurCarte {
       adieu: this.adieu && this.adieu.decennie === s.decennie ? this.t - this.adieu.t0 : -1,
       ouverte: this.ouverte,
       brume: this.fogY - s.y0,
-      // Plan 2d : le moteur ne cache encore aucune bobine.
-      bobine: () => undefined,
-      bobineTrouvee: () => true,
+      // Plan 2d (maquette : `bobinePerdue`) : la zone d'une bobine passe devant tout le décor (priorité 3).
+      bobine: (i, lx, ly, r) => {
+        if (trouvee(i)) return
+        dessinerBobinePerdue(ctx, lx, ly, r, i, t, !this.calme, monde.couleur)
+        zone('bobine', lx, ly, r * 1.6, i, 3)
+      },
+      bobineTrouvee: trouvee,
     }
   }
 
@@ -654,6 +740,7 @@ export class MoteurCarte {
     this.feux = []
     const camC = this.camY + this.H / 2
     const poids = poidsSections(camC, this.plan.sections)
+    this.rappels.presences(this.plan.sections.map((s, i) => ({ musique: this.deps.mondeDe(s.decennie).musique, poids: poids[i] ?? 0 })))
     const sectionP = this.plan.sections[poids.indexOf(Math.max(...poids))]
     const mondeP = sectionP ? this.deps.mondeDe(sectionP.decennie) : null
     const e = this.ens.q ? ease(this.ens.q) : 0
@@ -667,6 +754,8 @@ export class MoteurCarte {
       g.restore()
     }
     if (e > 0.001) dessinerEnsemble(g, this.W, this.H, e, this.geoEnsemble(), this.plan, this.etat, (d) => this.deps.mondeDe(d))
+    const vol = this.ouVole()
+    if (vol) dessinerEnvol(g, vol.x, vol.y, vol.e, this.t)
     this.particules.dessiner(g, true)
   }
 

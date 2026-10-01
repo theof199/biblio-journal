@@ -5,6 +5,7 @@ import { cercle, ombre, texte } from './moyen'
 import { imageCommune } from '../../carte/images'
 import { dessinerRoulotte } from '../../carte/dessin/roulotte'
 import { ease } from '../../carte/outils'
+import { bobineSousLaBrume } from './bobines'
 
 const F_F = '"IM Fell English", Georgia, serif'
 const F_A = 'Limelight, Didot, Georgia, serif'
@@ -52,13 +53,14 @@ function affichette(g: CanvasRenderingContext2D, v: VueMonde, d: DateVraie, i: n
 
 /**
  * Le sol : les affichettes des dates vraies (une par année dont la case n'est pas `verrou`), la
- * roulotte qui traverse pour qui mène son Voyage. Ni porte (la maquette finit sur
- * « PROCHAINEMENT »), ni infobulle (l'aperçu de la page en tient lieu).
+ * roulotte qui traverse pour qui mène son Voyage, la bobine perdue que couvre la brume. Ni porte
+ * (la maquette finit sur « PROCHAINEMENT »), ni infobulle (l'aperçu de la page en tient lieu).
  */
 export function dessinerSol(v: VueMonde, porte: { x: number; y: number }): void {
   void porte
   if (v.presence <= 0.01) return
   const g = v.ctx
+  bobineSousLaBrume(v)
   g.save(); g.translate(0, v.ecranY(0, 1)); g.scale(v.k, 1)
   if (v.roulotte) {
     const u = v.vivant ? (v.t / 26) % 1 : 0.42
