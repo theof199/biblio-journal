@@ -155,6 +155,9 @@ export default function PageRealisateur() {
                   </p>
                   <p className={styles.etatFilm}>
                     {film.vu ? `Vu${film.vu.rating != null ? ` · ${film.vu.rating}/10` : ''}` : film.introuvable ? 'Introuvable' : 'À voir'}
+                    {/* Le lien mène à l'onglet Voyage, à l'année de `voyage` : le signe l'annonce
+                        (décision du propriétaire du 1er octobre 2026). */}
+                    {film.voyage ? <span className={styles.signeVoyage}>{` · Voyage ${film.voyage.annee}`}</span> : null}
                   </p>
                 </div>
               </Link>

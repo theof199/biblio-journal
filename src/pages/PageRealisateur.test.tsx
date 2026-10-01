@@ -151,6 +151,20 @@ describe('la page d’un réalisateur', () => {
     expect(screen.getByRole('link', { name: (n) => n.includes('L’Arrivée d’un train') })).toHaveAttribute('href', '/voyage/1896/films/film-1896')
   })
 
+  // Décision du propriétaire du 1er octobre 2026 (2b-5) : la ligne d'un film qui mène au Voyage
+  // l'annonce, à l'année de `voyage` (1896, pas l'année de sortie, 1895) ; celle d'un film des Suivis
+  // n'en dit rien. Mutations : le signe retiré ; posé sur toutes les lignes ; l'année de sortie.
+  it('le signe « Voyage <année> » annonce le changement d’onglet, sur les seuls films du Voyage', async () => {
+    const TRAIN = { ...INCEPTION, tmdb_id: 12345, title: 'L’Arrivée d’un train', year: 1895, release_date: '1895-12-28', voyage: { annee: 1896, salle_id: 'salle-1896', film_id: 'film-1896' } }
+    const HORS = { ...INCEPTION, tmdb_id: 54321, title: 'Un film des Suivis', voyage: null }
+    servir({ 'GET /api/me/realisateurs/525/page': () => json({ ...PAGE_SUIVI, films: [TRAIN, HORS] }) })
+    monter()
+
+    const train = await screen.findByRole('link', { name: (n) => n.includes('L’Arrivée d’un train') })
+    expect(within(train).getByText('· Voyage 1896')).toBeInTheDocument()
+    expect(within(screen.getByRole('link', { name: (n) => n.includes('Un film des Suivis') })).queryByText(/Voyage/)).toBeNull()
+  })
+
   it('ne plus suivre invalide le cache : la page relue montre « Suivre »', async () => {
     let appels = 0
     const requetes = servir({

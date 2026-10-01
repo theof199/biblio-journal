@@ -175,7 +175,7 @@ jury. Ni un rechargement ni le retour suivant ne rejouent rien.
 **L'historique.** Depuis la fiche d'un film, composter **remplace** le billet par l'année ; depuis la
 séance de l'année, il recule vers elle. La page d'un réalisateur (onglet Suivis) mène un film qui
 figure dans une salle à sa fiche du Voyage (la plus ancienne année où il figure), l'onglet Voyage
-marqué : « Retour » y recule jusqu'au réalisateur. Composter depuis là donne l'historique
+marqué, et sa ligne l'annonce (« · Voyage 1896 ») : « Retour » y recule jusqu'au réalisateur. Composter depuis là donne l'historique
 `[réalisateur, film, année]` : le retour depuis l'année ramène au film, désormais vu, puis au
 réalisateur.
 
