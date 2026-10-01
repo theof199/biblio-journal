@@ -725,7 +725,11 @@ describe('la fiche d’une année', () => {
         'GET /api/me/voyage/annees/1897': () => new Promise<Response>(() => undefined),
       })
       await screen.findByRole('status')
-      await waitFor(() => expect(dernier().mode).toBe(mode))
+      // Avant la carte, le bandeau se peint déjà « en cours » (`modeDuBandeau` sans `v`) : attendre une
+      // image peinte d'après la carte (ses cases), sans quoi le témoin du compte IA passerait avant
+      // qu'elle soit lue. Mutation : l'attente lue hors IA pour tout le monde (`etatDeCase(a, false)`).
+      await waitFor(() => expect(dernier().cases.length).toBeGreaterThan(0))
+      expect(dernier().mode).toBe(mode)
       expect(dernier().annee).toBe(1897)
     })
 
