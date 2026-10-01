@@ -249,13 +249,16 @@ describe('la manivelle', () => {
     expect([...apres(n)].sort()).toEqual(RELECTURE)
   })
 
-  // Mutation : `throwOnError` retiré (la carte en panne, la manivelle dirait « à jour »).
-  it('un refus de l’API s’affiche tel qu’elle l’a écrit', async () => {
+  // Mutations : `throwOnError` retiré de l'une ou l'autre relecture (en panne, la manivelle dirait « à jour »).
+  it.each([
+    { quoi: 'la carte', route: 'GET /api/me/voyage' as const, corps: VOYAGE },
+    { quoi: 'la fiche', route: 'GET /api/me/voyage/annees/1897' as const, corps: FICHE },
+  ])('un refus de l’API sur $quoi s’affiche tel qu’elle l’a écrit', async ({ route, corps }) => {
     let lectures = 0
     const message = 'Le Voyage est en travaux, reviens dans un instant.'
     await annee1897({
       ...ROUTES,
-      'GET /api/me/voyage': () => (++lectures > 1 ? json({ code: 'SERVICE_UNCONFIGURED', message, retryable: false }, 503) : json(VOYAGE)),
+      [route]: () => (++lectures > 1 ? json({ code: 'SERVICE_UNCONFIGURED', message, retryable: false }, 503) : json(corps)),
     })
     fireEvent.click(screen.getByRole('button', { name: M.bouton }))
     expect(await screen.findByText(message)).toBeInTheDocument()
