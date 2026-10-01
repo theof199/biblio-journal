@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
-import { journalComplet } from '../../api/journal'
+import { journalDesAnnees } from '../../api/journal'
 import { lireAnnee } from '../../api/voyage'
 import { PAGES_1890 } from '../../mondes/1890/pages'
 import { creerRegistre } from '../../mondes'
@@ -33,6 +33,7 @@ const ROUTES = {
   'GET /api/me/voyage/annees/1897': () => json(FICHE),
 }
 const RELECTURE = ['GET /api/me/voyage', 'GET /api/me/voyage/annees/1897']
+const BOITE = 'GET /api/me/journal?limit=100&sortie_min=1890&sortie_max=1899'
 
 /** `matchMedia` manque à jsdom : le test pose la réponse de « moins d'animations ». */
 const calme = () =>
@@ -84,14 +85,14 @@ describe('la manivelle', () => {
   // journal relu avec elles.
   it('tirer au-delà du seuil recharge la fiche et la carte, et elles seules', async () => {
     const { bandeau, requetes, apres } = await annee1897(
-      { ...ROUTES, 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896 })), 'GET /api/me/journal?limit=100': () => json({ items: [], next_cursor: null }) },
+      { ...ROUTES, 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896 })), [BOITE]: () => json({ items: [], next_cursor: null }) },
       '/voyage/1897',
       (c) => {
-        // Une année visitée avant, et le journal du profil : en cache, relisibles, hors de la page.
+        // Une année visitée avant, et la boîte à billets : en cache, relisibles, hors de la page.
         c.setQueryDefaults(cles.annee(1896), { queryFn: ({ signal }) => lireAnnee(1896, signal) })
         c.setQueryData(cles.annee(1896), fichePrete({ annee: 1896 }))
-        c.setQueryDefaults(cles.journalComplet, { queryFn: ({ signal }) => journalComplet(signal) })
-        c.setQueryData(cles.journalComplet, [])
+        c.setQueryDefaults(cles.journalDesAnnees(1890, 1899), { queryFn: ({ signal }) => journalDesAnnees(1890, 1899, signal) })
+        c.setQueryData(cles.journalDesAnnees(1890, 1899), [])
       },
     )
     const n = requetes.length
