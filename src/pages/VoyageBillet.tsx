@@ -184,7 +184,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
 
   // Le numéro du billet corrigé se lit en tête (décision D3) ; un billet neuf l'apprend en se tamponnant.
   const boite = useQuery({ ...laBoite(decennie), enabled: item !== undefined })
-  const numeroCorrige = item && boite.data ? numeroDe(billetsDeLaDecennie(boite.data, decennie), item.entry.id) : null
+  const numeroCorrige = item && boite.data ? numeroDe(billetsDeLaDecennie(boite.data, decennie, v.depart), item.entry.id) : null
 
   // Le compostage (décision D4) : l'étape, le numéroteur (son tirage, le numéro qu'il pose), et le
   // support du billet, que la frappe amène à l'écran.
@@ -290,7 +290,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
   const tamponner = async (entree: JournalItem) => {
     let lu: number | null = null
     client.fetchQuery(laBoite(decennie)).then(
-      (items) => void (lu = numeroDe(billetsDeLaDecennie(items, decennie), entree.entry.id)),
+      (items) => void (lu = numeroDe(billetsDeLaDecennie(items, decennie, v.depart), entree.entry.id)),
       () => undefined,
     )
     support.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })

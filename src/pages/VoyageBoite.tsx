@@ -58,7 +58,9 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   // Le billet que la séance vient de ranger, lu une fois à l'ouverture : le liseré tient tant que la
   // page reste montée, même une fois la boîte l'ayant oublié.
   const [rangee] = useState(() => billetRange(user.id))
-  const billets = journal.data ? billetsDeLaDecennie(journal.data, d) : null
+  // La carte dit le départ du Voyage : sans elle, ni billet ni numéro (un film d'avant le départ
+  // n'en a pas, et le compter décalerait tous les numéros).
+  const billets = v && journal.data ? billetsDeLaDecennie(journal.data, d, v.depart) : null
   const nouveau = rangee !== null ? (billets?.find((b) => b.item.entry.id === rangee) ?? null) : null
   const anneeDuNouveau = nouveau?.item.media.year ?? null
 
@@ -74,12 +76,12 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
 
   // Le billet rangé : son casier s'ouvre, puis la boîte l'oublie (il n'est montré qu'une fois).
   // Un billet rangé d'une autre décennie reste pour la boîte qui le porte. La carte attendue (elle
-  // fait les intercalaires), l'intercalaire de l'adresse n'est pas encore choisi : rien ne se tranche
-  // avant elle. Un film d'avant le départ n'a pas d'intercalaire : « Tous » le montre.
+  // fait les billets et les intercalaires), rien ne se tranche avant elle. Chaque billet de la boîte a
+  // son intercalaire : un film d'avant le départ n'y est pas.
   const pret = anneeDuNouveau !== null && liste.length > 0
   useEffect(() => {
     if (!pret) return
-    if (choisi !== null && choisi !== anneeDuNouveau) choisir(liste.some((i) => i.annee === anneeDuNouveau) ? anneeDuNouveau : null)
+    if (choisi !== null && choisi !== anneeDuNouveau) choisir(anneeDuNouveau)
     oublierLeBillet()
     // Une fois, quand le billet paraît dans la boîte et que la carte est lue.
     // eslint-disable-next-line react-hooks/exhaustive-deps

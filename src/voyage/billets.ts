@@ -18,13 +18,16 @@ const avant = (a: JournalItem, b: JournalItem): number =>
 
 /**
  * Les billets d'une décennie, du premier au dernier vu : un par visionnage (un film revu a deux
- * billets), jamais une série, jamais un film d'une autre décennie. L'ordre : la date du visionnage,
- * puis sa création, puis son identifiant — deux entrées du même jour gardent toujours le même
- * rang, d'une lecture à l'autre.
+ * billets), jamais une série, jamais un film d'une autre décennie, ni d'avant le départ du Voyage
+ * (`depart`, celui de la carte : les années 1890 commencent en 1895, et un film de 1892 n'a ni
+ * billet ni numéro, décision du propriétaire du 1er octobre 2026). L'ordre : la date du
+ * visionnage, puis sa création, puis son identifiant — deux entrées du même jour gardent toujours
+ * le même rang, d'une lecture à l'autre.
  */
-export function billetsDeLaDecennie(items: readonly JournalItem[], decennie: number): Billet[] {
+export function billetsDeLaDecennie(items: readonly JournalItem[], decennie: number, depart: number): Billet[] {
+  const debut = Math.max(depart, decennie)
   return items
-    .filter((i) => i.media.type === 'movie' && i.media.year !== null && i.media.year >= decennie && i.media.year <= decennie + 9)
+    .filter((i) => i.media.type === 'movie' && i.media.year !== null && i.media.year >= debut && i.media.year <= decennie + 9)
     .sort(avant)
     .map((item, k) => ({ numero: k + 1, item }))
 }

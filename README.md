@@ -244,11 +244,11 @@ passage de la décennie ; jamais dans le livret, qui le montre posé depuis des 
 pas sous 196 px de côté, où son jour ne se lirait plus.
 
 **La boîte à billets** (`/voyage/decennies/:decennie/billets`). Un billet par visionnage d'un film
-sorti dans la décennie, numéroté du premier vu au dernier (`billetsDeLaDecennie` : la date du
+sorti dans la décennie, à partir du départ du Voyage (`depart` de la carte : les films de 1890 à
+1894 n'ont ni billet ni numéro), numéroté du premier vu au dernier (`billetsDeLaDecennie` : la date du
 visionnage, puis sa création, puis son identifiant) ; le numéro se recalcule à chaque lecture et
 n'est stocké nulle part, si bien qu'un visionnage ancien ajouté après coup décale ceux qui le
-suivent. Un intercalaire par année du Voyage, et « Tous » ; les films de 1890 à 1894, d'avant le
-départ, ne sont que sous « Tous ». L'intercalaire vit dans l'adresse (`?annee=`), le billet ouvert
+suivent. Un intercalaire par année du Voyage, et « Tous ». L'intercalaire vit dans l'adresse (`?annee=`), le billet ouvert
 en grand aussi (`?billet=`) : il dit la date, la note, les réactions et ma remarque privée, prend le
 focus, se ferme à Échap ou par le geste « retour ». « Corriger le billet » ne s'offre que si la fiche
 de l'année du film est déjà en cache (`voyage/boite/correction.ts`) : la boîte ne la lit jamais. Le

@@ -282,14 +282,20 @@ describe('la boîte à billets', () => {
     await waitFor(() => expect(billet(/L’Arroseur arrosé/)).toHaveClass(stylesDuCasier.nouveau!))
   })
 
-  // Un film sorti avant le départ (1892) n'a pas d'intercalaire : « Tous » le montre. Mutation :
-  // l'année du billet posée telle quelle dans l'adresse (`?annee=1892`, qu'aucun intercalaire ne porte).
-  it('un billet rangé d’avant le départ ouvre « Tous »', async () => {
-    const pierrot = vu('e0', 1892, '2026-09-20', { titre: 'Pauvre Pierrot', tmdb: 770 })
+  // La boîte commence au départ du Voyage (décision du propriétaire du 1er octobre 2026, 2c-1) : un
+  // film sorti en 1892, vu avant tous les autres, n'a ni billet ni numéro, sous « Tous » comme dans le
+  // pied, et le premier billet reste « La Sortie de l’usine ». Rangé par une séance, il n'est pas mis
+  // en avant. Mutation : `billetsDeLaDecennie` bornée à la décennie seule (1890) au lieu du départ.
+  it('ne porte aucun film d’avant le départ du Voyage, ni dans « Tous » ni dans le pied', async () => {
+    const pierrot = vu('e0', 1892, '2026-07-20', { titre: 'Pauvre Pierrot', tmdb: 770 })
     rangerLeBillet(SESSION.user.id, 'e0')
-    monter('/voyage/decennies/1890/billets?annee=1897', { ...ROUTES, [JOURNAL]: journal([...TROIS, pierrot]) })
-    await waitFor(() => expect(adresse()).toBe('/voyage/decennies/1890/billets'))
-    await waitFor(() => expect(billet(/Pauvre Pierrot/)).toHaveClass(stylesDuCasier.nouveau!))
+    monter('/voyage/decennies/1890/billets', { ...ROUTES, [JOURNAL]: journal([...TROIS, pierrot]) })
+    const lignes = (await billets()).map((b) => b.textContent)
+    expect(lignes).toHaveLength(3)
+    expect(lignes[2]).toMatch(/^N° 0001La Sortie de l’usine/)
+    expect(screen.queryByText(/Pauvre Pierrot/)).not.toBeInTheDocument()
+    expect(screen.getByText('3 billets, un par visionnage')).toBeInTheDocument()
+    expect(screen.getByText(/^Premier billet/)).toHaveTextContent('Premier billet : N° 0001, le 1er août 2026, La Sortie de l’usine.Le dernier porte le N° 0003.')
   })
 
   it('un billet rangé pour un autre membre n’est pas mis en avant', async () => {
