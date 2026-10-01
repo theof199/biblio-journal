@@ -67,6 +67,19 @@ de quoi ; son `vers` n'est que le repli d'une page ouverte d'un lien.
 Les icônes viennent de `@tabler/icons-react`, importées une à une par leur nom : le build n'en
 garde que celles-là.
 
+La barre est le rouleau du guichet (`Coque.module.css`) : cinq billets du papier de ceux du profil
+(`--ticket-papier`), joints par leurs pointillés, les coins mordus par un masque, l'icône au-dessus
+de son libellé en League Gothic. Le billet de la page courante est sorti du rouleau (levé, un peu
+penché, son encre pleine, une bande rouge au bord haut). La nuit, le projecteur d'en bas
+l'éclaire : les quatre autres billets tombent dans la pénombre, le courant rayonne et un cône de
+lumière monte de la zone sûre jusqu'à lui ; de jour tout cela est éteint et la forme ne change pas.
+Les valeurs sont les jetons `--billet-onglet-*` de `ui/theme.css`, les cinq lumières
+(`-faisceau`, `-faisceau-vif`, `-penombre`, `-eclat`, `-papier-eclaire`) éteintes dans `:root` et
+allumées, des mêmes valeurs, dans les deux blocs sombres. Le cône est pendu au `li`, non au lien :
+le masque couperait tout ce qui dépasse du billet, jusqu'à l'anneau de focus du dehors, que
+`:focus-visible` trace donc dans le billet. La hauteur de la barre (`--barre-onglets-hauteur`) et
+`--coque-bas` ne changent pas : le cône n'a que la hauteur de la zone sûre.
+
 ## La carte de `src/`
 
 | Dossier | Rôle |

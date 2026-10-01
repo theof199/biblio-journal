@@ -87,6 +87,93 @@ describe('la zone sûre du téléphone', () => {
   })
 })
 
+describe('la barre d’onglets : le rouleau du guichet', () => {
+  const COURANT = ".element:has(> [aria-current='page'])"
+  const BLOC_JOUR = regle(theme, ':root')
+  const BLOCS_SOMBRES = [regle(theme, ":root:not([data-theme='clair'])"), regle(theme, ":root[data-theme='sombre']")]
+  /** Les lumières du projecteur d'en bas, éteintes de jour : leur valeur « éteint ». */
+  const LUMIERES = [
+    ['--billet-onglet-faisceau', 'transparent'],
+    ['--billet-onglet-faisceau-vif', 'transparent'],
+    ['--billet-onglet-penombre', 'none'],
+    ['--billet-onglet-eclat', 'none'],
+    ['--billet-onglet-papier-eclaire', 'var(--ticket-papier)'],
+  ] as const
+
+  /** La valeur d'un jeton dans un bloc, tel qu'écrite. */
+  const valeurDe = (bloc: string, jeton: string) => bloc.match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]?.trim()
+
+  it('les billets sont découpés dans le papier des billets du profil, aux quatre coins', () => {
+    expect(regle(coque, '.onglet')).toMatch(/background:\s*var\(--ticket-papier\)/)
+    expect(regle(coque, '.onglet')).toMatch(/(^|[\s;])mask:\s*var\(--billet-onglet-masque\)/)
+    expect(valeurDe(BLOC_JOUR, '--billet-onglet-masque')?.match(/radial-gradient/g)).toHaveLength(4)
+  })
+
+  it('le billet de la page courante sort du rouleau, levé et penché', () => {
+    expect(regle(coque, COURANT)).toMatch(/transform:\s*translateY\(var\(--billet-onglet-levee\)\) rotate\(var\(--billet-onglet-inclinaison\)\)/)
+  })
+
+  it('il porte son encre pleine et la bande rouge le long de son bord haut', () => {
+    const courant = regle(coque, ".onglet[aria-current='page']")
+    expect(courant).toMatch(/color:\s*var\(--ticket-encre\)/)
+    expect(courant).toMatch(/box-shadow:\s*inset 0 var\(--billet-onglet-bande-hauteur\) 0 var\(--ticket-bande-vive\)/)
+  })
+
+  it.each(LUMIERES)('le projecteur est éteint de jour : %s', (jeton, eteint) => {
+    expect(sansCommentaires(theme).match(new RegExp(`${jeton}:`, 'g'))).toHaveLength(3)
+    expect(valeurDe(BLOC_JOUR, jeton)).toBe(eteint)
+  })
+
+  it.each(LUMIERES)('et allumé la nuit, des mêmes valeurs dans les deux blocs sombres : %s', (jeton, eteint) => {
+    const [suivantLeTelephone, force] = BLOCS_SOMBRES.map((bloc) => valeurDe(bloc, jeton))
+    expect(suivantLeTelephone).toBeDefined()
+    expect(suivantLeTelephone).not.toBe(eteint)
+    expect(force).toBe(suivantLeTelephone)
+  })
+
+  it('l’ombre du rouleau est plus forte la nuit, le papier, l’encre et la bande ne changent pas', () => {
+    const [nuit] = BLOCS_SOMBRES
+    expect(valeurDe(nuit!, '--billet-onglet-ombre')).not.toBe(valeurDe(BLOC_JOUR, '--billet-onglet-ombre'))
+    for (const jeton of ['--ticket-papier', '--ticket-encre', '--ticket-bande-vive', '--ticket-pointille']) {
+      expect(valeurDe(nuit!, jeton)).toBeUndefined()
+    }
+  })
+
+  it('les autres billets sont dans la pénombre, le billet courant rayonne', () => {
+    expect(regle(coque, '.element')).toMatch(/filter:\s*var\(--billet-onglet-penombre\)/)
+    expect(regle(coque, COURANT)).toMatch(/filter:\s*var\(--billet-onglet-eclat\)/)
+  })
+
+  it('le papier du billet courant est celui que le projecteur éclaire', () => {
+    expect(regle(coque, ".onglet[aria-current='page']")).toMatch(/background:\s*var\(--billet-onglet-papier-eclaire\)/)
+  })
+
+  it('le cône est pendu au billet de la liste, pas au lien que son masque couperait', () => {
+    expect(regle(coque, `${COURANT}::after`)).toMatch(/background:\s*var\(--billet-onglet-cone-fond\)/)
+    expect(sansCommentaires(coque)).not.toMatch(/\.onglet[^{]*::(before|after)/)
+  })
+
+  it('la hauteur du cône est celle de la zone sûre : sans zone sûre, rien ne dépasse de la barre', () => {
+    expect(regle(coque, `${COURANT}::after`)).toMatch(/(^|[\s;])height:\s*env\(safe-area-inset-bottom\);/)
+  })
+
+  it('le cône ne prend pas la place d’un billet ni les touchers', () => {
+    const cone = regle(coque, `${COURANT}::after`)
+    expect(cone).toMatch(/position:\s*absolute/)
+    expect(cone).toMatch(/pointer-events:\s*none/)
+  })
+
+  it('le focus clavier est tracé dans le billet, où le masque ne le coupe pas', () => {
+    expect(regle(coque, '.onglet:focus-visible')).toMatch(/outline-offset:\s*var\(--billet-onglet-focus-retrait\)/)
+    expect(valeurDe(BLOC_JOUR, '--billet-onglet-focus-retrait')).toMatch(/^-\d/)
+  })
+
+  it('la barre ne grandit pas : sa hauteur et son fond sont ceux d’avant', () => {
+    expect(regle(coque, '.liste')).toMatch(/height:\s*var\(--barre-onglets-hauteur\)/)
+    expect(valeurDe(BLOC_JOUR, '--barre-onglets-hauteur')).toBe('3.75rem')
+  })
+})
+
 describe('le ciel du bâtiment', () => {
   it('le corps le peint, sauf quand le Voyage est à l’écran', () => {
     expect(regle(theme, ":root:not([data-lieu='ecran']) body")).toMatch(/background-image:\s*var\(--fond-ciel\)/)

@@ -349,6 +349,33 @@
     radial-gradient(circle var(--ticket-encoche) at 0 50%, #0000 96%, #000),
     radial-gradient(circle var(--ticket-encoche) at 100% 50%, #0000 96%, #000);
 
+  /* La barre d'onglets : le rouleau du guichet. Cinq billets du même papier que ceux du profil, celui de
+     la page courante sorti du rouleau ; la nuit, le projecteur d'en bas l'éclaire (jour : éteint, la forme
+     reste). Un jeton de lumière vaut « éteint » ici et sa valeur allumée dans les deux blocs sombres. */
+  --billet-onglet-marge-haut: 2px; /* le rouleau, serré sous le bord haut de la barre */
+  --billet-onglet-marge-cote: 6px;
+  --billet-onglet-icone: 19px; /* l'icône d'un billet (la barre n'a plus la place de `--barre-onglets-icone`) */
+  --billet-onglet-libelle-taille: 0.875rem;
+  --billet-onglet-encre-eteinte: rgba(29, 26, 46, 0.62); /* l'encre d'un billet qui n'est pas celui de la page */
+  --billet-onglet-levee: -7px; /* le billet courant sort du rouleau, vers le haut */
+  --billet-onglet-inclinaison: -1.6deg;
+  --billet-onglet-bande-hauteur: 6px; /* la bande rouge, au bord haut du billet courant */
+  --billet-onglet-focus-retrait: -8px; /* l'anneau de focus dans le billet : le masque couperait celui du dehors */
+  --billet-onglet-masque: radial-gradient(circle var(--ticket-encoche) at 0 0, #0000 98%, #000) top left,
+    radial-gradient(circle var(--ticket-encoche) at 100% 0, #0000 98%, #000) top right,
+    radial-gradient(circle var(--ticket-encoche) at 0 100%, #0000 98%, #000) bottom left,
+    radial-gradient(circle var(--ticket-encoche) at 100% 100%, #0000 98%, #000) bottom right; /* quatre coins mordus */
+  --billet-onglet-masque-taille: 51% 51%; /* un coin chacun, avec un recouvrement pour ne pas laisser de fente */
+  --billet-onglet-cone-largeur: 76px;
+  --billet-onglet-cone-forme: polygon(0 0, 100% 0, 62% 100%, 38% 100%); /* large sous le billet, resserré vers la lanterne */
+  --billet-onglet-cone-fond: linear-gradient(to top, var(--billet-onglet-faisceau-vif), var(--billet-onglet-faisceau));
+  --billet-onglet-ombre: drop-shadow(0 4px 4px rgba(16, 19, 58, 0.25));
+  --billet-onglet-faisceau: transparent; /* le cône du projecteur, vers le billet */
+  --billet-onglet-faisceau-vif: transparent; /* son pied, plus vif */
+  --billet-onglet-penombre: none; /* les quatre autres billets, dans la pénombre */
+  --billet-onglet-eclat: none; /* le billet courant, qui rayonne */
+  --billet-onglet-papier-eclaire: var(--ticket-papier); /* son papier, éclairé par-dessous */
+
   /* La pellicule des décennies : quatorze repères, allumés quand un film y est sorti */
   --perforations-fond: linear-gradient(90deg, #1b1511, #15110e 10%, #15110e 90%, #1b1511);
   --perforations-relief: 0 10px 18px rgba(3, 4, 20, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -587,6 +614,12 @@
     --vumetre-lueur: drop-shadow(0 0 5px rgba(255, 244, 214, 0.7));
     --vumetre-lueur-pic: drop-shadow(0 0 5px rgba(255, 59, 78, 0.95));
     --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.85));
+    --billet-onglet-ombre: drop-shadow(0 8px 8px rgba(1, 2, 16, 0.7));
+    --billet-onglet-faisceau: rgba(255, 226, 170, 0.34);
+    --billet-onglet-faisceau-vif: rgba(255, 236, 190, 0.75);
+    --billet-onglet-penombre: brightness(0.62) saturate(0.9);
+    --billet-onglet-eclat: drop-shadow(0 0 9px rgba(255, 214, 140, 0.8));
+    --billet-onglet-papier-eclaire: radial-gradient(ellipse 90% 80% at 50% 115%, #fffdf2 0%, rgba(255, 253, 242, 0) 75%), var(--ticket-papier);
     --perforations-fond: linear-gradient(90deg, #3a2d24, #2e241c 10%, #2e241c 90%, #3a2d24);
     --perforations-relief: 0 18px 24px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4), 0 0 0 1px rgba(255, 235, 200, 0.28);
     --perforation-trou: #ffe9b8;
@@ -666,6 +699,12 @@
   --vumetre-lueur: drop-shadow(0 0 5px rgba(255, 244, 214, 0.7));
   --vumetre-lueur-pic: drop-shadow(0 0 5px rgba(255, 59, 78, 0.95));
   --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.85));
+  --billet-onglet-ombre: drop-shadow(0 8px 8px rgba(1, 2, 16, 0.7));
+  --billet-onglet-faisceau: rgba(255, 226, 170, 0.34);
+  --billet-onglet-faisceau-vif: rgba(255, 236, 190, 0.75);
+  --billet-onglet-penombre: brightness(0.62) saturate(0.9);
+  --billet-onglet-eclat: drop-shadow(0 0 9px rgba(255, 214, 140, 0.8));
+  --billet-onglet-papier-eclaire: radial-gradient(ellipse 90% 80% at 50% 115%, #fffdf2 0%, rgba(255, 253, 242, 0) 75%), var(--ticket-papier);
   --perforations-fond: linear-gradient(90deg, #3a2d24, #2e241c 10%, #2e241c 90%, #3a2d24);
   --perforations-relief: 0 18px 24px -2px rgba(1, 2, 16, 0.85), 0 4px 8px rgba(1, 2, 16, 0.6), inset 0 1px 0 rgba(255, 235, 200, 0.4), 0 0 0 1px rgba(255, 235, 200, 0.28);
   --perforation-trou: #ffe9b8;
