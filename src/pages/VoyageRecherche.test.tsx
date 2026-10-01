@@ -268,6 +268,18 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(screen.queryByText(PAGES_1890.mots.recherche.vide)).not.toBeInTheDocument()
   })
 
+  // Une affiche vide n'est pas un catalogue vide : les essentiels sont tous vus, le reste se cherche.
+  // Mutations : le message du catalogue vide dit ici ; celui de la recherche.
+  it('dit quand les essentiels sont tous vus', async () => {
+    monter(PAGE, {
+      'GET /api/me/voyage': () => json(voyage1890(1895, [{ annee: 1895, statut: 'en_cours', visitee: true }], { ia: true, depart: 1895 })),
+      [FICHE(1895)]: () => json(fichePrete({ annee: 1895, salles: [salle({ id: 's', cle: 'essentiels', films: [FEE] }), salle({ id: 's2', cle: 'ailleurs', films: [MANOIR] })] })),
+    })
+    expect(await screen.findByText('Les essentiels de la décennie sont tous vus.')).toBeInTheDocument()
+    taper('manoir')
+    expect(await titres()).toEqual(['Le Manoir du diable'])
+  })
+
   // Une fiche en panne se tait : le catalogue est plus court, une ligne le dit. Mutations : la ligne
   // retirée ; la panne d'une fiche qui tue tout le guichet.
   it('une fiche en panne laisse le reste du catalogue, et le dit', async () => {
