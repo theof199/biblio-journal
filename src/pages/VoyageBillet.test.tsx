@@ -186,8 +186,11 @@ describe('le billet de séance', () => {
     const { requetes } = monterVoyage(billet(FAUCON), routes)
     fireEvent.click(await screen.findByRole('button', { name: '7 sur 10' }))
     const bouton = await composter()
-    fireEvent.click(bouton)
-    fireEvent.click(bouton)
+    // Deux touchers avant le rendu suivant : le bouton n'est pas encore éteint, seule la garde tient.
+    act(() => {
+      bouton.click()
+      bouton.click()
+    })
     expect(await lAnnee()).toBeInTheDocument()
     expect(etat.creations).toBe(1)
     expect(compte(requetes, MEDIA)).toBe(1)
