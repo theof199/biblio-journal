@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
 import { createQueryClient } from '../api/queryClient'
@@ -11,11 +11,25 @@ import type { VueGuichet } from '../mondes/types'
 import { contexteFactice } from '../test/contexteFactice'
 import { SESSION } from '../test/pageVoyage'
 import { json, servir } from '../test/serveur'
-import { fichePrete, filmDeSalle, salle, voyage1890 } from '../test/voyage'
+import { ficheEnAttente, fichePrete, ficheVerrouillee, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import { anneeCivile } from '../voyage/decennie'
+import { noterLeGuichet } from '../voyage/recherche/memoire'
 import { decennieDe } from '../voyage/regles'
 import styles from './VoyageRecherche.module.css'
 import FEUILLE from './VoyageRecherche.module.css?raw'
+
+/** `catalogue`, le vrai, compté : la page ne le refait pas à chaque lettre tapée. */
+const compte = vi.hoisted(() => ({ catalogue: 0 }))
+vi.mock('../voyage/catalogue', async (original) => {
+  const vrai = await original<typeof import('../voyage/catalogue')>()
+  return {
+    ...vrai,
+    catalogue: (...args: Parameters<typeof vrai.catalogue>) => {
+      compte.catalogue += 1
+      return vrai.catalogue(...args)
+    },
+  }
+})
 
 /**
  * La carte : 1895 et 1896 écrites et ouvertes, 1897 en cours (écrite), 1898 et 1899 verrouillées.
@@ -73,6 +87,13 @@ function Adresse() {
 }
 const adresse = () => screen.getByTestId('adresse').textContent
 
+/** Le geste « retour » du téléphone, que la page ne dessine pas. */
+let historique!: NavigateFunction
+function Historique() {
+  historique = useNavigate()
+  return null
+}
+
 /** Le guichet dans l'app entière, sous la coque ; plusieurs entrées posent un historique. */
 function monter(entree: string | string[], routes: Routes = ROUTES) {
   const client = createQueryClient()
@@ -81,6 +102,7 @@ function monter(entree: string | string[], routes: Routes = ROUTES) {
   const vue = render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={entrees} initialIndex={entrees.length - 1}>
+        <Historique />
         <App />
         <Adresse />
       </MemoryRouter>
@@ -106,6 +128,23 @@ const lu = async () => {
 const calme = () =>
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
 
+/**
+ * jsdom ne met rien en page : `scrollTop` y garde toute valeur. Comme dans un navigateur, il est
+ * borné ici par la hauteur du contenu, cent pixels par lien de la zone, cinq cents de fenêtre : un
+ * catalogue plus court que celui qu'on a quitté ramène la position plus haut.
+ */
+function borner(zone: HTMLElement) {
+  let haut = 0
+  const plusBas = () => Math.max(0, zone.querySelectorAll('a').length * 100 - 500)
+  Object.defineProperty(zone, 'scrollTop', {
+    configurable: true,
+    get: () => haut,
+    set: (v: number) => {
+      haut = Math.min(Math.max(0, v), plusBas())
+    },
+  })
+}
+
 describe('le guichet, la recherche du Voyage', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
@@ -113,6 +152,51 @@ describe('le guichet, la recherche du Voyage', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
+  })
+
+  // On cherche, on ouvre un film, on revient : le guichet est celui qu'on a quitté, à sa place. La
+  // saisie ne vit pas dans l'adresse (une lettre ferait sauter la page) mais sous l'entrée
+  // d'historique. Mutations : la saisie, ou les années, qui repartent vides ; la position perdue
+  // (le catalogue de l'affiche, plus court, la ramène plus haut).
+  it('retrouve la saisie, les années cochées et la position au retour d’une fiche', async () => {
+    monter(PAGE, { ...ROUTES, 'GET /api/reference/films/4/realisateurs': () => json({ realisateurs: [] }) })
+    await lu()
+    const zone = screen.getByRole('main')
+    borner(zone)
+    taper('l')
+    fireEvent.click(annee(1895))
+    fireEvent.click(annee(1896))
+    const avant = await titres()
+    expect(avant).toEqual(['Programme Lumière', 'L’Arroseur arrosé', 'Le Repas de bébé', 'L’Arrivée d’un train en gare de La Ciotat', 'La Fée aux choux', 'Le Manoir du diable'])
+    zone.scrollTop = 300
+    fireEvent.scroll(zone)
+    expect(zone.scrollTop).toBe(300)
+
+    fireEvent.click((await lignes())[0]!)
+    expect(await screen.findByRole('region', { name: 'Programme Lumière' })).toBeInTheDocument()
+    expect(zone.scrollTop).toBe(0)
+
+    act(() => historique(-1))
+    expect(await titres()).toEqual(avant)
+    expect(champ()).toHaveValue('l')
+    expect(annee(1895)).toHaveAttribute('aria-pressed', 'true')
+    expect(annee(1896)).toHaveAttribute('aria-pressed', 'true')
+    expect(annee(1897)).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(zone.scrollTop).toBe(300))
+  })
+
+  // Le guichet retenu est celui de l'entrée, pas de l'adresse : y revenir par un lien neuf (l'onglet,
+  // la décennie) l'ouvre vide. Mutation : le guichet retenu sous l'adresse au lieu de l'entrée.
+  it('s’ouvre vide par une navigation nouvelle', async () => {
+    monter(PAGE)
+    await lu()
+    taper('melies')
+    fireEvent.click(annee(1897))
+    expect(await titres()).toEqual(['Cendrillon'])
+    act(() => historique(PAGE))
+    await waitFor(() => expect(champ()).toHaveValue(''))
+    expect(annee(1897)).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText(PAGES_1890.mots.recherche.affiche)).toBeInTheDocument()
   })
 
   // Lire une année non visitée enfilerait son ouverture chez le chroniqueur (le compte IA), ou
@@ -139,6 +223,38 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual(['GET /api/me/voyage', FICHE(1895)].sort())
     // Seule l'année lue se coche : 1896 reste fermée au guichet.
     expect(within(screen.getByRole('group', { name: 'Années' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['1895'])
+  })
+
+  // Le second joueur visite une année que le compte IA n'a pas encore ouverte : l'API la dit en
+  // attente, et verrouillée une année hors de ses années lisibles, quoi que dise sa carte. Le guichet
+  // ne propose pas ces années : une année cochée qui ne trouve rien, faute de salles, n'en est pas
+  // une, ni comme bouton, ni comme filtre retenu d'une visite précédente (sans bouton pour la
+  // décocher). Mutations : les boutons, ou le filtre, tirés des années lues (`anneesDuCatalogue`) au
+  // lieu des fiches prêtes.
+  it('ne propose au second joueur que les années que le compte IA a ouvertes', async () => {
+    // La première entrée d'un `MemoryRouter` porte la clé `default` : 1897 était cochée.
+    noterLeGuichet('default', 1890, { saisie: '', annees: [1897] })
+    const carte = voyage1890(
+      1897,
+      [
+        { annee: 1895, statut: 'ouverte', visitee: true },
+        { annee: 1896, statut: 'ouverte', visitee: true },
+        { annee: 1897, statut: 'en_cours', visitee: true },
+      ],
+      { ia: false, depart: 1895 },
+    )
+    monter(PAGE, {
+      'GET /api/me/voyage': () => json(carte),
+      [FICHE(1895)]: () => json(FICHES[1895]),
+      [FICHE(1896)]: () => json(ficheVerrouillee(1896)),
+      [FICHE(1897)]: () => json(ficheEnAttente(1897)),
+    })
+    await lu()
+    expect(within(screen.getByRole('group', { name: 'Années' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['1895'])
+    expect(screen.queryByText(/pas pu être lue/)).not.toBeInTheDocument()
+    expect(screen.getByText(PAGES_1890.mots.recherche.affiche)).toBeInTheDocument()
+    taper('e')
+    expect(await titres()).toEqual(['Programme Lumière', 'L’Arroseur arrosé', 'Le Repas de bébé'])
   })
 
   // L'API rend toujours les années du départ à l'année civile : un joueur en 1903 a une carte qui
@@ -252,6 +368,61 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(adresse()).toBe('/voyage/1895/films/f-prog')
   })
 
+  // Le catalogue se refait quand une fiche change, pas à chaque lettre : sur une décennie de mille
+  // vues, chaque frappe le reconstruirait. Mutation : la combinaison écrite dans le composant (une
+  // fonction neuve à chaque rendu, que TanStack refait).
+  it('ne refait pas le catalogue à chaque lettre tapée', async () => {
+    monter(PAGE)
+    await lu()
+    const avant = compte.catalogue
+    const mot = 'cendrillon'
+    for (let i = 1; i <= mot.length; i += 1) taper(mot.slice(0, i))
+    fireEvent.click(annee(1897))
+    expect(await titres()).toEqual(['Cendrillon'])
+    expect(compte.catalogue).toBe(avant)
+  })
+
+  // Le clavier d'un téléphone couvre la moitié basse de l'écran : sous le bandeau, il ne laissait voir
+  // qu'une ligne du catalogue (vu au navigateur, 390 × 508). Toucher le champ amène la fenêtre en
+  // haut, une fois ; la frappe ne fait rien bouger. À la souris, rien ne bouge. Mutations : rien
+  // d'amené ; amené à chaque lettre ; amené sans clavier tactile ; la place du bas retirée, ou gardée
+  // après le départ du doigt.
+  it.each([
+    ['au doigt', true],
+    ['à la souris', false],
+  ])('amène la fenêtre au-dessus du clavier quand le champ prend le doigt (%s)', async (_qui, doigt) => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q === '(pointer: coarse)' ? doigt : false,
+      media: q,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    const amener = vi.fn()
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { value: amener, configurable: true, writable: true })
+    try {
+      monter(PAGE)
+      await lu()
+      fireEvent.focus(champ())
+      taper('cen')
+      taper('cendr')
+      expect(await titres()).toEqual(['Cendrillon'])
+      if (doigt) {
+        expect(amener).toHaveBeenCalledTimes(1)
+        expect(amener.mock.contexts[0]).toBe(screen.getByRole('search'))
+        expect(amener).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }))
+        // La place de monter, même sur un catalogue court : la hauteur du bandeau, rendue au départ du doigt.
+        expect(screen.getByTestId('place-du-clavier')).toHaveStyle({ height: `${PAGES_1890.hauteurs.guichet}px` })
+        fireEvent.blur(champ())
+        expect(screen.queryByTestId('place-du-clavier')).not.toBeInTheDocument()
+      } else {
+        expect(amener).not.toHaveBeenCalled()
+        expect(screen.queryByTestId('place-du-clavier')).not.toBeInTheDocument()
+      }
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
+
   // Rien ne part à la frappe : ni TMDB, ni le chroniqueur. Mutation : une recherche par saisie
   // (`GET /api/search?…`) branchée sur le champ.
   it('aucune requête ne part à la frappe', async () => {
@@ -273,6 +444,8 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(await screen.findByText(PAGES_1890.mots.recherche.vide)).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: 'Les films du catalogue' })).not.toBeInTheDocument()
     page.unmount()
+    // Une autre app : la première entrée de son historique porte la même clé (`default`).
+    window.sessionStorage.clear()
 
     // Aucune année écrite : le catalogue est vide, pas « introuvable ».
     monter(PAGE, { 'GET /api/me/voyage': () => json(voyage1890(1895, [{ annee: 1895, statut: 'en_cours', visitee: false }], { ia: true, depart: 1895 })) })
@@ -355,6 +528,15 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(feuille).not.toContain('--corail')
     const calme = feuille.slice(feuille.indexOf('@media (prefers-reduced-motion: reduce)'))
     expect(calme).toMatch(/\.entree\s*\{\s*animation:\s*none;?\s*\}/)
+  })
+
+  // `type="search"` dessine sa croix d'effacement à la couleur du système (un bleu vif, vu au
+  // navigateur) : elle prend le bois du monde. Mutation : la règle retirée.
+  it('dessine la croix d’effacement aux couleurs du monde', () => {
+    const feuille = FEUILLE.replace(/\/\*[\s\S]*?\*\//g, '')
+    const regle = /::-webkit-search-cancel-button\s*\{([^}]*)\}/.exec(feuille)?.[1] ?? ''
+    expect(regle).toMatch(/appearance:\s*none/)
+    expect(regle).toMatch(/background:\s*var\(--m-[\w-]+\)/)
   })
 
   // La recherche du journal, hors du catalogue (décision D7).

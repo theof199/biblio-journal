@@ -56,9 +56,13 @@ export function catalogue(fiches: readonly FichePrete[]): Vue[] {
   return vues
 }
 
-/** Le pliage d'un caractère : sans accent ni casse, l'apostrophe droite, les ligatures dépliées. */
+/**
+ * Le pliage d'un caractère : sans accent ni casse, l'apostrophe droite, les ligatures dépliées, toute
+ * espace (l'insécable d'un titre typographié comprise) une espace simple.
+ */
 function plierUn(c: string): string {
   if (c === '’' || c === '‘' || c === 'ʼ') return "'"
+  if (/\s/u.test(c)) return ' '
   const bas = c.toLowerCase()
   if (bas === 'œ') return 'oe'
   if (bas === 'æ') return 'ae'
@@ -88,9 +92,12 @@ export function plier(texte: string): { plie: string; debut: number[]; fin: numb
   return { plie, debut, fin }
 }
 
+/** La saisie pliée, sans espaces autour, celles du milieu resserrées (un clavier en double une). */
+const plierLaSaisie = (saisie: string): string => plier(saisie).plie.trim().replace(/ {2,}/g, ' ')
+
 /** Le passage d'un titre que trouve la saisie, à souligner ; nul si la saisie ne s'y trouve pas. */
 export function passage(titre: string, saisie: string): { avant: string; trouve: string; apres: string } | null {
-  const q = plier(saisie.trim()).plie
+  const q = plierLaSaisie(saisie)
   if (!q) return null
   const { plie, debut, fin } = plier(titre)
   const k = plie.indexOf(q)
@@ -105,7 +112,7 @@ export function passage(titre: string, saisie: string): { avant: string; trouve:
  * années cochées (aucune cochée : toutes).
  */
 export function chercher(vues: readonly Vue[], saisie: string, annees: ReadonlySet<number>): Vue[] {
-  const q = plier(saisie.trim()).plie
+  const q = plierLaSaisie(saisie)
   return vues.filter(
     (v) => (annees.size === 0 || annees.has(v.annee)) && (!q || plier(v.titre).plie.includes(q) || plier(v.realisateur).plie.includes(q)),
   )

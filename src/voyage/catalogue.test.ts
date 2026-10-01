@@ -86,6 +86,15 @@ describe('le pliage', () => {
   it('souligne le bon passage après un caractère de deux unités', () => {
     expect(passage('🎬 L’Arrivée', 'arrivee')).toEqual({ avant: '🎬 L’', trouve: 'Arrivée', apres: '' })
   })
+
+  // Un titre typographié porte des espaces insécables (« Que la fête commence ! ») ; un clavier de
+  // téléphone en double une par mégarde. Mutations : l'insécable gardée ; les espaces de la saisie
+  // non resserrées.
+  it('tient toute espace pour une espace, et resserre celles de la saisie', () => {
+    expect(passage('Que la fête commence\u00a0!', 'commence !')).toEqual({ avant: 'Que la fête ', trouve: 'commence\u00a0!', apres: '' })
+    expect(passage('Le\u202fManoir', 'le manoir')).toEqual({ avant: '', trouve: 'Le\u202fManoir', apres: '' })
+    expect(passage('Georges Méliès', ' georges   melies ')).toEqual({ avant: '', trouve: 'Georges Méliès', apres: '' })
+  })
 })
 
 describe('le guichet', () => {
@@ -97,6 +106,12 @@ describe('le guichet', () => {
     expect(chercher(vues, 'FÉE', new Set()).map((v) => v.tmdbId)).toEqual([2])
     expect(chercher(vues, 'lumiere', new Set([1896])).map((v) => v.tmdbId)).toEqual([1])
     expect(chercher(vues, '', new Set([1895])).map((v) => v.tmdbId)).toEqual([4, 5, 6])
+  })
+
+  // Le jumeau de `passage` : la saisie se resserre aussi pour trouver, pas seulement pour souligner.
+  // Mutation : `chercher` sur la saisie seulement rognée.
+  it('trouve une saisie aux espaces doublées', () => {
+    expect(chercher(vues, ' georges  melies ', new Set()).map((v) => v.tmdbId)).toEqual([3])
   })
 
   // Mutations : un essentiel vu à l'affiche ; un film hors des essentiels ; l'ordre des années ; plus de six.

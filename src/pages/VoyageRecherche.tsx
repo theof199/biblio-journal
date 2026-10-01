@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
+import { useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { IconSearch } from '@tabler/icons-react'
 import { cles } from '../api/cles'
-import { estPrete, lireAnnee, lireVoyage } from '../api/voyage'
+import { estPrete, lireAnnee, lireVoyage, type FicheAnnee } from '../api/voyage'
 import { ambianceDeLHeure } from '../carte/heure'
 import { creerRegistre } from '../mondes'
 import type { MotsDesPages } from '../mondes/types'
@@ -12,6 +12,7 @@ import { useMouvementReduit } from '../ui/mouvement'
 import { useRevenir } from '../ui/revenir'
 import { aLAffiche, anneesDuCatalogue, catalogue, chercher, passage, type Vue } from '../voyage/catalogue'
 import { anneeCivile, decennieDeLAdresse } from '../voyage/decennie'
+import { noterLeGuichet, relireLeGuichet } from '../voyage/recherche/memoire'
 import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
 import styles from './VoyageRecherche.module.css'
 
@@ -25,10 +26,31 @@ const mondes = creerRegistre()
  */
 export default function VoyageRecherche() {
   const { decennie } = useParams()
+  const { key } = useLocation()
   const d = decennieDeLAdresse(decennie, anneeCivile())
   if (d === null) return <Navigate to="/voyage" replace />
-  return <GuichetDeLaDecennie key={d} decennie={d} />
+  // Une entrée d'historique, un guichet : une navigation nouvelle vers la même adresse en ouvre un vide.
+  return <GuichetDeLaDecennie key={`${d}/${key}`} decennie={d} entree={key} />
 }
+
+/**
+ * Le catalogue des fiches lues, et ce qui manque encore. Hors du composant : TanStack ne refait la
+ * combinaison que si une fiche change (même fonction, mêmes résultats), jamais à chaque lettre tapée.
+ */
+function lireLeCatalogue(fiches: UseQueryResult<FicheAnnee>[]) {
+  const pretes = fiches.flatMap((q) => (estPrete(q.data) ? [q.data] : []))
+  return {
+    vues: catalogue(pretes),
+    // Les années qui ont des salles : une fiche en attente (le second joueur, avant le compte IA) ou
+    // verrouillée (hors de ses années lisibles) n'en a pas, et ne se propose pas au guichet.
+    lues: pretes.map((f) => f.annee),
+    enPanne: fiches.filter((q) => q.isError).length,
+    enCours: fiches.some((q) => q.isPending),
+  }
+}
+
+/** Un écran qu'on touche du doigt : le champ y ouvre un clavier qui couvre le bas de l'écran. */
+const auDoigt = (): boolean => typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches
 
 /** L'état d'une vue, en clair (maquette : `etatDe`) ; un film perdu dit le mot du monde. */
 function etatLisible(v: Vue, m: MotsDesPages): string {
@@ -60,13 +82,42 @@ function souligne(texte: string, saisie: string): ReactNode {
 }
 
 /**
+ * Les lignes du catalogue. Mémorisées : la lettre tapée se montre au champ aussitôt, et la liste,
+ * qui peut compter des centaines de lignes sur une décennie explorée, se refait ensuite, sur la
+ * saisie différée (`useDeferredValue`), sans retenir la frappe.
+ */
+const ListeDuCatalogue = memo(function ListeDuCatalogue({ vues, saisie, mots: m }: { vues: Vue[]; saisie: string; mots: MotsDesPages }) {
+  return (
+    <ol className={styles.liste} aria-label="Les films du catalogue">
+      {vues.map((vue, i) => (
+        <li key={vue.tmdbId}>
+          <Link to={`/voyage/${vue.annee}/films/${vue.filmId}`} className={styles.entree}>
+            <span className={styles.l1}>
+              <span className={styles.no} aria-hidden="true">{`N° ${i + 1}`}</span>
+              <span className={styles.ti}>{souligne(vue.titre, saisie)}</span>
+              <span className={styles.points} aria-hidden="true" />
+              <span className={styles.an}>{vue.annee}</span>
+            </span>
+            <span className={styles.l2}>
+              <span>{souligne(vue.realisateur, saisie)}</span>
+              <span>{etatLisible(vue, m)}</span>
+            </span>
+            <span className={styles.ouvrir}>{`${m.recherche.ouvrir} ›`}</span>
+          </Link>
+        </li>
+      ))}
+    </ol>
+  )
+})
+
+/**
  * Le catalogue est celui des salles déjà écrites de la décennie : la page lit la carte, puis la
  * fiche de chaque année **déjà écrite et ouverte** (`anneesDuCatalogue`, le jumeau de l'aperçu de la
  * carte), jamais une autre — lire une année non visitée enfilerait son ouverture chez le
  * chroniqueur, et ouvrirait au second joueur une année que le Voyage suivi n'a pas faite. Rien ne
  * part à la frappe : la recherche se fait sur ce qui est lu.
  */
-function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
+function GuichetDeLaDecennie({ decennie: d, entree }: { decennie: number; entree: string }) {
   const monde = mondes(d)
   const { jetons, mots: m, hauteurs } = monde.pages
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
@@ -76,13 +127,26 @@ function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
 
   // La saisie et les années cochées vivent dans la page, pas dans l'adresse : chaque navigation
   // ramène la zone de contenu en haut (`coque/defilement.ts`), une lettre tapée la ferait sauter.
-  const [saisie, setSaisie] = useState('')
-  const [cochees, setCochees] = useState<ReadonlySet<number>>(() => new Set())
+  // Elles sont retenues sous l'entrée d'historique : le retour d'une fiche de film les retrouve.
+  const [retenu] = useState(() => relireLeGuichet(entree, d))
+  const [saisie, setSaisie] = useState(retenu.saisie)
+  const [cochees, setCochees] = useState<ReadonlySet<number>>(() => new Set(retenu.annees))
+  useEffect(() => noterLeGuichet(entree, d, { saisie, annees: [...cochees] }), [entree, d, saisie, cochees])
 
   // Le guichet : l'instant de la toile, et celui de la dernière lettre tapée (le guichetier se penche).
   const dernierT = useRef(0)
   const frappe = useRef(-9)
   const champ = useRef<HTMLInputElement>(null)
+  const fenetre = useRef<HTMLFormElement>(null)
+
+  // Le clavier du téléphone couvre le bas de l'écran : sous le bandeau, il ne laisserait voir qu'une
+  // ligne du catalogue. Au toucher du champ, la fenêtre monte en haut, une fois ; la frappe ne fait
+  // rien bouger. Le clavier ne rétrécit pas la page (Chrome sur Android) : un catalogue court ne
+  // laisserait pas la fenêtre monter, la page gagne en bas la hauteur du bandeau tant qu'il est ouvert.
+  const [auClavier, setAuClavier] = useState(false)
+  useEffect(() => {
+    if (auClavier) fenetre.current?.scrollIntoView?.({ block: 'start', behavior: calme ? 'auto' : 'smooth' })
+  }, [auClavier, calme])
   const nuit = useMemo(() => {
     const maintenant = new Date()
     return ambianceDeLHeure(maintenant.getHours() + maintenant.getMinutes() / 60).nuit
@@ -90,17 +154,16 @@ function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
 
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
   const v = voyage.data
-  const annees = v ? anneesDuCatalogue(v.annees, d) : []
-  const fiches = useQueries({
+  const annees = useMemo(() => (v ? anneesDuCatalogue(v.annees, d) : []), [v, d])
+  const { vues, lues, enPanne, enCours } = useQueries({
     queries: annees.map((a) => ({ queryKey: cles.annee(a), queryFn: ({ signal }) => lireAnnee(a, signal) })),
+    combine: lireLeCatalogue,
   })
-
-  const vues = catalogue(fiches.flatMap((q) => (estPrete(q.data) ? [q.data] : [])))
-  const enPanne = fiches.filter((q) => q.isError).length
-  const enCours = fiches.some((q) => q.isPending)
-  const filtres = new Set([...cochees].filter((a) => annees.includes(a)))
-  const sansFiltre = saisie.trim() === '' && filtres.size === 0
-  const trouvees = sansFiltre ? aLAffiche(vues) : chercher(vues, saisie, filtres)
+  const filtres = useMemo(() => new Set([...cochees].filter((a) => lues.includes(a))), [cochees, lues])
+  // La liste suit la saisie différée : la lettre se montre d'abord, la liste se refait ensuite.
+  const cherchee = useDeferredValue(saisie)
+  const sansFiltre = cherchee.trim() === '' && filtres.size === 0
+  const trouvees = useMemo(() => (sansFiltre ? aLAffiche(vues) : chercher(vues, cherchee, filtres)), [sansFiltre, vues, cherchee, filtres])
 
   const taper = (valeur: string) => {
     if (!calme) frappe.current = dernierT.current
@@ -134,9 +197,9 @@ function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
     else vide = 'Les essentiels de la décennie sont tous vus.'
     corps = (
       <>
-        {annees.length > 0 ? (
+        {lues.length > 0 ? (
           <div className={styles.annees} role="group" aria-label="Années">
-            {annees.map((a) => (
+            {lues.map((a) => (
               <button key={a} type="button" aria-pressed={filtres.has(a)} onClick={() => basculer(a)}>
                 {a}
               </button>
@@ -157,25 +220,7 @@ function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
             <p className={styles.rien}>{enPanne === 1 ? 'Une année n’a pas pu être lue.' : `${enPanne} années n’ont pas pu être lues.`}</p>
           ) : null}
           {trouvees.length > 0 ? (
-            <ol className={styles.liste} aria-label="Les films du catalogue">
-              {trouvees.map((vue, i) => (
-                <li key={vue.tmdbId}>
-                  <Link to={`/voyage/${vue.annee}/films/${vue.filmId}`} className={styles.entree}>
-                    <span className={styles.l1}>
-                      <span className={styles.no} aria-hidden="true">{`N° ${i + 1}`}</span>
-                      <span className={styles.ti}>{souligne(vue.titre, saisie)}</span>
-                      <span className={styles.points} aria-hidden="true" />
-                      <span className={styles.an}>{vue.annee}</span>
-                    </span>
-                    <span className={styles.l2}>
-                      <span>{souligne(vue.realisateur, saisie)}</span>
-                      <span>{etatLisible(vue, m)}</span>
-                    </span>
-                    <span className={styles.ouvrir}>{`${m.recherche.ouvrir} ›`}</span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
+            <ListeDuCatalogue vues={trouvees} saisie={cherchee} mots={m} />
           ) : enCours ? null : (
             <p className={styles.rien}>{vide}</p>
           )}
@@ -212,6 +257,7 @@ function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
       </div>
 
       <form
+        ref={fenetre}
         className={styles.fenetre}
         role="search"
         onSubmit={(e) => {
@@ -233,6 +279,10 @@ function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
             placeholder={m.recherche.champ}
             aria-label={m.recherche.champ}
             value={saisie}
+            onFocus={() => {
+              if (auDoigt()) setAuClavier(true)
+            }}
+            onBlur={() => setAuClavier(false)}
             onChange={(e) => taper(e.target.value)}
           />
         </label>
@@ -246,6 +296,7 @@ function GuichetDeLaDecennie({ decennie: d }: { decennie: number }) {
           {m.recherche.partout}
         </Link>
       </p>
+      {auClavier ? <div aria-hidden="true" data-testid="place-du-clavier" style={{ height: hauteurs.guichet }} /> : null}
     </section>
   )
 }
