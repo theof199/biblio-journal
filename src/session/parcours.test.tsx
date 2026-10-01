@@ -156,6 +156,39 @@ describe('la garde et la connexion', () => {
     expect(client.getQueryData(['journal'])).toBeUndefined()
   })
 
+  /**
+   * Une session expirée (un 401 en cours de route) ramène à la connexion sans passer par
+   * « Se déconnecter » : le cache du membre est encore là. Le membre qui se connecte ensuite sur le
+   * même onglet ne doit rien en lire — surtout pas le carnet (les remarques privées de la boîte à
+   * billets, plan 2c), servi tel quel par le cache avant toute relecture. Mutations : la connexion
+   * (ou son jumeau de développement) qui garde le cache.
+   */
+  it.each([
+    ['la connexion', () => saisir('alice', 'secret')],
+    [
+      'la connexion de développement',
+      () => {
+        fireEvent.change(screen.getByLabelText('Pseudo (dev)'), { target: { value: 'alice' } })
+        fireEvent.click(screen.getByRole('button', { name: /dev/i }))
+      },
+    ],
+  ])('%s ne laisse rien du cache d’une session expirée', async (_nom, seConnecter) => {
+    const client = createQueryClient()
+    client.setQueryData(cles.journalDesAnnees(1890, 1899), [{ carnet: { comment: 'La remarque de l’autre membre.' } }])
+    servir({
+      'GET /api/auth/me': () => json(NON_CONNECTE, 401),
+      'POST /api/auth/login': () => json(ALICE),
+      'POST /api/auth/dev-login': () => json(ALICE),
+      ...ROUTES_ACCUEIL,
+    })
+    monter('/', client)
+    await screen.findByRole('heading', { name: 'Connexion' })
+    seConnecter()
+
+    expect(await screen.findByText('La vitrine attend sa première affiche.')).toBeInTheDocument()
+    expect(client.getQueryData(cles.journalDesAnnees(1890, 1899))).toBeUndefined()
+  })
+
   it('API injoignable au lancement : une panne, pas l’écran de connexion', async () => {
     vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
     monter('/')
