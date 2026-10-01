@@ -34,8 +34,13 @@ function affichette(g: CanvasRenderingContext2D, v: VueMonde, d: DateVraie, i: n
   g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(-15, -45, 32, 23)
   g.fillStyle = c('#E9DCC0'); g.fillRect(-16, -46, 32, 23)
   g.fillStyle = c('#A8452F'); g.fillRect(-16, -46, 32, 5)
-  texte(g, d.court, 0, -31, `9px ${F_F}`, c('#1c140c'))
-  texte(g, String(d.an), 0, -25, `6.5px ${F_A}`, c('#6b4a2a'))
+  if (d.court === String(d.an)) {
+    // Une date connue à l'année seulement : l'année une fois, centrée dans le corps de l'affichette.
+    texte(g, String(d.an), 0, -29, `9px ${F_A}`, c('#1c140c'))
+  } else {
+    texte(g, d.court, 0, -31, `9px ${F_F}`, c('#1c140c'))
+    texte(g, String(d.an), 0, -25, `6.5px ${F_A}`, c('#6b4a2a'))
+  }
   g.fillStyle = c('#1c140c'); cercle(g, 0, -44, 1)
   if (v.age(`date:${i}`) === 99 && v.vivant) {
     g.strokeStyle = c('#F6D98A', 0.35 + 0.35 * Math.sin(v.t * 4 + i))
