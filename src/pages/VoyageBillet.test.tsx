@@ -795,8 +795,9 @@ describe('le billet de séance', () => {
   })
 
   describe('le billet numéroté (idée 5, décision D4)', () => {
-    // Mutations : le numéro pris dans tout le journal (« N° 0004 ») ; `rangerLeBillet` oublié ; le
-    // talon sans son numéro ; l'année ramenée avant la fin de la séquence.
+    // Mutations : le numéro pris dans tout le journal (« N° 0004 ») ; posé dès la réponse de la boîte,
+    // avant les tirages ; `rangerLeBillet` oublié ; le talon sans son numéro ; l'année ramenée avant la
+    // fin de la séquence ; ni vibration, ni billet amené à l'écran ; l'encre sans sa date.
     it('tamponne, numérote, range le billet, puis revient à l’année', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       const vibrate = vibreur()
@@ -809,6 +810,9 @@ describe('le billet de séance', () => {
       fireEvent.click(bouton)
       const encre = await tamponne()
       expect(encre).toHaveAccessibleName(`VU : Cinématographe · séance du ${formatDateVisionnage(jourLocal())}`)
+      // La boîte a répondu, mais le numéro attend le numéroteur.
+      expect(compte(requetes, BOITE)).toBe(1)
+      expect(screen.getByText('N° ····')).toBeInTheDocument()
       expect(vibrate).toHaveBeenCalledWith([18, 40, 70])
       expect(amener).toHaveBeenCalled()
       // La pause, le marteau qui remonte, les tirages : le numéro est posé, l'année pas encore là.
