@@ -226,6 +226,17 @@ describe('le guichet, la recherche du Voyage', () => {
     expect(cendrillon).toHaveTextContent(PAGES_1890.mots.introuvable)
   })
 
+  // Le mot d'un film perdu est celui du monde de la décennie. Mutation : « perdu » de 1890 en dur.
+  it('dit un film perdu par le mot de son monde', async () => {
+    monter('/voyage/decennies/1900/recherche', {
+      'GET /api/me/voyage': () => json(voyage1890(1900, [{ annee: 1900, statut: 'en_cours', visitee: true }], { ia: true, depart: 1895 })),
+      [FICHE(1900)]: () => json(fichePrete({ annee: 1900, salles: [salle({ id: 's', cle: 'essentiels', films: [CENDRILLON] })] })),
+    })
+    const [ligne] = await lignes()
+    expect(ligne).toHaveTextContent(PAGES_A_VENIR.mots.introuvable)
+    expect(ligne).not.toHaveTextContent(PAGES_1890.mots.introuvable)
+  })
+
   // Une bobine n'a pas de page : sa fiche est celle de son programme. Mutation : le lien vers le film
   // de la bobine (`vue.tmdbId`) au lieu de son programme.
   it('ouvre la fiche du film trouvé', async () => {
