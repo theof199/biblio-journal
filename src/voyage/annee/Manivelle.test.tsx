@@ -9,7 +9,7 @@ import { PAGES_1890 } from '../../mondes/1890/pages'
 import { creerRegistre } from '../../mondes'
 import { monterVoyage } from '../../test/pageVoyage'
 import { json } from '../../test/serveur'
-import { fichePrete, voyage1890 } from '../../test/voyage'
+import { ficheEnAttente, fichePrete, ficheVerrouillee, voyage1890 } from '../../test/voyage'
 import Manivelle, { DUREE_DU_FAIT, TENUE } from './Manivelle'
 import styles from './Manivelle.module.css'
 
@@ -99,6 +99,26 @@ describe('la manivelle', () => {
     expect(await screen.findByText(M.fait)).toBeInTheDocument()
     expect(screen.getByText(M.fait).closest('[role="status"]')).not.toBeNull()
     expect([...apres(n)].sort()).toEqual(RELECTURE)
+  })
+
+  // Autour de toute fiche, tirée de son corps. Mutations : la manivelle autour du seul bandeau ;
+  // autour de la seule fiche prête ; le journal relu (ici, la page le lit : il repartirait).
+  it.each([
+    { cas: 'fermée', fiche: ficheVerrouillee(1898) },
+    { cas: 'en attente', fiche: ficheEnAttente(1898) },
+  ])('se tire aussi sur une année $cas, de n’importe où dans la fiche', async ({ fiche }) => {
+    const relecture = ['GET /api/me/voyage', 'GET /api/me/voyage/annees/1898']
+    const { requetes } = monterVoyage('/voyage/1898', {
+      ...ROUTES,
+      'GET /api/me/voyage/annees/1898': () => json(fiche),
+      'GET /api/me/journal?limit=100': () => json({ items: [], next_cursor: null }),
+    })
+    const titre = await screen.findByRole('heading', { level: 1, name: '1898' })
+    await waitFor(() => expect(requetes).toContain('GET /api/me/journal?limit=100'))
+    const n = requetes.length
+    tirer(titre, 10, 200)
+    expect(await screen.findByText(M.fait)).toBeInTheDocument()
+    expect([...requetes.slice(n)].sort()).toEqual(relecture)
   })
 
   // Mutation : `aLaLachee` contourné (tout lâcher recharge).
