@@ -1,6 +1,6 @@
-/* Le billet de séance (maquette 1890 : `initNotation`, écran VI, styles 338 à 382, sans le marteau,
-   l'encre « Vu », le billet qui sort ni le numéro : décision D2). Couleurs et polices : les jetons du
-   monde, posés sur la racine par la page ; le corail ne marque que « Composter », le geste du joueur. */
+/* Le billet de séance (maquette 1890 : `initNotation`, écran VI, styles 338 à 391 ; le tampon et le
+   numéroteur ont leurs feuilles, `voyage/billet/`). Couleurs et polices : les jetons du monde, posés
+   sur la racine par la page ; le corail ne marque que « Tamponner », le geste du joueur. */
 .page {
   position: relative;
   min-height: 100%;
@@ -84,10 +84,37 @@
   color: var(--m-doux);
 }
 
+/* Le support du billet : le tampon et le talon s'y posent, hors du masque du billet qui les rognerait.
+   Ni étage ni opacité : l'encre se mêle au carton. */
+.support {
+  position: relative;
+  margin-top: 18px;
+}
+
+/* La frappe secoue le billet (maquette 1890 : `.ticket-notation.choc`). Le choc dure plus que la
+   pause : la règle vaut aussi pendant la remontée, sans quoi il s'arrêterait net. */
+.support:is([data-etape='pose'], [data-etape='remonte']) .billet {
+  animation: choc calc(350ms * var(--tempo));
+}
+
+@keyframes choc {
+  0% {
+    transform: none;
+  }
+  30% {
+    transform: translateY(5px) scale(0.99);
+  }
+  60% {
+    transform: translate(-2px, -1px);
+  }
+  100% {
+    transform: none;
+  }
+}
+
 /* Le billet : le carton grainé, ses deux demi-lunes à hauteur du pointillé. */
 .billet {
   position: relative;
-  margin-top: 18px;
   padding: 18px 16px 20px;
   border-radius: 4px;
   background-color: var(--m-papier2);
@@ -112,8 +139,8 @@
   border-top: 2px dashed color-mix(in srgb, var(--m-encre2) 40%, transparent);
 }
 
-/* La tête garde la hauteur qu'y prenait le numéro de la maquette (décision D2 : sans numéro), pour
-   que les demi-lunes et le pointillé (à 104 px) passent entre elle et le dateur. */
+/* La tête, numéro compris, tient au-dessus des demi-lunes et du pointillé (à 104 px), qui passent
+   entre elle et le dateur. */
 .entete {
   min-height: 68px;
   text-align: center;
@@ -213,7 +240,7 @@
   letter-spacing: 0;
 }
 
-/* « Composter le billet » : le billet corail du guichet (le geste du joueur), jamais teinté. */
+/* « Tamponner « Vu » » : le billet corail du guichet (le geste du joueur), jamais teinté. */
 .valider {
   display: grid;
   grid-template-columns: 1fr 64px;
@@ -258,6 +285,71 @@
   place-items: center;
   border-left: 2px dashed color-mix(in srgb, var(--m-encre) 45%, transparent);
   font: 400 14px var(--m-f-affiche);
+}
+
+/* Le talon du billet tamponné, qui part dans la boîte (maquette 1890 : `.billet-sort` et son
+   habillage, ligne 2705). La maquette le fait partir du bas du billet ; la frappe a amené le haut du
+   billet à l'écran, et le bas en est loin à 390 px : il se détache sous le numéro, et tombe sur le
+   dateur et la note. */
+.talonQuiPart {
+  position: absolute;
+  z-index: 1;
+  top: 112px;
+  right: 14px;
+  left: 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 3px;
+  background: var(--m-papier2);
+  color: var(--m-encre);
+  font: 13px var(--m-f-texte);
+  box-shadow: 0 10px 24px var(--m-ombre);
+  pointer-events: none;
+  animation: part calc(700ms * var(--tempo)) cubic-bezier(0.5, 0, 0.8, 0.4) both;
+}
+
+.talonQuiPart b {
+  display: block;
+  font: 700 12px var(--m-f-corps);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-rouge);
+}
+
+.vuDuTalon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--m-rouge);
+  border-radius: 50%;
+  color: var(--m-rouge);
+  font: 400 16px var(--m-f-affiche);
+  transform: rotate(-14deg);
+}
+
+@keyframes part {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(30px) rotate(-3deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(420px) rotate(8deg) scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .support[data-etape] .billet,
+  .talonQuiPart {
+    animation: none;
+  }
 }
 
 .erreur {

@@ -88,6 +88,15 @@ export const regler = (rattrapeLaSource: boolean) =>
 /** `{ configure: false }` n'a pas de `statut` : la seule façon sûre de reconnaître une fiche prête. */
 export const estPrete = (f: FicheAnnee | undefined): f is FichePrete => !!f && 'statut' in f && f.statut === 'prete'
 
+/**
+ * Une année qui n'a pas (encore) de salles à servir : verrouillée (après mon année en cours, ticket
+ * gagné en main ou non, même quand son ouverture existe déjà chez le compte IA), en attente du Voyage
+ * suivi, ou en préparation chez le chroniqueur. La fiche d'un film ou son billet, ouverts par une
+ * adresse tapée, renvoient alors à la page de l'année, qui dit pourquoi.
+ */
+export const anneeSansSalles = (f: FicheAnnee | undefined): boolean =>
+  !!f && 'statut' in f && (f.statut === 'verrouillee' || f.statut === 'en_attente' || f.statut === 'en_preparation')
+
 export const poserSurLePodium = (annee: number, place: number, corps: CorpsPodium) =>
   api.put<ReponsePodium>(`/me/voyage/annees/${annee}/podium/${place}`, corps)
 

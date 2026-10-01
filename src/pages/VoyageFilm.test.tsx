@@ -15,7 +15,7 @@ import { contexteFactice } from '../test/contexteFactice'
 import { visionnage } from '../test/journal'
 import { monterVoyage } from '../test/pageVoyage'
 import { json, servir } from '../test/serveur'
-import { fichePrete, filmDeSalle, salle } from '../test/voyage'
+import { ficheEnAttente, fichePrete, ficheVerrouillee, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import VoyageFilm from './VoyageFilm'
 
 const bobine = (tmdb_id: number, title: string, etat: Bobine['etat']): Bobine => ({ tmdb_id, title, duree_min: 1, cover_url: null, plex_url: null, etat })
@@ -88,6 +88,7 @@ const PAGE = exemple<JournalPage>('/me/journal', 'get', 200)
 const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)
 const CARTON_PRET = exemple<{ titre: string; texte: string }>('/reference/chroniques/films/{tmdbId}', 'get', 200)
 const CARTON_202 = exemple('/reference/chroniques/films/{tmdbId}', 'get', 202)
+const EN_PREPARATION = exemple('/me/voyage/annees/{annee}', 'get', 202)
 
 const ROUTES = {
   [ANNEE]: () => json(FICHE),
@@ -181,6 +182,57 @@ describe('la fiche d’un film du Voyage', () => {
     expect(screen.getByRole('link', { name: 'L’année 1897' })).toHaveAttribute('href', '/voyage/1897')
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(requetes.filter((r) => r.includes('/annees/'))).toEqual([ANNEE])
+  })
+
+  // Une adresse tapée vers une année après la mienne (un ticket gagné pas encore utilisé) : la page de
+  // l'année fermée, jamais « pas dans les salles », juste mais trompeur. Le film absent d'une année
+  // ouverte garde son message : le test précédent. Mutation : le renvoi retiré (le message revient,
+  // l'année ne s'affiche pas).
+  it('une année fermée renvoie à sa page, qui dit pourquoi, au lieu de « pas dans les salles »', async () => {
+    const voyage = voyage1890(1897, [
+      { annee: 1897, statut: 'en_cours', visitee: true, recompense: null },
+      { annee: 1898, statut: 'verrouillee', visitee: false, recompense: null },
+    ])
+    monterVoyage('/voyage/1898/films/f-kane', {
+      'GET /api/me/voyage': () => json(voyage),
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)),
+      'GET /api/me/journal?limit=100&sortie_min=1898&sortie_max=1898': () => json({ ...PAGE, items: [], next_cursor: null }),
+    })
+    expect(await screen.findByText('Cette année s’ouvre avec le ticket de 1897.')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'L’année 1898' })).toBeInTheDocument()
+    expect(screen.queryByText(/pas dans les salles/)).toBeNull()
+  })
+
+  // Le même renvoi pour une année en attente du Voyage suivi : sa page dit qui est en retard. Mutation :
+  // `en_attente` retiré d'`anneeSansSalles`.
+  it('une année en attente renvoie à sa page, qui dit qui est en retard, au lieu de « pas dans les salles »', async () => {
+    const voyage = voyage1890(1897, [{ annee: 1897, statut: 'en_cours', visitee: true, recompense: null }], {
+      ia: false,
+      source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: 1896 },
+    })
+    monterVoyage('/voyage/1897/films/f-kane', {
+      'GET /api/me/voyage': () => json(voyage),
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      [ANNEE]: () => json(ficheEnAttente(1897)),
+      'GET /api/me/journal?limit=100&sortie_min=1897&sortie_max=1897': () => json({ ...PAGE, items: [], next_cursor: null }),
+    })
+    expect(await screen.findByText(/theo n’a pas encore ouvert 1897/)).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
+    expect(screen.queryByText(/pas dans les salles/)).toBeNull()
+  })
+
+  // Et pour une année que le chroniqueur écrit encore : sa page montre l'estrade et relit la fiche
+  // jusqu'à l'ouverture. Mutation : `en_preparation` retiré d'`anneeSansSalles`.
+  it('une année en préparation renvoie à sa page, où le chroniqueur écrit, au lieu de « pas dans les salles »', async () => {
+    monterVoyage('/voyage/1897/films/f-kane', {
+      'GET /api/me/voyage': () => json(voyage1890(1897, [{ annee: 1897, statut: 'en_cours', visitee: false, recompense: null }])),
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      [ANNEE]: () => json(EN_PREPARATION, 202),
+    })
+    expect(await screen.findByRole('status', { name: 'Le chroniqueur écrit…' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
+    expect(screen.queryByText(/pas dans les salles/)).toBeNull()
   })
 
   // Le jumeau : le film trouvé est celui de l'adresse, pas le premier de la salle.
@@ -511,6 +563,50 @@ describe('la fiche d’un film du Voyage', () => {
     await screen.findByRole('heading', { level: 1, name: FAUCON.title })
     fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
     expect(await screen.findByRole('heading', { level: 1, name: '1897' })).toBeInTheDocument()
+  })
+
+  // Décision du propriétaire du 1er octobre 2026 (2b-3) : un programme porte le `tmdb_id` de sa
+  // première bobine (l'API), ici déjà vue ; vu en partie, ses gestes visent la première bobine qui
+  // reste à voir (512), jamais la première (511). « Corriger » ne s'offre pas tant qu'il en reste une.
+  // Mutation : `tmdbVise` rendu au seul `film.tmdb_id` (les gestes repartent vers 511).
+  describe('sur un programme vu en partie, les gestes visent la bobine qui reste à voir', () => {
+    const programme = (id: string, etat: Bobine['etat']) =>
+      filmDeSalle({
+        id,
+        tmdb_id: 511,
+        title: 'Programme Lumière n°2',
+        etat,
+        note: null,
+        plex_url: null,
+        programme: { duree_min: 3, bobines: [bobine(511, 'La Sortie de l’usine', 'vu'), bobine(512, 'Le Repas de bébé', etat), bobine(513, 'La Pêche aux poissons rouges', etat)] },
+      })
+    const A_DEMANDER = programme('p-demander', 'a_demander')
+    const PERDUE = programme('p-perdue', 'introuvable')
+    const routes = {
+      ...ROUTES,
+      [ANNEE]: () => json({ ...FICHE, salles: [salle({ id: 's-ess', nom: 'Les essentiels', films: [...FILMS, A_DEMANDER, PERDUE] })] }),
+      [REALISATEURS(511)]: () => json({ realisateurs: [] }),
+    }
+
+    it.each([
+      ['Demander sur Sir', A_DEMANDER, 'POST /api/me/voyage/demander/512', () => json({ demande: true }, 201)],
+      ['Introuvable', A_DEMANDER, 'PUT /api/me/introuvables/512', vide],
+      ['Le remettre à voir', PERDUE, 'DELETE /api/me/introuvables/512', vide],
+    ] as const)('« %s » vise la bobine 512', async (nom, film, requete, reponse) => {
+      const { requetes } = monterVoyage(page(film), { ...routes, [requete]: reponse })
+      fireEvent.click(await screen.findByRole('button', { name: nom }))
+      await waitFor(() => expect(requetes).toContain(requete))
+      expect(requetes.filter((r) => r.includes('/511'))).toEqual([REALISATEURS(511)])
+      expect(screen.queryByRole('link', { name: /Corriger/ })).toBeNull()
+    })
+
+    it('« Le film » lit le carton de la bobine 512', async () => {
+      const { requetes } = monterVoyage(page(A_DEMANDER), { ...routes, [CARTON(512)]: () => json(CARTON_PRET) })
+      fireEvent.click(await screen.findByRole('button', { name: /Le film/ }))
+      await screen.findByRole('dialog', { name: `Le film ${CARTON_PRET.titre}` })
+      expect(requetes).toContain(CARTON(512))
+      expect(requetes).not.toContain(CARTON(511))
+    })
   })
 
   describe('le carton du chroniqueur', () => {

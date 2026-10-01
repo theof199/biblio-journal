@@ -390,6 +390,18 @@ describe('le décor porté, tel que la maquette le montre', () => {
     expect(Math.max(...traits)).toBeGreaterThan(W)
   })
 
+  // Mutation : redessiner l'année sous un `court` qui est déjà l'année (« 1896 / 1896 »).
+  it('ne dit l’année qu’une fois sur une affichette connue à l’année seulement', () => {
+    const monde = creerMonde1890()
+    const { vue, appels } = vueFactice({ cases: cases(['encours', 'encours', 'encours', 'encours', 'encours']) })
+    monde.dessinerSol(vue, { x: 195, y: 820 })
+    const lues = textes(appels)
+    for (const an of new Set(DATES.map((d) => d.an))) {
+      const attendu = DATES.filter((d) => d.an === an).length
+      expect(lues.filter((t) => t === String(an)), String(an)).toHaveLength(attendu)
+    }
+  })
+
   // Mutations : une date hors de la section (`y`) ; une date rangée sous une autre année que la sienne.
   it('range chaque date vraie dans la section et sous son année', () => {
     for (const d of DATES) {

@@ -23,3 +23,49 @@ export function ecrireAnneeVue(membre: string, annee: number): void {
     // Sans stockage, la prochaine ouverture ne rejouera simplement pas la marche.
   }
 }
+
+/**
+ * Le réglage du son (plan 2d), par membre : vrai quand le membre l'a laissé allumé. Il ne rallume
+ * rien de lui-même (seul le bouton « Son » crée le son) ; il dit seulement au bouton de proposer
+ * de le reprendre. Illisible : coupé.
+ */
+const cleDuSon = (membre: string) => `journal.carte.son.${membre}`
+
+export function lireSon(membre: string): boolean {
+  try {
+    return localStorage.getItem(cleDuSon(membre)) === 'allume'
+  } catch {
+    return false
+  }
+}
+
+export function ecrireSon(membre: string, allume: boolean): void {
+  try {
+    localStorage.setItem(cleDuSon(membre), allume ? 'allume' : 'coupe')
+  } catch {
+    // Sans stockage, le son se coupe simplement au prochain chargement, comme par défaut.
+  }
+}
+
+/**
+ * Les bobines perdues trouvées sur cet appareil (plan 2d), par membre, par leur clé
+ * (`BobinePerdue.cle`). Illisible ou abîmé : aucune, et elles se ramassent de nouveau.
+ */
+const cleDesBobines = (membre: string) => `journal.carte.bobines.${membre}`
+
+export function lireBobines(membre: string): string[] {
+  try {
+    const brut: unknown = JSON.parse(localStorage.getItem(cleDesBobines(membre)) ?? '[]')
+    return Array.isArray(brut) ? brut.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export function ecrireBobines(membre: string, cles: readonly string[]): void {
+  try {
+    localStorage.setItem(cleDesBobines(membre), JSON.stringify(cles))
+  } catch {
+    // Sans stockage, la trouvaille vaut pour cette visite seulement.
+  }
+}

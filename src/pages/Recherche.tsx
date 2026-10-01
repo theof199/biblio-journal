@@ -15,6 +15,7 @@ import {
 } from '../formulaire/candidat'
 import { ajouterRechercheRecente, ecrireRecherchesRecentes, lireRecherchesRecentes } from '../recherche/recentes'
 import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
+import { apercuLitLaFiche } from '../voyage/regles'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
 import { sousTitre } from '../ui/format'
@@ -84,10 +85,14 @@ export default function Recherche() {
   const plex = useQuery({ queryKey: cles.plex, queryFn: ({ signal }) => lirePlex(signal) })
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
   const anneeEnCours = voyage.data?.annee_en_cours
+  // La fiche de l'année en cours, seulement déjà écrite et ouverte (`apercuLitLaFiche`, le jumeau de
+  // l'aperçu de la carte et du guichet) : sur une année non visitée, la lire enfilerait son ouverture
+  // chez le chroniqueur, et ouvrir la recherche ne doit jamais coûter un appel IA.
+  const caseEnCours = voyage.data?.annees.find((a) => a.annee === anneeEnCours)
   const annee = useQuery({
     queryKey: anneeEnCours ? cles.annee(anneeEnCours) : ['voyage', 'annee', 'aucune'],
     queryFn: ({ signal }) => lireAnnee(anneeEnCours!, signal),
-    enabled: anneeEnCours != null,
+    enabled: !!caseEnCours && apercuLitLaFiche(caseEnCours),
   })
 
   const ensuite = plex.data?.films[0] ? [candidatDepuisPlex(plex.data.films[0])] : []

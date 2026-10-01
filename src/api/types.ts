@@ -784,7 +784,7 @@ export interface paths {
      *
      * Les blocs `metadata` des résultats sont partiels, ce que dit `detail_level: "search"` — un champ nul ne prouve pas que la source l’ignore, seulement qu’on ne le lui a pas encore demandé. L’ajout (`POST /media`) interroge les fiches détaillées et remplit le reste.
      *
-     * `in_library` s’appuie sur `(source, external_id)`. Pour les livres, la déduplication par ISBN ne joue plus au niveau recherche : une œuvre n’a pas d’ISBN, seule une de ses éditions en a un, et il est choisi à l’ajout.
+     * `in_library` s’appuie sur `(source, external_id, type)` : chez TMDB, un film et une série de même identifiant sont deux œuvres, et l’un en bibliothèque n’y met pas l’autre. Pour les livres, la déduplication par ISBN ne joue plus au niveau recherche : une œuvre n’a pas d’ISBN, seule une de ses éditions en a un, et il est choisi à l’ajout.
      *
      * **Pagination** — `limit` (défaut 40, maximum 100) et `cursor`, comme `GET /media`. Le curseur est opaque : il retient la position exacte chez la source, y compris au milieu d’une de ses pages.
      */
@@ -5151,7 +5151,7 @@ export interface paths {
      *
      * `court` est vrai pour un film de 1 à 40 minutes chez TMDB (`discover/movie` filtré par réalisateur, mémorisé 30 jours par personne) — toujours faux sur une série, et faux aussi pour un film dont TMDB ignore la durée. Une panne de `discover` ne fait pas tomber la page : elle rend alors `court: false` partout, avec un `warn` dans le log.
      *
-     * Chaque film ou série porte aussi `sur_le_plex`, `demande` et `plex_url` (lus comme `GET /me/voyage`, sur le Plex du propriétaire), `annee_ouverte` (`year` non nul et inférieur ou égal à mon année en cours dans le Voyage, 1895 par défaut), et `voyage` — la ligne `voyage_films` la plus ancienne où il figure dans les salles du compte IA, bornées à mes années lisibles pour un membre hors IA (les miennes, sans borne, pour le compte IA) ; `null` s’il n’y figure pas.
+     * Chaque film ou série porte aussi `sur_le_plex`, `demande` et `plex_url` (lus comme `GET /me/voyage`, sur le Plex du propriétaire), `annee_ouverte` (`year` non nul et inférieur ou égal à mon année en cours dans le Voyage, 1895 par défaut), et `voyage` — la ligne `voyage_films` la plus ancienne où il figure dans les salles du compte IA, bornées à mon année en cours, compte IA compris — jamais l’année qu’un ticket gagné mais pas encore utilisé ouvrira ; `null` s’il n’y figure pas.
      *
      * `404` si `tmdbId` est une personne que TMDB ne connaît pas. `503` si `TMDB_API_KEY` n’est pas renseignée sur ce serveur.
      */
@@ -8880,9 +8880,9 @@ export interface paths {
   "/me/voyage/annees/{annee}": {
     /**
      * Une année du Voyage — salles et films
-     * @description `prete` (`200`) si l’ouverture existe déjà pour ce membre : ses salles, dans l’ordre, avec chaque film (état et note calculés à la lecture). `en_preparation` (`202`) à la première visite d’une année ouverte ou en cours — la demande enfile l’ouverture, à redemander dans quelques secondes ; jamais pour un membre hors IA, qui n’ouvre jamais lui-même une année. `verrouillee` (`200`) après mon année en cours : rien ne s’enfile, même en visitant. `{ configure: false }` (`200`) si `ANTHROPIC_API_KEY` manque et que l’année n’a pas encore d’ouverture, pour le compte IA seulement.
+     * @description `prete` (`200`) si l’ouverture existe déjà pour ce membre : ses salles, dans l’ordre, avec chaque film (état et note calculés à la lecture). `en_preparation` (`202`) à la première visite d’une année ouverte ou en cours — la demande enfile l’ouverture, à redemander dans quelques secondes ; jamais pour un membre hors IA, qui n’ouvre jamais lui-même une année. `verrouillee` (`200`) après mon année en cours : rien ne s’enfile, même en visitant, et rien ne s’y sert — ticket gagné en main ou non, et même si son ouverture existe déjà (celle du compte IA s’écrit dès l’octroi du ticket). `{ configure: false }` (`200`) si `ANTHROPIC_API_KEY` manque et que l’année n’a pas encore d’ouverture, pour le compte IA seulement.
      *
-     * Pour un membre hors IA, une quatrième forme existe : `en_attente` (`200`), pour une année dans mes années lisibles (celles déjà ouvertes par le compte IA, plus la sienne en cours — voir `GET /me/voyage`) que le compte IA n’a pas encore ouverte ; rien ne s’enfile, `prete` dès qu’il l’ouvre. Une année hors de mes années lisibles répond `verrouillee`, qu’elle soit ouverte chez le compte IA ou non.
+     * Pour un membre hors IA, une quatrième forme existe : `en_attente` (`200`), pour une année jusqu’à mon année en cours que le compte IA n’a pas encore ouverte ; rien ne s’enfile, `prete` dès qu’il l’ouvre. Une année après la mienne répond `verrouillee`, qu’elle soit ouverte chez le compte IA ou non.
      *
      * `etat` d’un film vaut `vu`, `sur_le_plex`, `demande`, `a_demander` ou `introuvable`. Pour un programme, `etat` ne vaut `vu` que quand **toutes** ses bobines le sont — chaque bobine porte le sien.
      *
@@ -8901,6 +8901,7 @@ export interface paths {
     get: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
         };
       };
@@ -9162,6 +9163,7 @@ export interface paths {
     put: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
           place: number;
         };
@@ -9225,6 +9227,7 @@ export interface paths {
     delete: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
           place: number;
         };
@@ -9254,7 +9257,7 @@ export interface paths {
      * « En voir plus » dans une salle
      * @description Enfile une fournée (`chroniques:file`) : trois à cinq films de plus dans cette salle, écrits par le chroniqueur — `202 { statut: "en_preparation" }`, qu’une fournée soit tout juste enfilée ou déjà en cours (le verrou Redis rend la même réponse dans les deux cas, sans réenfiler).
      *
-     * `200 { statut: "epuisee" }` sans rien enfiler si la salle est déjà connue comme épuisée — la dernière fournée n’a rien ajouté, ou le chroniqueur l’a dit. `404` si cette salle n’est pas la mienne. `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur : rien ne s’enfile alors.
+     * `200 { statut: "epuisee" }` sans rien enfiler si la salle est déjà connue comme épuisée — la dernière fournée n’a rien ajouté, ou le chroniqueur l’a dit. `404` si cette salle n’est pas la mienne, ou si son année vient après mon année en cours (ticket gagné en main ou non, comme `GET /me/voyage/annees/{annee}`). `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur : rien ne s’enfile alors.
      */
     post: {
       parameters: {
@@ -9319,13 +9322,14 @@ export interface paths {
      * Le contexte d’une salle
      * @description Appel **synchrone** au chroniqueur (modèle `CHRONIQUES_MODEL`), sur le modèle exact de la route des pistes. Si la colonne est déjà remplie, la rend telle quelle, sans appel. Sinon, génère un paragraphe de 5 à 10 phrases — ce que la salle raconte de l’année, ses films et ce qui les relie, le mouvement ou la tendance, sans reprendre l’ouverture de l’année —, l’écrit et le rend.
      *
-     * `404` si cette salle n’existe pas, n’est pas la mienne, ou n’est pas celle de l’année demandée. Pour un membre hors IA : la salle du compte IA, dans mes années lisibles ; `403 FORBIDDEN` quand le contexte n’a pas déjà été écrit — jamais généré pour moi ; déjà écrit, je le lis comme toute autre donnée du compte IA, `200`. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur et que le contexte n’a pas déjà été écrit. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
+     * `404` si cette salle n’existe pas, n’est pas la mienne, n’est pas celle de l’année demandée, ou si cette année vient après mon année en cours (ticket gagné en main ou non, comme `GET /me/voyage/annees/{annee}`). Pour un membre hors IA : la salle du compte IA, jusqu’à mon année en cours ; `403 FORBIDDEN` quand le contexte n’a pas déjà été écrit — jamais généré pour moi ; déjà écrit, je le lis comme toute autre donnée du compte IA, `200`. `503 SERVICE_UNCONFIGURED` si `ANTHROPIC_API_KEY` n’est pas posée sur ce serveur et que le contexte n’a pas déjà été écrit. `503 UPSTREAM_UNAVAILABLE` si le chroniqueur ne répond pas ou rend une sortie inexploitable — réessaie plus tard.
      *
      * Le coût de l’appel se journalise dans `appels_ia` (type `contexte_salle`), comme les autres appels au chroniqueur.
      */
     post: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
           salleId: string;
         };
@@ -9376,7 +9380,7 @@ export interface paths {
   "/me/voyage/annees/{annee}/salles": {
     /**
      * « Ouvrir une nouvelle salle » sur une phrase
-     * @description Corps `{ demande, piste? }` : `demande` est une phrase de 1 à 200 caractères (« la comédie italienne cette année-là ») ; `piste` reprend, si j’en ai suivi une, le `nom` d’une piste de l’année (`GET /me/voyage/annees/{annee}`) — que `demande` la reprenne mot pour mot ou non. Année verrouillée ou sans ouverture → `404`. Une demande `en_cours` existe déjà pour cette année → `409 CONFLICT`. `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA.
+     * @description Corps `{ demande, piste? }` : `demande` est une phrase de 1 à 200 caractères (« la comédie italienne cette année-là ») ; `piste` reprend, si j’en ai suivi une, le `nom` d’une piste de l’année (`GET /me/voyage/annees/{annee}`) — que `demande` la reprenne mot pour mot ou non. Année verrouillée (après mon année en cours, ticket gagné en main ou non) ou sans ouverture → `404`. Une demande `en_cours` existe déjà pour cette année → `409 CONFLICT`. `403 FORBIDDEN` pour un membre hors IA : ce geste n’appartient qu’au compte IA.
      *
      * `piste` fournie et connue : retirée de la liste des pistes de l’année tout de suite, avant même que le chroniqueur ait répondu — une piste inconnue est ignorée, sans erreur.
      *
@@ -9387,6 +9391,7 @@ export interface paths {
     post: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
         };
       };
@@ -9460,6 +9465,7 @@ export interface paths {
     post: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
         };
       };
@@ -9560,6 +9566,7 @@ export interface paths {
     post: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
         };
       };
@@ -9988,6 +9995,7 @@ export interface paths {
     post: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
         };
       };
@@ -10027,6 +10035,7 @@ export interface paths {
     post: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
         };
       };
@@ -10130,6 +10139,7 @@ export interface paths {
     post: {
       parameters: {
         path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
           annee: number;
         };
       };

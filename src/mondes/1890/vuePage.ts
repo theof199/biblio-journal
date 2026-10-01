@@ -3,7 +3,8 @@ import type { VueMonde } from '../types'
 /**
  * Les dessins de la carte (`moyen.ts`, `proches.ts`) prennent une `VueMonde` : une page du Voyage
  * leur en prête une, sans carte derrière. Rien n'y est touchable ni n'y fume ; `age` ne connaît que
- * le toucher de la toile (le rideau qui se rouvre, le manège qui s'emballe).
+ * le toucher de la toile (le rideau qui se rouvre, le manège qui s'emballe). Aucune bobine perdue
+ * ne s'y cache : elles ne se trouvent que sur la carte (plan 2d).
  */
 /** Les images des pages (la planche du train) : une fois chargées, gardées ; la vue se refait à chaque image. */
 const IMAGES = new Map<string, HTMLImageElement>()
@@ -45,5 +46,7 @@ export function vuePage(o: { ctx: CanvasRenderingContext2D; W: number; H: number
     adieu: -1,
     ouverte: { annee: o.annee, t0: -9 },
     brume: -1,
+    bobine: rien,
+    bobineTrouvee: () => true,
   }
 }

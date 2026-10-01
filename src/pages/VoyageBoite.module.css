@@ -1,0 +1,91 @@
+/* La boîte à billets d'une décennie (maquette 1890 : `initBoite`, écran VII ; `.boite-tete`,
+   `.stats-boite`, lignes 394 à 397 et 415). Les couleurs et les polices viennent des jetons du monde,
+   posés sur la racine par la page. */
+.page {
+  position: relative;
+  min-height: 100%;
+  padding-bottom: 30px;
+  background: var(--m-tel);
+  color: var(--m-papier);
+  font: 15px/1.55 var(--m-f-corps);
+}
+
+/* Le retour de la page d'une décennie, son jumeau. */
+.retour {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding-bottom: 3px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 60%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-fond) 78%, transparent);
+  color: var(--m-or2);
+  font: 400 24px/1 var(--m-f-affiche);
+  text-decoration: none;
+}
+
+.retour:focus-visible,
+.etat button:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.tete {
+  padding: 58px 16px 0;
+  text-align: center;
+}
+
+.sur {
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.2em;
+  color: var(--m-or);
+}
+
+.titre {
+  margin: 2px 0 0;
+  font: 400 32px/1 var(--m-f-affiche);
+}
+
+.compte {
+  margin: 6px 0 0;
+  font: italic 15.5px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.pied {
+  margin: 16px 14px 0;
+  font: italic 14.5px/1.45 var(--m-f-texte);
+  color: var(--m-doux);
+  text-align: center;
+}
+
+/* Le chargement, les pannes. */
+.etat {
+  margin: 30px 16px;
+  text-align: center;
+  font: italic 16px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.etat p {
+  margin: 0 0 12px;
+}
+
+.etat button {
+  display: inline-grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+  font: 400 15px var(--m-f-affiche);
+  box-shadow: 0 3px 0 var(--m-bois);
+  cursor: pointer;
+}

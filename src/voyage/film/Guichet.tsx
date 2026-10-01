@@ -9,7 +9,7 @@ import { poserSurLePodium, type FilmDeSalle, type Podium } from '../../api/voyag
 import type { Monde } from '../../mondes/types'
 import { useCalque } from '../calque'
 import Feuillet from '../Feuillet'
-import { boutonsDuFilm } from '../film'
+import { bobineAVoir, boutonsDuFilm, tmdbVise } from '../film'
 import { choixDesMarches, corpsPodium, type Candidat } from '../podium'
 import styles from './Guichet.module.css'
 
@@ -51,7 +51,8 @@ interface Props {
 export default function Guichet({ monde, annee, film, podium, entree, onFilm }: Props) {
   const client = useQueryClient()
   const feuillet = useCalque('podium')
-  const tmdb = film.tmdb_id
+  // Un programme vu en partie : les gestes visent la bobine qui reste à voir (`tmdbVise`).
+  const tmdb = tmdbVise(film)
 
   const ecrire = useMutation({
     mutationFn: async (g: Geste): Promise<void> => {
@@ -78,7 +79,7 @@ export default function Guichet({ monde, annee, film, podium, entree, onFilm }: 
   // Un programme se note bobine par bobine, et porte l'identifiant TMDB de sa première bobine
   // (l'API) : sans `?bobine=`, le billet noterait la première, fût-elle déjà vue. « Je l'ai vu »
   // ouvre donc celui de la première bobine qui reste à voir (un programme non vu en a toujours une).
-  const aVoir = film.programme?.bobines.find((b) => b.etat !== 'vu')
+  const aVoir = bobineAVoir(film)
   const billetVu = aVoir ? `${billet}?bobine=${aVoir.tmdb_id}` : billet
 
   return (

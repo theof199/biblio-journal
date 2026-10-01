@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { cles } from '../api/cles'
 import { connexionDev } from '../api/session'
+import { ouvrirLaSession } from '../session/SessionContext'
 import styles from './ConnexionDev.module.css'
 
 /**
@@ -16,9 +16,8 @@ export default function ConnexionDev() {
   const client = useQueryClient()
   const mutation = useMutation({
     mutationFn: (pseudo: string) => connexionDev(pseudo),
-    onSuccess: (session) => {
-      client.setQueryData(cles.session, session)
-    },
+    // Le jumeau de la connexion : une session neuve part d'un cache vide.
+    onSuccess: (session) => ouvrirLaSession(client, session),
   })
 
   const handleSubmit = (event: FormEvent) => {

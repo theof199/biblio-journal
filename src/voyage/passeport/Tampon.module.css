@@ -1,0 +1,97 @@
+/* Le tampon du passeport (maquette 1890 : `.tampon` et `@keyframes frappe`, lignes 222 à 224 ; la
+   place : `.livret .place`, ligne 289). L'encre est le rouge du monde, jamais le corail : le tampon
+   n'est pas un geste. Tout se mesure en em : le conteneur en fixe la taille par sa police
+   (la carte : 12,25 px, un tampon de 196 px), jamais en dessous : dans les 56 px de la place de la
+   maquette, le jour tomberait à 3 px. */
+.tampon,
+.place {
+  font-size: max(1em, 12.25px);
+  box-sizing: border-box;
+  width: 16em;
+  height: 16em;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  border-radius: 50%;
+  text-align: center;
+  transform: rotate(-14deg);
+}
+
+/* Posé : l'encre sur un rond de papier, pour qu'il se lise sur la carte comme sur le velours du livret. */
+.tampon {
+  gap: 0.15em;
+  padding: 1.6em;
+  border: 0.32em solid var(--m-rouge);
+  background: var(--m-papier);
+  box-shadow:
+    inset 0 0 0 0.3em var(--m-papier),
+    inset 0 0 0 0.46em var(--m-rouge),
+    0 0.8em 1.8em var(--m-ombre);
+  color: var(--m-rouge);
+}
+
+.frappe {
+  animation: frappe 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes frappe {
+  0% {
+    opacity: 0;
+    transform: rotate(-14deg) scale(2.4);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-14deg) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-14deg) scale(1);
+  }
+}
+
+.mot {
+  font: 400 0.9em var(--m-f-capitales);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.millesime {
+  margin: 0.1em 0;
+  /* La seule graisse embarquée du pochoir (décision D9). */
+  font: 700 2.1em/1 var(--m-f-pochoir);
+  letter-spacing: 0.04em;
+}
+
+.titre {
+  margin-top: 0.3em;
+  font: italic 1em/1.2 var(--m-f-texte);
+}
+
+.jour {
+  font: 0.9em var(--m-f-texte);
+}
+
+/* Sa place, en pointillés, avant la décennie bouclée. Sans fond à elle, elle écrit en encre douce
+   (5,3:1 sur le velours du livret ; `--m-pale`, 3,3:1, ne garde que les pointillés). */
+.place {
+  gap: 0.4em;
+  padding: 2em;
+  border: 0.2em dashed var(--m-pale);
+  color: var(--m-doux);
+}
+
+.titrePlace {
+  font: 400 1.1em/1.15 var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.place small {
+  font: italic 1em/1.2 var(--m-f-texte);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frappe {
+    animation: none;
+  }
+}

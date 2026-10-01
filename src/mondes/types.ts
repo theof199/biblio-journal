@@ -2,14 +2,15 @@ import type { Rgb } from '../carte/outils'
 import type { Rampe } from '../carte/rampe'
 import type { Trace } from './trace'
 import type { EtatCase } from '../voyage/regles'
+import type { EtatCheval } from '../voyage/decennie'
 import type { Recompense } from '../api/voyage'
 
 /**
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
  * son monument, son traitement d'image. Le moteur de la carte (`src/carte/`) ne connaît que
  * cette interface ; ajouter les années 1900 crée `src/mondes/1900/` et une ligne dans
- * `src/mondes/index.ts`, rien d'autre. Le papier, les cadres et les sons s'y ajouteront avec les
- * pages qui les demandent (plans 2b et 2c).
+ * `src/mondes/index.ts`, rien d'autre. Le papier et les cadres sont venus avec les pages (plans 2b
+ * et 2c) ; la musique et les bobines perdues avec le plan 2d.
  */
 export interface Palette {
   /** Le fond, en haut, au milieu et en bas du ciel (maquette : `ciel`, `fond`, et le bas de `scene`). */
@@ -133,6 +134,44 @@ export interface VueMonde {
   ouverte: { annee: number; t0: number }
   /** Le haut de la brume de l'avenir, en `y` du repère de la section ; négatif : toute la section y est. */
   brume: number
+  /**
+   * Cache la bobine perdue `i` (`Monde.bobines`) dans le repère courant, centrée en `lx`, `ly`, de
+   * rayon `r` : le moteur la dessine et inscrit sa zone. Rien, ni dessin ni zone, pour une bobine
+   * déjà trouvée sur cet appareil (plan 2d).
+   */
+  bobine: (i: number, lx: number, ly: number, r: number) => void
+  /** Vrai pour une bobine déjà trouvée (ou inconnue) : ce qui la trahit (une lueur dans la brume) se tait. */
+  bobineTrouvee: (i: number) => boolean
+}
+
+/**
+ * Une bobine perdue (plan 2d ; maquette carte v2 : `BOBINES`) : un film réellement perdu, caché
+ * dans le décor d'un monde, à ramasser d'un toucher. L'appareil la garde trouvée sous sa `cle`.
+ */
+export interface BobinePerdue {
+  /** Stable d'une version à l'autre : c'est elle que l'appareil retient, pas le rang. */
+  cle: string
+  titre: string
+  /** « F. W. Murnau, 1928 ». */
+  qui: string
+}
+
+/**
+ * La musique d'un monde (plan 2d ; maquette carte v2 : l'orgue de barbarie de 1890, `PAR_TEMPS`,
+ * `noteOrgue`, `planifier`). L'ambiance de la carte (`carte/son.ts`) la joue temps après temps,
+ * au volume de la présence du monde à l'écran ; elle seule crée le contexte audio, au geste « Son ».
+ */
+export interface MusiqueDuMonde {
+  /** La durée d'un temps, en secondes (maquette : `BATTUE`). */
+  battue: number
+  /** Le nombre de temps de l'air ; il reprend au premier ensuite. */
+  temps: number
+  /** Le volume à pleine présence (maquette : 0,5 pour l'orgue). */
+  volume: number
+  /** La coupure du passe-bas de sa sortie, en Hz (maquette : 2300 pour l'orgue). */
+  filtre: number
+  /** Joue le temps `pas` (de 0 à `temps` − 1), à l'instant `t0` du contexte, dans `sortie`. */
+  jouer: (ctx: BaseAudioContext, sortie: AudioNode, pas: number, t0: number) => void
 }
 
 export interface Monde {
@@ -179,6 +218,10 @@ export interface Monde {
   reagir: (id: string, data: number | null, v: VueMonde, ou: { x: number; y: number }) => void
   /** Les pages du Voyage de ce monde : la fiche d'une année, la fiche d'un film, le billet, la feuille (plan 2b). */
   pages: HabillagePages
+  /** La musique du monde quand le son est allumé ; nulle : le monde ne joue rien (le monde « à venir »). */
+  musique: MusiqueDuMonde | null
+  /** Les bobines perdues que cache le décor, que le monde pose par `VueMonde.bobine` ; aucune pour un monde à venir. */
+  bobines: readonly BobinePerdue[]
 }
 
 /**
@@ -214,6 +257,8 @@ export const JETONS_DE_PAGE = [
   '--m-f-texte',
   '--m-f-capitales',
   '--m-f-corps',
+  /** Les millésimes au pochoir (maquette 1890 : `--f-poch`, la palissade de l'écran IV). */
+  '--m-f-pochoir',
 ] as const
 
 export type JetonDePage = (typeof JETONS_DE_PAGE)[number]
@@ -236,7 +281,19 @@ export interface MotsDesPages {
   /** La phrase d'ambiance de l'intertitre d'une année fermée, avant le titre du passeport. */
   intertitre: string
   feuille: { tete: string; titre: string; sous: string; pied: string; imprimeur: string }
-  billet: { tete: string; titre: string; valider: string; validerSous: string }
+  /**
+   * Le billet de séance ; `tampon` est le mot que le tampon frappe (« VU »), `tamponAutour` ce qui
+   * court autour de lui avant la date (maquette 1890 : `encreVu`).
+   */
+  billet: { tete: string; titre: string; valider: string; validerSous: string; tampon: string; tamponAutour: string }
+  /** La page d'une décennie (plan 2c ; maquette 1890, écran IV). */
+  decennie: { annonce: string; passeport: string; palissade: { titre: string; sous: string }; registre: string; prochainement: string }
+  /** La boîte à billets (idée 5 ; maquette 1890, écran VII). */
+  boite: { sur: string; titre: string; etiquette: string; tous: string; vide: string; ranger: string }
+  /** Le guichet, la recherche du Voyage (maquette 1890, écran X). */
+  recherche: { champ: string; catalogue: string; affiche: string; vide: string; ouvrir: string; partout: string }
+  /** Tirer pour rafraîchir (idée 6 ; maquette 1890, écran I). */
+  manivelle: { tirer: string; relacher: string; charge: string; fait: string; bouton: string }
 }
 
 /** Ce que la page passe au monde pour le bandeau d'une fiche d'année (maquette 1890 : `dessinBandeau`). */
@@ -289,12 +346,51 @@ export interface VueEstrade {
   parle: 'non' | 'tape' | 'parle'
 }
 
+/** Le monument de la page d'une décennie (maquette 1890 : `dessinManege`, le manège à dix chevaux). */
+export interface VueMonument {
+  ctx: CanvasRenderingContext2D
+  W: number
+  H: number
+  t: number
+  vivant: boolean
+  nuit: number
+  /** Les dix années de la décennie, et l'état de leur figure (`chevaux`, `voyage/decennie.ts`). */
+  annees: readonly { annee: number; etat: EtatCheval }[]
+  /** Les années de ce monde telles que la carte les voit, et le tampon : de quoi remplir la foire, comme le bandeau. */
+  cases: readonly Pick<CaseVue, 'annee' | 'etat' | 'profondeur'>[]
+  bouclee: boolean
+  /** Le dernier toucher du monument hors d'une figure, en secondes de `t` ; -9 : jamais (le manège s'emballe). */
+  touche: number
+  /**
+   * Inscrit, pour cette image, où se tient la figure d'une année, en unités de la toile : la page y
+   * cherche le toucher achevé (`Toile.onChoisir`, jamais le premier contact, qui commence aussi un
+   * défilement), la figure la plus proche sous son rayon, et ouvre l'année. `devant` : la figure est
+   * peinte au premier plan (devant le pilier du manège) ; sous un doigt qui tombe à la fois sur une
+   * figure de devant et sur une de derrière, celle de devant l'emporte toujours (`figureTouchee`).
+   */
+  zone: (annee: number, x: number, y: number, r: number, devant: boolean) => void
+}
+
+/** Le bandeau du guichet, sur la recherche du Voyage (maquette 1890 : `dessinGuichet`). */
+export interface VueGuichet {
+  ctx: CanvasRenderingContext2D
+  W: number
+  H: number
+  t: number
+  vivant: boolean
+  nuit: number
+  /** La dernière lettre tapée dans le champ, en secondes de `t` ; -9 : jamais (la lampe se ravive, le guichetier se penche). */
+  frappe: number
+}
+
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>
   mots: MotsDesPages
-  /** Les hauteurs logiques des trois toiles (la maquette : 250, 300, 190). */
-  hauteurs: { bandeau: number; scene: number; estrade: number }
+  /** Les hauteurs logiques des toiles (la maquette : 250, 300, 190, puis 330 et 170). */
+  hauteurs: { bandeau: number; scene: number; estrade: number; monument: number; guichet: number }
   dessinerBandeau: (v: VueBandeau) => void
   dessinerScene: (v: VueScene) => void
   dessinerEstrade: (v: VueEstrade) => void
+  dessinerMonument: (v: VueMonument) => void
+  dessinerGuichet: (v: VueGuichet) => void
 }

@@ -21,8 +21,10 @@ const lues = (css: string) => [...sansCommentaires(css).matchAll(/var\(\s*(--[\w
  * Ce qu'une feuille du Voyage lit hors des jetons de son monde : le corail, commun à tous les mondes
  * et jamais teinté (`ui/voyage.css`), la zone sûre au-dessus de la barre d'onglets et les étages
  * (`ui/theme.css`). Jamais le reste de `voyage.css` : c'est la palette de la carte, pas celle du monde.
+ * Et le tempo de ce qui suit le geste « vu », que la page pose elle-même depuis `voyage/tempo.ts`
+ * (`STYLE_DU_TEMPO`) : ni couleur ni police, et défini hors de `theme.css`.
  */
-const PERMISES = (nom: string) => nom === '--corail' || nom === '--coque-bas' || nom.startsWith('--z-')
+const PERMISES = (nom: string) => nom === '--corail' || nom === '--tempo' || nom === '--coque-bas' || nom.startsWith('--z-')
 
 /** Les mots du raccourci `font` qui ne nomment pas une famille : style, variante, graisse, chasse, taille. */
 const MOTS_DU_RACCOURCI = new Set([
@@ -47,6 +49,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/annee/Embleme.module.css',
         '/src/voyage/annee/Fronton.module.css',
         '/src/voyage/annee/LigneDuBas.module.css',
+        '/src/voyage/annee/Manivelle.module.css',
         '/src/voyage/annee/Programme.module.css',
         '/src/voyage/salles/Salle.module.css',
         '/src/voyage/salles/NouvelleSalle.module.css',
@@ -59,6 +62,17 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/billet/Dateur.module.css',
         '/src/voyage/billet/Poincon.module.css',
         '/src/voyage/billet/Cartons.module.css',
+        '/src/voyage/billet/Tampon.module.css',
+        '/src/voyage/billet/Numeroteur.module.css',
+        '/src/voyage/passeport/Tampon.module.css',
+        '/src/pages/VoyageDecennie.module.css',
+        '/src/voyage/decennie/Livret.module.css',
+        '/src/voyage/decennie/Palissade.module.css',
+        '/src/voyage/decennie/Registre.module.css',
+        '/src/pages/VoyageBoite.module.css',
+        '/src/voyage/boite/Casier.module.css',
+        '/src/voyage/boite/Visionneuse.module.css',
+        '/src/pages/VoyageRecherche.module.css',
       ]),
     )
   })
@@ -67,7 +81,7 @@ describe('l’habillage des pages du Voyage', () => {
   // doit y être défini, sinon la valeur retombe en silence. Mutation : `var(--z-calqeu)` dans une feuille.
   it.each(Object.entries(FEUILLES))('%s ne lit de theme.css que ce qu’il définit', (_chemin, css) => {
     const definies = new Set([...sansCommentaires(THEME).matchAll(/(--[\w-]+)\s*:/g)].map(([, nom]) => nom!))
-    expect(lues(css).filter((nom) => PERMISES(nom) && nom !== '--corail' && !definies.has(nom))).toEqual([])
+    expect(lues(css).filter((nom) => PERMISES(nom) && nom !== '--corail' && nom !== '--tempo' && !definies.has(nom))).toEqual([])
   })
 
   // Un calque laisse visibles le bandeau « Nouvelle version » et la barre d'onglets. Mutation :
@@ -82,7 +96,7 @@ describe('l’habillage des pages du Voyage', () => {
   // Le jumeau : l'étage ne vaut que si les calques le lisent, et s'arrêtent au-dessus de la barre.
   // Mutations : `z-index: 30` en dur, ou `bottom: 0`, sur le `.calque` de la feuille ou du feuillet
   // (le calque couvrirait la barre d'onglets, ou son bas passerait dessous).
-  it.each(['/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css'])('%s pose son calque à l’étage des calques, au-dessus de la barre', (chemin) => {
+  it.each(['/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css', '/src/voyage/boite/Visionneuse.module.css'])('%s pose son calque à l’étage des calques, au-dessus de la barre', (chemin) => {
     const css = sansCommentaires(FEUILLES[chemin as keyof typeof FEUILLES] ?? '')
     const debut = css.indexOf('.calque {')
     expect(debut).toBeGreaterThanOrEqual(0)

@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { journalComplet } from '../api/journal'
+import { journalDesAnnees } from '../api/journal'
 import { estPrete, lireGenerique, lireVoyage, utiliserTicket, type FicheAnnee, type FichePrete, type Voyage } from '../api/voyage'
 import { ambianceDeLHeure } from '../carte/heure'
 import { creerRegistre } from '../mondes'
@@ -11,6 +11,7 @@ import type { Monde, VueBandeau } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
+import { VIBRATION } from '../voyage/billet'
 import { useMouvementReduit } from '../ui/mouvement'
 import { useRevenir } from '../ui/revenir'
 import { afficherGenerique, avancees, billetsDeProgression, ligneDuBas, statutDeLAnnee, verdictAChange, type Avancee } from '../voyage/annee'
@@ -27,6 +28,7 @@ import Corde from '../voyage/annee/Corde'
 import { NOM_DE_RECOMPENSE } from '../voyage/annee/Embleme'
 import Fronton from '../voyage/annee/Fronton'
 import LigneDuBas from '../voyage/annee/LigneDuBas'
+import Manivelle from '../voyage/annee/Manivelle'
 import Programme from '../voyage/annee/Programme'
 import { useFiche } from '../voyage/annee/useFiche'
 import Parade from '../voyage/parade/Parade'
@@ -54,13 +56,19 @@ export default function VoyageAnnee() {
 type Mode = VueBandeau['mode']
 const MODE_DU_STATUT = { ouverte: 'bouclee', en_cours: 'encours', verrouillee: 'fermee' } as const
 
-/** Le mode du bandeau : la forme de la fiche d'abord, sinon (tant qu'elle charge ou s'écrit) la carte. */
+/**
+ * Le mode du bandeau : la forme de la fiche d'abord, sinon (tant qu'elle charge ou s'écrit) la carte,
+ * qui sait déjà, pour un membre hors IA, qu'une année attend le Voyage suivi (`etatDeCase`).
+ */
 function modeDuBandeau(annee: number, fiche: FicheAnnee | undefined, v: Voyage | undefined): Mode {
   if (fiche && 'statut' in fiche) {
     if (fiche.statut === 'verrouillee') return 'fermee'
     if (fiche.statut === 'en_attente') return 'attente'
   }
-  return v ? MODE_DU_STATUT[statutDeLAnnee(annee, v.annee_en_cours)] : 'encours'
+  if (!v) return 'encours'
+  const a = v.annees.find((x) => x.annee === annee)
+  if (!fiche && a && etatDeCase(a, v.ia).attente) return 'attente'
+  return MODE_DU_STATUT[statutDeLAnnee(annee, v.annee_en_cours)]
 }
 
 function FicheDeLAnnee({ annee }: { annee: number }) {
@@ -81,10 +89,11 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   const prete = estPrete(fiche) ? fiche : undefined
   const fermee = fiche && 'statut' in fiche && (fiche.statut === 'verrouillee' || fiche.statut === 'en_attente') ? fiche : undefined
 
-  // Mon journal : pour les films vus en avance d'une année fermée ou en attente, jamais pour une fiche prête.
+  // Mes films sortis cette année-là : les films vus en avance d'une année fermée ou en attente,
+  // jamais pour une fiche prête, et jamais tout le journal pour quelques films.
   const journal = useQuery({
-    queryKey: cles.journalComplet,
-    queryFn: ({ signal }) => journalComplet(signal),
+    queryKey: cles.journalDesAnnees(annee, annee),
+    queryFn: ({ signal }) => journalDesAnnees(annee, annee, signal),
     enabled: !!fermee,
   })
 
@@ -106,7 +115,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     if (liste.length === 0) return
     setGains(liste)
     // Au calme, le téléphone ne vibre pas (la maquette, `initNotation`) : l'annonce et la corde suffisent.
-    if (!calme && franchitUnPalier(liste, prete.progression)) vibrer([18, 40, 70])
+    if (!calme && franchitUnPalier(liste, prete.progression)) vibrer(VIBRATION)
   }, [retour, relue, prete, calme])
   // Le verdict du jury, guetté au compte IA après une création (le billet l'a décidé) : la fiche se
   // relit toutes les cinq secondes, douze fois au plus, jusqu'à un verdict changé ou un ticket ; la
@@ -235,38 +244,55 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     )
   }
 
+  // La manivelle (plan 2c, décision D8) relit la fiche et la carte, elles seules : `exact`, sinon le
+  // préfixe `voyage` relirait toutes les fiches en cache (et, au compte IA, ouvrirait une année non
+  // visitée chez le chroniqueur). Jamais le journal ni le générique.
+  const recharger = () =>
+    Promise.all([
+      client.refetchQueries({ queryKey: cles.annee(annee), exact: true }, { throwOnError: true }),
+      client.refetchQueries({ queryKey: cles.voyage, exact: true }, { throwOnError: true }),
+    ])
+
   return (
     <section className={styles.page} aria-label={`L’année ${annee}`} style={style}>
-      <div className={styles.bandeau}>
-        <Toile
-          hauteur={hauteurs.bandeau}
-          libelle={`Le décor de ${annee}.`}
-          onToucher={() => {
-            if (!calme) touche.current = dernierT.current
-          }}
-          dessiner={(ctx, t, vivant) => {
-            dernierT.current = t
-            monde.pages.dessinerBandeau({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.bandeau, t, vivant, nuit, mode, annee, recompense, cases, bouclee, roulotte, touche: touche.current })
-          }}
-        />
-        {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
-            quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
-        <Link
-          to="/voyage"
-          className={styles.retour}
-          aria-label="Retour à la carte"
-          onClick={(e) => {
-            // Ouvrir dans un autre onglet reste au navigateur.
-            if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-            e.preventDefault()
-            revenir()
-          }}
-        >
-          <span aria-hidden="true">‹</span>
-        </Link>
-        {monde.chapitre ? <span className={styles.plaque}>{monde.chapitre}</span> : null}
-      </div>
-      {corps}
+      {/* Autour de toute fiche : prête, fermée, en attente, en préparation, en panne. */}
+      <Manivelle monde={monde} onRecharger={recharger}>
+        <div className={styles.bandeau}>
+          <Toile
+            hauteur={hauteurs.bandeau}
+            libelle={`Le décor de ${annee}.`}
+            onToucher={() => {
+              if (!calme) touche.current = dernierT.current
+            }}
+            dessiner={(ctx, t, vivant) => {
+              dernierT.current = t
+              monde.pages.dessinerBandeau({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.bandeau, t, vivant, nuit, mode, annee, recompense, cases, bouclee, roulotte, touche: touche.current })
+            }}
+          />
+          {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
+              quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
+          <Link
+            to="/voyage"
+            className={styles.retour}
+            aria-label="Retour à la carte"
+            onClick={(e) => {
+              // Ouvrir dans un autre onglet reste au navigateur.
+              if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+              e.preventDefault()
+              revenir()
+            }}
+          >
+            <span aria-hidden="true">‹</span>
+          </Link>
+          {/* La plaque du chapitre ouvre la page de la décennie de l'année (plan 2c, décision D5). */}
+          {monde.chapitre ? (
+            <Link to={`/voyage/decennies/${decennieDe(annee)}`} className={styles.plaque}>
+              {monde.chapitre}
+            </Link>
+          ) : null}
+        </div>
+        {corps}
+      </Manivelle>
     </section>
   )
 }

@@ -101,6 +101,10 @@
   font-size: var(--taille-s);
 }
 
+.signeVoyage {
+  font-weight: var(--graisse-forte);
+}
+
 .vide {
   margin: 0;
   color: var(--couleur-texte-doux);

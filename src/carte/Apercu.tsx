@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { estPrete, lireAnnee, type AnneeCarte } from '../api/voyage'
-import { apercuLitLaFiche, prochainPas } from '../voyage/regles'
+import { RATTRAPE, apercuLitLaFiche, prochainPas } from '../voyage/regles'
 import styles from './Carte.module.css'
 
 const RECOMPENSE = { palme: 'Palme', lion: 'Lion', ours: 'Ours' } as const
@@ -11,6 +11,10 @@ interface Props {
   anneeEnCours: number
   ia: boolean
   attente: boolean
+  /** Ce que dit une année en attente (`tropLent`) ; nul sans voyageur suivi. */
+  tropLent: string | null
+  /** L'année en cours de la lectrice, derrière le voyageur suivi (`rattrapeBientot`). */
+  rattrape: boolean
   ancre: { x: number; y: number }
 }
 
@@ -19,7 +23,7 @@ interface Props {
  * sont son podium, que seule la fiche porte : elle ne se lit que si l'année est déjà écrite
  * (`apercuLitLaFiche`), jamais sur une année dont la lecture réveillerait le chroniqueur.
  */
-export default function Apercu({ annee, anneeEnCours, ia, attente, ancre }: Props) {
+export default function Apercu({ annee, anneeEnCours, ia, attente, tropLent, rattrape, ancre }: Props) {
   const fiche = useQuery({
     queryKey: cles.annee(annee.annee),
     queryFn: ({ signal }) => lireAnnee(annee.annee, signal),
@@ -30,7 +34,9 @@ export default function Apercu({ annee, anneeEnCours, ia, attente, ancre }: Prop
     annee.statut === 'verrouillee' ? 'À tourner' : annee.statut === 'en_cours' ? 'En cours' : annee.recompense ? RECOMPENSE[annee.recompense] : 'Passée'
   let corps: string | null = null
   if (annee.statut === 'verrouillee') corps = 'Personne ici pour l’instant.'
-  else if (attente) corps = 'Tu le rattrapes bientôt.'
+  else if (attente) corps = tropLent ? `${tropLent}.` : null
+  // Le titre dit déjà « En cours » : la phrase s'y ajoute.
+  else if (rattrape && annee.annee === anneeEnCours) corps = `${RATTRAPE}.`
   else if (!annee.visitee) corps = 'Pas encore ouverte : touche l’année pour l’ouvrir.'
   const films = prete ? prete.podium.flatMap((m) => (m ? [m.title] : [])) : []
   // Sans progression (année pas encore ouverte), rien à compter : jamais « Tout est vu ».

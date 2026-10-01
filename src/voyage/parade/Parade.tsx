@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
-import { journalComplet } from '../../api/journal'
+import { journalDesAnnees } from '../../api/journal'
 import { poserSurLePodium, viderLaMarche, type Marche, type Podium, type Salle } from '../../api/voyage'
 import { APPUI_LONG_MS } from '../../carte/geste'
 import type { Monde } from '../../mondes/types'
@@ -182,7 +182,9 @@ interface PropsChoix {
 function ChoixDeLaMarche({ annee, place, marche, salles, onFermer }: PropsChoix) {
   const { envoyer, occupe, erreur } = useEcriture(annee)
   const onChoisir = (candidat: Candidat | null) => envoyer({ place, candidat }, onFermer)
-  const journal = useQuery({ queryKey: cles.journalComplet, queryFn: ({ signal }) => journalComplet(signal) })
+  // Mes films sortis cette année-là, jamais tout le journal : la clé de l'année fermée (`VoyageAnnee`),
+  // qu'une année en attente lit déjà pour ses films vus en avance.
+  const journal = useQuery({ queryKey: cles.journalDesAnnees(annee, annee), queryFn: ({ signal }) => journalDesAnnees(annee, annee, signal) })
   const lignes = lignesDeLaMarche(marche, journal.data ? candidats(journal.data, annee, salles) : [])
   const aucun = journal.data && !lignes.some((l) => l.type === 'candidat')
 

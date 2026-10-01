@@ -1,0 +1,201 @@
+/* Un billet ouvert en grand (maquette 1890 : `.visionneuse`, `.billet-plein`, lignes 417 à 424) :
+   les couleurs et les polices viennent des jetons du monde, posés sur la racine de la page. */
+
+/* Par-dessus la page, sous le bandeau « Nouvelle version » et la barre d'onglets, qui restent visibles. */
+.calque {
+  position: fixed;
+  z-index: var(--z-calque);
+  top: 0;
+  right: 0;
+  bottom: var(--coque-bas);
+  left: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.voile {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--m-fond) 90%, transparent);
+}
+
+.billet {
+  position: relative;
+  width: 100%;
+  max-width: 330px;
+  max-height: 100%;
+  padding: 18px 18px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--m-papier) 60%, var(--m-papier2));
+  color: var(--m-encre);
+  box-shadow: 0 16px 40px var(--m-ombre);
+  animation: sort 0.5s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes sort {
+  from {
+    opacity: 0;
+    transform: translateY(80px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.entete {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--m-encre2);
+  text-align: center;
+}
+
+.entete small {
+  font: 12px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  color: var(--m-rouge);
+}
+
+.entete strong {
+  font: 400 21px/1.15 var(--m-f-affiche);
+}
+
+.numero {
+  font: 700 13px var(--m-f-corps);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  color: var(--m-rouge);
+}
+
+.champs {
+  margin: 6px 0 0;
+}
+
+.champ {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px dotted color-mix(in srgb, var(--m-encre2) 50%, transparent);
+  font: 15px var(--m-f-texte);
+}
+
+.champ dt {
+  font: 12.5px var(--m-f-capitales);
+  letter-spacing: 0.12em;
+  color: var(--m-rouge);
+}
+
+.champ dd {
+  margin: 0;
+  text-align: right;
+}
+
+.reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reactions li {
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--m-encre2) 40%, transparent);
+  border-radius: 3px;
+  background: var(--m-papier);
+  font: 13px var(--m-f-corps);
+}
+
+/* La remarque privée, sous le sceau du velours. Elle tient le grand « VU » qui flotte à sa droite. */
+.prive {
+  display: flow-root;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--m-velours);
+  background: var(--m-papier);
+  font: italic 14.5px/1.4 var(--m-f-texte);
+}
+
+.sc {
+  display: block;
+  font: normal 11.5px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-rouge);
+}
+
+/* Le grand « VU » tamponné en travers (maquette : `.grand-vu`). La maquette le pose en absolu sur la
+   remarque, qu'il cachait en partie : il flotte à droite, et le texte le contourne. */
+.tampon {
+  float: right;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin: 2px 0 4px 10px;
+  shape-outside: circle(50%);
+  border: 3px double color-mix(in srgb, var(--m-rouge) 80%, transparent);
+  border-radius: 50%;
+  color: color-mix(in srgb, var(--m-rouge) 80%, transparent);
+  font: 400 30px var(--m-f-affiche);
+  opacity: 0.85;
+  transform: rotate(-16deg);
+  pointer-events: none;
+}
+
+/* Sans remarque, le « VU » se pose seul, à droite, au-dessus des gestes. */
+.sansRemarque {
+  display: flow-root;
+  margin-top: 10px;
+}
+
+.gestes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.ranger,
+.corriger {
+  display: inline-grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 3px;
+  font: 400 15px var(--m-f-affiche);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ranger {
+  border: 0;
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+  box-shadow: 0 3px 0 var(--m-bois);
+}
+
+.corriger {
+  border: 1px solid var(--m-encre2);
+  background: none;
+  color: var(--m-encre);
+}
+
+.ranger:focus-visible,
+.corriger:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .billet {
+    animation: none;
+  }
+}

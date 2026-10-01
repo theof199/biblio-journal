@@ -10,7 +10,7 @@ import { creerRegistre } from '../mondes'
 function ouvrir(annee: number, H: number) {
   const defile: number[] = []
   const visible = vi.fn()
-  const rappels: Rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, defilerVers: (y) => void defile.push(y), date() {}, roulotte() {}, avatarVisible: visible }
+  const rappels: Rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, defilerVers: (y) => void defile.push(y), date() {}, roulotte() {}, avatarVisible: visible, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {} }
   const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => contexteFactice().ctx }, rappels, {
     creerToile: (w, h) => ({ width: w, height: h, getContext: () => contexteFactice().ctx }),
     image: () => null,

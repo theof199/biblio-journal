@@ -59,11 +59,25 @@
   color: var(--m-encre);
   font: 12.5px/1 var(--m-f-capitales);
   letter-spacing: 0.08em;
+  text-decoration: none;
   box-shadow:
     0 0 0 1px var(--m-bois),
     0 0 0 3px var(--m-papier2),
     0 0 0 4px var(--m-bois),
     0 4px 10px var(--m-ombre);
+}
+
+/* La plaque est un lien (la page de la décennie) : sa cible s'étend à 44 px de haut sans changer
+   l'allure de la plaque (21,5 px de haut). */
+.plaque::before {
+  content: '';
+  position: absolute;
+  inset: -12px -6px;
+}
+
+.plaque:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 5px;
 }
 
 .ruban {

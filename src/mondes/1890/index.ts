@@ -11,6 +11,8 @@ import { dessinerAdieu } from './adieu'
 import { DATES } from './dates'
 import { c, RAMPE } from './couleur'
 import { PAGES_1890 } from './pages'
+import { BOBINES, dessinerLointain } from './bobines'
+import { ORGUE } from './orgue'
 
 /** Les origines : la baraque foraine en sépia, avec la roulotte (choix du propriétaire, 29 septembre 2026). */
 export function creerMonde1890(): Monde {
@@ -41,7 +43,7 @@ export function creerMonde1890(): Monde {
     adieu: 7,
     trace: trace1890,
     dessinerCiel,
-    dessinerLointain: () => undefined,
+    dessinerLointain,
     dessinerMoyen,
     dessinerSol,
     dessinerProche,
@@ -51,5 +53,8 @@ export function creerMonde1890(): Monde {
     dessinerAdieu,
     reagir,
     pages: PAGES_1890,
+    // Plan 2d : l'orgue de barbarie de la foire, et trois films perdus cachés dans le décor.
+    musique: ORGUE,
+    bobines: BOBINES,
   }
 }

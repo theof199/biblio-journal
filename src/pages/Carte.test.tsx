@@ -10,6 +10,10 @@ import { moteurFactice } from '../test/moteurFactice'
 import { fichePrete, voyage1890 } from '../test/voyage'
 import { exemple } from '../test/contrat'
 import { cles } from '../api/cles'
+import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
+import FEUILLE_DE_LA_CARTE from '../carte/Carte.module.css?raw'
+import { DoublureAudio, oublierDoublures } from '../test/audioFactice'
+import { oublierAmbianceDeLaPage } from '../carte/son'
 
 const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)
 const P = { essentiels_vus: 1, essentiels_total: 3, salles_completes: 0, salles_autres: 2 }
@@ -112,6 +116,27 @@ describe('la carte', () => {
     expect(voyage()).toHaveAttribute('aria-current', 'page')
   })
 
+  // Mutation : le lien vers `PREMIERE_DECENNIE` en dur (la carte de 1903 ouvrirait les années 1890).
+  it.each([
+    { anneeEnCours: 1898, nom: 'Chapitre I · Les origines', decennie: 1890 },
+    { anneeEnCours: 1903, nom: 'Chapitre II · Années 1900', decennie: 1900 },
+  ])('le chapitre ouvre la décennie de l’année en cours ($anneeEnCours)', async ({ anneeEnCours, nom, decennie }) => {
+    const annees = Array.from({ length: anneeEnCours - 1894 }, (_, i) => ({
+      annee: 1895 + i,
+      statut: 1895 + i === anneeEnCours ? ('en_cours' as const) : ('ouverte' as const),
+      visitee: true,
+      recompense: null,
+      progression: P,
+    }))
+    monter(voyage1890(anneeEnCours, annees), {
+      [`GET /api/me/journal?limit=100&sortie_min=${decennie}&sortie_max=${decennie + 9}`]: () => json({ items: [], next_cursor: null }),
+    })
+    const chapitre = await screen.findByRole('link', { name: nom })
+    expect(chapitre).toHaveAttribute('href', `/voyage/decennies/${decennie}`)
+    fireEvent.click(chapitre)
+    expect(await screen.findByRole('heading', { level: 1, name: `Années ${decennie}` })).toBeInTheDocument()
+  })
+
   it('toucher une case ouvre la fiche de son année', async () => {
     const { rappels, etats } = monter(VOYAGE, { 'GET /api/me/voyage/annees/1896': () => json(fichePrete({ annee: 1896 })) })
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
@@ -145,17 +170,38 @@ describe('la carte', () => {
     expect(moteur.reglerCalme).toHaveBeenLastCalledWith(true)
   })
 
-  // Mutation : `etatDeCase(a, true)` pour tout le monde ; et, relecture de la tâche 9, dans
-  // l'objectif du HUD seul (`etatDeCase(enCours, true)`), qui dirait « Touche l’année pour l’ouvrir ».
-  it('pour un membre hors IA, l’année que le Voyage suivi n’a pas ouverte se rattrape', async () => {
+  // Décision du propriétaire du 1er octobre 2026 (2c-5) : l'année que le Voyage suivi n'a pas ouverte
+  // dit « Théo est trop lent » (le HUD, l'aperçu avec son point, le lien du lecteur d'écran), jamais
+  // plus « Tu le rattrapes bientôt ». Mutations : `etatDeCase(a, true)` pour tout le monde ; et,
+  // relecture de la tâche 9, dans l'objectif du HUD seul (`etatDeCase(enCours, true)`), qui dirait
+  // « Touche l’année pour l’ouvrir » ; l'ancien texte remis à l'un des trois sites ; le pseudo pris
+  // ailleurs que dans `source` (le mien).
+  it('pour un membre hors IA, l’année que le Voyage suivi n’a pas ouverte dit qu’il est trop lent', async () => {
     const { rappels, etats } = monter({ ...VOYAGE, ia: false, source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: 1898 } })
     expect(await screen.findByText('Tu suis le Voyage de Théo')).toBeInTheDocument()
-    expect(screen.getByText('Tu le rattrapes bientôt')).toBeInTheDocument()
+    expect(screen.getByText('Théo est trop lent')).toBeInTheDocument()
     expect(screen.queryByText('Touche l’année pour l’ouvrir')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '1898, Théo est trop lent' })).toBeInTheDocument()
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
     act(() => rappels().apercu(1898, { x: 10, y: 10 }))
-    expect(await screen.findByText('Tu le rattrapes bientôt.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '1898, tu le rattrapes bientôt' })).toBeInTheDocument()
+    expect(await screen.findByText('Théo est trop lent.')).toBeInTheDocument()
+    expect(screen.queryByText(/rattrapes/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /rattrapes/i })).not.toBeInTheDocument()
+  })
+
+  // Ni le compte IA (aucune année n'y attend personne), ni un compte qui ne suit personne (`source`
+  // nul) ne disent de quiconque qu'il est trop lent. Mutation : la phrase sans pseudo (« null est
+  // trop lent », ou un repli sur « Tu le rattrapes bientôt »).
+  it.each([
+    ['le compte IA', { ia: true, source: null }],
+    ['un compte qui ne suit personne', { ia: false, source: null }],
+  ])('%s ne dit de personne qu’il est trop lent', async (_qui, surcharge) => {
+    const { rappels, etats } = monter({ ...VOYAGE, ...surcharge })
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().apercu(1898, { x: 10, y: 10 }))
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(screen.queryByText(/trop lent|rattrapes/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /trop lent|rattrapes/i })).not.toBeInTheDocument()
   })
 
   /** 1898 ouverte, en cours, sa Palme déjà là : il ne reste que le ticket. */
@@ -163,6 +209,45 @@ describe('la carte', () => {
     ...VOYAGE,
     annees: VOYAGE.annees.map((a) => (a.annee === 1898 ? { ...a, visitee: true, recompense: 'palme' as const, progression: P, profondeur: 6 } : a)),
   }
+
+  // Décision du propriétaire du 1er octobre 2026 (2c-5, option a) : la lectrice dont l'année en cours
+  // (1898, ouverte) est derrière le voyageur suivi (1899) le lit sur cette année seule, ajouté à son
+  // état : le HUD, l'aperçu (sous « En cours »), le lien du lecteur d'écran (« 1898, en cours, … »).
+  // Jamais sur une autre année. Mutations : la condition `>` changée en `>=` (la source à la même
+  // année) ; l'année ignorée au lien ou à l'aperçu (la phrase sur 1897) ; l'état remplacé au lien.
+  const SUIT = (annee: number) => ({ id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: annee })
+  it('derrière le voyageur suivi, l’année en cours dit « Tu le rattrapes bientôt », elle seule', async () => {
+    const { rappels, etats } = monter({ ...OUVERTE, ia: false, source: SUIT(1899) })
+    expect(await screen.findByText('Tu suis le Voyage de Théo · tu le rattrapes bientôt')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '1898, en cours, tu le rattrapes bientôt' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /rattrapes/ })).toHaveLength(1)
+    expect(screen.queryByText(/trop lent/)).not.toBeInTheDocument()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().apercu(1898, { x: 10, y: 10 }))
+    const apercu = await screen.findByText('Tu le rattrapes bientôt.')
+    expect(apercu.closest('[role="status"]')).toHaveTextContent('En cours')
+    act(() => rappels().finApercu())
+    act(() => rappels().apercu(1897, { x: 10, y: 10 }))
+    await waitFor(() => expect(screen.queryByText('Tu le rattrapes bientôt.')).not.toBeInTheDocument())
+  })
+
+  // La source à la même année, le compte IA, un compte sans source : rien ne se rattrape. Et une année
+  // en cours que la source, pourtant devant, n'a pas encore ouverte dit « … est trop lent », jamais
+  // les deux. Mutations : la garde `ia`, `source` ou `attente` retirée de `rattrapeBientot`.
+  it.each([
+    ['la source à la même année', { ...OUVERTE, ia: false, source: SUIT(1898) }, false],
+    ['le compte IA', { ...OUVERTE, ia: true, source: SUIT(1899) }, false],
+    ['un compte sans source', { ...OUVERTE, ia: false, source: null }, false],
+    ['une année en attente, la source devant', { ...VOYAGE, ia: false, source: SUIT(1899) }, true],
+  ] as const)('%s : jamais « Tu le rattrapes bientôt »', async (_cas, voyage, lent) => {
+    const { rappels, etats } = monter(voyage)
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().apercu(1898, { x: 10, y: 10 }))
+    expect(await screen.findByRole('link', { name: /^1898, / })).toBeInTheDocument()
+    expect(screen.queryByText(/rattrapes/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /rattrapes/i })).not.toBeInTheDocument()
+    if (lent) expect(screen.getByRole('link', { name: '1898, Théo est trop lent' })).toBeInTheDocument()
+  })
 
   // Relecture de la tâche 9. Mutations : `v.ia` remplacé par `true` dans l'objectif du HUD, ou
   // dans l'aperçu (un membre hors IA lirait le jury).
@@ -473,6 +558,17 @@ describe('le ticket', () => {
     expect(moteur.marcher).not.toHaveBeenCalled()
   })
 
+  // Relecture de la tâche 5 (plan 2c) : le calque monte le tampon du passeport, le sien. Mutations :
+  // un tampon fabriqué à la place de `tamponDe` (le jour de l'appareil, pas celui du passeport) ; le
+  // tampon monté sans `frappe` (la carte montre le moment où il se pose).
+  it('le tampon de la carte dit le jour du passeport et frappe', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1899')
+    monter({ ...V1900, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] })
+    const jour = await screen.findByText('28 septembre 2026')
+    expect(jour.closest('[role="status"]')).toHaveTextContent('Années 1890')
+    expect(jour.parentElement).toHaveClass(stylesDuTampon.frappe!)
+  })
+
   // Mutation : la petite affiche sans son image ou sans sa légende de crédit.
   it('la petite affiche montre l’image d’époque et sa légende de crédit', async () => {
     const { etats, rappels } = monter()
@@ -482,5 +578,187 @@ describe('le ticket', () => {
     const dialogue = await screen.findByRole('dialog', { name: 'Le Grand Café' })
     expect(dialogue.querySelector('img')?.getAttribute('src')).toBe(image.url)
     expect(dialogue).toHaveTextContent(image.legende)
+  })
+})
+
+describe('l’encre de la carte', () => {
+  // Le HUD (le millésime en cours, les récompenses, l’objectif) n’a pas d’encre à lui : il héritait
+  // `--couleur-texte` du thème général, sombre en thème clair, sur son dégradé presque noir. La
+  // maquette (`carte-v2.html`) pose `var(--papier)` sur son `body`. Mutation : la couleur retirée de `.ecran`.
+  it('pose le papier sur l’écran, sans rien hériter du thème général', () => {
+    const regle = /(?:^|\n)\.ecran\s*\{([^}]*)\}/.exec(FEUILLE_DE_LA_CARTE)?.[1]
+    expect(regle, 'la règle .ecran').toBeDefined()
+    expect(/(?:^|[;\s])color:\s*([^;]+);/.exec(regle!)?.[1]?.trim()).toBe('var(--papier)')
+  })
+})
+
+describe('le son et les bobines perdues (plan 2d)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('AudioContext', DoublureAudio)
+    oublierDoublures()
+    localStorage.clear()
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  const son = () => screen.getByRole('button', { name: 'Son' })
+  const compteur = () => screen.getByText(/^Bobines retrouvées/)
+  /** Un rechargement : la page démontée, l'ambiance de la page oubliée, aucun contexte construit. */
+  const recharger = () => {
+    cleanup()
+    oublierAmbianceDeLaPage()
+    oublierDoublures()
+  }
+  const CLE_SON = `journal.carte.son.${SESSION.user.id}`
+  const CLE_BOBINES = `journal.carte.bobines.${SESSION.user.id}`
+
+  // Mutations : l'ambiance qui construit son contexte au montage, au clap, aux présences ou au
+  // carillon d'une bobine ; le bouton qui ne l'allume pas.
+  it('ne construit aucun contexte audio tant que « Son » n’a pas été touché', async () => {
+    const { rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => {
+      rappels().clap()
+      rappels().presences([{ musique: { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }, poids: 1 }])
+      rappels().bobine('les-quatre-diables')
+      rappels().bobineArrivee('les-quatre-diables')
+    })
+    expect(DoublureAudio.crees).toHaveLength(0)
+    expect(son()).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(son())
+    expect(DoublureAudio.crees).toHaveLength(1)
+    expect(son()).toHaveAttribute('aria-pressed', 'true')
+    expect(son()).toHaveAttribute('title', 'Son : allumé')
+  })
+
+  // Mutations : `lireSon` remplacé par `false` (le choix oublié) ; `ecrireSon` retiré du bouton ;
+  // le réglage retenu qui rallume le son de lui-même au rechargement (un contexte sans geste).
+  it('est coupé par défaut, et son choix se relit au rechargement sans rien rallumer', async () => {
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('title', 'Son : coupé')
+    fireEvent.click(son())
+    expect(localStorage.getItem(CLE_SON)).toBe('allume')
+    recharger()
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('title', 'Son : touche pour le reprendre')
+    expect(son()).toHaveAttribute('aria-pressed', 'false')
+    expect(DoublureAudio.crees).toHaveLength(0)
+    fireEvent.click(son())
+    expect(DoublureAudio.crees).toHaveLength(1)
+    fireEvent.click(son())
+    expect(son()).toHaveAttribute('aria-pressed', 'false')
+    recharger()
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('title', 'Son : coupé')
+  })
+
+  // Mutation : l'écouteur `visibilitychange` retiré de la page : l'orgue jouerait l'app en arrière-plan.
+  it('se tait quand la page passe en arrière-plan', async () => {
+    monter()
+    fireEvent.click(await screen.findByRole('button', { name: 'Son' }))
+    const ctx = DoublureAudio.crees[0]!
+    const cache = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    act(() => void document.dispatchEvent(new Event('visibilitychange')))
+    expect(ctx.state).toBe('suspended')
+    cache.mockReturnValue(false)
+    act(() => void document.dispatchEvent(new Event('visibilitychange')))
+    expect(ctx.state).toBe('running')
+  })
+
+  // Mutation : `ambiance.taire(true)` retiré du démontage : l'orgue suivrait le membre sur la fiche
+  // d'une année ou dans un autre onglet.
+  it('se tait quand la carte est quittée, et reprend sans nouveau contexte à son retour', async () => {
+    monter()
+    fireEvent.click(await screen.findByRole('button', { name: 'Son' }))
+    const ctx = DoublureAudio.crees[0]!
+    cleanup()
+    expect(ctx.state).toBe('suspended')
+    monter()
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('aria-pressed', 'true')
+    expect(ctx.state).toBe('running')
+    expect(DoublureAudio.crees).toHaveLength(1)
+  })
+
+  // Mutation : l'ambiance de la page rendue sans regarder le membre : déconnecté puis reconnecté
+  // sous un autre pseudo dans le même onglet, le suivant entendrait le son du précédent sans avoir
+  // touché « Son », contre son propre réglage.
+  it('ne passe pas le son d’un membre au suivant, dans le même onglet', async () => {
+    monter()
+    fireEvent.click(await screen.findByRole('button', { name: 'Son' }))
+    const ctx = DoublureAudio.crees[0]!
+    cleanup()
+    const autre = { ...SESSION, user: { ...SESSION.user, id: `${SESSION.user.id}-autre`, pseudo: 'autre' } }
+    monter(VOYAGE, { 'GET /api/auth/me': () => json(autre) })
+    expect(await screen.findByRole('button', { name: 'Son' })).toHaveAttribute('aria-pressed', 'false')
+    expect(son()).toHaveAttribute('title', 'Son : coupé')
+    expect(ctx.state).toBe('suspended')
+  })
+
+  // Mutations : le compteur montré sans trouvaille (`hidden` retiré) ; compté dès le toucher (sans
+  // attendre l'arrivée) ; la trouvaille ni retenue sur l'appareil ni rendue au moteur.
+  it('ne montre le compteur qu’à la première trouvaille, et la compte à son arrivée', async () => {
+    const { rappels, etats, moteur } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(compteur()).not.toBeVisible()
+    act(() => rappels().bobine('les-quatre-diables'))
+    expect(compteur()).toBeVisible()
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 0/3')
+    expect(JSON.parse(localStorage.getItem(CLE_BOBINES)!)).toEqual(['les-quatre-diables'])
+    expect(moteur.reglerBobines).toHaveBeenLastCalledWith(['les-quatre-diables'])
+    act(() => rappels().bobineArrivee('les-quatre-diables'))
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
+    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/3« Les Quatre Diables », F. W. Murnau, 1928 : un film perdu.')
+  })
+
+  // Mutation : `lireBobines` remplacé par `[]` : les bobines trouvées la veille reviendraient.
+  it('relit les bobines déjà trouvées sur l’appareil', async () => {
+    localStorage.setItem(CLE_BOBINES, JSON.stringify(['les-quatre-diables', 'la-tete-de-janus']))
+    const { etats, moteur } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(moteur.reglerBobines).toHaveBeenLastCalledWith(['les-quatre-diables', 'la-tete-de-janus'])
+    expect(compteur()).toBeVisible()
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 2/3')
+  })
+
+  // Mutations : le message des trois jamais programmé, ou programmé avant la troisième.
+  it('dit, après la troisième, que les trois bobines perdues sont retrouvées', async () => {
+    localStorage.setItem(CLE_BOBINES, JSON.stringify(['les-quatre-diables']))
+    const { rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => {
+      rappels().bobine('la-tete-de-janus')
+      rappels().bobineArrivee('la-tete-de-janus')
+    })
+    await new Promise((fin) => setTimeout(fin, 3500))
+    expect(screen.queryByText('Les trois bobines perdues sont retrouvées.')).not.toBeInTheDocument()
+    act(() => {
+      rappels().bobine('londres-apres-minuit')
+      rappels().bobineArrivee('londres-apres-minuit')
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 3/3')
+    expect(await screen.findByText('Les trois bobines perdues sont retrouvées.', {}, { timeout: 4500 })).toBeInTheDocument()
+  }, 15000)
+
+  // Mutations : un `try` retiré de `carte/memoire.ts` (son ou bobines) : un stockage bloqué
+  // (navigation privée) ferait tomber la carte, le bouton ou la trouvaille.
+  it('un stockage qui lève ne casse ni la carte, ni le son, ni les bobines', async () => {
+    const bloque = () => {
+      throw new DOMException('Le stockage est bloqué.', 'SecurityError')
+    }
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(bloque)
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(bloque)
+    const { rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(son()).toHaveAttribute('title', 'Son : coupé')
+    fireEvent.click(son())
+    expect(son()).toHaveAttribute('aria-pressed', 'true')
+    act(() => {
+      rappels().bobine('les-quatre-diables')
+      rappels().bobineArrivee('les-quatre-diables')
+    })
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
   })
 })

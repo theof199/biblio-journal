@@ -53,5 +53,8 @@ export function mondeAVenir(decennie: number): Monde {
     dessinerAdieu: () => undefined,
     reagir: () => undefined,
     pages: PAGES_A_VENIR,
+    // Un monde sans chantier ne joue rien et ne cache rien (plan 2d).
+    musique: null,
+    bobines: [],
   }
 }

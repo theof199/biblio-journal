@@ -2,7 +2,7 @@ import type { CaseCarte, Toile } from '../moteur'
 import type { Monde } from '../../mondes/types'
 import { TAU } from '../outils'
 
-const CORAIL = '#FF6B57'
+export const CORAIL = '#FF6B57'
 
 const rr = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void => {
   g.beginPath()
@@ -366,10 +366,12 @@ export function dessinerCase(g: CanvasRenderingContext2D, x: number, y: number, 
   g.restore()
   colonne(g, x, y, c, monde, affiche)
   const py = y + ep + ry * 0.3 + 12
-  // Ni jauge ni plaque corail pour l'année en cours : `dessinerCorail` les dessine en dernier.
-  if (c.etat === 'encours') return
+  // Ni jauge ni plaque corail pour l'année en cours : `dessinerCorail` les dessine en dernier. Une
+  // année en cours en attente du Voyage suivi n'en a pas : sa plaque est celle d'une année fermée.
+  if (c.etat === 'encours' && !c.attente) return
   if (commeVerrou) plaque(g, x, py, String(c.annee), monde.couleur('#150F09', 0.72), monde.couleur('#F2E8D5', 0.55), monde.couleur('#F2E8D5', 0.18))
-  else plaque(g, x, py, String(c.annee), monde.couleur('#F2E8D5'), p.caseFaite.plaque)
+  // La plaque d'une année faite prend la couleur du monde, le millésime l'encre (maquette : `plaque`).
+  else plaque(g, x, py, String(c.annee), p.caseFaite.plaque, monde.couleur('#151009'))
   if ((c.etat === 'palme' || c.etat === 'lion' || c.etat === 'ours') && !c.attente) {
     const bob = vivant ? Math.sin(t * 1.6 + c.annee * 1.3) * 2.2 : 0
     ombre(g, x + 2, y + 1, 11 - bob * 0.6, 4, 0.3)

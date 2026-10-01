@@ -40,3 +40,5 @@ import '@fontsource/montserrat/latin-900.css'
 import '@fontsource/unbounded/latin-900.css'
 // Le crayon gras du membre sur le ticket de caisse (`--police-crayon`) : la seule écriture manuscrite de l'app.
 import '@fontsource/caveat/latin-700.css'
+// Les millésimes au pochoir des années 1890 (plan 2c, décision D9) : la palissade, l'affiche de l'adieu.
+import '@fontsource/stardos-stencil/latin-700.css'

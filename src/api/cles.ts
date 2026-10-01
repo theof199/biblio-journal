@@ -29,4 +29,9 @@ export const cles = {
    * que l'invalidation qui suit une écriture le périme aussi.
    */
   journalComplet: ['journal', 'complet'] as const,
+  /**
+   * Mes visionnages des films sortis de `de` à `a` (la boîte à billets, la page d'une décennie, plan
+   * 2c) : sous le préfixe `journal`, périmés comme lui par toute écriture au journal.
+   */
+  journalDesAnnees: (de: number, a: number) => ['journal', 'annees', de, a] as const,
 }

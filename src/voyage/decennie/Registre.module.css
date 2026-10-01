@@ -1,0 +1,75 @@
+/* Le registre des recettes (maquette 1890 : `.registre`, `.ligne-an`, lignes 302 à 310), ses lignes
+   portées à la cible tactile (44 px) et la réglure avec elles. L'année en cours se marque de l'or du
+   monde, pas du corail (maquette) : ce n'est pas un geste. Couleurs et polices : les jetons du monde. */
+.registre {
+  margin: 14px 14px 0;
+  padding: 12px 12px 8px;
+  background-color: var(--m-papier);
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 58px,
+      color-mix(in srgb, var(--m-rouge) 60%, transparent) 58px 59px,
+      transparent 59px 61px,
+      color-mix(in srgb, var(--m-rouge) 60%, transparent) 61px 62px,
+      transparent 62px
+    ),
+    repeating-linear-gradient(transparent 0 43px, color-mix(in srgb, var(--m-encre2) 25%, transparent) 43px 44px);
+  box-shadow: 0 8px 18px var(--m-ombre);
+  color: var(--m-encre);
+}
+
+.titre {
+  margin: 0 0 4px;
+  text-align: center;
+  font: 400 16px var(--m-f-capitales);
+  letter-spacing: 0.18em;
+}
+
+.lignes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ligne {
+  display: grid;
+  grid-template-columns: 50px 1fr 34px 46px;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  font: italic 15px var(--m-f-texte);
+  color: var(--m-encre);
+  text-decoration: none;
+}
+
+a.ligne:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: -2px;
+}
+
+.a {
+  font: normal 15px var(--m-f-capitales);
+}
+
+.n {
+  text-align: right;
+}
+
+.embleme {
+  width: 24px;
+  height: 24px;
+}
+
+.terne {
+  color: color-mix(in srgb, var(--m-encre) 45%, transparent);
+}
+
+.ici {
+  background: color-mix(in srgb, var(--m-or) 24%, transparent);
+}
+
+.ici .a {
+  color: var(--m-rouge);
+}

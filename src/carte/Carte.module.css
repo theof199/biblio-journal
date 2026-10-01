@@ -1,6 +1,7 @@
 /* Repris de la maquette v2 (docs/maquettes/carte-v2.html, lignes 53-179 et 231-238). */
 /* Dans `.contenu` de la coque (`position: relative`), au-dessus de sa barre, jamais dessous. */
-.ecran { position: absolute; inset: 0; overflow: hidden; isolation: isolate; background: var(--fond); }
+/* Le papier pour encre, comme le `body` de la maquette : le HUD n'hérite rien du thème général. */
+.ecran { position: absolute; inset: 0; overflow: hidden; isolation: isolate; background: var(--fond); color: var(--papier); }
 
 .hud {
   position: absolute; top: 0; left: 0; right: 0; z-index: 3; pointer-events: none;
@@ -8,7 +9,11 @@
   padding: 16px 16px 30px;
   background: linear-gradient(rgba(10, 7, 5, 0.94), rgba(10, 7, 5, 0.72) 62%, rgba(10, 7, 5, 0));
 }
-.chapitre { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+/* Un lien (la page de la décennie) dans un HUD qui ne reçoit aucun pointeur : il les reprend, et sa
+   cible s'étend à 44 px de haut sans pousser l'année (le HUD a 16 px de marge au-dessus). */
+.chapitre { position: relative; display: block; width: max-content; max-width: 100%; font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); text-decoration: none; pointer-events: auto; }
+.chapitre::before { content: ''; position: absolute; inset: -16px -8px -15px; }
+.chapitre:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .annee { display: block; font: 600 34px/1 'Fraunces', Georgia, serif; font-variant-numeric: lining-nums; }
 .recompenses { display: flex; gap: 10px; margin: 0; font: 600 14px/1 'Fraunces', Georgia, serif; padding-bottom: 3px; }
 .objectif {
@@ -53,17 +58,9 @@
 .apercuBas { display: flex; justify-content: space-between; gap: 8px; margin: 0; padding-top: 7px; border-top: 1px solid rgba(242, 232, 213, 0.09); font-size: 11.5px; font-weight: 600; color: rgba(242, 232, 213, 0.68); }
 .apercuBas b { color: var(--corail); text-align: right; }
 
-.tampon {
-  position: absolute; z-index: 5; left: 50%; top: 36%; width: 196px; height: 196px; margin-left: -98px;
-  display: grid; place-content: center; border-radius: 50%; text-align: center; color: var(--or);
-  border: 4px solid var(--or); box-shadow: inset 0 0 0 5px transparent, inset 0 0 0 7px var(--or);
-  background: radial-gradient(circle, rgba(21, 16, 9, 0.82) 55%, rgba(21, 16, 9, 0.55));
-  transform: rotate(-14deg); animation: tamponne 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
-}
-@keyframes tamponne { from { opacity: 0; transform: rotate(-14deg) scale(2.3); } }
-.tampon span { font-size: 10px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; }
-.tampon strong { margin: 4px 0; font: 26px/1 'Limelight', Georgia, serif; }
-.tampon em { margin-top: 6px; font: italic 500 12px 'Fraunces', Georgia, serif; color: var(--papier); }
+/* Le calque du tampon : il place le tampon du passeport (`voyage/passeport/Tampon`, qui s'habille et
+   frappe seul) et en fixe la taille par sa police (16 em : 196 px). */
+.tampon { position: absolute; z-index: 5; left: 50%; top: 36%; margin-left: -98px; font-size: 12.25px; pointer-events: none; }
 .carton { position: absolute; inset: 0; z-index: 6; display: grid; place-content: center; gap: 8px; text-align: center; background: rgba(4, 4, 5, 0.62); animation: scintille 1.2s steps(1) both; }
 .carton p { margin: 0; letter-spacing: 0.26em; text-transform: uppercase; font-size: 11.5px; }
 .carton p:nth-child(2) { font-size: 30px; letter-spacing: 0.03em; text-transform: none; color: var(--accent); }
@@ -73,10 +70,35 @@
 .annees:focus-within { z-index: 6; top: 120px; left: 16px; right: 16px; width: auto; height: auto; max-height: 50vh; margin: 0; padding: 12px; overflow: auto; clip: auto; white-space: normal; border-radius: 14px; background: #120d08; border: 1px solid var(--or); }
 
 @media (prefers-reduced-motion: reduce) {
-  .apercu, .tampon, .carton { animation: none; }
+  .apercu, .carton { animation: none; }
 }
 
 /* La petite affiche d'une date vraie (maquette du 29 septembre 2026 : `.affiche-date`). */
 .affiche { position: fixed; z-index: 5; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; padding: 18px; border-radius: 6px; background: #e9dcc0; color: #1c140c; }
 .affiche button { min-height: 44px; }
 .roulotte { position: absolute; z-index: 4; left: 16px; right: 16px; bottom: 96px; padding: 10px 14px; border-radius: 12px; background: #120d08; color: #f2e8d5; }
+
+/* Les bobines perdues (plan 2d ; maquette carte v2 : `.hud-bob`, `.toast`). La pulsation et l'apparition
+   suivent le tempo (`voyage/tempo.ts`), posé sur `.ecran`. */
+.bobines {
+  grid-column: 1 / -1; justify-self: start; margin: 6px 0 0;
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 4px; border-radius: 999px;
+  background: rgba(230, 185, 74, 0.13); border: 1px solid rgba(230, 185, 74, 0.45); color: var(--or);
+  font-size: 12px; font-weight: 700;
+}
+.bobines[hidden] { display: none; }
+.bobines svg { width: 20px; height: 20px; }
+.pulse { animation: pulse calc(700ms * var(--tempo)) cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes pulse { 0% { transform: scale(1); } 35% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.message {
+  position: absolute; left: 50%; bottom: 84px; z-index: 5; width: max-content; max-width: calc(100% - 32px); margin: 0;
+  padding: 9px 14px; border-radius: 12px; background: rgba(10, 7, 5, 0.93); border: 1px solid rgba(230, 185, 74, 0.28);
+  font-size: 12.5px; line-height: 1.45; text-align: center; color: rgba(242, 232, 213, 0.86); pointer-events: none;
+  transform: translateX(-50%); animation: monte calc(300ms * var(--tempo)) ease-out;
+}
+.message b { color: var(--or); }
+@keyframes monte { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse, .message { animation: none; }
+}

@@ -5,10 +5,13 @@ import {
   curseurSuivant,
   dejaAuJournal,
   journalComplet,
+  journalDesAnnees,
   lireJournal,
   supprimerVisionnage,
 } from './journal'
+import { cles } from './cles'
 import { exemple } from '../test/contrat'
+import brut from '../../contract/openapi.json?raw'
 import type { AddMediaResponse, JournalItem, JournalPage } from './journal'
 
 describe('curseurSuivant', () => {
@@ -125,5 +128,54 @@ describe('journalComplet', () => {
         new Response(JSON.stringify({ code: 'INTERNAL', message: 'Le journal n’a pas pu être lu.', retryable: false }), { status: 500 }),
       )
     await expect(journalComplet()).rejects.toMatchObject({ message: 'Le journal n’a pas pu être lu.' })
+  })
+})
+
+describe('mes visionnages d’une fourchette d’années de sortie', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const item = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
+  const page = (id: string, next: string | null): Response =>
+    new Response(JSON.stringify({ items: [{ ...item, entry: { ...item.entry, id } }], next_cursor: next }), { status: 200 })
+
+  // Mutations : une borne oubliée, ou les deux inversées ; le curseur perdu d'une page à l'autre.
+  it('demande les deux bornes à chaque page, et suit les curseurs jusqu’au bout', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(page('a', 'c2')).mockResolvedValueOnce(page('b', null))
+    const tout = await journalDesAnnees(1890, 1899)
+    expect(tout.map((i) => i.entry.id)).toEqual(['a', 'b'])
+    expect(vi.mocked(fetch).mock.calls.map((c) => c[0])).toEqual([
+      '/api/me/journal?limit=100&sortie_min=1890&sortie_max=1899',
+      '/api/me/journal?limit=100&cursor=c2&sortie_min=1890&sortie_max=1899',
+    ])
+  })
+
+  // Mutation : une page en échec ignorée : la boîte numéroterait sur un journal tronqué.
+  it('échoue tout entier quand une page échoue', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(page('a', 'c2'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 'INTERNAL', message: 'Le journal n’a pas pu être lu.', retryable: false }), { status: 500 }))
+    await expect(journalDesAnnees(1890, 1899)).rejects.toMatchObject({ message: 'Le journal n’a pas pu être lu.' })
+  })
+
+  // Le client écrit les noms des paramètres à la main (la requête n'est pas typée) : le contrat doit
+  // les porter, sinon l'API les ignorerait et rendrait tout le journal. Mutation : `sortie_de` au lieu
+  // de `sortie_min` dans le client (le premier test tombe) ; un contrat sans les paramètres (celui-ci).
+  it('ne demande que des paramètres que le contrat déclare', () => {
+    const contrat = JSON.parse(brut) as { paths: Record<string, { get: { parameters: { name: string; in: string }[] } }> }
+    const noms = contrat.paths['/me/journal']!.get.parameters.filter((p) => p.in === 'query').map((p) => p.name)
+    expect(noms).toEqual(expect.arrayContaining(['sortie_min', 'sortie_max']))
+  })
+
+  // Mutation : une clé hors du préfixe `journal` : un visionnage écrit ne périmerait pas la boîte.
+  it('se range sous le préfixe du journal, que toute écriture périme', () => {
+    expect(cles.journalDesAnnees(1890, 1899).slice(0, cles.journal.length)).toEqual([...cles.journal])
+    expect(cles.journalDesAnnees(1890, 1899)).not.toEqual(cles.journalDesAnnees(1900, 1909))
+  })
+
+  // Mutation : la clé sans sa borne haute. L'année fermée de 1900 (`journalDesAnnees(1900, 1900)`,
+  // plan 2c, tâche 11) et la décennie 1900 (`(1900, 1909)`) partageraient alors leur cache.
+  it('distingue deux fourchettes qui partent de la même année', () => {
+    expect(cles.journalDesAnnees(1900, 1900)).not.toEqual(cles.journalDesAnnees(1900, 1909))
   })
 })

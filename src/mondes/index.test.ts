@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { creerRegistre } from '.'
-import type { VueMonde } from './types'
+import type { VueMonde, VueMonument } from './types'
 import { contexteFactice } from '../test/contexteFactice'
+import { vueFactice } from '../test/vueFactice'
 
 describe('le registre des mondes', () => {
   // Relecture de la tâche 5. Mutations : le cache sorti de `creerRegistre` (deux cartes montées
@@ -23,5 +24,38 @@ describe('le registre des mondes', () => {
     const { ctx, appels } = contexteFactice()
     monde.dessinerSurLaBrume({ ctx } as VueMonde)
     expect(appels).toEqual([])
+  })
+
+  // Tâche 4 du plan 2c. Mutation : un `zone(…)` ajouté au monument du monde « à venir ». Sa page
+  // s'ouvre par le registre ; le monde 1890, lui, inscrit ses dix chevaux (la vue est la bonne).
+  it('ne donne aucune figure à toucher au monument du monde « à venir »', () => {
+    const inscrites = (decennie: number) => {
+      const zone = vi.fn()
+      const vue: VueMonument = {
+        ctx: contexteFactice().ctx, W: 390, H: 330, t: 0, vivant: true, nuit: 0,
+        annees: Array.from({ length: 10 }, (_, i) => ({ annee: decennie + i, etat: 'verrou' as const })),
+        cases: [], bouclee: false, touche: -9, zone,
+      }
+      creerRegistre()(decennie).pages.dessinerMonument(vue)
+      return zone.mock.calls.length
+    }
+    expect(inscrites(1890)).toBe(10)
+    expect(inscrites(1950)).toBe(0)
+  })
+
+  // Plan 2d. Mutations : une musique ou une bobine donnée au monde « à venir », ou un `v.bobine(…)`
+  // dans l'un de ses plans (la porte).
+  it('ne fait jouer ni ne cache rien au monde « à venir »', () => {
+    const monde = creerRegistre()(1950)
+    expect(monde.musique).toBeNull()
+    expect(monde.bobines).toEqual([])
+    const { vue } = vueFactice()
+    monde.dessinerCiel(vue)
+    monde.dessinerLointain(vue)
+    monde.dessinerMoyen(vue)
+    monde.dessinerSol(vue, { x: 195, y: 400 })
+    monde.dessinerProche(vue)
+    monde.dessinerSurLaBrume(vue)
+    expect(vue.bobine).not.toHaveBeenCalled()
   })
 })

@@ -1,0 +1,167 @@
+/* La page d'une décennie (maquette 1890 : `initDecennie`, écran IV ; le bandeau, le fronton et le
+   titre de section sont ceux de la fiche d'une année, lignes 94 à 113). Les couleurs et les polices
+   viennent des jetons du monde, posés sur la racine par la page. */
+.page {
+  min-height: 100%;
+  padding-bottom: 30px;
+  background: var(--m-tel);
+  color: var(--m-papier);
+  font: 15px/1.55 var(--m-f-corps);
+}
+
+.bandeau {
+  position: relative;
+}
+
+.bandeau::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 26px;
+  background: linear-gradient(transparent, var(--m-tel));
+  pointer-events: none;
+}
+
+/* Le retour de la maquette (`.retour`), porté à la cible tactile. */
+.retour {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding-bottom: 3px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 60%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-fond) 78%, transparent);
+  color: var(--m-or2);
+  font: 400 24px/1 var(--m-f-affiche);
+  text-decoration: none;
+}
+
+.retour:focus-visible,
+.lien:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.plaque {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  right: 14px;
+  padding: 5px 10px 4px;
+  border-radius: 3px;
+  background: linear-gradient(var(--m-papier), var(--m-carton));
+  color: var(--m-encre);
+  font: 12.5px/1 var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  box-shadow:
+    0 0 0 1px var(--m-bois),
+    0 0 0 3px var(--m-papier2),
+    0 0 0 4px var(--m-bois),
+    0 4px 10px var(--m-ombre);
+}
+
+.fronton {
+  padding: 6px 16px 4px;
+  text-align: center;
+}
+
+.annonce {
+  margin: 0;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.28em;
+  color: var(--m-or);
+}
+
+.annonce::before,
+.annonce::after {
+  content: ' ✦ ';
+  color: var(--m-pale);
+}
+
+/* Le millésime d'une décennie (maquette : `.millesime.clos`, à 50 px). */
+.millesime {
+  margin: 2px 0 0;
+  font: 400 50px/1 var(--m-f-affiche);
+  letter-spacing: 0.02em;
+  color: var(--m-papier2);
+  text-shadow:
+    3px 3px 0 var(--m-velours),
+    5px 5px 0 var(--m-ombre);
+}
+
+.monde {
+  margin: 4px 0 0;
+  font: italic 17px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.titreSec {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 26px 16px 10px;
+  font: 400 18px var(--m-f-affiche);
+  letter-spacing: 0.04em;
+  color: var(--m-or2);
+}
+
+.titreSec small {
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  color: var(--m-pale);
+}
+
+.titreSec::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--m-filet);
+  transform: translateY(-5px);
+}
+
+/* Le chargement, les pannes. */
+.etat,
+.panne {
+  margin: 18px 16px;
+  text-align: center;
+  font: italic 16px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.etat p,
+.panne p {
+  margin: 0 0 12px;
+}
+
+.etat button,
+.panne button,
+.lien {
+  display: inline-grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+  font: 400 15px var(--m-f-affiche);
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 3px 0 var(--m-bois);
+  cursor: pointer;
+}
+
+/* La boîte à billets et le catalogue : deux boutons dorés, côte à côte. */
+.liens {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 22px 14px 0;
+}
