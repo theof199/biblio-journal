@@ -51,8 +51,7 @@ export const PAGES_1890: HabillagePages = {
     fermee: { pancarte: 'Fermé jusqu’au ticket', dejaVus: 'Déjà vus', enAvance: 'en avance' },
     intertitre: 'La manivelle, les forains, le train qui fonce sur la salle.',
     feuille: { tete: 'Aujourd’hui · entrée libre', titre: 'Le Boniment', sous: 'du chroniqueur', pied: 'Le chroniqueur', imprimeur: 'Imprimerie du Voyage · composé à la main' },
-    // `valider` et `validerSous` changent avec le billet numéroté (tâche 8, décision D4).
-    billet: { tete: 'Cinématographe · billet de séance', titre: 'Séance du', valider: 'Composter le billet', validerSous: 'et revenir à l’année', tampon: 'VU', tamponAutour: 'Cinématographe · séance du' },
+    billet: { tete: 'Cinématographe · billet de séance', titre: 'Séance du', valider: 'Tamponner « Vu »', validerSous: 'et ranger le billet', tampon: 'VU', tamponAutour: 'Cinématographe · séance du' },
     decennie: { annonce: 'Le manège des années', passeport: 'Passeport', palissade: { titre: 'La palissade', sous: 'affiches par année' }, registre: 'Registre des recettes', prochainement: 'Prochainement' },
     boite: { sur: 'Collection', titre: 'La boîte à billets', etiquette: 'CINÉMATOGRAPHE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger le billet' },
     recherche: { champ: 'Quel film cherchez-vous ?', catalogue: 'Catalogue des vues', affiche: 'Les plus demandées au guichet', vide: 'Aucune vue à ce nom au catalogue.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher hors du Voyage' },

@@ -32,6 +32,20 @@ export function billetsDeLaDecennie(items: readonly JournalItem[], decennie: num
 /** « N° 0007 » : quatre chiffres au moins, comme le numéroteur de la maquette. */
 export const numeroLisible = (n: number): string => `N° ${String(n).padStart(4, '0')}`
 
+/** Le numéro d'un billet pas encore lu : le numéroteur s'arrête là quand la boîte n'a pas répondu. */
+export const NUMERO_EN_ATTENTE = 'N° ····'
+
+/**
+ * Un tirage du numéroteur (maquette 1890 : `tamponner`, ligne 2702) : au tirage `k` (de 0 à 9), le
+ * chiffre `i` du numéro est déjà le bon quand `k > 6 + i / 2`, tiré au sort sinon ; sans numéro lu
+ * (`final` nul), tous les chiffres roulent jusqu'au bout.
+ */
+export function tirerLeNumero(final: number | null, k: number, alea: () => number = Math.random): string {
+  const chiffres = final !== null ? numeroLisible(final).slice(3) : '0000'
+  const tires = [...chiffres].map((c, i) => (final !== null && k > 6 + i * 0.5 ? c : String(Math.floor(alea() * 10))))
+  return `N° ${tires.join('')}`
+}
+
 /** Le numéro du billet d'un visionnage ; nul s'il n'est pas dans la boîte. */
 export const numeroDe = (billets: readonly Billet[], entryId: string): number | null =>
   billets.find((b) => b.item.entry.id === entryId)?.numero ?? null

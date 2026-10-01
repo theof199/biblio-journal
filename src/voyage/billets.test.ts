@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { billetsDeLaDecennie, casier, intercalaires, numeroDe, numeroLisible } from './billets'
+import { NUMERO_EN_ATTENTE, billetsDeLaDecennie, casier, intercalaires, numeroDe, numeroLisible, tirerLeNumero } from './billets'
 import { visionnage } from '../test/journal'
 
 /** Un visionnage d'un film sorti `an`, vu le `date`, créé à `cree`. */
@@ -116,5 +116,25 @@ describe('la boîte', () => {
     expect(casier(billets, null).map((b) => b.numero)).toEqual([3, 2, 1])
     expect(casier(billets, 1895).map((b) => b.numero)).toEqual([3, 1])
     expect(billets.map((b) => b.numero)).toEqual([1, 2, 3])
+  })
+})
+
+describe('le numéroteur', () => {
+  // Un hasard qui tire toujours 9 : un chiffre tiré se distingue des chiffres de 0413.
+  const neuf = () => 0.95
+
+  // Mutations : le seuil d'un chiffre décalé (`k > 7 + i / 2`, ou `k > 6 + i`) ; le numéro posé d'emblée.
+  it('roule, puis pose le numéro chiffre après chiffre, de gauche à droite', () => {
+    expect(tirerLeNumero(413, 0, neuf)).toBe('N° 9999')
+    expect(tirerLeNumero(413, 6, neuf)).toBe('N° 9999')
+    expect(tirerLeNumero(413, 7, neuf)).toBe('N° 0499')
+    expect(tirerLeNumero(413, 8, neuf)).toBe('N° 0413')
+    expect(tirerLeNumero(413, 9, neuf)).toBe('N° 0413')
+  })
+
+  // Mutation : un numéro inconnu qui se pose quand même (« N° 0000 »).
+  it('sans numéro lu, roule jusqu’au bout', () => {
+    expect(tirerLeNumero(null, 9, neuf)).toBe('N° 9999')
+    expect(NUMERO_EN_ATTENTE).toBe('N° ····')
   })
 })

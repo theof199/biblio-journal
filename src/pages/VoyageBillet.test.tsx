@@ -4,9 +4,10 @@ import { cles } from '../api/cles'
 import type { JournalItem, JournalPage } from '../api/journal'
 import type { ReactionsCatalogue } from '../api/reactions'
 import type { Bobine, FichePrete, Progression, Voyage } from '../api/voyage'
-import { jourLocal } from '../ui/format'
+import { formatDateVisionnage, jourLocal } from '../ui/format'
 import { oublierLeRetour } from '../voyage/annee/retour'
-import { decalerJour } from '../voyage/billet'
+import { DUREE_DU_COMPOSTAGE, FRAPPE, decalerJour } from '../voyage/billet'
+import { billetRange, oublierLeBillet } from '../voyage/billet/range'
 import { RELECTURES } from '../voyage/relecture'
 import { exemple } from '../test/contrat'
 import { visionnage } from '../test/journal'
@@ -67,6 +68,8 @@ const ANNEE = 'GET /api/me/voyage/annees/1897'
 const REACTIONS = 'GET /api/reference/reactions'
 const MEDIA = 'POST /api/media'
 const JOURNAL = 'POST /api/me/journal'
+/** Mes films des années 1890 : la boîte à billets, où le billet lit son numéro (décision D3). */
+const BOITE = 'GET /api/me/journal?limit=100&sortie_min=1890&sortie_max=1899'
 const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)
 const PAGE = exemple<JournalPage>('/me/journal', 'get', 200)
 /** Une requête sous chaque préfixe que périme une écriture du journal, sans observateur (rien ne les relit). */
@@ -89,13 +92,31 @@ function kaneVu(): JournalItem {
   return v
 }
 
+/** Un visionnage d'un film sorti `annee`, vu le `date`. */
+const vu = (id: string, annee: number, date: string) => visionnage({ id, media: `m-${id}`, annee, date })
+
+/** L'entrée que rend le compostage d'un film de 1897 (vue le 12 juillet 2026, l'exemple du contrat). */
+const NEUVE = entreeRendue(1897)
+
+/**
+ * La boîte des années 1890 après ce compostage, dans l'ordre de l'API (le plus récent devant) : deux
+ * billets avant lui, et un film de 2010 vu entre eux, qu'une API d'avant le filtre rendrait aussi.
+ * Le billet neuf y porte le N° 0003 ; numéroté sur tout le journal, il porterait le N° 0004.
+ */
+const BOITE_DE_TROIS = [NEUVE, vu('e-b', 1895, '2026-06-01'), vu('e-x', 2010, '2026-05-15'), vu('e-a', 1896, '2026-05-01')]
+
 /**
  * Le serveur d'un billet : la fiche relue rend `apres` une fois le visionnage écrit (le film vu
- * compte), `avant` jusque-là. `ecrit` le dit au test.
+ * compte), `avant` jusque-là. `ecrit` le dit au test. `boite` : mes films de la décennie, ou la
+ * réponse à leur lecture.
  */
-function serveur(o: { voyage?: Voyage; avant?: FichePrete; apres?: () => FichePrete; entree?: JournalItem } = {}) {
+function serveur(
+  o: { voyage?: Voyage; avant?: FichePrete; apres?: () => FichePrete; entree?: JournalItem; boite?: JournalItem[] | (() => Promise<Response>) } = {},
+) {
   const etat = { ecrit: false, creations: 0 }
+  const boite = o.boite ?? []
   const routes = {
+    [BOITE]: () => (typeof boite === 'function' ? boite() : json({ ...PAGE, items: boite, next_cursor: null })),
     [CARTE]: () => json(o.voyage ?? VOYAGE),
     [ANNEE]: () => json(etat.ecrit ? (o.apres?.() ?? fiche({ profondeur: 3 })) : (o.avant ?? fiche())),
     [REACTIONS]: () => json(CATALOGUE),
@@ -112,8 +133,15 @@ function serveur(o: { voyage?: Voyage; avant?: FichePrete; apres?: () => FichePr
 const billet = (film: { id: string }, suite = '') => `/voyage/1897/films/${film.id}/billet${suite}`
 const compte = (requetes: string[], cle: string) => requetes.filter((r) => r === cle).length
 const corps = (init: RequestInit) => JSON.parse(String(init.body)) as Record<string, unknown>
-const composter = () => screen.findByRole('button', { name: /Composter le billet/ })
+const composter = () => screen.findByRole('button', { name: /Tamponner « Vu »/ })
 const lAnnee = () => screen.findByRole('region', { name: 'L’année 1897' })
+/** L'encre du tampon, qui n'a de nom qu'une fois posée. */
+const tamponne = () => screen.findByRole('img', { name: /^VU : / })
+/** Hors du calme, le compostage joue toute sa séquence avant l'année (décision D4) : la traverser. */
+const traverser = async () => {
+  await tamponne()
+  await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE)
+}
 
 /** `matchMedia` manque à jsdom : le test pose la réponse de « moins d'animations ». */
 const calme = () =>
@@ -137,17 +165,23 @@ describe('le billet de séance', () => {
     vi.stubGlobal('fetch', vi.fn())
     localStorage.clear()
     oublierLeRetour(1897)
+    oublierLeBillet()
   })
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
     delete (Element.prototype as { animate?: unknown }).animate
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
     delete (navigator as { vibrate?: unknown }).vibrate
   })
 
+  // Les tests qui attendent l'année composent au calme : l'année revient aussitôt (décision D4) ; la
+  // séquence du tampon a les siens, plus bas, sous minuteries simulées.
+
   // Mutations : la garde du double toucher retirée ; le retour à l'année oublié (retour à l'accueil).
   it('composte une fois, puis revient à l’année relue', async () => {
+    calme()
     const { etat, routes } = serveur()
     const { requetes } = monterVoyage(billet(FAUCON), routes)
     fireEvent.click(await screen.findByRole('button', { name: '7 sur 10' }))
@@ -160,22 +194,23 @@ describe('le billet de séance', () => {
     expect(compte(requetes, ANNEE)).toBeGreaterThan(1)
   })
 
-  // Mutations : « et revenir à l’année » laissé tel quel (la page ne met pas l'année) ; le nom de la
-  // correction pris aux mots du monde.
-  it('dit « Composter le billet » · « et revenir à 1897 », sans numéro ; « Corriger le billet » en correction', async () => {
+  // Mutations : les mots d'avant (« Composter le billet » · « et revenir à l’année ») ; le nom de la
+  // correction pris aux mots du monde ; un numéro posé avant le tampon.
+  it('dit « Tamponner « Vu » » · « et ranger le billet », le numéro en attente ; « Corriger le billet » en correction', async () => {
     const { routes } = serveur()
     const vue = monterVoyage(billet(FAUCON), routes)
-    expect(await composter()).toHaveAccessibleName('Composter le billet et revenir à 1897')
+    expect(await composter()).toHaveAccessibleName('Tamponner « Vu » et ranger le billet')
     expect(screen.getByText('Cinématographe · billet de séance')).toBeInTheDocument()
-    expect(screen.queryByText(/N°/)).toBeNull()
+    expect(screen.getByText('N° ····')).toBeInTheDocument()
     vue.unmount()
     monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kaneVu() } }, routes)
     expect(await screen.findByRole('button', { name: /Corriger le billet/ })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
   })
 
   // Mutations : la date d'aujourd'hui toujours ; la note oubliée ; les cartons ou la remarque oubliés.
   it('le corps de POST /me/journal porte la date du dateur (« Hier »), la note poinçonnée, les cartons, la remarque', async () => {
+    calme()
     const { routes } = serveur()
     let envoye: Record<string, unknown> | null = null
     monterVoyage(billet(FAUCON), {
@@ -220,6 +255,7 @@ describe('le billet de séance', () => {
 
   // Mutation : un billet sans note envoie la note d'avant, ou `0` (« sans note » rebouche tout).
   it('« sans note » rebouche le poinçon et envoie une note nulle', async () => {
+    calme()
     const { routes } = serveur()
     let envoye: Record<string, unknown> | null = null
     monterVoyage(billet(FAUCON), { ...routes, [JOURNAL]: (init) => ((envoye = corps(init)), routes[JOURNAL]()) })
@@ -277,6 +313,7 @@ describe('le billet de séance', () => {
 
   // Mutation : le candidat du programme (son `tmdb_id`, celui de la première bobine, déjà vue).
   it('une bobine : POST /media porte l’identifiant de la bobine, et le billet son titre', async () => {
+    calme()
     const { routes } = serveur()
     let media: Record<string, unknown> | null = null
     monterVoyage(billet(PROGRAMME, '?bobine=512'), { ...routes, [MEDIA]: (init) => ((media = corps(init)), routes[MEDIA]()) })
@@ -293,7 +330,7 @@ describe('le billet de séance', () => {
     const { requetes } = monterVoyage(billet(PROGRAMME, suite), routes)
     expect(await screen.findByText('Cette bobine n’est pas au programme de « Programme Lumière ».')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Retour au film' })).toHaveAttribute('href', '/voyage/1897/films/p-lumiere')
-    expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
     expect(requetes.some((r) => r.startsWith('POST'))).toBe(false)
   })
 
@@ -302,12 +339,13 @@ describe('le billet de séance', () => {
     const { routes } = serveur()
     monterVoyage('/voyage/1897/films/inconnu/billet', routes)
     expect(await screen.findByText('Ce film n’est pas dans les salles de 1897.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
   })
 
   // Le jumeau du formulaire du journal. Mutation : une clé retirée des péremptions (les Suivis
   // reproposeraient le film, le Profil garderait ses chiffres).
   it('périme ce que périme le formulaire du journal', async () => {
+    calme()
     const { routes } = serveur()
     const vue = monterVoyage(billet(FAUCON), routes, (c) => {
       for (const cle of PERIMABLES) c.setQueryData(cle, { garde: true })
@@ -318,6 +356,7 @@ describe('le billet de séance', () => {
   })
 
   it('un refus s’affiche tel que l’API l’a écrit, et le billet se retente', async () => {
+    calme()
     const { routes } = serveur()
     let essais = 0
     monterVoyage(billet(FAUCON), {
@@ -359,11 +398,17 @@ describe('le billet de séance', () => {
     // lecture (une relecture qui avance encore revibre) ; le retour joué sur la fiche d'avant (sans
     // attendre la relecture : rien n'aurait bougé).
     it('le billet des films passe de 2 à 3, la région d’état dit « +1 film vu », et le téléphone vibre une fois, au palier de l’Ours', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       const vibrate = vibreur()
       let apres = fiche({ profondeur: 3 })
       const { routes } = serveur({ voyage: HORS_IA, apres: () => apres })
       const vue = monterVoyage(billet(FAUCON), routes)
       fireEvent.click(await composter())
+      // Le tampon a déjà fait vibrer le téléphone (décision D4) : seul le palier compte ici.
+      await tamponne()
+      expect(vibrate).toHaveBeenCalledTimes(1)
+      vibrate.mockClear()
+      await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE)
       await lAnnee()
       const annonce = await screen.findByText('+1 film vu')
       expect(annonce).toHaveAttribute('role', 'status')
@@ -404,10 +449,15 @@ describe('le billet de séance', () => {
 
     // Le jumeau du palier. Mutation : vibrer à chaque avancée.
     it('une avancée sans palier ne fait pas vibrer', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       const vibrate = vibreur()
       const { routes } = serveur({ voyage: HORS_IA, avant: fiche({ profondeur: 5 }), apres: () => fiche({ profondeur: 6 }) })
       monterVoyage(billet(FAUCON), routes)
       fireEvent.click(await composter())
+      // La vibration du tampon n'est pas celle d'un palier.
+      await tamponne()
+      vibrate.mockClear()
+      await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE)
       await lAnnee()
       expect(await screen.findByText('+1 film vu')).toBeInTheDocument()
       expect(vibrate).not.toHaveBeenCalled()
@@ -415,10 +465,12 @@ describe('le billet de séance', () => {
 
     // Mutations : la garde du calme retirée (le « +1 » volerait) ; `peutAnimer` ignoré.
     it('un « +1 » vole sur le billet gagné, jamais au calme', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       const animate = animer()
       const { routes } = serveur({ voyage: HORS_IA })
       const vue = monterVoyage(billet(FAUCON), routes)
       fireEvent.click(await composter())
+      await traverser()
       await lAnnee()
       const films = await screen.findByRole('listitem', { name: '3 films vus' })
       await waitFor(() => expect(within(films).getByText('+1')).toBeInTheDocument())
@@ -440,9 +492,11 @@ describe('le billet de séance', () => {
 
     // Mutation : la garde de Web Animations retirée (le « +1 » s'afficherait, immobile, ou lèverait).
     it('sans Web Animations, rien ne vole, mais le compteur roule', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       const { routes } = serveur({ voyage: HORS_IA })
       monterVoyage(billet(FAUCON), routes)
       fireEvent.click(await composter())
+      await traverser()
       await lAnnee()
       const films = await screen.findByRole('listitem', { name: '3 films vus' })
       await waitFor(() => expect(within(films).getByText('2')).toBeInTheDocument())
@@ -453,6 +507,7 @@ describe('le billet de séance', () => {
     // ignoré (le guet ne s'arrêterait qu'au plafond).
     it('au compte IA, pour un film de l’année en cours, la fiche se relit toutes les cinq secondes jusqu’au verdict, puis s’arrête', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
+      calme()
       let verdict = JUGE
       const { routes } = serveur({
         entree: entreeRendue(1897),
@@ -480,6 +535,7 @@ describe('le billet de séance', () => {
       ['au compte IA, pour un film d’une autre année', VOYAGE, 2010],
     ] as const)('%s, aucune relecture de guet', async (_cas, voyage, anneeDuFilm) => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
+      calme()
       const { routes } = serveur({ voyage, entree: entreeRendue(anneeDuFilm) })
       const { requetes } = monterVoyage(billet(FAUCON), routes)
       fireEvent.click(await composter())
@@ -493,6 +549,7 @@ describe('le billet de séance', () => {
     // Le jumeau du verdict : le Lion accorde le ticket sans rejuger. Mutation : le ticket ignoré par le guet.
     it('un ticket apparu arrête le guet, même sans verdict neuf', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
+      calme()
       let ticket: FichePrete['ticket'] = null
       const { routes } = serveur({ entree: entreeRendue(1897), apres: () => fiche({ profondeur: 3, ticket }) })
       const { requetes } = monterVoyage(billet(FAUCON), routes)
@@ -528,6 +585,7 @@ describe('le billet de séance', () => {
     // Mutation : le guet au plafond ignoré (la fiche se relirait tant que le verdict ne change pas).
     it('le guet s’arrête au douzième essai', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
+      calme()
       const { routes } = serveur({ entree: entreeRendue(1897) })
       const { requetes } = monterVoyage(billet(FAUCON), routes)
       fireEvent.click(await composter())
@@ -541,6 +599,7 @@ describe('le billet de séance', () => {
     // Mutation : la minuterie non annulée en quittant la page.
     it('le guet s’arrête en quittant la page', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
+      calme()
       const { routes } = serveur({ entree: entreeRendue(1897) })
       const { requetes } = monterVoyage(['/voyage/1896', billet(FAUCON)], {
         ...routes,
@@ -560,6 +619,7 @@ describe('le billet de séance', () => {
     // jamais au billet. Mutations : toujours reculer (le billet ramènerait au film, pas à l'année) ;
     // pousser l'année au lieu de la remplacer (reculer rouvrirait le billet).
     it('depuis la fiche du film, le billet laisse place à l’année, et reculer ne le rouvre pas', async () => {
+      calme()
       const { routes } = serveur()
       monterVoyage(['/voyage/1896', `/voyage/1897/films/${FAUCON.id}`, billet(FAUCON)], {
         ...routes,
@@ -570,13 +630,14 @@ describe('le billet de séance', () => {
       expect(await lAnnee()).toBeInTheDocument()
       fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
       expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /Composter/ })).toBeNull()
+      expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
     })
 
     // Depuis la séance, l'année est derrière le billet. Mutations : le lien de la séance sans son état
     // (le billet remplacerait l'année par elle-même) ; toujours remplacer. L'historique aurait alors
     // deux fois 1897, et « Retour à la carte » ramènerait à 1897.
     it('depuis la séance, le billet recule vers l’année sans la doubler, et les billets roulent', async () => {
+      calme()
       const { routes } = serveur({ avant: fiche({ seances: [seance({ id: 's-1', rang: 1, long: morceau(FAUCON) })] }) })
       monterVoyage(['/voyage/1896', '/voyage/1897'], {
         ...routes,
@@ -730,6 +791,120 @@ describe('le billet de séance', () => {
       fireEvent.click(confirmer)
       expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
       expect(effacements).toBe(1)
+    })
+  })
+
+  describe('le billet numéroté (idée 5, décision D4)', () => {
+    // Mutations : le numéro pris dans tout le journal (« N° 0004 ») ; `rangerLeBillet` oublié ; le
+    // talon sans son numéro ; l'année ramenée avant la fin de la séquence.
+    it('tamponne, numérote, range le billet, puis revient à l’année', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const vibrate = vibreur()
+      const amener = vi.fn()
+      Object.defineProperty(Element.prototype, 'scrollIntoView', { value: amener, configurable: true, writable: true })
+      const { routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      const { requetes } = monterVoyage(billet(FAUCON), routes)
+      const bouton = await composter()
+      expect(screen.getByText('N° ····')).toBeInTheDocument()
+      fireEvent.click(bouton)
+      const encre = await tamponne()
+      expect(encre).toHaveAccessibleName(`VU : Cinématographe · séance du ${formatDateVisionnage(jourLocal())}`)
+      expect(vibrate).toHaveBeenCalledWith([18, 40, 70])
+      expect(amener).toHaveBeenCalled()
+      // La pause, le marteau qui remonte, les tirages : le numéro est posé, l'année pas encore là.
+      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + 20)
+      expect(screen.getByText('N° 0003')).toBeInTheDocument()
+      expect(compte(requetes, BOITE)).toBe(1)
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+      // Le talon part avec le même numéro.
+      await vi.advanceTimersByTimeAsync(FRAPPE.avantTalon)
+      expect(screen.getAllByText('N° 0003')).toHaveLength(2)
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+      await vi.advanceTimersByTimeAsync(FRAPPE.talon)
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(billetRange(SESSION.user.id)).toBe(NEUVE.entry.id)
+    })
+
+    // Mutation : la garde « montée » retirée (la séquence finie ramènerait à l'année).
+    it('ne ramène pas à l’année un membre parti pendant la séquence', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      monterVoyage([`/voyage/1897/films/${FAUCON.id}`, billet(FAUCON)], {
+        ...routes,
+        'GET /api/reference/films/963/realisateurs': () => json({ realisateurs: [] }),
+      })
+      fireEvent.click(await composter())
+      await tamponne()
+      // Pendant le numéroteur.
+      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * 3)
+      expect(screen.queryByText('N° ····')).toBeNull()
+      expect(screen.queryByText('N° 0003')).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
+      // La fiche du film : son enseigne, que le billet n'a pas.
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(DUREE_DU_COMPOSTAGE)
+      expect(screen.getByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+    })
+
+    // Mutations : la garde du calme retirée de la séquence (l'année n'arrive qu'après le tampon) ; la
+    // vibration jouée avant elle ; la boîte lue au calme ; `rangerLeBillet` oublié au calme.
+    it('au calme, range le billet et revient aussitôt, sans tampon ni vibration', async () => {
+      calme()
+      const vibrate = vibreur()
+      const { routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      const { requetes } = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(billetRange(SESSION.user.id)).toBe(NEUVE.entry.id)
+      expect(vibrate).not.toHaveBeenCalled()
+      expect(compte(requetes, BOITE)).toBe(0)
+    })
+
+    // Mutation : la séquence qui attend la lecture de la boîte avant de rouler.
+    it('le réseau lent n’arrête pas le billet : « N° ···· », puis l’année', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ entree: NEUVE, boite: () => new Promise<Response>(() => undefined) })
+      const { requetes } = monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await composter())
+      await tamponne()
+      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + 20)
+      expect(compte(requetes, BOITE)).toBe(1)
+      expect(screen.getByText('N° ····')).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(FRAPPE.avantTalon + FRAPPE.talon)
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(billetRange(SESSION.user.id)).toBe(NEUVE.entry.id)
+    })
+
+    // Mutation : la garde `envoi` relâchée à `onSettled`, avant la navigation (le bouton se rallume
+    // pendant le tampon).
+    it('deux touchers pendant la séquence n’écrivent qu’une fois', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { etat, routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      monterVoyage(billet(FAUCON), routes)
+      const bouton = await composter()
+      fireEvent.click(bouton)
+      await tamponne()
+      expect(bouton).toBeDisabled()
+      fireEvent.click(bouton)
+      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + FRAPPE.avantTalon + 20)
+      expect(bouton).toBeDisabled()
+      fireEvent.click(bouton)
+      await vi.advanceTimersByTimeAsync(FRAPPE.talon)
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(etat.creations).toBe(1)
+    })
+
+    // Mutations : le tampon joué en correction (l'année n'arriverait qu'après lui) ; le numéro pris
+    // dans tout le journal (« N° 0003 ») ; le billet corrigé rangé comme un neuf.
+    it('la correction dit son numéro et ne tamponne pas', async () => {
+      const kane = kaneVu()
+      const { routes } = serveur({ boite: [vu('e-c', 1899, '2026-09-15'), kane, vu('e-x', 2010, '2026-08-20'), vu('e-a', 1896, '2026-08-01')] })
+      monterVoyage({ pathname: billet(KANE, '/corriger'), state: { item: kane } }, { ...routes, 'PATCH /api/me/journal/e-kane': () => json(kaneVu()) })
+      expect(await screen.findByText('N° 0002')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /Corriger le billet/ }))
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(billetRange(SESSION.user.id)).toBeNull()
     })
   })
 

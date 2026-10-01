@@ -1,0 +1,12 @@
+/* Le numéroteur (maquette 1890 : `.entete-billet .numero`, ligne 351) : des chiffres d'égale chasse
+   dans un cadre fin, au rouge du monde. Couleurs et polices : les jetons du monde. */
+.numero {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--m-rouge) 50%, transparent);
+  color: var(--m-rouge);
+  font: 700 12px/1.4 var(--m-f-corps);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.14em;
+}

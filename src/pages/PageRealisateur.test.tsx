@@ -279,6 +279,9 @@ describe('depuis la page d’un réalisateur, le Voyage', () => {
   // Le réalisateur retrouvé se relit : mutation, `cles.realisateurs` retiré des péremptions du billet
   // (la page gardée en cache 30 s dirait encore « À voir »).
   it('« Je l’ai vu » puis composter revient à l’année, avec le film puis le réalisateur derrière elle', async () => {
+    // Au calme, l'année revient aussitôt : la lecture de l'année plus bas ne court pas contre le tampon
+    // du billet (décision D4), qui a ses propres tests (`VoyageBillet.test.tsx`).
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
     let creations = 0
     monterVoyage('/suivis/realisateurs/525', {
       ...ROUTES,

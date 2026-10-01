@@ -1,0 +1,136 @@
+/* Le tampon qui frappe le billet (maquette 1890 : `.marteau`, `.encre-vu`, lignes 387 à 390, et
+   `tamponner`). Posé sur le billet par son support, sans étage ni opacité : l'encre se mêle au carton
+   (`multiply`) sans groupe isolé entre eux. Les durées sont celles de `FRAPPE` (`voyage/billet.ts`).
+   Couleurs et polices : les jetons du monde ; l'encre est le rouge du monde, le marteau son bois. */
+.tampon {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* L'encre, à droite sous la tête du billet, sur le dateur : jamais sur la remarque. */
+.encre {
+  position: absolute;
+  top: 150px;
+  right: 18px;
+  width: 132px;
+  height: 132px;
+  color: var(--m-rouge);
+  opacity: 0.9;
+  transform: rotate(-16deg);
+  mix-blend-mode: multiply;
+}
+
+.encre svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.trait {
+  fill: none;
+  stroke: currentColor;
+}
+
+.mot {
+  fill: currentColor;
+  font: 400 32px var(--m-f-affiche);
+}
+
+.autour {
+  fill: currentColor;
+  font: 10.5px var(--m-f-capitales);
+  letter-spacing: 1.2px;
+}
+
+/* L'encre qui vient d'être posée : un éclat, pendant que le marteau est encore dessus. */
+.tampon[data-frappe='pose'] .encre {
+  animation: eclat 260ms ease-out;
+}
+
+@keyframes eclat {
+  from {
+    opacity: 0.4;
+    transform: rotate(-16deg) scale(1.25);
+  }
+  to {
+    opacity: 0.9;
+    transform: rotate(-16deg) scale(1);
+  }
+}
+
+/* Le marteau, au-dessus de l'encre. */
+.marteau {
+  position: absolute;
+  top: 66px;
+  right: 39px;
+  display: block;
+  width: 118px;
+  height: auto;
+  transform: rotate(-16deg);
+}
+
+.tampon[data-frappe='descend'] .marteau {
+  animation: descend 420ms cubic-bezier(0.6, 0, 1, 0.6) both;
+}
+
+.tampon[data-frappe='remonte'] .marteau {
+  animation: remonte 420ms cubic-bezier(0.2, 0.8, 0.4, 1) both;
+}
+
+@keyframes descend {
+  0% {
+    opacity: 0;
+    transform: translateY(-240px) rotate(-10deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-200px) rotate(-10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(-16deg);
+  }
+}
+
+@keyframes remonte {
+  from {
+    opacity: 1;
+    transform: translateY(0) rotate(-16deg);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-260px) rotate(-4deg);
+  }
+}
+
+.tete {
+  fill: var(--m-bois);
+}
+
+.reflet {
+  fill: color-mix(in srgb, var(--m-bois) 60%, var(--m-or3));
+}
+
+.manche {
+  fill: color-mix(in srgb, var(--m-bois) 80%, var(--m-encre));
+}
+
+.bague {
+  fill: var(--m-or3);
+}
+
+.socle {
+  fill: color-mix(in srgb, var(--m-encre2) 55%, var(--m-encre));
+}
+
+.semelle {
+  fill: var(--m-encre);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tampon[data-frappe] .encre,
+  .tampon[data-frappe] .marteau {
+    animation: none;
+  }
+}

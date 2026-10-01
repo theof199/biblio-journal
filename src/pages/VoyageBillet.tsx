@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { corrigerVisionnage, creerVisionnage, supprimerVisionnage, type JournalItem } from '../api/journal'
+import { corrigerVisionnage, creerVisionnage, journalDesAnnees, supprimerVisionnage, type JournalItem } from '../api/journal'
 import { lireReactions } from '../api/reactions'
 import { estPrete, lireVoyage, type FicheAnnee, type Voyage } from '../api/voyage'
 import type { CandidatFilm } from '../formulaire/candidat'
@@ -11,16 +11,22 @@ import { brouillonInitial, construirePatch, type FormulaireBrouillon } from '../
 import { creerRegistre } from '../mondes'
 import type { Monde } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
-import { sousTitre } from '../ui/format'
+import { formatDateVisionnage, sousTitre } from '../ui/format'
+import { vibrer } from '../ui/haptique'
+import { useMouvementReduit } from '../ui/mouvement'
 import Panne from '../ui/Panne'
 import { historiqueDerriere, useRevenir } from '../ui/revenir'
 import { doitGuetterVerdict } from '../voyage/annee'
 import { confierLeRetour, type EtatBillet, type Retour } from '../voyage/annee/retour'
 import { useFiche } from '../voyage/annee/useFiche'
-import { initiale } from '../voyage/billet'
+import { FRAPPE, initiale } from '../voyage/billet'
 import Cartons from '../voyage/billet/Cartons'
 import Dateur from '../voyage/billet/Dateur'
+import Numeroteur from '../voyage/billet/Numeroteur'
 import Poincon from '../voyage/billet/Poincon'
+import { rangerLeBillet } from '../voyage/billet/range'
+import Tampon, { type Frappe } from '../voyage/billet/Tampon'
+import { NUMERO_EN_ATTENTE, billetsDeLaDecennie, numeroDe, numeroLisible } from '../voyage/billets'
 import { bobineDuFilm, candidatDuBillet, filmDeLaFiche } from '../voyage/film'
 import { decennieDe } from '../voyage/regles'
 import styles from './VoyageBillet.module.css'
@@ -41,10 +47,23 @@ const PERIMES = [cles.journal, cles.stats, cles.voyage, cles.realisateurs, cles.
 const messageDe = (e: unknown, repli: string) => (e instanceof ApiError ? e.message : repli)
 
 /**
- * Le billet de séance (plan 2b, tâche 11 ; maquette 1890 : `initNotation`, écran VI ; décision D2) :
- * `…/billet` enregistre un visionnage (`?bobine=` pour une bobine d'un programme), `…/billet/corriger`
- * corrige celui que porte l'état de navigation (`state.item`). Un `:annee` qui n'est pas un entier
- * ramène à la carte.
+ * Mes visionnages des films de la décennie, sous la clé de la boîte à billets (`pages/VoyageBoite.tsx`)
+ * : le billet y lit son numéro (décision D3), à la correction comme au compostage — une seule lecture,
+ * donc un seul numéro, celui que la boîte montre.
+ */
+const laBoite = (d: number) =>
+  queryOptions({ queryKey: cles.journalDesAnnees(d, d + 9), queryFn: ({ signal }) => journalDesAnnees(d, d + 9, signal) })
+
+const attendre = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+/** Où en est le compostage (décision D4) : au repos, la frappe du tampon, le numéroteur, le talon qui part. */
+type Etape = 'repos' | Exclude<Frappe, 'fini'> | 'numerote' | 'talon'
+
+/**
+ * Le billet de séance (plan 2b, tâche 11 ; maquette 1890 : `initNotation`, écran VI ; plan 2c,
+ * décision D4) : `…/billet` enregistre un visionnage (`?bobine=` pour une bobine d'un programme) et le
+ * tamponne, `…/billet/corriger` corrige celui que porte l'état de navigation (`state.item`). Un
+ * `:annee` qui n'est pas un entier ramène à la carte.
  */
 export default function VoyageBillet({ correction = false }: { correction?: boolean }) {
   const { annee, filmId } = useParams()
@@ -158,8 +177,27 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
   const navigate = useNavigate()
   const { key } = useLocation()
   const { user } = useSession()
+  const calme = useMouvementReduit()
   const item = cible.type === 'correction' ? cible.item : undefined
   const candidat = cible.type === 'creation' ? cible.candidat : undefined
+  const decennie = decennieDe(annee)
+
+  // Le numéro du billet corrigé se lit en tête (décision D3) ; un billet neuf l'apprend en se tamponnant.
+  const boite = useQuery({ ...laBoite(decennie), enabled: item !== undefined })
+  const numeroCorrige = item && boite.data ? numeroDe(billetsDeLaDecennie(boite.data, decennie), item.entry.id) : null
+
+  // Le compostage (décision D4) : l'étape, le numéroteur (son tirage, le numéro qu'il pose), et le
+  // support du billet, que la frappe amène à l'écran.
+  const [etape, setEtape] = useState<Etape>('repos')
+  const [roue, setRoue] = useState<{ tirage: number | null; numero: number | null }>({ tirage: null, numero: null })
+  const support = useRef<HTMLDivElement>(null)
+  // La séquence attend entre ses étapes : le rappel de `mutate` ne se tait qu'à son appel, pas après ses
+  // attentes. Elle relit ce drapeau après chacune, et ne navigue jamais depuis un billet quitté.
+  const monte = useRef(true)
+  useEffect(() => {
+    monte.current = true
+    return () => void (monte.current = false)
+  }, [])
   const [brouillon, setBrouillon] = useState(() => brouillonInitial(item, candidat))
   const [confirmer, setConfirmer] = useState(false)
   // Le focus suit la confirmation : « Annuler » (le geste sans risque) à son ouverture, qui la montre
@@ -182,7 +220,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
   // Ce que le cache doit apprendre reste ici (les péremptions) ; la navigation va dans les rappels de
   // `mutate`, qui se taisent si le billet est quitté pendant l'envoi (le « retour » du téléphone).
   const ecrire = useMutation({
-    mutationFn: async (b: FormulaireBrouillon): Promise<Retour> => {
+    mutationFn: async (b: FormulaireBrouillon): Promise<{ retour: Retour; entree: JournalItem }> => {
       // L'avant : la fiche en cache avant l'écriture, que l'année compare à sa relecture.
       const f = client.getQueryData<FicheAnnee>(cles.annee(annee))
       const avant = estPrete(f) ? { profondeur: f.profondeur, progression: f.progression } : null
@@ -199,7 +237,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
             },
           )
       const guetter = doitGuetterVerdict({ ia: v.ia, creation: !item, anneeDuFilm: entree.media.year, anneeEnCours: v.annee_en_cours })
-      return { avant, guet: guetter ? { depuis } : null }
+      return { retour: { avant, guet: guetter ? { depuis } : null }, entree }
     },
     onSuccess: perimer,
   })
@@ -211,36 +249,97 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
 
   // `isPending` ne se voit qu'au rendu suivant : deux touchers rapprochés écriraient deux fois. Une
   // seule garde pour les deux gestes : on ne corrige pas un visionnage qu'on est en train d'effacer.
+  // Elle se dit aussi au rendu (`garde`) : le compostage la tient levée, bouton éteint, jusqu'au retour
+  // à l'année, bien après la fin de l'écriture ; seul un refus la relâche.
   const envoi = useRef(false)
+  const [garde, setGarde] = useState(false)
+  const lever = () => {
+    envoi.current = true
+    setGarde(true)
+  }
+  const relacher = () => {
+    envoi.current = false
+    setGarde(false)
+  }
+
+  const revenirALAnnee = (retour: Retour) => {
+    confierLeRetour(annee, user.id, retour)
+    // Depuis l'année, reculer : la remplacer par elle-même la doublerait dans l'historique.
+    if (depuisLAnnee && historiqueDerriere(key)) navigate(-1)
+    else navigate(`/voyage/${annee}`, { replace: true })
+  }
+
+  /**
+   * Le billet se tamponne, se numérote, et son talon part (décision D4 ; maquette 1890 : `tamponner`),
+   * puis l'année revient. Le numéro se lit dans la boîte de la décennie, lue dès le succès : si elle n'a
+   * pas répondu à la fin des tirages, le numéroteur s'arrête sur « N° ···· » et la séquence continue.
+   */
+  const tamponner = async (retour: Retour, entree: JournalItem) => {
+    let lu: number | null = null
+    client.fetchQuery(laBoite(decennie)).then(
+      (items) => void (lu = numeroDe(billetsDeLaDecennie(items, decennie), entree.entry.id)),
+      () => undefined,
+    )
+    support.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    setEtape('descend')
+    await attendre(FRAPPE.descend)
+    if (!monte.current) return
+    setEtape('pose')
+    vibrer([18, 40, 70])
+    await attendre(FRAPPE.pause)
+    if (!monte.current) return
+    setEtape('remonte')
+    await attendre(FRAPPE.remonte)
+    if (!monte.current) return
+    setEtape('numerote')
+    for (let k = 0; k < FRAPPE.tirages; k += 1) {
+      setRoue({ tirage: k, numero: lu })
+      await attendre(FRAPPE.tirage)
+      if (!monte.current) return
+    }
+    setRoue({ tirage: null, numero: lu })
+    await attendre(FRAPPE.avantTalon)
+    if (!monte.current) return
+    setEtape('talon')
+    await attendre(FRAPPE.talon)
+    if (!monte.current) return
+    revenirALAnnee(retour)
+  }
+
   const composter = () => {
     if (envoi.current) return
-    envoi.current = true
+    lever()
     suppression.reset()
     ecrire.mutate(brouillon, {
-      onSuccess: (retour) => {
-        confierLeRetour(annee, user.id, retour)
-        // Depuis l'année, reculer : la remplacer par elle-même la doublerait dans l'historique.
-        if (depuisLAnnee && historiqueDerriere(key)) navigate(-1)
-        else navigate(`/voyage/${annee}`, { replace: true })
+      onSuccess: ({ retour, entree }) => {
+        // Corriger ne tamponne pas : le billet a déjà son numéro, lu en tête.
+        if (item) return revenirALAnnee(retour)
+        // Rangé dès l'écriture : un membre qui quitte le billet pendant le tampon le retrouve dans la boîte.
+        rangerLeBillet(user.id, entree.entry.id)
+        // Au calme, ni tampon, ni numéroteur, ni talon, ni vibration : l'année revient aussitôt.
+        if (calme) revenirALAnnee(retour)
+        else void tamponner(retour, entree)
       },
-      onSettled: () => void (envoi.current = false),
+      onError: relacher,
     })
   }
   const supprimer = () => {
     if (!item || envoi.current) return
-    envoi.current = true
+    lever()
     ecrire.reset()
     suppression.mutate(item.entry.id, {
       // Le billet effacé ne reste pas dans l'historique : reculer vers la fiche du film qui l'a ouvert.
       onSuccess: () => (historiqueDerriere(key) ? navigate(-1) : navigate(`/voyage/${annee}/films/${filmId}`, { replace: true })),
-      onSettled: () => void (envoi.current = false),
+      onSettled: relacher,
     })
   }
 
   const titre = item ? item.media.title : candidat!.title
   const couverture = item ? item.media.cover_url : candidat!.cover_url
   const sous = item ? sousTitre(item.media.director, item.media.year) : sousTitre(candidat!.director, candidat!.year)
-  const occupe = ecrire.isPending || suppression.isPending
+  const occupe = ecrire.isPending || suppression.isPending || garde
+  const numero = item ? numeroCorrige : roue.numero
+  const date = formatDateVisionnage(brouillon.date)
 
   return (
     <div className={styles.notation}>
@@ -255,54 +354,70 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
         </div>
       </div>
 
-      <div className={styles.billet}>
-        {/* Sans numéro (décision D2). */}
-        <div className={styles.entete}>
-          <small>{m.billet.tete}</small>
-          <strong>{m.billet.titre}</strong>
-        </div>
-        <div className={`${styles.rubrique} ${styles.dateur}`}>
-          <Dateur date={brouillon.date} onChange={(date) => setBrouillon((b) => ({ ...b, date }))} />
-        </div>
-        <div className={styles.rubrique}>
-          <div className={styles.rubriqueTete}>
-            Ta note <em>poinçonnez</em>
+      {/* Le support porte le billet et ce qui le frappe : le masque du billet rognerait le marteau. */}
+      <div ref={support} className={styles.support} data-etape={etape}>
+        <div className={styles.billet}>
+          <div className={styles.entete}>
+            <small>{m.billet.tete}</small>
+            <strong>{m.billet.titre}</strong>
+            <Numeroteur numero={numero} tirage={roue.tirage} />
           </div>
-          <Poincon note={brouillon.note} onNote={(note) => setBrouillon((b) => ({ ...b, note }))} />
-        </div>
-        <div className={styles.rubrique}>
-          <div className={styles.rubriqueTete}>
-            Tes réactions <em>douze cartons au plus</em>
+          <div className={`${styles.rubrique} ${styles.dateur}`}>
+            <Dateur date={brouillon.date} onChange={(date) => setBrouillon((b) => ({ ...b, date }))} />
           </div>
-          {reactions.data ? (
-            <Cartons catalogue={reactions.data.reactions} choisis={brouillon.reactions} onChange={(r) => setBrouillon((b) => ({ ...b, reactions: r }))} />
-          ) : reactions.error && !reactions.isFetching ? (
-            <div className={styles.erreurCartons}>
-              <Panne erreur={reactions.error} onReessayer={() => void reactions.refetch()} />
+          <div className={styles.rubrique}>
+            <div className={styles.rubriqueTete}>
+              Ta note <em>poinçonnez</em>
             </div>
-          ) : (
-            <p role="status" className={styles.attente}>
-              Chargement…
-            </p>
-          )}
-        </div>
-        <div className={`${styles.rubrique} ${styles.remarque}`}>
-          <div className={styles.rubriqueTete}>
-            <span>
-              <span className={styles.cire} aria-hidden="true">
-                {initiale(user.pseudo)}
-              </span>
-              Ta remarque
-            </span>
-            <em>privée : toi seul la lis</em>
+            <Poincon note={brouillon.note} onNote={(note) => setBrouillon((b) => ({ ...b, note }))} />
           </div>
-          <textarea
-            aria-label="Remarque privée"
-            placeholder="Ce que tu en retiens, pour toi…"
-            value={brouillon.remarque}
-            onChange={(e) => setBrouillon((b) => ({ ...b, remarque: e.target.value }))}
-          />
+          <div className={styles.rubrique}>
+            <div className={styles.rubriqueTete}>
+              Tes réactions <em>douze cartons au plus</em>
+            </div>
+            {reactions.data ? (
+              <Cartons catalogue={reactions.data.reactions} choisis={brouillon.reactions} onChange={(r) => setBrouillon((b) => ({ ...b, reactions: r }))} />
+            ) : reactions.error && !reactions.isFetching ? (
+              <div className={styles.erreurCartons}>
+                <Panne erreur={reactions.error} onReessayer={() => void reactions.refetch()} />
+              </div>
+            ) : (
+              <p role="status" className={styles.attente}>
+                Chargement…
+              </p>
+            )}
+          </div>
+          <div className={`${styles.rubrique} ${styles.remarque}`}>
+            <div className={styles.rubriqueTete}>
+              <span>
+                <span className={styles.cire} aria-hidden="true">
+                  {initiale(user.pseudo)}
+                </span>
+                Ta remarque
+              </span>
+              <em>privée : toi seul la lis</em>
+            </div>
+            <textarea
+              aria-label="Remarque privée"
+              placeholder="Ce que tu en retiens, pour toi…"
+              value={brouillon.remarque}
+              onChange={(e) => setBrouillon((b) => ({ ...b, remarque: e.target.value }))}
+            />
+          </div>
         </div>
+        {etape !== 'repos' ? (
+          <Tampon mot={m.billet.tampon} autour={m.billet.tamponAutour} date={date} frappe={etape === 'descend' || etape === 'pose' || etape === 'remonte' ? etape : 'fini'} />
+        ) : null}
+        {/* Le talon du billet tamponné, qui part dans la boîte (maquette 1890 : `.billet-sort`). */}
+        {etape === 'talon' ? (
+          <div className={styles.talonQuiPart} aria-hidden="true">
+            <span>
+              <b>{numero !== null ? numeroLisible(numero) : NUMERO_EN_ATTENTE}</b>
+              {`${titre} · ${date}`}
+            </span>
+            <span className={styles.vuDuTalon}>{m.billet.tampon}</span>
+          </div>
+        ) : null}
       </div>
 
       {ecrire.error ? (
@@ -312,12 +427,10 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
       ) : null}
       <button type="button" className={styles.valider} disabled={occupe} onClick={composter}>
         <span>
-          <b>{item ? 'Corriger le billet' : m.billet.valider}</b>{' '}
-          {/* Les mots du monde disent « l’année » ; c'est la page qui la nomme. */}
-          <small>{m.billet.validerSous.replace('l’année', String(annee))}</small>
+          <b>{item ? 'Corriger le billet' : m.billet.valider}</b> <small>{m.billet.validerSous}</small>
         </span>
         <span className={styles.talon} aria-hidden="true">
-          VU
+          {m.billet.tampon}
         </span>
       </button>
 
