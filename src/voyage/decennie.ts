@@ -106,7 +106,7 @@ export interface LigneDuRegistre {
   enCours: boolean
   /**
    * Pour un membre hors IA, une année que le Voyage suivi n'a pas encore ouverte (`etatDeCase`, le
-   * jumeau de la carte) : fermée pour lui, « tu le rattrapes bientôt ».
+   * jumeau de la carte) : fermée pour lui, « Théo est trop lent » (`tropLent`).
    */
   attente: boolean
   /** Verrouillée, mais déjà des films vus. */

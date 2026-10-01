@@ -128,7 +128,8 @@ Toucher une année de la carte ouvre sa fiche, `/voyage/:annee`, lue sur
 `GET /me/voyage/annees/{annee}` à chaque ouverture (plan 2b). Selon la forme que rend l'API : l'année
 en cours ou bouclée (la corde des billets, le boniment, le programme, la parade du podium, la séance
 du soir, les salles, le ticket), une année fermée (la pancarte, le chemin, mes films vus en avance),
-une année qui attend le Voyage suivi (« Tu le rattrapes bientôt »), ou l'ouverture qui s'écrit
+une année qui attend le Voyage suivi (« Théo est trop lent », le pseudo du voyageur suivi :
+`tropLent`, `voyage/regles.ts`), ou l'ouverture qui s'écrit
 (relue toutes les cinq secondes, trente-six fois au plus, puis « Réessayer »). Une affiche de salle
 ouvre la fiche du film, `/voyage/:annee/films/:filmId` (`filmId` est la ligne de salle, pas un
 identifiant TMDB) : la projection, le guichet, le programme et ses bobines (vu en partie, ses
@@ -238,7 +239,8 @@ le titre du HUD de la carte (la décennie de l'année en cours) et la plaque du 
 
 Pour un membre hors IA, une année que le Voyage suivi n'a pas encore ouverte (`etatDeCase`,
 `attente`) n'est jamais « en cours » : son cheval est terne au pointillé or, comme sa case de la
-carte, qui ne porte plus de corail ; le registre dit « tu le rattrapes bientôt ».
+carte, qui ne porte plus de corail ; le registre dit « Théo est trop lent » (`tropLent`). Le compte IA,
+ou un compte qui ne suit personne, ne le dit de personne.
 
 **Le tampon du passeport** (`voyage/passeport/Tampon.tsx`), le même sur la carte et dans le livret :
 un rond de papier à l'encre rouge du monde (jamais le corail), « Passeport », « Années 1890 » au

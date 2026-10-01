@@ -75,6 +75,14 @@ export function etatDeCase(a: AnneeCarte, ia: boolean): { etat: EtatCase; attent
 }
 
 /**
+ * Ce que dit une année en attente du Voyage suivi (`etatDeCase`, `attente`) : « Théo est trop
+ * lent », le pseudo du voyageur suivi (`source`) — décision du propriétaire du 1er octobre 2026, à
+ * la place de « Tu le rattrapes bientôt ». Nulle sans voyageur suivi (le compte IA, ou un compte
+ * qui ne suit personne) : rien ne se dit alors. Chaque site y ajoute sa ponctuation.
+ */
+export const tropLent = (source: { pseudo: string } | null): string | null => (source ? `${source.pseudo} est trop lent` : null)
+
+/**
  * Faut-il lire la fiche pour l'aperçu d'une année ? Seulement si elle est déjà écrite
  * (`visitee`) et non verrouillée : sur une année non visitée, `GET /me/voyage/annees/{annee}`
  * enfile l'ouverture chez le chroniqueur — un appui long ne doit jamais coûter un appel IA.

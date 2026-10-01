@@ -359,9 +359,21 @@ describe('la page d’une décennie', () => {
   // pour elle. Le manège ne la peint pas en cours (le corail), le registre ne la dit pas en cours ni
   // ne la marque comme telle : les mots de la carte. Mutations : `chevaux` sans l'attente ; le texte
   // du registre sans elle ; `enCours` sans sa garde (la ligne marquée « ici »).
+  // Un compte hors IA qui ne suit personne (`source` nul) : rien ne se dit de personne, la ligne ne
+  // compte que ses films. Mutation : la phrase sans pseudo (« null est trop lent », ou l'ancien texte).
+  it('sans voyageur suivi, le registre ne dit de personne qu’il est trop lent', async () => {
+    const seul: Voyage = { ...VOYAGE, ia: false, source: null, annees: VOYAGE.annees.map((a) => (a.annee === 1897 ? { ...a, visitee: false, profondeur: 2 } : a)) }
+    monterVoyage('/voyage/decennies/1890', { ...ROUTES, 'GET /api/me/voyage': () => json(seul) })
+    await decennie()
+    expect(registreDeLaPage().getAllByRole('listitem')[7]).toHaveTextContent(/^18972 vus$/)
+    expect(screen.queryByText(/trop lent|rattrapes/i)).toBeNull()
+  })
+
+  // Décision du propriétaire du 1er octobre 2026 (2c-5) : « theo est trop lent », le pseudo du
+  // Voyage suivi, à la place de « tu le rattrapes bientôt ». Mutation : l'ancien texte remis.
   it.each([
-    { profondeur: 2, texte: /^18972 vus · tu le rattrapes bientôt$/ },
-    { profondeur: 0, texte: /^1897Tu le rattrapes bientôt$/ },
+    { profondeur: 2, texte: /^18972 vus · theo est trop lent$/ },
+    { profondeur: 0, texte: /^1897theo est trop lent$/ },
   ])('montre en attente, pas en cours, l’année que le Voyage suivi n’a pas encore ouverte ($profondeur vus)', async ({ profondeur, texte }) => {
     const manege = doublerLeManege()
     const lectrice: Voyage = {

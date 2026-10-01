@@ -168,17 +168,38 @@ describe('la carte', () => {
     expect(moteur.reglerCalme).toHaveBeenLastCalledWith(true)
   })
 
-  // Mutation : `etatDeCase(a, true)` pour tout le monde ; et, relecture de la tâche 9, dans
-  // l'objectif du HUD seul (`etatDeCase(enCours, true)`), qui dirait « Touche l’année pour l’ouvrir ».
-  it('pour un membre hors IA, l’année que le Voyage suivi n’a pas ouverte se rattrape', async () => {
+  // Décision du propriétaire du 1er octobre 2026 (2c-5) : l'année que le Voyage suivi n'a pas ouverte
+  // dit « Théo est trop lent » (le HUD, l'aperçu avec son point, le lien du lecteur d'écran), jamais
+  // plus « Tu le rattrapes bientôt ». Mutations : `etatDeCase(a, true)` pour tout le monde ; et,
+  // relecture de la tâche 9, dans l'objectif du HUD seul (`etatDeCase(enCours, true)`), qui dirait
+  // « Touche l’année pour l’ouvrir » ; l'ancien texte remis à l'un des trois sites ; le pseudo pris
+  // ailleurs que dans `source` (le mien).
+  it('pour un membre hors IA, l’année que le Voyage suivi n’a pas ouverte dit qu’il est trop lent', async () => {
     const { rappels, etats } = monter({ ...VOYAGE, ia: false, source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: 1898 } })
     expect(await screen.findByText('Tu suis le Voyage de Théo')).toBeInTheDocument()
-    expect(screen.getByText('Tu le rattrapes bientôt')).toBeInTheDocument()
+    expect(screen.getByText('Théo est trop lent')).toBeInTheDocument()
     expect(screen.queryByText('Touche l’année pour l’ouvrir')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '1898, Théo est trop lent' })).toBeInTheDocument()
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
     act(() => rappels().apercu(1898, { x: 10, y: 10 }))
-    expect(await screen.findByText('Tu le rattrapes bientôt.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '1898, tu le rattrapes bientôt' })).toBeInTheDocument()
+    expect(await screen.findByText('Théo est trop lent.')).toBeInTheDocument()
+    expect(screen.queryByText(/rattrapes/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /rattrapes/i })).not.toBeInTheDocument()
+  })
+
+  // Ni le compte IA (aucune année n'y attend personne), ni un compte qui ne suit personne (`source`
+  // nul) ne disent de quiconque qu'il est trop lent. Mutation : la phrase sans pseudo (« null est
+  // trop lent », ou un repli sur « Tu le rattrapes bientôt »).
+  it.each([
+    ['le compte IA', { ia: true, source: null }],
+    ['un compte qui ne suit personne', { ia: false, source: null }],
+  ])('%s ne dit de personne qu’il est trop lent', async (_qui, surcharge) => {
+    const { rappels, etats } = monter({ ...VOYAGE, ...surcharge })
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().apercu(1898, { x: 10, y: 10 }))
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(screen.queryByText(/trop lent|rattrapes/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /trop lent|rattrapes/i })).not.toBeInTheDocument()
   })
 
   /** 1898 ouverte, en cours, sa Palme déjà là : il ne reste que le ticket. */

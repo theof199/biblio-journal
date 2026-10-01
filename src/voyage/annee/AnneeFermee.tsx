@@ -5,6 +5,7 @@ import type { Voyage } from '../../api/voyage'
 import type { Monde } from '../../mondes/types'
 import Panne from '../../ui/Panne'
 import { chemin, phraseDuChemin, vusEnAvance } from '../annee'
+import { tropLent } from '../regles'
 import Corde from './Corde'
 import Fronton from './Fronton'
 import styles from './AnneeFermee.module.css'
@@ -27,12 +28,13 @@ interface Props {
 
 /**
  * Une année qu'on ne peut pas encore ouvrir (maquette 1890, écran III : `initVerrou`, lignes 259 à
- * 282) : fermée jusqu'au ticket, ou en attente du Voyage suivi (« Tu le rattrapes bientôt »). Mes
+ * 282) : fermée jusqu'au ticket, ou en attente du Voyage suivi (« Théo est trop lent », `tropLent`). Mes
  * films de l'année déjà vus y comptent déjà ; ils se lisent dans mon journal.
  */
 export default function AnneeFermee({ variante, monde, annee, voyage: v, profondeur, journal, parade }: Props) {
   const m = monde.pages.mots
   const attente = variante === 'attente'
+  const lent = tropLent(v.source)
   const annees = chemin(annee, v.annee_en_cours)
   const vus = journal.items ? vusEnAvance(journal.items, annee) : []
   const nomDuChemin = `Chemin : ${annees[0]}, tu es ici${annees
@@ -43,7 +45,7 @@ export default function AnneeFermee({ variante, monde, annee, voyage: v, profond
   return (
     <>
       <Fronton annee={annee} annonce={attente ? m.annonce.attente : m.annonce.fermee} millesime={attente ? 'attente' : 'fermee'} monde={monde}>
-        {attente ? <span className={styles.banderole}>Tu le rattrapes bientôt</span> : null}
+        {attente && lent ? <span className={styles.banderole}>{lent}</span> : null}
       </Fronton>
 
       <Corde

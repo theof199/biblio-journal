@@ -27,6 +27,7 @@ import {
   jauge,
   prochainPas,
   recompensesJusquaAnneeEnCours,
+  tropLent,
   type FrontiereAvancee,
 } from '../voyage/regles'
 import styles from '../carte/Carte.module.css'
@@ -187,12 +188,14 @@ export default function Carte() {
   const monde = mondes(Math.floor(v.annee_en_cours / 10) * 10)
   const compte = compterRecompenses(recompensesJusquaAnneeEnCours(v.annees, v.annee_en_cours))
   const ticketConnu = !!tickets.data?.tickets.some((t) => t.annee === v.annee_en_cours + 1)
+  // Une année en attente du Voyage suivi le dit de lui (`tropLent`), nulle part ailleurs.
+  const lent = tropLent(v.source)
   // Sans progression, l'année n'est pas encore ouverte : « Tout est vu » y serait faux.
   const objectif = !enCours
     ? null
     : !enCours.progression
       ? etatDeCase(enCours, v.ia).attente
-        ? 'Tu le rattrapes bientôt'
+        ? lent
         : 'Touche l’année pour l’ouvrir'
       : prochainPas(enCours.profondeur, enCours.progression, enCours.recompense, ticketConnu, v.ia)[0] ?? 'Tout est vu'
   const j = enCours ? jauge(enCours.progression, enCours.recompense) : null
@@ -242,7 +245,7 @@ export default function Carte() {
         <ul>
           {etat?.cases.map((c) => (
             <li key={c.annee}>
-              <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente ? 'tu le rattrapes bientôt' : LIBELLE[c.etat]}`}</Link>
+              <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}`}</Link>
             </li>
           ))}
         </ul>
@@ -280,7 +283,7 @@ export default function Carte() {
       ) : null}
 
       {apercu && apercuAnnee ? (
-        <Apercu annee={apercuAnnee} anneeEnCours={v.annee_en_cours} ia={v.ia} attente={etatDeCase(apercuAnnee, v.ia).attente} ancre={apercu.ancre} />
+        <Apercu annee={apercuAnnee} anneeEnCours={v.annee_en_cours} ia={v.ia} attente={etatDeCase(apercuAnnee, v.ia).attente} tropLent={lent} ancre={apercu.ancre} />
       ) : null}
 
       {date ? (

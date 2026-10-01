@@ -334,7 +334,9 @@ describe('la fiche d’une année', () => {
       'GET /api/me/voyage/annees/1897': () => json(ficheEnAttente(1897)),
       [JOURNAL(1897)]: journal([vu('e1', 'Un film de 1897', 1897)]),
     })
-    expect(await screen.findByText('Tu le rattrapes bientôt')).toBeInTheDocument()
+    // Décision du propriétaire du 1er octobre 2026 (2c-5). Mutation : l'ancien texte remis à la banderole.
+    expect(await screen.findByText('theo est trop lent')).toBeInTheDocument()
+    expect(screen.queryByText(/rattrapes/i)).toBeNull()
     expect(screen.getByText(/theo n’a pas encore ouvert 1897 : sa roulotte est encore en 1896/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: '1897' })).toBeInTheDocument()
     // Mutation : le journal lu pour la seule année fermée : ses films vus en avance manqueraient ici.

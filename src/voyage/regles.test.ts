@@ -91,7 +91,7 @@ describe('l’état d’une case', () => {
     expect(etatDeCase(annee({ annee: 1896, statut: 'ouverte', recompense: null }), true).etat).toBe('passee')
   })
 
-  // Mutation : oublier `!ia` met « Tu le rattrapes bientôt » sur l'année que le compte IA n'a
+  // Mutation : oublier `!ia` met « Théo est trop lent » sur l'année que le compte IA n'a
   // simplement pas encore visitée. Oublier `!a.visitee` le met sur toutes les années déjà écrites.
   it('n’est en attente que pour un membre hors IA, sur une année lisible non ouverte', () => {
     const nonVisitee = annee({ annee: 1898, statut: 'en_cours', visitee: false })
