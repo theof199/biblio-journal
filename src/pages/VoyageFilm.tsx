@@ -6,7 +6,7 @@ import { ApiError } from '../api/client'
 import { curseurSuivant, lireJournal, type JournalItem } from '../api/journal'
 import { lireRealisateursDuFilm } from '../api/personnes'
 import { lireReactions } from '../api/reactions'
-import { estPrete, estVerrouillee, lireCarton, type Carton, type FilmDeSalle, type Podium, type Salle } from '../api/voyage'
+import { anneeSansSalles, estPrete, lireCarton, type Carton, type FilmDeSalle, type Podium, type Salle } from '../api/voyage'
 import { creerRegistre } from '../mondes'
 import type { Monde } from '../mondes/types'
 import { formatDateVisionnage } from '../ui/format'
@@ -60,10 +60,10 @@ function FicheDuFilm({ annee, filmId }: { annee: number; filmId: string }) {
   const fiche = requete.data
   const trouve = estPrete(fiche) ? filmDeLaFiche(fiche, filmId) : null
 
-  // Une adresse tapée vers une année fermée : « pas dans les salles » serait juste mais trompeur. La
-  // page de l'année dit pourquoi elle est fermée et quel ticket l'ouvre ; `replace`, pour que
-  // « Retour » ne ramène pas ici, d'où l'on repartirait aussitôt.
-  if (estVerrouillee(fiche)) return <Navigate to={`/voyage/${annee}`} replace />
+  // Une adresse tapée vers une année sans salles (fermée, en attente, en préparation) : « pas dans les
+  // salles » serait juste mais trompeur. La page de l'année dit pourquoi, et ce qui l'ouvrira ;
+  // `replace`, pour que « Retour » ne ramène pas ici, d'où l'on repartirait aussitôt.
+  if (anneeSansSalles(fiche)) return <Navigate to={`/voyage/${annee}`} replace />
 
   let corps: ReactNode
   if (!fiche) {

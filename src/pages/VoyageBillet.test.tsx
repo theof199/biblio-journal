@@ -13,7 +13,7 @@ import { exemple } from '../test/contrat'
 import { visionnage } from '../test/journal'
 import { SESSION, monterVoyage } from '../test/pageVoyage'
 import { json } from '../test/serveur'
-import { fichePrete, ficheVerrouillee, filmDeSalle, morceau, salle, seance, voyage1890 } from '../test/voyage'
+import { ficheEnAttente, fichePrete, ficheVerrouillee, filmDeSalle, morceau, salle, seance, voyage1890 } from '../test/voyage'
 
 const SOURCE = { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: 1897 }
 const VOYAGE = voyage1890(
@@ -360,6 +360,37 @@ describe('le billet de séance', () => {
     expect(screen.getByRole('region', { name: 'L’année 1898' })).toBeInTheDocument()
     expect(screen.queryByText(/pas dans les salles/)).toBeNull()
     expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
+    expect(requetes.some((r) => r.startsWith('POST'))).toBe(false)
+  })
+
+  // Le même renvoi pour une année en attente du Voyage suivi. Mutation : `en_attente` retiré
+  // d'`anneeSansSalles`.
+  it('une année en attente renvoie à sa page, qui dit qui est en retard, au lieu de « pas dans les salles »', async () => {
+    const { routes } = serveur({ voyage: { ...HORS_IA, source: { ...SOURCE, annee_en_cours: 1896 } } })
+    const { requetes } = monterVoyage(billet(KANE), {
+      ...routes,
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      [ANNEE]: () => json(ficheEnAttente(1897)),
+      'GET /api/me/journal?limit=100&sortie_min=1897&sortie_max=1897': () => json({ ...PAGE, items: [], next_cursor: null }),
+    })
+    expect(await screen.findByText(/theo n’a pas encore ouvert 1897/)).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
+    expect(screen.queryByText(/pas dans les salles/)).toBeNull()
+    expect(requetes.some((r) => r.startsWith('POST'))).toBe(false)
+  })
+
+  // Et pour une année que le chroniqueur écrit encore. Mutation : `en_preparation` retiré
+  // d'`anneeSansSalles`.
+  it('une année en préparation renvoie à sa page, où le chroniqueur écrit, au lieu de « pas dans les salles »', async () => {
+    const { routes } = serveur()
+    const { requetes } = monterVoyage(billet(KANE), {
+      ...routes,
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      [ANNEE]: () => json(exemple('/me/voyage/annees/{annee}', 'get', 202), 202),
+    })
+    expect(await screen.findByRole('status', { name: 'Le chroniqueur écrit…' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
+    expect(screen.queryByText(/pas dans les salles/)).toBeNull()
     expect(requetes.some((r) => r.startsWith('POST'))).toBe(false)
   })
 

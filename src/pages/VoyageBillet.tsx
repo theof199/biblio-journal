@@ -5,7 +5,7 @@ import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
 import { corrigerVisionnage, creerVisionnage, journalDesAnnees, supprimerVisionnage, type JournalItem } from '../api/journal'
 import { lireReactions } from '../api/reactions'
-import { estPrete, estVerrouillee, lireVoyage, type FicheAnnee, type Voyage } from '../api/voyage'
+import { anneeSansSalles, estPrete, lireVoyage, type FicheAnnee, type Voyage } from '../api/voyage'
 import type { CandidatFilm } from '../formulaire/candidat'
 import { brouillonInitial, construirePatch, type FormulaireBrouillon } from '../formulaire/patch'
 import { creerRegistre } from '../mondes'
@@ -95,9 +95,10 @@ function BilletDuFilm({ annee, filmId, bobine, correction }: { annee: number; fi
   const trouve = estPrete(fiche) ? filmDeLaFiche(fiche, filmId) : null
   const item = correction ? etat?.item : undefined
 
-  // Une adresse tapée vers une année fermée : comme la fiche du film, la page de l'année, qui dit
-  // pourquoi et quel ticket l'ouvre, plutôt que « pas dans les salles », juste mais trompeur.
-  if (estVerrouillee(fiche)) return <Navigate to={`/voyage/${annee}`} replace />
+  // Une adresse tapée vers une année sans salles (fermée, en attente, en préparation) : comme la
+  // fiche du film, la page de l'année, qui dit pourquoi, plutôt que « pas dans les salles », juste
+  // mais trompeur.
+  if (anneeSansSalles(fiche)) return <Navigate to={`/voyage/${annee}`} replace />
 
   const absent = (texte: string, lien: string, nom: string) => (
     <div className={styles.etat}>
