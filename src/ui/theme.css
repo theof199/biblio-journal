@@ -1095,6 +1095,14 @@ body {
   overscroll-behavior: none;
 }
 
+/* iOS grossit le texte quand le téléphone passe en paysage et ne le ramène pas toujours au retour :
+   `100%` garde la taille choisie, sans empêcher le zoom du lecteur (`none` le bloquerait sur les
+   vieux WebKit). Partout, onglet du navigateur compris : il grossit le texte de la même façon. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   min-height: 100dvh;
@@ -1106,6 +1114,19 @@ body {
   /* La barre d'état est translucide sur iOS (voir index.html) : le contenu ne passe pas dessous.
      Le bas est laissé à la coque, dont la barre d'onglets porte la zone sûre. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* Sur iOS 26, dans l'app installée à barre d'état translucide, la fenêtre est plus courte que
+   l'écran de la hauteur de la barre d'état (WebKit 301108) : ce qui est fixé au bas flotte d'autant
+   au-dessus du bord tant que le document n'atteint pas l'écran entier, et `lvh` est la seule unité
+   qui le mesure. Hors de l'app installée, `dvh` reste : dans un onglet du navigateur, `lvh` ferait
+   défiler le document sous les barres du navigateur. Ce bloc vient après le corps, à spécificité
+   égale. */
+@media (display-mode: standalone) {
+  html,
+  body {
+    min-height: 100lvh;
+  }
 }
 
 /* Le ciel est le fond de tout le bâtiment, zones sûres comprises : le corps le peint, et il le passe

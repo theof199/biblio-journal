@@ -210,6 +210,25 @@ describe('le défilement', () => {
   it('le corps ne dépasse pas l’écran du téléphone (100vh compte sous la barre d’adresse)', () => {
     expect(sansCommentaires(theme)).toMatch(/\nbody \{[^}]*min-height:\s*100dvh/)
   })
+
+  it('installée, la page atteint l’écran entier (iOS 26 raccourcit la fenêtre sous la barre d’état translucide)', () => {
+    const css = sansCommentaires(theme)
+    const bloc = css.match(
+      /@media \(display-mode:\s*standalone\)\s*\{\s*([^{}]*)\{\s*min-height:\s*100lvh;\s*\}\s*\}/,
+    )
+    expect(bloc).not.toBeNull()
+    const selecteurs = (bloc?.[1] ?? '').split(',').map((selecteur) => selecteur.trim())
+    expect(selecteurs).toEqual(expect.arrayContaining(['html', 'body']))
+    const corps = css.search(/\nbody \{[^}]*min-height:\s*100dvh/)
+    expect(css.indexOf('@media (display-mode: standalone)')).toBeGreaterThan(corps)
+  })
+
+  it('le texte garde sa taille quand le téléphone tourne (partout, pas seulement installée)', () => {
+    const horsInstallee = sansCommentaires(theme).replace(/@media \(display-mode:\s*standalone\)\s*\{[^{}]*\{[^{}]*\}\s*\}/, '')
+    const html = horsInstallee.match(/\nhtml \{([^}]*)\}/)?.[1] ?? ''
+    expect(html).toMatch(/(^|[\s;])-webkit-text-size-adjust:\s*100%;/)
+    expect(html).toMatch(/(^|[\s;])text-size-adjust:\s*100%;/)
+  })
 })
 
 describe('les grilles', () => {

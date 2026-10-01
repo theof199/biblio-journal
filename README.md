@@ -417,7 +417,12 @@ Le ciel (`--fond-ciel`) est le fond de tout le bâtiment, zones sûres comprises
 sur le corps, que le document passe à sa toile, et les pages sont transparentes. La barre d'onglets
 prend la couleur du bas du ciel (`--barre-onglets-fond`), pour que la zone sûre du bas prolonge la
 page. Le Voyage n'en reçoit rien : la coque pose `data-lieu="ecran"` sur `<html>` tant qu'il est à
-l'écran, et le corps garde alors son fond plat.
+l'écran, et le corps garde alors son fond plat. Dans l'app installée (`display-mode: standalone`), la
+page fait `100lvh` de haut : sur iOS 26, la barre d'état translucide raccourcit la fenêtre de sa
+hauteur (WebKit 301108), et sans cela la barre d'onglets, fixée au bas, flotterait d'autant au-dessus
+du bord ; dans un onglet du navigateur, `dvh` reste. Le texte, lui, garde sa taille
+quand le téléphone tourne (`text-size-adjust: 100%` sur `html`, onglet compris) : sans cela iOS le grossit
+en paysage et ne le ramène pas toujours au retour.
 
 Le fronton de l'accueil change d'enseigne avec la décennie du film qu'il annonce (`data-decennie`
 sur son lien, `decennieDeAnnee` dans `src/accueil/fronton.ts`) : le cadre et ses ampoules restent, le
