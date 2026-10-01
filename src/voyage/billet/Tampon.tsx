@@ -15,6 +15,12 @@ interface Props {
 }
 
 /**
+ * La longueur de l'anneau, un peu moins que le tour de son cercle (rayon 47 : 295) : le texte s'y
+ * resserre ou s'y espace, et la date tient en entier, « 28 septembre 2026 » comme « 1er mai 2026 ».
+ */
+const TOUR_DE_L_ANNEAU = 288
+
+/**
  * Le tampon qui frappe le billet (idée 5, décision D4 ; maquette 1890 : `encreVu`, `.marteau`,
  * `.encre-vu`, `tamponner`). Le marteau descend sur le billet, l'encre se pose — le mot du monde au
  * centre, `autour` et la date sur l'anneau —, le marteau remonte ; l'encre reste. Les durées sont
@@ -44,7 +50,9 @@ export default function Tampon({ mot, autour, date, frappe }: Props) {
                 {mot}
               </text>
               <text className={styles.autour}>
-                <textPath href={`#arc-${id}`}>{anneau}</textPath>
+                <textPath href={`#arc-${id}`} textLength={TOUR_DE_L_ANNEAU} lengthAdjust="spacing">
+                  {anneau}
+                </textPath>
               </text>
             </g>
           </svg>

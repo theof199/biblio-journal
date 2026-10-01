@@ -91,8 +91,9 @@
   margin-top: 18px;
 }
 
-/* La frappe secoue le billet (maquette 1890 : `.ticket-notation.choc`). */
-.support[data-etape='pose'] .billet {
+/* La frappe secoue le billet (maquette 1890 : `.ticket-notation.choc`). Le choc dure plus que la
+   pause : la règle vaut aussi pendant la remontée, sans quoi il s'arrêterait net. */
+.support:is([data-etape='pose'], [data-etape='remonte']) .billet {
   animation: choc 0.35s;
 }
 
@@ -287,12 +288,14 @@
 }
 
 /* Le talon du billet tamponné, qui part dans la boîte (maquette 1890 : `.billet-sort` et son
-   habillage, ligne 2705) : au-dessus du bouton qu'il traverse en tombant. */
+   habillage, ligne 2705). La maquette le fait partir du bas du billet ; la frappe a amené le haut du
+   billet à l'écran, et le bas en est loin à 390 px : il se détache sous le numéro, et tombe sur le
+   dateur et la note. */
 .talonQuiPart {
   position: absolute;
   z-index: 1;
+  top: 112px;
   right: 14px;
-  bottom: 0;
   left: 14px;
   display: grid;
   grid-template-columns: 1fr auto;
@@ -305,7 +308,7 @@
   font: 13px var(--m-f-texte);
   box-shadow: 0 10px 24px var(--m-ombre);
   pointer-events: none;
-  animation: part 1.2s cubic-bezier(0.5, 0, 0.8, 0.4) both;
+  animation: part 700ms cubic-bezier(0.5, 0, 0.8, 0.4) both;
 }
 
 .talonQuiPart b {

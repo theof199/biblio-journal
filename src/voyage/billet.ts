@@ -42,12 +42,14 @@ export const compteDesCartons = (n: number): string => (n === 0 ? 'aucun carton'
 export const initiale = (pseudo: string): string => pseudo.trim().charAt(0).toUpperCase()
 
 /**
- * Le compostage de l'idée 5 (décision D4), en millisecondes (maquette 1890 : `tamponner`, lignes 2683
- * à 2708) : le marteau descend, l'encre se pose (son éclat de 260 ms court pendant la pause), le
- * marteau remonte, le numéroteur fait ses tirages, une pause, puis le talon part. Les feuilles du
- * tampon et du billet jouent les mêmes durées.
+ * Le compostage de l'idée 5 (décision D4), en millisecondes : le marteau descend, l'encre se pose (son
+ * éclat de 260 ms court pendant la pause et la remontée), le marteau remonte, le numéroteur fait ses
+ * tirages, une pause, puis le talon part. L'ordre et les gestes sont ceux de la maquette 1890
+ * (`tamponner`, lignes 2683 à 2708), les durées raccourcies : les siennes faisaient 3 050 ms, à chaque
+ * film, bouton éteint ; le plan en voulait deux. Les feuilles du tampon et du billet jouent les mêmes
+ * durées (`billet.test.ts`).
  */
-export const FRAPPE = { descend: 420, pause: 160, remonte: 420, tirage: 55, tirages: 10, avantTalon: 300, talon: 1200 } as const
+export const FRAPPE = { descend: 360, pause: 140, remonte: 320, tirage: 45, tirages: 10, avantTalon: 200, talon: 700 } as const
 
-/** Le compostage entier, du toucher au retour à l'année : un peu plus de trois secondes. */
+/** Le compostage entier, du toucher au retour à l'année : environ deux secondes. */
 export const DUREE_DU_COMPOSTAGE = FRAPPE.descend + FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + FRAPPE.avantTalon + FRAPPE.talon
