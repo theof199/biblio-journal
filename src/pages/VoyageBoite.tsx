@@ -73,14 +73,17 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   }
 
   // Le billet rangé : son casier s'ouvre, puis la boîte l'oublie (il n'est montré qu'une fois).
-  // Un billet rangé d'une autre décennie reste pour la boîte qui le porte.
+  // Un billet rangé d'une autre décennie reste pour la boîte qui le porte. La carte attendue (elle
+  // fait les intercalaires), l'intercalaire de l'adresse n'est pas encore choisi : rien ne se tranche
+  // avant elle. Un film d'avant le départ n'a pas d'intercalaire : « Tous » le montre.
+  const pret = anneeDuNouveau !== null && liste.length > 0
   useEffect(() => {
-    if (anneeDuNouveau === null) return
-    if (choisi !== null && choisi !== anneeDuNouveau) choisir(anneeDuNouveau)
+    if (!pret) return
+    if (choisi !== null && choisi !== anneeDuNouveau) choisir(liste.some((i) => i.annee === anneeDuNouveau) ? anneeDuNouveau : null)
     oublierLeBillet()
-    // Une fois, quand le billet paraît dans la boîte.
+    // Une fois, quand le billet paraît dans la boîte et que la carte est lue.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anneeDuNouveau])
+  }, [pret, anneeDuNouveau])
 
   const ouvert = vue.valeur !== null && billets ? (billets.find((b) => b.item.entry.id === vue.valeur) ?? null) : null
   // Un `?billet=` qui ne désigne aucun billet de la boîte se ferme, une fois la boîte lue.

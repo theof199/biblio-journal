@@ -144,6 +144,14 @@ describe('la boîte à billets', () => {
     expect(screen.getByText('3 billets, un par visionnage')).toBeInTheDocument()
   })
 
+  // Le pied lit la boîte dans l'ordre des numéros, pas celui du casier (le dernier devant).
+  // Mutations : le premier billet pris en tête du casier ; le dernier pris au début de la boîte.
+  it('le pied dit le premier billet et le numéro du dernier', async () => {
+    monter('/voyage/decennies/1890/billets')
+    await billets()
+    expect(screen.getByText(/^Premier billet/)).toHaveTextContent('Premier billet : N° 0001, le 1er août 2026, La Sortie de l’usine.Le dernier porte le N° 0003.')
+  })
+
   // Mutation : le filtre de l'intercalaire retiré (`casier(billets, null)`) ; l'intercalaire hors de
   // l'adresse ; l'adresse poussée au lieu d'être remplacée (le « retour » repasserait chaque intercalaire).
   it('un intercalaire n’ouvre que les billets de son année, et vit dans l’adresse', async () => {
@@ -160,6 +168,12 @@ describe('la boîte à billets', () => {
     fireEvent.click(intercalaires.getByRole('button', { name: /^1896/ }))
     expect(screen.getByText('Aucun billet pour cette année.')).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: 'Les billets' })).not.toBeInTheDocument()
+
+    // « Tous » rouvre toute la boîte et retire l'intercalaire de l'adresse. Mutation : « Tous » sans effet.
+    fireEvent.click(intercalaires.getByRole('button', { name: 'Tous' }))
+    expect(intercalaires.getByRole('button', { name: 'Tous' })).toHaveAttribute('aria-pressed', 'true')
+    expect(await billets()).toHaveLength(3)
+    expect(adresse()).toBe('/voyage/decennies/1890/billets')
 
     // Remplacée, pas empilée : le retour quitte la boîte d'un seul geste.
     fireEvent.click(screen.getByRole('link', { name: 'Retour aux années 1890' }))
@@ -190,6 +204,19 @@ describe('la boîte à billets', () => {
     expect(adresse()).toBe('/voyage/decennies/1890/billets')
   })
 
+  // Un dialogue rend le focus au billet qui l'a ouvert, une fois rangé. Mutation : le casier remonté
+  // à l'ouverture du billet (une clé qui suit `?billet=`), qui perd l'élément à qui rendre le focus.
+  it('rend le focus, une fois le billet rangé, au billet touché', async () => {
+    monter('/voyage/decennies/1890/billets')
+    await billets()
+    billet(/L’Arroseur arrosé/).focus()
+    fireEvent.click(billet(/L’Arroseur arrosé/))
+    const dialogue = await screen.findByRole('dialog', { name: 'L’Arroseur arrosé' })
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Ranger le billet' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(billet(/L’Arroseur arrosé/)).toHaveFocus()
+  })
+
   // Mutation : le catalogue des réactions lu à l'ouverture de la boîte (sans `enabled`) ; les clés
   // montrées telles quelles, le catalogue lu.
   it('dit les réactions d’un billet par leur phrase, en ne lisant le catalogue qu’à son ouverture', async () => {
@@ -218,6 +245,31 @@ describe('la boîte à billets', () => {
     monter('/voyage/decennies/1890/billets?annee=1895')
     await billets()
     expect(billet(/L’Arroseur arrosé/)).not.toHaveClass(stylesDuCasier.nouveau!)
+  })
+
+  // La carte qui répond après le journal (son cache passé, une autre lecture en cours) : tant que les
+  // intercalaires ne sont pas là, l'intercalaire de l'adresse n'est pas encore choisi. Mutation : le
+  // billet rangé traité, et oublié, dès que le journal le porte, la carte encore attendue (le casier
+  // de 1897 restait ouvert, sans lui).
+  it('le billet rangé attend la carte pour ouvrir son casier', async () => {
+    rangerLeBillet(SESSION.user.id, 'e2')
+    let carte: (r: Response) => void = () => undefined
+    const { client } = monter('/voyage/decennies/1890/billets?annee=1897', { ...ROUTES, 'GET /api/me/voyage': () => new Promise<Response>((r) => (carte = r)) })
+    await waitFor(() => expect(client.getQueryData(cles.journalDesAnnees(1890, 1899))).toBeDefined())
+    await new Promise((r) => setTimeout(r, 20))
+    carte(json(VOYAGE))
+    await waitFor(() => expect(adresse()).toBe('/voyage/decennies/1890/billets?annee=1895'))
+    await waitFor(() => expect(billet(/L’Arroseur arrosé/)).toHaveClass(stylesDuCasier.nouveau!))
+  })
+
+  // Un film sorti avant le départ (1892) n'a pas d'intercalaire : « Tous » le montre. Mutation :
+  // l'année du billet posée telle quelle dans l'adresse (`?annee=1892`, qu'aucun intercalaire ne porte).
+  it('un billet rangé d’avant le départ ouvre « Tous »', async () => {
+    const pierrot = vu('e0', 1892, '2026-09-20', { titre: 'Pauvre Pierrot', tmdb: 770 })
+    rangerLeBillet(SESSION.user.id, 'e0')
+    monter('/voyage/decennies/1890/billets?annee=1897', { ...ROUTES, [JOURNAL]: journal([...TROIS, pierrot]) })
+    await waitFor(() => expect(adresse()).toBe('/voyage/decennies/1890/billets'))
+    await waitFor(() => expect(billet(/Pauvre Pierrot/)).toHaveClass(stylesDuCasier.nouveau!))
   })
 
   it('un billet rangé pour un autre membre n’est pas mis en avant', async () => {
