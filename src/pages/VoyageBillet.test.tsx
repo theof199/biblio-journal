@@ -790,8 +790,11 @@ describe('le billet de séance', () => {
       })
       fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
       const confirmer = screen.getByRole('button', { name: 'Supprimer' })
-      fireEvent.click(confirmer)
-      fireEvent.click(confirmer)
+      // Deux touchers avant le rendu suivant : le bouton n'est pas encore éteint, seule la garde tient.
+      act(() => {
+        confirmer.click()
+        confirmer.click()
+      })
       expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
       expect(effacements).toBe(1)
     })
