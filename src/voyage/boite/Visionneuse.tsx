@@ -32,6 +32,11 @@ export default function Visionneuse({ monde, billet, corriger, onFermer }: Props
   // jamais à l'ouverture de la boîte. Sans lui, la clé se lit telle quelle.
   const reactions = useQuery({ queryKey: cles.reactions, queryFn: ({ signal }) => lireReactions(signal), enabled: carnet.reactions.length > 0 })
   const reaction = (cle: string) => reactions.data?.reactions.find((r) => r.cle === cle)
+  const vu = (
+    <span className={styles.tampon} aria-hidden="true">
+      {m.billet.tampon}
+    </span>
+  )
 
   return (
     <div className={styles.calque}>
@@ -66,15 +71,16 @@ export default function Visionneuse({ monde, billet, corriger, onFermer }: Props
             })}
           </ul>
         ) : null}
+        {/* Le grand « VU » flotte à côté de la remarque, que le texte contourne : jamais dessus. */}
         {carnet.comment ? (
           <p className={styles.prive}>
+            {vu}
             <span className={styles.sc}>Ta remarque · rien qu’à toi</span>
             {carnet.comment}
           </p>
-        ) : null}
-        <span className={styles.tampon} aria-hidden="true">
-          {m.billet.tampon}
-        </span>
+        ) : (
+          <div className={styles.sansRemarque}>{vu}</div>
+        )}
         <div className={styles.gestes}>
           {corriger ? (
             <Link to={corriger} state={{ item: billet.item }} className={styles.corriger}>

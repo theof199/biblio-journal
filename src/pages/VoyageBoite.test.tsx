@@ -18,6 +18,7 @@ import { anneeCivile } from '../voyage/decennie'
 import { decennieDe } from '../voyage/regles'
 import stylesDuCasier from '../voyage/boite/Casier.module.css'
 import FEUILLE_DU_CASIER from '../voyage/boite/Casier.module.css?raw'
+import FEUILLE_DE_LA_VISIONNEUSE from '../voyage/boite/Visionneuse.module.css?raw'
 
 const VOYAGE = voyage1890(
   1897,
@@ -202,6 +203,25 @@ describe('la boîte à billets', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(adresse()).toBe('/voyage/decennies/1890/billets')
+  })
+
+  // Le grand « VU » se posait en absolu au bas du billet, sur la remarque privée qu'il cachait en
+  // partie (relecture de la tâche 7). Il flotte désormais à côté d'elle : le texte l'entoure, sans
+  // jamais passer dessous. Mutations : le tampon remis en `position: absolute` ; sorti du bloc de
+  // la remarque (le texte ne l'entourerait plus).
+  it('le grand « VU » ne recouvre pas la remarque privée : il flotte à côté, le texte l’entoure', async () => {
+    monter('/voyage/decennies/1890/billets?billet=e2')
+    const dialogue = await screen.findByRole('dialog', { name: 'L’Arroseur arrosé' })
+    const remarque = within(dialogue).getByText('Revu avec Alycia, on a ri.')
+    const vu = within(dialogue).getByText(PAGES_1890.mots.billet.tampon)
+    // Le tampon précède le texte dans le même bloc : un flottant que le texte contourne.
+    expect(remarque.contains(vu)).toBe(true)
+    expect(vu.compareDocumentPosition(remarque.lastChild!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const debut = FEUILLE_DE_LA_VISIONNEUSE.indexOf('.tampon {')
+    const regle = FEUILLE_DE_LA_VISIONNEUSE.slice(debut, FEUILLE_DE_LA_VISIONNEUSE.indexOf('}', debut))
+    expect(debut).toBeGreaterThanOrEqual(0)
+    expect(regle).toMatch(/float:\s*right/)
+    expect(regle).not.toMatch(/position:\s*absolute/)
   })
 
   // Un dialogue rend le focus au billet qui l'a ouvert, une fois rangé. Mutation : le casier remonté

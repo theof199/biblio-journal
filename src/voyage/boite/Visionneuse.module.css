@@ -112,8 +112,9 @@
   font: 13px var(--m-f-corps);
 }
 
-/* La remarque privée, sous le sceau du velours. */
+/* La remarque privée, sous le sceau du velours. Elle tient le grand « VU » qui flotte à sa droite. */
 .prive {
+  display: flow-root;
   margin: 10px 0 0;
   padding: 8px 10px;
   border-left: 3px solid var(--m-velours);
@@ -128,15 +129,16 @@
   color: var(--m-rouge);
 }
 
-/* Le grand « VU » tamponné en travers (maquette : `.grand-vu`). */
+/* Le grand « VU » tamponné en travers (maquette : `.grand-vu`). La maquette le pose en absolu sur la
+   remarque, qu'il cachait en partie : il flotte à droite, et le texte le contourne. */
 .tampon {
-  position: absolute;
-  right: 16px;
-  bottom: 70px;
+  float: right;
   display: grid;
   place-items: center;
   width: 84px;
   height: 84px;
+  margin: 2px 0 4px 10px;
+  shape-outside: circle(50%);
   border: 3px double color-mix(in srgb, var(--m-rouge) 80%, transparent);
   border-radius: 50%;
   color: color-mix(in srgb, var(--m-rouge) 80%, transparent);
@@ -144,6 +146,12 @@
   opacity: 0.85;
   transform: rotate(-16deg);
   pointer-events: none;
+}
+
+/* Sans remarque, le « VU » se pose seul, à droite, au-dessus des gestes. */
+.sansRemarque {
+  display: flow-root;
+  margin-top: 10px;
 }
 
 .gestes {
