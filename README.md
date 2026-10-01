@@ -38,7 +38,7 @@ session, toute route mène à `/connexion` ; une route inconnue ramène à `/`.
 | Onglet | Chemin | Icône Tabler | Page |
 |---|---|---|---|
 | Accueil | `/` | `building-pavilion` | `pages/Accueil.tsx` : le fronton, « Ce soir », « Ensuite », la grille du journal |
-| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`) : « Les pages du Voyage », plus bas |
+| Voyage | `/voyage` | `route` | `pages/Carte.tsx` : la carte (plus bas) ; sous-pages `voyage/:annee` (`pages/VoyageAnnee.tsx`, la fiche d'une année), `voyage/:annee/films/:filmId` (`pages/VoyageFilm.tsx`), `…/billet` et `…/billet/corriger` (`pages/VoyageBillet.tsx`), `voyage/decennies/:decennie` (`pages/VoyageDecennie.tsx`, la page d'une décennie), `…/billets` (`pages/VoyageBoite.tsx`, la boîte à billets), `…/recherche` (`pages/VoyageRecherche.tsx`, le guichet) : « Les pages du Voyage » et « Les pages d'une décennie », plus bas |
 | Suivis | `/suivis` | `chair-director` | `pages/Suivis.tsx` : réalisateurs et sagas suivis ; sous-pages `suivis/realisateurs/:tmdbId`, `suivis/sagas/:tmdbId`, `suivis/films/:tmdbId` |
 | Au ciné | `/au-cine` | `ticket` | `pages/AuCine.tsx` : mes séances et les sorties en salle |
 | Profil | `/profil` | `armchair` | `pages/Profil.tsx` : le pseudo, les chiffres de `/stats`, le bilan (dont les réalisateurs et sagas suivis) et les graphiques (`profil/`), « Mes films » (`pages/MesFilms.tsx`, sous `/profil/mes-films`), l’import Letterboxd (`pages/ImportLetterboxd.tsx`, sous `/profil/import-letterboxd`), « Se déconnecter », la mention TMDB |
@@ -147,10 +147,11 @@ Où vit quoi :
 - `Monde.pages` (`src/mondes/types.ts`, `HabillagePages`) : l'habillage d'une page par la décennie
   de son année, trouvé par le registre comme pour la carte — les jetons CSS posés sur la racine de
   la page (couleurs et polices, `JETONS_DE_PAGE`), les mots (« La parade », « Ce soir à la
-  baraque »), les hauteurs et les trois dessins (le bandeau d'une année, la scène d'un film,
-  l'estrade du chroniqueur). Le monde « à venir » habille les années sans chantier. En 1890, les
-  pages s'écrivent en IM Fell English et IM Fell English SC (`@fontsource`, précachées,
-  `ui/polices.ts`).
+  baraque »), les hauteurs et les cinq dessins (le bandeau d'une année, la scène d'un film,
+  l'estrade du chroniqueur, puis, pour les pages d'une décennie, le monument et le guichet). Le
+  monde « à venir » habille les années sans chantier. En 1890, les pages s'écrivent en IM Fell
+  English et IM Fell English SC, les millésimes au pochoir en Stardos Stencil (`@fontsource`,
+  précachées, `ui/polices.ts`).
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
 `generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`. Le geste
@@ -180,7 +181,108 @@ réalisateur.
 **« Moins d'animations »** y pose tout à l'état final : chaque toile peint une image immobile
 (repeinte au rendu et quand une police finit de charger), la feuille du chroniqueur se pose d'un
 coup sans minuterie, la corde ne se balance plus, les compteurs sont à leur valeur, aucun « +1 »
-ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas.
+ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas. Le billet ne se
+tamponne pas (l'année revient aussitôt), la manivelle ne tourne pas, le manège et le guichetier ne
+bougent pas, et aucun tampon du passeport ne frappe.
+
+**La manivelle** (`voyage/annee/Manivelle.tsx`, règles dans `voyage/manivelle.ts`) enveloppe la
+fiche de toute année, quelle que soit sa forme. Tout en haut de la page (le `<main>` de la coque à
+`scrollTop` 0), tirer vers le bas : le contenu suit le doigt à mi-course (110 px au plus), le bras
+tourne ; lâché au-delà de 70, la fiche et la carte se relisent, elles seules (`refetchQueries`
+`exact` : ni les autres fiches, ni le journal, ni le générique), le contenu tenu à 80 px pendant
+au moins un tour (`UN_TOUR`, 500 ms), puis une bulle au-dessus de la barre d'onglets dit que la
+bobine est rechargée (4 s), ou le refus de l'API. Un tirage ne commence qu'au-delà de 10 px
+(`BOUGE_PX`, le seuil de la carte) : en deçà, c'est un toucher, qui ouvre ce qu'il touche ; le
+`click` qui suit un vrai tirage (500 ms) n'ouvre rien. Jamais au milieu de la page, sous un calque
+ouvert (son voile compris), pendant une saisie, ni pendant un rechargement. Les écouteurs sont
+natifs et non passifs : React pose `touchmove` en passif, et son `preventDefault` serait ignoré. En
+bas de la fiche, « Recharger la bobine » fait la même relecture, sans tour, pour qui ne tire pas.
+
+## Les pages d'une décennie
+
+Trois pages sous l'onglet Voyage (plan 2c), chacune habillée par le monde de sa décennie comme les
+fiches. Une adresse qui n'est pas une décennie du Voyage (pas un multiple de dix, avant 1890, après
+la décennie de l'année civile **à Paris**, `anneeCivile`) ramène à la carte (`decennieDeLAdresse`).
+**Aucune n'enfile d'ouverture chez le chroniqueur** : la page d'une décennie lit la carte, mes
+tickets et mes visionnages des films sortis dans la décennie (`journalDesAnnees`, `GET /me/journal`
+borné par `sortie_min` et `sortie_max`) ; la boîte, la carte et ces visionnages (et le catalogue des
+réactions à l'ouverture d'un billet qui en porte) ; ni l'une ni
+l'autre ne lit de fiche d'année. Le guichet lit la carte, puis les seules fiches déjà écrites et
+ouvertes.
+
+**La page d'une décennie** (`/voyage/decennies/:decennie`). On y entre par la plaque du chapitre :
+le titre du HUD de la carte (la décennie de l'année en cours) et la plaque du bandeau d'une année
+(la décennie de cette année). Dans l'ordre :
+
+- **Le monument** du monde, sur une toile : en 1890, le manège, un cheval par année
+  (`mondes/1890/monument.ts`). Le toucher achevé (`Toile.onChoisir`, le `click`) ouvre l'année du
+  cheval le plus proche sous le doigt, si elle a sa page ; le premier contact (`onToucher`,
+  `pointerdown`) n'ouvre jamais rien, puisqu'un défilement commence aussi par lui, et emballe le
+  manège hors d'un cheval qui s'ouvre. Les chevaux de derrière se touchent aussi. Le monde « à
+  venir » ne dessine qu'un fond, sans rien à toucher.
+- **Le passeport** (`voyage/decennie/Livret.tsx`) : l'anneau des années de la décennie qui portent
+  leur récompense, puis ce qui manque en clair (« Il manque une récompense en 1897 et 1899, et le
+  ticket de 1900. », `ceQuiManque`, le jumeau de `calculerTampons` de l'API). Le ticket se juge sur
+  `GET /me/voyage/tickets` : tant qu'ils ne sont pas lus, rien ne se dit ; leur panne se dit à la
+  place de la phrase. Dessous, le tampon posé, ou sa place.
+- **La palissade** : les affiches de mes films de chaque année, quatre au plus, les millésimes au
+  pochoir.
+- **Le registre des recettes** : une ligne par année (films vus, récompense, ma meilleure note) ;
+  une année qui a sa page en est le lien, le chemin du clavier et du lecteur d'écran.
+- **Les liens** vers la boîte et le guichet, ceux de `PAGES_DE_LA_DECENNIE` (`voyage/decennie.ts`)
+  seulement : une page sans route y ramènerait à l'accueil, hors du Voyage.
+
+Pour un membre hors IA, une année que le Voyage suivi n'a pas encore ouverte (`etatDeCase`,
+`attente`) n'est jamais « en cours » : son cheval est terne au pointillé or, comme sa case de la
+carte, qui ne porte plus de corail ; le registre dit « tu le rattrapes bientôt ».
+
+**Le tampon du passeport** (`voyage/passeport/Tampon.tsx`), le même sur la carte et dans le livret :
+un rond de papier à l'encre rouge du monde (jamais le corail), « Passeport », « Années 1890 » au
+pochoir, « bouclée », le titre du voyageur, et le jour où la décennie a été bouclée, **à Paris**
+(`boucle_le`, « 1er janvier 2000 »). Il ne frappe que posé à l'instant (`frappe`) : sur la carte, au
+passage de la décennie ; jamais dans le livret, qui le montre posé depuis des mois. Il ne descend
+pas sous 196 px de côté, où son jour ne se lirait plus.
+
+**La boîte à billets** (`/voyage/decennies/:decennie/billets`). Un billet par visionnage d'un film
+sorti dans la décennie, numéroté du premier vu au dernier (`billetsDeLaDecennie` : la date du
+visionnage, puis sa création, puis son identifiant) ; le numéro se recalcule à chaque lecture et
+n'est stocké nulle part, si bien qu'un visionnage ancien ajouté après coup décale ceux qui le
+suivent. Un intercalaire par année du Voyage, et « Tous » ; les films de 1890 à 1894, d'avant le
+départ, ne sont que sous « Tous ». L'intercalaire vit dans l'adresse (`?annee=`), le billet ouvert
+en grand aussi (`?billet=`) : il dit la date, la note, les réactions et ma remarque privée, prend le
+focus, se ferme à Échap ou par le geste « retour ». « Corriger le billet » ne s'offre que si la fiche
+de l'année du film est déjà en cache (`voyage/boite/correction.ts`) : la boîte ne la lit jamais. Le
+billet que la séance vient de ranger (`voyage/billet/range.ts`, en mémoire, par membre) y est mis en
+avant une fois, son casier ouvert, d'un liseré or.
+
+**Le billet numéroté.** Composter sur le billet de séance (« Tamponner « Vu » » · « et ranger le
+billet ») joue la séquence de la maquette en 2 170 ms (`FRAPPE` et `DUREE_DU_COMPOSTAGE`,
+`voyage/billet.ts`) : le marteau descend (360 ms), l'encre se pose et le téléphone vibre, une pause
+(140), le marteau remonte (320), le numéroteur fait dix tirages (45 chacun), une pause (200), le
+talon part (700) ; puis l'année revient, comme au plan 2b. Le numéro se lit dans la boîte, par la
+même requête et la même clé : celui du billet est celui de la boîte. Si elle n'a pas répondu à la fin
+des tirages, le numéroteur s'arrête sur « N° ···· » et la séquence continue. Au calme, rien de tout
+cela : l'année revient aussitôt, et le numéro se lit dans la boîte. Corriger ne tamponne pas : le
+numéro se lit en tête.
+
+**Le guichet** (`/voyage/decennies/:decennie/recherche`). Il cherche dans le catalogue des salles
+déjà écrites de la décennie : la page ne lit que les fiches des années visitées et non verrouillées
+(`anneesDuCatalogue`, le jumeau de `apercuLitLaFiche`, l'aperçu de la carte), ce qui n'enfile rien
+chez le chroniqueur. Films et bobines des programmes, par titre ou réalisateur, sans accents ni
+casse, apostrophes, ligatures et espaces pliées (`voyage/catalogue.ts`), le passage trouvé souligné ;
+filtré par années, dont les boutons ne viennent que des fiches prêtes. Rien ne part à la frappe. Sans
+saisie, « les plus demandées » : les essentiels pas encore vus, six au plus. La saisie et les années
+cochées sont retenues sous l'entrée d'historique (`voyage/recherche/memoire.ts`, `sessionStorage`) :
+revenir d'une fiche de film les retrouve, une navigation nouvelle ouvre un guichet vide. Au doigt, la
+fenêtre monte au-dessus du clavier. « Chercher hors du Voyage » mène à la recherche du journal.
+
+Où vit quoi : les règles, sans rendu, dans `src/voyage/` (`decennie.ts` : l'adresse, les chevaux,
+le toucher, le registre, la palissade ; `passeport.ts` : le tampon et ce qui lui manque ;
+`billets.ts` : le numéro, les intercalaires, le casier ; `catalogue.ts` : le pliage et la
+recherche ; `manivelle.ts` ; `billet/range.ts` : le billet rangé) ; les morceaux dans
+`voyage/decennie/`, `voyage/boite/`, `voyage/passeport/`, `voyage/billet/` (`Tampon.tsx`,
+`Numeroteur.tsx`) et `voyage/recherche/` ; le monument et le guichet de 1890 dans
+`mondes/1890/monument.ts` et `mondes/1890/guichetPage.ts`.
 
 ## Le thème
 

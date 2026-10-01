@@ -54,6 +54,32 @@ même dossier : œuvre, source (la page du fichier), licence et sa raison, trait
 peut porter ses propres droits. Jamais une vidéo au précache (`verifier:dist` la refuse, comme une
 image au-dessus de son plafond ou hors du budget).
 
+## Le Voyage : ce qu'on casse sans le voir
+
+La carte des fichiers du Voyage est dans le `README.md` (« Les pages du Voyage », « Les pages d'une
+décennie »). Trois règles, que les plans 2b et 2c ont payées :
+
+- **Lire une fiche d'année n'est pas anodin.** `GET /me/voyage/annees/{annee}` enfile l'ouverture
+  de l'année chez le chroniqueur, au compte IA, quand elle n'est ni visitée ni après l'année en
+  cours : une lecture sans geste du membre dépense des jetons Anthropic. La page d'une décennie et
+  la boîte à billets ne lisent aucune fiche (la boîte ne fait que consulter le cache, pour offrir la
+  correction) ; le billet ne lit que celle de son année, d'où l'on vient ; le guichet, la recherche
+  du journal et l'aperçu de la carte ne lisent que les fiches déjà écrites et ouvertes
+  (`apercuLitLaFiche`, `src/voyage/regles.ts`) ; la manivelle ne relit que la fiche ouverte et la
+  carte, en `exact`. La décennie, la boîte, le guichet, la recherche du journal, l'aperçu de la
+  carte et la manivelle ont chacun un test qui compte les requêtes parties : une lecture ajoutée
+  doit y passer.
+- **Une séquence lancée d'un rappel de `mutate` vérifie que la page est montée.** TanStack tait ces
+  rappels pour un composant démonté à leur appel, pas après les attentes qu'ils lancent : le
+  compostage dure 2 170 ms, et un membre parti entre-temps serait ramené à l'année depuis ailleurs.
+  Relire un drapeau `monte` après chaque attente, avant tout `setState`, toute vibration et toute
+  navigation (`pages/VoyageBillet.tsx`, `tamponner`). Ce que le cache ou une autre page doit
+  apprendre (les péremptions, le retour confié à l'année, le billet rangé) va dans `onSuccess` de
+  `useMutation`, qui survit au départ ; la navigation reste dans les rappels de `mutate`.
+- **Une toile n'ouvre rien au premier contact.** Un défilement commence par un `pointerdown` :
+  ouvrir une page passe par `Toile.onChoisir` (le `click`, que le navigateur ne donne pas après un
+  défilement), jamais par `onToucher`, qui ne sert qu'à animer (le manège qui s'emballe).
+
 ## Le contrat de l'API
 
 `contract/openapi.json` est une copie de `../biblio-back/docs/openapi.json`, et `src/api/types.ts`
