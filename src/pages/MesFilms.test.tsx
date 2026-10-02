@@ -506,7 +506,7 @@ describe('Mes films', () => {
 
     fireEvent.click(await screen.findByText('Le Voyage de Chihiro'))
     fireEvent.click(await screen.findByRole('link', { name: 'Corriger' }))
-    await screen.findByLabelText(/Vu le/)
+    await screen.findByLabelText(/Séance du/)
 
     fireEvent.click(screen.getByRole('button', { name: 'Retour' }))
     // Mutation : sans l'état remis par le retour du formulaire, la fiche dirait « plus disponible ».

@@ -492,6 +492,7 @@
   --espace-moins-demi: -0.375rem;
   --espace-moins-2: -0.5rem;
   --espace-moins-3: -0.75rem;
+  --espace-moins-4: -1rem;
 
   /* Rayons */
   --rayon-s: 0.375rem;
@@ -635,6 +636,61 @@
   --etoile-taille: 1.375rem; /* une étoile de note : chaque emploi pose la sienne sur sa propre classe */
   --etoile-taille-petite: 0.8125rem;
   --etoile-trait: 1.5; /* le trait de son contour, dans sa boîte de 24 sur 24 */
+
+  /* Le billet du critique : le formulaire d'un visionnage, un billet de presse sur le papier des billets du
+     profil (coins mordus, bande rouge au bord haut), la page de notes d'un carnet à spirale dessous. Le crayon
+     est celui du membre, le tampon bleu celui des réactions qu'il a posées. */
+  --tampon-encre: var(--couleur-bloc); /* l'encre bleue d'un tampon : celle du cobalt, la même de jour comme de nuit */
+  --tampon-fond: rgba(42, 63, 214, 0.07);
+  --tampon-inclinaison: -2deg; /* un tampon posé de travers, le suivant de l'autre côté */
+  --tampon-inclinaison-paire: 1.5deg;
+  --tampon-cadre-decalage: -0.3125rem; /* le second cadre, hors du premier, mesuré depuis l'intérieur de son bord */
+  --crayon-inclinaison: -1deg;
+  --crayon-note-taille: 1.1875rem; /* une ligne de crayon posée sur le billet : « Déjà vu le… » */
+  --crayon-note-interligne: 1.15;
+  --crayon-verdict-taille: 1.625rem; /* le verdict, à côté de « Mon avis » */
+  --crayon-verdict-interligne: 0.6; /* serré : un crayon qui déborde sans grandir la ligne de la rubrique */
+  --crayon-plus-taille: 1.25rem; /* « + 10 autres » */
+  --billet-trait: 1.5px;
+  --billet-marge-haut: 1.125rem; /* sous la bande rouge */
+  --billet-tete-taille: 0.875rem;
+  --presse-marge: 0.125rem 0.375rem 0.0625rem;
+  --billet-affiche-largeur: 3.875rem;
+  --billet-titre-taille: 1.3125rem;
+  --billet-champ-marge: 0.875rem;
+  --billet-rubrique-taille: 0.9375rem;
+  --billet-rubrique-interlettre: 0.16em;
+  --billet-rubrique-marge: 0.4375rem;
+  --billet-saisie-hauteur: 3rem;
+  --billet-saisie-taille: 1.0625rem;
+  --billet-saisie-fond: rgba(255, 255, 255, 0.5);
+  --billet-trous-ecart: 0.125rem; /* la rangée des dix trous de la note */
+  --billet-trou-hauteur: 3.25rem; /* la cible d'un trou : la rangée en fait dix, sur un petit écran 25 px de large */
+  --billet-trou-diametre: 1.5rem;
+  --billet-trou-ratio: 1 / 1;
+  --billet-trou-part: 84%; /* la part de la largeur du trou que le poinçon prend, jusqu'à son diamètre */
+  --billet-chiffre-taille: 0.875rem;
+  --billet-chiffre-interlettre: 0.05em;
+  --billet-chiffre-choisi-taille: 1.0625rem;
+  --billet-tampon-hauteur: 2.5rem;
+  --billet-tampon-taille: 0.9375rem;
+  --billet-tampon-interlettre: 0.07em;
+  --billet-actions-marge: 0.875rem 1rem 0.625rem; /* le bouton collé au bas : son fondu déborde de la page à gauche et à droite */
+  --billet-actions-fondu: linear-gradient(to top, var(--barre-onglets-fond) 62%, transparent);
+  --billet-bouton-taille: 1.4375rem;
+  --billet-bouton-interlettre: 0.18em;
+  --carnet-papier: #fbf8ee;
+  --carnet-marge: 1.5rem 0.875rem 0.875rem; /* la spirale occupe le haut */
+  --carnet-fond: radial-gradient(circle 0.28125rem at 0.6875rem 0.6875rem, var(--pellicule-trou) 96%, transparent) 0 0 / 1.375rem 1.375rem repeat-x,
+    var(--carnet-papier); /* les trous de la spirale laissent voir le ciel */
+  --carnet-ombre-haut: inset 0 1.375rem 0 rgba(120, 100, 60, 0.07);
+  --carnet-interligne: 1.75rem;
+  --carnet-ligne: rgba(60, 90, 160, 0.32);
+  --carnet-lignes: repeating-linear-gradient(
+    180deg,
+    transparent 0 calc(var(--carnet-interligne) - var(--trait)),
+    var(--carnet-ligne) calc(var(--carnet-interligne) - var(--trait)) var(--carnet-interligne)
+  );
 
   /* Gabarits : ils touchent à l'ergonomie, à garder raisonnables. */
   --cible-tactile: 44px; /* la plus petite zone touchable */

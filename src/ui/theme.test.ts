@@ -6,6 +6,9 @@ import affiche from './Affiche.module.css?raw'
 import auCine from '../pages/AuCine.module.css?raw'
 import suivis from '../pages/Suivis.module.css?raw'
 import recherche from '../pages/Recherche.module.css?raw'
+import formulaire from '../pages/Formulaire.module.css?raw'
+import rangeeDeNote from '../formulaire/RangeeDeNote.module.css?raw'
+import tampons from '../formulaire/Tampons.module.css?raw'
 import planche from '../suivis/PlancheCycle.module.css?raw'
 import papier from '../suivis/Papier.module.css?raw'
 import affichette from '../suivis/Affichette.module.css?raw'
@@ -351,5 +354,73 @@ describe('les affichettes des Suivis', () => {
 
   it('rien n’y bouge : ni transition ni animation', () => {
     for (const [, css] of DES_SUIVIS) expect(sansCommentaires(css)).not.toMatch(/\b(transition|animation|@keyframes)\b/)
+  })
+})
+
+describe('le billet du critique', () => {
+  const BLOC_JOUR = regle(theme, ':root')
+  const BLOCS_SOMBRES = [regle(theme, ":root:not([data-theme='clair'])"), regle(theme, ":root[data-theme='sombre']")]
+  const valeurDe = (bloc: string, jeton: string) => bloc.match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]?.trim()
+
+  // Sur iPhone, un `input type="date"` garde sa largeur propre et déborde de l'écran : ces quatre lignes
+  // de la feuille sont ce qui l'en empêche, et rien d'autre dans un test de rendu ne les verrait.
+  describe('le champ de date', () => {
+    const date = regle(formulaire, '.date')
+
+    it('perd son apparence native et son plancher de largeur', () => {
+      expect(date).toMatch(/(^|[\s;])appearance:\s*none/)
+      expect(date).toMatch(/-webkit-appearance:\s*none/)
+      expect(date).toMatch(/(^|[\s;])min-width:\s*0/)
+      expect(date).toMatch(/(^|[\s;])max-width:\s*100%/)
+    })
+
+    it('prend toute la largeur du billet, jamais plus', () => {
+      expect(date).toMatch(/(^|[\s;])width:\s*100%/)
+    })
+
+    it('aligne à gauche le texte que WebKit centre', () => {
+      expect(date).toMatch(/text-align:\s*left/)
+      expect(regle(formulaire, '.date::-webkit-date-and-time-value')).toMatch(/text-align:\s*left/)
+    })
+
+    it('reste clair, de jour comme de nuit : il est posé sur du papier', () => {
+      expect(date).toMatch(/color-scheme:\s*light/)
+    })
+  })
+
+  it('le billet est découpé aux quatre coins dans le papier des billets, sous la bande rouge', () => {
+    const corps = regle(formulaire, '.corps')
+    expect(corps).toMatch(/background:\s*var\(--ticket-papier\)/)
+    expect(corps).toMatch(/(^|[\s;])mask:\s*var\(--billet-onglet-masque\)/)
+    expect(corps).toMatch(/box-shadow:\s*inset 0 var\(--billet-onglet-bande-hauteur\) 0 var\(--ticket-bande-vive\)/)
+  })
+
+  it('le bouton suit le doigt au bas de la page, au-dessus du papier', () => {
+    const actions = regle(formulaire, '.actions')
+    expect(actions).toMatch(/position:\s*sticky/)
+    expect(actions).toMatch(/(^|[\s;])bottom:\s*0/)
+    expect(actions).toMatch(/z-index:\s*var\(--z-complet\)/)
+  })
+
+  it('la remarque grandit avec son texte : pas de barre de défilement ni de poignée', () => {
+    const remarque = regle(formulaire, '.remarque')
+    expect(remarque).toMatch(/overflow:\s*hidden/)
+    expect(remarque).toMatch(/resize:\s*none/)
+  })
+
+  it('les dix trous rétrécissent sous la largeur d’une cible tactile, et laissent le défilement vertical au navigateur', () => {
+    expect(regle(rangeeDeNote, '.trou')).toMatch(/min-width:\s*0/)
+    expect(regle(rangeeDeNote, '.rangee')).toMatch(/touch-action:\s*pan-y/)
+  })
+
+  it('le papier du carnet, les lignes et l\'encre du tampon sont les mêmes de jour et de nuit', () => {
+    for (const jeton of ['--carnet-papier', '--carnet-ligne', '--tampon-encre', '--tampon-fond']) {
+      expect(valeurDe(BLOC_JOUR, jeton)).toBeDefined()
+      for (const bloc of BLOCS_SOMBRES) expect(valeurDe(bloc, jeton)).toBeUndefined()
+    }
+  })
+
+  it('rien n\'y bouge : ni transition ni animation', () => {
+    for (const css of [formulaire, rangeeDeNote, tampons]) expect(sansCommentaires(css)).not.toMatch(/\b(transition|animation|@keyframes)\b/)
   })
 })

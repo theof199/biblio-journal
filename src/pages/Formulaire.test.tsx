@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import Formulaire from './Formulaire'
@@ -7,9 +7,11 @@ import { cles } from '../api/cles'
 import { createQueryClient } from '../api/queryClient'
 import { json, servir } from '../test/serveur'
 import { exemple } from '../test/contrat'
+import { visionnage } from '../test/journal'
 import type { CandidatFilm } from '../formulaire/candidat'
 import type { AddMediaResponse, JournalItem, JournalPage } from '../api/journal'
 import type { ReactionsCatalogue } from '../api/reactions'
+import type { Stats } from '../api/stats'
 
 const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)
 const ITEM = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
@@ -69,7 +71,7 @@ describe('le formulaire, en création', () => {
     monterCreation()
 
     await screen.findByText('Inception')
-    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
     await screen.findByText('Accueil')
     expect(requetes.filter((r) => r.startsWith('POST'))).toEqual(['POST /api/media', 'POST /api/me/journal'])
@@ -89,11 +91,11 @@ describe('le formulaire, en création', () => {
     const reaction = CATALOGUE.reactions[0]!
     await screen.findByRole('button', { name: `${reaction.emoji} ${reaction.phrase}` })
 
-    fireEvent.change(screen.getByLabelText('Vu le'), { target: { value: '2026-09-20' } })
+    fireEvent.change(screen.getByLabelText('Séance du'), { target: { value: '2026-09-20' } })
     fireEvent.click(screen.getByRole('radio', { name: 'Note 7 sur 10' }))
     fireEvent.click(screen.getByRole('button', { name: `${reaction.emoji} ${reaction.phrase}` }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '  Revu en salle.  ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
     await screen.findByText('Accueil')
     // Mutation : un champ du brouillon oublié dans `creerVisionnage` (la note, les réactions, la
@@ -121,7 +123,7 @@ describe('le formulaire, en création', () => {
     await screen.findByText('Inception')
 
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '   ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
     await screen.findByText('Accueil')
     // Mutation : une remarque blanche envoyée telle quelle poserait un carnet vide mais non nul.
@@ -138,7 +140,7 @@ describe('le formulaire, en création', () => {
     monterCreation()
     await screen.findByText('Inception')
 
-    const date = screen.getByLabelText('Vu le')
+    const date = screen.getByLabelText('Séance du')
     // Mutation, sur l'un ou l'autre site : `toISOString().slice(0, 10)` rend '2026-09-29'.
     expect(date).toHaveValue('2026-09-30')
     expect(date).toHaveAttribute('max', '2026-09-30')
@@ -167,7 +169,7 @@ describe('le formulaire, en création', () => {
     monterCreation()
 
     await screen.findByText('Inception')
-    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
@@ -194,6 +196,8 @@ describe('le formulaire, en création', () => {
     monterCreation()
     const premiere = CATALOGUE.reactions[0]!
     await screen.findByRole('button', { name: `${premiere.emoji} ${premiere.phrase}` })
+    // Trois réactions d'emblée : pour les poser toutes, il faut déplier le reste.
+    fireEvent.click(screen.getByRole('button', { name: '+ 10 autres' }))
 
     for (const r of CATALOGUE.reactions) {
       fireEvent.click(screen.getByRole('button', { name: `${r.emoji} ${r.phrase}` }))
@@ -226,7 +230,7 @@ describe('le formulaire, en correction', () => {
     // Seule la note change.
     const nouvelleNote = ITEM.entry.rating === 10 ? 1 : (ITEM.entry.rating ?? 0) + 1
     fireEvent.click(screen.getByRole('radio', { name: `Note ${nouvelleNote} sur 10` }))
-    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger mon papier' }))
 
     await screen.findByText('Accueil')
     expect(corpsEnvoye).toEqual({ rating: nouvelleNote })
@@ -241,7 +245,7 @@ describe('le formulaire, en correction', () => {
     monterCorrection()
     await screen.findByText(ITEM.media.title)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger mon papier' }))
 
     // Mutation : une erreur lue sur la seule mutation de création (`creation.error`) resterait muette ici.
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
@@ -257,7 +261,7 @@ describe('le formulaire, en correction', () => {
     monterCorrection()
     await screen.findByText(ITEM.media.title)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Déchirer ce billet' }))
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
 
     // Mutation : sans l'alerte de la confirmation, un échec de suppression ne se disait nulle part.
@@ -287,7 +291,7 @@ describe('le formulaire, en correction', () => {
     monterCorrection()
     await screen.findByText(ITEM.media.title)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Déchirer ce billet' }))
     // Mutation : sans la confirmation en page, ce premier clic supprimerait déjà.
     expect(requetes.filter((r) => r.startsWith('DELETE'))).toHaveLength(0)
     expect(confirmSpy).not.toHaveBeenCalled()
@@ -298,6 +302,279 @@ describe('le formulaire, en correction', () => {
     await screen.findByText('Accueil')
     expect(requetes.filter((r) => r.startsWith('DELETE'))).toHaveLength(1)
     expect(confirmSpy).not.toHaveBeenCalled()
+  })
+})
+
+/** Le nom accessible d'une réaction du catalogue, comme un tampon l'écrit. */
+const nomDe = (cle: string) => {
+  const r = CATALOGUE.reactions.find((reaction) => reaction.cle === cle)!
+  return `${r.emoji} ${r.phrase}`
+}
+const stats = (total: number) =>
+  ({ dashboard: { periods: { all: { counts: { finished_by_type: { movie: total } } } } } }) as unknown as Stats
+/** Le journal de l'accueil, déjà en cache : une page, ses entrées, sans suite. */
+const journalEnCache = (client: ReturnType<typeof createQueryClient>, items: JournalItem[], suite: string | null = null) =>
+  client.setQueryData(cles.journal, { pages: [{ items, next_cursor: suite }], pageParams: [undefined] })
+/** Inception (`CANDIDAT`) déjà vu : l'entrée d'exemple du contrat porte le même `external_id`. */
+const dejaVu = (jour: string, note: number | null): JournalItem => ({
+  ...ITEM,
+  entry: { ...ITEM.entry, finished_at: jour, rating: note },
+})
+
+describe('le billet du critique', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const servirLeCatalogue = () => servir({ 'GET /api/reference/reactions': () => json(CATALOGUE) })
+
+  it('est un billet de presse : « Presse » et « Projection » en tête', async () => {
+    servirLeCatalogue()
+    monterCreation()
+    await screen.findByText('Inception')
+
+    expect(screen.getByText('Presse')).toBeInTheDocument()
+    expect(screen.getByText('Projection', { exact: false })).toBeInTheDocument()
+  })
+
+  it('ne fait aucun appel de plus que le catalogue des réactions', async () => {
+    const requetes = servirLeCatalogue()
+    monterCreation()
+    await screen.findByText('Inception')
+    await screen.findByRole('button', { name: nomDe('adore') })
+
+    // Mutation : une lecture du journal ou des stats ajoutée au billet.
+    expect(requetes).toEqual(['GET /api/reference/reactions'])
+  })
+
+  describe('son numéro', () => {
+    it('est le total du journal, d’après les stats déjà en cache, plus un', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      client.setQueryData(cles.stats, stats(412))
+      monterCreation(client)
+
+      // Mutation : le total lu sans `+ 1`, ou sans les quatre chiffres.
+      expect(await screen.findByText('N° 0413')).toBeInTheDocument()
+    })
+
+    it('manque quand les stats ne sont pas en cache : il n’en demande pas', async () => {
+      servirLeCatalogue()
+      monterCreation()
+      await screen.findByText('Inception')
+
+      expect(screen.queryByText(/^N° /)).toBeNull()
+    })
+
+    it('manque quand les stats sont périmées : le journal a bougé depuis', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      client.setQueryData(cles.stats, stats(412))
+      void client.invalidateQueries({ queryKey: cles.stats })
+      monterCreation(client)
+      await screen.findByText('Inception')
+
+      expect(screen.queryByText(/^N° /)).toBeNull()
+    })
+
+    it('manque en correction : le billet existe déjà', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      client.setQueryData(cles.stats, stats(412))
+      monterCorrection(ITEM, client)
+      await screen.findByText(ITEM.media.title)
+
+      expect(screen.queryByText(/^N° /)).toBeNull()
+    })
+  })
+
+  describe('le rappel d’une séance passée', () => {
+    it('dit le jour et la note de la dernière séance, et que la prochaine sera la deuxième', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, [dejaVu('2024-03-14', 9)])
+      monterCreation(client)
+
+      // Mutation : la date ou la note retirée du rappel, ou « 2ᵉ » écrit en dur d'un autre rang.
+      expect(await screen.findByText('Déjà vu le 14 mars 2024, noté 9. Ce sera une 2ᵉ séance.')).toBeInTheDocument()
+    })
+
+    it('omet la note quand la séance passée n’en avait pas', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, [dejaVu('2024-03-14', null)])
+      monterCreation(client)
+
+      expect(await screen.findByText('Déjà vu le 14 mars 2024. Ce sera une 2ᵉ séance.')).toBeInTheDocument()
+    })
+
+    it('compte les séances d’avant : la troisième, quand le film a déjà été vu deux fois', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, [dejaVu('2025-01-02', 7), dejaVu('2024-03-14', 9)])
+      monterCreation(client)
+
+      expect(await screen.findByText('Déjà vu le 2 janvier 2025, noté 7. Ce sera une 3ᵉ séance.')).toBeInTheDocument()
+    })
+
+    it('ne dit rien d’un film que le journal en cache ne connaît pas', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, [{ ...dejaVu('2024-03-14', 9), media: { ...ITEM.media, external_id: 'autre' } }])
+      monterCreation(client)
+      await screen.findByText('Inception')
+
+      expect(screen.queryByText(/Déjà vu/)).toBeNull()
+    })
+
+    it('ne dit rien d’un journal en cache que l’écriture d’un visionnage a déjà périmé', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, [dejaVu('2024-03-14', 9)])
+      void client.invalidateQueries({ queryKey: cles.journal })
+      monterCreation(client)
+      await screen.findByText('Inception')
+
+      expect(screen.queryByText(/Déjà vu/)).toBeNull()
+    })
+
+    it('ne dit rien en correction : la séance qu’on corrige est celle du journal', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, [ITEM])
+      monterCorrection(ITEM, client)
+      await screen.findByText(ITEM.media.title)
+
+      expect(screen.queryByText(/Déjà vu/)).toBeNull()
+    })
+  })
+
+  describe('son avis', () => {
+    it('écrit le verdict et la note au crayon, et le retire quand la note se décoche', async () => {
+      servirLeCatalogue()
+      monterCreation()
+      await screen.findByText('Inception')
+      expect(screen.queryByText(/\/10$/)).toBeNull()
+
+      fireEvent.click(screen.getByRole('radio', { name: 'Note 8 sur 10' }))
+      // Mutation : le verdict d'un autre rang (note - 1), ou la note sans son verdict.
+      expect(screen.getByText('Très bien · 8/10')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('radio', { name: 'Note 8 sur 10' }))
+      expect(screen.queryByText('Très bien · 8/10')).toBeNull()
+    })
+
+    it('garde les dix notes d’un radiogroupe nommé « Note sur 10 »', async () => {
+      servirLeCatalogue()
+      monterCreation()
+      await screen.findByText('Inception')
+
+      const groupe = screen.getByRole('radiogroup', { name: 'Note sur 10' })
+      expect(within(groupe).getAllByRole('radio')).toHaveLength(10)
+    })
+  })
+
+  describe('ses réactions', () => {
+    const posees = (...lots: string[][]) => lots.map((reactions, rang) => visionnage({ id: `v${rang}`, date: '2026-09-01', reactions }))
+
+    it('ne montrent d’abord que les trois les plus posées du journal en cache, le reste replié', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, posees(['visuel', 'en_salle', 'touche'], ['visuel', 'en_salle'], ['visuel', 'nul']))
+      monterCreation(client)
+
+      // Mutation : le classement ignoré (les trois premières du catalogue), ou une quatrième montrée.
+      await screen.findByRole('button', { name: nomDe('visuel') })
+      const montrees = CATALOGUE.reactions.filter((r) => screen.queryByRole('button', { name: nomDe(r.cle) }))
+      // « visuel » trois fois, « en_salle » deux, puis « nul » et « touche » à égalité : l'ordre du catalogue les départage.
+      expect(montrees.map((r) => r.cle)).toEqual(['nul', 'visuel', 'en_salle'])
+      expect(screen.getByRole('button', { name: '+ 10 autres' })).toBeInTheDocument()
+    })
+
+    it('à défaut de journal en cache, montrent les trois premières du catalogue', async () => {
+      servirLeCatalogue()
+      monterCreation()
+
+      await screen.findByRole('button', { name: nomDe('adore') })
+      const montrees = CATALOGUE.reactions.filter((r) => screen.queryByRole('button', { name: nomDe(r.cle) }))
+      expect(montrees.map((r) => r.cle)).toEqual(['adore', 'sympa', 'nul'])
+    })
+
+    it('classent aussi d’après un journal en cache déjà périmé', async () => {
+      servirLeCatalogue()
+      const client = createQueryClient()
+      journalEnCache(client, posees(['en_salle'], ['en_salle'], ['visuel'], ['touche']))
+      void client.invalidateQueries({ queryKey: cles.journal })
+      monterCreation(client)
+
+      await screen.findByRole('button', { name: nomDe('en_salle') })
+      expect(screen.getByRole('button', { name: nomDe('visuel') })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: nomDe('adore') })).toBeNull()
+    })
+
+    it('gardent visible une réaction cochée qui n’est pas parmi les trois, même replié', async () => {
+      servirLeCatalogue()
+      monterCreation()
+      await screen.findByRole('button', { name: nomDe('adore') })
+      fireEvent.click(screen.getByRole('button', { name: '+ 10 autres' }))
+      fireEvent.click(screen.getByRole('button', { name: nomDe('flippe') }))
+
+      fireEvent.click(screen.getByRole('button', { name: '− replier' }))
+
+      // Mutation : le repli qui cache aussi les réactions cochées.
+      expect(screen.getByRole('button', { name: nomDe('flippe') })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.queryByRole('button', { name: nomDe('long') })).toBeNull()
+      expect(screen.getByRole('button', { name: '+ 9 autres' })).toBeInTheDocument()
+    })
+
+    it('se déplient d’un bouton « + 10 autres » et se replient d’un « − replier »', async () => {
+      servirLeCatalogue()
+      monterCreation()
+      await screen.findByRole('button', { name: nomDe('adore') })
+      expect(screen.queryByRole('button', { name: nomDe('long') })).toBeNull()
+
+      fireEvent.click(screen.getByRole('button', { name: '+ 10 autres' }))
+      expect(screen.getByRole('button', { name: nomDe('long') })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^\+ / })).toBeNull()
+
+      fireEvent.click(screen.getByRole('button', { name: '− replier' }))
+      expect(screen.queryByRole('button', { name: nomDe('long') })).toBeNull()
+    })
+
+    it('comptent celles qui sont choisies', async () => {
+      servirLeCatalogue()
+      monterCreation()
+      await screen.findByRole('button', { name: nomDe('adore') })
+      expect(screen.queryByText('1 choisie')).toBeNull()
+
+      fireEvent.click(screen.getByRole('button', { name: nomDe('adore') }))
+      expect(screen.getByText('1 choisie')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: nomDe('sympa') }))
+      expect(screen.getByText('2 choisies')).toBeInTheDocument()
+    })
+  })
+
+  it('écrit la remarque dans « Mes notes », rien qu’à toi', async () => {
+    servirLeCatalogue()
+    monterCreation()
+    await screen.findByText('Inception')
+
+    expect(screen.getByText('rien qu’à toi')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/^Mes notes/), { target: { value: 'Une claque.' } })
+    expect(screen.getByRole('textbox')).toHaveValue('Une claque.')
+  })
+
+  it('nomme son bouton « Rendre mon papier » en création et « Corriger mon papier » en correction', async () => {
+    servirLeCatalogue()
+    const { unmount } = monterCreation()
+    await screen.findByText('Inception')
+    expect(screen.getByRole('button', { name: 'Rendre mon papier' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Déchirer ce billet' })).toBeNull()
+    unmount()
+
+    monterCorrection()
+    await screen.findByText(ITEM.media.title)
+    expect(screen.getByRole('button', { name: 'Corriger mon papier' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Déchirer ce billet' })).toBeInTheDocument()
   })
 })
 
@@ -336,7 +613,7 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
     monterCreation(client)
 
     await screen.findByText('Inception')
-    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
     await screen.findByText('Accueil')
     expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
@@ -354,7 +631,7 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
 
     const nouvelleNote = ITEM.entry.rating === 10 ? 1 : (ITEM.entry.rating ?? 0) + 1
     fireEvent.click(screen.getByRole('radio', { name: `Note ${nouvelleNote} sur 10` }))
-    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger mon papier' }))
 
     await screen.findByText('Accueil')
     expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
@@ -370,7 +647,7 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
     monterCorrection(ITEM, client)
     await screen.findByText(ITEM.media.title)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Déchirer ce billet' }))
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
 
     await screen.findByText('Accueil')

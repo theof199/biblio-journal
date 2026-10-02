@@ -1,13 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
-import { corrigerVisionnage, creerVisionnage, supprimerVisionnage } from '../api/journal'
+import { corrigerVisionnage, creerVisionnage, filmDejaVu, supprimerVisionnage } from '../api/journal'
 import { basculerReaction, lireReactions } from '../api/reactions'
+import { compterReactions } from '../profil/bilan'
+import { journalEnCache, numeroDeBillet, totalDuJournal } from '../formulaire/journalEnCache'
 import { brouillonInitial, construirePatch } from '../formulaire/patch'
+import { reactionsFavorites, reactionsVisibles } from '../formulaire/reactionsVisibles'
+import RangeeDeNote from '../formulaire/RangeeDeNote'
+import Tampons from '../formulaire/Tampons'
+import { useHauteurAuto } from '../formulaire/useHauteurAuto'
+import { noteEnMots } from '../formulaire/verdict'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
-import { jourLocal, sousTitre } from '../ui/format'
+import { formatDateVisionnage, jourLocal, sousTitre } from '../ui/format'
 import styles from './Formulaire.module.css'
 import type { CandidatFilm } from '../formulaire/candidat'
 import type { JournalItem } from '../api/journal'
@@ -26,10 +33,19 @@ interface EtatCorrection {
   retour?: string
 }
 
+/** « Déjà vu le 14 mars 2024, noté 9. Ce sera une 2ᵉ séance. » : la ligne au crayon d'un film que le journal connaît déjà. */
+function rappelDejaVu(vu: { finished_at: string; rating: number | null; seances: number }): string {
+  const note = vu.rating != null ? `, noté ${vu.rating}` : ''
+  return `Déjà vu le ${formatDateVisionnage(vu.finished_at)}${note}. Ce sera une ${vu.seances + 1}ᵉ séance.`
+}
+
 /**
- * Le film et sa remarque, en création (`/journal/nouveau`, depuis la recherche ou « Ensuite ») et
- * en correction (`/journal/:id/corriger`, depuis la fiche) — reprise de `FormScreen.kt`. L'état de
- * navigation porte le film ou l'entrée : sans lui (accès direct, rechargement de page), la page
+ * Le billet du critique : le film et sa remarque, en création (`/journal/nouveau`, depuis la
+ * recherche ou « Ensuite ») et en correction (`/journal/:id/corriger`, depuis la fiche) — reprise de
+ * `FormScreen.kt`. Un billet de presse, puis la page de notes du carnet dessous. Ses lignes « en
+ * plus » (le numéro du billet, le rappel d'une séance passée, les trois réactions les plus posées)
+ * ne viennent que du cache de requêtes (`formulaire/journalEnCache.ts`), jamais d'un appel de plus.
+ * L'état de navigation porte le film ou l'entrée : sans lui (accès direct, rechargement de page), la page
  * renvoie vers la recherche ou l'accueil plutôt que de tenter un appel que l'API ne sait pas servir
  * (il n'existe pas de `GET /me/journal/{id}`).
  */
@@ -46,10 +62,29 @@ export default function Formulaire() {
 
   const [brouillon, setBrouillon] = useState(() => brouillonInitial(item, candidat))
   const [confirmerSuppression, setConfirmerSuppression] = useState(false)
+  const [reactionsDepliees, setReactionsDepliees] = useState(false)
+  const zoneRemarque = useRef<HTMLTextAreaElement>(null)
+  useHauteurAuto(zoneRemarque, brouillon.remarque)
+
+  // Lus une fois, à l'ouverture : le cache ne bouge pas pendant qu'on remplit le billet, et ni le
+  // numéro ni le rappel ne doivent changer sous les doigts. Rien de tout cela en correction : le
+  // billet existe déjà, il n'a pas de numéro à venir ni de séance à rappeler.
+  const [numero] = useState(() => (correction ? null : numeroDeBillet(totalDuJournal(client))))
+  const [dejaVu] = useState(() => {
+    const journal = candidat ? journalEnCache(client) : null
+    return candidat && journal ? filmDejaVu(journal.items, candidat.external_id) : null
+  })
 
   const reactions = useQuery({ queryKey: cles.reactions, queryFn: ({ signal }) => lireReactions(signal) })
-  const catalogue = reactions.data?.reactions ?? []
+  const catalogue = useMemo(() => reactions.data?.reactions ?? [], [reactions.data])
   const ordre = catalogue.map((r) => r.cle)
+  // Les trois les plus posées du journal déjà en cache, périmé ou non : à défaut, les trois premières du catalogue.
+  const favorites = useMemo(
+    () => reactionsFavorites(compterReactions(journalEnCache(client, { perime: true })?.items ?? [], catalogue), catalogue),
+    [client, catalogue],
+  )
+  const reactionsMontrees = reactionsVisibles(catalogue, favorites, brouillon.reactions, reactionsDepliees)
+  const reactionsCachees = catalogue.length - reactionsVisibles(catalogue, favorites, brouillon.reactions, false).length
 
   const apresEcriture = () => {
     // Par préfixe : `cles.journal` périme aussi `cles.seances` (« Tes séances », Au ciné), qui
@@ -133,87 +168,95 @@ export default function Formulaire() {
           vers={correction ? `/journal/${id}` : '/recherche'}
           etat={correction ? { item, depuis: etatCorrection?.depuis } : undefined}
         />
+        <span className={styles.lieu}>{correction ? 'Corriger un visionnage' : 'Le guichet'}</span>
       </div>
 
-      <div className={styles.film}>
-        <Affiche src={couverture} titre={titre} taille="ligne" />
-        <div className={styles.infosFilm}>
-          <h1 className={styles.titreFilm}>{titre}</h1>
-          {sous ? <p className={styles.sousTitreFilm}>{sous}</p> : null}
+      <article className={styles.billet}>
+        <div className={styles.corps}>
+          <header className={styles.tete}>
+            <span>
+              <span className={styles.presse}>Presse</span>Projection
+            </span>
+            {numero ? <b className={styles.numero}>{numero}</b> : null}
+          </header>
+
+          <div className={styles.film}>
+            <Affiche src={couverture} titre={titre} className={styles.affiche} />
+            <div className={styles.infosFilm}>
+              <h1 className={styles.titreFilm}>{titre}</h1>
+              {sous ? <p className={styles.sousTitreFilm}>{sous}</p> : null}
+            </div>
+          </div>
+
+          {dejaVu ? <p className={styles.deja}>{rappelDejaVu(dejaVu)}</p> : null}
+
+          <label className={styles.champ}>
+            <span className={styles.rubrique}>Séance du</span>
+            <input
+              type="date"
+              value={brouillon.date}
+              max={jourLocal()}
+              onChange={(event) => setBrouillon((b) => ({ ...b, date: event.target.value }))}
+              className={styles.date}
+            />
+          </label>
+
+          <section className={styles.champ}>
+            <h2 className={styles.rubrique}>
+              Mon avis{' '}
+              {brouillon.note != null ? <span className={styles.verdict}>{noteEnMots(brouillon.note)}</span> : null}
+            </h2>
+            <RangeeDeNote note={brouillon.note} onChoisir={(note) => setBrouillon((b) => ({ ...b, note }))} />
+          </section>
+
+          <section className={styles.champ}>
+            <h2 className={styles.rubrique}>
+              Réactions{' '}
+              {brouillon.reactions.length > 0 ? (
+                <small className={styles.compte}>
+                  {brouillon.reactions.length} {brouillon.reactions.length > 1 ? 'choisies' : 'choisie'}
+                </small>
+              ) : null}
+            </h2>
+            <Tampons
+              reactions={reactionsMontrees}
+              cochees={brouillon.reactions}
+              onBasculer={(cle) => setBrouillon((b) => ({ ...b, reactions: basculerReaction(b.reactions, cle, ordre) }))}
+              cachees={reactionsCachees}
+              depliees={reactionsDepliees}
+              onDeplier={() => setReactionsDepliees((depliees) => !depliees)}
+            />
+          </section>
+        </div>
+
+        {/* La page de notes sous le billet, sur sa spirale : on y écrit pour soi. */}
+        <div className={styles.carnet}>
+          <label className={styles.champ}>
+            <span className={`${styles.rubrique} ${styles.rubriqueCarnet}`}>
+              Mes notes <small className={styles.compte}>rien qu’à toi</small>
+            </span>
+            <textarea
+              ref={zoneRemarque}
+              value={brouillon.remarque}
+              onChange={(event) => setBrouillon((b) => ({ ...b, remarque: event.target.value }))}
+              className={styles.remarque}
+            />
+          </label>
+        </div>
+      </article>
+
+      <div className={styles.actions}>
+        {erreur ? (
+          <p role="alert" className={styles.erreur}>
+            {erreur.message}
+          </p>
+        ) : null}
+        <div className={styles.talon}>
+          <button type="button" onClick={enregistrer} disabled={mutation.isPending} className={styles.valider}>
+            {correction ? 'Corriger mon papier' : 'Rendre mon papier'}
+          </button>
         </div>
       </div>
-
-      <label className={styles.champ}>
-        <span>Vu le</span>
-        <input
-          type="date"
-          value={brouillon.date}
-          max={jourLocal()}
-          onChange={(event) => setBrouillon((b) => ({ ...b, date: event.target.value }))}
-          className={styles.saisie}
-        />
-      </label>
-
-      <div>
-        <p className={styles.libelle}>Note</p>
-        <div className={styles.notes} role="radiogroup" aria-label="Note sur 10">
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-            <button
-              key={n}
-              type="button"
-              className={styles.pastille}
-              role="radio"
-              aria-checked={brouillon.note === n}
-              aria-label={`Note ${n} sur 10`}
-              onClick={() => setBrouillon((b) => ({ ...b, note: b.note === n ? null : n }))}
-            >
-              <span className={`${styles.rond} ${brouillon.note === n ? styles.rondActif : ''}`}>{n}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className={styles.libelle}>Réactions</p>
-        <div className={styles.puces}>
-          {catalogue.map((r) => {
-            const cochee = brouillon.reactions.includes(r.cle)
-            return (
-              <button
-                key={r.cle}
-                type="button"
-                className={`${styles.puce} ${cochee ? styles.puceActive : ''}`}
-                aria-pressed={cochee}
-                onClick={() =>
-                  setBrouillon((b) => ({ ...b, reactions: basculerReaction(b.reactions, r.cle, ordre) }))
-                }
-              >
-                {`${r.emoji} ${r.phrase}`}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      <label className={styles.champ}>
-        <span>Remarque</span>
-        <textarea
-          value={brouillon.remarque}
-          onChange={(event) => setBrouillon((b) => ({ ...b, remarque: event.target.value }))}
-          className={styles.remarque}
-        />
-        <span className={styles.aide}>Rien qu’à toi</span>
-      </label>
-
-      {erreur ? (
-        <p role="alert" className={styles.erreur}>
-          {erreur.message}
-        </p>
-      ) : null}
-
-      <button type="button" onClick={enregistrer} disabled={mutation.isPending} className={styles.bouton}>
-        {correction ? 'Corriger' : 'Enregistrer'}
-      </button>
 
       {correction ? (
         confirmerSuppression ? (
@@ -250,7 +293,7 @@ export default function Formulaire() {
           </div>
         ) : (
           <button type="button" className={styles.boutonSupprimer} onClick={() => setConfirmerSuppression(true)}>
-            Supprimer
+            Déchirer ce billet
           </button>
         )
       ) : null}

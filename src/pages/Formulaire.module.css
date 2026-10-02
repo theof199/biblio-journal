@@ -3,162 +3,260 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--espace-4);
   max-width: var(--largeur-contenu);
   margin: 0 auto;
-  padding: var(--espace-2) var(--espace-4) var(--espace-6);
+  padding: var(--espace-2) var(--espace-4) var(--espace-5);
 }
 
 .entete {
   display: flex;
   align-items: center;
   gap: var(--espace-2);
+  min-height: var(--cible-tactile);
+  margin-bottom: var(--espace-2);
+}
+
+.entete > button {
+  margin-left: var(--espace-moins-3);
+}
+
+.lieu {
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+}
+
+/* Le billet et la page de notes sous lui forment un seul objet de papier, qu'une seule ombre porte. */
+.billet {
+  position: relative;
+  color: var(--papier-encre);
+  filter: var(--ticket-ombre);
+}
+
+/* Le billet : le papier des billets du profil, ses quatre coins mordus, la bande rouge de l'imprimeur au bord haut. */
+.corps {
+  padding: var(--billet-marge-haut) var(--espace-4) var(--espace-4);
+  background: var(--ticket-papier);
+  box-shadow: inset 0 var(--billet-onglet-bande-hauteur) 0 var(--ticket-bande-vive);
+  mask: var(--billet-onglet-masque);
+  -webkit-mask: var(--billet-onglet-masque);
+  mask-size: var(--billet-onglet-masque-taille);
+  -webkit-mask-size: var(--billet-onglet-masque-taille);
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+}
+
+.tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--espace-3);
+  color: var(--ticket-bande-vive);
+  font-family: var(--police-fronton);
+  font-size: var(--billet-tete-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--imprime-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+/* « Presse » : une étiquette de rouge plein, le papier du billet en réserve. */
+.presse {
+  margin-right: var(--espace-2);
+  padding: var(--presse-marge);
+  background: var(--ticket-bande-vive);
+  color: var(--papier-clair);
+  letter-spacing: var(--intercalaire-interlettre);
+}
+
+.numero {
+  color: var(--papier-encre-douce);
+  font-weight: var(--graisse-normale);
 }
 
 .film {
   display: flex;
-  gap: var(--espace-4);
+  align-items: center;
+  gap: var(--espace-3);
+}
+
+.affiche {
+  width: var(--billet-affiche-largeur);
+  box-shadow: var(--vignette-ombre);
 }
 
 .infosFilm {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--espace-1);
   min-width: 0;
 }
 
 .titreFilm {
   margin: 0;
-  font-size: var(--taille-l);
+  font-size: var(--billet-titre-taille);
+  line-height: var(--interligne-titre);
+  overflow-wrap: anywhere;
 }
 
 .sousTitreFilm {
   margin: 0;
-  color: var(--couleur-texte-doux);
+  color: var(--papier-encre-moyenne);
+  font-size: var(--taille-s);
+}
+
+/* Ce que le journal sait déjà du film : une ligne au crayon rouge, un peu de travers, sur le billet. */
+.deja {
+  margin: var(--espace-3) 0 0;
+  color: var(--crayon-rouge);
+  font-family: var(--police-crayon);
+  font-size: var(--crayon-note-taille);
+  font-weight: var(--graisse-forte);
+  line-height: var(--crayon-note-interligne);
+  transform: rotate(var(--crayon-inclinaison));
 }
 
 .champ {
   display: flex;
   flex-direction: column;
-  gap: var(--espace-1);
-  font-size: var(--taille-s);
-  font-weight: var(--graisse-moyenne);
+  margin: var(--billet-champ-marge) 0 0;
 }
 
-.saisie {
-  min-height: var(--cible-tactile);
-  padding: 0 var(--espace-3);
-  border-radius: var(--rayon-m);
-  border: var(--trait) solid var(--couleur-bordure);
-  background: var(--couleur-surface);
-  font-size: var(--taille-m);
-}
-
-.libelle {
-  margin: 0 0 var(--espace-2);
-  font-size: var(--taille-s);
-  font-weight: var(--graisse-moyenne);
-  color: var(--couleur-texte-doux);
-}
-
-.notes {
+/* Le titre d'une rubrique, imprimé en rouge ; ce que le membre y écrit (verdict, compte) est au crayon ou en petit à droite. */
+.rubrique {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--espace-1);
-}
-
-.pastille {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--cible-tactile);
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.rond {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--taille-pastille-note);
-  height: var(--taille-pastille-note);
-  border-radius: var(--rayon-plein);
-  background: var(--couleur-surface-2);
-  font-size: var(--taille-s);
-  font-weight: var(--graisse-forte);
-}
-
-.rondActif {
-  background: var(--couleur-accent);
-  color: var(--couleur-sur-accent);
-}
-
-.puces {
-  display: flex;
-  flex-wrap: wrap;
   gap: var(--espace-2);
+  margin: 0 0 var(--billet-rubrique-marge);
+  color: var(--ticket-bande-vive);
+  font-family: var(--police-fronton);
+  font-size: var(--billet-rubrique-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--billet-rubrique-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
 }
 
-.puce {
-  min-height: var(--cible-tactile);
-  padding: 0 var(--espace-3);
-  border: var(--trait) solid var(--couleur-bordure);
-  border-radius: var(--rayon-plein);
-  background: var(--couleur-surface);
-  font-size: var(--taille-s);
-  cursor: pointer;
-}
-
-.puceActive {
-  border-color: var(--couleur-accent);
-  background: var(--couleur-accent);
-  color: var(--couleur-sur-accent);
-}
-
-.remarque {
-  min-height: var(--hauteur-remarque);
-  padding: var(--espace-3);
-  border-radius: var(--rayon-m);
-  border: var(--trait) solid var(--couleur-bordure);
-  background: var(--couleur-surface);
-  font-family: inherit;
-  font-size: var(--taille-m);
-  resize: vertical;
-}
-
-.aide {
-  margin: var(--espace-1) 0 0;
-  color: var(--couleur-texte-doux);
+.compte {
+  color: var(--papier-encre-douce);
+  font-family: var(--police-texte);
   font-size: var(--taille-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.verdict {
+  color: var(--crayon-rouge);
+  font-family: var(--police-crayon);
+  font-size: var(--crayon-verdict-taille);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0;
+  line-height: var(--crayon-verdict-interligne);
+  text-transform: none;
+}
+
+/* Un champ de date iOS garde sa largeur propre et déborde de l'écran : on lui ôte son apparence et son
+   plancher de largeur, et son texte s'aligne à gauche (le `::-webkit-date-and-time-value` d'iOS le centre). */
+.date {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--billet-saisie-hauteur);
+  padding: 0 var(--espace-3);
+  border: var(--billet-trait) solid var(--papier-encre-douce);
+  border-radius: 0;
+  background: var(--billet-saisie-fond);
+  -webkit-appearance: none;
+  appearance: none;
+  color: var(--papier-encre);
+  color-scheme: light;
+  font-size: var(--billet-saisie-taille);
+  text-align: left;
+}
+
+.date::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* La page de notes : une feuille de carnet à spirale sous le billet, ses lignes bleues, son écriture au crayon. */
+.carnet {
+  margin-top: var(--espace-3);
+  padding: var(--carnet-marge);
+  background: var(--carnet-fond);
+  box-shadow: var(--carnet-ombre-haut);
+}
+
+.carnet .champ {
+  margin-top: var(--espace-1);
+}
+
+.rubriqueCarnet {
+  color: var(--papier-encre-douce);
+}
+
+/* Elle grandit avec ce qu'on y écrit (`useHauteurAuto`) : pas de barre de défilement dans le carnet. */
+.remarque {
+  display: block;
+  width: 100%;
+  min-height: var(--hauteur-remarque);
+  padding: 0 var(--espace-1);
+  border: 0;
+  border-radius: 0;
+  background: var(--carnet-lignes);
+  color: var(--papier-encre);
+  font-family: var(--police-crayon);
+  font-size: var(--crayon-taille);
+  font-weight: var(--graisse-forte);
+  line-height: var(--carnet-interligne);
+  outline-offset: var(--espace-1);
+  overflow: hidden;
+  resize: none;
+}
+
+/* Le bouton suit le doigt au bas de la page, au-dessus de la barre d'onglets (la zone de contenu de la
+   coque s'arrête déjà au-dessus d'elle) ; un fondu de la couleur du bas du ciel le détache de ce qui défile dessous. */
+.actions {
+  position: sticky;
+  z-index: var(--z-complet);
+  bottom: 0;
+  margin: var(--espace-2) var(--espace-moins-4) 0;
+  padding: var(--billet-actions-marge);
+  background: var(--billet-actions-fondu);
 }
 
 .erreur {
-  margin: 0;
+  margin: 0 0 var(--espace-2);
   color: var(--couleur-danger);
 }
 
-.contexteErreur {
-  margin: 0;
-  color: var(--couleur-texte-doux);
-  font-size: var(--taille-s);
+/* L'ombre est portée par l'enveloppe du bouton : son masque couperait la sienne. */
+.talon {
+  filter: var(--billet-onglet-ombre);
 }
 
-.bouton {
-  min-height: var(--cible-tactile);
-  padding: 0 var(--espace-4);
-  border-radius: var(--rayon-m);
-  border: none;
-  background: var(--couleur-accent);
-  color: var(--couleur-sur-accent);
-  font-size: var(--taille-m);
-  font-weight: var(--graisse-forte);
+/* « Rendre mon papier » : un talon de papier rouge, mordu aux quatre coins comme le billet. */
+.valider {
+  display: block;
+  width: 100%;
+  min-height: var(--bouton-hauteur);
+  border: 0;
+  background: var(--ticket-bande-vive);
+  color: var(--papier-clair);
+  font-family: var(--police-fronton);
+  font-size: var(--billet-bouton-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--billet-bouton-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
   cursor: pointer;
+  mask: var(--billet-onglet-masque);
+  -webkit-mask: var(--billet-onglet-masque);
+  mask-size: var(--billet-onglet-masque-taille);
+  -webkit-mask-size: var(--billet-onglet-masque-taille);
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
 }
 
-.bouton:disabled {
+.valider:disabled {
   opacity: var(--opacite-inactif);
   cursor: default;
 }
@@ -166,11 +264,13 @@
 .boutonSupprimer {
   align-self: center;
   min-height: var(--cible-tactile);
+  margin-top: var(--espace-2);
   padding: 0 var(--espace-3);
   border: none;
   background: none;
   color: var(--couleur-danger);
   font-size: var(--taille-s);
+  text-decoration: underline;
   cursor: pointer;
 }
 
@@ -178,9 +278,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--espace-3);
+  margin-top: var(--espace-3);
   padding: var(--espace-4);
   border: var(--trait) solid var(--couleur-danger);
-  border-radius: var(--rayon-m);
   background: var(--couleur-surface);
 }
 
@@ -193,7 +293,6 @@
 .boutonDanger {
   min-height: var(--cible-tactile);
   padding: 0 var(--espace-4);
-  border-radius: var(--rayon-m);
   border: none;
   background: var(--couleur-danger);
   color: var(--couleur-sur-accent);
@@ -205,7 +304,6 @@
 .boutonSecondaire {
   min-height: var(--cible-tactile);
   padding: 0 var(--espace-4);
-  border-radius: var(--rayon-m);
   border: var(--trait) solid var(--couleur-bordure);
   background: var(--couleur-surface);
   font-size: var(--taille-m);

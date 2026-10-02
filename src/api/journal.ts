@@ -114,6 +114,25 @@ export function dejaAuJournal(pages: JournalPage[]): Map<string, number | null> 
   return table
 }
 
+/** Ce que le journal sait d'un film déjà vu : sa dernière séance, et le nombre de séances. */
+export interface FilmDejaVu {
+  finished_at: string
+  rating: number | null
+  seances: number
+}
+
+/**
+ * Jumeau de `dejaAuJournal` qui garde la date : le jour et la note de la dernière séance d'un film
+ * (`media.external_id`) sur des entrées déjà chargées du journal, et combien elles sont. Le journal se
+ * lit de la plus récente à la plus ancienne : la première entrée croisée est la dernière séance. Nul
+ * si le film n'y est pas. Aucun appel réseau.
+ */
+export function filmDejaVu(items: readonly JournalItem[], externalId: string): FilmDejaVu | null {
+  const seances = items.filter((item) => item.media.external_id === externalId)
+  const derniere = seances[0]
+  return derniere ? { finished_at: derniere.entry.finished_at, rating: derniere.entry.rating, seances: seances.length } : null
+}
+
 /**
  * L'entrée complète (carnet compris) d'un film déjà au journal, retrouvée par l'identifiant
  * d'entrée que porte sa ligne de filmographie ou de saga (`vu.entry_id`) — pour la fiche d'un film

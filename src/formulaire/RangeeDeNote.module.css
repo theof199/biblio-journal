@@ -1,0 +1,56 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* `pan-y` : le doigt qui monte ou descend fait défiler la page, celui qui va de côté suit les trous. */
+.rangee {
+  display: flex;
+  gap: var(--billet-trous-ecart);
+  touch-action: pan-y;
+}
+
+/* Un trou : un bouton de la dixième de la rangée, qui peut rétrécir (la règle d'un bouton lui donne
+   sinon la largeur d'une cible tactile, et dix cibles débordent d'un petit écran). */
+.trou {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--billet-trous-ecart);
+  min-width: 0;
+  min-height: var(--billet-trou-hauteur);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.poincon {
+  display: block;
+  width: var(--billet-trou-part);
+  max-width: var(--billet-trou-diametre);
+  aspect-ratio: var(--billet-trou-ratio);
+  border: var(--billet-trait) solid var(--papier-encre-douce);
+  border-radius: var(--rayon-plein);
+}
+
+.chiffre {
+  color: var(--papier-encre-douce);
+  font-family: var(--police-fronton);
+  font-size: var(--billet-chiffre-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--billet-chiffre-interlettre);
+  line-height: var(--interligne-serre);
+}
+
+/* Le trou choisi est poinçonné : il laisse voir le ciel, et son chiffre est repassé au crayon rouge. */
+.trou[aria-checked='true'] .poincon {
+  border-color: transparent;
+  background: var(--pellicule-trou);
+  box-shadow: var(--trou-relief);
+}
+
+.trou[aria-checked='true'] .chiffre {
+  color: var(--crayon-rouge);
+  font-size: var(--billet-chiffre-choisi-taille);
+}

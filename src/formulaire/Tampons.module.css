@@ -1,0 +1,60 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.tampons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-demi);
+}
+
+/* Un tampon encreur avant d'être posé : son contour en pointillés, à l'encre des billets. */
+.tampon {
+  position: relative;
+  min-height: var(--billet-tampon-hauteur);
+  padding: 0 var(--espace-2);
+  border: var(--billet-trait) dashed var(--papier-tiret);
+  background: none;
+  color: var(--papier-encre-douce);
+  font-family: var(--police-fronton);
+  font-size: var(--billet-tampon-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--billet-tampon-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* Pressé : l'encre bleue, le double cadre (le second est un liseré posé hors du premier, pour que l'anneau
+   de focus du clavier reste celui du navigateur), et la main qui a tapé de travers — un tampon sur deux de l'autre côté. */
+.tampon[aria-pressed='true'] {
+  border: var(--papier-trait) solid var(--tampon-encre);
+  background: var(--tampon-fond);
+  color: var(--tampon-encre);
+  transform: rotate(var(--tampon-inclinaison));
+}
+
+.tampon[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  inset: var(--tampon-cadre-decalage);
+  border: var(--trait) solid var(--tampon-encre);
+  pointer-events: none;
+}
+
+.tampon[aria-pressed='true']:nth-child(even) {
+  transform: rotate(var(--tampon-inclinaison-paire));
+}
+
+/* Le bouton qui plie et déplie : un mot au crayon, souligné de pointillés. */
+.plus {
+  min-height: var(--billet-tampon-hauteur);
+  padding: 0 var(--espace-demi);
+  border: 0;
+  border-bottom: var(--trait) dashed var(--papier-tiret);
+  background: none;
+  color: var(--papier-encre-moyenne);
+  font-family: var(--police-crayon);
+  font-size: var(--crayon-plus-taille);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-serre);
+  cursor: pointer;
+}

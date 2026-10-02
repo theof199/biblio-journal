@@ -370,7 +370,7 @@ describe('l’import Letterboxd', () => {
     // Le formulaire ne s'ouvre pas : la ligne passe à « ajouté », dans le rapport.
     expect(await screen.findByText('Ajouté : Alien, le huitième passager (1979)')).toBeInTheDocument()
     expect(screen.getByText('4 importés · 0 déjà présents')).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Vu le/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Séance du/)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Alien: Awakening (1979)' })).not.toBeInTheDocument()
     // Les deux routes du formulaire, dans son ordre, avec la date et la note de la ligne.
     expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([IMPORT, AJOUT, VISIONNAGE])
@@ -474,9 +474,9 @@ describe('l’import Letterboxd', () => {
     await screen.findByText('Ajouté : Alien, le huitième passager (1979)')
 
     fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
-    expect(await screen.findByLabelText(/Vu le/)).toHaveValue(ITEM.entry.finished_at)
+    expect(await screen.findByLabelText(/Séance du/)).toHaveValue(ITEM.entry.finished_at)
     fireEvent.click(screen.getByRole('radio', { name: 'Note 3 sur 10' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Corriger' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Corriger mon papier' }))
 
     expect(await screen.findByText('Ajouté : Alien, le huitième passager (1979)')).toBeInTheDocument()
     expect(screen.getByText('4 importés · 0 déjà présents')).toBeInTheDocument()

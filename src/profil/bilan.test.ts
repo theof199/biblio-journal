@@ -3,6 +3,7 @@ import {
   DECENNIES_DU_VOYAGE,
   REACTIONS_MONTREES,
   anneeDAdhesion,
+  compterReactions,
   filmographieTerminee,
   filmsParDecennie,
   filmsParMois,
@@ -151,6 +152,14 @@ describe('reactionsComptees', () => {
     const large = Array.from({ length: 8 }, (_, i) => ({ cle: `r${i}`, emoji: '🎬', phrase: `R${i}` }))
     const j = [v({ id: 'a', date: '2026-01-01', reactions: large.map((r) => r.cle) })]
     expect(reactionsComptees(j, large)).toHaveLength(REACTIONS_MONTREES)
+  })
+})
+
+describe('compterReactions', () => {
+  it('rend toutes les réactions posées, sans la limite de six du profil', () => {
+    const large = Array.from({ length: 8 }, (_, i) => ({ cle: `r${i}`, emoji: '🎬', phrase: `R${i}` }))
+    const j = [v({ id: 'a', date: '2026-01-01', reactions: large.map((r) => r.cle) })]
+    expect(compterReactions(j, large)).toHaveLength(8)
   })
 })
 

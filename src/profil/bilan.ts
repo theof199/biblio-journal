@@ -84,10 +84,11 @@ export interface ReactionComptee extends Reaction {
 }
 
 /**
- * Les réactions du carnet les plus posées, la plus fréquente d'abord : une clé que le catalogue
- * ne connaît plus n'a ni emoji ni phrase à montrer, elle est ignorée. À égalité, l'ordre du catalogue.
+ * Toutes les réactions posées au carnet, la plus fréquente d'abord : une clé que le catalogue ne
+ * connaît plus n'a ni emoji ni phrase à montrer, elle est ignorée. À égalité, l'ordre du catalogue.
+ * Le profil en montre les six premières (`reactionsComptees`), le formulaire les trois premières.
  */
-export function reactionsComptees(journal: JournalItem[], catalogue: readonly Reaction[]): ReactionComptee[] {
+export function compterReactions(journal: JournalItem[], catalogue: readonly Reaction[]): ReactionComptee[] {
   const comptes = new Map<string, number>()
   for (const i of journal) for (const cle of i.carnet.reactions) comptes.set(cle, (comptes.get(cle) ?? 0) + 1)
   return catalogue
@@ -96,5 +97,8 @@ export function reactionsComptees(journal: JournalItem[], catalogue: readonly Re
       return nombre > 0 ? [{ ...reaction, nombre }] : []
     })
     .sort((a, b) => b.nombre - a.nombre)
-    .slice(0, REACTIONS_MONTREES)
 }
+
+/** Les réactions du carnet les plus posées, `REACTIONS_MONTREES` au plus. */
+export const reactionsComptees = (journal: JournalItem[], catalogue: readonly Reaction[]): ReactionComptee[] =>
+  compterReactions(journal, catalogue).slice(0, REACTIONS_MONTREES)

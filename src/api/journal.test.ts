@@ -4,6 +4,7 @@ import {
   creerVisionnage,
   curseurSuivant,
   dejaAuJournal,
+  filmDejaVu,
   journalComplet,
   journalDesAnnees,
   lireJournal,
@@ -44,6 +45,34 @@ describe('dejaAuJournal', () => {
 
   it('ne connaît pas un film jamais vu', () => {
     expect(dejaAuJournal([{ items: [], next_cursor: null }]).has('27205')).toBe(false)
+  })
+})
+
+describe('filmDejaVu', () => {
+  const item = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
+  const seance = (id: string, jour: string, note: number | null): JournalItem => ({
+    ...item,
+    entry: { ...item.entry, id, finished_at: jour, rating: note },
+  })
+  const identifiant = item.media.external_id
+
+  it('rend le jour et la note de la dernière séance, la première rencontrée, et leur nombre', () => {
+    const recente = seance('a', '2026-07-12', 9)
+    const ancienne = seance('b', '2024-03-14', 5)
+    expect(filmDejaVu([recente, ancienne], identifiant)).toEqual({ finished_at: '2026-07-12', rating: 9, seances: 2 })
+  })
+
+  it('garde une dernière séance sans note : la note est nulle, pas celle d’une séance d’avant', () => {
+    expect(filmDejaVu([seance('a', '2026-07-12', null), seance('b', '2024-03-14', 5)], identifiant)?.rating).toBeNull()
+  })
+
+  it('ne compte pas les séances des autres films', () => {
+    const autre: JournalItem = { ...seance('c', '2026-08-01', 6), media: { ...item.media, external_id: 'autre' } }
+    expect(filmDejaVu([autre, seance('a', '2026-07-12', 9)], identifiant)?.seances).toBe(1)
+  })
+
+  it('ne connaît pas un film jamais vu', () => {
+    expect(filmDejaVu([seance('a', '2026-07-12', 9)], 'jamais-vu')).toBeNull()
   })
 })
 
