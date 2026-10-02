@@ -555,3 +555,64 @@ describe('l’entrée de « Mes films » depuis le profil', () => {
     expect(marques).toEqual(['Profil'])
   })
 })
+
+describe('« Mes films » qui attend son journal', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('IntersectionObserver', FauxObservateur)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const routes = (journal: Promise<Response>) => ({
+    'GET /api/me/journal?limit=20': () => journal,
+    'GET /api/stats': () => json(stats(3, 3)),
+    'GET /api/reference/reactions': () => json(CATALOGUE),
+  })
+
+  it('annonce « Chargement… » une seule fois', async () => {
+    servir(routes(new Promise<Response>(() => {})))
+    monter()
+
+    expect(await screen.findAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+  })
+
+  it('garde le bouton retour et le titre, sans la recherche ni les puces', async () => {
+    servir(routes(new Promise<Response>(() => {})))
+    monter()
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mes films' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Rechercher parmi mes films')).not.toBeInTheDocument()
+  })
+
+  it('dessine six lignes en blanc', async () => {
+    servir(routes(new Promise<Response>(() => {})))
+    monter()
+
+    expect(await screen.findAllByTestId('ligne-en-attente')).toHaveLength(6)
+  })
+
+  it('ne lance que les trois requêtes de la page, chacune une fois', async () => {
+    const requetes = servir(routes(new Promise<Response>(() => {})))
+    monter()
+
+    await screen.findByRole('status')
+    await patienter(20)
+    expect([...requetes].sort()).toEqual(['GET /api/me/journal?limit=20', 'GET /api/reference/reactions', 'GET /api/stats'])
+  })
+
+  it('à l’arrivée du journal, les lignes en blanc et le statut s’en vont, les films et la recherche viennent', async () => {
+    const suite = differee()
+    servir(routes(suite.promesse))
+    monter()
+    await screen.findByRole('status')
+
+    suite.liberer(json({ items: [F1, F2], next_cursor: null }))
+
+    expect(await screen.findByText('Inception')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Rechercher parmi mes films')).toBeInTheDocument()
+  })
+})

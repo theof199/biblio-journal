@@ -7,11 +7,15 @@ import { destinationFilmRealisateur } from '../suivis/destination'
 import { filmsSansSeries, filmsVus } from '../suivis/prochain'
 import { IconAward } from '@tabler/icons-react'
 import Affiche from '../ui/Affiche'
+import Attente, { Barre } from '../ui/Attente'
 import Sceau from '../ui/Sceau'
 import { filmographieTerminee } from '../profil/bilan'
 import BoutonRetour from '../ui/BoutonRetour'
 import Panne from '../ui/Panne'
 import styles from './PageRealisateur.module.css'
+
+/** Les films laissés en blanc tant que la page n'est pas là. */
+const FILMS_EN_ATTENTE = 6
 
 const anneeDe = (date: string) => date.slice(0, 4)
 
@@ -30,6 +34,55 @@ function ligneDates(naissance: string | null, deces: string | null, genre: 'homm
 const libelleSuivi = (suivi: boolean, genre: 'homme' | 'femme' | null): string => {
   if (!suivi) return 'Suivre'
   return genre === 'femme' ? 'Suivie' : 'Suivi'
+}
+
+/**
+ * La page avant son réalisateur : le retour, puis sa fiche et sa filmographie en blanc. Le bouton
+ * « Suivre » et l'interrupteur agissent sur des données qui ne sont pas encore là : ils viennent avec elles.
+ */
+function PageRealisateurEnAttente() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.entete}>
+        <BoutonRetour vers="/suivis" />
+      </div>
+      <Attente className={styles.enAttente}>
+        <div className={styles.fiche}>
+          <span className={styles.portrait}>
+            <Affiche src={null} titre="" taille="ligne" className={styles.photo} />
+          </span>
+          <div className={`${styles.infos} ${styles.colonne}`}>
+            <div className={styles.nom}>
+              <Barre largeur="longue" />
+            </div>
+            <div className={styles.dates}>
+              <Barre largeur="moyenne" />
+            </div>
+            <div className={styles.compte}>
+              <Barre largeur="courte" />
+            </div>
+          </div>
+        </div>
+        <ul className={styles.liste}>
+          {Array.from({ length: FILMS_EN_ATTENTE }, (_, film) => (
+            <li key={film}>
+              <div className={styles.film} data-testid="ligne-en-attente">
+                <Affiche src={null} titre="" taille="ligne" />
+                <div className={`${styles.infosFilm} ${styles.colonne}`}>
+                  <div className={styles.titreFilm}>
+                    <Barre largeur="longue" />
+                  </div>
+                  <div className={styles.etatFilm}>
+                    <Barre largeur="courte" />
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Attente>
+    </div>
+  )
 }
 
 /**
@@ -65,14 +118,7 @@ export default function PageRealisateur() {
     onSuccess: () => void client.invalidateQueries({ queryKey: cles.realisateurs }),
   })
 
-  if (page.isPending) {
-    return (
-      <div className={styles.page}>
-        <BoutonRetour vers="/suivis" />
-        <p role="status">Chargement…</p>
-      </div>
-    )
-  }
+  if (page.isPending) return <PageRealisateurEnAttente />
   if (page.error) {
     return (
       <div className={styles.page}>

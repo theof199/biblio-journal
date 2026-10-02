@@ -9,6 +9,7 @@ import type { Reaction } from '../api/reactions'
 import { lireStats } from '../api/stats'
 import { useChargementInfini } from '../accueil/useChargementInfini'
 import Affiche from '../ui/Affiche'
+import Attente, { Barre } from '../ui/Attente'
 import BoutonRetour from '../ui/BoutonRetour'
 import Panne from '../ui/Panne'
 import { formatDateVisionnage, sousTitre } from '../ui/format'
@@ -35,6 +36,9 @@ const CHEMIN_MES_FILMS = '/profil/mes-films'
 
 /** Même taille de page que l'accueil (`Accueil.tsx`) : les deux partagent la clé `cles.journal`. */
 const LIMITE = 20
+
+/** Les lignes laissées en blanc tant que le journal n'est pas là. */
+const LIGNES_EN_ATTENTE = 6
 
 /** La feuille ouverte sous les puces : au plus une à la fois, comme les deux feuilles d'Android. */
 type Panneau = 'note' | 'reaction' | null
@@ -87,7 +91,7 @@ export default function MesFilms() {
   const items = useMemo(() => journal.data?.pages.flatMap((page) => page.items) ?? [], [journal.data])
   const visibles = useMemo(() => appliquerFiltres(items, filtres), [items, filtres])
 
-  if (journal.isPending) return <p role="status">Chargement…</p>
+  if (journal.isPending) return <MesFilmsEnAttente />
   if (!journal.data) return <Panne erreur={journal.error} onReessayer={() => void journal.refetch()} />
 
   const total = stats.data?.dashboard.periods.all.counts.finished_by_type.movie
@@ -258,6 +262,38 @@ export default function MesFilms() {
       )}
 
       {!actifs && journal.hasNextPage ? <div ref={sentinelle} data-testid="sentinelle-mes-films" /> : null}
+    </div>
+  )
+}
+
+/**
+ * La page avant son journal : son en-tête, puis des lignes en blanc. La recherche et les puces
+ * agissent sur des films qui ne sont pas encore là : elles viennent avec eux.
+ */
+function MesFilmsEnAttente() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.entete}>
+        <BoutonRetour vers="/profil" />
+        <h1 className={styles.titre}>Mes films</h1>
+      </div>
+      <Attente>
+        <div className={styles.liste}>
+          {Array.from({ length: LIGNES_EN_ATTENTE }, (_, ligne) => (
+            <div key={ligne} className={styles.ligne} data-testid="ligne-en-attente">
+              <Affiche src={null} titre="" taille="ligne" />
+              <div className={styles.infosLigne}>
+                <div className={styles.titreLigne}>
+                  <Barre largeur="longue" />
+                </div>
+                <div className={styles.sousTitreLigne}>
+                  <Barre largeur="moyenne" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Attente>
     </div>
   )
 }

@@ -51,3 +51,19 @@
   cursor: progress;
   opacity: var(--opacite-inactif);
 }
+
+/* L'attente : les mêmes écarts que la page, dont la zone d'attente enveloppe les films, et une colonne de texte qui prend la place restante, sans quoi les lignes en blanc n'ont pas de largeur. */
+.enAttente {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.colonne {
+  flex: 1;
+}
+
+/* Un candidat en blanc n'est pas un bouton : ni survol ni curseur de main. */
+.inerte {
+  pointer-events: none;
+}

@@ -127,3 +127,14 @@
   right: 0;
   bottom: 0;
 }
+
+/* L'attente : les mêmes écarts que la page, dont la zone d'attente enveloppe fiche et liste, et des colonnes de texte qui prennent la place restante, sans quoi les lignes en blanc n'ont pas de largeur. */
+.enAttente {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+}
+
+.colonne {
+  flex: 1;
+}

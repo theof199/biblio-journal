@@ -167,6 +167,13 @@
   min-width: 0;
 }
 
+/* Une affiche en blanc et les lignes de son titre, au même écart qu'un résultat. */
+.enAttente {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
 .resultat {
   position: relative;
   display: flex;

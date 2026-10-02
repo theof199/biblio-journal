@@ -855,6 +855,45 @@ describe('la page Suivis', () => {
       expect(screen.queryByText(/Rien trouvé/)).not.toBeInTheDocument()
     })
 
+    it('pendant qu’un des deux services n’a pas répondu, annonce « Recherche… » et dessine deux résultats en blanc', async () => {
+      servir({
+        'GET /api/me/realisateurs': () => json([]),
+        'GET /api/me/sagas': () => json([]),
+        'GET /api/reference/personnes?q=Zzz': () => json(VIDES),
+        'GET /api/reference/sagas?q=Zzz': () => new Promise<Response>(() => undefined),
+      })
+      monter()
+      await screen.findByRole('button', { name: '+ Suivre' })
+      ouvrir()
+      chercher('Zzz')
+
+      await screen.findAllByTestId('resultat-en-attente', {}, DELAI_RECHERCHE)
+      // Les réalisateurs ont déjà répondu, les sagas non : la page attend encore.
+      await new Promise((r) => setTimeout(r, 20))
+      expect(screen.getAllByTestId('resultat-en-attente')).toHaveLength(2)
+      expect(screen.getAllByRole('status')).toHaveLength(1)
+      expect(screen.getByRole('status')).toHaveTextContent('Recherche…')
+      expect(screen.getByRole('searchbox', { name: 'Un réalisateur ou une saga' })).toBeInTheDocument()
+    })
+
+    it('les deux services arrivés, le statut et les lignes en blanc s’en vont', async () => {
+      servir({
+        'GET /api/me/realisateurs': () => json([]),
+        'GET /api/me/sagas': () => json([]),
+        'GET /api/reference/personnes?q=Nolan': () => json(RESULTATS_PERSONNES),
+        'GET /api/reference/sagas?q=Nolan': () => json(RESULTATS_SAGAS),
+      })
+      monter()
+      await screen.findByRole('button', { name: '+ Suivre' })
+      ouvrir()
+      chercher('Nolan')
+
+      await screen.findByRole('heading', { name: 'Réalisateurs' }, DELAI_RECHERCHE)
+      await screen.findByRole('heading', { name: 'Sagas' })
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('resultat-en-attente')).not.toBeInTheDocument()
+    })
+
     it('suivre un réalisateur invalide sa liste, pas celle des sagas, et la recherche reste ouverte', async () => {
       let appelsListe = 0
       const requetes = servir({

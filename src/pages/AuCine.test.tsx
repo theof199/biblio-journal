@@ -417,3 +417,82 @@ describe('Au ciné', () => {
     })
   })
 })
+
+describe('Au ciné qui attend ses données', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('IntersectionObserver', FauxObservateur)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const jamais = () => new Promise<Response>(() => {})
+
+  it('annonce « Chargement… » une fois par requête : les sorties, les séances', async () => {
+    servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
+    monter()
+
+    const statuts = await screen.findAllByRole('status')
+    expect(statuts).toHaveLength(2)
+    for (const statut of statuts) expect(statut).toHaveTextContent('Chargement…')
+  })
+
+  it('garde le titre de la page et ceux de ses trois sections', async () => {
+    servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
+    monter()
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Au ciné' })).toBeInTheDocument()
+    expect(screen.getByText('Sorti cette semaine dans mes cinémas')).toBeInTheDocument()
+    expect(screen.getByText('La semaine prochaine')).toBeInTheDocument()
+    expect(screen.getByText('Tes séances')).toBeInTheDocument()
+  })
+
+  it('dessine deux grilles de six tuiles en blanc et trois lignes de séance', async () => {
+    servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
+    monter()
+
+    expect(await screen.findAllByTestId('tuile-en-attente')).toHaveLength(12)
+    expect(screen.getAllByTestId('ligne-en-attente')).toHaveLength(3)
+  })
+
+  it('les séances arrivées, ses lignes en blanc et son statut s’en vont, les sorties attendent encore', async () => {
+    servir({ 'GET /api/reference/sorties': jamais, ...routeSeances([seance({ id: 'e1', finished_at: '2026-09-10', title: 'Alien' })]) })
+    monter()
+
+    expect(await screen.findByText('Alien')).toBeInTheDocument()
+    expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getAllByTestId('tuile-en-attente')).toHaveLength(12)
+  })
+
+  it('les sorties arrivées, ses tuiles en blanc s’en vont, les séances attendent encore', async () => {
+    servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
+    monter()
+
+    expect(await screen.findByText('Rien cette semaine.')).toBeInTheDocument()
+    expect(screen.queryByTestId('tuile-en-attente')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getAllByTestId('ligne-en-attente')).toHaveLength(3)
+  })
+
+  it('tout arrivé, plus aucun statut ni aucune forme en blanc', async () => {
+    servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances([seance({ id: 'e1', finished_at: '2026-09-10', title: 'Alien' })]) })
+    monter()
+
+    expect(await screen.findByText('Rien cette semaine.')).toBeInTheDocument()
+    expect(await screen.findByText('Alien')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('tuile-en-attente')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+  })
+
+  it('ne lance que les quatre requêtes de la page, chacune une fois', async () => {
+    const requetes = servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
+    monter()
+
+    await screen.findAllByRole('status')
+    await patienter(20)
+    expect([...requetes].sort()).toEqual(
+      ['GET /api/me/journal?limit=40&reaction=en_salle', 'GET /api/me/realisateurs', 'GET /api/me/sagas', 'GET /api/reference/sorties'].sort(),
+    )
+  })
+})

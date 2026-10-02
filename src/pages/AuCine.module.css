@@ -62,12 +62,6 @@
   color: var(--couleur-texte-doux);
 }
 
-.chargementGrille {
-  margin: 0;
-  color: var(--couleur-texte-doux);
-  padding: var(--espace-3) 0;
-}
-
 .videGrille {
   margin: 0;
   color: var(--couleur-texte-doux);

@@ -5,9 +5,14 @@ import { cles } from '../api/cles'
 import { choisirFilmSensCritique, lireAApparier } from '../api/senscritique'
 import type { CandidatSensCritique, ChoixSensCritique, FilmAApparier } from '../api/senscritique'
 import Affiche from '../ui/Affiche'
+import Attente, { Barre } from '../ui/Attente'
 import BoutonRetour from '../ui/BoutonRetour'
 import { formatDateVisionnage } from '../ui/format'
 import styles from './AppariementSensCritique.module.css'
+
+/** Les films, chacun avec ses deux candidats, laissés en blanc tant que la liste n'est pas là. */
+const FILMS_EN_ATTENTE = 2
+const CANDIDATS_EN_ATTENTE = 2
 
 const titreAnnee = (titre: string, annee: number | null) => (annee != null ? `${titre} (${annee})` : titre)
 
@@ -49,9 +54,11 @@ export default function AppariementSensCritique() {
           {films.error.message}
         </p>
       ) : !films.data ? (
-        <p role="status" className={styles.doux}>
-          Chargement…
-        </p>
+        <Attente className={styles.enAttente}>
+          {Array.from({ length: FILMS_EN_ATTENTE }, (_, film) => (
+            <FilmEnAttente key={film} />
+          ))}
+        </Attente>
       ) : films.data.items.length === 0 ? (
         <p>Aucun film à apparier.</p>
       ) : (
@@ -65,6 +72,29 @@ export default function AppariementSensCritique() {
           ))}
         </>
       )}
+    </div>
+  )
+}
+
+/** Un film à apparier en blanc : son titre, sa date, et deux candidats, sans le bouton « Aucun de ceux-là » qui agirait sur rien. */
+function FilmEnAttente() {
+  return (
+    <div className={styles.ligne} data-testid="film-en-attente">
+      <div className={styles.nom}>
+        <Barre largeur="longue" />
+      </div>
+      <div className={styles.doux}>
+        <Barre largeur="moyenne" />
+      </div>
+      {Array.from({ length: CANDIDATS_EN_ATTENTE }, (_, candidat) => (
+        <div key={candidat} className={`${styles.candidat} ${styles.inerte}`} data-testid="candidat-en-attente">
+          <Affiche src={null} titre="" taille="ligne" />
+          <div className={`${styles.candidatTexte} ${styles.colonne}`}>
+            <Barre largeur="longue" />
+            <Barre largeur="courte" />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

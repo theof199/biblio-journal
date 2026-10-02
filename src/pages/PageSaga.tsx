@@ -11,12 +11,68 @@ import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
 import { sousTitre } from '../ui/format'
 import type { MovieSearchResult } from '../api/recherche'
 import Affiche from '../ui/Affiche'
+import Attente, { Barre } from '../ui/Attente'
 import BoutonRetour from '../ui/BoutonRetour'
 import Panne from '../ui/Panne'
 import styles from './PageSaga.module.css'
 
 /** Ce que dit la page quand l'ajout ou le retrait d'un film échoue : sans détail, comme sur Android. */
 const ECHEC = 'Impossible pour l’instant'
+
+/** Les films laissés en blanc tant que la page n'est pas là, les résultats tant que la recherche n'a pas répondu. */
+const FILMS_EN_ATTENTE = 6
+const RESULTATS_EN_ATTENTE = 3
+
+/** Une ligne de film laissée en blanc : l'affiche et deux lignes de texte, sans le bouton qui agirait sur un film pas encore là. */
+function LigneFilmEnAttente() {
+  return (
+    <li className={styles.ligneFilm} data-testid="ligne-en-attente">
+      <div className={styles.film}>
+        <Affiche src={null} titre="" taille="ligne" />
+        <div className={`${styles.infosFilm} ${styles.colonne}`}>
+          <div className={styles.titreFilm}>
+            <Barre largeur="longue" />
+          </div>
+          <div className={styles.etatFilm}>
+            <Barre largeur="courte" />
+          </div>
+        </div>
+      </div>
+    </li>
+  )
+}
+
+/**
+ * La page avant sa saga : le retour, puis sa fiche et ses films en blanc. Les actions et
+ * l'interrupteur agissent sur des données qui ne sont pas encore là : ils viennent avec elles.
+ */
+function PageSagaEnAttente() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.entete}>
+        <BoutonRetour vers="/suivis" />
+      </div>
+      <Attente className={styles.enAttente}>
+        <div className={styles.fiche}>
+          <Affiche src={null} titre="" taille="ligne" className={styles.photo} />
+          <div className={`${styles.infos} ${styles.colonne}`}>
+            <div className={styles.nom}>
+              <Barre largeur="longue" />
+            </div>
+            <div className={styles.compte}>
+              <Barre largeur="courte" />
+            </div>
+          </div>
+        </div>
+        <ul className={styles.liste}>
+          {Array.from({ length: FILMS_EN_ATTENTE }, (_, film) => (
+            <LigneFilmEnAttente key={film} />
+          ))}
+        </ul>
+      </Attente>
+    </div>
+  )
+}
 
 /**
  * « Ajouter un film » (reprise de `Screen.ChoisirFilmDeSaga`, Android) : la recherche de films
@@ -51,7 +107,13 @@ function AjouterFilm({ onChoisir, desactive }: { onChoisir: (filmId: number) => 
         recherche.error ? (
           <p role="alert">{recherche.error.message}</p>
         ) : recherche.isPending ? (
-          <p role="status">Recherche…</p>
+          <Attente libelle="Recherche…">
+            <ul className={styles.liste}>
+              {Array.from({ length: RESULTATS_EN_ATTENTE }, (_, resultat) => (
+                <LigneFilmEnAttente key={resultat} />
+              ))}
+            </ul>
+          </Attente>
         ) : resultats.length === 0 ? (
           <p className={styles.vide}>Rien trouvé pour « {requete} ».</p>
         ) : (
@@ -133,14 +195,7 @@ export default function PageSaga() {
     },
   })
 
-  if (sagas.isPending || films.isPending) {
-    return (
-      <div className={styles.page}>
-        <BoutonRetour vers="/suivis" />
-        <p role="status">Chargement…</p>
-      </div>
-    )
-  }
+  if (sagas.isPending || films.isPending) return <PageSagaEnAttente />
   if (sagas.error) {
     return (
       <div className={styles.page}>

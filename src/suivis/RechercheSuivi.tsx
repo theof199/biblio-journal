@@ -5,6 +5,7 @@ import { chercherRealisateurs, chercherSagas } from '../api/personnes'
 import { suivreRealisateur } from '../api/realisateurs'
 import { suivreSaga } from '../api/sagas'
 import Affiche from '../ui/Affiche'
+import Attente, { Barre } from '../ui/Attente'
 import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
 import styles from './RechercheSuivi.module.css'
 
@@ -13,6 +14,9 @@ interface Resultat {
   name: string
   image_url: string | null
 }
+
+/** Les lignes laissées en blanc tant qu'une des deux recherches n'a pas répondu. */
+const RESULTATS_EN_ATTENTE = 2
 
 const message = (erreur: unknown) => (erreur instanceof Error ? erreur.message : String(erreur))
 
@@ -78,11 +82,29 @@ export default function RechercheSuivi({
         <>
           <Groupe titre="Réalisateurs" requete={realisateurs} deja={realisateursSuivis} cle={cles.realisateurs} suivre={suivreRealisateur} />
           <Groupe titre="Sagas" requete={sagas} deja={sagasSuivies} cle={cles.sagas} suivre={suivreSaga} />
-          {realisateurs.isPending || sagas.isPending ? <p role="status">Recherche…</p> : null}
+          {realisateurs.isPending || sagas.isPending ? <RechercheEnAttente /> : null}
           {aucunResultat ? <p className={styles.vide}>Rien trouvé pour « {requete} ».</p> : null}
         </>
       ) : null}
     </div>
+  )
+}
+
+/** Les résultats à venir, en blanc : l'affiche et le nom, sans le bouton qui agirait sur personne. */
+function RechercheEnAttente() {
+  return (
+    <Attente libelle="Recherche…">
+      <ul className={styles.liste}>
+        {Array.from({ length: RESULTATS_EN_ATTENTE }, (_, resultat) => (
+          <li key={resultat} className={styles.resultat} data-testid="resultat-en-attente">
+            <Affiche src={null} titre="" taille="ligne" />
+            <div className={styles.nom}>
+              <Barre largeur="moyenne" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Attente>
   )
 }
 

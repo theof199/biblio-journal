@@ -321,3 +321,56 @@ describe('depuis la page d’un réalisateur, le Voyage', () => {
     expect(screen.queryByText('À voir')).toBeNull()
   })
 })
+
+describe('la page d’un réalisateur qui attend sa fiche', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const jamais = () => new Promise<Response>(() => {})
+
+  it('annonce « Chargement… » une seule fois', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': jamais })
+    monter()
+
+    expect(await screen.findAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+  })
+
+  it('garde le bouton retour, sans le bouton « Suivre » ni l’interrupteur qui agiraient sur rien', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': jamais })
+    monter()
+
+    expect(await screen.findByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Suivi?e?$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('dessine six films en blanc', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': jamais })
+    monter()
+
+    expect(await screen.findAllByTestId('ligne-en-attente')).toHaveLength(6)
+  })
+
+  it('ne lance que sa requête, une fois', async () => {
+    const requetes = servir({ 'GET /api/me/realisateurs/525/page': jamais })
+    monter()
+
+    await screen.findByRole('status')
+    await new Promise((r) => setTimeout(r, 20))
+    expect(requetes).toEqual(['GET /api/me/realisateurs/525/page'])
+  })
+
+  it('à l’arrivée de la fiche, le statut et les formes en blanc s’en vont', async () => {
+    let liberer!: () => void
+    servir({ 'GET /api/me/realisateurs/525/page': () => new Promise<Response>((r) => (liberer = () => r(json(PAGE_SUIVI)))) })
+    monter()
+    await screen.findByRole('status')
+
+    liberer()
+
+    expect(await screen.findByRole('heading', { name: 'Christopher Nolan' })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+  })
+})

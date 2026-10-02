@@ -296,3 +296,65 @@ describe('la recherche', () => {
     })
   })
 })
+
+describe('la recherche qui attend ses résultats', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  /** Cherche « inception » ; la requête ne répond qu'au signal du test, rendu. */
+  async function chercherEnAttente() {
+    let liberer!: () => void
+    const requetes = servir({
+      ...ROUTES_VOYAGE,
+      'GET /api/search?type=movie&q=inception': () => new Promise<Response>((r) => (liberer = () => r(json(RESULTATS)))),
+    })
+    monter()
+    fireEvent.change(screen.getByLabelText('Rechercher un film'), { target: { value: 'inception' } })
+    await vi.advanceTimersByTimeAsync(300)
+    return { requetes, liberer: () => liberer() }
+  }
+
+  it('annonce « Recherche… » une seule fois', async () => {
+    await chercherEnAttente()
+
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('Recherche…')
+  })
+
+  it('dessine deux rangées de trois affiches en blanc', async () => {
+    await chercherEnAttente()
+
+    expect(screen.getAllByTestId('affiche-en-attente')).toHaveLength(6)
+  })
+
+  it('garde le guichet : sa question et son champ', async () => {
+    await chercherEnAttente()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Quel film as-tu vu ?' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Rechercher un film')).toHaveValue('inception')
+  })
+
+  it('ne lance que la recherche, une fois : le squelette n’ajoute aucune requête', async () => {
+    const { requetes } = await chercherEnAttente()
+
+    await vi.advanceTimersByTimeAsync(500)
+    expect(requetes.filter((r) => !(r in ROUTES_VOYAGE) && !r.includes('/me/voyage/annees'))).toEqual(['GET /api/search?type=movie&q=inception'])
+  })
+
+  it('à l’arrivée des résultats, le statut et les affiches en blanc s’en vont', async () => {
+    const { liberer } = await chercherEnAttente()
+
+    liberer()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('affiche-en-attente')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Inception/ })).toBeInTheDocument()
+  })
+})

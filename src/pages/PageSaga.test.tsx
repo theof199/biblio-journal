@@ -293,3 +293,125 @@ describe('la page d’une saga', () => {
     expect(await screen.findByText('Tu ne suis plus cette saga.')).toBeInTheDocument()
   })
 })
+
+describe('la page d’une saga qui attend ses données', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    reinitialiserMasquerIntrouvables()
+  })
+
+  const jamais = () => new Promise<Response>(() => {})
+  /** Les statuts de la page : le chemin courant du banc d'essai est un `<output>`, donc un statut aussi. */
+  const statuts = () => screen.queryAllByRole('status').filter((statut) => statut.tagName !== 'OUTPUT')
+
+  it('annonce « Chargement… » une seule fois, tant que les films ne sont pas là', async () => {
+    servir({ 'GET /api/me/sagas': () => json([ALIEN]), 'GET /api/me/sagas/8091/films': jamais })
+    monter()
+
+    await screen.findAllByTestId('ligne-en-attente')
+    expect(statuts()).toHaveLength(1)
+    expect(statuts()[0]).toHaveTextContent('Chargement…')
+  })
+
+  it('attend aussi la liste des sagas, d’où vient son nom', async () => {
+    servir({ 'GET /api/me/sagas': jamais, 'GET /api/me/sagas/8091/films': () => json(FILMS) })
+    monter()
+
+    await screen.findAllByTestId('ligne-en-attente')
+    // Les films, eux, répondent : la page doit pourtant attendre le nom que seule la liste des sagas donne.
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.getAllByTestId('ligne-en-attente')).toHaveLength(6)
+    expect(statuts()[0]).toHaveTextContent('Chargement…')
+    expect(screen.queryByRole('heading', { name: 'Alien (Saga)' })).not.toBeInTheDocument()
+  })
+
+  it('garde le bouton retour, sans les actions ni l’interrupteur qui agiraient sur rien', async () => {
+    servir({ 'GET /api/me/sagas': () => json([ALIEN]), 'GET /api/me/sagas/8091/films': jamais })
+    monter()
+
+    expect(await screen.findByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ne plus suivre' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('dessine six films en blanc', async () => {
+    servir({ 'GET /api/me/sagas': () => json([ALIEN]), 'GET /api/me/sagas/8091/films': jamais })
+    monter()
+
+    expect(await screen.findAllByTestId('ligne-en-attente')).toHaveLength(6)
+  })
+
+  it('ne lance que ses deux requêtes, une fois chacune', async () => {
+    const requetes = servir({ 'GET /api/me/sagas': () => json([ALIEN]), 'GET /api/me/sagas/8091/films': jamais })
+    monter()
+
+    await screen.findAllByTestId('ligne-en-attente')
+    await new Promise((r) => setTimeout(r, 20))
+    expect([...requetes].sort()).toEqual(['GET /api/me/sagas', 'GET /api/me/sagas/8091/films'])
+  })
+
+  it('à l’arrivée, le statut et les formes en blanc s’en vont', async () => {
+    let liberer!: () => void
+    servir({
+      'GET /api/me/sagas': () => json([ALIEN]),
+      'GET /api/me/sagas/8091/films': () => new Promise<Response>((r) => (liberer = () => r(json(FILMS)))),
+    })
+    monter()
+    await screen.findAllByTestId('ligne-en-attente')
+
+    liberer()
+
+    expect(await screen.findByRole('heading', { name: 'Alien (Saga)' })).toBeInTheDocument()
+    expect(statuts()).toHaveLength(0)
+    expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+  })
+
+  describe('la recherche d’un film à ajouter', () => {
+    const ouvrirEtChercher = async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Ajouter un film' }))
+      fireEvent.change(screen.getByLabelText('Chercher un film à ajouter'), { target: { value: 'inception' } })
+    }
+
+    it('annonce « Recherche… » et dessine trois résultats en blanc', async () => {
+      servir({
+        'GET /api/me/sagas': () => json([ALIEN]),
+        'GET /api/me/sagas/8091/films': () => json(FILMS),
+        'GET /api/search?type=movie&q=inception': jamais,
+      })
+      monter()
+      await ouvrirEtChercher()
+
+      expect(await screen.findAllByTestId('ligne-en-attente', {}, { timeout: 2000 })).toHaveLength(3)
+      expect(statuts()).toHaveLength(1)
+      expect(statuts()[0]).toHaveTextContent('Recherche…')
+    })
+
+    it('garde le champ de recherche pendant l’attente', async () => {
+      servir({
+        'GET /api/me/sagas': () => json([ALIEN]),
+        'GET /api/me/sagas/8091/films': () => json(FILMS),
+        'GET /api/search?type=movie&q=inception': jamais,
+      })
+      monter()
+      await ouvrirEtChercher()
+
+      await screen.findAllByTestId('ligne-en-attente', {}, { timeout: 2000 })
+      expect(screen.getByLabelText('Chercher un film à ajouter')).toBeInTheDocument()
+    })
+
+    it('à l’arrivée des résultats, le statut et les lignes en blanc s’en vont', async () => {
+      servir({
+        'GET /api/me/sagas': () => json([ALIEN]),
+        'GET /api/me/sagas/8091/films': () => json(FILMS),
+        'GET /api/search?type=movie&q=inception': () => json(RECHERCHE),
+      })
+      monter()
+      await ouvrirEtChercher()
+
+      expect(await screen.findByRole('button', { name: 'Ajouter Inception à la saga' }, { timeout: 2000 })).toBeInTheDocument()
+      expect(statuts()).toHaveLength(0)
+      expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+    })
+  })
+})

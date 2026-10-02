@@ -27,6 +27,7 @@ import {
 import { useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useChargementInfini } from '../accueil/useChargementInfini'
 import Affiche from '../ui/Affiche'
+import Attente, { Barre } from '../ui/Attente'
 import Sceau from '../ui/Sceau'
 import Panne from '../ui/Panne'
 import { formatDateVisionnage, sousTitre } from '../ui/format'
@@ -34,6 +35,10 @@ import styles from './AuCine.module.css'
 import type { JournalItem } from '../api/journal'
 import type { SortieEnCoursFilm, SortieProchaineFilm } from '../api/sorties'
 import type { CandidatFilm } from '../formulaire/candidat'
+
+/** Deux rangées de la grille des sorties, trois tuiles chacune. */
+const TUILES_EN_ATTENTE = 6
+const LIGNES_EN_ATTENTE = 3
 
 /** Même page que côté back par défaut, et que `JournalApi.seances()` (Android). */
 const LIMITE = 40
@@ -104,9 +109,7 @@ export default function AuCine() {
           {majAffichee ? <p className={styles.maj}>{majAffichee}</p> : null}
         </div>
         {sorties.isPending ? (
-          <p role="status" className={styles.chargementGrille}>
-            Chargement…
-          </p>
+          <GrilleEnAttente />
         ) : sorties.error ? (
           <Panne erreur={sorties.error} onReessayer={() => void sorties.refetch()} />
         ) : messageEnCours ? (
@@ -132,9 +135,8 @@ export default function AuCine() {
       <section className={styles.section}>
         <p className={styles.titreSection}>La semaine prochaine</p>
         {sorties.isPending ? (
-          <p role="status" className={styles.chargementGrille}>
-            Chargement…
-          </p>
+          // Même requête que la section du dessus, qui l'annonce : un seul statut pour les deux grilles.
+          <GrilleEnAttente muet />
         ) : sorties.error ? null : prochaine && prochaine.films.length === 0 ? (
           // L'erreur des sorties n'est montrée qu'une fois, dans la section précédente.
           <p className={styles.videGrille}>Rien cette semaine.</p>
@@ -156,7 +158,13 @@ export default function AuCine() {
         <p className={styles.titreSection}>Tes séances</p>
 
         {seances.isPending ? (
-          <p role="status">Chargement…</p>
+          <Attente>
+            <div className={styles.liste}>
+              {Array.from({ length: LIGNES_EN_ATTENTE }, (_, ligne) => (
+                <LigneEnAttente key={ligne} />
+              ))}
+            </div>
+          </Attente>
         ) : !seances.data ? (
           <Panne erreur={seances.error} onReessayer={() => void seances.refetch()} />
         ) : (
@@ -285,6 +293,43 @@ function TuileProchaine({ film, dejaVu, marque }: { film: SortieProchaineFilm; d
       marque={marque}
       candidat={candidatDepuisSortieProchaine(film)}
     />
+  )
+}
+
+/** Une grille de sorties laissée en blanc : deux rangées de trois tuiles. */
+function GrilleEnAttente({ muet = false }: { muet?: boolean }) {
+  return (
+    <Attente muet={muet}>
+      <div className={styles.grille}>
+        {Array.from({ length: TUILES_EN_ATTENTE }, (_, tuile) => (
+          <div key={tuile} className={styles.tuile} data-testid="tuile-en-attente">
+            <div className={styles.jaquette}>
+              <Affiche src={null} titre="" taille="ligne" className={styles.afficheTuile} />
+            </div>
+            <div className={styles.titreTuile}>
+              <Barre largeur="longue" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Attente>
+  )
+}
+
+/** Une ligne de « Tes séances » laissée en blanc : l'affiche et deux lignes de texte. */
+function LigneEnAttente() {
+  return (
+    <div className={styles.ligne} data-testid="ligne-en-attente">
+      <Affiche src={null} titre="" taille="ligne" />
+      <div className={styles.infosLigne}>
+        <div className={styles.titreLigne}>
+          <Barre largeur="longue" />
+        </div>
+        <div className={styles.sousTitreLigne}>
+          <Barre largeur="moyenne" />
+        </div>
+      </div>
+    </div>
   )
 }
 

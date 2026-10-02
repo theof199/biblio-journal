@@ -17,12 +17,16 @@ import { ajouterRechercheRecente, ecrireRecherchesRecentes, lireRecherchesRecent
 import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
 import { apercuLitLaFiche } from '../voyage/regles'
 import Affiche from '../ui/Affiche'
+import Attente, { Barre } from '../ui/Attente'
 import BoutonRetour from '../ui/BoutonRetour'
 import Etoiles from '../ui/Etoiles'
 import { sousTitre } from '../ui/format'
 import styles from './Recherche.module.css'
 import type { JournalPage } from '../api/journal'
 import type { MovieSearchResult } from '../api/recherche'
+
+/** Deux rangées de la grille, trois affiches chacune. */
+const AFFICHES_EN_ATTENTE = 6
 
 /** L'étiquette de papier collée sur une affiche déjà vue : ses étoiles si elle est notée, le mot « vu » au crayon sinon. */
 function EtiquetteVu({ note }: { note: number | null }) {
@@ -169,9 +173,23 @@ export default function Recherche() {
 
       {termeNormalise ? (
         recherche.isPending ? (
-          <p role="status" className={styles.vide}>
-            Recherche…
-          </p>
+          <Attente libelle="Recherche…" className={styles.liste}>
+            <ul className={styles.affiches}>
+              {Array.from({ length: AFFICHES_EN_ATTENTE }, (_, affiche) => (
+                <li key={affiche} className={styles.enAttente} data-testid="affiche-en-attente">
+                  <Affiche src={null} titre="" />
+                  <div className={styles.infosResultat}>
+                    <div className={styles.titreResultat}>
+                      <Barre largeur="longue" />
+                    </div>
+                    <div className={styles.sousTitreResultat}>
+                      <Barre largeur="courte" />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Attente>
         ) : resultats.length === 0 && !recherche.error ? (
           <p className={styles.vide}>Rien trouvé pour « {termeNormalise} ».</p>
         ) : (

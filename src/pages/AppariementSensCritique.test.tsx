@@ -173,3 +173,61 @@ describe('les films à apparier chez SensCritique', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 })
+
+describe('les films à apparier qui attendent leur liste', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const retenue = () => servir({ 'GET /api/auth/me': () => json(SESSION), [A_APPARIER]: () => new Promise<Response>(() => {}) })
+
+  it('annonce « Chargement… » une seule fois', async () => {
+    retenue()
+    monter()
+
+    expect(await screen.findAllByTestId('film-en-attente')).toHaveLength(2)
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+  })
+
+  it('garde le bouton retour et le titre de la page', async () => {
+    retenue()
+    monter()
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Films à apparier' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+  })
+
+  it('dessine deux films en blanc, chacun avec deux candidats, et aucun bouton qui agirait sur rien', async () => {
+    retenue()
+    monter()
+
+    const films = await screen.findAllByTestId('film-en-attente')
+    expect(films).toHaveLength(2)
+    expect(screen.getAllByTestId('candidat-en-attente')).toHaveLength(4)
+    expect(screen.queryByRole('button', { name: 'Aucun de ceux-là' })).not.toBeInTheDocument()
+    // Les candidats en blanc ne sont pas des boutons : seul le retour en est un.
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+  })
+
+  it('ne lance que la liste, une fois', async () => {
+    const requetes = retenue()
+    monter()
+
+    await screen.findAllByTestId('film-en-attente')
+    await new Promise((r) => setTimeout(r, 20))
+    expect(requetes.filter((r) => r !== 'GET /api/auth/me')).toEqual([A_APPARIER])
+  })
+
+  it('à l’arrivée de la liste, le statut et les formes en blanc s’en vont', async () => {
+    let liberer!: () => void
+    servir({ 'GET /api/auth/me': () => json(SESSION), [A_APPARIER]: () => new Promise<Response>((r) => (liberer = () => r(json(LISTE)))) })
+    monter()
+    await screen.findAllByTestId('film-en-attente')
+
+    liberer()
+
+    expect(await screen.findByRole('button', { name: NOM_MELIES })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('film-en-attente')).not.toBeInTheDocument()
+  })
+})
