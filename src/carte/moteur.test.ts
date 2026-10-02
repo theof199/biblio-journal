@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CORAIL, DUREE_DE_L_ENVOL, MAX_TUILES, MoteurCarte, type CaseCarte, type Dependances, type EtatCarte, type Rappels } from './moteur'
+import { A_L_ARRET, CORAIL, DUREE_DE_L_ENVOL, DUREE_DU_ROULEMENT, MAX_TUILES, MoteurCarte, REPOS_DU_DEFILEMENT, type CaseCarte, type Dependances, type EtatCarte, type Rappels } from './moteur'
 import { contexteFactice, type Appel } from '../test/contexteFactice'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
 import type { BobinePerdue, DateVraie, Monde, MusiqueDuMonde, SuiviGare, VueMonde } from '../mondes/types'
-import { TEMPO } from '../voyage/tempo'
+import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
 const H = 700
@@ -42,7 +42,8 @@ const reactions: string[] = []
  * Plan 3a : le monde d'essai collant de 1900 (option `collant`). Sa section commence sous celle de
  * 1890 (cinq années du tracé « à venir »). Il tient ses cinq premières années sur un quai fixe, au
  * bas de l'écran, loin de la place que le tracé leur donne ; les suivantes sont hors de vue. Il
- * gare le Voyage suivi en `OU_SUIVI`, et joue sa propre musique.
+ * gare le Voyage suivi en `OU_SUIVI`, et joue sa propre musique. Il n'a d'arrêts que ceux qu'on lui
+ * donne (option `arrets`) : sans eux, la caméra n'y est jamais rappelée.
  */
 const HAUT_1900 = MARGE_HAUT + mondeAVenir(1890).trace([1895, 1896, 1897, 1898, 1899]).hauteur
 const quai = (annee: number) => (annee <= 1904 ? { x: 45 + (annee - 1900) * 75, y: 655 } : null)
@@ -50,7 +51,7 @@ const OU_SUIVI = { x: 330, y: 130 }
 const MUSIQUE_1900: MusiqueDuMonde = { battue: 0.5, temps: 16, volume: 0.4, filtre: 1800, jouer: () => undefined }
 /** Les Voyages suivis que le monde collant a été prié de dessiner. */
 const suivis: SuiviGare[] = []
-function mondeDEssai(decennie: number, collant = false): Monde {
+function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = []): Monde {
   const base = mondeAVenir(decennie)
   const scene: Monde['scene'] =
     collant && decennie === 1900
@@ -62,7 +63,7 @@ function mondeDEssai(decennie: number, collant = false): Monde {
           },
           dessinerBande: () => () => null,
           entree: [],
-          arrets: [],
+          arrets,
         }
       : null
   return {
@@ -111,6 +112,8 @@ function monter(
     deuxBobines?: boolean
     /** Plan 3a : le monde d'essai de 1900 a une `scene`, sa section est collante. */
     collant?: boolean
+    /** Tâche 4 : les arrêts de la section collante, en `y` de la section, un par année. */
+    arrets?: readonly number[]
   } = {},
 ) {
   vus.length = 0
@@ -118,6 +121,8 @@ function monter(
   suivis.length = 0
   const principal = contexteFactice()
   const toiles: Appel[][] = []
+  /** Les images que le moteur a demandées et qu'aucun test n'a encore jouées : sa boucle, pour qui veut la faire tourner. */
+  const demandees: Array<(t: number) => void> = []
   const deps: Dependances = {
     creerToile: (w, h) => {
       const f = contexteFactice()
@@ -128,11 +133,11 @@ function monter(
       return toile
     },
     image: () => ({}) as CanvasImageSource,
-    demanderImage: () => 1,
+    demanderImage: (f) => demandees.push(f),
     annulerImage: vi.fn(),
     heure: () => options.heure ?? 12,
     mondeDe: (d) => {
-      const m = mondeDEssai(d, options.collant)
+      const m = mondeDEssai(d, options.collant, options.arrets)
       const { chantier1898, particules } = options
       return {
         ...m,
@@ -167,7 +172,7 @@ function monter(
   })
   const roulotte = options.roulotte ?? null
   moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], roulotte })
-  return { moteur, appels: principal.appels, toiles, rappels, deps, cases, roulotte }
+  return { moteur, appels: principal.appels, toiles, rappels, deps, cases, roulotte, demandees }
 }
 
 const pleinEcran = (a: Appel) => (a.nom === 'fillRect' || a.nom === 'drawImage') && a.args.slice(-2).join() === `${W},${H}`
@@ -1074,6 +1079,388 @@ describe('le moteur de la carte', () => {
       expect(collant.rappels.roulotte).not.toHaveBeenCalled()
       toucher(collant.moteur, OU_SUIVI.x, OU_SUIVI.y)
       expect(collant.rappels.roulotte).toHaveBeenCalledTimes(1)
+    })
+
+    describe('la caméra roule d’arrêt en arrêt (tâche 4)', () => {
+      /** Un arrêt par année de 1900, tous les 250 px de la section : loin des cases du tracé (170 px). */
+      const ARRETS = Array.from({ length: 10 }, (_, i) => i * 250)
+      const arret = (annee: number) => HAUT_1900 + ARRETS[annee - 1900]!
+      /** Le banc, une première image jouée, et de quoi jouer les suivantes : une toutes les 40 ms d'horloge. */
+      const enGare = (options: Parameters<typeof auTrain>[0] & { ailleurs?: boolean } = {}) => {
+        const banc = options.ailleurs ? monter({ collant: true, arrets: ARRETS, ...options }) : auTrain({ arrets: ARRETS, ...options })
+        let ms = 1000
+        banc.moteur.image(ms)
+        const filer = (duree: number) => {
+          for (const fin = ms + duree; ms < fin; ) banc.moteur.image((ms += 40))
+        }
+        const vers = () => vi.mocked(banc.rappels.defilerVers).mock.calls.map(([y]) => y)
+        /** La caméra posée à l'arrêt de `annee`, le défilement reposé, les rappels oubliés. */
+        const poserA = (y: number) => {
+          banc.moteur.defiler(y)
+          filer(REPOS_DU_DEFILEMENT + 120)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+        }
+        /** Un témoin posé dans le `then` d'une promesse du moteur. */
+        const temoin = (promesse: Promise<void>) => {
+          const t = { fini: false }
+          void promesse.then(() => void (t.fini = true))
+          return t
+        }
+        return { ...banc, filer, vers, poserA, temoin }
+      }
+      const ROULEMENT = auTempo(DUREE_DU_ROULEMENT)
+
+      // Mutations : la promesse résolue à l'appel ; `auTempo` retiré de `rouler` (elle se résoudrait
+      // à mi-chemin de l'horloge attendue) ; le roulement remplacé par la marche de l'avatar.
+      it('marcher y fait rouler la caméra jusqu’à l’arrêt de l’année, au tempo, et ne se résout qu’à l’arrivée', async () => {
+        const banc = enGare()
+        banc.poserA(arret(1900))
+        const marche = banc.temoin(banc.moteur.marcher(1901))
+        await Promise.resolve()
+        expect(marche.fini).toBe(false)
+        banc.filer(ROULEMENT - 40)
+        await Promise.resolve()
+        expect(marche.fini).toBe(false)
+        // En chemin, la caméra glisse entre les deux arrêts, toujours vers le suivant.
+        const enChemin = banc.vers()
+        expect(enChemin.length).toBeGreaterThan(10)
+        enChemin.forEach((y, i) => {
+          expect(y).toBeGreaterThanOrEqual(i ? enChemin[i - 1]! : arret(1900))
+          expect(y).toBeLessThan(arret(1901))
+        })
+        banc.filer(80)
+        await Promise.resolve()
+        expect(marche.fini).toBe(true)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1901))
+        // Arrivée, elle ne bouge plus.
+        const n = banc.vers().length
+        banc.filer(600)
+        expect(banc.vers().length).toBe(n)
+      })
+
+      // Mutations : la garde `this.roulement` retirée de `constaterLeRepos` (le rappel au plus
+      // proche remplacerait le roulement attendu, et libérerait `marcher` au repos du défilement) ;
+      // `r.fin ||` retiré de `constaterLeDefilement` (un défilement en chemin arrêterait la marche).
+      it('ni le repos du défilement, ni un défilement en chemin, ne libèrent marcher avant l’arrivée', async () => {
+        const banc = enGare()
+        // La caméra laissée entre deux arrêts, et la marche demandée avant que le défilement ne repose.
+        banc.moteur.defiler(arret(1900) + 90)
+        const marche = banc.temoin(banc.moteur.marcher(1902))
+        // Dix images de 40 ms : le repos du défilement est passé, le roulement non.
+        expect(REPOS_DU_DEFILEMENT + 40).toBeLessThan(400)
+        banc.filer(400)
+        banc.moteur.defiler(arret(1900) + 30)
+        banc.filer(ROULEMENT - 400 - 40)
+        await Promise.resolve()
+        expect(marche.fini).toBe(false)
+        banc.filer(80)
+        await Promise.resolve()
+        expect(marche.fini).toBe(true)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1902))
+      })
+
+      // Mutation : la garde `this.calme` retirée de `rouler` : l'horloge figée, le roulement
+      // n'arriverait jamais, et le témoin resterait faux.
+      it('au calme, marcher pose la caméra à l’arrêt d’un coup et se résout sans qu’aucune image ne soit jouée', async () => {
+        const banc = auTrain({ calme: true, arrets: ARRETS })
+        banc.moteur.defiler(arret(1900))
+        let fini = false
+        void banc.moteur.marcher(1901).then(() => void (fini = true))
+        await Promise.resolve()
+        expect(fini).toBe(true)
+        expect(vi.mocked(banc.rappels.defilerVers).mock.calls).toEqual([[arret(1901)]])
+      })
+
+      // Mutation : `Math.abs(y - this.camY) <= A_L_ARRET` retiré de `rouler` : la caméra déjà à
+      // l'arrêt ferait attendre tout un roulement immobile.
+      it('marcher vers l’arrêt où la caméra est déjà posée se résout aussitôt', async () => {
+        const banc = enGare()
+        banc.poserA(arret(1900))
+        const marche = banc.temoin(banc.moteur.marcher(1900))
+        await Promise.resolve()
+        expect(marche.fini).toBe(true)
+      })
+
+      // Mutation : la garde `this.sceneDe(ici.section)` retirée de `passerLaPorte` : l'avatar, que
+      // personne ne voit, marcherait vers la porte, et la caméra le suivrait.
+      it('passer la porte depuis la section se résout aussitôt, sans rien déplacer', async () => {
+        const banc = enGare()
+        banc.poserA(arret(1900))
+        const porte = banc.temoin(banc.moteur.passerLaPorte())
+        await Promise.resolve()
+        expect(porte.fini).toBe(true)
+        banc.filer(600)
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+      })
+
+      // Mutations : le bloc du roulement retiré d'`achever` (l'horloge figée, la marche ne finirait
+      // jamais) ; `this.poser(r.y1)` retiré (libérée, mais la caméra laissée en chemin).
+      it('achève le roulement quand le visiteur demande moins d’animations en chemin : la caméra à l’arrêt, marcher libéré', async () => {
+        const banc = enGare()
+        banc.poserA(arret(1900))
+        const marche = banc.temoin(banc.moteur.marcher(1901))
+        banc.filer(200)
+        banc.moteur.reglerCalme(true)
+        await Promise.resolve()
+        expect(marche.fini).toBe(true)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1901))
+        const n = banc.vers().length
+        banc.filer(600)
+        expect(banc.vers().length).toBe(n)
+      })
+
+      // Mutations : le rappel retiré de `constaterLeRepos` (la caméra resterait entre deux arrêts) ;
+      // le premier arrêt pris au lieu du plus proche ; le défilement daté une seule fois (`d.aDater
+      // && d.depuis === null`) : le rappel partirait pendant que le membre défile encore.
+      it.each([
+        { ecart: 90, vers: 1902 },
+        { ecart: 160, vers: 1903 },
+      ])('ramène au plus proche la caméra laissée entre deux arrêts, une fois le défilement arrêté (à $ecart px de 1902 : $vers)', ({ ecart, vers }) => {
+        const banc = enGare()
+        banc.poserA(arret(1901))
+        // Tant que le défilement dure, rien : un `defiler` toutes les 80 ms, plus court que le repos.
+        for (let i = 0; i <= 10; i++) {
+          banc.moteur.defiler(arret(1902) + (ecart * i) / 10)
+          banc.filer(80)
+        }
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+        banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+        const ou = banc.vers()
+        expect(ou.length).toBeGreaterThan(10)
+        expect(ou[ou.length - 1]).toBe(arret(vers))
+        // Elle y roule, sans jamais sortir de l'intervalle qui la sépare de l'arrêt.
+        const bornes = [arret(1902) + ecart, arret(vers)].sort((a, b) => a - b)
+        ou.forEach((y) => expect(y >= bornes[0]! && y <= bornes[1]!).toBe(true))
+      })
+
+      // Avant le premier arrêt (l'entrée de la section) et après le dernier, la caméra n'est pas
+      // entre deux arrêts. Mutation : les bornes retirées d'`arretsAutour`.
+      it('ne rappelle pas la caméra laissée avant le premier arrêt, ni après le dernier', () => {
+        const banc = enGare()
+        banc.poserA(arret(1900))
+        banc.moteur.defiler(arret(1900) - 60)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        banc.moteur.defiler(arret(1909) + 60)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+      })
+
+      // Mutation : `this.arreterLeRoulement()` retiré de `rouler` : la promesse du roulement
+      // remplacé ne se résoudrait jamais.
+      it('un roulement qui en remplace un autre libère qui attendait le premier', async () => {
+        const banc = enGare()
+        banc.poserA(arret(1900))
+        const premiere = banc.temoin(banc.moteur.marcher(1901))
+        banc.filer(200)
+        const seconde = banc.temoin(banc.moteur.marcher(1902))
+        await Promise.resolve()
+        expect(premiere.fini).toBe(true)
+        expect(seconde.fini).toBe(false)
+        banc.filer(ROULEMENT + 40)
+        await Promise.resolve()
+        expect(seconde.fini).toBe(true)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1902))
+      })
+
+      // Mutations : `|| this.doigt` retiré de `constaterLeRepos` ; l'arrêt du roulement retiré de
+      // `pointeur` (le rappel en cours tirerait la caméra sous le doigt qui vient de se poser) ;
+      // `this.defilement.aDater = true` retiré au même endroit (le doigt levé, la caméra resterait
+      // entre deux arrêts).
+      it('ne rappelle pas la caméra tant que le pointeur est bas, et lui rend celle qui roulait', () => {
+        const banc = enGare()
+        banc.poserA(arret(1901))
+        banc.moteur.defiler(arret(1902) + 90)
+        banc.moteur.pointeur('bas', 200, 300, false)
+        banc.filer(REPOS_DU_DEFILEMENT + 1000)
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+        // Le doigt levé, le rappel part ; le doigt reposé en chemin, il s'arrête.
+        banc.moteur.pointeur('annule', 200, 300, false)
+        banc.filer(200)
+        const n = banc.vers().length
+        expect(n).toBeGreaterThan(0)
+        expect(banc.vers()[n - 1]).not.toBe(arret(1902))
+        banc.moteur.pointeur('bas', 200, 300, false)
+        banc.filer(REPOS_DU_DEFILEMENT + 1000)
+        expect(banc.vers().length).toBe(n)
+        // Levé de nouveau, la caméra n'est pas laissée là.
+        banc.moteur.pointeur('annule', 200, 300, false)
+        banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1902))
+      })
+
+      // Sur un écran tactile, le navigateur prend le geste (`pointercancel`) : le moteur ne sait plus
+      // le doigt posé, il ne voit que le défilement. Mutations : la comparaison à `avant` retirée de
+      // `constaterLeDefilement` (l'écho de ce que le roulement vient de poser l'arrêterait) ;
+      // `this.arreterLeRoulement()` retiré au même endroit (le rappel combattrait le défilement).
+      it('le rappel en cours cède au défilement du membre, pas à l’écho de ce qu’il vient de poser', () => {
+        const banc = enGare()
+        banc.poserA(arret(1901))
+        banc.moteur.defiler(arret(1902) + 90)
+        banc.filer(REPOS_DU_DEFILEMENT + 200)
+        const n = banc.vers().length
+        expect(n).toBeGreaterThan(0)
+        // L'écho : la page rend, arrondi, le défilement que le moteur vient de poser.
+        banc.moteur.defiler(Math.round(banc.vers()[n - 1]!))
+        banc.filer(40)
+        expect(banc.vers().length).toBe(n + 1)
+        // Le geste : le membre repart vers le bas.
+        banc.moteur.defiler(arret(1902) + 140)
+        banc.filer(REPOS_DU_DEFILEMENT - 40)
+        expect(banc.vers().length).toBe(n + 1)
+        banc.filer(ROULEMENT + 300)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1903))
+      })
+
+      // Mutations : le rappel au plus proche employé au calme (trente pixels sous 1902 rendraient
+      // 1902) ; le premier arrêt devant pris même quand le défilement en a franchi d'autres ; la
+      // garde `this.calme` retirée de `rouler` (au repos, la caméra glisserait).
+      it('au calme, chaque geste pose l’arrêt suivant dans son sens, d’un seul defilerVers', () => {
+        const banc = enGare({ calme: true })
+        banc.poserA(arret(1902))
+        banc.moteur.defiler(arret(1902) + 30)
+        expect(banc.vers()).toEqual([arret(1903)])
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        expect(banc.vers()).toEqual([arret(1903)])
+        banc.moteur.defiler(arret(1903) - 30)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        expect(banc.vers()).toEqual([arret(1903), arret(1902)])
+        // Un défilement qui franchit plusieurs arrêts d'un coup se pose au dernier franchi.
+        banc.moteur.defiler(arret(1906) + 20)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        expect(banc.vers()).toEqual([arret(1903), arret(1902), arret(1906)])
+        // Posée entre deux arrêts sans qu'aucun geste ne l'y mène (le calme demandé là) : au plus proche, d'un coup.
+        const laissee = enGare()
+        laissee.poserA(arret(1901))
+        laissee.moteur.defiler(arret(1902) + 90)
+        laissee.moteur.reglerCalme(true)
+        laissee.filer(REPOS_DU_DEFILEMENT + 600)
+        expect(laissee.vers()).toEqual([arret(1902)])
+      })
+
+      // Au calme, la boucle du moteur dort : c'est elle qui doit tenir jusqu'au repos du défilement.
+      // Mutations : `defile ||` retiré de `boucle` (le geste fini, la caméra resterait où le doigt
+      // l'a traînée) ; la garde `this.pose !== null` retirée de `constaterLeDefilement` (la suite du
+      // même geste poserait l'arrêt d'après).
+      it('au calme, la suite du geste ne pose pas d’autre arrêt, et la boucle tient jusqu’au repos pour y ramener la caméra', () => {
+        const banc = auTrain({ calme: true, arrets: ARRETS })
+        let ms = 1000
+        const tourner = (duree: number) => {
+          for (const fin = ms + duree; ms < fin; ) {
+            ms += 40
+            for (const f of banc.demandees.splice(0)) f(ms)
+          }
+        }
+        banc.moteur.defiler(arret(1902))
+        tourner(REPOS_DU_DEFILEMENT + 400)
+        // Reposée, la boucle se rendort.
+        expect(banc.demandees).toEqual([])
+        banc.moteur.defiler(arret(1902) + 30)
+        banc.moteur.defiler(arret(1903) + 40)
+        banc.moteur.defiler(arret(1903) + 80)
+        expect(vi.mocked(banc.rappels.defilerVers).mock.calls).toEqual([[arret(1903)]])
+        tourner(REPOS_DU_DEFILEMENT + 400)
+        expect(vi.mocked(banc.rappels.defilerVers).mock.calls).toEqual([[arret(1903)], [arret(1903)]])
+        expect(banc.demandees).toEqual([])
+      })
+
+      // La page cachée, la boucle ne tourne que pour ce qui doit finir. Mutation : `this.roulement`
+      // retiré de `boucle` : le roulement s'arrêterait à sa première image, et `marcher` avec lui.
+      it('la boucle tient jusqu’au bout du roulement, même quand la carte n’est pas visible', async () => {
+        const banc = auTrain({ arrets: ARRETS })
+        let ms = 1000
+        const tourner = (duree: number) => {
+          for (const fin = ms + duree; ms < fin; ) {
+            ms += 40
+            for (const f of banc.demandees.splice(0)) f(ms)
+          }
+        }
+        banc.moteur.reglerVisible(false)
+        banc.moteur.defiler(arret(1900))
+        tourner(REPOS_DU_DEFILEMENT + 400)
+        expect(banc.demandees).toEqual([])
+        let fini = false
+        void banc.moteur.marcher(1901).then(() => void (fini = true))
+        tourner(ROULEMENT + 200)
+        await Promise.resolve()
+        expect(fini).toBe(true)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1901))
+        expect(banc.demandees).toEqual([])
+      })
+
+      // Mutations : `avatarVisible` calculé sur l'avatar de la route (à l'arrêt de 1903, la case de
+      // 1905 est à l'écran ; à celui de 1905, elle est au-dessus) ; l'écart `A_L_ARRET` ramené à 0
+      // (la page rend un défilement arrondi) ; `allerIci` qui viserait l'avatar de la route.
+      it('dit le membre en vue quand la caméra est posée à l’arrêt de son année, et « Tu es ici » y ramène', () => {
+        const banc = enGare({ enCours: 1905 })
+        const vu = () => vi.mocked(banc.rappels.avatarVisible).mock.lastCall![0]
+        banc.poserA(arret(1903))
+        expect(vu()).toBe(false)
+        banc.moteur.allerIci(true)
+        expect(banc.vers()).toEqual([arret(1905)])
+        banc.filer(40)
+        expect(vu()).toBe(true)
+        banc.moteur.defiler(arret(1905) + A_L_ARRET - 0.5)
+        banc.filer(40)
+        expect(vu()).toBe(true)
+        // Sans `instant`, la caméra y roule ; au calme, elle s'y pose d'un coup.
+        banc.poserA(arret(1903))
+        banc.moteur.allerIci()
+        banc.filer(ROULEMENT / 2)
+        expect(banc.vers().length).toBeGreaterThan(10)
+        expect(vu()).toBe(false)
+        banc.filer(ROULEMENT / 2 + 40)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1905))
+        expect(vu()).toBe(true)
+        const calme = enGare({ enCours: 1905, calme: true })
+        calme.poserA(arret(1903))
+        calme.moteur.allerIci()
+        expect(calme.vers()).toEqual([arret(1905)])
+      })
+
+      // Mutation : la borne retirée d'`arretsDe` : un arrêt écrit sous le bas de la carte, que le
+      // défilement n'atteint pas, rappellerait la caméra sans fin.
+      it('borne un arrêt à ce que le défilement atteint', async () => {
+        const banc = auTrain({ calme: true, arrets: [...ARRETS.slice(0, 9), 1e6] })
+        await banc.moteur.marcher(1909)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(banc.moteur.hauteur - H)
+      })
+
+      // Un seul glissement à la fois. Mutations : `this.suivre = false` ou `this.visee = null` retiré
+      // de `rouler` (le glissement d'avant arrêterait le roulement, et libérerait `marcher` à la
+      // première image) ; la ligne « celui qui a commencé après l'emporte » retirée de `maj` (deux
+      // `defilerVers` par image, qui se disputent la caméra) ; `arreterLeRoulement` retiré de
+      // `direAdieu` (le rappel tirerait la caméra hors de l'adieu).
+      it.each(['suivre', 'visee'] as const)('le roulement arrête le glissement d’avant (%s), et cède à celui d’après', async (glissement) => {
+        // Le membre est resté en 1898 : « Tu es ici » fait suivre l'avatar, 1898 ouverte sous les yeux fait viser son chantier.
+        const banc = enGare({ ailleurs: true, chantier1898: 0 })
+        banc.poserA(arret(1900))
+        if (glissement === 'suivre') banc.moteur.allerIci()
+        else banc.moteur.ouvrirSousLesYeux(1898)
+        const marche = banc.temoin(banc.moteur.marcher(1901))
+        banc.filer(ROULEMENT - 40)
+        await Promise.resolve()
+        expect(marche.fini).toBe(false)
+        expect(banc.vers().every((y) => y >= arret(1900))).toBe(true)
+        // En chemin, l'autre glissement repart : lui seul commande la caméra, et `marcher` est libéré.
+        vi.mocked(banc.rappels.defilerVers).mockClear()
+        if (glissement === 'suivre') banc.moteur.allerIci()
+        else banc.moteur.ouvrirSousLesYeux(1898)
+        banc.filer(200)
+        await Promise.resolve()
+        expect(marche.fini).toBe(true)
+        expect(banc.vers().length).toBe(5)
+      })
+
+      it('l’adieu d’un monde arrête le rappel en cours', () => {
+        const banc = enGare({ ailleurs: true })
+        banc.poserA(arret(1901))
+        banc.moteur.defiler(arret(1902) + 90)
+        banc.filer(REPOS_DU_DEFILEMENT + 200)
+        expect(banc.vers().length).toBeGreaterThan(0)
+        void banc.moteur.direAdieu(1890)
+        banc.filer(400)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(MARGE_HAUT)
+      })
     })
   })
 

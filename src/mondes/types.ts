@@ -248,14 +248,14 @@ export interface BobinePerdue {
 /**
  * La musique d'un monde (plan 2d ; maquette carte v2 : l'orgue de barbarie de 1890, `PAR_TEMPS`,
  * `noteOrgue`, `planifier`). L'ambiance de la carte (`carte/son.ts`) la joue temps après temps,
- * au volume de la présence du monde à l'écran ; elle seule crée le contexte audio, au geste « Son ».
+ * au volume du poids de mélange du monde ; elle seule crée le contexte audio, au geste « Son ».
  */
 export interface MusiqueDuMonde {
   /** La durée d'un temps, en secondes (maquette : `BATTUE`). */
   battue: number
   /** Le nombre de temps de l'air ; il reprend au premier ensuite. */
   temps: number
-  /** Le volume à pleine présence (maquette : 0,5 pour l'orgue). */
+  /** Le volume à plein poids de mélange (maquette : 0,5 pour l'orgue). */
   volume: number
   /** La coupure du passe-bas de sa sortie, en Hz (maquette : 2300 pour l'orgue). */
   filtre: number
