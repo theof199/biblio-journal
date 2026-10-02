@@ -96,7 +96,12 @@ export interface VueMonde {
   t: number
   /** Faux quand le visiteur demande moins d'animations : le décor se pose, immobile. */
   vivant: boolean
-  /** La présence du monde à l'écran, de 0 à 1 (les fondus aux frontières). */
+  /**
+   * La présence du monde à l'écran, de 0 à 1 : un fondu à la frontière de deux sections ordinaires,
+   * et à la sortie d'une section collante vers une section ordinaire. À l'entrée d'une section
+   * collante, aucun fondu : le monde quitté vaut 1 tant que sa section est à l'écran, le monde à
+   * `scene` dès que la sienne y entre, tous deux à 1 tant que la frontière est à l'écran.
+   */
   presence: number
   /** Lumière (0,45 le jour, 1,3 la nuit) et nuit (0 à 1), d'après l'heure du visiteur. */
   lum: number
@@ -225,7 +230,13 @@ export type LectureDeBande = (x: number, y: number) => number | null
  * la brume, sa bande de la vue d'ensemble).
  */
 export interface SceneCollante {
-  /** Où se tient `annee` à l'écran, en px CSS ; nul hors de vue. Le moteur y inscrit la zone `case` et y pose le corail. */
+  /**
+   * Où se tient `annee` à l'écran, en px CSS ; nul hors de vue. Le moteur y inscrit la zone `case` et
+   * y pose le corail. Elle doit être pure : le moteur l'appelle pour chaque année de la section à
+   * chaque image où le monde est présent, et aussi hors d'une image, pour l'ancre d'un aperçu (avec
+   * une vue de présence 1, sur le contexte tel que la dernière image l'a laissé). Elle ne dessine
+   * rien, n'inscrit aucune zone et ne retient rien.
+   */
   ecranDeLaCase: (v: VueMonde, annee: number) => { x: number; y: number } | null
   /** Le Voyage suivi garé dans son année ; le monde inscrit lui-même sa zone `roulotte` (`v.zone`). */
   dessinerSuivi: (v: VueMonde, suivi: SuiviGare) => void
@@ -236,9 +247,20 @@ export interface SceneCollante {
    * contexte (opacité, coupe, repère) est défait après l'appel.
    */
   dessinerBande: (g: CanvasRenderingContext2D, cadre: CadreDeBande, etat: EtatDeBande) => LectureDeBande
-  /** Les temps du passage d'entrée, dans l'ordre où il se joue à l'endroit. Vide : aucun passage. */
+  /**
+   * Les temps du passage d'entrée, dans l'ordre où il se joue à l'endroit. Vide : aucun passage. Le
+   * dernier temps est le premier arrêt (`arrets[0]`) : la zone où le geste lance le passage finit au
+   * dernier temps, le rappel à l'arrêt ne vaut pas avant le premier arrêt. Plus haut, il reste entre
+   * les deux une zone où la caméra laissée n'est ni prise par le passage ni rappelée ; plus bas, le
+   * passage finit hors d'un arrêt, et le premier défilement constaté ensuite (l'écho que la page
+   * rend de sa fin compris) rappelle la caméra à l'arrêt le plus proche.
+   */
   entree: readonly TempsDEntree[]
-  /** Les `y` de la section où la caméra se pose, un par année, dans l'ordre des années. */
+  /**
+   * Les `y` de la section où la caméra se pose, un par année, dans l'ordre des années, et croissants :
+   * le moteur tient le premier de la liste pour le plus haut (le rappel ne vaut pas avant lui) et, au
+   * calme, lit la liste dans son ordre pour trouver l'arrêt suivant dans le sens du geste.
+   */
   arrets: readonly number[]
 }
 
