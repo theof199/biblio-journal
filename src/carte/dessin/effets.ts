@@ -1,6 +1,7 @@
 import type { Toile } from '../moteur'
 import { pointA, type Route } from '../route'
 import { alea, clamp, lerp, rgba, TAU, hash, type Rgb } from '../outils'
+import { couperAuxBandes, type Bande } from './sol'
 
 export interface Feu {
   x: number
@@ -67,8 +68,11 @@ export class Effets {
     return toile
   }
 
-  /** Le pointillé doré qui coule sur la route déjà parcourue (maquette : `scene`, bloc `ING.route`). */
-  parcouru(g: CanvasRenderingContext2D, route: Route, d: number, camY: number, t: number, vivant: boolean): void {
+  /**
+   * Le pointillé doré qui coule sur la route déjà parcourue (maquette : `scene`, bloc `ING.route`).
+   * `bandes` : où le sol se dessine (`bandesDuSol`) ; le pointillé y est coupé net, comme la route.
+   */
+  parcouru(g: CanvasRenderingContext2D, route: Route, d: number, camY: number, t: number, vivant: boolean, bandes: readonly Bande[] | null = null): void {
     if (typeof Path2D !== 'function' || route.pts.length === 0) return
     const chemin = new Path2D()
     const premier = route.pts[0]!
@@ -80,6 +84,7 @@ export class Effets {
     const e = pointA(route, d)
     chemin.lineTo(e.x, e.y - camY)
     g.save()
+    if (bandes) couperAuxBandes(g, bandes, -camY, -8, this.W + 16)
     g.lineJoin = 'round'
     g.globalCompositeOperation = 'lighter'
     g.strokeStyle = 'rgba(230,185,74,.1)'

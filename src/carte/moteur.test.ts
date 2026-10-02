@@ -3,7 +3,7 @@ import { CORAIL, DUREE_DE_L_ENVOL, MAX_TUILES, MoteurCarte, type CaseCarte, type
 import { contexteFactice, type Appel } from '../test/contexteFactice'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, DateVraie, Monde, MusiqueDuMonde, VueMonde } from '../mondes/types'
+import type { BobinePerdue, DateVraie, Monde, MusiqueDuMonde, SuiviGare, VueMonde } from '../mondes/types'
 import { TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -38,14 +38,43 @@ const MUSIQUE: MusiqueDuMonde = { battue: 0.36, temps: 24, volume: 0.5, filtre: 
 const JOUE = mondeAVenir(1890).couleur('#6b6258')
 /** Les réactions demandées au monde d'essai, par zone touchée. */
 const reactions: string[] = []
-function mondeDEssai(decennie: number): Monde {
+/**
+ * Plan 3a : le monde d'essai collant de 1900 (option `collant`). Sa section commence sous celle de
+ * 1890 (cinq années du tracé « à venir »). Il tient ses cinq premières années sur un quai fixe, au
+ * bas de l'écran, loin de la place que le tracé leur donne ; les suivantes sont hors de vue. Il
+ * gare le Voyage suivi en `OU_SUIVI`, et joue sa propre musique.
+ */
+const HAUT_1900 = MARGE_HAUT + mondeAVenir(1890).trace([1895, 1896, 1897, 1898, 1899]).hauteur
+const quai = (annee: number) => (annee <= 1904 ? { x: 45 + (annee - 1900) * 75, y: 655 } : null)
+const OU_SUIVI = { x: 330, y: 130 }
+const MUSIQUE_1900: MusiqueDuMonde = { battue: 0.5, temps: 16, volume: 0.4, filtre: 1800, jouer: () => undefined }
+/** Les Voyages suivis que le monde collant a été prié de dessiner. */
+const suivis: SuiviGare[] = []
+function mondeDEssai(decennie: number, collant = false): Monde {
   const base = mondeAVenir(decennie)
+  const scene: Monde['scene'] =
+    collant && decennie === 1900
+      ? {
+          ecranDeLaCase: (_, annee) => quai(annee),
+          dessinerSuivi: (v, suivi) => {
+            suivis.push(suivi)
+            v.zone('roulotte', OU_SUIVI.x, OU_SUIVI.y, 36, undefined, 2)
+          },
+          dessinerBande: () => () => null,
+          entree: [],
+          arrets: [],
+        }
+      : null
   return {
     ...base,
+    scene,
+    // Une rampe et un ciel marqués : ce que le moteur dessine pour le monde collant se reconnaît.
+    couleur: scene ? (hex, a = 1) => `collant(${hex},${a})` : base.couleur,
+    palette: scene ? { ...base.palette, ciel: [250, 10, 10], cielJour: [250, 10, 10], cielCrepuscule: [250, 10, 10] } : base.palette,
     traitement: { cadence: 16, tremblement: 0.8, scintillement: 0.03, grain: 0.09, virage: { couleur: [150, 104, 58], alpha: 0.13 }, affiches: 'sepia' },
     dates: decennie === 1890 ? [DATE] : [],
     bobines: decennie === 1890 ? [BOBINE] : [],
-    musique: decennie === 1890 ? MUSIQUE : null,
+    musique: decennie === 1890 ? MUSIQUE : scene ? MUSIQUE_1900 : null,
     adieu: decennie === 1890 ? 2 : 0,
     dessinerCiel: (v) => {
       vus.push(v)
@@ -80,10 +109,13 @@ function monter(
     cielSage?: boolean
     /** Le monde d'essai cache une seconde bobine, en `OU_AUTRE_BOBINE`. */
     deuxBobines?: boolean
+    /** Plan 3a : le monde d'essai de 1900 a une `scene`, sa section est collante. */
+    collant?: boolean
   } = {},
 ) {
   vus.length = 0
   reactions.length = 0
+  suivis.length = 0
   const principal = contexteFactice()
   const toiles: Appel[][] = []
   const deps: Dependances = {
@@ -100,7 +132,7 @@ function monter(
     annulerImage: vi.fn(),
     heure: () => options.heure ?? 12,
     mondeDe: (d) => {
-      const m = mondeDEssai(d)
+      const m = mondeDEssai(d, options.collant)
       const { chantier1898, particules } = options
       return {
         ...m,
@@ -738,6 +770,311 @@ describe('le moteur de la carte', () => {
     const { moteur, deps } = monter()
     moteur.detruire()
     expect(deps.annulerImage).toHaveBeenCalledWith(1)
+  })
+
+  describe('la section collante (plan 3a)', () => {
+    type Options = NonNullable<Parameters<typeof monter>[0]>
+    /** Le membre a pris le train : 1890 quittée, `enCours` en cours (1900 sans autre mot), l'avatar dessus. Collant, sauf pour le témoin. */
+    const auTrain = (options: Options & { enCours?: number } = {}) => {
+      const enCours = options.enCours ?? 1900
+      const banc = monter({ collant: true, ...options })
+      const cases = banc.cases.map((c): CaseCarte =>
+        c.annee < enCours ? { ...c, etat: 'lion', profondeur: 30, jauge: null } : c.annee === enCours ? { ...c, etat: 'encours', profondeur: 30, jauge: { vus: 3, total: 5 } } : c,
+      )
+      banc.moteur.majEtat({ cases, anneeAvatar: enCours, tampons: [], roulotte: banc.roulotte })
+      return { ...banc, cases }
+    }
+    /** Le haut de 1900 à cent pixels du haut de l'écran : le bas de 1890 et quatre années de 1900 y tiennent. */
+    const CAMERA = HAUT_1900 - 100
+    const toucher = (moteur: MoteurCarte, x: number, y: number) => {
+      moteur.pointeur('bas', x, y, false)
+      moteur.pointeur('haut', x, y, false)
+    }
+    /** Où le tracé pose la case de `annee`, à l'écran, à la dernière image : là où le moteur la dessinait. */
+    const anciennePlace = (annee: number) => {
+      const c = vus.flatMap((v) => v.cases).filter((x) => x.annee === annee).pop()!
+      return { x: c.x, y: c.y }
+    }
+    /**
+     * Ce que la coupe en vigueur à l'appel `i` laisse voir de la ligne `y` (dans le repère où la
+     * coupe a été posée) : vrai sans coupe, ou si l'un de ses rectangles tient la ligne. Rejoue
+     * `save`, `restore`, `beginPath`, `rect` et `clip`.
+     */
+    const visible = (appels: Appel[], i: number, y: number): boolean => {
+      let coupe: number[][] | null = null
+      let chemin: number[][] = []
+      const pile: Array<number[][] | null> = []
+      for (const a of appels.slice(0, i)) {
+        if (a.nom === 'save') pile.push(coupe)
+        else if (a.nom === 'restore') coupe = pile.pop() ?? null
+        else if (a.nom === 'beginPath') chemin = []
+        else if (a.nom === 'rect') chemin.push(a.args as number[])
+        else if (a.nom === 'clip') coupe = chemin
+      }
+      return coupe === null || coupe.some(([, ry, , rh]) => y >= ry! && y < ry! + rh!)
+    }
+    /** Les lignes d'une section collante de 1900 à sonder, depuis `haut` : la première, la suivante, le milieu, la dernière. */
+    const lignesDe1900 = (haut: number) => {
+      const hauteur = mondeAVenir(1900).trace([1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909]).hauteur
+      return [haut, haut + 1, haut + hauteur / 2, haut + hauteur - 1]
+    }
+    const estUnPhotogramme = (a: Appel) => a.nom === 'fillRect' && a.composite === 'lighter'
+    /** Le `y` de carte de chaque photogramme allumé pour le monde collant, dans une tuile : son `translate`. */
+    const photogrammesDuCollant = (tuile: Appel[]) =>
+      tuile.flatMap((a, i) =>
+        estUnPhotogramme(a) && String(a.fillStyle).startsWith('collant(#FFDEA0') ? [tuile.slice(0, i).filter((b) => b.nom === 'translate').pop()!.args[1] as number] : [],
+      )
+    const ecrits = (appels: Appel[]) => appels.filter((a) => a.nom === 'fillText').map((a) => a.args[0])
+    const AVATAR = '#231e19'
+    const estLaPoussiere = (a: Appel) => String(a.fillStyle).startsWith('rgba(255,242,218')
+    const estLaBrume = (a: Appel) => a.nom === 'fillRect' && a.args[0] === -8 && (a.fillStyle as { arrets?: unknown[] }).arrets?.length === 3
+
+    // Mutations : la garde retirée autour de `dessinerCase` (les cases communes de 1901 et 1902
+    // reviennent) ; la garde retirée autour de l'avatar, de sa zone `clap` ou de sa lumière.
+    it('n’y dessine ni case commune, ni avatar, ni lumière, et n’y inscrit pas la zone du clap', () => {
+      const jouer = (collant: boolean) => {
+        const banc = auTrain({ calme: true, collant })
+        banc.moteur.defiler(CAMERA)
+        banc.moteur.image(1000)
+        const avatar = anciennePlace(1900)
+        toucher(banc.moteur, avatar.x, avatar.y - 16)
+        return banc
+      }
+      // Le témoin : la même carte sans section collante dessine tout cela, là où on le cherche.
+      const temoin = jouer(false)
+      expect(ecrits(temoin.appels)).toEqual(expect.arrayContaining(['1901', '1902']))
+      expect(temoin.appels.some((a) => a.fillStyle === AVATAR)).toBe(true)
+      expect(temoin.appels.some(estLaPoussiere)).toBe(true)
+      expect(temoin.rappels.clap).toHaveBeenCalledTimes(1)
+      const collant = jouer(true)
+      expect(ecrits(collant.appels)).not.toContain('1901')
+      expect(ecrits(collant.appels)).not.toContain('1902')
+      expect(collant.appels.filter((a) => String(a.fillStyle).startsWith('collant(') || String(a.strokeStyle).startsWith('collant('))).toEqual([])
+      expect(collant.appels.some((a) => a.fillStyle === AVATAR)).toBe(false)
+      expect(collant.appels.some(estLaPoussiere)).toBe(false)
+      expect(collant.rappels.clap).not.toHaveBeenCalled()
+    })
+
+    // Mutation : la coupe retirée de `dessinerSol` (la route et les photogrammes descendent dans la
+    // section collante) ; les bandes de la coupe décalées d'un pixel, vers le haut ou vers le bas.
+    it('coupe net la route et les photogrammes au haut de la section, dans les tuiles', () => {
+      const { moteur, toiles } = auTrain({ calme: true })
+      moteur.defiler(CAMERA)
+      moteur.image(1000)
+      const tuiles = toiles.filter((t) => t.some((a) => a.nom === 'stroke'))
+      expect(tuiles.length).toBeGreaterThan(1)
+      for (const tuile of tuiles) {
+        const dessins = tuile.flatMap((a, i) => (a.nom === 'stroke' || a.nom === 'fillRect' ? [i] : []))
+        expect(dessins.length).toBeGreaterThan(5)
+        for (const i of dessins) {
+          for (const y of lignesDe1900(HAUT_1900)) expect(visible(tuile, i, y), `${tuile[i]!.nom} à ${y}`).toBe(false)
+          // Rien n'est sauté au-dessus, ni sous la section : la dernière ligne de 1890, la première de 1910.
+          expect(visible(tuile, i, HAUT_1900 - 1)).toBe(true)
+          expect(visible(tuile, i, lignesDe1900(HAUT_1900)[3]! + 1)).toBe(true)
+        }
+      }
+    })
+
+    // Mutation : la case d'une section collante sautée dans `dessinerSol` : les photogrammes qui
+    // mènent à 1900 s'éteindraient dès la case de 1899, dans la section d'avant.
+    it('laisse allumés, au-dessus de la coupe, les photogrammes qui mènent à la première année de la section', () => {
+      const { moteur, toiles } = auTrain({ calme: true })
+      moteur.defiler(CAMERA)
+      moteur.image(1000)
+      const ys = toiles.flatMap(photogrammesDuCollant)
+      const case1899 = anciennePlace(1899).y + CAMERA
+      const audessus = ys.filter((y) => y > case1899 && y < HAUT_1900)
+      expect(audessus.length).toBeGreaterThan(3)
+    })
+
+    // Mutation : la coupe retirée de `Effets.parcouru` (décision 2 : le chemin parcouru est du sol).
+    it('coupe net le chemin parcouru au haut de la section', () => {
+      const { moteur, appels } = auTrain({ calme: true })
+      moteur.defiler(CAMERA)
+      moteur.image(1000)
+      const traits = appels.flatMap((a, i) => (a.nom === 'stroke' && (a.strokeStyle === '#F2CB6A' || a.strokeStyle === 'rgba(230,185,74,.1)') ? [i] : []))
+      expect(traits).toHaveLength(2)
+      for (const i of traits) {
+        for (const y of lignesDe1900(HAUT_1900 - CAMERA)) expect(visible(appels, i, y), `à ${y}`).toBe(false)
+        expect(visible(appels, i, HAUT_1900 - CAMERA - 1)).toBe(true)
+      }
+      // La coupe ne déborde pas du chemin parcouru : la suite de l'image n'est pas coupée.
+      expect(visible(appels, appels.length, HAUT_1900 - CAMERA)).toBe(true)
+    })
+
+    // Mutation : la garde retirée autour de `brouillard`. Le membre est encore en 1898 : la brume de
+    // l'avenir couvre tout l'écran sous lui, et s'arrête au haut de 1900.
+    it('ne pose pas la brume de l’avenir sur la section', () => {
+      const { moteur, appels } = monter({ calme: true, collant: true })
+      moteur.defiler(CAMERA)
+      moteur.image(1000)
+      const brume = appels.findIndex(estLaBrume)
+      expect(brume).toBeGreaterThan(-1)
+      for (const y of lignesDe1900(HAUT_1900 - CAMERA)) expect(visible(appels, brume, y), `à ${y}`).toBe(false)
+      expect(visible(appels, brume, HAUT_1900 - CAMERA - 1)).toBe(true)
+      // Ses volutes non plus, et la coupe se referme avant la suite de l'image.
+      const volutes = appels.flatMap((a, i) => (a.nom === 'arc' && i > brume && i < brume + 60 && a.args[2] === 60 ? [i] : []))
+      expect(volutes).toHaveLength(4)
+      for (const i of volutes) expect(visible(appels, i, HAUT_1900 - CAMERA)).toBe(false)
+      expect(visible(appels, appels.length, HAUT_1900 - CAMERA)).toBe(true)
+    })
+
+    // Mutations : la zone `case` inscrite à `c.x`, `c.y` (l'ancienne place) ; inscrite aussi pour une
+    // année que le monde dit hors de vue.
+    it('ouvre l’année au point que le monde rend, plus à l’ancienne place de la case', () => {
+      const { moteur, rappels } = auTrain({ calme: true })
+      moteur.defiler(CAMERA)
+      moteur.image(1000)
+      for (const annee of [1901, 1902]) {
+        const ancienne = anciennePlace(annee)
+        expect(ancienne.y).toBeGreaterThan(0)
+        expect(ancienne.y).toBeLessThan(H)
+        expect(Math.hypot(ancienne.x - quai(annee)!.x, ancienne.y - quai(annee)!.y)).toBeGreaterThan(80)
+        toucher(moteur, ancienne.x, ancienne.y - 4)
+      }
+      expect(rappels.toucherAnnee).not.toHaveBeenCalled()
+      toucher(moteur, quai(1902)!.x, quai(1902)!.y)
+      expect(rappels.toucherAnnee).toHaveBeenCalledTimes(1)
+      expect(rappels.toucherAnnee).toHaveBeenLastCalledWith(1902)
+      // 1905 est hors de vue pour le monde : aucune zone, où que le tracé la pose.
+      moteur.defiler(HAUT_1900 + 600)
+      moteur.image(1050)
+      const ancienne1905 = anciennePlace(1905)
+      expect(ancienne1905.y).toBeGreaterThan(0)
+      expect(ancienne1905.y).toBeLessThan(H)
+      toucher(moteur, ancienne1905.x, ancienne1905.y - 4)
+      expect(rappels.toucherAnnee).toHaveBeenCalledTimes(1)
+    })
+
+    // Mutations : `ecranDeLAnnee` resté sur le tracé (l'aperçu s'ancrerait à l'ancienne place) ; le
+    // milieu de l'écran non rendu pour une année hors de vue.
+    it('ancre l’aperçu au point que le monde rend, au milieu de l’écran pour une année hors de vue', () => {
+      const { moteur } = auTrain({ calme: true })
+      moteur.defiler(CAMERA)
+      moteur.image(1000)
+      expect(moteur.ecranDeLAnnee(1902)).toEqual(quai(1902))
+      expect(moteur.ecranDeLAnnee(1905)).toEqual({ x: W / 2, y: H / 2 })
+      // 1890 reste sur son tracé.
+      expect(moteur.ecranDeLAnnee(1899)).toEqual(anciennePlace(1899))
+    })
+
+    // Mutations : le corail posé à `place.x`, `place.y` (l'ancienne place) ; posé là quand le monde
+    // dit l'année hors de vue ; posé avant les voiles.
+    it('pose le corail de l’année en cours au point du monde, après tous les voiles, et nulle part si elle est hors de vue', () => {
+      const { moteur, appels } = auTrain({ calme: true })
+      moteur.defiler(CAMERA)
+      moteur.image(1000)
+      const premierCorail = appels.findIndex((a) => a.fillStyle === CORAIL || a.strokeStyle === CORAIL)
+      expect(premierCorail).toBeGreaterThan(appels.map(pleinEcran).lastIndexOf(true))
+      // La jauge se dessine autour de (x, y + 1) : `dessinerCorail`.
+      const ou = appels.slice(0, premierCorail).filter((a) => a.nom === 'translate').pop()!.args
+      expect(ou).toEqual([quai(1900)!.x, quai(1900)!.y + 1])
+      const millesime = appels.slice(premierCorail).find((a) => a.nom === 'fillText')
+      expect(millesime?.args[0]).toBe('1900')
+      const horsDeVue = auTrain({ calme: true, enCours: 1905 })
+      horsDeVue.moteur.defiler(HAUT_1900 + 600)
+      horsDeVue.moteur.image(1000)
+      expect(horsDeVue.appels.length).toBeGreaterThan(100)
+      expect(horsDeVue.appels.some((a) => a.fillStyle === CORAIL || a.strokeStyle === CORAIL)).toBe(false)
+    })
+
+    const vueDe = (annee: number) => vus.filter((v) => v.cases.some((c) => c.annee === annee)).pop()
+    /** Une image à ce défilement : la présence donnée à chaque monde, et ce que l'ambiance reçoit. */
+    const a = (banc: ReturnType<typeof monter>, camY: number) => {
+      vus.length = 0
+      banc.appels.length = 0
+      banc.moteur.defiler(camY)
+      banc.moteur.image(1000)
+      const liste = vi.mocked(banc.rappels.presences).mock.lastCall![0]
+      const ciel = banc.appels.find(pleinEcran)!.fillStyle as { arrets: Array<[number, string]> }
+      const virages = banc.appels.filter((x) => pleinEcran(x) && String(x.fillStyle).startsWith('rgba(150,104,58,'))
+      return {
+        de1890: vueDe(1898)?.presence,
+        de1900: vueDe(1900)?.presence,
+        melange1890: liste.find((p) => p.musique === MUSIQUE)!.poids,
+        melange1900: liste.find((p) => p.musique === MUSIQUE_1900)!.poids,
+        musiques: liste.filter((p) => p.musique).reduce((somme, p) => somme + p.poids, 0),
+        ciel: ciel.arrets[0]![1].match(/\d+/g)!.slice(0, 3).map(Number),
+        virage: virages.reduce((somme, x) => somme + Number(String(x.fillStyle).match(/([\d.e-]+)\)$/)![1]), 0),
+      }
+    }
+    /** L'entrée de la section : du dernier défilement où 1900 est sous l'écran au premier où 1890 est au-dessus. */
+    const ENTREE = { debut: HAUT_1900 - H, fin: HAUT_1900 }
+
+    // Mutation : la présence prise à `poidsSections` (un demi à la frontière, et un fondu autour).
+    it('garde à 1 la présence du monde quitté tant que sa section est à l’écran, et donne 1 au monde collant dès que la sienne y entre', () => {
+      const banc = monter({ calme: true, collant: true })
+      // 1900 sous l'écran : son monde n'est pas dessiné.
+      expect(a(banc, ENTREE.debut)).toMatchObject({ de1890: 1, de1900: undefined })
+      for (const camY of [ENTREE.debut + 1, ENTREE.debut + 60, HAUT_1900 - H / 2, ENTREE.fin - 60, ENTREE.fin - 1]) {
+        expect(a(banc, camY), `à ${camY}`).toMatchObject({ de1890: 1, de1900: 1 })
+      }
+      // 1890 au-dessus de l'écran : son monde n'est plus dessiné.
+      expect(a(banc, ENTREE.fin)).toMatchObject({ de1890: undefined, de1900: 1 })
+    })
+
+    /** Les défilements voisins d'un pixel à sonder : serrés aux deux bouts de l'entrée, espacés entre eux. */
+    const VOISINS = [
+      ...Array.from({ length: 12 }, (_, i) => ENTREE.debut - 6 + i),
+      ...Array.from({ length: 13 }, (_, i) => ENTREE.debut + 50 * (i + 1)),
+      ...Array.from({ length: 12 }, (_, i) => ENTREE.fin - 6 + i),
+    ]
+
+    // Mutation : le poids de mélange égal à la présence (le ciel et le virage sautent quand la
+    // section entre à l'écran, et quand celle d'avant en sort) ; le virage pesé à la présence.
+    it('ne fait pas sauter le ciel à l’entrée de la section : d’un pixel à l’autre, le mélange bouge de moins d’un centième', () => {
+      const banc = monter({ calme: true, collant: true })
+      for (const camY of VOISINS) {
+        const ici = a(banc, camY)
+        const voisin = a(banc, camY + 1)
+        expect(Math.abs(voisin.melange1890 - ici.melange1890), `1890 à ${camY}`).toBeLessThan(0.01)
+        expect(Math.abs(voisin.melange1900 - ici.melange1900), `1900 à ${camY}`).toBeLessThan(0.01)
+        // Le ciel dessiné : aucune composante ne bouge de plus de deux crans sur 255.
+        voisin.ciel.forEach((c, k) => expect(Math.abs(c - ici.ciel[k]!), `le ciel à ${camY}`).toBeLessThanOrEqual(2))
+        // Les virages des deux mondes ne s'empilent pas : à eux deux, celui d'un seul.
+        expect(ici.virage, `le virage à ${camY}`).toBeCloseTo(0.13, 6)
+      }
+      // Le mélange est la part de l'écran : rien avant l'entrée, la moitié à la frontière, tout après.
+      expect(a(banc, ENTREE.debut)).toMatchObject({ melange1890: 1, melange1900: 0 })
+      expect(a(banc, HAUT_1900 - H / 2).melange1900).toBeCloseTo(0.5, 6)
+      expect(a(banc, HAUT_1900 - H / 4).melange1900).toBeCloseTo(0.75, 6)
+      expect(a(banc, ENTREE.fin)).toMatchObject({ melange1890: 0, melange1900: 1 })
+      // Et le ciel a bien changé d'un bout à l'autre : il n'est pas resté celui de 1890.
+      expect(a(banc, ENTREE.fin).ciel).not.toEqual(a(banc, ENTREE.debut).ciel)
+    })
+
+    // Mutation : la présence passée à `rappels.presences` (les deux musiques à plein volume, ensemble).
+    it('ne joue jamais deux musiques dont les poids somment à plus de 1', () => {
+      const banc = monter({ calme: true, collant: true })
+      for (const camY of VOISINS) expect(a(banc, camY).musiques, `à ${camY}`).toBeCloseTo(1, 6)
+    })
+
+    // Mutations : `dessinerSuivi` jamais appelé ; la roulotte commune, sa plaque ou sa zone gardées
+    // dans la section collante.
+    it('laisse le monde garer le Voyage suivi, sans roulotte commune', () => {
+      const roulotte = { pseudo: 'theo', annee: 1901 }
+      const jouer = (collant: boolean) => {
+        const banc = auTrain({ calme: true, collant, roulotte })
+        banc.moteur.defiler(CAMERA)
+        banc.moteur.image(1000)
+        return banc
+      }
+      const temoin = jouer(false)
+      const commune = temoin.moteur.ecranDeLaRoulotte()!
+      expect(ecrits(temoin.appels)).toContain('theo est rendu en 1901')
+      expect(ecrits(temoin.appels)).toContain('THEO ET CIE')
+      expect(suivis).toEqual([])
+      toucher(temoin.moteur, commune.x, commune.y - 8)
+      expect(temoin.rappels.roulotte).toHaveBeenCalledTimes(1)
+      const collant = jouer(true)
+      expect(suivis).toEqual([roulotte])
+      expect(ecrits(collant.appels)).not.toContain('theo est rendu en 1901')
+      expect(ecrits(collant.appels)).not.toContain('THEO ET CIE')
+      toucher(collant.moteur, commune.x, commune.y - 8)
+      expect(collant.rappels.roulotte).not.toHaveBeenCalled()
+      toucher(collant.moteur, OU_SUIVI.x, OU_SUIVI.y)
+      expect(collant.rappels.roulotte).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('les bobines perdues et le son (plan 2d)', () => {

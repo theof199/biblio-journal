@@ -7,7 +7,7 @@ import type { CaseCarte, EtatCarte } from '../moteur'
 import { placerCarte } from '../placement'
 import { construireRoute } from '../route'
 import { dessinerCase } from './cases'
-import { dessinerSol } from './sol'
+import { bandesDuSol, dessinerSol } from './sol'
 import { dessinerRoulotte } from './roulotte'
 import { Particules } from './particules'
 
@@ -134,6 +134,28 @@ describe('le dessin commun', () => {
     expect(photogrammes.length).toBeGreaterThan(10)
     expect(brutes(couleursPosees(appels))).toEqual([])
     expect(photogrammes.every((a) => String(a.fillStyle).startsWith('rampe(#FF'))).toBe(true)
+  })
+
+  // Plan 3a. Mutations : une section ordinaire prise pour collante, ou l'inverse (la bande d'après
+  // une section collante oubliée : le sol ne reprendrait pas) ; des bandes rendues sans section
+  // collante (le sol de 1890 serait coupé pour rien, et sa référence tomberait).
+  it('ne coupe le sol que dans les sections collantes, et pas du tout sans elles', () => {
+    const scene: Monde['scene'] = { ecranDeLaCase: () => null, dessinerSuivi: () => undefined, dessinerBande: () => () => null, entree: [], arrets: [] }
+    const annees = Array.from({ length: 1939 - 1895 + 1 }, (_, i) => 1895 + i)
+    const plan = placerCarte(annees, (d, a) => mondeAVenir(d).trace(a))
+    const mondeDe = (collantes: readonly number[]) => (d: number): Monde => ({ ...mondeAVenir(d), scene: collantes.includes(d) ? scene : null })
+    expect(bandesDuSol(plan.sections, mondeDe([]))).toBeNull()
+    for (const collantes of [[1900], [1890], [1930], [1900, 1910], [1900, 1920]]) {
+      const bandes = bandesDuSol(plan.sections, mondeDe(collantes))!
+      const dessine = (y: number) => bandes.some((b) => y >= b.y0 && y < b.y1)
+      // Au-dessus de la carte et sous elle, le sol n'est jamais coupé.
+      expect(dessine(-1)).toBe(true)
+      expect(dessine(plan.hauteur)).toBe(true)
+      for (const s of plan.sections) {
+        const attendu = !collantes.includes(s.decennie)
+        for (const y of [s.y0, s.y0 + s.hauteur / 2, s.y0 + s.hauteur - 1]) expect(dessine(y), `${collantes.join()} : ${s.decennie} à ${y}`).toBe(attendu)
+      }
+    }
   })
 
   // Mutation : `tourne = roule` — la roue et les chevaux suivraient `t` quand le visiteur demande

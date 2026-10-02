@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { construireRoute, pointA } from './route'
 import { MARGE_HAUT, placerCarte } from './placement'
-import { cibleCamera, poidsSections } from './camera'
+import { cibleCamera, poidsSections, presencesSections } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { geoEnsemble } from './ensemble'
 import { ambianceDeLHeure } from './heure'
@@ -103,6 +103,76 @@ describe('la caméra', () => {
     const [a, b] = poidsSections(frontiere, plan.sections)
     expect(a).toBeCloseTo(0.5, 6)
     expect(b).toBeCloseTo(0.5, 6)
+  })
+
+  describe('à l’entrée d’une section collante (plan 3a)', () => {
+    // 1890, 1900 collante, 1910 : une entrée sans fondu, puis une sortie vers une section ordinaire.
+    const plan = placerCarte(annees(1895, 1919), traceDe)
+    const H = 700
+    const entrees = { H, collante: [false, true, false] }
+    const y1900 = plan.sections[1]!.y0
+    const y1910 = plan.sections[2]!.y0
+    /** Le centre de la caméra quand le haut de l'écran est à `y`. */
+    const centre = (hautDeLEcran: number) => hautDeLEcran + H / 2
+
+    // Mutations : le fondu `lisse` gardé à l'entrée de la section collante (un quart d'écran ne
+    // pèse pas un quart) ; la part comptée depuis le centre de la caméra et non depuis son bas.
+    it('mêle les deux mondes selon la part de l’écran que chaque section occupe', () => {
+      expect(poidsSections(centre(y1900 - H), plan.sections, entrees)).toEqual([1, 0, 0])
+      const [a, b, c] = poidsSections(centre(y1900 - (3 * H) / 4), plan.sections, entrees)
+      expect(a).toBeCloseTo(0.75, 6)
+      expect(b).toBeCloseTo(0.25, 6)
+      expect(c).toBe(0)
+      expect(poidsSections(centre(y1900), plan.sections, entrees)).toEqual([0, 1, 0])
+    })
+
+    // Mutation : un mélange à marche (la présence prise pour le mélange) : la somme passe à 2, et le
+    // poids saute de 0 à 1 d'un pixel à l'autre.
+    it('garde un mélange continu et de somme 1, d’un bout à l’autre de la carte', () => {
+      let avant = poidsSections(0, plan.sections, entrees)
+      for (let camC = 1; camC < plan.hauteur; camC++) {
+        const ici = poidsSections(camC, plan.sections, entrees)
+        expect(ici.reduce((x, y) => x + y, 0)).toBeCloseTo(1, 6)
+        ici.forEach((p, i) => expect(Math.abs(p - avant[i]!)).toBeLessThan(0.01))
+        avant = ici
+      }
+    })
+
+    // Mutations : la présence prise à `poidsSections` ; la sortie du monde quitté lue au bas de
+    // l'écran (il s'éteindrait dès que la section collante entre) ; l'entrée du monde collant lue
+    // au haut de l'écran (il n'apparaîtrait qu'une fois l'autre parti).
+    it('tient à 1 la présence des deux mondes tant que leur section est à l’écran', () => {
+      const presences = (hautDeLEcran: number) => presencesSections(centre(hautDeLEcran), plan.sections, entrees)
+      expect(presences(y1900 - H)).toEqual([1, 0, 0])
+      expect(presences(y1900 - H + 1)).toEqual([1, 1, 0])
+      expect(presences(y1900 - H / 2)).toEqual([1, 1, 0])
+      expect(presences(y1900 - 1)).toEqual([1, 1, 0])
+      expect(presences(y1900)).toEqual([0, 1, 0])
+    })
+
+    // Mutation : l'entrée sans fondu appliquée aussi à la sortie de la section collante (la
+    // frontière lue sur la section d'avant).
+    it('garde le fondu d’aujourd’hui à la sortie vers une section ordinaire', () => {
+      const [, a, b] = poidsSections(y1910, plan.sections, entrees)
+      expect(a).toBeCloseTo(0.5, 6)
+      expect(b).toBeCloseTo(0.5, 6)
+      for (let camC = y1910 - 400; camC <= y1910 + 400; camC += 25) {
+        const ordinaire = poidsSections(camC, plan.sections).slice(1)
+        expect(poidsSections(camC, plan.sections, entrees).slice(1)).toEqual(ordinaire)
+        expect(presencesSections(camC, plan.sections, entrees).slice(1)).toEqual(ordinaire)
+      }
+    })
+
+    // Mutation : une présence qui ne serait plus le poids d'avant entre deux sections ordinaires
+    // (1890 et le monde « à venir » en dépendent).
+    it('sans section collante, donne pour présence et pour mélange le poids d’avant', () => {
+      const aucune = { H, collante: [false, false, false] }
+      for (let camC = 0; camC < plan.hauteur; camC += 37) {
+        const avant = poidsSections(camC, plan.sections)
+        expect(poidsSections(camC, plan.sections, aucune)).toEqual(avant)
+        expect(presencesSections(camC, plan.sections, aucune)).toEqual(avant)
+      }
+    })
   })
 })
 

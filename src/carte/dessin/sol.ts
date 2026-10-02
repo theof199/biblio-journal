@@ -6,6 +6,43 @@ import { hash } from '../outils'
 
 export const TUILE = 512
 
+/** Une bande de la carte, de `y0` (compris) à `y1` (exclu), en `y` de carte. */
+export interface Bande {
+  y0: number
+  y1: number
+}
+/** Plus loin que toute carte : le bord d'une bande qui n'en a pas. */
+const LOIN = 1e6
+
+/**
+ * Les bandes de la carte où le sol se dessine (plan 3a) : tout, sauf les sections collantes
+ * (`Monde.scene`), dont le monde dessine lui-même les années. Nul sans section collante : rien à
+ * couper, et le dessin reste celui d'avant, appel pour appel.
+ */
+export function bandesDuSol(sections: readonly SectionPlacee[], mondeDe: (d: number) => Monde): Bande[] | null {
+  const collantes = sections.filter((s) => mondeDe(s.decennie).scene !== null)
+  if (collantes.length === 0) return null
+  const bandes: Bande[] = []
+  let haut = -LOIN
+  for (const s of collantes) {
+    if (s.y0 > haut) bandes.push({ y0: haut, y1: s.y0 })
+    haut = s.y0 + s.hauteur
+  }
+  bandes.push({ y0: haut, y1: haut + LOIN })
+  return bandes
+}
+
+/**
+ * Coupe le dessin aux bandes : net, au pixel. `dy` ramène un `y` de carte au repère courant
+ * (`-camY` à l'écran, 0 dans une tuile) ; `x` et `w` bornent la coupe en largeur. À poser entre un
+ * `save` et son `restore`.
+ */
+export function couperAuxBandes(g: CanvasRenderingContext2D, bandes: readonly Bande[], dy: number, x: number, w: number): void {
+  g.beginPath()
+  for (const b of bandes) g.rect(x, b.y0 + dy, w, b.y1 - b.y0)
+  g.clip()
+}
+
 /** Un dégradé vertical, une couleur par section, un fondu de `FADE` px à chaque frontière. */
 function degradeSection(g: CanvasRenderingContext2D, hauteur: number, sections: readonly SectionPlacee[], mondeDe: (d: number) => Monde, lire: (p: Palette['route']) => string): CanvasGradient {
   const FADE = 240
@@ -35,10 +72,16 @@ function degradeSection(g: CanvasRenderingContext2D, hauteur: number, sections: 
  * remplit (maquette : `sol`, sans ses trois dernières lignes — le pointillé doré du chemin
  * parcouru vit dans `Effets.parcouru`). Chaque courbe se colore aux teintes de `palette.route` de
  * la section qu'elle traverse, fondues sur 240 px aux frontières.
+ *
+ * Le sol entier est coupé net au haut d'une section collante (`bandesDuSol`). Rien n'est sauté pour
+ * autant : les photogrammes qui mènent à la première année d'une section collante se dessinent
+ * comme les autres, et la coupe les arrête à la frontière.
  */
 export function dessinerSol(x: CanvasRenderingContext2D, chemin: Path2D, route: Route, plan: PlanCarte, etat: EtatCarte, mondeDe: (d: number) => Monde): void {
   const g = x
   g.save()
+  const bandes = bandesDuSol(plan.sections, mondeDe)
+  if (bandes) couperAuxBandes(g, bandes, 0, -LOIN, 2 * LOIN)
   g.lineJoin = 'round'
   g.save()
   g.translate(4, 9)

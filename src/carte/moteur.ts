@@ -1,18 +1,18 @@
 import { clamp, ease, lerp, mixc, rgba, type Rgb } from './outils'
 import { construireRoute, pointA, type Route } from './route'
 import { placerCarte, type PlanCarte } from './placement'
-import { cibleCamera, poidsSections } from './camera'
+import { cibleCamera, poidsSections, presencesSections } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { geoEnsemble } from './ensemble'
 import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, tremblement } from './traitement'
 import { Geste, lirePincement } from './geste'
-import type { DateVraie, Monde, MusiqueDuMonde, VueMonde } from '../mondes/types'
+import type { DateVraie, Monde, MusiqueDuMonde, SceneCollante, VueMonde } from '../mondes/types'
 import type { EtatCase } from '../voyage/regles'
 import { dessinerCase, dessinerCorail } from './dessin/cases'
 import { dessinerAvatar } from './dessin/avatar'
-import { dessinerSol, TUILE } from './dessin/sol'
+import { bandesDuSol, couperAuxBandes, dessinerSol, TUILE, type Bande } from './dessin/sol'
 import { dessinerEnsemble } from './dessin/ensemble'
 import { Particules } from './dessin/particules'
 import { Effets, type Feu } from './dessin/effets'
@@ -128,6 +128,10 @@ export class MoteurCarte {
   private plan: PlanCarte = { points: [], cases: [], sections: [], hauteur: 0 }
   private route: Route = { pts: [], dWay: [] }
   private chemin: Path2D | null = null
+  /** Les sections collantes du plan (`Monde.scene`), par rang de section : le moteur s'y efface (plan 3a). */
+  private collantes: boolean[] = []
+  /** Où le sol, le chemin parcouru et la brume se dessinent : tout sauf les sections collantes. Nul sans elles : rien à couper. */
+  private bandes: Bande[] | null = null
   private readonly tuiles = new Lru<number, Toile>(MAX_TUILES)
   /** Les affiches traitées, par monde et par adresse : quarante-huit toiles de 52 × 76. */
   private readonly affiches = new Lru<string, Toile>(48)
@@ -386,8 +390,21 @@ export class MoteurCarte {
     this.route = construireRoute(this.plan.points, this.k)
     this.chemin = typeof Path2D === 'function' ? new Path2D() : null
     this.route.pts.forEach((p, i) => (i ? this.chemin?.lineTo(p.x, p.y) : this.chemin?.moveTo(p.x, p.y)))
+    this.collantes = this.plan.sections.map((s) => this.deps.mondeDe(s.decennie).scene !== null)
+    this.bandes = bandesDuSol(this.plan.sections, (d) => this.deps.mondeDe(d))
     this.tuiles.clear()
     if (!this.avatar.marche) this.poserAvatar(this.etat.anneeAvatar)
+  }
+
+  /** La scène collante de la section de rang `section` ; nulle pour une section ordinaire. */
+  private sceneDe(section: number): SceneCollante | null {
+    const s = this.plan.sections[section]
+    return s && this.collantes[section] ? this.deps.mondeDe(s.decennie).scene : null
+  }
+
+  /** Vrai quand le `y` de carte tombe dans une section collante. */
+  private collanteEn(y: number): boolean {
+    return this.plan.sections.some((s, i) => this.collantes[i] && y >= s.y0 && y < s.y0 + s.hauteur)
   }
 
   /** Dit à la page si l'avatar est à l'écran, quand cela change seulement. */
@@ -570,10 +587,18 @@ export class MoteurCarte {
     return { x: lerp(v.x0, cible.x, e), y: lerp(v.y0, cible.y, e) - Math.sin(u * Math.PI) * 80, u, e }
   }
 
-  /** Le centre de la case de `annee`, à l'écran (l'ancre de l'aperçu). */
+  /**
+   * Le centre de la case de `annee`, à l'écran (l'ancre de l'aperçu). Dans une section collante,
+   * c'est le monde qui dit où se tient l'année (`SceneCollante.ecranDeLaCase`) ; hors de vue, comme
+   * pour une année inconnue, le milieu de l'écran.
+   */
   ecranDeLAnnee(annee: number): { x: number; y: number } {
+    const milieu = { x: this.W / 2, y: this.H / 2 }
     const c = this.plan.cases.find((x) => x.annee === annee)
-    return c ? { x: c.x * this.k, y: c.y - this.camY } : { x: this.W / 2, y: this.H / 2 }
+    if (!c) return milieu
+    const scene = this.sceneDe(c.section)
+    if (!scene) return { x: c.x * this.k, y: c.y - this.camY }
+    return (this.ctx ? scene.ecranDeLaCase(this.vueMonde(c.section, 1), annee) : null) ?? milieu
   }
 
   private entrerEnsemble(): void {
@@ -743,7 +768,13 @@ export class MoteurCarte {
     this.zones = []
     this.feux = []
     const camC = this.camY + this.H / 2
-    const poids = poidsSections(camC, this.plan.sections)
+    // Deux nombres par monde (plan 3a). Le poids de mélange : ce qui se mêle d'un monde à l'autre
+    // (le ciel, le virage, la musique), et qui désigne la décennie à l'écran (le plus fort). La
+    // présence : ce que le monde reçoit pour dessiner. Ils ne diffèrent qu'à l'entrée d'une
+    // section collante, où la présence vaut 1 sans fondu et où le mélange suit la part de l'écran.
+    const entrees = { H: this.H, collante: this.collantes }
+    const poids = poidsSections(camC, this.plan.sections, entrees)
+    const presence = presencesSections(camC, this.plan.sections, entrees)
     this.rappels.presences(this.plan.sections.map((s, i) => ({ musique: this.deps.mondeDe(s.decennie).musique, poids: poids[i] ?? 0 })))
     const sectionP = this.plan.sections[poids.indexOf(Math.max(...poids))]
     const mondeP = sectionP ? this.deps.mondeDe(sectionP.decennie) : null
@@ -754,7 +785,7 @@ export class MoteurCarte {
         const { dx, dy } = tremblement(this.t, mondeP.traitement.cadence, mondeP.traitement.tremblement, this.calme)
         g.translate(dx, dy)
       }
-      this.scene(poids, mondeP)
+      this.scene(poids, presence, mondeP)
       g.restore()
     }
     if (e > 0.001) dessinerEnsemble(g, this.W, this.H, e, this.geoEnsemble(), this.plan, this.etat, (d) => this.deps.mondeDe(d))
@@ -764,11 +795,11 @@ export class MoteurCarte {
   }
 
   /** L'ordre des couches. Le corail vient en dernier : rien ne le voile ni ne le teinte. */
-  private scene(poids: number[], principal: Monde | null): void {
+  private scene(poids: number[], presence: number[], principal: Monde | null): void {
     const g = this.ctx!
-    const actifs = this.plan.sections.map((_, i) => i).filter((i) => poids[i]! > 0.01)
+    const actifs = this.plan.sections.map((_, i) => i).filter((i) => presence[i]! > 0.01)
     const monde = (i: number) => this.deps.mondeDe(this.plan.sections[i]!.decennie)
-    const vues = new Map(actifs.map((i) => [i, this.vueMonde(i, poids[i]!)]))
+    const vues = new Map(actifs.map((i) => [i, this.vueMonde(i, presence[i]!)]))
     const vue = (i: number) => vues.get(i)!
     const ambiance = ambianceDeLHeure(this.deps.heure())
     const mele = (choix: (m: Monde) => Rgb) => melanger(actifs.map((i) => choix(monde(i))), actifs.map((i) => poids[i]!))
@@ -787,41 +818,68 @@ export class MoteurCarte {
     for (const i of actifs) monde(i).dessinerCiel(vue(i))
     for (const i of actifs) monde(i).dessinerLointain(vue(i))
     for (const i of actifs) monde(i).dessinerMoyen(vue(i))
-    // 3. Le sol : les tuiles de la route (pré-rendues, bornées par `MAX_TUILES`).
+    // 3. Le sol : les tuiles de la route (pré-rendues, bornées par `MAX_TUILES`). Il est coupé net
+    // au haut d'une section collante : dans la tuile par `dessinerSol`, ici pour le chemin parcouru.
     const i0 = Math.floor(this.camY / TUILE)
     const i1 = Math.floor((this.camY + this.H) / TUILE)
     for (let i = Math.max(0, i0); i <= i1 && i * TUILE < this.plan.hauteur; i++) {
       g.drawImage(this.tuile(i) as unknown as CanvasImageSource, 0, i * TUILE - this.camY, this.W, TUILE)
     }
-    this.effets.parcouru(g, this.route, this.avatar.d, this.camY, this.t, !this.calme)
+    this.effets.parcouru(g, this.route, this.avatar.d, this.camY, this.t, !this.calme, this.bandes)
     // 4. Au sol : repères, portes, figurants ; puis les cases et l'avatar.
     for (const i of actifs) {
       const s = this.plan.sections[i]!
       const [px, py] = this.plan.points[s.porte]!
       monde(i).dessinerSol(vue(i), { x: px * this.k, y: py - this.camY })
     }
+    // Dans une section collante, ni case commune, ni avatar : le monde dessine ses années, et le
+    // moteur n'inscrit que la zone `case`, au point que le monde rend.
     const parAnnee = new Map(this.etat.cases.map((c) => [c.annee, c]))
+    const chezLeMonde = new Map<number, { x: number; y: number }>()
     for (const c of this.plan.cases) {
       const y = c.y - this.camY
       const etat = parAnnee.get(c.annee)
+      const collante = this.sceneDe(c.section)
+      if (collante) {
+        const v = vues.get(c.section)
+        const p = v && etat ? collante.ecranDeLaCase(v, c.annee) : null
+        if (p) {
+          chezLeMonde.set(c.annee, p)
+          this.zones.push({ id: 'case', x: p.x, y: p.y, r: 34, data: c.annee, prio: 1 })
+        }
+        continue
+      }
       if (y < -110 || y > this.H + 70 || !etat) continue
       const m = this.deps.mondeDe(this.plan.sections[c.section]!.decennie)
       dessinerCase(g, c.x * this.k, y, etat, m, this.t, !this.calme, (url) => afficheTraitee(url, m.traitement, this.deps, this.affiches, () => this.demander()))
       this.zones.push({ id: 'case', x: c.x * this.k, y: y - 4, r: 34, data: c.annee, prio: 1 })
     }
     const pa = pointA(this.route, this.avatar.d)
-    dessinerAvatar(g, pa.x, pa.y - this.camY, this.t - this.avatar.claque, !!this.avatar.marche, !this.calme)
-    this.zones.push({ id: 'clap', x: pa.x, y: pa.y - this.camY - 16, r: 22, data: null, prio: 2 })
-    this.effets.lumiere(g, pa.x, pa.y - this.camY - 4, this.t, !this.calme)
+    if (!this.collanteEn(pa.y)) {
+      dessinerAvatar(g, pa.x, pa.y - this.camY, this.t - this.avatar.claque, !!this.avatar.marche, !this.calme)
+      this.zones.push({ id: 'clap', x: pa.x, y: pa.y - this.camY - 16, r: 22, data: null, prio: 2 })
+      this.effets.lumiere(g, pa.x, pa.y - this.camY - 4, this.t, !this.calme)
+    }
     // 5. Les plans proches, les particules du monde, la brume de l'avenir.
     for (const i of actifs) monde(i).dessinerProche(vue(i))
     this.particules.dessiner(g, false)
     const brume = this.plan.sections.find((s) => this.fogY >= s.y0 && this.fogY < s.y0 + s.hauteur)
+    // Aucune brume de l'avenir sur une section collante : le monde montre lui-même ses années fermées.
+    if (this.bandes) {
+      g.save()
+      couperAuxBandes(g, this.bandes, -this.camY, -8, this.W + 16)
+    }
     this.effets.brouillard(g, this.camY, this.fogY, (brume ? this.deps.mondeDe(brume.decennie) : principal)?.palette.brume ?? [40, 38, 36], this.t, !this.calme)
+    if (this.bandes) g.restore()
     // La roulotte garée passe au-dessus de la brume : le Voyage suivi peut être loin devant.
     const rg = this.roulotteGaree()
     const roul = this.etat.roulotte
-    if (rg && roul) {
+    const garage = rg ? this.sceneDe(rg.section) : null
+    if (rg && roul && garage) {
+      // Dans une section collante, le monde dessine le Voyage suivi et inscrit sa zone `roulotte`.
+      const v = vues.get(rg.section)
+      if (v && roul.annee !== null) garage.dessinerSuivi(v, { pseudo: roul.pseudo, annee: roul.annee })
+    } else if (rg && roul) {
       const m = this.deps.mondeDe(this.plan.sections[rg.section]!.decennie)
       const url = imageCommune('roulotte.webp')
       const planche = url ? this.deps.image(url, () => this.demander()) : null
@@ -855,7 +913,9 @@ export class MoteurCarte {
     // Jamais une année en attente du Voyage suivi : elle se dessine comme fermée, plaque comprise.
     const enCours = this.etat.cases.find((c) => c.etat === 'encours' && !c.attente)
     const place = enCours ? this.plan.cases.find((c) => c.annee === enCours.annee) : undefined
-    if (enCours && place) dessinerCorail(g, place.x * this.k, place.y - this.camY, enCours, this.t, !this.calme)
+    // Dans une section collante, au point où le monde tient l'année ; rien si elle est hors de vue.
+    const ou = !place ? undefined : this.sceneDe(place.section) ? chezLeMonde.get(place.annee) : { x: place.x * this.k, y: place.y - this.camY }
+    if (enCours && ou) dessinerCorail(g, ou.x, ou.y, enCours, this.t, !this.calme)
   }
 
   private tuile(i: number): Toile {
