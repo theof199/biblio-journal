@@ -99,6 +99,8 @@ function Connexion({ etat }: { etat: EtatSensCritique }) {
           {expiree ? null : <span className={styles.aide}>Chaque film noté au journal y part tout seul, avec sa note et sa date</span>}
         </button>
         {enAttente}
+        {/* Session expirée, ou file héritée d'une liaison effacée par l'ancien code : sans reconnexion possible, délier arrête la file. */}
+        {expiree || etat.envois_en_attente > 0 || etat.a_apparier > 0 ? <Retrait /> : null}
       </div>
     )
   }
@@ -152,17 +154,6 @@ function Connexion({ etat }: { etat: EtatSensCritique }) {
 }
 
 function Liaison({ etat }: { etat: EtatSensCritique }) {
-  const client = useQueryClient()
-  const [aConfirmer, setAConfirmer] = useState(false)
-  const retrait = useMutation({
-    mutationFn: delierSensCritique,
-    onSuccess: (delie) => {
-      client.setQueryData(cles.senscritique, delie)
-      // Le `DELETE` efface aussi les films à apparier : la liste gardée en cache n'existe plus.
-      client.removeQueries({ queryKey: cles.senscritiqueAApparier })
-    },
-  })
-
   return (
     <div className={styles.bloc}>
       <p className={styles.compte}>
@@ -180,6 +171,26 @@ function Liaison({ etat }: { etat: EtatSensCritique }) {
         </Link>
       ) : null}
       {etat.envois_en_attente > 0 ? <p>{notesEnAttente(etat.envois_en_attente)}</p> : null}
+      <Retrait />
+    </div>
+  )
+}
+
+/** « Délier mon compte » et sa confirmation : dans l'état relié, et quand la session a expiré (le `DELETE` y est permis). */
+function Retrait() {
+  const client = useQueryClient()
+  const [aConfirmer, setAConfirmer] = useState(false)
+  const retrait = useMutation({
+    mutationFn: delierSensCritique,
+    onSuccess: (delie) => {
+      client.setQueryData(cles.senscritique, delie)
+      // Le `DELETE` efface aussi les films à apparier : la liste gardée en cache n'existe plus.
+      client.removeQueries({ queryKey: cles.senscritiqueAApparier })
+    },
+  })
+
+  return (
+    <>
       {retrait.error ? (
         <p role="alert" className={styles.erreur}>
           {retrait.error.message}
@@ -206,6 +217,6 @@ function Liaison({ etat }: { etat: EtatSensCritique }) {
           Délier mon compte
         </button>
       )}
-    </div>
+    </>
   )
 }

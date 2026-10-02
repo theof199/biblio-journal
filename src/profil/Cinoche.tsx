@@ -27,7 +27,12 @@ export default function Cinoche() {
   return (
     <>
       <h2 className={styles.titreSection}>Cinoche</h2>
-      {etat.data.connecte ? <Liaison etat={etat.data} /> : <Connexion etat={etat.data} />}
+      {etat.data.connecte ? (
+        <Liaison etat={etat.data} />
+      ) : (
+        // La clé : délier une session expirée repart d'un formulaire vide, sans l'e-mail du compte effacé.
+        <Connexion key={String(etat.data.session_expiree)} etat={etat.data} />
+      )}
     </>
   )
 }
@@ -101,6 +106,8 @@ function Connexion({ etat }: { etat: EtatCinoche }) {
           )}
         </button>
         {etatDeLaFile}
+        {/* Sans reconnexion possible (compte Google sans mot de passe, compte supprimé), délier arrête la file. */}
+        {expiree ? <Retrait /> : null}
       </div>
     )
   }
@@ -158,13 +165,6 @@ function Connexion({ etat }: { etat: EtatCinoche }) {
 }
 
 function Liaison({ etat }: { etat: EtatCinoche }) {
-  const client = useQueryClient()
-  const [aConfirmer, setAConfirmer] = useState(false)
-  const retrait = useMutation({
-    mutationFn: delierCinoche,
-    onSuccess: (delie) => client.setQueryData(cles.cinoche, delie),
-  })
-
   return (
     <div className={styles.bloc}>
       <p className={styles.compte}>
@@ -173,6 +173,22 @@ function Liaison({ etat }: { etat: EtatCinoche }) {
         <span className={styles.fleche}>{etat.email}</span>
       </p>
       {etat.envois_en_attente > 0 ? <p>{notesEnAttente(etat.envois_en_attente)}</p> : null}
+      <Retrait />
+    </div>
+  )
+}
+
+/** « Délier mon compte » et sa confirmation : dans l'état relié, et quand la session a expiré (le `DELETE` y est permis). */
+function Retrait() {
+  const client = useQueryClient()
+  const [aConfirmer, setAConfirmer] = useState(false)
+  const retrait = useMutation({
+    mutationFn: delierCinoche,
+    onSuccess: (delie) => client.setQueryData(cles.cinoche, delie),
+  })
+
+  return (
+    <>
       {retrait.error ? (
         <p role="alert" className={styles.erreur}>
           {retrait.error.message}
@@ -198,6 +214,6 @@ function Liaison({ etat }: { etat: EtatCinoche }) {
           Délier mon compte
         </button>
       )}
-    </div>
+    </>
   )
 }

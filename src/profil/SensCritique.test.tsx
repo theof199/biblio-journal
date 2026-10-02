@@ -290,4 +290,60 @@ describe('la liaison SensCritique, à la caisse', () => {
     expect(screen.queryByText(/a expiré/)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Me reconnecter/ })).not.toBeInTheDocument()
   })
+
+  // Mutation : ne plus offrir « Délier » hors de l'état relié ; lancer le `DELETE` sans confirmation ;
+  // relire l'état au lieu de poser la réponse.
+  it('session expirée : délier reste offert, avec sa confirmation, et ramène à « Relier mon compte »', async () => {
+    // Rien en file : c'est l'expiration seule qui offre de délier.
+    const requetes = servir({ [ETAT]: () => json(EXPIREE), [DELIER]: () => json(DELIE) })
+    monter()
+
+    // La reconnexion reste offerte à côté.
+    expect(await screen.findByRole('button', { name: /Me reconnecter/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Délier mon compte' }))
+    expect(screen.getByText(/Les notes en attente ne partiront plus/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    expect(requetes).toEqual([ETAT])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Délier mon compte' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Délier' }))
+    expect(await screen.findByRole('button', { name: /Relier mon compte/ })).toBeInTheDocument()
+    expect(requetes).toEqual([ETAT, DELIER])
+    expect(screen.queryByText(/a expiré/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Session expirée')).not.toBeInTheDocument()
+    expect(screen.queryByText(EXPIREE.pseudo!)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Délier mon compte' })).not.toBeInTheDocument()
+  })
+
+  // Mutation : offrir « Délier » à qui n'a aucune liaison.
+  it('jamais relié, rien en file : « Délier » n’est pas offert', async () => {
+    servir({ [ETAT]: () => json(DELIE) })
+    monter()
+
+    expect(await screen.findByRole('button', { name: /Relier mon compte/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Délier mon compte' })).not.toBeInTheDocument()
+    // Le formulaire ouvert ne l'offre pas davantage.
+    fireEvent.click(screen.getByRole('button', { name: /Relier mon compte/ }))
+    expect(screen.queryByRole('button', { name: 'Délier mon compte' })).not.toBeInTheDocument()
+  })
+
+  // Mutation : n'offrir « Délier » que sur `session_expiree` (la file héritée ne pourrait plus être arrêtée).
+  it.each([
+    { cas: 'des notes en file', envois: 2, films: 0 },
+    { cas: 'des films à apparier', envois: 0, films: 1 },
+  ])('liaison effacée par l’ancien code, $cas : délier vide la file sans reconnexion', async ({ envois, films }) => {
+    const requetes = servir({
+      [ETAT]: () => json({ ...DELIE, envois_en_attente: envois, a_apparier: films }),
+      [DELIER]: () => json(DELIE),
+    })
+    monter()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Délier mon compte' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Délier' }))
+    // La réponse posée, il ne reste rien à délier : ni la confirmation, ni son bouton d'entrée.
+    await waitFor(() => expect(screen.queryByRole('button', { name: /^Délier/ })).not.toBeInTheDocument())
+    expect(requetes).toEqual([ETAT, DELIER])
+    expect(screen.getByRole('button', { name: /Relier mon compte/ })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
 })

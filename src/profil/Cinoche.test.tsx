@@ -294,6 +294,44 @@ describe('la liaison Cinoche, à la caisse', () => {
     expect(screen.queryByText('Session expirée')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Me reconnecter/ })).not.toBeInTheDocument()
   })
+
+  // Mutation : ne plus offrir « Délier » hors de l'état relié ; lancer le `DELETE` sans confirmation ;
+  // relire l'état au lieu de poser la réponse.
+  it('session expirée : délier reste offert, avec sa confirmation, et ramène à « Relier mon compte »', async () => {
+    const requetes = servir({ [ETAT]: () => json({ ...EXPIREE, envois_en_attente: 2 }), [DELIER]: () => json(DELIE) })
+    monter()
+
+    // La reconnexion reste offerte à côté.
+    expect(await screen.findByRole('button', { name: /Me reconnecter/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Délier mon compte' }))
+    expect(screen.getByText(/Les notes en attente ne partiront plus/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    expect(requetes).toEqual([ETAT])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Délier mon compte' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Délier' }))
+    expect(await screen.findByRole('button', { name: /Relier mon compte/ })).toBeInTheDocument()
+    expect(requetes).toEqual([ETAT, DELIER])
+    expect(screen.queryByText(/a expiré/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Session expirée')).not.toBeInTheDocument()
+    expect(screen.queryByText(EXPIREE.email!)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Délier mon compte' })).not.toBeInTheDocument()
+    // Le formulaire repart vide : l'e-mail du compte effacé n'y est plus.
+    fireEvent.click(screen.getByRole('button', { name: /Relier mon compte/ }))
+    expect(screen.getByLabelText('E-mail du compte Cinoche')).toHaveValue('')
+  })
+
+  // Mutation : offrir « Délier » à qui n'a aucune liaison.
+  it('jamais relié, rien en file : « Délier » n’est pas offert', async () => {
+    servir({ [ETAT]: () => json(DELIE) })
+    monter()
+
+    expect(await screen.findByRole('button', { name: /Relier mon compte/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Délier mon compte' })).not.toBeInTheDocument()
+    // Le formulaire ouvert ne l'offre pas davantage.
+    fireEvent.click(screen.getByRole('button', { name: /Relier mon compte/ }))
+    expect(screen.queryByRole('button', { name: 'Délier mon compte' })).not.toBeInTheDocument()
+  })
 })
 
 /** Le message de `CINOCHE_IDENTIFIANTS_REFUSES` (`ERROR_DEFAULTS` du back) : le contrat ne porte pas d'exemple d'erreur. */
