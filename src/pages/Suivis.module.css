@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--espace-5);
-  max-width: var(--largeur-contenu);
+  max-width: var(--largeur-page);
   margin: 0 auto;
   padding: var(--espace-5) var(--gouttiere-page);
 }
@@ -74,14 +74,18 @@
   min-width: 0;
 }
 
-/* Les cycles : une planche pleine largeur par saga. */
+/* Les cycles : une planche par saga, pleine largeur sur téléphone. */
 .planches {
   list-style: none;
   margin: 0;
   padding: var(--espace-2) 0 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: var(--grille-planches-colonnes);
   gap: var(--affichette-ecart);
+}
+
+.planches > * {
+  min-width: 0;
 }
 
 .vide {

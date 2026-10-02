@@ -739,6 +739,7 @@
   /* Gabarits : ils touchent à l'ergonomie, à garder raisonnables. */
   --cible-tactile: 44px; /* la plus petite zone touchable */
   --largeur-contenu: 40rem; /* la largeur maximale d'une page */
+  --largeur-page: var(--largeur-contenu); /* celle d'une page qui s'élargit sur grand écran */
   --barre-onglets-hauteur: 3.75rem; /* sans la zone sûre, ajoutée par la coque */
   --barre-onglets-icone: 24px;
   --barre-onglets-icone-trait: 1.75; /* l'épaisseur du trait des icônes */
@@ -750,6 +751,8 @@
   --grille-bande-colonnes: repeat(6, minmax(0, 1fr)); /* la bande d'un cycle, six affiches par rangée */
   --grille-planche-colonnes: repeat(3, minmax(0, 1fr)); /* la planche-contact d'un mois du journal, trois vignettes par rangée */
   --grille-mur-colonnes: repeat(2, minmax(0, 1fr)); /* le mur des affichettes de Suivis, deux par rangée */
+  --grille-seances-colonnes: repeat(1, minmax(0, 1fr)); /* la liste « Tes séances » d'Au ciné, une colonne */
+  --grille-planches-colonnes: repeat(1, minmax(0, 1fr)); /* les planches des cycles de Suivis, une colonne */
   --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, filmographies, Au ciné) */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */
   --cote-tuile-note: 1.5rem; /* la tuile de note posée sur une affiche : au moins ce carré */
@@ -786,6 +789,20 @@
   --z-calque: 5; /* un calque du Voyage (la feuille du chroniqueur, un feuillet) : sous le bandeau et la barre, qu'il laisse visibles */
   --z-bandeau: 10; /* le bandeau « Nouvelle version » : au-dessus de la carte, sous la barre d'onglets */
   --z-barre-onglets: 20;
+}
+
+/* ------------------------------------------------------------------ Grand écran */
+/* Les pages s'élargissent et les grilles gagnent des colonnes, en redéfinissant des jetons seulement :
+   aucune feuille ne porte de point de rupture. La condition est un nombre en dur, qu'une requête de
+   média ne peut pas lire dans une variable. */
+@media (min-width: 64rem) {
+  :root {
+    --largeur-page: 80rem;
+    --grille-sorties-colonnes: repeat(6, minmax(0, 1fr));
+    --grille-mur-colonnes: repeat(4, minmax(0, 1fr));
+    --grille-seances-colonnes: repeat(2, minmax(0, 1fr));
+    --grille-planches-colonnes: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ------------------------------------------------------------------ Sombre */

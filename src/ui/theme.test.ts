@@ -244,7 +244,7 @@ describe('le défilement', () => {
 describe('les grilles', () => {
   // `1fr` vaut `minmax(auto, 1fr)` : le minimum est le contenu, un titre long ou une image gonfle la
   // piste et la page défile de côté. `minmax(0, 1fr)` la borne.
-  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes', '--grille-planche-colonnes', '--grille-mur-colonnes', '--grille-guichet-colonnes'])(
+  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes', '--grille-planche-colonnes', '--grille-mur-colonnes', '--grille-guichet-colonnes', '--grille-seances-colonnes', '--grille-planches-colonnes'])(
     '%s borne ses pistes à zéro',
     (jeton) => {
       const valeur = regle(theme, ':root').match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]
@@ -264,7 +264,9 @@ describe('les grilles', () => {
   /** Chaque grille de l'app et la classe de ses éléments, qui doivent pouvoir rétrécir sous leur contenu. */
   const ELEMENTS_DE_GRILLE = [
     ['/src/pages/AuCine.module.css', auCine, '.tuile'],
+    ['/src/pages/AuCine.module.css', auCine, '.ligne'],
     ['/src/pages/Suivis.module.css', suivis, '.mur > *'],
+    ['/src/pages/Suivis.module.css', suivis, '.planches > *'],
     ['/src/pages/Recherche.module.css', recherche, '.affiches > li'],
     ['/src/suivis/PlancheCycle.module.css', planche, '.case'],
     ['/src/accueil/Pellicule.module.css', pellicule, '.planche .vignette'],
@@ -272,7 +274,15 @@ describe('les grilles', () => {
 
   it('chaque feuille qui pose une grille d’affiches a son élément dans la table', () => {
     const grilles = HORS_VOYAGE.filter(([, css]) => /var\(--grille-[a-z-]+-colonnes\)/.test(sansCommentaires(css))).map(([chemin]) => chemin)
-    expect(grilles.sort()).toEqual(ELEMENTS_DE_GRILLE.map(([chemin]) => chemin).sort())
+    // Une feuille à deux grilles a deux lignes dans la table : on compare les chemins, pas les lignes.
+    expect(grilles.sort()).toEqual([...new Set(ELEMENTS_DE_GRILLE.map(([chemin]) => chemin))].sort())
+  })
+
+  it('chaque définition d’un jeton de grille, grand écran compris, borne ses pistes à zéro', () => {
+    const definitions = [...sansCommentaires(theme).matchAll(/(--grille-[a-z-]+-colonnes):\s*([^;]+);/g)]
+    expect(definitions.length).toBeGreaterThan(0)
+    const fautes = definitions.filter(([, , valeur]) => !/^repeat\(\d+, minmax\(0, 1fr\)\)/.test(valeur!)).map(([, jeton, valeur]) => `${jeton}: ${valeur}`)
+    expect(fautes).toEqual([])
   })
 
   it.each(ELEMENTS_DE_GRILLE)('l’élément de grille de %s peut rétrécir sous son contenu', (_chemin, css, selecteur) => {
