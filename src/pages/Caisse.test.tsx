@@ -743,4 +743,18 @@ describe('la caisse', () => {
 
     await waitFor(() => expect(requetes).toContain('POST /api/auth/logout'))
   })
+
+  // Mutation : retirer `<Cinoche />` de la caisse.
+  it('porte la liaison Cinoche, à côté de celle de SensCritique', async () => {
+    base({
+      'GET /api/me/senscritique': () => json(exemple('/me/senscritique', 'delete', 200)),
+      'GET /api/me/cinoche': () => json(exemple('/me/cinoche', 'delete', 200)),
+    })
+    monter()
+
+    const titre = await screen.findByRole('heading', { level: 2, name: 'Cinoche' })
+    // Chaque liaison a sa section : la sienne offre de relier le compte.
+    expect(within(titre.closest('section')!).getByRole('button', { name: /Relier mon compte/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'SensCritique' })).toBeInTheDocument()
+  })
 })

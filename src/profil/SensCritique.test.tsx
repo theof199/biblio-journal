@@ -17,6 +17,9 @@ const DELIER = 'DELETE /api/me/senscritique'
 const RELIE = exemple<EtatSensCritique>('/me/senscritique', 'get', 200)
 const DELIE = exemple<EtatSensCritique>('/me/senscritique', 'delete', 200)
 
+/** Relié, mais SensCritique a refusé la session : la liaison et le pseudo restent (étape 28 du guide du back). */
+const EXPIREE: EtatSensCritique = { ...RELIE, connecte: false, session_expiree: true, expire_le: null, envois_en_attente: 0, a_apparier: 0 }
+
 const IDENTIFIANT = 'moi@exemple.fr'
 const MOT_DE_PASSE = 'un-secret-de-sc'
 
@@ -33,6 +36,17 @@ function monter() {
     </QueryClientProvider>,
   )
   return client
+}
+
+/** Le même montage, rendu avec de quoi le démonter : pour deux états dans un même test. */
+function monterSeul() {
+  return render(
+    <QueryClientProvider client={createQueryClient()}>
+      <MemoryRouter>
+        <SensCritique />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
 }
 
 /** Ouvre le formulaire, le remplit et l'envoie. */
@@ -219,5 +233,61 @@ describe('la liaison SensCritique, à la caisse', () => {
     monter()
 
     expect(await screen.findByRole('status')).toHaveTextContent('2 notes en attente d’envoi : elles partiront une fois ton compte relié.')
+  })
+
+  // Mutation : ne plus lire `session_expiree` (l'écran dirait « Relier mon compte », comme à un inconnu).
+  it('session expirée : l’écran le dit, garde le pseudo, annonce la file et offre de se reconnecter', async () => {
+    servir({ [ETAT]: () => json({ ...EXPIREE, envois_en_attente: 2 }) })
+    monter()
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Ta session SensCritique a expiré. Tes visionnages attendent en file : ils partiront à la reconnexion. 2 notes en attente d’envoi.',
+    )
+    expect(screen.getByText('Session expirée')).toBeInTheDocument()
+    expect(screen.getByText(EXPIREE.pseudo!)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Me reconnecter/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Relier mon compte/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Compte relié')).not.toBeInTheDocument()
+  })
+
+  // Mutation : ne pas poser la réponse de la reconnexion dans le cache ; retirer le message du formulaire.
+  it('session expirée : se reconnecter envoie les identifiants et rend le compte relié', async () => {
+    const envoye: unknown[] = []
+    const requetes = servir({
+      [ETAT]: () => json(EXPIREE),
+      [RELIER]: (init) => {
+        envoye.push(JSON.parse(String(init.body)))
+        return json(RELIE)
+      },
+    })
+    monter()
+    fireEvent.click(await screen.findByRole('button', { name: /Me reconnecter/ }))
+    // Le message reste sous les yeux pendant la saisie.
+    expect(screen.getByRole('status')).toHaveTextContent(/Ta session SensCritique a expiré/)
+    fireEvent.change(screen.getByLabelText(/Identifiant SensCritique/), { target: { value: IDENTIFIANT } })
+    fireEvent.change(screen.getByLabelText('Mot de passe SensCritique'), { target: { value: MOT_DE_PASSE } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reconnecter' }))
+
+    expect(await screen.findByText('Compte relié')).toBeInTheDocument()
+    expect(screen.queryByText(/a expiré/)).not.toBeInTheDocument()
+    expect(envoye).toEqual([{ identifiant: IDENTIFIANT, mot_de_passe: MOT_DE_PASSE }])
+    expect(requetes).toEqual([ETAT, RELIER])
+  })
+
+  // Mutation : dire « session expirée » dès que `connecte` est faux, sans lire `session_expiree`.
+  it('jamais relié, ou relié (`session_expiree` faux) : ni message d’expiration, ni offre de reconnexion', async () => {
+    servir({ [ETAT]: () => json({ ...DELIE, envois_en_attente: 2 }) })
+    const { unmount } = monterSeul()
+    expect(await screen.findByRole('button', { name: /Relier mon compte/ })).toBeInTheDocument()
+    expect(screen.queryByText(/a expiré/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Session expirée')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Me reconnecter/ })).not.toBeInTheDocument()
+    unmount()
+
+    servir({ [ETAT]: () => json(RELIE) })
+    monterSeul()
+    expect(await screen.findByText('Compte relié')).toBeInTheDocument()
+    expect(screen.queryByText(/a expiré/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Me reconnecter/ })).not.toBeInTheDocument()
   })
 })

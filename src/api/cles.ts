@@ -15,6 +15,7 @@ export const cles = {
   stats: ['stats'] as const,
   plex: ['plex'] as const,
   senscritique: ['senscritique'] as const,
+  cinoche: ['cinoche'] as const,
   /** Les films à apparier : sous le préfixe `senscritique`, mais l'état se pose et se périme en `exact`, sans les relire. */
   senscritiqueAApparier: ['senscritique', 'a-apparier'] as const,
   /**

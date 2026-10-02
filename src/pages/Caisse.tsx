@@ -6,6 +6,7 @@ import BoutonRetour from '../ui/BoutonRetour'
 import { formatDateCourte, jourLocal } from '../ui/format'
 import { appliquerTheme, ecrireTheme, lireTheme } from '../ui/theme'
 import type { ChoixTheme } from '../ui/theme'
+import Cinoche from '../profil/Cinoche'
 import Doublons from '../profil/Doublons'
 import Rattrapage from '../profil/Rattrapage'
 import recu from '../profil/Recu.module.css'
@@ -34,7 +35,7 @@ function Ligne({ children }: { children: string }) {
 
 /**
  * La caisse (`profil/reglages`) : un ticket de caisse thermique déroulé sur le ciel, où le membre
- * règle son Journal. Le thème, « Mes films », l'import Letterboxd, la liaison SensCritique, le rattrapage,
+ * règle son Journal. Le thème, « Mes films », l'import Letterboxd, la liaison SensCritique, la liaison Cinoche, le rattrapage,
  * les doublons, la déconnexion, la mention TMDB et la version en pied de ticket. Le papier est crème de jour comme de nuit.
  */
 export default function Caisse() {
@@ -128,6 +129,10 @@ export default function Caisse() {
 
             <section>
               <SensCritique />
+            </section>
+
+            <section>
+              <Cinoche />
             </section>
 
             <section>
