@@ -730,6 +730,9 @@ export class MoteurCarte {
         zone('bobine', lx, ly, r * 1.6, i, 3)
       },
       bobineTrouvee: trouvee,
+      avance: this.camY - s.y0,
+      // Aucun passage d'entrée ne se joue encore (`direBonjour`, plan 3a) : toujours hors passage.
+      entree: -1,
     }
   }
 

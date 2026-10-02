@@ -48,5 +48,8 @@ export function vuePage(o: { ctx: CanvasRenderingContext2D; W: number; H: number
     brume: -1,
     bobine: rien,
     bobineTrouvee: () => true,
+    // Sans carte derrière : ni défilement, ni passage d'entrée (plan 3a).
+    avance: 0,
+    entree: -1,
   }
 }

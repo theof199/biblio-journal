@@ -142,6 +142,78 @@ export interface VueMonde {
   bobine: (i: number, lx: number, ly: number, r: number) => void
   /** Vrai pour une bobine déjà trouvée (ou inconnue) : ce qui la trahit (une lueur dans la brume) se tait. */
   bobineTrouvee: (i: number) => boolean
+  /**
+   * De combien la caméra est entrée dans la section : `camY − y0`, en pixels de carte (négatif tant
+   * que le haut de la section est sous le haut de l'écran). Un monde à `scene` en tire tout ce qui
+   * bouge ; le moteur le donne à tous les mondes.
+   */
+  avance: number
+  /** Les secondes écoulées depuis le début du passage d'entrée joué (`SceneCollante.entree`) ; -1 hors passage. Le jumeau de `adieu`. */
+  entree: number
+}
+
+/**
+ * Un temps du passage d'entrée d'un monde (`SceneCollante.entree`) : la caméra va jusqu'à `y`, puis
+ * s'y arrête. Les durées s'écrivent en millisecondes **de base, sans tempo** : le moteur seul les
+ * joue au tempo (`voyage/tempo.ts`), là où il les joue.
+ */
+export interface TempsDEntree {
+  /** Où la caméra se pose, en `y` du repère de la section (comme `VueMonde.avance`). */
+  y: number
+  /** Le temps mis pour y venir depuis le temps d'avant, en millisecondes de base ; le premier temps se pose d'un coup. */
+  duree: number
+  /** Le temps passé là avant de repartir, en millisecondes de base. */
+  arret: number
+}
+
+/** Le Voyage suivi garé dans une année d'une section collante (`EtatCarte.roulotte`, son année connue). */
+export interface SuiviGare {
+  pseudo: string
+  annee: number
+  /** Le moment (horloge du moteur, avant sa cadence) où ce Voyage a changé d'année ; -9 : il y est déjà. */
+  t0: number
+}
+
+/** Où tient la bande d'un monde dans la vue d'ensemble, en px CSS de l'écran, et l'ouverture de cette vue. */
+export interface CadreDeBande {
+  x: number
+  y: number
+  w: number
+  h: number
+  /** L'ouverture de la vue d'ensemble, de 0 à 1 : l'opacité de ce qui s'y dessine. */
+  e: number
+}
+
+/** Ce que la carte sait des années d'un monde, pour sa bande de la vue d'ensemble. */
+export interface EtatDeBande {
+  /** Les années de la section, dans l'ordre ; `attente` : en attente du Voyage suivi, à montrer fermée. */
+  annees: readonly { annee: number; etat: EtatCase; attente: boolean; profondeur: number }[]
+  /** L'année où se tient le membre (`EtatCarte.anneeAvatar`), qu'elle soit de ce monde ou non. */
+  anneeAvatar: number
+  /** Le passeport porte-t-il la décennie ? */
+  bouclee: boolean
+}
+
+/**
+ * La scène collante d'un monde (plan 3a ; spec du monde 1900, « `Monde.scene` ») : sa section ne
+ * glisse plus sous la caméra, le monde dessine lui-même ses années d'après `VueMonde.avance`, et
+ * prend à sa charge ce que le moteur dessinait (la route, les cases, l'avatar, la roulotte garée,
+ * la brume, sa bande de la vue d'ensemble).
+ */
+export interface SceneCollante {
+  /** Où se tient `annee` à l'écran, en px CSS ; nul hors de vue. Le moteur y inscrit la zone `case` et y pose le corail. */
+  ecranDeLaCase: (v: VueMonde, annee: number) => { x: number; y: number } | null
+  /** Le Voyage suivi garé dans son année ; le monde inscrit lui-même sa zone `roulotte` (`v.zone`). */
+  dessinerSuivi: (v: VueMonde, suivi: SuiviGare) => void
+  /**
+   * La bande du monde dans la vue d'ensemble, dessinée dans `cadre`. Rend de quoi lire un toucher :
+   * l'année que désigne le point (`x`, `y`) de l'écran, nulle s'il n'en désigne aucune.
+   */
+  dessinerBande: (g: CanvasRenderingContext2D, cadre: CadreDeBande, etat: EtatDeBande) => (x: number, y: number) => number | null
+  /** Les temps du passage d'entrée, dans l'ordre où il se joue à l'endroit. Vide : aucun passage. */
+  entree: readonly TempsDEntree[]
+  /** Les `y` de la section où la caméra se pose, un par année, dans l'ordre des années. */
+  arrets: readonly number[]
 }
 
 /**
@@ -222,6 +294,11 @@ export interface Monde {
   musique: MusiqueDuMonde | null
   /** Les bobines perdues que cache le décor, que le monde pose par `VueMonde.bobine` ; aucune pour un monde à venir. */
   bobines: readonly BobinePerdue[]
+  /**
+   * La scène collante du monde ; nulle : sa section glisse sous la caméra et le moteur y dessine la
+   * route, les cases et l'avatar (1890, le monde « à venir »).
+   */
+  scene: SceneCollante | null
 }
 
 /**

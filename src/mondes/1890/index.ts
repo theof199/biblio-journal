@@ -56,5 +56,7 @@ export function creerMonde1890(): Monde {
     // Plan 2d : l'orgue de barbarie de la foire, et trois films perdus cachés dans le décor.
     musique: ORGUE,
     bobines: BOBINES,
+    // Plan 3a : la foire glisse sous la caméra, le moteur y dessine la route, les cases et l'avatar.
+    scene: null,
   }
 }

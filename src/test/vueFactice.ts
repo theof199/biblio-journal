@@ -35,6 +35,9 @@ export function vueFactice(surcharge: Partial<VueMonde> = {}) {
     brume: 1240,
     bobine: vi.fn(),
     bobineTrouvee: () => false,
+    // Plan 3a : la caméra au haut de la section, hors de tout passage d'entrée.
+    avance: 0,
+    entree: -1,
     ...surcharge,
   }
   return { vue, appels, zones }

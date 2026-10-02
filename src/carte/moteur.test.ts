@@ -450,6 +450,40 @@ describe('le moteur de la carte', () => {
     expect(vus.find((v) => v.cases.some((c) => c.annee === 1900))!.brume).toBeLessThan(0)
   })
 
+  // Plan 3a. Mutation : `avance: this.camY`, sans le `- s.y0` de la section (1890 commence à
+  // `MARGE_HAUT`, pas à 0 : le défilement seul n'est l'avance d'aucun monde).
+  it('donne à chaque monde son avance : le défilement moins le haut de sa section', () => {
+    const { moteur } = monter()
+    // Le haut de 1900 : le vide du haut de la carte, puis la section 1890 du monde d'essai (cinq années).
+    const haut1900 = MARGE_HAUT + mondeAVenir(1890).trace([1895, 1896, 1897, 1898, 1899]).hauteur
+    const vueDe = (annee: number) => vus.find((v) => v.cases.some((c) => c.annee === annee))!
+    vus.length = 0
+    moteur.defiler(300)
+    moteur.image(1100)
+    expect(vueDe(1898).avance).toBe(300 - MARGE_HAUT)
+    // À la frontière, les deux mondes à l'écran : chacun compte depuis le haut de sa section, et
+    // celui d'en bas, que la caméra n'a pas atteint, est en négatif.
+    vus.length = 0
+    moteur.defiler(haut1900 - 350)
+    moteur.image(1200)
+    expect(vueDe(1898).avance).toBe(haut1900 - 350 - MARGE_HAUT)
+    expect(vueDe(1900).avance).toBe(-350)
+  })
+
+  // Plan 3a. Mutation : `entree: 0` dans `vueMonde` : le monde jouerait son entrée dès qu'il est à
+  // l'écran, sans qu'aucun passage n'ait commencé.
+  it('dit au monde qu’aucun passage d’entrée ne se joue : ni au repos, ni en marche, ni pendant un adieu', () => {
+    const { moteur } = monter()
+    moteur.image(1000)
+    void moteur.marcher(1899)
+    moteur.image(1050)
+    void moteur.direAdieu(1890)
+    moteur.image(1100)
+    expect(vus[vus.length - 1]!.adieu).toBeGreaterThanOrEqual(0)
+    expect(vus.length).toBeGreaterThan(2)
+    expect(vus.map((v) => v.entree)).toEqual(vus.map(() => -1))
+  })
+
   // Idée 8. Mutations : `dessinerSurLaBrume` appelé avec les plans proches, sous la
   // brume et la roulotte ; jamais appelé ; appelé après les voiles.
   it('laisse le monde dessiner par-dessus la brume et la roulotte garée, sous les voiles', () => {
