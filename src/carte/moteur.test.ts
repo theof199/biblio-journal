@@ -1087,6 +1087,23 @@ describe('le moteur de la carte', () => {
       for (const camY of VOISINS) expect(a(banc, camY).musiques, `à ${camY}`).toBeCloseTo(1, 6)
     })
 
+    // Tâche 7 : le compteur de bobines montre la décennie à l'écran. Mutations : la décennie prise à
+    // la présence (elle vaut 1 pour les deux mondes dans toute l'entrée : 1890 jusqu'à la frontière) ;
+    // celle de la première section, ou de l'avatar ; jamais dite (nulle).
+    it('dit avec les présences la décennie à l’écran : celle du plus fort poids de mélange, pas de la présence', () => {
+      const banc = monter({ calme: true, collant: true })
+      const decennie = (camY: number) => {
+        banc.moteur.defiler(camY)
+        banc.moteur.image(1000)
+        return vi.mocked(banc.rappels.presences).mock.lastCall![1]
+      }
+      expect(decennie(ENTREE.debut)).toBe(1890)
+      // Les deux mondes sont présents à 1 : le mélange tranche, au quart puis aux trois quarts de l'écran.
+      expect(decennie(HAUT_1900 - (3 * H) / 4)).toBe(1890)
+      expect(decennie(HAUT_1900 - H / 4)).toBe(1900)
+      expect(decennie(ENTREE.fin)).toBe(1900)
+    })
+
     // Mutations : `dessinerSuivi` jamais appelé ; la roulotte commune, sa plaque ou sa zone gardées
     // dans la section collante.
     it('laisse le monde garer le Voyage suivi, sans roulotte commune', () => {

@@ -13,7 +13,7 @@ import { ecrireAnneeVue, ecrireBobines, ecrireSon, lireAnneeVue, lireBobines, li
 import { ambianceDeLaPage } from '../carte/son'
 import { STYLE_DU_TEMPO } from '../voyage/tempo'
 import { creerRegistre } from '../mondes'
-import type { DateVraie } from '../mondes/types'
+import type { BobinePerdue, DateVraie } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
@@ -123,6 +123,11 @@ export default function Carte() {
   const [pulsation, setPulsation] = useState(0)
   const [message, setMessage] = useState<{ titre: string; texte: string | null } | null>(null)
   const compteurRef = useRef<HTMLParagraphElement>(null)
+  // Le compteur va par décennie (plan 3a) : il montre celle qui est à l'écran, que le moteur dit à
+  // chaque image. L'état ne bouge que lorsqu'elle change, la référence le sait sans rendre la page ;
+  // nul tant que le moteur n'a rien dit qui compte, et le compteur montre alors la décennie d'ouverture.
+  const [decennieVue, setDecennieVue] = useState<number | null>(null)
+  const decennieVueRef = useRef<number | null>(null)
   const ecranRef = useRef<HTMLDivElement>(null)
   const derniereRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => void (derniereRef.current !== null && clearTimeout(derniereRef.current)), [])
@@ -157,7 +162,7 @@ export default function Carte() {
     setChantierDuDepart(null)
   }, [moteur, chantierDuDepart])
 
-  const bobinesDuVoyage = useMemo(() => [...new Set((v?.annees ?? []).map((a) => decennieDe(a.annee)))].flatMap((d) => mondes(d).bobines), [v])
+  const decenniesDuVoyage = useMemo(() => [...new Set((v?.annees ?? []).map((a) => decennieDe(a.annee)))].sort((a, b) => a - b), [v])
 
   const attendre = useCallback((ms: number) => new Promise<void>((fin) => setTimeout(fin, ms)), [])
 
@@ -279,8 +284,20 @@ export default function Carte() {
       : prochainPas(enCours.profondeur, enCours.progression, enCours.recompense, ticketConnu, v.ia)[0] ?? 'Tout est vu'
   const j = enCours ? jauge(enCours.progression, enCours.recompense) : null
   const apercuAnnee = apercu ? v.annees.find((a) => a.annee === apercu.annee) : undefined
-  const comptees = (cles: readonly string[], sauf: string | null) => bobinesDuVoyage.filter((b) => cles.includes(b.cle) && b.cle !== sauf).length
-  const nBobines = comptees(trouvees, enVol)
+  // À l'ouverture, la décennie de l'année en cours ; si son monde ne cache aucune bobine, la dernière
+  // avant elle qui en cache. Ensuite celle que le moteur a dite à l'écran (`montrerDecennie`).
+  const decennieDOuverture = decenniesDuVoyage.filter((d) => d <= decennieDe(v.annee_en_cours) && mondes(d).bobines.length > 0).pop() ?? null
+  const decennieDuCompteur = decennieVue ?? decennieDOuverture
+  const bobinesDuCompteur = decennieDuCompteur === null ? [] : mondes(decennieDuCompteur).bobines
+  const comptees = (bobines: readonly BobinePerdue[], cles: readonly string[], sauf: string | null) => bobines.filter((b) => cles.includes(b.cle) && b.cle !== sauf).length
+  const nBobines = comptees(bobinesDuCompteur, trouvees, enVol)
+  // Dit à chaque image : la page n'en retient que le changement. Devant un monde sans bobines, le
+  // compteur garde la décennie qu'il montrait.
+  const montrerDecennie = (decennie: number | null) => {
+    if (decennie === null || decennie === decennieVueRef.current || mondes(decennie).bobines.length === 0) return
+    decennieVueRef.current = decennie
+    setDecennieVue(decennie)
+  }
   const ramassee = (cle: string) => {
     if (!trouveesRef.current.includes(cle)) trouveesRef.current = [...trouveesRef.current, cle]
     setTrouvees(trouveesRef.current)
@@ -291,9 +308,11 @@ export default function Carte() {
   const arrivee = (cle: string) => {
     setEnVol(null)
     setPulsation((p) => p + 1)
-    const b = bobinesDuVoyage.find((x) => x.cle === cle)
-    const n = comptees(trouveesRef.current, null)
-    const total = bobinesDuVoyage.length
+    // Le message compte dans la décennie de la bobine, pas dans celle que le compteur montre.
+    const sienne = decenniesDuVoyage.map((d) => mondes(d).bobines).find((bobines) => bobines.some((x) => x.cle === cle)) ?? []
+    const b = sienne.find((x) => x.cle === cle)
+    const n = comptees(sienne, trouveesRef.current, null)
+    const total = sienne.length
     if (b) setMessage({ titre: `Bobine retrouvée ${n}/${total}`, texte: `« ${b.titre} », ${b.qui} : un film perdu.` })
     if (b && n === total) {
       if (derniereRef.current !== null) clearTimeout(derniereRef.current)
@@ -329,7 +348,10 @@ export default function Carte() {
             bobineArrivee: arrivee,
             cibleBobines,
             clap: () => ambiance.clap(),
-            presences: (liste) => ambiance.presences(liste),
+            presences: (liste, decennie) => {
+              ambiance.presences(liste)
+              montrerDecennie(decennie)
+            },
           }}
         />
       ) : null}
@@ -366,7 +388,7 @@ export default function Carte() {
             </g>
             <circle cx="10" cy="10" r="1.1" fill="currentColor" />
           </svg>
-          <span>{`Bobines retrouvées ${nBobines}/${bobinesDuVoyage.length}`}</span>
+          <span>{`Bobines retrouvées ${nBobines}/${bobinesDuCompteur.length}`}</span>
         </p>
       </header>
 

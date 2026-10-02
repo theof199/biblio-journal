@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { creerRegistre } from '.'
-import type { VueMonde, VueMonument } from './types'
+import { mondeAVenir } from './avenir'
+import type { Monde, VueMonde, VueMonument } from './types'
 import { contexteFactice } from '../test/contexteFactice'
 import { vueFactice } from '../test/vueFactice'
 
@@ -57,5 +58,31 @@ describe('le registre des mondes', () => {
     monde.dessinerProche(vue)
     monde.dessinerSurLaBrume(vue)
     expect(vue.bobine).not.toHaveBeenCalled()
+  })
+
+  /** Les clés de bobine portées par plus d'un monde, ou deux fois par le même. */
+  const clesEnDouble = (mondes: readonly Monde[]) => {
+    const cles = mondes.flatMap((m) => m.bobines.map((b) => b.cle))
+    return [...new Set(cles.filter((cle, i) => cles.indexOf(cle) !== i))]
+  }
+  /** Chaque monde du registre, une fois : les décennies sans ligne partagent le monde « à venir », qui ne cache rien. */
+  const mondesDuRegistre = () => {
+    const registre = creerRegistre()
+    return Array.from({ length: 16 }, (_, i) => registre(1880 + 10 * i))
+  }
+  const mondeDEssai = (cle: string): Monde => ({ ...mondeAVenir(1900), bobines: [{ cle, titre: 'Bobine d’essai', qui: 'Personne, 1900' }] })
+
+  // Plan 3a, tâche 7 : le compteur va par décennie, et l'appareil ne retient que la clé ; une clé
+  // portée par deux mondes compterait une trouvaille dans les deux. Le registre n'a aujourd'hui qu'un
+  // monde à bobines : un monde d'essai se joint à lui, comme le fera la ligne de 1900.
+  // Mutations : une clé de 1890 recopiée dans le monde d'essai (la deuxième assertion) ; une clé
+  // répétée dans `BOBINES` de 1890, ou une bobine de même clé donnée au monde « à venir » (la
+  // première) ; `clesEnDouble` qui ne rendrait jamais rien (la troisième).
+  it('ne laisse pas deux mondes porter la même clé de bobine', () => {
+    expect(mondesDuRegistre().some((m) => m.bobines.length > 0)).toBe(true)
+    expect(clesEnDouble(mondesDuRegistre())).toEqual([])
+    expect(clesEnDouble([...mondesDuRegistre(), mondeDEssai('bobine-d-essai-1900')])).toEqual([])
+    const de1890 = creerRegistre()(1890).bobines[0]!.cle
+    expect(clesEnDouble([...mondesDuRegistre(), mondeDEssai(de1890)])).toEqual([de1890])
   })
 })

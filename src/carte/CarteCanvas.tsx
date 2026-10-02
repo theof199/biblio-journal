@@ -81,7 +81,7 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
       bobineArrivee: (cle) => rappelsRef.current.bobineArrivee(cle),
       cibleBobines: () => rappelsRef.current.cibleBobines(),
       clap: () => rappelsRef.current.clap(),
-      presences: (liste) => rappelsRef.current.presences(liste),
+      presences: (liste, decennie) => rappelsRef.current.presences(liste, decennie),
       entreeProche: (d) => rappelsRef.current.entreeProche?.(d),
       defilerVers: (y) => {
         vue.scrollTop = y

@@ -13,7 +13,7 @@ import { cles } from '../api/cles'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 import FEUILLE_DE_LA_CARTE from '../carte/Carte.module.css?raw'
 import { DoublureAudio, oublierDoublures } from '../test/audioFactice'
-import { oublierAmbianceDeLaPage } from '../carte/son'
+import { Ambiance, oublierAmbianceDeLaPage } from '../carte/son'
 
 const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)
 const P = { essentiels_vus: 1, essentiels_total: 3, salles_completes: 0, salles_autres: 2 }
@@ -634,7 +634,7 @@ describe('le son et les bobines perdues (plan 2d)', () => {
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
     act(() => {
       rappels().clap()
-      rappels().presences([{ musique: { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }, poids: 1 }])
+      rappels().presences([{ musique: { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }, poids: 1 }], 1890)
       rappels().bobine('les-quatre-diables')
       rappels().bobineArrivee('les-quatre-diables')
     })
@@ -644,6 +644,19 @@ describe('le son et les bobines perdues (plan 2d)', () => {
     expect(DoublureAudio.crees).toHaveLength(1)
     expect(son()).toHaveAttribute('aria-pressed', 'true')
     expect(son()).toHaveAttribute('title', 'Son : allumé')
+  })
+
+  // Plan 3a, tâche 7 : le rappel porte aussi la décennie à l'écran, pour le compteur. Mutations :
+  // `ambiance.presences(liste)` retiré du rappel de la page (plus aucune musique), ou la décennie
+  // passée à l'ambiance avec la liste.
+  it('donne toujours à l’ambiance les présences que le moteur dit, sans la décennie', async () => {
+    const recues = vi.spyOn(Ambiance.prototype, 'presences')
+    const { rappels, etats } = monter()
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    const liste = [{ musique: null, poids: 0.25 }, { musique: null, poids: 0.75 }]
+    recues.mockClear()
+    act(() => rappels().presences(liste, 1890))
+    expect(recues.mock.calls).toEqual([[liste]])
   })
 
   // Mutations : `lireSon` remplacé par `false` (le choix oublié) ; `ecrireSon` retiré du bouton ;

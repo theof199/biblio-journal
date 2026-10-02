@@ -92,8 +92,13 @@ export interface Rappels {
   cibleBobines: () => { x: number; y: number }
   /** Le clap a claqué (maquette : `claquer`, `sonClap`). */
   clap: () => void
-  /** Les mondes de la carte et leur poids de mélange, de 0 à 1 : l'ambiance y règle le volume de chaque musique (maquette : `majSon`). */
-  presences: (liste: ReadonlyArray<{ musique: MusiqueDuMonde | null; poids: number }>) => void
+  /**
+   * Les mondes de la carte et leur poids de mélange, de 0 à 1 : l'ambiance y règle le volume de
+   * chaque musique (maquette : `majSon`). Et la décennie à l'écran, celle du monde au plus fort
+   * poids de mélange (le premier des deux à égalité) : le compteur de bobines la montre. Nulle
+   * sur une carte sans section. Dit à chaque image : à qui l'écoute de ne retenir que ses changements.
+   */
+  presences: (liste: ReadonlyArray<{ musique: MusiqueDuMonde | null; poids: number }>, decennie: number | null) => void
   /**
    * La décennie dont le passage d'entrée est à portée de geste (plan 3a) : la caméra est au bas de
    * la section qui précède une section collante, à un écran au plus de son premier temps. Nulle
@@ -1255,8 +1260,8 @@ export class MoteurCarte {
     const entrees = { H: this.H, collante: this.collantes }
     const poids = poidsSections(camC, this.plan.sections, entrees)
     const presence = presencesSections(camC, this.plan.sections, entrees)
-    this.rappels.presences(this.plan.sections.map((s, i) => ({ musique: this.deps.mondeDe(s.decennie).musique, poids: poids[i] ?? 0 })))
     const sectionP = this.plan.sections[poids.indexOf(Math.max(...poids))]
+    this.rappels.presences(this.plan.sections.map((s, i) => ({ musique: this.deps.mondeDe(s.decennie).musique, poids: poids[i] ?? 0 })), sectionP?.decennie ?? null)
     const mondeP = sectionP ? this.deps.mondeDe(sectionP.decennie) : null
     const e = this.ens.q ? ease(this.ens.q) : 0
     if (e < 0.999) {
