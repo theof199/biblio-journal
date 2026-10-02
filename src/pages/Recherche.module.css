@@ -3,110 +3,256 @@
 .page {
   max-width: var(--largeur-contenu);
   margin: 0 auto;
-  padding-bottom: var(--espace-6);
+  padding: var(--espace-2) var(--espace-4) var(--espace-6);
 }
 
-.entete {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-2);
-  padding: var(--espace-2) var(--espace-3);
+/* Le retour, puis ce que le guichet dit : sa rubrique imprimée en rouge, sa question en grand. */
+.guichet {
+  margin-bottom: var(--espace-4);
+}
+
+.guichet > button {
+  margin-left: var(--espace-moins-2);
+}
+
+.kicker {
+  margin: 0 0 var(--espace-1);
+  color: var(--couleur-accent);
+  font-family: var(--police-fronton);
+  font-size: var(--guichet-kicker-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--imprime-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.titre {
+  margin: 0;
+}
+
+/* Le champ est du papier crème, souligné du trait rouge de l'imprimeur : la loupe et le bouton « Effacer » y sont posés. */
+.demande {
+  position: relative;
+  margin-bottom: var(--espace-3);
+  color: var(--papier-encre);
+  filter: var(--billet-onglet-ombre);
 }
 
 .champ {
-  flex: 1;
-  min-height: var(--cible-tactile);
-  padding: 0 var(--espace-3);
-  border: var(--trait) solid var(--couleur-bordure);
-  border-radius: var(--rayon-m);
-  background: var(--couleur-surface);
-  font-size: var(--taille-m);
+  display: block;
+  width: 100%;
+  min-height: var(--guichet-champ-hauteur);
+  padding: 0 var(--cible-tactile) 0 var(--guichet-champ-retrait);
+  border: 0;
+  border-radius: 0;
+  background: var(--papier-champ);
+  box-shadow: var(--guichet-champ-soulignement);
+  color: var(--papier-encre);
+  font-family: var(--police-titre);
+  font-size: var(--guichet-champ-taille);
 }
 
-.corps {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espace-5);
-  padding: 0 var(--espace-4);
+.champ::placeholder {
+  color: var(--papier-encre-douce);
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espace-2);
+/* Un seul « Effacer » : celui du champ, pas celui que WebKit y ajoute. */
+.champ::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.enteteSection {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.loupe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--guichet-loupe-gauche);
+  width: var(--guichet-loupe);
+  height: var(--guichet-loupe);
+  margin: auto 0;
+  opacity: var(--guichet-loupe-opacite);
+  pointer-events: none;
 }
 
-.titreSection {
-  margin: 0;
-  font-size: var(--taille-s);
-  font-weight: var(--graisse-forte);
-  color: var(--couleur-texte-doux);
-}
-
-.puces {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-2);
-}
-
-.puce {
-  min-height: var(--cible-tactile);
-  padding: 0 var(--espace-3);
-  border: var(--trait) solid var(--couleur-bordure);
-  border-radius: var(--rayon-plein);
-  background: var(--couleur-surface);
-  font-size: var(--taille-s);
+.effacer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--papier-encre-douce);
   cursor: pointer;
 }
 
-.resultats {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espace-3);
-}
-
-.resultat {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-3);
-  text-decoration: none;
-  color: inherit;
-}
-
-.infosResultat {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espace-1);
-  min-width: 0;
-  flex: 1;
-}
-
-.titreResultat {
-  margin: 0;
-  font-weight: var(--graisse-moyenne);
-}
-
-.sousTitreResultat {
-  margin: 0;
-  color: var(--couleur-texte-doux);
-  font-size: var(--taille-s);
-}
-
-.vuResultat {
-  flex-shrink: 0;
-  color: var(--couleur-texte-doux);
-  font-size: var(--taille-s);
+.erreur {
+  margin: 0 0 var(--espace-3);
+  color: var(--couleur-danger);
 }
 
 .vide {
   margin: 0;
+  padding: var(--espace-5) 0;
   color: var(--couleur-texte-doux);
   text-align: center;
-  padding: var(--espace-5) 0;
+}
+
+/* Les recherches d'avant, au crayon : un mot souligné par recherche, la corbeille au bout de la ligne. */
+.recentes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--espace-demi);
+  margin-bottom: var(--espace-2);
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-meta);
+}
+
+.legendeRecentes {
+  margin: 0;
+}
+
+.motCrayon {
+  min-height: var(--crayon-mot-hauteur);
+  padding: 0 var(--espace-2);
+  border: 0;
+  background: none;
+  color: var(--couleur-texte);
+  font-family: var(--police-crayon);
+  font-size: var(--crayon-taille);
+  font-weight: var(--graisse-forte);
+  text-decoration: underline;
+  text-decoration-thickness: var(--trait);
+  text-underline-offset: var(--espace-1);
+  cursor: pointer;
+}
+
+.corbeille {
+  align-self: center;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--couleur-texte-doux);
+  cursor: pointer;
+}
+
+.liste {
+  margin-top: var(--espace-5);
+}
+
+.rubrique {
+  margin: 0 0 var(--espace-3);
+  color: var(--couleur-accent);
+  font-family: var(--police-fronton);
+  font-size: var(--guichet-rubrique-taille);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--imprime-interlettre);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+/* Trois affiches par rangée : on reconnaît le film à son affiche. */
+.affiches {
+  display: grid;
+  grid-template-columns: var(--grille-guichet-colonnes);
+  gap: var(--guichet-grille-ecart);
+  margin: 0 0 var(--guichet-liste-marge);
+  padding: 0;
+  list-style: none;
+}
+
+.affiches > li {
+  min-width: 0;
+}
+
+.resultat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--espace-2);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resultat > :first-child {
+  box-shadow: var(--ensuite-ombre);
+}
+
+.infosResultat {
+  display: block;
+  min-width: 0;
+}
+
+.titreResultat {
+  display: -webkit-box;
+  -webkit-line-clamp: var(--lignes-titre);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-family: var(--police-titre);
+  font-size: var(--guichet-titre-taille);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-titre);
+  overflow-wrap: anywhere;
+}
+
+.sousTitreResultat {
+  display: block;
+  margin-top: var(--espace-1);
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-xs);
+  line-height: var(--guichet-sous-titre-interligne);
+}
+
+/* Le titre imprimé sur une affiche qui n'a pas d'image : l'ambre de la pellicule sur le fond de l'amorce. */
+.sansAffiche {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espace-1);
+  overflow: hidden;
+  background: var(--pellicule-amorce-fond);
+  color: var(--pellicule-ambre);
+  font-family: var(--police-fronton);
+  font-size: var(--guichet-sans-affiche-taille);
+  letter-spacing: var(--guichet-sans-affiche-interlettre);
+  line-height: var(--interligne-serre);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Collée de travers au coin de l'affiche, un peu en débord : le « vu » du membre. */
+.vu {
+  position: absolute;
+  top: var(--espace-2);
+  right: var(--etiquette-debord);
+  padding: var(--etiquette-marge);
+  background: var(--papier-clair);
+  box-shadow: var(--etiquette-ombre);
+  color: var(--crayon-rouge);
+  transform: rotate(var(--etiquette-inclinaison));
+}
+
+.etoilesVu {
+  --etoile-taille: var(--etoile-taille-petite);
+}
+
+.motVu {
+  display: block;
+  font-family: var(--police-crayon);
+  font-size: var(--crayon-vu-taille);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-serre);
 }

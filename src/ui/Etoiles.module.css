@@ -1,0 +1,32 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* La taille est celle que la classe qui l'emploie pose dans `--etoile-taille` ; la rangée rétrécit
+   avant de déborder, et chaque étoile garde sa forme dans sa boîte. */
+.etoiles {
+  display: flex;
+  gap: var(--trait);
+  min-width: 0;
+}
+
+.etoile {
+  flex: 0 1 auto;
+  width: var(--etoile-taille);
+  min-width: 0;
+  height: var(--etoile-taille);
+}
+
+/* Le contour reste dessiné sous le remplissage : une étoile vide se lit encore. */
+.fond {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--etoile-trait);
+  stroke-linejoin: round;
+  opacity: var(--opacite-attenue);
+}
+
+.plein {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: var(--etoile-trait);
+  stroke-linejoin: round;
+}

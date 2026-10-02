@@ -18,13 +18,23 @@ import { useValeurDebouncee } from '../recherche/useValeurDebouncee'
 import { apercuLitLaFiche } from '../voyage/regles'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
+import Etoiles from '../ui/Etoiles'
 import { sousTitre } from '../ui/format'
 import styles from './Recherche.module.css'
 import type { JournalPage } from '../api/journal'
 import type { MovieSearchResult } from '../api/recherche'
 
-/** Une ligne de résultat — recherche, « Tes Ensuite », « à voir cette année » (reprise de `LigneResultat`, `SearchScreen.kt`). */
-function LigneResultat({
+/** L'étiquette de papier collée sur une affiche déjà vue : ses étoiles si elle est notée, le mot « vu » au crayon sinon. */
+function EtiquetteVu({ note }: { note: number | null }) {
+  return (
+    <span className={styles.vu}>
+      {note != null ? <Etoiles note={note} libelle={`vu, noté ${note} sur 10`} className={styles.etoilesVu} /> : <span className={styles.motVu}>vu</span>}
+    </span>
+  )
+}
+
+/** Une affiche de résultat — recherche, « Tes Ensuite », « à voir cette année » (reprise de `LigneResultat`, `SearchScreen.kt`) : le titre et « réalisateur, année » dessous. */
+function AfficheResultat({
   candidat,
   vu,
   onChoisir,
@@ -34,23 +44,33 @@ function LigneResultat({
   onChoisir: () => void
 }) {
   return (
-    <button type="button" onClick={onChoisir} className={styles.resultat}>
-      <Affiche src={candidat.cover_url} titre={candidat.title} taille="ligne" />
-      <div className={styles.infosResultat}>
-        <p className={styles.titreResultat}>{candidat.title}</p>
-        <p className={styles.sousTitreResultat}>{sousTitre(candidat.director, candidat.year)}</p>
-      </div>
-      {vu !== undefined ? (
-        <span className={styles.vuResultat}>{vu != null ? `vu · ${vu}` : 'vu'}</span>
-      ) : null}
-    </button>
+    <li>
+      <button type="button" onClick={onChoisir} className={styles.resultat}>
+        {/* Sans affiche, le titre est imprimé sur le cadre : le bouton le dit déjà, d'où `aria-hidden`. */}
+        <Affiche
+          src={candidat.cover_url}
+          titre={candidat.title}
+          substitut={
+            <span className={styles.sansAffiche} aria-hidden="true">
+              {candidat.title}
+            </span>
+          }
+        />
+        <span className={styles.infosResultat}>
+          <span className={styles.titreResultat}>{candidat.title}</span>
+          <span className={styles.sousTitreResultat}>{sousTitre(candidat.director, candidat.year)}</span>
+        </span>
+        {vu !== undefined ? <EtiquetteVu note={vu} /> : null}
+      </button>
+    </li>
   )
 }
 
 /**
- * La recherche d'un film à journaliser (reprise de `SearchScreen.kt`) : un champ débouncé, les
- * dernières recherches avant la saisie, puis « Tes Ensuite » et les films à voir cette année du
- * Voyage en cours. Le repère « vu · note » relit le journal déjà en cache — pas de second appel.
+ * Le guichet : la recherche d'un film à journaliser (reprise de `SearchScreen.kt`), des affiches à
+ * toucher, trois par rangée. Un champ débouncé, les dernières recherches avant la saisie, puis
+ * « Tes Ensuite » et les films à voir cette année du Voyage en cours. L'étiquette « vu » (ses étoiles,
+ * ou le mot quand le film n'a pas de note) relit le journal déjà en cache — pas de second appel.
  */
 export default function Recherche() {
   const naviguer = useNavigate()
@@ -117,8 +137,14 @@ export default function Recherche() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.entete}>
+      <header className={styles.guichet}>
         <BoutonRetour vers="/" />
+        <p className={styles.kicker}>Le guichet</p>
+        <h1 className={styles.titre}>Quel film as-tu vu ?</h1>
+      </header>
+
+      <div className={styles.demande}>
+        <IconSearch aria-hidden="true" className={styles.loupe} />
         <input
           type="search"
           value={saisie}
@@ -129,88 +155,88 @@ export default function Recherche() {
           autoFocus
         />
         {saisie ? (
-          <button type="button" onClick={() => setSaisie('')} aria-label="Effacer">
+          <button type="button" onClick={() => setSaisie('')} aria-label="Effacer" className={styles.effacer}>
             <IconX aria-hidden="true" />
           </button>
-        ) : (
-          <IconSearch aria-hidden="true" />
-        )}
+        ) : null}
       </div>
 
-      <div className={styles.corps}>
-        {recherche.error ? <p role="alert">{recherche.error.message}</p> : null}
+      {recherche.error ? (
+        <p role="alert" className={styles.erreur}>
+          {recherche.error.message}
+        </p>
+      ) : null}
 
-        {termeNormalise ? (
-          recherche.isPending ? (
-            <p role="status">Recherche…</p>
-          ) : resultats.length === 0 && !recherche.error ? (
-            <p className={styles.vide}>Rien trouvé pour « {termeNormalise} ».</p>
-          ) : (
-            <div className={styles.resultats}>
+      {termeNormalise ? (
+        recherche.isPending ? (
+          <p role="status" className={styles.vide}>
+            Recherche…
+          </p>
+        ) : resultats.length === 0 && !recherche.error ? (
+          <p className={styles.vide}>Rien trouvé pour « {termeNormalise} ».</p>
+        ) : (
+          <div className={styles.liste}>
+            <ul className={styles.affiches}>
               {resultats.map((resultat) => (
-                <LigneResultat
+                <AfficheResultat
                   key={resultat.external_id}
                   candidat={candidatDepuisResultat(resultat)}
                   vu={vuPour(resultat.external_id)}
                   onChoisir={() => ouvrirFormulaire(candidatDepuisResultat(resultat))}
                 />
               ))}
+            </ul>
+          </div>
+        )
+      ) : (
+        <>
+          {recentes.length > 0 ? (
+            <div className={styles.recentes}>
+              <p className={styles.legendeRecentes}>Dernières recherches</p>
+              {recentes.map((terme) => (
+                <button key={terme} type="button" className={styles.motCrayon} onClick={() => setSaisie(terme)}>
+                  {terme}
+                </button>
+              ))}
+              <button type="button" onClick={effacerRecentes} aria-label="Effacer les dernières recherches" className={styles.corbeille}>
+                <IconTrash aria-hidden="true" />
+              </button>
             </div>
-          )
-        ) : (
-          <>
-            {recentes.length > 0 ? (
-              <div className={styles.section}>
-                <div className={styles.enteteSection}>
-                  <p className={styles.titreSection}>Tes dernières recherches</p>
-                  <button type="button" onClick={effacerRecentes} aria-label="Effacer les dernières recherches">
-                    <IconTrash aria-hidden="true" />
-                  </button>
-                </div>
-                <div className={styles.puces}>
-                  {recentes.map((terme) => (
-                    <button key={terme} type="button" className={styles.puce} onClick={() => setSaisie(terme)}>
-                      {terme}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+          ) : null}
 
-            {ensuite.length > 0 ? (
-              <div className={styles.section}>
-                <p className={styles.titreSection}>Tes « Ensuite »</p>
-                <div className={styles.resultats}>
-                  {ensuite.map((candidat) => (
-                    <LigneResultat
-                      key={`ensuite:${candidat.external_id}`}
-                      candidat={candidat}
-                      vu={undefined}
-                      onChoisir={() => ouvrirFormulaire(candidat)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null}
+          {ensuite.length > 0 ? (
+            <section className={styles.liste}>
+              <h2 className={styles.rubrique}>Tes « Ensuite »</h2>
+              <ul className={styles.affiches}>
+                {ensuite.map((candidat) => (
+                  <AfficheResultat
+                    key={`ensuite:${candidat.external_id}`}
+                    candidat={candidat}
+                    vu={undefined}
+                    onChoisir={() => ouvrirFormulaire(candidat)}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
-            {aVoirCetteAnnee.length > 0 ? (
-              <div className={styles.section}>
-                <p className={styles.titreSection}>Pas encore vus, cette année du Voyage</p>
-                <div className={styles.resultats}>
-                  {aVoirCetteAnnee.map((candidat) => (
-                    <LigneResultat
-                      key={`voyage:${candidat.external_id}`}
-                      candidat={candidat}
-                      vu={undefined}
-                      onChoisir={() => ouvrirFormulaire(candidat)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
-      </div>
+          {aVoirCetteAnnee.length > 0 ? (
+            <section className={styles.liste}>
+              <h2 className={styles.rubrique}>Pas encore vus, cette année du Voyage</h2>
+              <ul className={styles.affiches}>
+                {aVoirCetteAnnee.map((candidat) => (
+                  <AfficheResultat
+                    key={`voyage:${candidat.external_id}`}
+                    candidat={candidat}
+                    vu={undefined}
+                    onChoisir={() => ouvrirFormulaire(candidat)}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
+      )}
     </div>
   )
 }
