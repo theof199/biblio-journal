@@ -411,6 +411,25 @@ describe('le moteur de la carte', () => {
     expect(rappels.toucherAnnee).not.toHaveBeenCalled()
   })
 
+  // Relecture de la tâche 6 : l'adieu prend la caméra par `prendreLaCamera`, sans lâcher la visée
+  // d'un chantier, qu'il n'a jamais arrêtée : son comportement d'avant, figé tel quel. Mutation :
+  // `prendreLaCamera(false)` devenu `prendreLaCamera()` dans `direAdieu` (la visée lâchée, la caméra
+  // resterait au haut de la section).
+  it('l’adieu ne lâche pas la visée d’un chantier : la caméra posée au haut du monde reprend son glissement', () => {
+    const { moteur, rappels, cases } = monter()
+    moteur.image(1000)
+    moteur.defiler(moteur.ecranDeLAnnee(1899).y - 350)
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    for (let i = 1; i <= 3; i++) moteur.image(1000 + i * 50)
+    void moteur.direAdieu(1890)
+    expect(rappels.defilerVers).toHaveBeenLastCalledWith(MARGE_HAUT)
+    for (let i = 4; i <= 40; i++) moteur.image(1000 + i * 50)
+    // Le site de 1899 au milieu de l'écran, borné au haut de la carte : là où la visée menait.
+    const cible = Math.max(0, MARGE_HAUT + SITE_1899 - H / 2)
+    const dernier = vi.mocked(rappels.defilerVers).mock.lastCall![0]
+    expect(Math.abs(dernier - cible)).toBeLessThan(2)
+  })
+
   // Mutation : un adieu qui ne se résout jamais, ou `adieu: -1` toujours dans `vueMonde`.
   it('dit adieu au monde quitté : il en reçoit le temps écoulé, puis la carte reprend', async () => {
     const { moteur, rappels } = monter()
@@ -1791,6 +1810,40 @@ describe('le moteur de la carte', () => {
           banc.filer(ROULEMENT + 600)
           expect(banc.vers()).toEqual([arret(1906)])
           expect(camera(1900, HAUT_1900)).toBe(arret(1906))
+        })
+
+        /** Une marche de 1898 vers 1896 commencée, la caméra qui suit l'avatar, puis la vue d'ensemble quittée d'un toucher tout en bas de l'écran. */
+        const quitterEnMarchant = (banc: Banc) => {
+          void banc.moteur.marcher(1896)
+          banc.filer(80)
+          banc.moteur.basculerEnsemble(true)
+          banc.filer(80)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          toucher(banc.moteur, W / 2, H - 70)
+          const ou = banc.vers()[0]!
+          banc.filer(3000)
+          return ou
+        }
+
+        // Relecture de la tâche 6 : 1890 strictement identique. Sur une carte sans monde à scène, la
+        // sortie ne prend pas la caméra : celle qui suivait l'avatar y repart, comme avant le plan 3a.
+        // Mutation : la garde `this.bandes` retirée de `quitterEnsemble` (la caméra resterait où l'on a touché).
+        it('sur une carte sans section collante, la sortie par un toucher laisse la caméra suivre l’avatar qui marche', () => {
+          const banc = enGare({ ailleurs: true, collant: false })
+          const ou = quitterEnMarchant(banc)
+          // Loin de l'avatar, tout en bas de la carte ; puis la caméra remonte vers lui, image après image.
+          expect(ou).toBeGreaterThan(5000)
+          expect(banc.vers().length).toBeGreaterThan(20)
+          expect(banc.vers()[banc.vers().length - 1]).toBeLessThan(600)
+        })
+
+        // Le même geste sur une carte à section collante : la sortie prend la caméra, et elle reste
+        // où l'on a touché. Mutation : `this.suivre = false` retiré de `prendreLaCamera`.
+        it('sur une carte à section collante, le même geste arrête le suivi : la caméra reste où l’on a touché', () => {
+          const banc = enGare({ ailleurs: true })
+          const ou = quitterEnMarchant(banc)
+          expect(ou).toBeGreaterThan(5000)
+          expect(banc.vers()).toEqual([ou])
         })
 
         /** Le bas de la bande de 1890, juste au-dessus de celle du monde : la sortie y mène dans le bas de 1890. */

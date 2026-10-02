@@ -191,7 +191,11 @@ export interface CadreDeBande {
   y: number
   w: number
   h: number
-  /** L'ouverture de la vue d'ensemble, de 0 à 1 : l'opacité de ce qui s'y dessine. */
+  /**
+   * L'ouverture de la vue d'ensemble, de 0 à 1 : l'opacité de ce qui s'y dessine. Le contexte la
+   * porte déjà à l'appel de `dessinerBande` (`g.globalAlpha` vaut `e`) : un monde qui la multiplierait
+   * encore l'appliquerait deux fois.
+   */
   e: number
   /**
    * Une image du monde (les photos des gares), nulle tant qu'elle charge ; le moteur redessine à son
@@ -225,7 +229,12 @@ export interface SceneCollante {
   ecranDeLaCase: (v: VueMonde, annee: number) => { x: number; y: number } | null
   /** Le Voyage suivi garé dans son année ; le monde inscrit lui-même sa zone `roulotte` (`v.zone`). */
   dessinerSuivi: (v: VueMonde, suivi: SuiviGare) => void
-  /** La bande du monde dans la vue d'ensemble, dessinée dans `cadre`. Rend de quoi lire un toucher ou un pincement (`LectureDeBande`). */
+  /**
+   * La bande du monde dans la vue d'ensemble, dessinée dans `cadre`. Rend de quoi lire un toucher ou un
+   * pincement (`LectureDeBande`). Le moteur n'y peint ni fond ni marquise : seul le voile plein écran
+   * de la vue d'ensemble reste commun, et le monde peint le fond de sa bande. Ce qu'il laisse sur le
+   * contexte (opacité, coupe, repère) est défait après l'appel.
+   */
   dessinerBande: (g: CanvasRenderingContext2D, cadre: CadreDeBande, etat: EtatDeBande) => LectureDeBande
   /** Les temps du passage d'entrée, dans l'ordre où il se joue à l'endroit. Vide : aucun passage. */
   entree: readonly TempsDEntree[]

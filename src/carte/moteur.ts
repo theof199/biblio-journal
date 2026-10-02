@@ -465,9 +465,8 @@ export class MoteurCarte {
     const duree = this.deps.mondeDe(decennie).adieu
     if (!s || duree <= 0 || this.calme) return Promise.resolve()
     this.adieu?.fin()
-    this.suivre = false
-    this.arreterLeRoulement()
-    this.arreterLePassage()
+    // La visée d'un chantier, elle, n'est pas lâchée : l'adieu ne l'a jamais arrêtée.
+    this.prendreLaCamera(false)
     this.camY = s.y0
     this.rappels.defilerVers(s.y0)
     return new Promise((fin) => {
@@ -495,13 +494,10 @@ export class MoteurCarte {
     // Les temps dans l'ordre joué, chacun avec la durée du segment qui y mène : à l'envers, celle
     // que la liste donne au temps d'où l'on vient (la durée appartient au segment, pas au sens).
     const joues = sens === 'envers' ? temps.map((x, i) => ({ ...x, duree: temps[i + 1]?.duree ?? 0 })).reverse() : temps
-    this.arreterLeRoulement()
-    this.suivre = false
-    this.visee = null
+    // Aucun passage ne joue ici (plus haut) : il n'y en a pas à arrêter.
+    this.prendreLaCamera()
     // Le défilement qui a mené ici n'a plus rien à constater : le passage commande la caméra.
-    this.defilement = { aDater: false, depuis: null }
-    this.pose = null
-    this.depart = null
+    this.oublierLeDefilement()
     if (this.calme) {
       this.poser(joues[joues.length - 1]!.y)
       this.demander()
@@ -687,6 +683,25 @@ export class MoteurCarte {
     return arrets.some((a) => Math.abs(a - this.camY) <= A_L_ARRET) ? null : arrets
   }
 
+  /**
+   * Un seul glissement à la fois : qui prend la caméra arrête le roulement et le passage en cours
+   * (qui les attendait est libéré), et la caméra cesse de suivre l'avatar. `visee` faux : la visée
+   * d'un chantier est laissée (l'adieu).
+   */
+  private prendreLaCamera(visee = true): void {
+    this.arreterLeRoulement()
+    this.arreterLePassage()
+    this.suivre = false
+    if (visee) this.visee = null
+  }
+
+  /** Le défilement en cours n'a plus rien à constater : ni son départ, ni son repos, ni l'arrêt qu'il a choisi au calme. */
+  private oublierLeDefilement(): void {
+    this.defilement = { aDater: false, depuis: null }
+    this.pose = null
+    this.depart = null
+  }
+
   /** La caméra à `y`, d'un coup. */
   private poser(y: number): void {
     this.camY = y
@@ -700,10 +715,7 @@ export class MoteurCarte {
    * qui commence arrête les autres.
    */
   private rouler(y: number, fin: (() => void) | null): void {
-    this.arreterLeRoulement()
-    this.arreterLePassage()
-    this.suivre = false
-    this.visee = null
+    this.prendreLaCamera()
     if (this.calme || Math.abs(y - this.camY) <= A_L_ARRET) {
       this.poser(y)
       fin?.()
@@ -1018,16 +1030,15 @@ export class MoteurCarte {
     if (this.ens.cible === 0 && this.ens.q === 0) return
     const y = point ? this.sortieDeLEnsemble(point.x, point.y) : null
     if (y !== null) {
-      // La sortie prend la caméra : un seul glissement à la fois, et le défilement d'avant n'a plus
-      // rien à constater (son départ dirait un geste entré dans une zone des temps, son repos un rappel).
-      this.arreterLeRoulement()
-      this.arreterLePassage()
-      this.suivre = false
-      this.visee = null
-      this.defilement = { aDater: false, depuis: null }
-      this.pose = null
-      this.depart = null
-      this.sortie = y
+      // Sur une carte à section collante, la sortie prend la caméra : un seul glissement à la fois,
+      // et le défilement d'avant n'a plus rien à constater (son départ dirait un geste entré dans
+      // une zone des temps, son repos un rappel). Sur une carte ordinaire, rien de cela : la caméra
+      // qui suivait l'avatar ou visait un chantier y repart à l'image suivante, comme avant le plan 3a.
+      if (this.bandes) {
+        this.prendreLaCamera()
+        this.oublierLeDefilement()
+        this.sortie = y
+      }
       this.poser(y)
     }
     this.ens.cible = 0
