@@ -7,7 +7,8 @@ const CASES = 6
 
 /**
  * La planche d'un cycle laissée en blanc : la punaise, le papier, le nom en barre et la bande de
- * ses cases, aux classes de `PlancheCycle`. Ni compte ni « ensuite », qui dépendent des films.
+ * ses cases, aux classes de `PlancheCycle`, avec le compte à droite du titre et la ligne « ensuite »
+ * qu'une planche a toujours ; leur contenu dépend des films.
  */
 export default function PlancheCycleEnAttente() {
   return (
@@ -19,6 +20,9 @@ export default function PlancheCycleEnAttente() {
           <div className={styles.nom}>
             <Barre largeur="moyenne" />
           </div>
+        </div>
+        <div className={`${styles.attente} ${styles.attenteVide}`}>
+          <Barre largeur="longue" />
         </div>
       </div>
       <ul className={styles.bande}>
@@ -33,6 +37,9 @@ export default function PlancheCycleEnAttente() {
           </li>
         ))}
       </ul>
+      <div className={styles.suite}>
+        <Barre largeur="moyenne" />
+      </div>
     </li>
   )
 }

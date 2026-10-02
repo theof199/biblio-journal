@@ -769,6 +769,7 @@
   --attente-barre-longue: 90%;
   --attente-barre-moyenne: 65%;
   --attente-barre-courte: 40%;
+  --attente-bouton-largeur: 7rem; /* un bouton d'action en blanc, avant que la page sache ce qu'il dira */
   --attente-carte-largeur: 5rem; /* le compte d'une planche dont la filmographie n'est pas arrivée : sa place ne dépend pas d'un contenu qui n'y est pas */
   /* Les objets du profil en blanc (`profil/SectionsEnAttente.tsx`) : la hauteur de ce qu'ils contiennent, d'après les tokens des vrais, pour qu'un graphique qui arrive ne pousse pas la page. */
   --attente-jauge-ratio: 300 / 168; /* le cadran de la jauge : son viewBox */

@@ -509,6 +509,30 @@ describe('la page Suivis', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
     })
 
+    it('une barre tient la place du compte sous le titre tant qu’une liste manque, et s’en va quand il s’écrit', async () => {
+      let liberer!: () => void
+      servir({
+        'GET /api/me/realisateurs': () => new Promise<Response>((r) => (liberer = () => r(json([realisateur(1)])))),
+        'GET /api/me/sagas': () => json([]),
+        'GET /api/me/realisateurs/1/page': () => json(pageRealisateur(1, [])),
+      })
+      monter()
+      expect(await screen.findByTestId('compte-en-attente')).toBeInTheDocument()
+
+      liberer()
+
+      expect(await screen.findByText('1 rétrospective · 0 cycle')).toBeInTheDocument()
+      expect(screen.queryByTestId('compte-en-attente')).not.toBeInTheDocument()
+    })
+
+    it('une liste en panne ne laisse pas la barre du compte en place', async () => {
+      servir({ 'GET /api/me/realisateurs': () => json(ERREUR_TMDB, 503), 'GET /api/me/sagas': () => json([]) })
+      monter()
+
+      await screen.findByRole('alert')
+      expect(screen.queryByTestId('compte-en-attente')).not.toBeInTheDocument()
+    })
+
     it('le titre, « + Suivre » et les intercalaires sont déjà là', async () => {
       servir({ 'GET /api/me/realisateurs': jamais, 'GET /api/me/sagas': jamais })
       monter()

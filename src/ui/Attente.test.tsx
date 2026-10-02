@@ -48,14 +48,14 @@ describe('Attente', () => {
     expect(container.firstElementChild).toHaveAttribute('aria-hidden', 'true')
   })
 
-  it('porte la classe de la page qui l’emploie', () => {
+  it('donne la classe de la page à ce qui contient directement les formes, pour que sa mise en page les atteigne', () => {
     render(
       <Attente className="mise-en-page">
         <p>une forme</p>
       </Attente>,
     )
 
-    expect(screen.getByRole('status')).toHaveClass('mise-en-page')
+    expect(screen.getByText('une forme').parentElement).toHaveClass('mise-en-page')
   })
 })
 

@@ -474,6 +474,21 @@ describe('Au ciné qui attend ses données', () => {
     expect(screen.getAllByTestId('ligne-en-attente')).toHaveLength(3)
   })
 
+  it('ne dit pas « 0 séance cette année » tant que les séances ne sont pas là', async () => {
+    servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
+    monter()
+
+    await screen.findAllByTestId('ligne-en-attente')
+    expect(screen.queryByText(/séances? cette année/)).not.toBeInTheDocument()
+  })
+
+  it('donne le compte de l’année une fois les séances arrivées', async () => {
+    servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances([]) })
+    monter()
+
+    expect(await screen.findByText('0 séance cette année')).toBeInTheDocument()
+  })
+
   it('tout arrivé, plus aucun statut ni aucune forme en blanc', async () => {
     servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances([seance({ id: 'e1', finished_at: '2026-09-10', title: 'Alien' })]) })
     monter()

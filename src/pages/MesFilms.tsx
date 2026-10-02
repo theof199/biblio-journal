@@ -289,6 +289,9 @@ function MesFilmsEnAttente() {
                 <div className={styles.sousTitreLigne}>
                   <Barre largeur="moyenne" />
                 </div>
+                <div className={styles.dateLigne}>
+                  <Barre largeur="courte" />
+                </div>
               </div>
             </div>
           ))}

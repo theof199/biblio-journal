@@ -16,7 +16,7 @@ import RangeeEnsuite from '../suivis/RangeeEnsuite'
 import RechercheSuivi from '../suivis/RechercheSuivi'
 import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useMemoireSuivis } from '../suivis/useMemoireSuivis'
-import Attente from '../ui/Attente'
+import Attente, { Barre } from '../ui/Attente'
 import Panne from '../ui/Panne'
 import styles from './Suivis.module.css'
 
@@ -110,6 +110,13 @@ export default function Suivis() {
           {/* Absent tant qu'une des deux listes n'a pas répondu : pas de « 0 rétrospective » qui grimperait sous les yeux. */}
           {realisateurs.data && sagas.data ? (
             <p className={styles.compteSuivis}>{compteSuivis(realisateurs.data.length, sagas.data.length)}</p>
+          ) : realisateurs.isPending || sagas.isPending ? (
+            // Une barre de la hauteur du compte : les intercalaires ne descendent pas quand il arrive.
+            <div className={styles.compteSuivis} data-testid="compte-en-attente">
+              <Attente muet>
+                <Barre largeur="moyenne" />
+              </Attente>
+            </div>
           ) : null}
         </div>
         <button

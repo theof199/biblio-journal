@@ -64,6 +64,10 @@ function PageSagaEnAttente() {
             </div>
           </div>
         </div>
+        <div className={styles.actions}>
+          <div className={`${styles.boutonSuivre} ${styles.boutonEnAttente}`} />
+          <div className={`${styles.bouton} ${styles.boutonEnAttente}`} />
+        </div>
         <ul className={styles.liste}>
           {Array.from({ length: FILMS_EN_ATTENTE }, (_, film) => (
             <LigneFilmEnAttente key={film} />

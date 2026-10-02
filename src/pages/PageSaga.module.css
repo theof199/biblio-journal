@@ -190,3 +190,9 @@
 .colonne {
   flex: 1;
 }
+
+/* Un bouton en blanc : celui de la page, sans rien à dire ni à faire, de la largeur qu'il aura à peu près. */
+.boutonEnAttente {
+  width: var(--attente-bouton-largeur);
+  cursor: default;
+}

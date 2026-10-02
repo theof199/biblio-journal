@@ -98,9 +98,12 @@ export default function AuCine() {
     <div className={styles.page}>
       <div className={styles.entete}>
         <h1 className={styles.titre}>Au ciné</h1>
-        <p className={styles.compte}>
-          {compte} séance{compte > 1 ? 's' : ''} cette année
-        </p>
+        {/* Absent tant que les séances ne sont pas là : « 0 séance » à côté d'un squelette se lirait comme un fait. */}
+        {seances.isPending ? null : (
+          <p className={styles.compte}>
+            {compte} séance{compte > 1 ? 's' : ''} cette année
+          </p>
+        )}
       </div>
 
       <section className={styles.section}>
@@ -109,7 +112,7 @@ export default function AuCine() {
           {majAffichee ? <p className={styles.maj}>{majAffichee}</p> : null}
         </div>
         {sorties.isPending ? (
-          <GrilleEnAttente />
+          <GrilleEnAttente avecSousTitre />
         ) : sorties.error ? (
           <Panne erreur={sorties.error} onReessayer={() => void sorties.refetch()} />
         ) : messageEnCours ? (
@@ -296,8 +299,11 @@ function TuileProchaine({ film, dejaVu, marque }: { film: SortieProchaineFilm; d
   )
 }
 
-/** Une grille de sorties laissée en blanc : deux rangées de trois tuiles. */
-function GrilleEnAttente({ muet = false }: { muet?: boolean }) {
+/**
+ * Une grille de sorties laissée en blanc : deux rangées de trois tuiles. Celle de la semaine en cours
+ * porte une ligne de plus sous le titre (les cinémas), celle de la semaine prochaine non.
+ */
+function GrilleEnAttente({ muet = false, avecSousTitre = false }: { muet?: boolean; avecSousTitre?: boolean }) {
   return (
     <Attente muet={muet}>
       <div className={styles.grille}>
@@ -309,6 +315,11 @@ function GrilleEnAttente({ muet = false }: { muet?: boolean }) {
             <div className={styles.titreTuile}>
               <Barre largeur="longue" />
             </div>
+            {avecSousTitre ? (
+              <div className={styles.sousTitreTuile}>
+                <Barre largeur="courte" />
+              </div>
+            ) : null}
           </div>
         ))}
       </div>

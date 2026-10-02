@@ -63,6 +63,7 @@ function PageRealisateurEnAttente() {
             </div>
           </div>
         </div>
+        <div className={`${styles.boutonSuivre} ${styles.boutonEnAttente}`} />
         <ul className={styles.liste}>
           {Array.from({ length: FILMS_EN_ATTENTE }, (_, film) => (
             <li key={film}>

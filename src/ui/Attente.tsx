@@ -16,6 +16,8 @@ interface Props {
  * `role="status"` par zone d'attente : le dessin est caché aux lecteurs d'écran, qui n'entendent que le libellé.
  */
 export default function Attente({ libelle = 'Chargement…', muet = false, className, children }: Props) {
+  // La classe de la page va sur le conteneur des formes, pas sur le rôle : c'est lui qui est le parent
+  // de la mise en page (écarts, colonnes) que la page lui demande.
   const classes = `${styles.attente} ${className ?? ''}`.trim()
   if (muet) {
     return (
@@ -25,9 +27,9 @@ export default function Attente({ libelle = 'Chargement…', muet = false, class
     )
   }
   return (
-    <div role="status" className={className}>
+    <div role="status">
       <span className="sr-only">{libelle}</span>
-      <div className={styles.attente} aria-hidden="true">
+      <div className={classes} aria-hidden="true">
         {children}
       </div>
     </div>

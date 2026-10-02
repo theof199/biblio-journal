@@ -1,7 +1,11 @@
 import styles from './Fronton.module.css'
 
-/** Les rails d'un panneau allumé : le jour, l'étiquette, trois pour le titre, un détail. */
-const RAILS = 6
+/**
+ * Les rails d'un panneau éteint. Un fronton allumé en compte cinq à sept selon son titre (le jour,
+ * l'étiquette, deux ou trois pour le titre, un détail) : le blanc en prend quatre, pour n'être jamais
+ * plus haut que le plus court, que la page agrandit à l'arrivée.
+ */
+const RAILS = 4
 
 /**
  * Le fronton éteint : le cadre, les ampoules et les rails, sans une lettre. Il ne reprend pas
