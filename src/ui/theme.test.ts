@@ -3,6 +3,7 @@ import theme from './theme.css?raw'
 import voyage from './voyage.css?raw'
 import coque from '../coque/Coque.module.css?raw'
 import affiche from './Affiche.module.css?raw'
+import attente from './Attente.module.css?raw'
 import auCine from '../pages/AuCine.module.css?raw'
 import suivis from '../pages/Suivis.module.css?raw'
 import recherche from '../pages/Recherche.module.css?raw'
@@ -491,5 +492,19 @@ describe('la coupure de presse du papier rendu', () => {
 
   it('rien n’y bouge : ni transition ni animation', () => {
     expect(sansCommentaires(papierRendu)).not.toMatch(/\b(transition|animation|@keyframes)\b/)
+  })
+})
+
+describe('l’attente', () => {
+  it('seule sa feuille boucle hors du Voyage', () => {
+    expect(sansCommentaires(attente)).toMatch(/\binfinite\b/)
+    const boucleuses = HORS_VOYAGE.filter(([, css]) => /\binfinite\b/.test(sansCommentaires(css))).map(([chemin]) => chemin)
+    expect(boucleuses).toEqual(['/src/ui/Attente.module.css'])
+  })
+
+  it('elle s’arrête pour qui demande moins de mouvement', () => {
+    expect(sansCommentaires(attente)).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.attente\s*\{[^{}]*animation:\s*none;[^{}]*\}\s*\}/,
+    )
   })
 })

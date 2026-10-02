@@ -76,8 +76,10 @@ chiffres au crayon gras, ses recherches, son « vu », son verdict, sa remarque,
 ## Le mouvement
 
 Un seul allumage par page, une fois, à l'arrivée (les lettres du fronton, les ampoules). Rien ne
-boucle, rien ne clignote. Sous `prefers-reduced-motion`, tout est allumé d'emblée
-(`src/ui/mouvement.ts`). Un défilement est toujours celui du doigt, jamais automatique.
+boucle, rien ne clignote, à une exception : une page qui attend ses données laisse ses objets en
+blanc, et ils respirent lentement, tous ensemble, jusqu'à l'arrivée des données (`src/ui/Attente.tsx`).
+Sous `prefers-reduced-motion`, tout est allumé d'emblée (`src/ui/mouvement.ts`) et les objets en blanc
+restent immobiles. Un défilement est toujours celui du doigt, jamais automatique.
 
 ## Les mots
 

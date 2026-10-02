@@ -760,6 +760,14 @@
   --largeur-affiche-fiche: 7rem; /* la jaquette de la fiche d'un visionnage */
   --largeur-logo-tmdb: 6rem; /* le logo TMDB de la mention */
   --hauteur-graphique: 3rem; /* un histogramme du profil */
+  /* L'attente : les objets d'une page laissés en blanc, qui respirent ensemble (`ui/Attente.tsx`). */
+  --attente-duree: 1.2s; /* une demi-respiration, de pleine à creuse */
+  --attente-creux: 0.5; /* l'opacité du creux de la respiration */
+  --attente-barre-hauteur: 0.75rem; /* une ligne de texte en blanc */
+  --attente-barre-opacite: 0.18; /* son encre, éclaircie : la couleur du texte qui la porte, jour et nuit */
+  --attente-barre-longue: 90%;
+  --attente-barre-moyenne: 65%;
+  --attente-barre-courte: 40%;
   --taille-icone-inline: 1rem; /* une icône posée au fil du texte, à côté d'une ligne de « Mes films » */
   /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));

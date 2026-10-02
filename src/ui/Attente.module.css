@@ -1,0 +1,41 @@
+/* Aucune valeur en dur : tout vient de `theme.css`. Seule feuille hors du Voyage qui boucle. */
+
+/* Une seule respiration par zone d'attente : toutes les formes qu'elle contient s'éclaircissent ensemble. */
+.attente {
+  animation: respiration var(--attente-duree) ease-in-out infinite alternate;
+}
+
+@keyframes respiration {
+  from {
+    opacity: 100%;
+  }
+
+  to {
+    opacity: var(--attente-creux);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attente {
+    animation: none;
+  }
+}
+
+.barre {
+  height: var(--attente-barre-hauteur);
+  border-radius: var(--rayon-s);
+  background: currentColor;
+  opacity: var(--attente-barre-opacite);
+}
+
+.longue {
+  width: var(--attente-barre-longue);
+}
+
+.moyenne {
+  width: var(--attente-barre-moyenne);
+}
+
+.courte {
+  width: var(--attente-barre-courte);
+}
