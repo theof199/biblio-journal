@@ -50,8 +50,9 @@ venir »** (que la signature oblige à suivre) : jamais un contournement dans le
 
 **Les images.** Un fichier d'un dossier `assets/` n'entre qu'avec son entrée dans le `CREDITS.md` du
 même dossier : œuvre, source (la page du fichier), licence et sa raison, traitement
-(`src/test/credits.test.ts`). Jamais une restauration récente (Lobster, Institut Lumière) : le scan
-peut porter ses propres droits. Jamais une vidéo au précache (`verifier:dist` la refuse, comme une
+(`src/test/credits.test.ts`). Une restauration récente (Lobster, Institut Lumière) est permise,
+décision du propriétaire du 2 octobre 2026 : l'appli est personnelle, sans but commercial, et la
+meilleure image l'emporte ; son entrée au `CREDITS.md` dit seulement d'où elle vient. Jamais une vidéo au précache (`verifier:dist` la refuse, comme une
 image au-dessus de son plafond ou hors du budget).
 
 ## Le Voyage : ce qu'on casse sans le voir
