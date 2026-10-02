@@ -160,9 +160,18 @@ export interface VueMonde {
 export interface TempsDEntree {
   /** Où la caméra se pose, en `y` du repère de la section (comme `VueMonde.avance`). */
   y: number
-  /** Le temps mis pour y venir depuis le temps d'avant, en millisecondes de base ; le premier temps se pose d'un coup. */
+  /**
+   * La durée du segment qui relie ce temps à celui d'avant dans la liste, en millisecondes de base :
+   * elle appartient au segment, pas au sens. À l'endroit, c'est le temps mis pour venir ici depuis
+   * le temps d'avant ; à l'envers, le trajet du temps i+1 au temps i dure la `duree` du temps i+1.
+   * Celle du premier temps de la liste n'est jamais lue : aucun segment ne le précède, et la caméra
+   * se pose d'un coup au premier temps du sens joué.
+   */
   duree: number
-  /** Le temps passé là avant de repartir, en millisecondes de base. */
+  /**
+   * La pause tenue à ce temps quand la caméra y arrive, dans les deux sens, en millisecondes de
+   * base. Le passage finit après la pause du dernier temps joué.
+   */
   arret: number
 }
 
@@ -170,8 +179,6 @@ export interface TempsDEntree {
 export interface SuiviGare {
   pseudo: string
   annee: number
-  /** Le moment (horloge du moteur, avant sa cadence) où ce Voyage a changé d'année ; -9 : il y est déjà. */
-  t0: number
 }
 
 /** Où tient la bande d'un monde dans la vue d'ensemble, en px CSS de l'écran, et l'ouverture de cette vue. */
@@ -182,17 +189,26 @@ export interface CadreDeBande {
   h: number
   /** L'ouverture de la vue d'ensemble, de 0 à 1 : l'opacité de ce qui s'y dessine. */
   e: number
+  /**
+   * Une image du monde (les photos des gares), nulle tant qu'elle charge ; le moteur redessine à son
+   * arrivée. La même que `VueMonde.image`.
+   */
+  image: (url: string) => CanvasImageSource | null
 }
 
 /** Ce que la carte sait des années d'un monde, pour sa bande de la vue d'ensemble. */
 export interface EtatDeBande {
   /** Les années de la section, dans l'ordre ; `attente` : en attente du Voyage suivi, à montrer fermée. */
-  annees: readonly { annee: number; etat: EtatCase; attente: boolean; profondeur: number }[]
+  annees: readonly { annee: number; etat: EtatCase; attente: boolean }[]
   /** L'année où se tient le membre (`EtatCarte.anneeAvatar`), qu'elle soit de ce monde ou non. */
   anneeAvatar: number
-  /** Le passeport porte-t-il la décennie ? */
-  bouclee: boolean
 }
+
+/**
+ * Ce que rend `SceneCollante.dessinerBande` : l'année que désigne le point (`x`, `y`) de l'écran, en
+ * px CSS, dans la bande qui vient d'être dessinée ; nulle s'il n'en désigne aucune.
+ */
+export type LectureDeBande = (x: number, y: number) => number | null
 
 /**
  * La scène collante d'un monde (plan 3a ; spec du monde 1900, « `Monde.scene` ») : sa section ne
@@ -205,11 +221,8 @@ export interface SceneCollante {
   ecranDeLaCase: (v: VueMonde, annee: number) => { x: number; y: number } | null
   /** Le Voyage suivi garé dans son année ; le monde inscrit lui-même sa zone `roulotte` (`v.zone`). */
   dessinerSuivi: (v: VueMonde, suivi: SuiviGare) => void
-  /**
-   * La bande du monde dans la vue d'ensemble, dessinée dans `cadre`. Rend de quoi lire un toucher :
-   * l'année que désigne le point (`x`, `y`) de l'écran, nulle s'il n'en désigne aucune.
-   */
-  dessinerBande: (g: CanvasRenderingContext2D, cadre: CadreDeBande, etat: EtatDeBande) => (x: number, y: number) => number | null
+  /** La bande du monde dans la vue d'ensemble, dessinée dans `cadre`. Rend de quoi lire un toucher ou un pincement (`LectureDeBande`). */
+  dessinerBande: (g: CanvasRenderingContext2D, cadre: CadreDeBande, etat: EtatDeBande) => LectureDeBande
   /** Les temps du passage d'entrée, dans l'ordre où il se joue à l'endroit. Vide : aucun passage. */
   entree: readonly TempsDEntree[]
   /** Les `y` de la section où la caméra se pose, un par année, dans l'ordre des années. */
