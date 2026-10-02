@@ -411,23 +411,23 @@ describe('le moteur de la carte', () => {
     expect(rappels.toucherAnnee).not.toHaveBeenCalled()
   })
 
-  // Relecture de la tâche 6 : l'adieu prend la caméra par `prendreLaCamera`, sans lâcher la visée
-  // d'un chantier, qu'il n'a jamais arrêtée : son comportement d'avant, figé tel quel. Mutation :
-  // `prendreLaCamera(false)` devenu `prendreLaCamera()` dans `direAdieu` (la visée lâchée, la caméra
-  // resterait au haut de la section).
-  it('l’adieu ne lâche pas la visée d’un chantier : la caméra posée au haut du monde reprend son glissement', () => {
+  // Décision du propriétaire du 2 octobre 2026 : l'adieu lâche la visée d'un chantier, que l'adieu
+  // d'avant laissait courir par oubli. Mutations : `this.visee = null` retiré de `prendreLaCamera`,
+  // ou `prendreLaCamera()` retiré de `direAdieu` (la caméra posée au haut du monde repartirait vers
+  // le chantier, image après image).
+  it('l’adieu lâche la visée d’un chantier : la caméra posée au haut du monde n’en repart pas', () => {
     const { moteur, rappels, cases } = monter()
     moteur.image(1000)
     moteur.defiler(moteur.ecranDeLAnnee(1899).y - 350)
     moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
     for (let i = 1; i <= 3; i++) moteur.image(1000 + i * 50)
+    // Le témoin : la visée courait bien, la caméra glissait vers le chantier.
+    expect(vi.mocked(rappels.defilerVers).mock.calls.length).toBeGreaterThan(1)
+    expect(rappels.defilerVers).not.toHaveBeenLastCalledWith(MARGE_HAUT)
+    vi.mocked(rappels.defilerVers).mockClear()
     void moteur.direAdieu(1890)
-    expect(rappels.defilerVers).toHaveBeenLastCalledWith(MARGE_HAUT)
     for (let i = 4; i <= 40; i++) moteur.image(1000 + i * 50)
-    // Le site de 1899 au milieu de l'écran, borné au haut de la carte : là où la visée menait.
-    const cible = Math.max(0, MARGE_HAUT + SITE_1899 - H / 2)
-    const dernier = vi.mocked(rappels.defilerVers).mock.lastCall![0]
-    expect(Math.abs(dernier - cible)).toBeLessThan(2)
+    expect(vi.mocked(rappels.defilerVers).mock.calls).toEqual([[MARGE_HAUT]])
   })
 
   // Mutation : un adieu qui ne se résout jamais, ou `adieu: -1` toujours dans `vueMonde`.
@@ -1842,16 +1842,48 @@ describe('le moteur de la carte', () => {
           return ou
         }
 
-        // Relecture de la tâche 6 : 1890 strictement identique. Sur une carte sans monde à scène, la
-        // sortie ne prend pas la caméra : celle qui suivait l'avatar y repart, comme avant le plan 3a.
-        // Mutation : la garde `this.bandes` retirée de `quitterEnsemble` (la caméra resterait où l'on a touché).
-        it('sur une carte sans section collante, la sortie par un toucher laisse la caméra suivre l’avatar qui marche', () => {
+        // Décision du propriétaire du 2 octobre 2026 : la sortie prend la caméra sur toute carte, 1890
+        // comprise. Mutations : `prendreLaCamera()` remis sous la garde `this.bandes` de
+        // `quitterEnsemble` (la caméra remonterait vers l'avatar, image après image) ;
+        // `this.suivre = false` retiré de `prendreLaCamera`.
+        it('sur une carte sans section collante, la sortie par un toucher arrête le suivi : la caméra reste où l’on a touché, la marche finit hors champ', async () => {
           const banc = enGare({ ailleurs: true, collant: false })
-          const ou = quitterEnMarchant(banc)
-          // Loin de l'avatar, tout en bas de la carte ; puis la caméra remonte vers lui, image après image.
+          const marche = banc.temoin(banc.moteur.marcher(1896))
+          banc.filer(80)
+          // Le témoin : avant la sortie, la caméra suivait l'avatar.
+          expect(banc.vers().length).toBeGreaterThan(0)
+          banc.moteur.basculerEnsemble(true)
+          banc.filer(80)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          toucher(banc.moteur, W / 2, H - 70)
+          const ou = banc.vers()[0]!
+          banc.filer(3000)
+          // Loin de l'avatar, tout en bas de la carte.
           expect(ou).toBeGreaterThan(5000)
-          expect(banc.vers().length).toBeGreaterThan(20)
-          expect(banc.vers()[banc.vers().length - 1]).toBeLessThan(600)
+          expect(banc.vers()).toEqual([ou])
+          // La marche, elle, va au bout : qui l'attendait est libéré.
+          await Promise.resolve()
+          expect(marche.fini).toBe(true)
+        })
+
+        // Le jumeau, pour la visée d'un chantier. Mutations : `prendreLaCamera()` remis sous la garde
+        // `this.bandes` de `quitterEnsemble`, ou `this.visee = null` retiré de `prendreLaCamera` (la
+        // caméra repartirait vers le chantier).
+        it('sur une carte sans section collante, la sortie par un toucher lâche la visée d’un chantier : la caméra reste où l’on a touché', () => {
+          const banc = enGare({ ailleurs: true, collant: false })
+          banc.moteur.defiler(banc.moteur.ecranDeLAnnee(1899).y - 350)
+          banc.moteur.majEtat({ cases: banc.cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+          banc.filer(120)
+          // Le témoin : la visée courait, la caméra glissait vers le chantier.
+          expect(banc.vers().length).toBeGreaterThan(1)
+          banc.moteur.basculerEnsemble(true)
+          banc.filer(80)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          toucher(banc.moteur, W / 2, H - 70)
+          const ou = banc.vers()[0]!
+          banc.filer(3000)
+          expect(ou).toBeGreaterThan(5000)
+          expect(banc.vers()).toEqual([ou])
         })
 
         // Le même geste sur une carte à section collante : la sortie prend la caméra, et elle reste

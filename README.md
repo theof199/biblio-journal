@@ -244,8 +244,10 @@ pincement dans sa bande, la vue d'ensemble pose la caméra à l'arrêt de l'ann�
 laisse où elle est si le point n'en désigne aucune. Dans une bande ordinaire, elle la pose à
 l'endroit touché, au milieu de l'écran ; si cela tombait dans une section collante, au haut de la
 section touchée. Fermée sans désigner d'endroit (le bouton), elle ne bouge pas la caméra.
-Sur une carte à section collante, cette sortie prend la caméra, et l'écho qu'en rend la page ne
-lance ni passage ni rappel.
+Cette sortie prend la caméra sur toute carte, 1890 comprise : celle qui suivait l'avatar ou visait
+un chantier reste où l'on a touché, et la marche finit hors champ s'il le faut. Sur une carte à
+section collante, l'écho qu'en rend la page ne lance ni passage ni rappel. `direAdieu` la prend de
+même : posée au haut du monde quitté, elle n'en repart pas vers un chantier.
 
 **Les images.** Chaque dossier `assets/` (`src/carte/assets/` pour les images communes,
 `src/mondes/<décennie>/assets/`) a son `CREDITS.md`, où chaque fichier porte son œuvre, sa source,

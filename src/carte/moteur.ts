@@ -462,16 +462,16 @@ export class MoteurCarte {
 
   /**
    * Le monde de `decennie` dit adieu (idée 7, 29 septembre 2026) : la caméra remonte en haut de sa
-   * section et la cinématique dure `monde.adieu` secondes. Rien quand le visiteur demande moins
-   * d'animations : le carton de l'année suivante porte seul la nouvelle.
+   * section et y reste (l'adieu prend la caméra : ni l'avatar ni un chantier ne la rappellent), et
+   * la cinématique dure `monde.adieu` secondes. Rien quand le visiteur demande moins d'animations :
+   * le carton de l'année suivante porte seul la nouvelle.
    */
   direAdieu(decennie: number): Promise<void> {
     const s = this.plan.sections.find((x) => x.decennie === decennie)
     const duree = this.deps.mondeDe(decennie).adieu
     if (!s || duree <= 0 || this.calme) return Promise.resolve()
     this.adieu?.fin()
-    // La visée d'un chantier, elle, n'est pas lâchée : l'adieu ne l'a jamais arrêtée.
-    this.prendreLaCamera(false)
+    this.prendreLaCamera()
     this.camY = s.y0
     this.rappels.defilerVers(s.y0)
     return new Promise((fin) => {
@@ -690,14 +690,13 @@ export class MoteurCarte {
 
   /**
    * Un seul glissement à la fois : qui prend la caméra arrête le roulement et le passage en cours
-   * (qui les attendait est libéré), et la caméra cesse de suivre l'avatar. `visee` faux : la visée
-   * d'un chantier est laissée (l'adieu).
+   * (qui les attendait est libéré), et la caméra cesse de suivre l'avatar comme de viser un chantier.
    */
-  private prendreLaCamera(visee = true): void {
+  private prendreLaCamera(): void {
     this.arreterLeRoulement()
     this.arreterLePassage()
     this.suivre = false
-    if (visee) this.visee = null
+    this.visee = null
   }
 
   /** Le défilement en cours n'a plus rien à constater : ni son départ, ni son repos, ni l'arrêt qu'il a choisi au calme. */
@@ -1035,12 +1034,15 @@ export class MoteurCarte {
     if (this.ens.cible === 0 && this.ens.q === 0) return
     const y = point ? this.sortieDeLEnsemble(point.x, point.y) : null
     if (y !== null) {
-      // Sur une carte à section collante, la sortie prend la caméra : un seul glissement à la fois,
-      // et le défilement d'avant n'a plus rien à constater (son départ dirait un geste entré dans
-      // une zone des temps, son repos un rappel). Sur une carte ordinaire, rien de cela : la caméra
-      // qui suivait l'avatar ou visait un chantier y repart à l'image suivante, comme avant le plan 3a.
+      // La sortie prend la caméra, sur toute carte : un seul glissement à la fois, et celle qui
+      // suivait l'avatar ou visait un chantier reste où l'on a touché (la marche finit hors champ
+      // s'il le faut).
+      this.prendreLaCamera()
+      // Sur une carte à section collante, le défilement d'avant n'a plus rien à constater (son
+      // départ dirait un geste entré dans une zone des temps, son repos un rappel), et l'écho de la
+      // sortie est attendu. Sans section collante, le défilement ne se constate pas : rien à
+      // oublier, et un écho attendu que personne ne lèverait.
       if (this.bandes) {
-        this.prendreLaCamera()
         this.oublierLeDefilement()
         this.sortie = y
       }
