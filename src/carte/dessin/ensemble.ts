@@ -1,8 +1,8 @@
 import type { PlanCarte } from '../placement'
 import type { EtatCarte } from '../moteur'
-import type { Monde } from '../../mondes/types'
+import type { CadreDeBande, LectureDeBande, Monde } from '../../mondes/types'
 import type { EtatCase } from '../../voyage/regles'
-import type { geoEnsemble } from '../ensemble'
+import { genreDeBande, type geoEnsemble } from '../ensemble'
 import { TAU, rgba } from '../outils'
 
 const rr = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void => {
@@ -62,12 +62,30 @@ function marquise(g: CanvasRenderingContext2D, x: number, y: number, etat: EtatC
   g.restore()
 }
 
+/** La bande qu'un monde à `scene` vient de dessiner : le rang de sa section, et de quoi y lire un point de l'écran. */
+export interface BandeLue {
+  section: number
+  lire: LectureDeBande
+}
+
 /**
  * La vue d'ensemble (maquette : `dessinerEnsemble`, `marquise`) : une bande par section aux
  * couleurs de `palette.fond`, une marquise par année dans une section détaillée, une seule pour
- * une section repliée. Ni collures ni bobines.
+ * une section repliée. Ni collures ni bobines. Un monde à `scene` dessine sa bande lui-même, dans
+ * le cadre que tiendrait la bande commune (plan 3a) : le dessin commun n'y pose ni fond ni
+ * marquise, et rend ce que le monde donne pour y lire un toucher. `image` : `CadreDeBande.image`.
  */
-export function dessinerEnsemble(g: CanvasRenderingContext2D, W: number, H: number, e: number, geo: ReturnType<typeof geoEnsemble>, plan: PlanCarte, etat: EtatCarte, mondeDe: (d: number) => Monde): void {
+export function dessinerEnsemble(
+  g: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  e: number,
+  geo: ReturnType<typeof geoEnsemble>,
+  plan: PlanCarte,
+  etat: EtatCarte,
+  mondeDe: (d: number) => Monde,
+  image: CadreDeBande['image'],
+): BandeLue[] {
   g.globalAlpha = Math.min(1, e * 1.2)
   g.fillStyle = '#0b0806'
   g.fillRect(0, 0, W, H)
@@ -75,15 +93,28 @@ export function dessinerEnsemble(g: CanvasRenderingContext2D, W: number, H: numb
   const k = W / 390
   const parAnnee = new Map(etat.cases.map((c) => [c.annee, c]))
   const ici = plan.cases.find((c) => c.annee === etat.anneeAvatar)
+  const lues: BandeLue[] = []
   plan.sections.forEach((s, i) => {
     const bande = geo.bandes[i]
     if (!bande) return
     const monde = mondeDe(s.decennie)
+    const genre = genreDeBande(monde, ici?.section === i)
+    if (genre === 'scene' && monde.scene) {
+      const annees = s.annees.map((annee) => {
+        const c = parAnnee.get(annee)
+        return { annee, etat: c?.etat ?? 'verrou', attente: c?.attente ?? false }
+      })
+      // Ce que le monde laisse sur le contexte (une coupe, un repère, une opacité) ne déborde pas sur les bandes suivantes.
+      g.save()
+      const lire = monde.scene.dessinerBande(g, { x: 10, y: bande.y0, w: W - 20, h: Math.max(4, bande.y1 - bande.y0), e, image }, { annees, anneeAvatar: etat.anneeAvatar })
+      g.restore()
+      lues.push({ section: i, lire })
+      return
+    }
     g.fillStyle = rgba(monde.palette.fond)
     rr(g, 10, bande.y0, W - 20, Math.max(4, bande.y1 - bande.y0), 10)
     g.fill()
-    const detaillee = !monde.aVenir || ici?.section === i
-    if (detaillee) {
+    if (genre === 'detaillee') {
       for (const c of plan.cases.filter((x) => x.section === i)) {
         const y = geo.versEcran(c.y)
         const e2 = parAnnee.get(c.annee)
@@ -95,4 +126,5 @@ export function dessinerEnsemble(g: CanvasRenderingContext2D, W: number, H: numb
     }
   })
   g.globalAlpha = 1
+  return lues
 }

@@ -3,7 +3,7 @@ import { construireRoute, pointA, type Route } from './route'
 import { placerCarte, type PlanCarte } from './placement'
 import { cibleCamera, poidsSections, presencesSections } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
-import { geoEnsemble } from './ensemble'
+import { genreDeBande, geoEnsemble } from './ensemble'
 import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, tremblement } from './traitement'
@@ -13,7 +13,7 @@ import type { EtatCase } from '../voyage/regles'
 import { dessinerCase, dessinerCorail } from './dessin/cases'
 import { dessinerAvatar } from './dessin/avatar'
 import { bandesDuSol, couperAuxBandes, dessinerSol, TUILE, type Bande } from './dessin/sol'
-import { dessinerEnsemble } from './dessin/ensemble'
+import { dessinerEnsemble, type BandeLue } from './dessin/ensemble'
 import { Particules } from './dessin/particules'
 import { Effets, type Feu } from './dessin/effets'
 import { afficheTraitee } from './dessin/affiches'
@@ -227,6 +227,17 @@ export class MoteurCarte {
   private depart: number | null = null
   /** Ce que la page sait de l'entrée à portée de geste (`Rappels.entreeProche`). */
   private entreeDite: number | null = null
+  /**
+   * Ce que les mondes à `scene` ont rendu à la dernière image dessinée de la vue d'ensemble
+   * (`SceneCollante.dessinerBande`) : de quoi lire l'année sous un toucher ou un pincement. Vide
+   * tant qu'aucune image de la vue d'ensemble n'est dessinée, et dès qu'elle ne l'est plus.
+   */
+  private lectures: BandeLue[] = []
+  /**
+   * Où la sortie de la vue d'ensemble vient de poser la caméra : ce que la page en rend est son
+   * écho, pas un geste du membre. Nul dès qu'un défilement mène ailleurs.
+   */
+  private sortie: number | null = null
   private readonly geste: Geste
   private readonly ctx: CanvasRenderingContext2D | null
   private readonly canvas: Toile
@@ -355,7 +366,7 @@ export class MoteurCarte {
       return
     }
     if (this.ens.cible) {
-      if (type === 'haut') this.quitterEnsemble(y)
+      if (type === 'haut') this.quitterEnsemble({ x, y })
       return
     }
     if (type === 'bas') this.geste.baisser(x, y, souris)
@@ -375,8 +386,11 @@ export class MoteurCarte {
     if (nombre > 0) this.reprendreLaCamera()
   }
 
-  /** Deux doigts : `ecart` nul les relâche. Rend vrai quand le geste est pris (la page appelle alors `preventDefault`). */
-  pincer(ecart: number | null, yMilieu: number): boolean {
+  /**
+   * Deux doigts : `ecart` nul les relâche ; `xMilieu`, `yMilieu` : le milieu des deux doigts, à
+   * l'écran. Rend vrai quand le geste est pris (la page appelle alors `preventDefault`).
+   */
+  pincer(ecart: number | null, xMilieu: number, yMilieu: number): boolean {
     if (ecart === null) {
       this.pincement = null
       return false
@@ -387,7 +401,7 @@ export class MoteurCarte {
     }
     const lu = lirePincement(this.pincement, ecart, this.ens.cible === 1)
     if (lu === 'ouvrir') this.entrerEnsemble()
-    if (lu === 'fermer') this.quitterEnsemble(yMilieu)
+    if (lu === 'fermer') this.quitterEnsemble({ x: xMilieu, y: yMilieu })
     if (lu) this.pincement = null
     return true
   }
@@ -718,6 +732,12 @@ export class MoteurCarte {
     // Le passage commande la caméra : ce que la page rend n'est que l'écho de ce qu'il pose, et un
     // défilement du membre ne le détourne pas (un toucher, lui, le pose à sa fin).
     if (this.passage) return
+    // La sortie de la vue d'ensemble a posé la caméra : la page le rend, à l'arrondi près. Cet écho
+    // n'est le départ d'aucun geste : il ne lance ni passage d'entrée, ni rappel.
+    if (this.sortie !== null) {
+      if (Math.abs(this.camY - this.sortie) <= A_L_ARRET) return
+      this.sortie = null
+    }
     const r = this.roulement
     if (r) {
       // La page rend ce que le roulement a posé, tôt ou tard : tout ce qui tombe entre son départ
@@ -989,11 +1009,26 @@ export class MoteurCarte {
     this.demander()
   }
 
-  private quitterEnsemble(yEcran: number | null): void {
+  /**
+   * Ferme la vue d'ensemble. `point` : où le toucher ou le pincement la quitte, à l'écran ; nul
+   * quand elle se ferme sans désigner d'endroit (le bouton, « Tu es ici », Échap) : la caméra ne
+   * bouge pas.
+   */
+  private quitterEnsemble(point: { x: number; y: number } | null): void {
     if (this.ens.cible === 0 && this.ens.q === 0) return
-    if (yEcran !== null) {
-      const y = this.geoEnsemble().versMonde(yEcran)
-      this.rappels.defilerVers(clamp(y - this.H * 0.5, 0, Math.max(0, this.plan.hauteur - this.H)))
+    const y = point ? this.sortieDeLEnsemble(point.x, point.y) : null
+    if (y !== null) {
+      // La sortie prend la caméra : un seul glissement à la fois, et le défilement d'avant n'a plus
+      // rien à constater (son départ dirait un geste entré dans une zone des temps, son repos un rappel).
+      this.arreterLeRoulement()
+      this.arreterLePassage()
+      this.suivre = false
+      this.visee = null
+      this.defilement = { aDater: false, depuis: null }
+      this.pose = null
+      this.depart = null
+      this.sortie = y
+      this.poser(y)
     }
     this.ens.cible = 0
     if (this.calme) this.ens.q = 0
@@ -1001,12 +1036,39 @@ export class MoteurCarte {
     this.demander()
   }
 
+  /**
+   * Où la caméra se pose quand la vue d'ensemble est quittée au point (`x`, `y`) de l'écran, en `y`
+   * de carte ; nul : elle reste où elle est.
+   *
+   * Dans la bande d'un monde à `scene`, à l'arrêt de l'année que le monde désigne sous le point
+   * (`LectureDeBande`, rendue à la dernière image dessinée de la vue d'ensemble). Nul si aucune
+   * image de la vue d'ensemble n'a été dessinée, si le point n'y désigne aucune année, ou si l'année
+   * désignée n'a pas d'arrêt.
+   *
+   * Dans une bande ordinaire, l'endroit touché au milieu de l'écran ; jamais dans une section
+   * collante : touché près du haut de sa section, il laisserait la caméra entre deux arrêts de la
+   * section d'avant, et elle se tient alors au haut de la section touchée.
+   */
+  private sortieDeLEnsemble(x: number, y: number): number | null {
+    const geo = this.geoEnsemble()
+    const section = geo.bandeSous(y)
+    const s = this.plan.sections[section]
+    if (!s) return null
+    if (this.sceneDe(section)) {
+      const annee = this.lectures.find((l) => l.section === section)?.lire(x, y) ?? null
+      return annee === null ? null : (this.arretDe(annee) ?? null)
+    }
+    const fond = Math.max(0, this.plan.hauteur - this.H)
+    const cible = clamp(geo.versMonde(y) - this.H * 0.5, 0, fond)
+    return this.collanteEn(cible) ? clamp(s.y0, 0, fond) : cible
+  }
+
   private geoEnsemble() {
     const ici = this.plan.cases.find((c) => c.annee === this.etat.anneeAvatar)
     const sources = this.plan.sections.map((s, i) => ({
       y0: s.y0,
       hauteur: s.hauteur,
-      detaillee: !this.deps.mondeDe(s.decennie).aVenir || i === ici?.section,
+      detaillee: genreDeBande(this.deps.mondeDe(s.decennie), i === ici?.section) === 'detaillee',
     }))
     return geoEnsemble(sources, this.H, 132, 64)
   }
@@ -1195,7 +1257,9 @@ export class MoteurCarte {
       this.scene(poids, presence, mondeP)
       g.restore()
     }
-    if (e > 0.001) dessinerEnsemble(g, this.W, this.H, e, this.geoEnsemble(), this.plan, this.etat, (d) => this.deps.mondeDe(d))
+    // Ce que les mondes à `scene` rendent pour lire leur bande ne vaut que pour l'image qui vient d'être dessinée.
+    this.lectures =
+      e > 0.001 ? dessinerEnsemble(g, this.W, this.H, e, this.geoEnsemble(), this.plan, this.etat, (d) => this.deps.mondeDe(d), (url) => this.deps.image(url, () => this.demander())) : []
     const vol = this.ouVole()
     if (vol) dessinerEnvol(g, vol.x, vol.y, vol.e, this.t)
     this.particules.dessiner(g, true)

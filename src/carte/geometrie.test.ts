@@ -3,11 +3,12 @@ import { construireRoute, pointA } from './route'
 import { MARGE_HAUT, placerCarte } from './placement'
 import { cibleCamera, poidsSections, presencesSections } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
-import { geoEnsemble } from './ensemble'
+import { genreDeBande, geoEnsemble, POIDS_REPLIEE } from './ensemble'
 import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, SCINTILLEMENT_MAX, tremblement } from './traitement'
 import { HAUTEUR_MIN_SECTION, trace1890, traceAVenir } from '../mondes/trace'
+import type { SceneCollante } from '../mondes/types'
 
 const traceDe = (decennie: number, annees: readonly number[]) => (decennie === 1890 ? trace1890(annees) : traceAVenir(annees))
 const annees = (de: number, a: number) => Array.from({ length: a - de + 1 }, (_, i) => de + i)
@@ -219,6 +220,56 @@ describe('la vue d’ensemble', () => {
     // Le vide au-dessus de la première section n'a pas de bande : il se ramène à son bord.
     for (let y = MARGE_HAUT; y < plan.hauteur; y += 97) expect(geo.versMonde(geo.versEcran(y))).toBeCloseTo(y, 6)
     expect(geo.versEcran(plan.cases[3]!.y)).toBeLessThan(geo.versEcran(plan.cases[40]!.y))
+  })
+})
+
+describe('la bande d’un monde à scène dans la vue d’ensemble (plan 3a)', () => {
+  const scene: SceneCollante = { ecranDeLaCase: () => null, dessinerSuivi: () => undefined, dessinerBande: () => () => null, entree: [], arrets: [] }
+  /** 1890 et 1900 ont leur chantier ; 1900 est collant, sa section fait 7000 px ; le reste est à venir. */
+  const mondeDe = (decennie: number) => ({ aVenir: decennie > 1900, scene: decennie === 1900 ? scene : null })
+  const plan = placerCarte(annees(1895, 2026), (d, a) => (d === 1900 ? { ...traceAVenir(a), hauteur: 7000 } : traceDe(d, a)))
+  const geoPour = (sectionAvatar: number) =>
+    geoEnsemble(
+      plan.sections.map((s, i) => ({ y0: s.y0, hauteur: s.hauteur, detaillee: genreDeBande(mondeDe(s.decennie), i === sectionAvatar) === 'detaillee' })),
+      700,
+      132,
+      64,
+    )
+
+  // Mutation : la ligne `scene` retirée de `genreDeBande` (`detaillee` laissé à `!aVenir`) : la
+  // section collante pesée à ses 7000 px, 1890 tombe à onze pixels par année.
+  it('ne pèse que le poids d’une repliée, quelle que soit la hauteur de sa section : 1890 garde trente pixels par année', () => {
+    // Que le membre se tienne en 1890 ou dans le monde à scène.
+    for (const sectionAvatar of [0, 1]) {
+      const geo = geoPour(sectionAvatar)
+      const [b1890, b1900, b1910] = [geo.bandes[0]!, geo.bandes[1]!, geo.bandes[2]!]
+      expect((b1890.y1 - b1890.y0) / 5).toBeGreaterThanOrEqual(30)
+      // Elle tient la même place qu'une décennie repliée, et dans la proportion de son poids.
+      expect(b1900.y1 - b1900.y0).toBeCloseTo(b1910.y1 - b1910.y0, 6)
+      expect((b1900.y1 - b1900.y0) / (b1890.y1 - b1890.y0)).toBeCloseTo(POIDS_REPLIEE / 1240, 6)
+    }
+  })
+
+  // Le poids des sections ordinaires ne change pas. Mutations : un monde à venir détaillé sans
+  // l'avatar ; replié avec lui ; un monde qui a son chantier replié.
+  it('laisse aux mondes sans scène leur genre : détaillé pour un chantier ou sous l’avatar, replié sinon', () => {
+    expect(genreDeBande({ aVenir: true, scene: null }, false)).toBe('repliee')
+    expect(genreDeBande({ aVenir: true, scene: null }, true)).toBe('detaillee')
+    expect(genreDeBande({ aVenir: false, scene: null }, false)).toBe('detaillee')
+    expect(genreDeBande({ aVenir: true, scene }, true)).toBe('scene')
+    expect(genreDeBande({ aVenir: false, scene }, false)).toBe('scene')
+  })
+
+  // Mutation : `bandeSous` qui rend -1 hors des bandes, ou la bande d'avant à la frontière.
+  it('range un point de l’écran sous la bande où `versMonde` le range', () => {
+    const geo = geoPour(0)
+    geo.bandes.forEach((b, i) => {
+      expect(geo.bandeSous(b.y0)).toBe(i)
+      expect(geo.bandeSous((b.y0 + b.y1) / 2)).toBe(i)
+    })
+    expect(geo.bandeSous(0)).toBe(0)
+    expect(geo.bandeSous(699)).toBe(geo.bandes.length - 1)
+    expect(geoEnsemble([], 700, 132, 64).bandeSous(300)).toBe(-1)
   })
 })
 

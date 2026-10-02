@@ -120,8 +120,10 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
     const ecart = (t: TouchList) => (t.length === 2 ? Math.hypot(t[0]!.clientX - t[1]!.clientX, t[0]!.clientY - t[1]!.clientY) : null)
     const touches = (e: TouchEvent) => {
       const r = vue.getBoundingClientRect()
-      const milieu = e.touches.length === 2 ? (e.touches[0]!.clientY + e.touches[1]!.clientY) / 2 - r.top : 0
-      if (moteur.pincer(ecart(e.touches), milieu) && e.cancelable) e.preventDefault()
+      const deux = e.touches.length === 2
+      const xMilieu = deux ? (e.touches[0]!.clientX + e.touches[1]!.clientX) / 2 - r.left : 0
+      const yMilieu = deux ? (e.touches[0]!.clientY + e.touches[1]!.clientY) / 2 - r.top : 0
+      if (moteur.pincer(ecart(e.touches), xMilieu, yMilieu) && e.cancelable) e.preventDefault()
     }
     // Le nombre de doigts posés sur la carte : il survit au `pointercancel` du défilement natif, que
     // le moteur ne doit pas combattre. `targetTouches`, pas `touches` : un doigt posé ailleurs que

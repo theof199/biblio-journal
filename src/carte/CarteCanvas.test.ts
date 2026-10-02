@@ -85,6 +85,19 @@ describe('le pont entre le DOM et le moteur', () => {
     for (const [, , options] of duRelais) expect(options).toEqual({ passive: true })
   })
 
+  // Plan 3a : quitter la vue d'ensemble d'un pincement désigne une année sous le milieu des deux
+  // doigts, dans le repère de la carte. Mutations : le `x` du milieu non relayé (0, ou le `y` à sa
+  // place) ; le bord gauche de la carte non retranché ; le `y` perdu en chemin.
+  it('relaie au moteur l’écart des deux doigts et leur milieu, en x comme en y, dans le repère de la carte', () => {
+    const { moteur, vue } = monter()
+    vi.spyOn(vue, 'getBoundingClientRect').mockReturnValue({ left: 20, top: 50 } as DOMRect)
+    fireEvent.touchMove(vue, { touches: [{ clientX: 100, clientY: 300 }, { clientX: 160, clientY: 380 }] })
+    expect(moteur.pincer).toHaveBeenLastCalledWith(100, 110, 290)
+    // Un seul doigt : le pincement est relâché.
+    fireEvent.touchEnd(vue, { touches: [{ clientX: 100, clientY: 300 }] })
+    expect(moteur.pincer).toHaveBeenLastCalledWith(null, 0, 0)
+  })
+
   // Plan 3a : le rappel neuf du moteur arrive à la page. Mutation : la ligne `entreeProche` retirée
   // du relais (la page n'offrirait jamais « Prendre le train »).
   it('relaie à la page l’entrée à portée de geste que dit le moteur', () => {

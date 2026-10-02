@@ -3,7 +3,7 @@ import { A_L_ARRET, CORAIL, DUREE_DE_L_ENVOL, DUREE_DU_ROULEMENT, MAX_TUILES, Mo
 import { contexteFactice, type Appel } from '../test/contexteFactice'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, DateVraie, Monde, MusiqueDuMonde, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
+import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Monde, MusiqueDuMonde, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
 import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -52,6 +52,12 @@ const OU_SUIVI = { x: 330, y: 130 }
 const MUSIQUE_1900: MusiqueDuMonde = { battue: 0.5, temps: 16, volume: 0.4, filtre: 1800, jouer: () => undefined }
 /** Les Voyages suivis que le monde collant a été prié de dessiner. */
 const suivis: SuiviGare[] = []
+/**
+ * Les bandes de la vue d'ensemble que le monde collant a été prié de dessiner : ce qu'il a reçu. Il
+ * y range ses dix années de gauche à droite, en dix vignettes égales, et ne désigne rien hors de
+ * son cadre.
+ */
+const bandes: Array<{ cadre: CadreDeBande; etat: EtatDeBande }> = []
 function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = [], entree: readonly TempsDEntree[] = []): Monde {
   const base = mondeAVenir(decennie)
   const scene: Monde['scene'] =
@@ -62,7 +68,11 @@ function mondeDEssai(decennie: number, collant = false, arrets: readonly number[
             suivis.push(suivi)
             v.zone('roulotte', OU_SUIVI.x, OU_SUIVI.y, 36, undefined, 2)
           },
-          dessinerBande: () => () => null,
+          dessinerBande: (g, cadre, etat) => {
+            bandes.push({ cadre, etat })
+            g.fillText('bande 1900', cadre.x, cadre.y)
+            return (x, y) => (x >= cadre.x && x < cadre.x + cadre.w && y >= cadre.y && y < cadre.y + cadre.h ? 1900 + Math.floor(((x - cadre.x) / cadre.w) * 10) : null)
+          },
           entree,
           arrets,
         }
@@ -122,6 +132,7 @@ function monter(
   vus.length = 0
   reactions.length = 0
   suivis.length = 0
+  bandes.length = 0
   const principal = contexteFactice()
   const toiles: Appel[][] = []
   /** Les images que le moteur a demandées et qu'aucun test n'a encore jouées : sa boucle, pour qui veut la faire tourner. */
@@ -1587,6 +1598,267 @@ describe('le moteur de la carte', () => {
         void banc.moteur.direAdieu(1890)
         banc.filer(400)
         expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(MARGE_HAUT)
+      })
+
+      describe('la vue d’ensemble d’un monde à scène (plan 3a)', () => {
+        /** Un passage dont la zone des temps commence dans le bas de 1890 et tient les arrêts de 1901 à 1903. */
+        const TEMPS: TempsDEntree[] = [
+          { y: -600, duree: 0, arret: 200 },
+          { y: 300, duree: 500, arret: 100 },
+          { y: 700, duree: 800, arret: 300 },
+        ]
+        type Banc = ReturnType<typeof enGare>
+        /** La vue d'ensemble ouverte, `duree` millisecondes d'images jouées, les rappels oubliés : rend le cadre donné au monde à la dernière. */
+        const ouvrir = (banc: Banc, duree = 1000) => {
+          banc.moteur.basculerEnsemble(true)
+          banc.filer(duree)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          vi.mocked(banc.rappels.ensemble).mockClear()
+          return bandes[bandes.length - 1]!.cadre
+        }
+        /** Le milieu de la vignette de `annee`, dans la bande du monde d'essai. */
+        const pointDe = (cadre: CadreDeBande, annee: number) => ({ x: cadre.x + ((annee - 1900 + 0.5) * cadre.w) / 10, y: cadre.y + cadre.h / 2 })
+        /** Deux doigts qui s'écartent autour du point : le pincement qui referme la vue d'ensemble. */
+        const ecarter = (moteur: MoteurCarte, x: number, y: number) => {
+          moteur.pincer(100, x, y)
+          moteur.pincer(200, x, y)
+        }
+        /** Où la caméra est, d'après la dernière image dessinée où `annee` avait sa section à l'écran ; nul si aucune. */
+        const camera = (annee: number, haut: number) => {
+          const v = vueDe(annee)
+          return v ? v.avance + haut : null
+        }
+        const passageJoue = () => vus.some((v) => v.entree >= 0)
+        const DECENNIES = 14
+
+        // Mutations : dans `geoEnsemble` du moteur, `detaillee` laissé à `!aVenir || i === ici?.section`
+        // (le membre dans 1900, sa bande pèserait la hauteur de sa section : 202 px au lieu de 36) ;
+        // la ligne `scene` retirée de `genreDeBande` ; le cadre décalé ; `attente` ou l'état oubliés ;
+        // le rappel de `cadre.image` vidé (l'image arrivée, la bande ne serait pas redessinée).
+        it('donne au monde le cadre d’une bande repliée, l’état de ses années et ses images, et n’y pose aucune marquise', () => {
+          const banc = auTrain({ calme: true, arrets: ARRETS })
+          banc.moteur.majEtat({ cases: banc.cases.map((c) => (c.annee === 1900 ? { ...c, attente: true } : c)), anneeAvatar: 1900, tampons: [], roulotte: null })
+          const image = vi.spyOn(banc.deps, 'image')
+          const tourner = () => {
+            for (let ms = 1000; banc.demandees.length; ms += 40) for (const f of banc.demandees.splice(0)) f(ms)
+          }
+          tourner()
+          banc.moteur.basculerEnsemble(true)
+          banc.appels.length = 0
+          tourner()
+          const { cadre, etat } = bandes[bandes.length - 1]!
+          const hauteur = (H - 132 - 64) / DECENNIES
+          expect(cadre.x).toBe(10)
+          expect(cadre.w).toBe(W - 20)
+          expect(cadre.y).toBeCloseTo(132 + hauteur, 6)
+          expect(cadre.h).toBeCloseTo(hauteur, 6)
+          expect(cadre.e).toBe(1)
+          expect(etat.anneeAvatar).toBe(1900)
+          expect(etat.annees.map((x) => x.annee)).toEqual([1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909])
+          expect(etat.annees.slice(0, 2)).toEqual([
+            { annee: 1900, etat: 'encours', attente: true },
+            { annee: 1901, etat: 'verrou', attente: false },
+          ])
+          // Le monde a dessiné sa bande ; le moteur n'y a écrit aucun millésime, ni la décennie.
+          expect(ecrits(banc.appels)).toContain('bande 1900')
+          expect(ecrits(banc.appels)).toContain('1910 – 1919')
+          for (const texte of ['1900', '1905', '1909', '1900 – 1909']) expect(ecrits(banc.appels)).not.toContain(texte)
+          // L'image que le monde demande passe par les dépendances du moteur, qui redessine à son arrivée.
+          image.mockClear()
+          expect(banc.demandees).toEqual([])
+          expect(cadre.image('gare.webp')).not.toBeNull()
+          expect(image).toHaveBeenCalledTimes(1)
+          expect(image.mock.calls[0]![0]).toBe('gare.webp')
+          image.mock.calls[0]![1]()
+          expect(banc.demandees.length).toBe(1)
+        })
+
+        // Mutations : `x` non passé à `quitterEnsemble` depuis `pointeur` (un `x` fixe : la même année
+        // pour les deux touchers, ou aucune) ; l'année lue sur le seul `y` (l'ancien chemin : la
+        // caméra posée d'après la hauteur du toucher dans la bande).
+        it('un toucher dans la bande du monde mène à l’arrêt de l’année que le monde désigne sous le point, et la caméra y reste', () => {
+          for (const annee of [1906, 1902]) {
+            const banc = enGare()
+            banc.poserA(arret(1900))
+            const cadre = ouvrir(banc)
+            const p = pointDe(cadre, annee)
+            toucher(banc.moteur, p.x, p.y)
+            expect(banc.rappels.ensemble).toHaveBeenLastCalledWith(false)
+            expect(banc.vers()).toEqual([arret(annee)])
+            // La page rend ce défilement ; au repos, rien ne reprend la caméra.
+            banc.moteur.defiler(arret(annee))
+            banc.filer(REPOS_DU_DEFILEMENT + 1500)
+            expect(banc.vers()).toEqual([arret(annee)])
+            expect(camera(1900, HAUT_1900)).toBe(arret(annee))
+          }
+        })
+
+        // Mutation : le seul `y` du milieu passé à `quitterEnsemble` depuis `pincer` (un `x` fixe).
+        it('un pincement qui referme dans la bande du monde mène à l’arrêt de l’année sous le milieu des doigts', () => {
+          for (const annee of [1907, 1903]) {
+            const banc = enGare()
+            banc.poserA(arret(1900))
+            const cadre = ouvrir(banc)
+            const p = pointDe(cadre, annee)
+            ecarter(banc.moteur, p.x, p.y)
+            expect(banc.rappels.ensemble).toHaveBeenLastCalledWith(false)
+            expect(banc.vers()).toEqual([arret(annee)])
+          }
+        })
+
+        // Les replis : la sortie ferme la vue d'ensemble et laisse la caméra où elle est. Mutations :
+        // une année nulle rendue au chemin des bandes ordinaires (la caméra posée d'après le seul
+        // `y`) ; les lectures gardées quand la vue d'ensemble n'est plus dessinée (celle d'une
+        // ouverture d'avant lue à la réouverture) ; l'arrêt manquant remplacé par un nombre (`?? 0`).
+        it('ne bouge pas la caméra quand aucune image de la vue d’ensemble n’a été dessinée, quand le point ne désigne aucune année, ou quand l’année n’a pas d’arrêt', () => {
+          const banc = enGare({ calme: true })
+          banc.poserA(arret(1900))
+          const fermee = () => {
+            expect(banc.rappels.ensemble).toHaveBeenLastCalledWith(false)
+            banc.filer(REPOS_DU_DEFILEMENT + 400)
+            expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+          }
+          // Aucune image dessinée : ni à la première ouverture, ni à une réouverture.
+          banc.moteur.basculerEnsemble(true)
+          toucher(banc.moteur, W / 2, 132 + ((H - 132 - 64) / DECENNIES) * 1.5)
+          fermee()
+          const cadre = ouvrir(banc, 80)
+          const p = pointDe(cadre, 1906)
+          banc.moteur.basculerEnsemble(false)
+          banc.filer(80)
+          banc.moteur.basculerEnsemble(true)
+          toucher(banc.moteur, p.x, p.y)
+          fermee()
+          // Le point de la bande que le monde ne range sous aucune année : à gauche de son cadre.
+          ouvrir(banc, 80)
+          toucher(banc.moteur, cadre.x - 5, p.y)
+          fermee()
+          ouvrir(banc, 80)
+          ecarter(banc.moteur, cadre.x - 5, p.y)
+          fermee()
+          // Le témoin : le même point, une image dessinée, mène à l'arrêt.
+          ouvrir(banc, 80)
+          toucher(banc.moteur, p.x, p.y)
+          expect(banc.vers()).toEqual([arret(1906)])
+          // Un monde qui ne donne pas d'arrêt à l'année qu'il désigne.
+          const court = enGare({ calme: true, arrets: ARRETS.slice(0, 5) })
+          court.poserA(arret(1900))
+          const q = pointDe(ouvrir(court, 80), 1907)
+          toucher(court.moteur, q.x, q.y)
+          expect(court.rappels.ensemble).toHaveBeenLastCalledWith(false)
+          court.filer(REPOS_DU_DEFILEMENT + 400)
+          expect(court.rappels.defilerVers).not.toHaveBeenCalled()
+        })
+
+        // Relecture de la tâche 5 : la sortie défilait sans poser la caméra, et l'écho de ce défilement
+        // passait pour un geste entré dans la zone des temps. Mutations : `this.poser(y)` remplacé
+        // par le seul `rappels.defilerVers(y)` (l'image d'après est dessinée à l'ancienne place) ; le
+        // défilement d'avant non oublié (parti d'au-dessus de la zone, il lance le passage au repos).
+        it('la sortie dans la bande du monde pose la caméra à l’arrêt d’un coup, et n’y lance aucun passage d’entrée', () => {
+          const banc = enGare({ entree: TEMPS })
+          banc.poserA(MARGE_HAUT)
+          // Un défilement encore à constater, parti d'au-dessus de la zone des temps.
+          banc.moteur.defiler(MARGE_HAUT + 10)
+          const cadre = ouvrir(banc, 80)
+          const p = pointDe(cadre, 1902)
+          expect(arret(1902)).toBeGreaterThan(HAUT_1900 + TEMPS[0]!.y)
+          expect(arret(1902)).toBeLessThan(HAUT_1900 + TEMPS[2]!.y)
+          toucher(banc.moteur, p.x, p.y)
+          expect(banc.vers()).toEqual([arret(1902)])
+          vus.length = 0
+          banc.filer(40)
+          expect(camera(1900, HAUT_1900)).toBe(arret(1902))
+          banc.moteur.defiler(arret(1902))
+          banc.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(banc.vers()).toEqual([arret(1902)])
+          expect(passageJoue()).toBe(false)
+        })
+
+        // Le rappel de la tâche 4 qui roulait à la sortie. Mutation : `arreterLeRoulement()` retiré
+        // de `quitterEnsemble` (le rappel reprendrait la caméra à l'image suivante, vers son arrêt).
+        it('la sortie dans la bande du monde arrête le rappel qui roulait : la caméra reste à l’arrêt désigné', () => {
+          const banc = enGare()
+          banc.poserA(arret(1902))
+          banc.moteur.defiler(arret(1902) + 90)
+          banc.filer(REPOS_DU_DEFILEMENT + 120)
+          // Le rappel roule vers 1902, et n'y est pas encore.
+          expect(banc.vers().length).toBeGreaterThan(0)
+          expect(banc.vers()).not.toContain(arret(1902))
+          const cadre = ouvrir(banc, 80)
+          const p = pointDe(cadre, 1906)
+          ecarter(banc.moteur, p.x, p.y)
+          banc.moteur.defiler(arret(1906))
+          banc.filer(ROULEMENT + 600)
+          expect(banc.vers()).toEqual([arret(1906)])
+          expect(camera(1900, HAUT_1900)).toBe(arret(1906))
+        })
+
+        /** Le bas de la bande de 1890, juste au-dessus de celle du monde : la sortie y mène dans le bas de 1890. */
+        const basDe1890 = (cadre: CadreDeBande) => ({ x: W / 2, y: cadre.y - 1 })
+        const cibleDuBasDe1890 = (cadre: CadreDeBande) => MARGE_HAUT + ((cadre.h - 1) / cadre.h) * (HAUT_1900 - MARGE_HAUT) - H / 2
+
+        // Le jumeau, dans une bande ordinaire : la caméra posée dans la zone des temps, venue d'en
+        // dessous. Mutations : les mêmes (`poser` remplacé par `defilerVers` ; le défilement d'avant
+        // non oublié : parti d'en dessous de la zone, il lance le passage à l'envers).
+        it('la sortie dans une bande ordinaire pose la caméra d’un coup, et ne lance aucun passage d’entrée', () => {
+          const banc = enGare({ entree: TEMPS })
+          banc.poserA(arret(1905))
+          banc.moteur.defiler(arret(1905) + 30)
+          const cadre = ouvrir(banc, 80)
+          const cible = cibleDuBasDe1890(cadre)
+          expect(cible).toBeGreaterThan(HAUT_1900 + TEMPS[0]!.y + 50)
+          const p = basDe1890(cadre)
+          toucher(banc.moteur, p.x, p.y)
+          expect(banc.vers().length).toBe(1)
+          expect(banc.vers()[0]).toBeCloseTo(cible, 6)
+          vus.length = 0
+          banc.filer(40)
+          expect(camera(1895, MARGE_HAUT)).toBeCloseTo(cible, 6)
+          banc.moteur.defiler(Math.round(cible))
+          banc.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(banc.vers().length).toBe(1)
+          expect(passageJoue()).toBe(false)
+        })
+
+        // L'écho, lui-même : la page rend le défilement arrondi, et la sortie posée à un pixel et
+        // demi du premier temps passerait, arrondie, pour un geste qui vient d'entrer dans la zone.
+        // Mutations : la garde `this.sortie` retirée de `constaterLeDefilement` ; la garde qui ne se
+        // lève jamais (`this.sortie = null` retiré, et tout défilement tenu pour un écho).
+        it('l’écho de la sortie, rendu arrondi par la page, n’est pas pris pour un geste entré dans la zone des temps', () => {
+          const essai = enGare({ entree: TEMPS })
+          essai.poserA(arret(1905))
+          const cible = cibleDuBasDe1890(ouvrir(essai, 80))
+          // Le premier temps à 1,4 px au-dessus de la sortie : elle y est posée (`A_L_ARRET`), son écho non.
+          expect(A_L_ARRET).toBeGreaterThan(1.4)
+          const banc = enGare({ entree: [{ ...TEMPS[0]!, y: cible - 1.4 - HAUT_1900 }, TEMPS[1]!, TEMPS[2]!] })
+          banc.poserA(arret(1905))
+          const p = basDe1890(ouvrir(banc, 80))
+          toucher(banc.moteur, p.x, p.y)
+          expect(banc.vers()[0]).toBeCloseTo(cible, 6)
+          vus.length = 0
+          banc.moteur.defiler(cible + 0.4)
+          banc.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(banc.vers().length).toBe(1)
+          expect(passageJoue()).toBe(false)
+          // Un vrai geste, ensuite, n'est pas avalé : laissée entre deux arrêts, la caméra est rappelée.
+          banc.moteur.defiler(arret(1904) + 90)
+          banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1904))
+        })
+
+        // Touchée près du haut de sa section, une année ordinaire laisserait la caméra un demi-écran
+        // plus haut : dans la section collante d'avant, entre deux arrêts, où rien ne la laisse au
+        // repos. Mutation : la garde `collanteEn` retirée de `sortieDeLEnsemble`.
+        it('la sortie dans une bande ordinaire ne laisse pas la caméra dans la section collante d’avant', () => {
+          const banc = enGare()
+          banc.poserA(arret(1900))
+          const cadre = ouvrir(banc)
+          toucher(banc.moteur, W / 2, cadre.y + cadre.h + 1)
+          expect(banc.vers()).toEqual([BAS_1900])
+          banc.moteur.defiler(BAS_1900)
+          banc.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(banc.vers()).toEqual([BAS_1900])
+        })
       })
 
       describe('le passage d’entrée (plan 3a)', () => {

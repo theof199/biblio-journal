@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { contexteFactice, type Appel } from '../../test/contexteFactice'
 import { mondeAVenir } from '../../mondes/avenir'
 import { creerRegistre } from '../../mondes'
-import type { Monde } from '../../mondes/types'
+import type { CadreDeBande, EtatDeBande, LectureDeBande, Monde } from '../../mondes/types'
 import type { CaseCarte, EtatCarte } from '../moteur'
 import { placerCarte } from '../placement'
 import { construireRoute } from '../route'
@@ -10,6 +10,9 @@ import { dessinerCase } from './cases'
 import { bandesDuSol, dessinerSol } from './sol'
 import { dessinerRoulotte } from './roulotte'
 import { Particules } from './particules'
+import { dessinerEnsemble } from './ensemble'
+import { genreDeBande, geoEnsemble } from '../ensemble'
+import { rgba } from '../outils'
 
 /**
  * Un monde dont la rampe et la palette marquent tout ce qui les traverse : un hexadécimal qui
@@ -156,6 +159,71 @@ describe('le dessin commun', () => {
         for (const y of [s.y0, s.y0 + s.hauteur / 2, s.y0 + s.hauteur - 1]) expect(dessine(y), `${collantes.join()} : ${s.decennie} à ${y}`).toBe(attendu)
       }
     }
+  })
+
+  // Plan 3a : la bande d'un monde à `scene` est la sienne. Mutations : la garde retirée (le fond
+  // et les marquises communes dessinés sous ou sur la bande du monde) ; le cadre décalé ou sans
+  // l'ouverture ; l'état d'une année ou son attente oubliés ; la lecture du monde non rendue ; le
+  // `save`/`restore` retiré (ce que le monde laisse sur le contexte déteint sur la bande d'après).
+  it('laisse un monde à scène dessiner sa bande : ni fond ni marquise communs, son cadre, l’état de ses années, et sa lecture rendue', () => {
+    const recus: Array<{ cadre: CadreDeBande; etat: EtatDeBande }> = []
+    const lire: LectureDeBande = () => 1903
+    const image: CadreDeBande['image'] = () => null
+    const mondeDe = (d: number): Monde => {
+      const base = mondeAVenir(d)
+      // Un fond par décennie : la bande commune de chacune se reconnaît à sa couleur.
+      const palette = { ...base.palette, fond: [d % 100, 2, 3] as [number, number, number] }
+      if (d !== 1900) return { ...base, aVenir: d > 1900, palette }
+      return {
+        ...base,
+        aVenir: false,
+        palette,
+        scene: {
+          ecranDeLaCase: () => null,
+          dessinerSuivi: () => undefined,
+          dessinerBande: (g, cadre, etat) => {
+            recus.push({ cadre, etat })
+            g.globalAlpha = 0.1
+            g.fillText('la bande du monde', cadre.x, cadre.y)
+            return lire
+          },
+          entree: [],
+          arrets: [],
+        },
+      }
+    }
+    const annees = Array.from({ length: 1919 - 1895 + 1 }, (_, i) => 1895 + i)
+    const plan = placerCarte(annees, (d, a) => mondeDe(d).trace(a))
+    // 1901 manque à la carte relue : le monde la reçoit fermée. 1900 est en attente du Voyage suivi.
+    const etat: EtatCarte = {
+      cases: annees.filter((a) => a !== 1901).map((annee) => ({ annee, etat: annee < 1900 ? 'lion' : annee === 1900 ? 'encours' : 'verrou', attente: annee === 1900, profondeur: 0, jauge: null, affiches: [] })),
+      anneeAvatar: 1900,
+      tampons: [],
+      roulotte: null,
+    }
+    const geo = geoEnsemble(plan.sections.map((s, i) => ({ y0: s.y0, hauteur: s.hauteur, detaillee: genreDeBande(mondeDe(s.decennie), i === 1) === 'detaillee' })), 700, 132, 64)
+    const { ctx, appels } = contexteFactice()
+    const lues = dessinerEnsemble(ctx, 390, 700, 0.5, geo, plan, etat, mondeDe, image)
+    const bande = geo.bandes[1]!
+    expect(recus).toEqual([
+      {
+        cadre: { x: 10, y: bande.y0, w: 370, h: bande.y1 - bande.y0, e: 0.5, image },
+        etat: {
+          anneeAvatar: 1900,
+          annees: [1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909].map((annee) => ({ annee, etat: annee === 1900 ? 'encours' : 'verrou', attente: annee === 1900 })),
+        },
+      },
+    ])
+    expect(lues).toEqual([{ section: 1, lire }])
+    expect(lues[0]!.lire).toBe(lire)
+    const ecrits = appels.filter((a) => a.nom === 'fillText').map((a) => a.args[0])
+    expect(ecrits).toEqual(expect.arrayContaining(['1895', '1899', 'la bande du monde', '1910 – 1919']))
+    for (const texte of ['1900', '1901', '1909', '1900 – 1909']) expect(ecrits).not.toContain(texte)
+    const fonds = (d: number) => appels.filter((a) => a.nom === 'fill' && a.fillStyle === rgba(mondeDe(d).palette.fond))
+    expect(fonds(1890).length).toBe(1)
+    expect(fonds(1900)).toEqual([])
+    // La bande d'après garde l'opacité de la vue d'ensemble, pas celle que le monde a laissée.
+    expect(fonds(1910).map((a) => a.alpha)).toEqual([0.5])
   })
 
   // Mutation : `tourne = roule` — la roue et les chevaux suivraient `t` quand le visiteur demande
