@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import Formulaire from './Formulaire'
 import { cles } from '../api/cles'
@@ -11,7 +11,9 @@ import { visionnage } from '../test/journal'
 import type { CandidatFilm } from '../formulaire/candidat'
 import type { AddMediaResponse, JournalItem, JournalPage } from '../api/journal'
 import type { ReactionsCatalogue } from '../api/reactions'
+import type { Saga } from '../api/sagas'
 import type { Stats } from '../api/stats'
+import type { EtatPapier } from './PapierRendu'
 
 const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)
 const ITEM = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
@@ -25,12 +27,22 @@ const CANDIDAT: CandidatFilm = {
   director: 'Christopher Nolan',
 }
 
+/** La page du papier rendu : elle montre le chemin, le geste de navigation et l'état reçus, que la coupure lirait. */
+function Arrivee() {
+  const { pathname, state } = useLocation()
+  return <p data-testid="papier">{JSON.stringify({ pathname, state, geste: useNavigationType() })}</p>
+}
+
+/** Ce que le formulaire a donné au papier rendu, relu depuis la page d'arrivée. */
+const recu = () => JSON.parse(screen.getByTestId('papier').textContent!) as { pathname: string; geste: string; state: EtatPapier }
+
 function monterCreation(client = createQueryClient()) {
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[{ pathname: '/journal/nouveau', state: { candidat: CANDIDAT } }]}>
         <Routes>
           <Route path="/journal/nouveau" element={<Formulaire />} />
+          <Route path="/journal/:id/papier" element={<Arrivee />} />
           <Route path="/" element={<p>Accueil</p>} />
         </Routes>
       </MemoryRouter>
@@ -73,7 +85,7 @@ describe('le formulaire, en création', () => {
     await screen.findByText('Inception')
     fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
-    await screen.findByText('Accueil')
+    await screen.findByTestId('papier')
     expect(requetes.filter((r) => r.startsWith('POST'))).toEqual(['POST /api/media', 'POST /api/me/journal'])
   })
 
@@ -97,7 +109,7 @@ describe('le formulaire, en création', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '  Revu en salle.  ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
-    await screen.findByText('Accueil')
+    await screen.findByTestId('papier')
     // Mutation : un champ du brouillon oublié dans `creerVisionnage` (la note, les réactions, la
     // remarque) ou la remarque envoyée sans `trim()` fait tomber cette égalité.
     expect(corps).toEqual({
@@ -125,7 +137,7 @@ describe('le formulaire, en création', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '   ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
-    await screen.findByText('Accueil')
+    await screen.findByTestId('papier')
     // Mutation : une remarque blanche envoyée telle quelle poserait un carnet vide mais non nul.
     expect(corps).not.toHaveProperty('comment')
     expect(corps).not.toHaveProperty('reactions')
@@ -578,6 +590,164 @@ describe('le billet du critique', () => {
   })
 })
 
+describe('le formulaire, après l’écriture', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const servirLaCreation = () =>
+    servir({
+      'GET /api/reference/reactions': () => json(CATALOGUE),
+      'POST /api/media': () => json(MEDIA, 201),
+      'POST /api/me/journal': () => json(exemple<JournalItem>('/me/journal', 'post', 201), 201),
+    })
+  const rendreLePapier = async () => {
+    await screen.findByRole('button', { name: nomDe('adore') })
+    fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
+    await screen.findByTestId('papier')
+  }
+
+  it('une création remplace la page par le papier rendu de l’entrée créée, sans l’empiler', async () => {
+    servirLaCreation()
+    monterCreation()
+    await rendreLePapier()
+
+    // Mutation : `replace` retiré (le geste devient PUSH), ou le chemin construit sur autre chose que l'entrée créée.
+    expect(recu().pathname).toBe(`/journal/${ITEM.entry.id}/papier`)
+    expect(recu().geste).toBe('REPLACE')
+  })
+
+  it('donne au papier l’entrée créée, telle que l’API l’a rendue', async () => {
+    servirLaCreation()
+    monterCreation()
+    await rendreLePapier()
+
+    expect(recu().state.item.entry.id).toBe(ITEM.entry.id)
+    expect(recu().state.item.media.title).toBe(ITEM.media.title)
+  })
+
+  it('lui donne les réactions posées, avec leur emoji et leur phrase, dans l’ordre du catalogue : il n’a rien à demander', async () => {
+    servirLaCreation()
+    monterCreation()
+    await rendreLePapier()
+
+    // L'entrée créée porte `adore` et `touche` (exemple du contrat).
+    expect(recu().state.reactions).toEqual(CATALOGUE.reactions.filter((r) => ['adore', 'touche'].includes(r.cle)))
+  })
+
+  it('lui donne « En bref » tel que le cache le disait avant que l’écriture ne le périme', async () => {
+    servirLaCreation()
+    const client = createQueryClient()
+    // Le film est déjà au journal, sous une autre entrée, et le journal tient dans une page : le mois est prouvé.
+    const ancienne = { ...ITEM, entry: { ...ITEM.entry, id: 'ancienne', finished_at: '2024-03-14' } }
+    journalEnCache(client, [ancienne])
+    monterCreation(client)
+    await rendreLePapier()
+
+    // Mutation : les invalidations passées avant le calcul (« En bref » serait vide), ou le calcul retiré.
+    expect(recu().state.enBref).toEqual([
+      { type: 'seance', titre: ITEM.media.title, rang: 2 },
+      { type: 'mois', mois: 'Juillet 2026', rang: 1 },
+    ])
+    expect(client.getQueryState(cles.journal)?.isInvalidated).toBe(true)
+  })
+
+  it('compte un cycle comme sa planche : sans les introuvables tant que « Masquer les introuvables » est actif', async () => {
+    servirLaCreation()
+    const client = createQueryClient()
+    const vu = { entry_id: 'ancien', rating: null, finished_at: '2026-01-01' }
+    const filmDeSaga = (id: number, etat: { vu?: boolean; introuvable?: boolean }) => ({
+      tmdb_id: id,
+      title: `Film ${id}`,
+      year: 2000,
+      cover_url: null,
+      vu: etat.vu ? vu : null,
+      introuvable: etat.introuvable ?? false,
+    })
+    client.setQueryData(cles.sagas, [{ ...exemple<Saga[]>('/me/sagas', 'get', 200)[0]!, tmdb_id: 8, name: 'Inception et suites' }])
+    client.setQueryData(cles.filmsSaga(8), { films: [filmDeSaga(1, { vu: true }), filmDeSaga(3, { introuvable: true }), filmDeSaga(27205, {})] })
+    monterCreation(client)
+    await rendreLePapier()
+
+    // Mutation : le réglage ignoré (`false` passé à la place), qui compterait l'introuvable : 2 séances sur 3.
+    expect(recu().state.enBref).toMatchObject([{ type: 'suivi', genre: 'Cycle', vus: 2, total: 2 }])
+  })
+
+  it('n’a aucune ligne « En bref » sans rien en cache', async () => {
+    servirLaCreation()
+    monterCreation()
+    await rendreLePapier()
+
+    expect(recu().state.enBref).toEqual([])
+  })
+
+  it('ne fait aucune requête de plus que le catalogue, le média et le journal', async () => {
+    const requetes = servirLaCreation()
+    monterCreation()
+    await rendreLePapier()
+
+    // Mutation : une lecture ajoutée au chemin du papier (le catalogue relu, une filmographie, une fiche d'année).
+    expect(requetes).toEqual(['GET /api/reference/reactions', 'POST /api/media', 'POST /api/me/journal'])
+  })
+
+  describe('une correction', () => {
+    const monterLaCorrection = (retour?: string) =>
+      render(
+        <QueryClientProvider client={createQueryClient()}>
+          <MemoryRouter initialEntries={[{ pathname: `/journal/${ITEM.entry.id}/corriger`, state: { item: ITEM, retour } }]}>
+            <Routes>
+              <Route path="/journal/:id/corriger" element={<Formulaire />} />
+              <Route path="/" element={<p>Accueil</p>} />
+              <Route path="/profil/import-letterboxd" element={<p>Rapport d’import</p>} />
+              <Route path="/journal/:id/papier" element={<Arrivee />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      )
+    const corriger = async () => {
+      await screen.findByText(ITEM.media.title)
+      fireEvent.click(screen.getByRole('button', { name: 'Corriger mon papier' }))
+    }
+
+    it('revient où la page d’origine l’a demandé, et non au papier rendu', async () => {
+      servir({
+        'GET /api/reference/reactions': () => json(CATALOGUE),
+        [`PATCH /api/me/journal/${ITEM.entry.id}`]: () => json(ITEM),
+      })
+      monterLaCorrection('/profil/import-letterboxd')
+      await corriger()
+
+      // Mutation : la correction qui passe, elle aussi, par `apresCreation`.
+      expect(await screen.findByText('Rapport d’import')).toBeInTheDocument()
+      expect(screen.queryByTestId('papier')).toBeNull()
+    })
+
+    it('revient à l’accueil sans page d’origine, et non au papier rendu', async () => {
+      servir({
+        'GET /api/reference/reactions': () => json(CATALOGUE),
+        [`PATCH /api/me/journal/${ITEM.entry.id}`]: () => json(ITEM),
+      })
+      monterLaCorrection()
+      await corriger()
+
+      expect(await screen.findByText('Accueil')).toBeInTheDocument()
+      expect(screen.queryByTestId('papier')).toBeNull()
+    })
+
+    it('la suppression revient aussi où la page d’origine l’a demandé, jamais au papier rendu', async () => {
+      servir({
+        'GET /api/reference/reactions': () => json(CATALOGUE),
+        [`DELETE /api/me/journal/${ITEM.entry.id}`]: () => new Response(null, { status: 204 }),
+      })
+      monterLaCorrection('/profil/import-letterboxd')
+      await screen.findByText(ITEM.media.title)
+      fireEvent.click(screen.getByRole('button', { name: 'Déchirer ce billet' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+
+      expect(await screen.findByText('Rapport d’import')).toBeInTheDocument()
+    })
+  })
+})
+
 /**
  * « Tes séances » (Au ciné) a sa propre clé, `cles.seances` : une écriture du formulaire qui ne la
  * marquerait pas périmée laisserait l'onglet montrer une séance supprimée, ou taire la nouvelle,
@@ -615,7 +785,7 @@ describe('le formulaire, après une écriture, périme « Tes séances »', () =
     await screen.findByText('Inception')
     fireEvent.click(screen.getByRole('button', { name: 'Rendre mon papier' }))
 
-    await screen.findByText('Accueil')
+    await screen.findByTestId('papier')
     expect(client.getQueryState(cles.seances)?.isInvalidated).toBe(true)
     suivisPerimes(client)
   })

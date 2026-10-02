@@ -679,6 +679,50 @@
   --billet-actions-fondu: linear-gradient(to top, var(--barre-onglets-fond) 62%, transparent);
   --billet-bouton-taille: 1.4375rem;
   --billet-bouton-interlettre: 0.18em;
+  --decoupe: none; /* le contour d'une coupure de presse, un `clip-path` posé en ligne depuis l'identifiant de l'entrée (`formulaire/decoupe.ts`) */
+  --journal-papier: radial-gradient(rgba(20, 20, 20, 0.045) 1px, transparent 1.3px) 0 0 / 4px 4px, linear-gradient(180deg, #f3f2ee, #e8e7e2); /* le papier d'un journal d'aujourd'hui : blanc cassé, froid, à peine grisé */
+  --journal-encre: #1b1b1b;
+  --journal-gris: #5a5a5a;
+  --journal-filet: rgba(27, 27, 27, 0.45);
+  --coupure-inclinaison: -1.1deg;
+  --coupure-bref-inclinaison: 1.2deg;
+  --coupure-bref-decalage: 1.25rem 0.625rem 0 1.875rem; /* « En bref » : plus petite, décalée vers la droite, penchée de l'autre côté */
+  --coupure-marge: 1.75rem 1.625rem 1.625rem;
+  --coupure-bref-marge: 1.375rem 1.5rem;
+  --coupure-annonce-taille: 1.25rem;
+  --coupure-double: 3px; /* le double filet sous la rubrique */
+  --coupure-rubrique-taille: 0.9375rem;
+  --coupure-date-taille: 0.71875rem;
+  --coupure-date-interlettre: 0.06em;
+  --coupure-titre-taille: 1.8125rem;
+  --coupure-titre-interligne: 1.05;
+  --coupure-titre-long-taille: 1.375rem;
+  --coupure-titre-long-interligne: 1.12;
+  --coupure-sous-taille: 0.9375rem;
+  --coupure-affiche-filtre: grayscale(1) contrast(1.1); /* l'affiche s'imprime en noir et blanc */
+  --coupure-manchette-affiche: 31%;
+  --coupure-manchette-affiche-max: 6rem;
+  --coupure-grande-etoile: 2.25rem; /* les étoiles qui font la une */
+  --coupure-petite-etoile: 1.375rem; /* celles du chapeau d'une colonne */
+  --coupure-mot-taille: 1.6875rem;
+  --coupure-mot-interlettre: 0.1em;
+  --coupure-sur-interlettre: 0.04em;
+  --coupure-citation-taille: 1.25rem;
+  --coupure-citation-interligne: 1.32;
+  --coupure-verdict-taille: 1.0625rem;
+  --coupure-verdict-interlettre: 0.16em;
+  --coupure-colonne-affiche: 5.25rem;
+  --coupure-colonne-marge: 0.25rem 0.875rem 0.375rem 0;
+  --coupure-lettrine-taille: 2.75rem;
+  --coupure-lettrine-interligne: 0.78;
+  --coupure-lettrine-marge: 0.25rem 0.4375rem 0 0;
+  --coupure-reaction-hauteur: 1.875rem;
+  --coupure-signature-taille: 1.5625rem;
+  --coupure-trou: 0.625rem;
+  --coupure-suite-marge: 1.75rem;
+  --coupure-suite-hauteur: 3rem;
+  --coupure-suite-taille: 1.0625rem;
+  --coupure-suite-interlettre: 0.12em;
   --carnet-papier: #fbf8ee;
   --carnet-marge: 1.5rem 0.875rem 0.875rem; /* la spirale occupe le haut */
   --carnet-fond: radial-gradient(circle 0.28125rem at 0.6875rem 0.6875rem, var(--pellicule-trou) 96%, transparent) 0 0 / 1.375rem 1.375rem repeat-x,

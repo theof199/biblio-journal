@@ -6,6 +6,7 @@ import Accueil from './pages/Accueil'
 import Recherche from './pages/Recherche'
 import Formulaire from './pages/Formulaire'
 import Fiche from './pages/Fiche'
+import PapierRendu from './pages/PapierRendu'
 import MesFilms from './pages/MesFilms'
 import Carte from './pages/Carte'
 import VoyageAnnee from './pages/VoyageAnnee'
@@ -39,6 +40,8 @@ export default function App() {
           <Route path="journal/nouveau" element={<Formulaire />} />
           <Route path="journal/:id" element={<Fiche />} />
           <Route path="journal/:id/corriger" element={<Formulaire />} />
+          {/* Après une création : la critique imprimée, puis « En bref ». Elle vit de l'état de navigation du formulaire. */}
+          <Route path="journal/:id/papier" element={<PapierRendu />} />
           <Route path="voyage" element={<Carte />} />
           {/* La sacoche du voyageur (passeport, portefeuille, coulisses) : on y entre par une pastille
               de la carte. Un segment fixe : React Router le préfère à `voyage/:annee`, et un test le garde. */}

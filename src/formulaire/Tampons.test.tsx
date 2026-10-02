@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import Tampons from './Tampons'
+import styles from './Tampons.module.css'
 
 const reactions = [
   { cle: 'adore', emoji: '❤️', phrase: 'J’ai adoré' },
@@ -29,6 +30,14 @@ describe('Tampons', () => {
 
     expect(screen.getByRole('button', { name: '❤️ J’ai adoré' })).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByRole('button', { name: '👍 Sympa' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('ne pose le tampon bleu que sur une réaction cochée', () => {
+    monter({ cochees: ['sympa'] })
+
+    // Mutation : le tampon posé sur toutes les réactions (ou sur aucune).
+    expect(screen.getByRole('button', { name: '👍 Sympa' })).toHaveClass(styles.pose!)
+    expect(screen.getByRole('button', { name: '❤️ J’ai adoré' })).not.toHaveClass(styles.pose!)
   })
 
   it('annonce la clé de la réaction touchée', () => {

@@ -12,7 +12,7 @@ import type { Stats } from '../api/stats'
  * d'avant — un numéro de billet qui se répète, un « quatrième film du mois » faux. Mieux vaut qu'une
  * ligne manque qu'une ligne fausse.
  */
-const fraiche = (client: QueryClient, cle: readonly unknown[]): boolean => {
+export const fraiche = (client: QueryClient, cle: readonly unknown[]): boolean => {
   const etat = client.getQueryState(cle)
   return etat !== undefined && !etat.isInvalidated
 }

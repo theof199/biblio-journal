@@ -5,6 +5,7 @@ import { cles } from '../api/cles'
 import { corrigerVisionnage, creerVisionnage, filmDejaVu, supprimerVisionnage } from '../api/journal'
 import { basculerReaction, lireReactions } from '../api/reactions'
 import { compterReactions } from '../profil/bilan'
+import { enBrefEnCache } from '../formulaire/enBrefEnCache'
 import { journalEnCache, numeroDeBillet, totalDuJournal } from '../formulaire/journalEnCache'
 import { brouillonInitial, construirePatch } from '../formulaire/patch'
 import { reactionsFavorites, reactionsVisibles } from '../formulaire/reactionsVisibles'
@@ -12,12 +13,14 @@ import RangeeDeNote from '../formulaire/RangeeDeNote'
 import Tampons from '../formulaire/Tampons'
 import { useHauteurAuto } from '../formulaire/useHauteurAuto'
 import { noteEnMots } from '../formulaire/verdict'
+import { useMasquerIntrouvables } from '../suivis/masquer'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
 import { formatDateVisionnage, jourLocal, sousTitre } from '../ui/format'
 import styles from './Formulaire.module.css'
 import type { CandidatFilm } from '../formulaire/candidat'
 import type { JournalItem } from '../api/journal'
+import type { EtatPapier } from './PapierRendu'
 
 interface EtatCreation {
   candidat: CandidatFilm
@@ -86,7 +89,9 @@ export default function Formulaire() {
   const reactionsMontrees = reactionsVisibles(catalogue, favorites, brouillon.reactions, reactionsDepliees)
   const reactionsCachees = catalogue.length - reactionsVisibles(catalogue, favorites, brouillon.reactions, false).length
 
-  const apresEcriture = () => {
+  const masquerIntrouvables = useMasquerIntrouvables()
+
+  const perimerLesLectures = () => {
     // Par préfixe : `cles.journal` périme aussi `cles.seances` (« Tes séances », Au ciné), qui
     // commence par lui — le test « périme « Tes séances » » garde ce lien.
     void client.invalidateQueries({ queryKey: cles.journal })
@@ -96,7 +101,24 @@ export default function Formulaire() {
     // « Ensuite » reproposerait le film qu'on vient de journaliser.
     void client.invalidateQueries({ queryKey: cles.realisateurs })
     void client.invalidateQueries({ queryKey: cles.sagas })
+  }
+
+  const apresEcriture = () => {
+    perimerLesLectures()
     naviguer(etatCorrection?.retour ?? '/', { replace: true })
+  }
+
+  // Une création rend le papier : la critique imprimée, puis « En bref ». Ce que « En bref » dit se lit
+  // dans le cache **avant** les invalidations, qui le périment ; les réactions posées se résolvent dans
+  // le catalogue déjà là, pour que la page du papier n'ait rien à demander.
+  const apresCreation = (visionnage: JournalItem) => {
+    const etat: EtatPapier = {
+      item: visionnage,
+      reactions: catalogue.filter((reaction) => visionnage.carnet.reactions.includes(reaction.cle)),
+      enBref: enBrefEnCache(client, visionnage, masquerIntrouvables),
+    }
+    perimerLesLectures()
+    naviguer(`/journal/${visionnage.entry.id}/papier`, { replace: true, state: etat })
   }
 
   const creation = useMutation({
@@ -110,7 +132,7 @@ export default function Formulaire() {
           comment: brouillon.remarque.trim() || undefined,
         },
       ),
-    onSuccess: apresEcriture,
+    onSuccess: apresCreation,
   })
 
   const correctionMutation = useMutation({

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { formatDateCourte, formatDateVisionnage, formatJourBref, jourLocal, normaliser, sousTitre, virgule } from './format'
+import { formatDateCourte, formatDateVisionnage, formatJourBref, jourLocal, espaceInsecable, moisEnLettres, normaliser, sousTitre, virgule } from './format'
 
 describe('sousTitre', () => {
   it('joint le réalisateur et l’année', () => {
@@ -92,5 +92,27 @@ describe('virgule', () => {
 describe('formatDateCourte', () => {
   it('écrit jour, mois, année avec leurs zéros', () => {
     expect(formatDateCourte('2026-10-01')).toBe('01/10/2026')
+  })
+})
+
+describe('moisEnLettres', () => {
+  it('écrit le mois en toutes lettres avec sa majuscule, puis l’année', () => {
+    expect(moisEnLettres('2026-10-02')).toBe('Octobre 2026')
+  })
+
+  it('lit le jour en date locale : le dernier jour d’un mois ne passe pas au suivant', () => {
+    expect(moisEnLettres('2026-09-30')).toBe('Septembre 2026')
+    expect(moisEnLettres('2026-01-01')).toBe('Janvier 2026')
+  })
+})
+
+describe('espaceInsecable', () => {
+  it.each([':', ';', '?', '!'])('remplace l’espace avant « %s » par une espace insécable', (marque) => {
+    expect(espaceInsecable(`Batman ${marque} Le Défi`)).toBe(`Batman\u00a0${marque} Le Défi`)
+  })
+
+  it('laisse les autres espaces, et un deux-points collé, comme ils sont', () => {
+    expect(espaceInsecable('Le Garçon et le Héron')).toBe('Le Garçon et le Héron')
+    expect(espaceInsecable('Mission: Impossible')).toBe('Mission: Impossible')
   })
 })

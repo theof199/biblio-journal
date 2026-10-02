@@ -24,9 +24,9 @@ fichier-ci ne porte que les intentions.
 | Au ciné | Le hall et la caisse | Mes billets de séance, les affiches « prochainement » des sorties en salle |
 | Suivis | Le bureau de la programmation | Un mur d'affichettes punaisées : une par réalisateur que je suis (son portrait imprimé à l'encre bleue, un trou poinçonné par film vu), une planche par saga ; au-dessus, le prochain film de chacun ; les suivis bouclés rangés aux archives |
 | Fiche d'un film (`journal/:id`) | La boîte de la bobine | L'étiquette du film : l'affiche, la date, la note, ce que j'en ai écrit |
-| Recherche, nouveau film | Le guichet | On demande un titre, on prend son billet |
+| Recherche, nouveau film | Le guichet | On demande un titre sur du papier crème, on choisit à l'affiche (trois par rangée) ; un film déjà vu y porte une étiquette de papier, ses étoiles ou « vu » au crayon. Puis le billet du critique : un billet de presse, coins mordus, bande rouge ; dix trous poinçonnés pour la note, des tampons pour les réactions, la page de notes d'un carnet à spirale dessous ; enfin le papier rendu, sa critique imprimée comme une coupure de presse |
 
-Les deux dernières lignes sont des propositions : elles se confirment avant leur maquette.
+Une seule ligne reste une proposition, la fiche d'un film (`journal/:id`) : elle se confirme avant sa maquette.
 
 ## Les objets, jamais les cartes
 
@@ -71,7 +71,7 @@ Trois rôles, pas plus, hors enseignes :
 
 Une police par décennie pour l'enseigne (`src/ui/polices.ts`, `src/accueil/enseignes.test.ts`).
 Une écriture manuscrite n'apparaît que sur ce que le membre a « écrit lui-même » (son prénom, ses
-chiffres au crayon gras) ; elle demande une police de plus, et donc un accord avant de l'ajouter.
+chiffres au crayon gras, ses recherches, son « vu », son verdict, sa remarque, sa signature) ; elle demande une police de plus, et donc un accord avant de l'ajouter.
 
 ## Le mouvement
 

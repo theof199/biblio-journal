@@ -63,3 +63,17 @@ export function formatDateCourte(iso: string): string {
   const [annee, mois, jour] = iso.split('-')
   return `${jour}/${mois}/${annee}`
 }
+
+const MOIS_ET_ANNEE = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
+
+/** « Octobre 2026 » : le mois d'une date seule (`AAAA-MM-JJ`), avec sa majuscule d'en-tête. */
+export function moisEnLettres(iso: string): string {
+  const texte = MOIS_ET_ANNEE.format(dateLocale(iso))
+  return texte.charAt(0).toUpperCase() + texte.slice(1)
+}
+
+/**
+ * Le français prend une espace insécable avant « : », « ; », « ? » et « ! » : sans elle, un titre
+ * comme « Batman : Le Défi » se coupe avant les deux-points et la ligne suivante commence par eux.
+ */
+export const espaceInsecable = (texte: string): string => texte.replace(/ (?=[:;?!])/g, '\u00a0')

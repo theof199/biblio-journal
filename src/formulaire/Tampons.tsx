@@ -20,17 +20,20 @@ interface Props {
 export default function Tampons({ reactions, cochees, onBasculer, cachees, depliees, onDeplier }: Props) {
   return (
     <div className={styles.tampons}>
-      {reactions.map((reaction) => (
-        <button
-          key={reaction.cle}
-          type="button"
-          className={styles.tampon}
-          aria-pressed={cochees.includes(reaction.cle)}
-          onClick={() => onBasculer(reaction.cle)}
-        >
-          {`${reaction.emoji} ${reaction.phrase}`}
-        </button>
-      ))}
+      {reactions.map((reaction) => {
+        const posee = cochees.includes(reaction.cle)
+        return (
+          <button
+            key={reaction.cle}
+            type="button"
+            className={posee ? `${styles.encre} ${styles.tampon} ${styles.pose}` : `${styles.encre} ${styles.tampon}`}
+            aria-pressed={posee}
+            onClick={() => onBasculer(reaction.cle)}
+          >
+            {`${reaction.emoji} ${reaction.phrase}`}
+          </button>
+        )
+      })}
       {cachees > 0 ? (
         <button type="button" className={styles.plus} onClick={onDeplier}>
           {depliees ? '− replier' : `+ ${cachees} ${cachees > 1 ? 'autres' : 'autre'}`}

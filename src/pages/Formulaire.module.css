@@ -121,9 +121,10 @@
 /* Le titre d'une rubrique, imprimé en rouge ; ce que le membre y écrit (verdict, compte) est au crayon ou en petit à droite. */
 .rubrique {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--espace-2);
+  gap: 0 var(--espace-2);
   margin: 0 0 var(--billet-rubrique-marge);
   color: var(--ticket-bande-vive);
   font-family: var(--police-fronton);

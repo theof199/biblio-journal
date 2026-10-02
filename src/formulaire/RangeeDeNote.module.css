@@ -7,14 +7,15 @@
   touch-action: pan-y;
 }
 
-/* Un trou : un bouton de la dixième de la rangée, qui peut rétrécir (la règle d'un bouton lui donne
+/* La piste de la grille est bornée à la largeur du bouton : sans elle, la part en pourcentage du poinçon ne se résout pas
+   contre le bouton et le poinçon se réduit au chiffre. Un trou : un bouton de la dixième de la rangée, qui peut rétrécir (la règle d'un bouton lui donne
    sinon la largeur d'une cible tactile, et dix cibles débordent d'un petit écran). */
 .trou {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: minmax(0, 100%);
+  justify-items: center;
+  align-content: center;
   gap: var(--billet-trous-ecart);
   min-width: 0;
   min-height: var(--billet-trou-hauteur);

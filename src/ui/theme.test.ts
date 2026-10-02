@@ -9,6 +9,7 @@ import recherche from '../pages/Recherche.module.css?raw'
 import formulaire from '../pages/Formulaire.module.css?raw'
 import rangeeDeNote from '../formulaire/RangeeDeNote.module.css?raw'
 import tampons from '../formulaire/Tampons.module.css?raw'
+import papierRendu from '../pages/PapierRendu.module.css?raw'
 import planche from '../suivis/PlancheCycle.module.css?raw'
 import papier from '../suivis/Papier.module.css?raw'
 import affichette from '../suivis/Affichette.module.css?raw'
@@ -413,6 +414,14 @@ describe('le billet du critique', () => {
     expect(regle(rangeeDeNote, '.rangee')).toMatch(/touch-action:\s*pan-y/)
   })
 
+  it('les poinçons remplissent leur case : la piste du bouton est bornée à sa largeur, le poinçon en prend une part ronde', () => {
+    expect(regle(rangeeDeNote, '.trou')).toMatch(/display:\s*grid/)
+    expect(regle(rangeeDeNote, '.trou')).toMatch(/grid-template-columns:\s*minmax\(0, 100%\)/)
+    expect(regle(rangeeDeNote, '.poincon')).toMatch(/width:\s*var\(--billet-trou-part\)/)
+    expect(regle(rangeeDeNote, '.poincon')).toMatch(/aspect-ratio:\s*var\(--billet-trou-ratio\)/)
+    expect(valeurDe(BLOC_JOUR, '--billet-trou-part')).toBe('84%')
+  })
+
   it('le papier du carnet, les lignes et l\'encre du tampon sont les mêmes de jour et de nuit', () => {
     for (const jeton of ['--carnet-papier', '--carnet-ligne', '--tampon-encre', '--tampon-fond']) {
       expect(valeurDe(BLOC_JOUR, jeton)).toBeDefined()
@@ -422,5 +431,65 @@ describe('le billet du critique', () => {
 
   it('rien n\'y bouge : ni transition ni animation', () => {
     for (const css of [formulaire, rangeeDeNote, tampons]) expect(sansCommentaires(css)).not.toMatch(/\b(transition|animation|@keyframes)\b/)
+  })
+})
+
+describe('la coupure de presse du papier rendu', () => {
+  const BLOC_JOUR = regle(theme, ':root')
+  const BLOCS_SOMBRES = [regle(theme, ":root:not([data-theme='clair'])"), regle(theme, ":root[data-theme='sombre']")]
+  const valeurDe = (bloc: string, jeton: string) => bloc.match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]?.trim()
+
+  it('le papier est découpé par le contour que la page pose en ligne, et sans contour tant qu’aucun n’est posé', () => {
+    expect(regle(papierRendu, '.coupure')).toMatch(/clip-path:\s*var\(--decoupe\)/)
+    expect(valeurDe(BLOC_JOUR, '--decoupe')).toBe('none')
+  })
+
+  it('l’ombre est portée par le cadre, pas par le papier découpé : le `clip-path` la couperait', () => {
+    expect(regle(papierRendu, '.cadre')).toMatch(/filter:\s*var\(--ticket-ombre\)/)
+    expect(regle(papierRendu, '.cadre')).not.toMatch(/clip-path/)
+    expect(regle(papierRendu, '.coupure')).not.toMatch(/filter/)
+  })
+
+  it('le papier d’un journal et son encre sont les mêmes de jour et de nuit', () => {
+    for (const jeton of ['--journal-papier', '--journal-encre', '--journal-gris', '--journal-filet']) {
+      expect(valeurDe(BLOC_JOUR, jeton)).toBeDefined()
+      for (const bloc of BLOCS_SOMBRES) expect(valeurDe(bloc, jeton)).toBeUndefined()
+    }
+  })
+
+  it('le texte courant est du Jost : le Bodoni est gardé aux titres', () => {
+    expect(regle(papierRendu, '.texte')).toMatch(/font-family:\s*var\(--police-texte\)/)
+  })
+
+  it('la lettrine flotte à gauche du texte, et la colonne referme son flottement', () => {
+    expect(regle(papierRendu, '.colonne .texte::first-letter')).toMatch(/float:\s*left/)
+    expect(regle(papierRendu, '.colonne .affiche')).toMatch(/float:\s*left/)
+    expect(regle(papierRendu, '.colonne::after')).toMatch(/clear:\s*both/)
+  })
+
+  it('l’affiche s’imprime en noir et blanc', () => {
+    expect(regle(papierRendu, '.affiche')).toMatch(/filter:\s*var\(--coupure-affiche-filtre\)/)
+    expect(valeurDe(BLOC_JOUR, '--coupure-affiche-filtre')).toMatch(/grayscale\(1\)/)
+  })
+
+  it('les étoiles du chapeau sont du rouge imprimé, comme celles de la une : seul le « sur 10 » est gris', () => {
+    expect(regle(papierRendu, '.verdictImprime')).toMatch(/color:\s*var\(--ticket-bande-vive\)/)
+    expect(regle(papierRendu, '.verdictImprime .surDix')).toMatch(/color:\s*var\(--journal-gris\)/)
+    expect(sansCommentaires(papierRendu)).not.toMatch(/\.verdictImprime span/)
+  })
+
+  it('à 320 px, le chapeau se replie entre ses morceaux, jamais au milieu du verdict ni du « 8 sur 10 »', () => {
+    expect(regle(papierRendu, '.verdictImprime')).toMatch(/flex-wrap:\s*wrap/)
+    expect(regle(papierRendu, '.verdictImprime b')).toMatch(/white-space:\s*nowrap/)
+    expect(regle(papierRendu, '.verdictImprime .surDix')).toMatch(/white-space:\s*nowrap/)
+  })
+
+  it('« En bref » ne coupe pas les mots, la colonne de la critique si', () => {
+    expect(regle(papierRendu, '.bref .texte')).toMatch(/hyphens:\s*manual/)
+    expect(regle(papierRendu, '.texte')).toMatch(/hyphens:\s*auto/)
+  })
+
+  it('rien n’y bouge : ni transition ni animation', () => {
+    expect(sansCommentaires(papierRendu)).not.toMatch(/\b(transition|animation|@keyframes)\b/)
   })
 })
