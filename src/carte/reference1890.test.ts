@@ -11,8 +11,23 @@ import type { Monde } from '../mondes/types'
  * étendent le moteur la laissent verte **sans y toucher** : une empreinte qui change dit qu'un
  * dessin de 1890, un dessin commun ou le sol a bougé.
  *
+ * Ce qui est figé : chaque appel au contexte, avec l'état que le banc tient (`contexteFactice`), et
+ * chaque écriture de propriété (`lineWidth`, `font`, `lineCap`…), que le banc avale et qu'un témoin
+ * local note (`temoin`). Les nombres sont arrondis à six décimales avant d'être hachés : un dernier
+ * chiffre qui diffère d'une machine à l'autre ne fait pas tomber la référence, un pixel si.
+ *
  * Une empreinte ne se recopie pas pour faire passer un test : elle ne se refait (l'échec imprime
  * les empreintes reçues) que si le changement de dessin est voulu, et dit dans le commit.
+ *
+ * Lire un échec. Une empreinte ne dit pas quel appel a bougé : la suite, si. Avec la variable
+ * `VITE_REFERENCE_1890_SORTIE` posée sur un dossier en chemin absolu, **hors du dépôt**, chaque cas
+ * y écrit sa suite, un appel par ligne, dans un fichier à son nom (l'image, puis chaque toile).
+ * Sans elle, rien ne s'écrit. Pour comparer deux commits :
+ *
+ *   VITE_REFERENCE_1890_SORTIE=/tmp/reference-avant npx vitest run src/carte/reference1890.test.ts
+ *   (changer de commit)
+ *   VITE_REFERENCE_1890_SORTIE=/tmp/reference-apres npx vitest run src/carte/reference1890.test.ts
+ *   diff -r /tmp/reference-avant /tmp/reference-apres
  */
 
 const W = 390
@@ -109,7 +124,7 @@ function suiteFixe(graine: number, compter: () => void): () => number {
   }
 }
 
-/** L'empreinte d'un texte (cyrb53, cinquante-trois bits) : jsdom n'a pas de quoi hacher, et le dépôt n'importe pas `node:`. */
+/** L'empreinte d'un texte (cyrb53, cinquante-trois bits) : jsdom n'a pas de quoi hacher, et le dépôt n'a pas les types de Node. */
 function hacher(texte: string): string {
   let h1 = 0xdeadbeef
   let h2 = 0x41c6ce57
@@ -123,8 +138,31 @@ function hacher(texte: string): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0')
 }
 
+/** Le nom que le témoin donne à une écriture de propriété, devant celui de la propriété. */
+const ECRITURE = '= '
+
+/**
+ * Le témoin : le banc n'écrit que ce que son état tient (`fillStyle`, `strokeStyle`, l'alpha, la
+ * composition, le décalage du pointillé) et avale le reste. Ici, toute écriture de propriété entre
+ * dans la suite, à sa place, avec sa valeur : une largeur de trait ou une police qui change se voit.
+ */
+function temoin(f: { ctx: CanvasRenderingContext2D; appels: Appel[] }): CanvasRenderingContext2D {
+  return new Proxy(f.ctx, {
+    set(cible, cle, valeur: unknown) {
+      const ecrit = Reflect.set(cible, cle, valeur)
+      if (typeof cle === 'string') {
+        f.appels.push({ nom: `${ECRITURE}${cle}`, args: [valeur], fillStyle: cible.fillStyle, strokeStyle: cible.strokeStyle, alpha: cible.globalAlpha, composite: cible.globalCompositeOperation, dash: cible.lineDashOffset })
+      }
+      return ecrit
+    },
+  })
+}
+
+/** Les appels d'une suite, sans les écritures de propriétés : ce qu'un contexte qui ne note rien ne rendrait pas. */
+const appelsDe = (suite: readonly Appel[]) => suite.filter((a) => !a.nom.startsWith(ECRITURE))
+
 interface Jeu {
-  /** Les appels de la dernière image, sur le contexte principal. */
+  /** La suite de la dernière image, sur le contexte principal : ses appels et ses écritures de propriétés. */
   image: Appel[]
   /** Chaque toile créée par le moteur (le grain, les affiches traitées, les tuiles du sol), dans l'ordre. */
   toiles: Array<{ nom: string; appels: Appel[] }>
@@ -140,6 +178,7 @@ function jouer(cas: Cas, graine = GRAINE): Jeu {
   let tirages = 0
   vi.spyOn(Math, 'random').mockImplementation(suiteFixe(graine, () => void tirages++))
   const principal = contexteFactice()
+  const ctxPrincipal = temoin(principal)
   const toiles: Jeu['toiles'] = []
   // Le vrai 1890 ; toute autre décennie prend `mondeAVenir`, importé d'ici : la référence ne dépend
   // pas des lignes que le registre gagnera.
@@ -154,8 +193,12 @@ function jouer(cas: Cas, graine = GRAINE): Jeu {
   const deps: Dependances = {
     creerToile: (w, h) => {
       const f = contexteFactice()
+      const ctx = temoin(f)
+      // Numérotée par ordre de création (comme le banc de `moteur.test.ts`) : deux tuiles échangées
+      // à l'écran se voient dans l'argument du `drawImage` de l'image principale.
+      const toile = { width: w, height: h, numero: toiles.length, getContext: () => ctx }
       toiles.push({ nom: `${toiles.length} ${w}x${h}`, appels: f.appels })
-      return { width: w, height: h, getContext: () => f.ctx }
+      return toile
     },
     image: () => ({}) as CanvasImageSource,
     demanderImage: () => 1,
@@ -165,7 +208,7 @@ function jouer(cas: Cas, graine = GRAINE): Jeu {
   }
   const rien = () => undefined
   const rappels: Rappels = { toucherAnnee: rien, apercu: rien, finApercu: rien, ensemble: rien, defilerVers: rien, date: rien, roulotte: rien, avatarVisible: rien, bobine: rien, bobineArrivee: rien, cibleBobines: () => ({ x: 350, y: 40 }), clap: rien, presences: rien }
-  const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
+  const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => ctxPrincipal }, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(cas.calme)
   const etat = cas.etat ?? 'depart'
@@ -185,146 +228,168 @@ function jouer(cas: Cas, graine = GRAINE): Jeu {
 
 /** Les empreintes d'un cas : le contexte principal, puis chaque toile à part (la route et les photogrammes vivent dans les tuiles). */
 function empreintes(jeu: Jeu): string[] {
-  return [`image ${jeu.image.length} ${hacher(JSON.stringify(jeu.image))}`, ...jeu.toiles.map((t) => `toile ${t.nom} ${t.appels.length} ${hacher(JSON.stringify(t.appels))}`)]
+  return [`image ${jeu.image.length} ${hacher(ecrire(jeu.image))}`, ...jeu.toiles.map((t) => `toile ${t.nom} ${t.appels.length} ${hacher(ecrire(t.appels))}`)]
+}
+
+/** Six décimales : sous le millionième de pixel, un écart n'est pas un dessin qui change. */
+const arrondir = (_cle: string, v: unknown): unknown => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v)
+
+/** Une suite en texte, une ligne par appel ou par écriture, les nombres arrondis : ce qui est haché, et ce que le diagnostic écrit. */
+const ecrire = (suite: readonly Appel[]): string => suite.map((a) => JSON.stringify(a, arrondir)).join('\n')
+
+/** Le dossier du diagnostic (voir l'en-tête) ; vide : rien ne s'écrit. */
+const SORTIE: string = import.meta.env.VITE_REFERENCE_1890_SORTIE ?? ''
+
+/** Le diagnostic : la suite d'un cas, dans un fichier à son nom. Jamais sans `SORTIE`, jamais en chemin relatif. */
+async function sortir(cas: Cas, jeu: Jeu): Promise<void> {
+  if (!SORTIE) return
+  if (!SORTIE.startsWith('/')) throw new Error(`VITE_REFERENCE_1890_SORTIE veut un chemin absolu, hors du dépôt : reçu « ${SORTIE} »`)
+  // Le dépôt n'a pas les types de Node : le module se charge par son nom, et ne sert qu'ici.
+  const module = 'node:fs'
+  const fs: { mkdirSync: (dossier: string, options: { recursive: boolean }) => void; writeFileSync: (fichier: string, texte: string) => void } = await import(/* @vite-ignore */ module)
+  const fichier = cas.nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const texte = [`# image`, ecrire(jeu.image), ...jeu.toiles.flatMap((t) => [`# toile ${t.nom}`, ecrire(t.appels)])].join('\n')
+  fs.mkdirSync(SORTIE, { recursive: true })
+  fs.writeFileSync(`${SORTIE}/${fichier}.txt`, `${texte}\n`)
 }
 
 /** Les trois motifs du grain, les premières toiles de chaque montage : les mêmes pour tous les cas. */
 const GRAIN: readonly string[] = [
-  'toile 0 128x128 2 0972b9d3b955a0',
-  'toile 1 128x128 2 0da230cb7e35b6',
-  'toile 2 128x128 2 0f6f63e3bdea43',
+  'toile 0 128x128 2 051358ee03649b',
+  'toile 1 128x128 2 1912e957808390',
+  'toile 2 128x128 2 157f2cfa79db20',
 ]
 
-/** Les empreintes, cas par cas : `image`, le contexte principal à la dernière image (le nombre d'appels, puis leur empreinte) ; `toile`, chaque toile dans l'ordre de sa création (son rang, sa taille, ses appels). Les toiles de 780 × 1024 sont les tuiles du sol. */
+/** Les empreintes, cas par cas : `image`, le contexte principal à la dernière image (le nombre d'appels et d'écritures, puis leur empreinte) ; `toile`, chaque toile dans l'ordre de sa création (son rang, sa taille, ses appels). Les toiles de 780 × 1024 sont les tuiles du sol. */
 const REFERENCE: Record<string, readonly string[]> = {
   'en haut de 1890, au calme': [
-    'image 3389 19f07b2f6a1c88',
+    'image 4193 1966bcdae370b8',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'en haut de 1890, en mouvement': [
-    'image 3437 1334619859d7dd',
+    'image 4262 02bff8260c6761',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'sur 1897, au calme': [
-    'image 3520 0b827ca7f861d2',
+    'image 4350 1025fa804c866e',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'sur 1897, en mouvement': [
-    'image 3568 0f3e06bbd40ee6',
+    'image 4419 02aa726e1c66f6',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'sur la porte, au calme': [
-    'image 3276 03234f35998413',
+    'image 4061 01249951890ee0',
     ...GRAIN,
-    'toile 3 780x1024 105 0d302d0b43007a',
-    'toile 4 780x1024 105 1cc5be02989263',
+    'toile 3 780x1024 146 113ccfd3042ee9',
+    'toile 4 780x1024 146 02139b68ae2928',
   ],
   'sur la porte, en mouvement': [
-    'image 3317 17fd3b2408613b',
+    'image 4122 0dd869e0800a46',
     ...GRAIN,
-    'toile 3 780x1024 105 0d302d0b43007a',
-    'toile 4 780x1024 105 1cc5be02989263',
+    'toile 3 780x1024 146 113ccfd3042ee9',
+    'toile 4 780x1024 146 02139b68ae2928',
   ],
   'à cheval sur la frontière de 1900, au calme': [
-    'image 3255 0e3eca74b137c5',
+    'image 4053 06701609f9bee6',
     ...GRAIN,
-    'toile 3 780x1024 105 1cc5be02989263',
-    'toile 4 780x1024 105 0d3d922edbdcae',
+    'toile 3 780x1024 146 02139b68ae2928',
+    'toile 4 780x1024 146 0700d6e654936f',
   ],
   'à cheval sur la frontière de 1900, en mouvement': [
-    'image 3289 08cb72d818f8bf',
+    'image 4106 1c6ebd2f9c10e0',
     ...GRAIN,
-    'toile 3 780x1024 105 1cc5be02989263',
-    'toile 4 780x1024 105 0d3d922edbdcae',
+    'toile 3 780x1024 146 02139b68ae2928',
+    'toile 4 780x1024 146 0700d6e654936f',
   ],
   'dans 1900, au calme': [
-    'image 1023 017c5c416d11f2',
+    'image 1272 04e1363e742d68',
     ...GRAIN,
-    'toile 3 780x1024 105 0d3d922edbdcae',
-    'toile 4 780x1024 105 192a8f0030442b',
-    'toile 5 780x1024 105 00aaf72c024acf',
+    'toile 3 780x1024 146 0700d6e654936f',
+    'toile 4 780x1024 146 01f3b45f116c6a',
+    'toile 5 780x1024 146 05c99fc3ca5fcc',
   ],
   'dans 1900, en mouvement': [
-    'image 1033 0d4252cfec768b',
+    'image 1286 03980a31e34109',
     ...GRAIN,
-    'toile 3 780x1024 105 0d3d922edbdcae',
-    'toile 4 780x1024 105 192a8f0030442b',
-    'toile 5 780x1024 105 00aaf72c024acf',
+    'toile 3 780x1024 146 0700d6e654936f',
+    'toile 4 780x1024 146 01f3b45f116c6a',
+    'toile 5 780x1024 146 05c99fc3ca5fcc',
   ],
   'la vue d’ensemble ouverte, au calme': [
-    'image 256 074cc7ea9d4567',
+    'image 346 044f4092c6b3e0',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'la vue d’ensemble qui s’ouvre, en mouvement': [
-    'image 3692 0fcdc55bf4284a',
+    'image 4607 011cf019442224',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'une roulotte garée en 1896, au calme': [
-    'image 3619 11d0a63341b3d2',
+    'image 4473 0298eff42fa85c',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'une roulotte qui descend vers 1896, en mouvement': [
-    'image 3641 189bef6dad12e8',
+    'image 4510 1a3ac52efa1638',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   'une bobine déjà trouvée, au calme': [
-    'image 3241 03f82cf0fae0ef',
+    'image 4020 13f9b4801dce83',
     ...GRAIN,
-    'toile 3 780x1024 105 0d302d0b43007a',
-    'toile 4 780x1024 105 1cc5be02989263',
+    'toile 3 780x1024 146 113ccfd3042ee9',
+    'toile 4 780x1024 146 02139b68ae2928',
   ],
   'une bobine déjà trouvée, en mouvement': [
-    'image 3282 065fc3ea9656c8',
+    'image 4081 16908ef958d7cf',
     ...GRAIN,
-    'toile 3 780x1024 105 0d302d0b43007a',
-    'toile 4 780x1024 105 1cc5be02989263',
+    'toile 3 780x1024 146 113ccfd3042ee9',
+    'toile 4 780x1024 146 02139b68ae2928',
   ],
   '1900 ouverte, sur la porte, au calme': [
-    'image 4141 157320fbb78137',
+    'image 5135 185a7dce8ed9b8',
     ...GRAIN,
-    'toile 3 780x1024 177 08160a42394b4d',
-    'toile 4 780x1024 177 046a5dea1014e0',
+    'toile 3 780x1024 242 182073565237ab',
+    'toile 4 780x1024 242 1c0a48c9163572',
   ],
   '1900 ouverte, sur la porte, en mouvement': [
-    'image 4189 149297802e3b5a',
+    'image 5204 1844f8a7923207',
     ...GRAIN,
-    'toile 3 780x1024 177 08160a42394b4d',
-    'toile 4 780x1024 177 046a5dea1014e0',
+    'toile 3 780x1024 242 182073565237ab',
+    'toile 4 780x1024 242 1c0a48c9163572',
   ],
   '1900 ouverte, à cheval sur la frontière, au calme': [
-    'image 4071 128a20b5e53fdf',
+    'image 5077 03223a2fb1fc21',
     ...GRAIN,
-    'toile 3 780x1024 177 046a5dea1014e0',
-    'toile 4 780x1024 177 0acf2e12c3fc47',
-    'toile 5 52x76 2 0301dcf5fa40b7',
+    'toile 3 780x1024 242 1c0a48c9163572',
+    'toile 4 780x1024 242 18177a5a7b7140',
+    'toile 5 52x76 5 19a5836027e192',
   ],
   'de nuit, sur 1897, en mouvement': [
-    'image 3607 06cfa2fc528948',
+    'image 4556 080e67614c93af',
     ...GRAIN,
-    'toile 3 780x1024 105 1b338b9d56b774',
-    'toile 4 780x1024 105 0d302d0b43007a',
+    'toile 3 780x1024 146 1e22da48e2edd8',
+    'toile 4 780x1024 146 113ccfd3042ee9',
   ],
   '1890 bouclée, en haut de 1890, en mouvement': [
-    'image 5181 091ff84edf429f',
+    'image 6542 0d178b4d829f03',
     ...GRAIN,
-    'toile 3 780x1024 177 08274e45499ac1',
-    'toile 4 780x1024 177 08160a42394b4d',
+    'toile 3 780x1024 242 17c4df36dc45e1',
+    'toile 4 780x1024 242 182073565237ab',
   ],
 }
 
@@ -344,14 +409,16 @@ describe('la référence de 1890', () => {
 
   // Mutations : une coordonnée décalée d'un pixel dans `mondes/1890/sol.ts` (un dessin de 1890) ;
   // l'appel à `dessinerAvatar` retiré de `moteur.ts` (un dessin commun) ; une coordonnée du
-  // photogramme décalée dans `dessin/sol.ts` (le sol, qui ne vit que dans les tuiles) ; un contexte
-  // factice qui ne note rien (la référence vide).
-  it.each(CAS)('ne laisse pas bouger le dessin : $nom', (cas) => {
+  // photogramme décalée dans `dessin/sol.ts` (le sol, qui ne vit que dans les tuiles) ; une largeur
+  // de trait changée dans le même fichier (une propriété que le banc avale) ; un contexte factice
+  // qui ne note rien (la référence vide).
+  it.each(CAS)('ne laisse pas bouger le dessin : $nom', async (cas) => {
     const jeu = jouer(cas)
-    expect(jeu.image.length).toBeGreaterThan(100)
+    await sortir(cas, jeu)
+    expect(appelsDe(jeu.image).length).toBeGreaterThan(100)
     const tuiles = jeu.toiles.filter((t) => t.nom.endsWith(' 780x1024'))
     expect(tuiles.length).toBeGreaterThan(0)
-    for (const t of jeu.toiles) expect(t.appels.length, t.nom).toBeGreaterThan(0)
+    for (const t of jeu.toiles) expect(appelsDe(t.appels).length, t.nom).toBeGreaterThan(0)
     expect(empreintes(jeu)).toEqual(REFERENCE[cas.nom])
   })
 
