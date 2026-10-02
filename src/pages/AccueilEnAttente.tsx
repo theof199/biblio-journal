@@ -17,17 +17,21 @@ export default function AccueilEnAttente({ compte = null }: { compte?: string | 
   return (
     <div className={styles.fond}>
       <div className={styles.page}>
-        <Attente>
-          <FrontonEnAttente />
-        </Attente>
-        <section className={styles.journal} aria-labelledby="titre-journal">
-          <EnteteDuJournal compte={compte} />
-          <Attente muet className={styles.pellicules}>
-            {Array.from({ length: MOIS }, (_, mois) => (
-              <PelliculeEnAttente key={mois} />
-            ))}
+        <div className={styles.entree}>
+          <Attente>
+            <FrontonEnAttente />
           </Attente>
-        </section>
+        </div>
+        <div className={styles.colonneJournal}>
+          <section className={styles.journal} aria-labelledby="titre-journal">
+            <EnteteDuJournal compte={compte} />
+            <Attente muet className={styles.pellicules}>
+              {Array.from({ length: MOIS }, (_, mois) => (
+                <PelliculeEnAttente key={mois} />
+              ))}
+            </Attente>
+          </section>
+        </div>
       </div>
     </div>
   )

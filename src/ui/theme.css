@@ -740,6 +740,8 @@
   --cible-tactile: 44px; /* la plus petite zone touchable */
   --largeur-contenu: 40rem; /* la largeur maximale d'une page */
   --largeur-page: var(--largeur-contenu); /* celle d'une page qui s'élargit sur grand écran */
+  --accueil-colonnes: minmax(0, 1fr); /* les colonnes de l'accueil : une sur téléphone, l'entrée à gauche et le journal sur grand écran */
+  --accueil-entree-position: static; /* l'entrée ne suit le défilement que sur grand écran */
   --barre-onglets-hauteur: 3.75rem; /* sans la zone sûre, ajoutée par la coque */
   --barre-onglets-icone: 24px;
   --barre-onglets-icone-trait: 1.75; /* l'épaisseur du trait des icônes */
@@ -805,6 +807,9 @@
     --grille-planches-colonnes: repeat(2, minmax(0, 1fr));
     --grille-lignes-colonnes: repeat(3, minmax(0, 1fr));
     --grille-guichet-colonnes: repeat(6, minmax(0, 1fr));
+    --grille-planche-colonnes: repeat(6, minmax(0, 1fr));
+    --accueil-colonnes: var(--eventail-largeur-max) minmax(0, 1fr);
+    --accueil-entree-position: sticky;
   }
 }
 

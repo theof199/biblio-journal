@@ -296,6 +296,19 @@ describe('les grilles', () => {
   })
 })
 
+describe('les colonnes de l’accueil', () => {
+  // Les enfants de la grille sont l'entrée et le journal, dont la bande d'un mois est `max-content` : sans
+  // `min-width: 0` leur minimum est ce contenu, la piste s'élargit à la bande, qui ne défile plus.
+  it('l’entrée et le journal peuvent rétrécir sous leur contenu', () => {
+    expect(regle(MODULES['/src/pages/Accueil.module.css']!, '.entree,\n.colonneJournal')).toMatch(/min-width:\s*0/)
+  })
+
+  it('le téléphone garde une seule colonne', () => {
+    const valeur = regle(theme, ':root').match(/--accueil-colonnes:\s*([^;]+);/)?.[1]
+    expect(valeur).toBe('minmax(0, 1fr)')
+  })
+})
+
 describe('l’affiche', () => {
   it('le cadre tient son ratio, image ou non', () => {
     expect(regle(affiche, '.cadre')).toMatch(/aspect-ratio:\s*var\(--ratio-affiche\)/)

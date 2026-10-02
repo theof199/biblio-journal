@@ -114,36 +114,40 @@ export default function Accueil() {
   return (
     <div className={styles.fond}>
       <div className={styles.page}>
-        <Fronton etat={etatFronton(maintenant, seance, cartes, items[0])} />
-        <Eventail cartes={cartesEventail(seance, cartes)} />
-        {voyage.data ? <BandeVoyage voyage={voyage.data} /> : null}
+        <div className={styles.entree}>
+          <Fronton etat={etatFronton(maintenant, seance, cartes, items[0])} />
+          <Eventail cartes={cartesEventail(seance, cartes)} />
+          {voyage.data ? <BandeVoyage voyage={voyage.data} /> : null}
+        </div>
 
-        {vide ? (
-          <VitrineVide onAjouter={() => naviguer('/recherche')} />
-        ) : (
-          <section className={styles.journal} aria-labelledby="titre-journal">
-            <EnteteDuJournal compte={compte} />
+        <div className={styles.colonneJournal}>
+          {vide ? (
+            <VitrineVide onAjouter={() => naviguer('/recherche')} />
+          ) : (
+            <section className={styles.journal} aria-labelledby="titre-journal">
+              <EnteteDuJournal compte={compte} />
 
-            {mois.map((groupe) => (
-              <Pellicule key={groupe.cle} mois={groupe} deroulee={deroules.has(groupe.cle)} onBasculer={() => basculer(groupe.cle)} />
-            ))}
+              {mois.map((groupe) => (
+                <Pellicule key={groupe.cle} mois={groupe} deroulee={deroules.has(groupe.cle)} onBasculer={() => basculer(groupe.cle)} />
+              ))}
 
-            {journal.hasNextPage ? (
-              <div ref={sentinelle} data-testid="sentinelle-journal" className={styles.sentinelle} />
-            ) : null}
-            {journal.isFetchingNextPage && !isFetchNextPageError ? (
-              <p className={styles.chargement}>Chargement…</p>
-            ) : null}
-            {isFetchNextPageError ? (
-              <div className={styles.erreur} role="alert">
-                <p className={styles.erreurTexte}>{journal.error?.message}</p>
-                <button type="button" className={styles.bouton} onClick={() => void fetchNextPage()}>
-                  Réessayer
-                </button>
-              </div>
-            ) : null}
-          </section>
-        )}
+              {journal.hasNextPage ? (
+                <div ref={sentinelle} data-testid="sentinelle-journal" className={styles.sentinelle} />
+              ) : null}
+              {journal.isFetchingNextPage && !isFetchNextPageError ? (
+                <p className={styles.chargement}>Chargement…</p>
+              ) : null}
+              {isFetchNextPageError ? (
+                <div className={styles.erreur} role="alert">
+                  <p className={styles.erreurTexte}>{journal.error?.message}</p>
+                  <button type="button" className={styles.bouton} onClick={() => void fetchNextPage()}>
+                    Réessayer
+                  </button>
+                </div>
+              ) : null}
+            </section>
+          )}
+        </div>
 
         {!vide ? (
           <Link to="/recherche" className={styles.boutonAjouter}>

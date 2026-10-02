@@ -6,13 +6,33 @@
 }
 
 .page {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: var(--accueil-colonnes);
   gap: var(--espace-5);
-  max-width: var(--largeur-contenu);
+  /* Sans effet sur la colonne unique du téléphone. */
+  column-gap: var(--espace-6);
+  max-width: var(--largeur-page);
   margin: 0 auto;
   /* Le bas laisse libre le bouton flottant, qui n'a pas à cacher la dernière rangée. */
   padding: var(--espace-4) var(--gouttiere-page) calc(var(--bouton-hauteur) + var(--espace-6));
+}
+
+/* Les deux colonnes de la page. `min-width: 0` : sans lui, la bande d'un mois (`max-content`) gonflerait la piste
+   au lieu de défiler. */
+.entree,
+.colonneJournal {
+  min-width: 0;
+}
+
+/* Sur grand écran, l'entrée reste sous les yeux pendant que le journal défile. La position vient d'un jeton :
+   `sticky` forme un contexte d'empilement, que le téléphone n'a pas à recevoir pour rien. */
+.entree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-5);
+  position: var(--accueil-entree-position);
+  top: var(--espace-4);
+  align-self: start;
 }
 
 .journal {
