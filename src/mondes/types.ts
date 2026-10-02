@@ -153,9 +153,12 @@ export interface VueMonde {
 }
 
 /**
- * Un temps du passage d'entrée d'un monde (`SceneCollante.entree`) : la caméra va jusqu'à `y`, puis
- * s'y arrête. Les durées s'écrivent en millisecondes **de base, sans tempo** : le moteur seul les
- * joue au tempo (`voyage/tempo.ts`), là où il les joue.
+ * Un temps du passage d'entrée d'un monde (`SceneCollante.entree`) : la caméra se tient à `y` et y
+ * marque une pause, qu'elle y soit venue d'un autre temps ou qu'elle y ait été posée d'un coup (le
+ * premier temps du sens joué). Joué à l'envers, le passage est le retournement exact de l'endroit.
+ * « Le temps i » désigne ici le rang du temps dans la liste, quel que soit le sens joué. Les durées
+ * s'écrivent en millisecondes **de base, sans tempo** : le moteur seul les joue au tempo
+ * (`voyage/tempo.ts`), là où il les joue.
  */
 export interface TempsDEntree {
   /** Où la caméra se pose, en `y` du repère de la section (comme `VueMonde.avance`). */
@@ -169,8 +172,9 @@ export interface TempsDEntree {
    */
   duree: number
   /**
-   * La pause tenue à ce temps quand la caméra y arrive, dans les deux sens, en millisecondes de
-   * base. Le passage finit après la pause du dernier temps joué.
+   * La pause tenue à ce temps, en millisecondes de base, dans les deux sens. Elle se tient à chaque
+   * temps joué, y compris celui où la caméra est posée d'un coup (le premier du sens joué) ; le
+   * passage finit après la pause du dernier temps joué. Un monde qui ne veut pas de pause écrit 0.
    */
   arret: number
 }
