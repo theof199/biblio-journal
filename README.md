@@ -134,7 +134,7 @@ rechargement ni au retour sur la carte : l'appareil garde la dernière année mo
 (`journal.carte.annee-vue.<membre>`, `carte/memoire.ts`).
 
 **Le son** (plan 2d ; `carte/son.ts`, `Ambiance`). Le ronron du projecteur, le clap, le carillon
-d'une bobine retrouvée, et la musique de chaque monde à l'écran, au volume de sa présence
+d'une bobine retrouvée, et la musique de chaque monde à l'écran, au volume de son poids de mélange
 (`Monde.musique` : l'orgue de barbarie de 1890, `mondes/1890/orgue.ts` ; rien pour le monde « à
 venir »). Tout est synthétisé par WebAudio, sans fichier. Coupé par défaut : **seul le bouton
 « Son »** (la pastille du haut, en bas à droite) crée le contexte audio, dans son geste, et le reprend
@@ -154,6 +154,98 @@ n'apparaît qu'à la première trouvaille ; un message dit le film, puis, à la 
 sont retrouvées. Au calme, elle arrive d'un coup. Les trouvailles se gardent sur l'appareil, par
 membre (`journal.carte.bobines.<membre>`) : une bobine trouvée ne se dessine plus, sa zone ne se
 touche plus. Un stockage illisible vaut « coupé » et « aucune ».
+
+**Le compteur va par décennie** (plan 3a ; `pages/Carte.tsx`). Il compte les bobines du monde de la
+décennie à l'écran : celle du monde au plus fort poids de mélange (le premier des deux à égalité),
+que le moteur dit à chaque image par `Rappels.presences` et dont la page ne retient que le
+changement. À l'ouverture, c'est la décennie de l'année en cours, ou la dernière avant elle dont le
+monde cache des bobines. Devant un monde sans bobines (le monde « à venir »), il garde la décennie
+qu'il montrait. Il reste caché tant que rien n'est trouvé dans la décennie qu'il montre. Pendant le
+vol, la décennie de la bobine l'emporte, même ramassée à une frontière devant un autre monde, et la
+bobine en vol n'est comptée qu'à son arrivée. Le message compte alors dans la décennie de la bobine,
+et le compteur y reste jusqu'à ce que le moteur dise une autre décennie : jamais de retour à l'image
+suivante. Le dernier message dit « les trois » pour un monde de trois bobines, « toutes » sinon.
+
+**La référence de 1890** (`carte/reference1890.test.ts`). Ce que le moteur dessine pour le vrai
+monde 1890 suivi du monde « à venir » est figé en empreintes : chaque appel au contexte et chaque
+écriture de propriété, les nombres arrondis à six décimales. C'est le garde-fou de « 1890 ne bouge
+pas » : un travail sur le moteur la laisse verte **sans y toucher**, et une empreinte ne se refait
+que si le changement de dessin est voulu, et dit dans le commit. Une empreinte ne dit pas quel appel
+a bougé : avec `VITE_REFERENCE_1890_SORTIE` posée sur un dossier en chemin absolu, hors du dépôt,
+chaque cas y écrit sa suite, un appel par ligne, à comparer d'un commit à l'autre par `diff -r`
+(l'en-tête du fichier donne les commandes).
+
+**La section collante** (plan 3a ; `Monde.scene`, `mondes/types.ts`). Un monde qui porte une `scene`
+ne laisse plus sa section glisser sous la caméra : il dessine lui-même ses années d'après
+`VueMonde.avance` (`camY − y0`, donné à tous les mondes). **Aucun monde n'en a encore** : 1890 et le
+monde « à venir » ont `scene: null`, le monde 1900 viendra au lot suivant, et rien de ce qui suit ne
+se voit aujourd'hui. Dans une telle section, le moteur s'efface :
+
+- Le sol, le chemin parcouru et la brume de l'avenir sont coupés net à ses bords (`bandesDuSol`,
+  `couperAuxBandes`, `dessin/sol.ts`). Sans section collante sur la carte, les bandes sont nulles et
+  rien n'est coupé : le dessin reste celui d'avant, appel pour appel.
+- Ni case commune, ni avatar, ni clap. Le moteur n'inscrit que la zone `case` et ne pose le corail
+  qu'au point que rend `ecranDeLaCase` ; rien pour une année que le monde dit hors de vue.
+- Le Voyage suivi garé dans la section est dessiné par `dessinerSuivi`, qui inscrit lui-même sa
+  zone `roulotte`.
+- Deux nombres par monde (`carte/camera.ts`), qui ne diffèrent qu'à l'entrée d'une section
+  collante. Le **poids de mélange** (`poidsSections`) : ce qui se mêle d'un monde à l'autre (le
+  ciel, le virage, la musique) ; il y suit la part de l'écran passée sous la frontière. La
+  **présence** (`presencesSections`) : ce que le monde reçoit pour dessiner, et ce qui dit s'il
+  dessine ; elle y vaut 1 sans fondu, pour le monde quitté tant que sa section est à l'écran, pour
+  le monde collant dès que la sienne y entre.
+
+**La caméra roule d'arrêt en arrêt.** `scene.arrets` donne un `y` par année, que le moteur borne à
+ce que le défilement atteint. Dans une section collante, `marcher` ne fait marcher personne : la
+caméra roule jusqu'à l'arrêt de l'année (`DUREE_DU_ROULEMENT`, des millisecondes de base jouées au
+tempo, la même durée quelle que soit la distance) et la promesse se résout à l'arrivée ; d'un coup
+au calme, ou quand elle y est déjà (`A_L_ARRET`). `allerIci` y mène à l'arrêt de l'année du membre,
+`passerLaPorte` n'y fait rien, et `avatarVisible` dit vrai quand la caméra est posée à cet arrêt.
+Un seul glissement tient la caméra à la fois (`prendreLaCamera`) : celui qui commence arrête les
+autres et libère qui les attendait.
+
+**Le rappel à l'arrêt.** Le moteur n'a que `defiler` pour savoir que le membre défile : l'arrêt se
+constate aux images, quand `defiler` s'est tu depuis `REPOS_DU_DEFILEMENT` (un seuil, pas une
+animation : il ne suit pas le tempo) et qu'aucun doigt n'est posé. La caméra laissée entre deux
+arrêts revient alors au plus proche en roulant ; au calme, elle se pose d'un coup à l'arrêt suivant
+dans le sens du geste, choisi une fois par geste. Le rappel vaut du premier arrêt au bas de la
+section, pas avant le premier arrêt (la zone du passage d'entrée). Ce que la page rend d'un
+`defilerVers` est un écho, pas un geste : pendant un roulement, un défilement tombé entre son
+départ et là où il en est ne compte pas, et un roulement qu'on attend (`marcher`) n'est détourné par
+aucun geste. **`doigtsPoses`** : `CarteCanvas` relaie `targetTouches.length` à `touchstart`,
+`touchend` et `touchcancel`, parce que le navigateur relève le pointeur (`pointercancel`) dès qu'il
+prend le geste pour défiler. Tant qu'un doigt reste posé, le moteur ne rappelle ni ne pose la
+caméra : il combattrait le défilement que le doigt mène.
+
+**`direBonjour` et le passage d'entrée.** `direBonjour(decennie, sens)` joue `scene.entree`, le
+jumeau de `direAdieu` : la caméra est posée d'un coup au premier temps du sens joué, y tient sa
+pause, puis glisse d'un temps au suivant ; à l'envers, c'est le retournement exact de l'endroit (la
+durée appartient au segment, pas au sens). Les durées et les pauses s'écrivent dans le monde en
+millisecondes de base : le moteur seul les joue au tempo. Le monde reçoit `VueMonde.entree`, les
+secondes écoulées, -1 hors passage. La promesse se résout après la pause du dernier temps ; aussitôt
+pour un monde sans `scene` ou sans temps ; aussitôt au calme, la caméra posée au dernier temps du
+sens joué. Un seul passage à la fois : demandé pendant qu'un autre joue, il ne relance rien et se
+résout avec lui. Pendant le passage, un défilement du membre ne le détourne pas ; un toucher le
+pose à sa fin et n'ouvre pas l'année qui se trouve sous le doigt. **Le geste le lance** : un
+défilement laissé entre le premier et le dernier temps, parti d'au-dessus, joue le passage à
+l'endroit ; parti d'au-dessous, à l'envers ; parti dans la zone, rien. Sous la même garde que le
+rappel (jamais sous un doigt posé), et avant lui. Le rappel optionnel `entreeProche` dit la décennie
+dont le premier temps est à un écran au plus sous la caméra, nulle sinon et tant qu'un passage se
+joue. **La page n'appelle pas encore `direBonjour` et n'écoute pas `entreeProche`** : `CarteCanvas`
+les expose, `pages/Carte.tsx` ne s'en sert pas.
+
+**La vue d'ensemble d'un monde à `scene`.** Il dessine sa bande lui-même (`dessinerBande`), dans le
+cadre que tiendrait la bande commune : le moteur n'y pose ni fond ni marquise, seul le voile plein
+écran reste commun. Le contexte porte déjà l'ouverture (`globalAlpha` vaut `e`), et ce que le monde
+y laisse est défait après l'appel. La bande ne pèse que `POIDS_REPLIEE`, quelle que soit la hauteur
+de la section (`genreDeBande`, `carte/ensemble.ts`, que le géomètre et le dessin lisent tous deux).
+Le monde rend de quoi lire un point de l'écran (`LectureDeBande`) : quittée par un toucher ou un
+pincement dans sa bande, la vue d'ensemble pose la caméra à l'arrêt de l'année désignée, et la
+laisse où elle est si le point n'en désigne aucune. Dans une bande ordinaire, elle la pose à
+l'endroit touché, au milieu de l'écran ; si cela tombait dans une section collante, au haut de la
+section touchée. Fermée sans désigner d'endroit (le bouton), elle ne bouge pas la caméra.
+Sur une carte à section collante, cette sortie prend la caméra, et l'écho qu'en rend la page ne
+lance ni passage ni rappel.
 
 **Les images.** Chaque dossier `assets/` (`src/carte/assets/` pour les images communes,
 `src/mondes/<décennie>/assets/`) a son `CREDITS.md`, où chaque fichier porte son œuvre, sa source,

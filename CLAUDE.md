@@ -48,6 +48,29 @@ Si l'interface ne
 suffit pas au monde qu'on écrit, **elle s'étend d'abord, dans une tâche à part, avec le monde « à
 venir »** (que la signature oblige à suivre) : jamais un contournement dans le moteur ou la page.
 
+**`Monde.scene` : la scène collante** (plan 3a ; `SceneCollante`, `src/mondes/types.ts`, dont les
+commentaires font foi). Nulle, la section glisse sous la caméra et le moteur y dessine la route, les
+cases et l'avatar : c'est 1890 et le monde « à venir », et **aucun monde n'en porte encore** (1900
+viendra). Posée, la section ne glisse plus et le monde prend à sa charge ce que le moteur dessinait
+(la route, les cases, l'avatar, la roulotte garée, la brume, sa bande de la vue d'ensemble) ; tout
+ce qui bouge se tire de `VueMonde.avance`. Ses cinq membres, et ce que chacun doit au moteur :
+
+- `ecranDeLaCase` : où se tient une année à l'écran, nul hors de vue. Le moteur y inscrit la zone
+  `case` et y pose le corail ; nul, l'année n'est ni touchable ni marquée.
+- `dessinerSuivi` : le Voyage suivi garé dans son année ; le monde inscrit lui-même sa zone
+  `roulotte` (`v.zone`), sans quoi la roulotte ne se touche pas.
+- `dessinerBande` : sa bande de la vue d'ensemble, fond compris. `cadre.e` est déjà sur le contexte :
+  le multiplier encore l'appliquerait deux fois. Elle rend une `LectureDeBande`, d'où la sortie de la
+  vue d'ensemble tire l'année touchée.
+- `arrets` : un `y` de la section par année, dans l'ordre des années. Une année sans arrêt n'est
+  atteinte ni par `marcher`, ni par « Tu es ici », ni par la sortie de la vue d'ensemble.
+- `entree` : les temps du passage d'entrée, dans l'ordre de l'endroit ; vide, aucun passage. Durées
+  et pauses en millisecondes **de base, sans tempo** : le moteur seul les joue au tempo.
+
+Le moteur côté carte (les arrêts, le rappel, `direBonjour`) est décrit dans le `README.md`, « La
+carte du Voyage ». Étendre le moteur laisse `src/carte/reference1890.test.ts` verte **sans y
+toucher** : une empreinte ne se recopie pas pour faire passer un test.
+
 **Les images.** Un fichier d'un dossier `assets/` n'entre qu'avec son entrée dans le `CREDITS.md` du
 même dossier : œuvre, source (la page du fichier), licence et sa raison, traitement
 (`src/test/credits.test.ts`). Une restauration récente (Lobster, Institut Lumière) est permise,
