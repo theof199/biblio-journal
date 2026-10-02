@@ -10189,9 +10189,9 @@ export interface paths {
   "/me/senscritique": {
     /**
      * L’état de ma liaison SensCritique
-     * @description Connecté ou non, pseudo SensCritique, expiration annoncée, nombre de notes en attente d’envoi et de films à apparier.
+     * @description Connecté, session expirée ou pas de liaison ; pseudo SensCritique, expiration annoncée, nombre de notes en attente d’envoi et de films à apparier.
      *
-     * `connecte` ne repasse à `false` que sur un **vrai refus** de SensCritique (ou une clé de chiffrement changée) : `expire_le` est indicatif, l’API ne le compare jamais à l’horloge. Les envois en attente et les choix mémorisés survivent à ce refus ; seul `DELETE /me/senscritique` les efface.
+     * `connecte` ne repasse à `false` que sur un **vrai refus** de SensCritique (ou une clé de chiffrement changée) : `expire_le` est indicatif, l’API ne le compare jamais à l’horloge. `session_expiree` passe alors à `true` : la liaison, son `pseudo`, les envois en attente et les choix mémorisés restent, **les notes écrites entre-temps continuent de se filer** et partent à la reconnexion. Seul `DELETE /me/senscritique` efface la liaison, la file et les choix ; plus rien ne se file ensuite.
      *
      * Sans `SENSCRITIQUE_CLE` sur le serveur, `503 SERVICE_UNCONFIGURED`.
      */
@@ -10203,7 +10203,9 @@ export interface paths {
             "application/json": {
               /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
               connecte: boolean;
-              /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+              /** @description Vrai si le compte est toujours lié mais que SensCritique a refusé sa session : proposer de se reconnecter. Les notes écrites entre-temps attendent dans la file et partiront à la reconnexion. Faux si tu es connecté, et faux aussi si tu n’as pas de liaison (jamais liée, ou effacée par `DELETE /me/senscritique`) */
+              session_expiree: boolean;
+              /** @description Ton pseudo chez SensCritique — gardé quand la session a expiré —, nul sans liaison */
               pseudo: string | null;
               /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
               expire_le: string | null;
@@ -10244,7 +10246,9 @@ export interface paths {
             "application/json": {
               /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
               connecte: boolean;
-              /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+              /** @description Vrai si le compte est toujours lié mais que SensCritique a refusé sa session : proposer de se reconnecter. Les notes écrites entre-temps attendent dans la file et partiront à la reconnexion. Faux si tu es connecté, et faux aussi si tu n’as pas de liaison (jamais liée, ou effacée par `DELETE /me/senscritique`) */
+              session_expiree: boolean;
+              /** @description Ton pseudo chez SensCritique — gardé quand la session a expiré —, nul sans liaison */
               pseudo: string | null;
               /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
               expire_le: string | null;
@@ -10302,7 +10306,9 @@ export interface paths {
             "application/json": {
               /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
               connecte: boolean;
-              /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+              /** @description Vrai si le compte est toujours lié mais que SensCritique a refusé sa session : proposer de se reconnecter. Les notes écrites entre-temps attendent dans la file et partiront à la reconnexion. Faux si tu es connecté, et faux aussi si tu n’as pas de liaison (jamais liée, ou effacée par `DELETE /me/senscritique`) */
+              session_expiree: boolean;
+              /** @description Ton pseudo chez SensCritique — gardé quand la session a expiré —, nul sans liaison */
               pseudo: string | null;
               /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
               expire_le: string | null;
@@ -10449,7 +10455,9 @@ export interface paths {
               etat: {
                 /** @description Vrai si l’API détient un cookie de session SensCritique pour toi. Un refus de session le repasse à faux */
                 connecte: boolean;
-                /** @description Ton pseudo chez SensCritique, nul si tu n’es pas connecté */
+                /** @description Vrai si le compte est toujours lié mais que SensCritique a refusé sa session : proposer de se reconnecter. Les notes écrites entre-temps attendent dans la file et partiront à la reconnexion. Faux si tu es connecté, et faux aussi si tu n’as pas de liaison (jamais liée, ou effacée par `DELETE /me/senscritique`) */
+                session_expiree: boolean;
+                /** @description Ton pseudo chez SensCritique — gardé quand la session a expiré —, nul sans liaison */
                 pseudo: string | null;
                 /** @description Date d’expiration annoncée par SensCritique pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de SensCritique déconnecte */
                 expire_le: string | null;
@@ -10481,6 +10489,166 @@ export interface paths {
         };
         /** @description Default Response */
         409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/cinoche": {
+    /**
+     * L’état de ma liaison Cinoche
+     * @description Connecté, session expirée ou pas de liaison ; e-mail du compte Cinoche lié, expiration annoncée, nombre de notes en attente d’envoi.
+     *
+     * `connecte` ne repasse à `false` que sur un **vrai refus** de Cinoche (un `401`) ou une clé de chiffrement changée : `expire_le` est indicatif, l’API ne le compare jamais à l’horloge. `session_expiree` passe alors à `true` : la liaison et son `email` restent, **les notes écrites entre-temps continuent de se filer** et partent à la reconnexion. Seul `DELETE /me/cinoche` efface la liaison et la file ; plus rien ne se file ensuite.
+     *
+     * Sans `CINOCHE_CLE` sur le serveur, `503 SERVICE_UNCONFIGURED`.
+     */
+    get: {
+      responses: {
+        /** @description L’état de la liaison Cinoche de l’utilisateur de la session */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Vrai si l’API détient un cookie de session Cinoche pour toi. Un refus de session le repasse à faux */
+              connecte: boolean;
+              /** @description Vrai si le compte est toujours lié mais que Cinoche a refusé sa session : proposer de se reconnecter. Les notes écrites entre-temps attendent dans la file et partiront à la reconnexion. Faux si tu es connecté, et faux aussi si tu n’as pas de liaison (jamais liée, ou effacée par `DELETE /me/cinoche`) */
+              session_expiree: boolean;
+              /** @description L’e-mail du compte Cinoche lié — gardé quand la session a expiré —, nul sans liaison */
+              email: string | null;
+              /** @description Date d’expiration annoncée par Cinoche pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de Cinoche déconnecte */
+              expire_le: string | null;
+              /** @description Notes qui n’ont pas pu partir (Cinoche injoignable, session refusée) et qu’un rejeu enverra */
+              envois_en_attente: number;
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    /**
+     * Effacer ma liaison Cinoche
+     * @description Efface **tout** : le cookie chiffré, l’e-mail et la file des envois en attente. Rien ne part plus, et rien de ce qui attendait ne partira.
+     *
+     * Ne touche jamais au journal : les notes déjà posées y restent, et chez Cinoche, ce qui est déjà parti aussi. La réponse est l’état, remis à zéro.
+     *
+     * Idempotent : effacer une liaison qui n’existe pas répond de même.
+     */
+    delete: {
+      responses: {
+        /** @description L’état de la liaison Cinoche de l’utilisateur de la session */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Vrai si l’API détient un cookie de session Cinoche pour toi. Un refus de session le repasse à faux */
+              connecte: boolean;
+              /** @description Vrai si le compte est toujours lié mais que Cinoche a refusé sa session : proposer de se reconnecter. Les notes écrites entre-temps attendent dans la file et partiront à la reconnexion. Faux si tu es connecté, et faux aussi si tu n’as pas de liaison (jamais liée, ou effacée par `DELETE /me/cinoche`) */
+              session_expiree: boolean;
+              /** @description L’e-mail du compte Cinoche lié — gardé quand la session a expiré —, nul sans liaison */
+              email: string | null;
+              /** @description Date d’expiration annoncée par Cinoche pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de Cinoche déconnecte */
+              expire_le: string | null;
+              /** @description Notes qui n’ont pas pu partir (Cinoche injoignable, session refusée) et qu’un rejeu enverra */
+              envois_en_attente: number;
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/cinoche/connexion": {
+    /**
+     * Relier mon compte Cinoche
+     * @description L’API se connecte à Cinoche **à ta place, une fois**, avec l’e-mail et le mot de passe reçus, et ne garde que le cookie de session rendu — chiffré —, sa date d’expiration annoncée et l’e-mail.
+     *
+     * **Le mot de passe n’est jamais stocké, jamais journalisé, jamais renvoyé.** Il n’existe que dans ce corps de requête. Un compte Cinoche créé avec Google n’a pas de mot de passe tant qu’on n’en pose pas un dans son profil Cinoche : il ne peut pas se lier avant.
+     *
+     * La réponse est l’état, comme `GET /me/cinoche`, rendu **sans attendre** : la reconnexion rejoue les envois qui attendaient **en arrière-plan**, et `envois_en_attente` les compte encore dans cette réponse. Rien du journal déjà écrit avant la liaison ne part.
+     *
+     * **Limite de débit :** 5 tentatives par 15 minutes, **réussies comprises**, comptées par membre et par IP : chacune part chez Cinoche. Au-delà : `429 RATE_LIMITED`, avec un en-tête `Retry-After`, et rien ne part.
+     *
+     * `422 CINOCHE_IDENTIFIANTS_REFUSES` : Cinoche a refusé l’e-mail ou le mot de passe (jamais 401 : ce n’est pas ta session de la médiathèque). `503 UPSTREAM_UNAVAILABLE` : Cinoche ne répond pas (réessayer), ou a répondu d’une façon inattendue (`retryable: false` : un `4xx` autre que `401`, un `200` sans cookie — les identifiants ne sont pas en cause). `503 SERVICE_UNCONFIGURED` : pas de `CINOCHE_CLE` sur ce serveur.
+     */
+    post: {
+      /** @description Les identifiants Cinoche, envoyés une fois pour ouvrir la liaison */
+      requestBody: {
+        content: {
+          "application/json": {
+            /** @description L’adresse e-mail du compte Cinoche. Gardée en clair, pour dire quel compte est lié */
+            email: string;
+            /** @description Le mot de passe Cinoche. **Jamais stocké, jamais journalisé, jamais renvoyé** : il ne sert qu’à cet appel. Un compte Cinoche créé avec Google n’en a pas tant qu’on n’en pose pas un dans son profil Cinoche */
+            mot_de_passe: string;
+          };
+        };
+      };
+      responses: {
+        /** @description L’état de la liaison Cinoche de l’utilisateur de la session */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Vrai si l’API détient un cookie de session Cinoche pour toi. Un refus de session le repasse à faux */
+              connecte: boolean;
+              /** @description Vrai si le compte est toujours lié mais que Cinoche a refusé sa session : proposer de se reconnecter. Les notes écrites entre-temps attendent dans la file et partiront à la reconnexion. Faux si tu es connecté, et faux aussi si tu n’as pas de liaison (jamais liée, ou effacée par `DELETE /me/cinoche`) */
+              session_expiree: boolean;
+              /** @description L’e-mail du compte Cinoche lié — gardé quand la session a expiré —, nul sans liaison */
+              email: string | null;
+              /** @description Date d’expiration annoncée par Cinoche pour le cookie. **Indicative** : l’API ne la compare pas à l’horloge, seul un vrai refus de Cinoche déconnecte */
+              expire_le: string | null;
+              /** @description Notes qui n’ont pas pu partir (Cinoche injoignable, session refusée) et qu’un rejeu enverra */
+              envois_en_attente: number;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        422: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        429: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };
