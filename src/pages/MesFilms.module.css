@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--espace-3);
-  max-width: var(--largeur-contenu);
+  max-width: var(--largeur-page);
   margin: 0 auto;
   padding: var(--espace-2) var(--espace-4) var(--espace-6);
 }
@@ -28,6 +28,7 @@
 }
 
 .recherche {
+  max-width: var(--largeur-contenu);
   display: flex;
   align-items: center;
   gap: var(--espace-2);
@@ -72,6 +73,7 @@
 }
 
 .panneau {
+  max-width: var(--largeur-contenu);
   display: flex;
   flex-direction: column;
   gap: var(--espace-3);
@@ -147,11 +149,14 @@
 }
 
 .liste {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: var(--grille-lignes-colonnes);
+  /* Sans effet sur la colonne unique du téléphone. */
+  column-gap: var(--espace-5);
 }
 
 .ligne {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--espace-3);

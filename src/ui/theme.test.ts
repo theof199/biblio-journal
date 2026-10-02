@@ -6,6 +6,9 @@ import affiche from './Affiche.module.css?raw'
 import attente from './Attente.module.css?raw'
 import auCine from '../pages/AuCine.module.css?raw'
 import suivis from '../pages/Suivis.module.css?raw'
+import mesFilms from '../pages/MesFilms.module.css?raw'
+import pageRealisateur from '../pages/PageRealisateur.module.css?raw'
+import pageSaga from '../pages/PageSaga.module.css?raw'
 import recherche from '../pages/Recherche.module.css?raw'
 import formulaire from '../pages/Formulaire.module.css?raw'
 import rangeeDeNote from '../formulaire/RangeeDeNote.module.css?raw'
@@ -244,7 +247,7 @@ describe('le défilement', () => {
 describe('les grilles', () => {
   // `1fr` vaut `minmax(auto, 1fr)` : le minimum est le contenu, un titre long ou une image gonfle la
   // piste et la page défile de côté. `minmax(0, 1fr)` la borne.
-  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes', '--grille-planche-colonnes', '--grille-mur-colonnes', '--grille-guichet-colonnes', '--grille-seances-colonnes', '--grille-planches-colonnes'])(
+  it.each(['--grille-sorties-colonnes', '--grille-bande-colonnes', '--grille-planche-colonnes', '--grille-mur-colonnes', '--grille-guichet-colonnes', '--grille-seances-colonnes', '--grille-planches-colonnes', '--grille-lignes-colonnes'])(
     '%s borne ses pistes à zéro',
     (jeton) => {
       const valeur = regle(theme, ':root').match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]
@@ -267,6 +270,9 @@ describe('les grilles', () => {
     ['/src/pages/AuCine.module.css', auCine, '.ligne'],
     ['/src/pages/Suivis.module.css', suivis, '.mur > *'],
     ['/src/pages/Suivis.module.css', suivis, '.planches > *'],
+    ['/src/pages/MesFilms.module.css', mesFilms, '.ligne'],
+    ['/src/pages/PageRealisateur.module.css', pageRealisateur, '.liste > li'],
+    ['/src/pages/PageSaga.module.css', pageSaga, '.liste > li'],
     ['/src/pages/Recherche.module.css', recherche, '.affiches > li'],
     ['/src/suivis/PlancheCycle.module.css', planche, '.case'],
     ['/src/accueil/Pellicule.module.css', pellicule, '.planche .vignette'],

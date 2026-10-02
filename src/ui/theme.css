@@ -753,6 +753,7 @@
   --grille-mur-colonnes: repeat(2, minmax(0, 1fr)); /* le mur des affichettes de Suivis, deux par rangée */
   --grille-seances-colonnes: repeat(1, minmax(0, 1fr)); /* la liste « Tes séances » d'Au ciné, une colonne */
   --grille-planches-colonnes: repeat(1, minmax(0, 1fr)); /* les planches des cycles de Suivis, une colonne */
+  --grille-lignes-colonnes: repeat(1, minmax(0, 1fr)); /* une liste de lignes de films (Mes films, filmographies, sagas), une colonne */
   --largeur-affiche-ligne: 3.5rem; /* une jaquette dans une ligne (recherche, filmographies, Au ciné) */
   --taille-pastille-note: 2rem; /* une pastille de note, 1 à 10 */
   --cote-tuile-note: 1.5rem; /* la tuile de note posée sur une affiche : au moins ce carré */
@@ -802,6 +803,8 @@
     --grille-mur-colonnes: repeat(4, minmax(0, 1fr));
     --grille-seances-colonnes: repeat(2, minmax(0, 1fr));
     --grille-planches-colonnes: repeat(2, minmax(0, 1fr));
+    --grille-lignes-colonnes: repeat(3, minmax(0, 1fr));
+    --grille-guichet-colonnes: repeat(6, minmax(0, 1fr));
   }
 }
 

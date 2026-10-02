@@ -1,7 +1,7 @@
 /* Aucune valeur en dur : tout vient de `ui/theme.css`. */
 
 .page {
-  max-width: var(--largeur-contenu);
+  max-width: var(--largeur-page);
   margin: 0 auto;
   padding: var(--espace-2) var(--espace-4) var(--espace-6);
 }
@@ -33,6 +33,7 @@
 /* Le champ est du papier crème, souligné du trait rouge de l'imprimeur : la loupe et le bouton « Effacer » y sont posés. */
 .demande {
   position: relative;
+  max-width: var(--largeur-contenu);
   margin-bottom: var(--espace-3);
   color: var(--papier-encre);
   filter: var(--billet-onglet-ombre);
