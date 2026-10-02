@@ -114,20 +114,64 @@ describe('le compteur de bobines, par décennie', () => {
     expect(JSON.parse(localStorage.getItem(CLE_BOBINES)!)).toEqual(['les-quatre-diables', 'la-tete-de-janus', 'essai-1900-a', 'essai-1900-b'])
   })
 
-  // Mutations : le total, ou le compte, du message pris à la décennie à l'écran ; « toutes
-  // retrouvées » décidé sur la décennie à l'écran (jamais dit ici : 1890 n'en a aucune).
-  it('compte le message d’une bobine dans la décennie de cette bobine, pas dans celle du compteur', async () => {
+  // Une bobine ramassée à une frontière, devant un autre monde que le sien.
+  // Mutation : le compteur laissé sur la décennie à l'écran pendant le vol (« 1/3 » sous une bobine
+  // de 1900, et un message qui dirait « 1/2 »).
+  it('montre, pendant le vol d’une bobine d’une autre décennie, le compte de cette décennie-là, et le message dit le même', async () => {
     localStorage.setItem(CLE_BOBINES, JSON.stringify(['les-quatre-diables']))
+    const { aLEcran, trouver, rappels } = await monter(1903)
+    aLEcran(1890)
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
+    act(() => rappels().bobine('essai-1900-a'))
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 0/2')
+    act(() => rappels().bobineArrivee('essai-1900-a'))
+    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/2« Essai A », Personne, 1900 : un film perdu.')
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
+    trouver('essai-1900-b')
+    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 2/2')
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 2/2')
+    expect(await screen.findByText('Toutes les bobines perdues sont retrouvées.', {}, { timeout: 4500 })).toBeInTheDocument()
+  }, 15000)
+
+  // Le compteur est caché tant que la décennie montrée n'a aucune trouvaille. Mutations : la
+  // décennie de la bobine oubliée à son arrivée (le compteur, apparu pour le vol, disparaît devant un
+  // 1890 sans trouvaille) ; `decennieVueRef` écrite elle aussi à l'arrivée (à l'image suivante, le
+  // moteur redit 1890 et le compteur disparaît de même).
+  it('n’apparaît jamais pour une bobine en vol pour disparaître à son arrivée', async () => {
+    const { aLEcran, rappels } = await monter(1903)
+    aLEcran(1890)
+    expect(compteur()).not.toBeVisible()
+    act(() => rappels().bobine('essai-1900-a'))
+    expect(compteur()).toBeVisible()
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 0/2')
+    act(() => rappels().bobineArrivee('essai-1900-a'))
+    expect(compteur()).toBeVisible()
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
+    // Les images suivantes : le moteur redit la même décennie, le compteur garde celle de la bobine.
+    for (let i = 0; i < 100; i++) aLEcran(1890)
+    expect(compteur()).toBeVisible()
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
+  })
+
+  // Mutations : la décennie posée par une bobine arrivée gardée pour de bon (l'état jamais remplacé
+  // une fois posé) ; le compte ou le total du message pris au compteur du dernier rendu (ramassée et
+  // arrivée d'un coup, comme au calme, la bobine n'a pas eu de rendu en vol : ce compteur-là est
+  // encore celui de 1890).
+  it('revient, après le vol, à la décennie à l’écran dès que le moteur en dit une autre', async () => {
+    localStorage.setItem(CLE_BOBINES, JSON.stringify(['les-quatre-diables', 'la-tete-de-janus']))
     const { aLEcran, trouver } = await monter(1903)
     aLEcran(1890)
     trouver('essai-1900-a')
-    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/2« Essai A », Personne, 1900 : un film perdu.')
-    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
-    trouver('essai-1900-b')
-    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 2/2')
-    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/3')
-    expect(await screen.findByText('Toutes les bobines perdues sont retrouvées.', {}, { timeout: 4500 })).toBeInTheDocument()
-  }, 15000)
+    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/2')
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
+    // Devant un monde sans bobines, il garde ce qu'il montre ; le moteur dit 1900 puis 1890 : il suit.
+    aLEcran(1910)
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
+    aLEcran(1900)
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
+    aLEcran(1890)
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 2/3')
+  })
 
   // Mutations : la décennie montrée suivie sans condition (devant 1910, « 0/0 », et le compteur
   // caché) ; une décennie nulle (une carte sans section) qui viderait le compteur.
@@ -163,8 +207,11 @@ describe('le compteur de bobines, par décennie', () => {
     expect(compteur()).toHaveTextContent(texte)
   })
 
-  // Mutation : `setDecennieVue` sans comparaison à la décennie déjà montrée. Le moteur dit la
-  // décennie à chaque image : la page ne se rend que lorsqu'elle change.
+  // Mutation : `setDecennieVue` sans comparaison à la dernière décennie dite. Le moteur dit la
+  // décennie à chaque image : la page ne se rend que lorsqu'elle change. La mutation ne tombe que
+  // d'un rendu (N + 1 contre N) : React écarte de lui-même un `setState` à valeur égale, sauf le
+  // premier après un changement, pour lequel il rend le composant une fois avant de renoncer. Si
+  // React cessait de le faire, la mutation deviendrait équivalente et ce test ne la verrait plus.
   it('ne rend pas la page une fois de plus pour cent images sans changement de décennie', async () => {
     const { aLEcran } = await monter(1903)
     aLEcran(1890)

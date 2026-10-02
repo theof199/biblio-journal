@@ -124,8 +124,9 @@ export default function Carte() {
   const [message, setMessage] = useState<{ titre: string; texte: string | null } | null>(null)
   const compteurRef = useRef<HTMLParagraphElement>(null)
   // Le compteur va par décennie (plan 3a) : il montre celle qui est à l'écran, que le moteur dit à
-  // chaque image. L'état ne bouge que lorsqu'elle change, la référence le sait sans rendre la page ;
-  // nul tant que le moteur n'a rien dit qui compte, et le compteur montre alors la décennie d'ouverture.
+  // chaque image. La référence retient la dernière qu'il a dite, sans rendre la page ; l'état est la
+  // décennie montrée, qui ne bouge que lorsque le moteur en dit une autre ou qu'une bobine arrive.
+  // Nul tant que rien ne l'a posé : le compteur montre alors la décennie d'ouverture.
   const [decennieVue, setDecennieVue] = useState<number | null>(null)
   const decennieVueRef = useRef<number | null>(null)
   const ecranRef = useRef<HTMLDivElement>(null)
@@ -287,7 +288,10 @@ export default function Carte() {
   // À l'ouverture, la décennie de l'année en cours ; si son monde ne cache aucune bobine, la dernière
   // avant elle qui en cache. Ensuite celle que le moteur a dite à l'écran (`montrerDecennie`).
   const decennieDOuverture = decenniesDuVoyage.filter((d) => d <= decennieDe(v.annee_en_cours) && mondes(d).bobines.length > 0).pop() ?? null
-  const decennieDuCompteur = decennieVue ?? decennieDOuverture
+  const decennieDeLaBobine = (cle: string) => decenniesDuVoyage.find((d) => mondes(d).bobines.some((b) => b.cle === cle)) ?? null
+  // Une bobine en vol l'emporte : le compteur où elle arrive est celui de sa décennie, même ramassée
+  // à une frontière, devant un autre monde. Il dit alors ce que dira le message.
+  const decennieDuCompteur = (enVol === null ? null : decennieDeLaBobine(enVol)) ?? decennieVue ?? decennieDOuverture
   const bobinesDuCompteur = decennieDuCompteur === null ? [] : mondes(decennieDuCompteur).bobines
   const comptees = (bobines: readonly BobinePerdue[], cles: readonly string[], sauf: string | null) => bobines.filter((b) => cles.includes(b.cle) && b.cle !== sauf).length
   const nBobines = comptees(bobinesDuCompteur, trouvees, enVol)
@@ -308,8 +312,13 @@ export default function Carte() {
   const arrivee = (cle: string) => {
     setEnVol(null)
     setPulsation((p) => p + 1)
-    // Le message compte dans la décennie de la bobine, pas dans celle que le compteur montre.
-    const sienne = decenniesDuVoyage.map((d) => mondes(d).bobines).find((bobines) => bobines.some((x) => x.cle === cle)) ?? []
+    // Le message compte dans la décennie de la bobine, et le compteur y reste : `decennieVueRef`
+    // n'est pas touchée, elle garde ce que le moteur a dit en dernier. Le compteur ne revient donc à
+    // la décennie à l'écran que lorsque le moteur en dit une autre, jamais à l'image suivante (il
+    // apparaîtrait pour une bobine de 1900 et disparaîtrait aussitôt devant un 1890 sans trouvaille).
+    const decennie = decennieDeLaBobine(cle)
+    if (decennie !== null) setDecennieVue(decennie)
+    const sienne = decennie === null ? [] : mondes(decennie).bobines
     const b = sienne.find((x) => x.cle === cle)
     const n = comptees(sienne, trouveesRef.current, null)
     const total = sienne.length
