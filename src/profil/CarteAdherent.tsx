@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Attente, { Barre } from '../ui/Attente'
 import styles from './CarteAdherent.module.css'
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
   sansDuree: number
   /** Nulle tant que le journal n'est pas là, ou s'il est vide. */
   depuis: number | null
+  /** `GET /stats` n'a pas encore répondu : une barre tient la place de la ligne des chiffres. Une panne ne la montre pas. */
+  enAttente?: boolean
 }
 
 const pluriel = (nombre: number, singulier: string, pluriel: string) => `${nombre} ${nombre > 1 ? pluriel : singulier}`
@@ -19,7 +22,7 @@ const pluriel = (nombre: number, singulier: string, pluriel: string) => `${nombr
  * La carte d'adhérent du membre : sa couleur en bande, son monogramme en sceau, son pseudo, ses
  * chiffres gaufrés. Un seul lien, vers « Mes films ». La couleur vient de `--identite`, posée par la page.
  */
-export default function CarteAdherent({ pseudo, films, heures, cetteAnnee, sansDuree, depuis }: Props) {
+export default function CarteAdherent({ pseudo, films, heures, cetteAnnee, sansDuree, depuis, enAttente = false }: Props) {
   const monogramme = Array.from(pseudo)[0]?.toUpperCase() ?? ''
   const chiffres = films === null ? null : heures === null ? pluriel(films, 'film', 'films') : `${pluriel(films, 'film', 'films')} · ${heures} h`
   const nom = chiffres === null ? `Mes films, carte de ${pseudo}` : `Mes films, carte de ${pseudo} : ${chiffres}`
@@ -35,7 +38,15 @@ export default function CarteAdherent({ pseudo, films, heures, cetteAnnee, sansD
         <span className={styles.etiquette}>Carte d’adhérent</span>
         <span className={styles.pseudo}>{pseudo}</span>
         {depuis === null ? null : <span className={styles.depuis}>Membre depuis {depuis}</span>}
-        {chiffres === null ? null : <span className={styles.chiffres}>{chiffres}</span>}
+        {chiffres !== null ? (
+          <span className={styles.chiffres}>{chiffres}</span>
+        ) : enAttente ? (
+          <span className={styles.chiffres} data-testid="chiffres-en-attente">
+            <Attente muet>
+              <Barre largeur="moyenne" />
+            </Attente>
+          </span>
+        ) : null}
         <span className={styles.pied}>
           <span className={styles.notes}>
             {cetteAnnee === null ? null : <span>{pluriel(cetteAnnee, 'film', 'films')} cette année</span>}

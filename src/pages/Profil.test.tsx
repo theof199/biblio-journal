@@ -186,7 +186,9 @@ describe('le profil', () => {
       servirProfil()
       monter()
 
-      const section = await screen.findByRole('region', { name: 'Réactions' })
+      // Les titres des sections sont déjà là, en blanc : les graphiques arrivent avec le journal.
+      await screen.findByRole('img', { name: /^Films par note/ })
+      const section = screen.getByRole('region', { name: 'Réactions' })
       const billets = within(section).getAllByRole('listitem')
       expect(billets.map((billet) => billet.textContent)).toEqual(['❤️J’ai adoré2fois', '🎬En salle1fois'])
     })
@@ -195,7 +197,8 @@ describe('le profil', () => {
       servirProfil()
       monter()
 
-      const section = await screen.findByRole('region', { name: 'Réactions' })
+      await screen.findByRole('img', { name: /^Films par note/ })
+      const section = screen.getByRole('region', { name: 'Réactions' })
       expect(within(section).queryByText('inconnue')).not.toBeInTheDocument()
       expect(within(section).getAllByRole('listitem')).toHaveLength(2)
     })
@@ -229,7 +232,8 @@ describe('le profil', () => {
       servirProfil()
       monter()
 
-      const section = await screen.findByRole('region', { name: 'Mois · 2026' })
+      await screen.findByRole('img', { name: /^Films par note/ })
+      const section = screen.getByRole('region', { name: 'Mois · 2026' })
       expect(
         within(section).getByRole('img', {
           name: 'Films par mois en 2026 : janvier 1, février 0, mars 0, avril 0, mai 0, juin 0, juillet 0, août 0, septembre 1, octobre 0, novembre 0, décembre 0',
@@ -244,6 +248,8 @@ describe('le profil', () => {
       monter()
 
       await carte()
+      // Les sections en blanc tiennent la place des graphiques tant que le journal n'est pas arrivé : on juge le profil une fois l'attente finie.
+      await vi.waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
       expect(screen.queryByRole('region')).not.toBeInTheDocument()
       expect(screen.queryByRole('img', { name: /^Films par/ })).not.toBeInTheDocument()
     })
@@ -264,6 +270,110 @@ describe('le profil', () => {
 
       await carte()
       expect(screen.queryByRole('img', { name: /^Films par/ })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('en attendant ses données', () => {
+    const jamais = () => new Promise<Response>(() => undefined)
+
+    it('le journal attendu : un seul « Chargement… » et les quatre sections, leurs titres déjà écrits', async () => {
+      servirProfil({ [JOURNAL]: jamais })
+      monter()
+
+      // La garde de session attend d'abord, avec son propre statut : on laisse passer la session.
+      await screen.findAllByTestId('objet-en-attente')
+      expect(screen.getAllByRole('status')).toHaveLength(1)
+      expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+      for (const nom of ['Notes', 'Réactions', 'Décennies', 'Mois · 2026']) {
+        expect(screen.getByRole('region', { name: nom })).toBeInTheDocument()
+      }
+    })
+
+    it('le journal attendu : cinq objets en blanc à la place des graphiques, aucun zéro', async () => {
+      servirProfil({ [JOURNAL]: jamais })
+      monter()
+
+      expect(await screen.findAllByTestId('objet-en-attente')).toHaveLength(5)
+      expect(screen.queryByRole('img', { name: /^Films par|^Note moyenne|^Aucun film noté/ })).not.toBeInTheDocument()
+    })
+
+    it('le journal attendu : le titre des décennies ne compte rien encore', async () => {
+      servirProfil({ [JOURNAL]: jamais })
+      monter()
+
+      await screen.findAllByTestId('objet-en-attente')
+      expect(screen.getByRole('heading', { level: 2, name: 'Décennies' })).toBeInTheDocument()
+    })
+
+    it('le journal arrivé : le statut et les objets en blanc s’en vont, les graphiques viennent', async () => {
+      let liberer!: () => void
+      servirProfil({ [JOURNAL]: () => new Promise<Response>((r) => (liberer = () => r(json({ items: JOURNAL_DE_TEST, next_cursor: null })))) })
+      monter()
+      await screen.findAllByTestId('objet-en-attente')
+
+      liberer()
+
+      expect(await screen.findByRole('img', { name: /^Films par note/ })).toBeInTheDocument()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('objet-en-attente')).not.toBeInTheDocument()
+    })
+
+    it('un journal qui échoue ne laisse aucun objet en blanc', async () => {
+      servirProfil({ [JOURNAL]: () => erreurApi('Le journal n’a pas pu être lu.', 500) })
+      monter()
+
+      await carte()
+      await new Promise((r) => setTimeout(r, 50))
+      expect(screen.queryByTestId('objet-en-attente')).not.toBeInTheDocument()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('un journal vide ne laisse aucun objet en blanc', async () => {
+      servirProfil({ [JOURNAL]: () => json({ items: [], next_cursor: null }) })
+      monter()
+
+      await carte()
+      await new Promise((r) => setTimeout(r, 50))
+      expect(screen.queryByTestId('objet-en-attente')).not.toBeInTheDocument()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('/stats attendu : une barre tient la place des chiffres de la carte, sans statut de plus', async () => {
+      servirProfil({ 'GET /api/stats': jamais })
+      monter()
+
+      const lien = await screen.findByRole('link', { name: `Mes films, carte de ${PSEUDO}` })
+      expect(within(lien).getByTestId('chiffres-en-attente')).toBeInTheDocument()
+      // Le seul statut est celui des sections du journal, pas un de plus pour la carte.
+      await screen.findByRole('img', { name: /^Films par note/ })
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('/stats arrivé : la barre s’en va et les chiffres sont écrits', async () => {
+      servirProfil()
+      monter()
+
+      const lien = await carte()
+      expect(within(lien).getByText('412 films · 213 h')).toBeInTheDocument()
+      expect(within(lien).queryByTestId('chiffres-en-attente')).not.toBeInTheDocument()
+    })
+
+    it('/stats en panne : pas de barre, la panne seule le dit', async () => {
+      servirProfil({ 'GET /api/stats': () => erreurApi('Les statistiques sont en panne.', 503) })
+      monter()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Les statistiques sont en panne.')
+      const lien = screen.getByRole('link', { name: `Mes films, carte de ${PSEUDO}` })
+      expect(within(lien).queryByTestId('chiffres-en-attente')).not.toBeInTheDocument()
+    })
+
+    it('ne lance que les quatre requêtes du profil, chacune une fois : les squelettes n’en ajoutent aucune', async () => {
+      const requetes = servirProfil({ [JOURNAL]: jamais, 'GET /api/stats': jamais })
+      monter()
+
+      await screen.findAllByTestId('objet-en-attente')
+      await new Promise((r) => setTimeout(r, 20))
+      expect([...requetes].sort()).toEqual(['GET /api/auth/me', CATALOGUE, JOURNAL, 'GET /api/stats'].sort())
     })
   })
 

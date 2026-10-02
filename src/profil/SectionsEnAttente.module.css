@@ -1,0 +1,37 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+/* Les objets d'une même section, au même écart que ceux du profil. */
+.objets {
+  composes: objets from '../pages/Profil.module.css';
+}
+
+/* Un panneau de laiton éteint : ni aiguille, ni diodes, ni ampoules, rien que ce qu'ils vont occuper. */
+.panneau {
+  composes: panneau from './Panneau.module.css';
+}
+
+/* Celui des mois, vissé comme le vrai. */
+.panneauVisse {
+  composes: panneau vissee from './Panneau.module.css';
+}
+
+.cadran {
+  width: 100%;
+  aspect-ratio: var(--attente-jauge-ratio);
+}
+
+.lecture {
+  height: var(--attente-jauge-lecture);
+}
+
+.diodes {
+  height: var(--attente-vumetre-hauteur);
+}
+
+.ampoules {
+  height: var(--attente-ampoules-hauteur);
+}
+
+.perforations {
+  height: var(--attente-perforations-hauteur);
+}

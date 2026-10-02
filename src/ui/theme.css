@@ -770,6 +770,12 @@
   --attente-barre-moyenne: 65%;
   --attente-barre-courte: 40%;
   --attente-carte-largeur: 5rem; /* le compte d'une planche dont la filmographie n'est pas arrivée : sa place ne dépend pas d'un contenu qui n'y est pas */
+  /* Les objets du profil en blanc (`profil/SectionsEnAttente.tsx`) : la hauteur de ce qu'ils contiennent, d'après les tokens des vrais, pour qu'un graphique qui arrive ne pousse pas la page. */
+  --attente-jauge-ratio: 300 / 168; /* le cadran de la jauge : son viewBox */
+  --attente-jauge-lecture: calc(var(--jauge-valeur-taille) + var(--taille-xs) * var(--interligne) + var(--espace-moins-demi)); /* sa valeur et sa légende, sous le cadran */
+  --attente-vumetre-hauteur: calc(var(--taille-s) + var(--espace-demi) + var(--vumetre-hauteur) + var(--espace-demi) + var(--taille-xs) + var(--espace-2) + var(--taille-xs) * var(--interligne)); /* un compte, vingt pas de diodes, une note, la légende */
+  --attente-perforations-hauteur: calc(var(--taille-xs) + var(--espace-3) + var(--repere-hauteur) + var(--espace-demi) + var(--taille-xs)); /* un compte, un repère, une année */
+  --attente-ampoules-hauteur: calc(var(--taille-s) + var(--espace-3) + 11 * var(--ampoule-diametre) + 10 * var(--espace-1) + var(--espace-demi) + var(--taille-xs) + var(--espace-1) + var(--ampoule-trait-hauteur)); /* un compte, onze ampoules, un mois, son trait */
   --taille-icone-inline: 1rem; /* une icône posée au fil du texte, à côté d'une ligne de « Mes films » */
   /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));

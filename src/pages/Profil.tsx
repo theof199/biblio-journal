@@ -12,6 +12,7 @@ import CarteAdherent from '../profil/CarteAdherent'
 import Jauge from '../profil/Jauge'
 import Perforations from '../profil/Perforations'
 import Section from '../profil/Section'
+import SectionsEnAttente from '../profil/SectionsEnAttente'
 import SoucheCaisse from '../profil/SoucheCaisse'
 import Tickets from '../profil/Tickets'
 import Vumetre from '../profil/Vumetre'
@@ -62,6 +63,7 @@ export default function Profil() {
           cetteAnnee={stats.data?.dashboard.periods.year.counts.finished_by_type.movie ?? null}
           sansDuree={minutes?.coverage.missing ?? 0}
           depuis={films ? anneeDAdhesion(films) : null}
+          enAttente={stats.isPending}
         />
 
         {stats.error ? <Panne erreur={stats.error} onReessayer={() => void stats.refetch()} /> : null}
@@ -89,6 +91,8 @@ export default function Profil() {
               <Ampoules annee={annee} comptes={filmsParMois(films, annee)} moisCourant={moisCourant} />
             </Section>
           </>
+        ) : journal.isPending ? (
+          <SectionsEnAttente annee={annee} />
         ) : null}
 
         <div className={styles.souche}>

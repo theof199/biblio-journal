@@ -76,4 +76,24 @@ describe('CarteAdherent', () => {
 
     expect(screen.getByText('Membre depuis 2019')).toBeInTheDocument()
   })
+
+  it('en attendant les chiffres, tient leur place d’une barre muette', () => {
+    monter({ films: null, heures: null, cetteAnnee: null, sansDuree: 0, enAttente: true })
+
+    expect(screen.getByTestId('chiffres-en-attente')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('sans les chiffres et sans attente (une panne), ne dessine rien à leur place', () => {
+    monter({ films: null, heures: null, cetteAnnee: null, sansDuree: 0 })
+
+    expect(screen.queryByTestId('chiffres-en-attente')).not.toBeInTheDocument()
+  })
+
+  it('une fois les chiffres arrivés, la barre s’en va même si l’attente n’est pas retombée', () => {
+    monter({ enAttente: true })
+
+    expect(screen.queryByTestId('chiffres-en-attente')).not.toBeInTheDocument()
+    expect(screen.getByText('412 films · 213 h')).toBeInTheDocument()
+  })
 })
