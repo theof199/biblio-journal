@@ -462,9 +462,10 @@ export class MoteurCarte {
 
   /**
    * Le monde de `decennie` dit adieu (idée 7, 29 septembre 2026) : la caméra remonte en haut de sa
-   * section et y reste (l'adieu prend la caméra : ni l'avatar ni un chantier ne la rappellent), et
-   * la cinématique dure `monde.adieu` secondes. Rien quand le visiteur demande moins d'animations :
-   * le carton de l'année suivante porte seul la nouvelle.
+   * section, et la cinématique dure `monde.adieu` secondes. En prenant la caméra, l'adieu coupe le
+   * suivi de l'avatar et la visée d'un chantier en cours ; un geste du membre peut la reprendre
+   * ensuite (« Tu es ici », `allerIci`, relance le suivi). Rien quand le visiteur demande moins
+   * d'animations : le carton de l'année suivante porte seul la nouvelle.
    */
   direAdieu(decennie: number): Promise<void> {
     const s = this.plan.sections.find((x) => x.decennie === decennie)
