@@ -6,7 +6,7 @@ import styles from './CarteCanvas.module.css'
 /** Ce que la page attend d'un moteur : `MoteurCarte`, ou sa doublure dans un test. */
 export type Moteur = Pick<
   MoteurCarte,
-  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'detruire'
+  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'direBonjour' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'detruire'
 >
 export type FabriqueMoteur = (canvas: HTMLCanvasElement, rappels: Rappels) => Moteur
 
@@ -82,6 +82,7 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
       cibleBobines: () => rappelsRef.current.cibleBobines(),
       clap: () => rappelsRef.current.clap(),
       presences: (liste) => rappelsRef.current.presences(liste),
+      entreeProche: (d) => rappelsRef.current.entreeProche?.(d),
       defilerVers: (y) => {
         vue.scrollTop = y
       },
@@ -122,8 +123,10 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
       const milieu = e.touches.length === 2 ? (e.touches[0]!.clientY + e.touches[1]!.clientY) / 2 - r.top : 0
       if (moteur.pincer(ecart(e.touches), milieu) && e.cancelable) e.preventDefault()
     }
-    // Le nombre de doigts posés : il survit au `pointercancel` du défilement natif, que le moteur ne doit pas combattre.
-    const doigts = (e: TouchEvent) => moteur.doigtsPoses(e.touches.length)
+    // Le nombre de doigts posés sur la carte : il survit au `pointercancel` du défilement natif, que
+    // le moteur ne doit pas combattre. `targetTouches`, pas `touches` : un doigt posé ailleurs que
+    // sur la carte y compterait, et son lever, qui n'arrive jamais ici, laisserait le compte bloqué.
+    const doigts = (e: TouchEvent) => moteur.doigtsPoses(e.targetTouches.length)
     const menu = (e: Event) => e.target === canvas && e.preventDefault()
     vue.addEventListener('pointerdown', bas)
     vue.addEventListener('pointermove', bouge)

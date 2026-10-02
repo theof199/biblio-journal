@@ -39,29 +39,34 @@ describe('le pont entre le DOM et le moteur', () => {
   const monter = () => {
     const banc = moteurFactice()
     const ecoutes = vi.spyOn(HTMLElement.prototype, 'addEventListener')
-    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {} }
+    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn() }
     const { container } = render(
       createElement(FabriqueMoteurContexte.Provider, { value: banc.fabrique }, createElement(CarteCanvas, { etat: ETAT, calme: false, bobines: [], rappels, surMoteur: () => undefined })),
     )
-    return { ...banc, vue: container.firstElementChild as HTMLElement, ecoutes }
+    return { ...banc, vue: container.firstElementChild as HTMLElement, ecoutes, page: rappels }
   }
 
   // Plan 3a : le navigateur relève le pointeur (`pointercancel`) dès qu'il prend le geste pour
-  // défiler ; les événements tactiles, eux, durent jusqu'au lever. Mutations : le relais retiré de
-  // `touchstart`, de `touchend` ou de `touchcancel` ; un nombre fixe à la place de `touches.length`.
-  it('relaie au moteur le nombre de doigts posés, au poser, au lever et à l’annulation', () => {
+  // défiler ; les événements tactiles, eux, durent jusqu'au lever. Le compte est celui des doigts
+  // posés sur la carte (`targetTouches`) : un doigt posé ailleurs (`touches` le compte aussi) ne se
+  // lèvera jamais ici. Mutations : le relais retiré de `touchstart`, de `touchend` ou de
+  // `touchcancel` ; un nombre fixe ; `touches.length` à la place de `targetTouches.length`.
+  it('relaie au moteur le nombre de doigts posés sur la carte, au poser, au lever et à l’annulation', () => {
     const { moteur, vue } = monter()
-    fireEvent.touchStart(vue, { touches: [{ clientX: 10, clientY: 10 }] })
+    const ici = { clientX: 10, clientY: 10 }
+    const ailleurs = { clientX: 300, clientY: 900 }
+    fireEvent.touchStart(vue, { touches: [ailleurs, ici], targetTouches: [ici] })
     expect(moteur.doigtsPoses).toHaveBeenLastCalledWith(1)
-    fireEvent.touchStart(vue, { touches: [{ clientX: 10, clientY: 10 }, { clientX: 90, clientY: 90 }] })
+    fireEvent.touchStart(vue, { touches: [ailleurs, ici, { clientX: 90, clientY: 90 }], targetTouches: [ici, { clientX: 90, clientY: 90 }] })
     expect(moteur.doigtsPoses).toHaveBeenLastCalledWith(2)
-    fireEvent.touchEnd(vue, { touches: [{ clientX: 10, clientY: 10 }] })
+    fireEvent.touchEnd(vue, { touches: [ailleurs, ici], targetTouches: [ici] })
     expect(moteur.doigtsPoses).toHaveBeenLastCalledWith(1)
-    fireEvent.touchCancel(vue, { touches: [] })
+    // Le doigt posé ailleurs reste : le compte de la carte tombe quand même à zéro.
+    fireEvent.touchCancel(vue, { touches: [ailleurs], targetTouches: [] })
     expect(moteur.doigtsPoses).toHaveBeenLastCalledWith(0)
     expect(moteur.doigtsPoses).toHaveBeenCalledTimes(4)
-    fireEvent.touchStart(vue, { touches: [{ clientX: 10, clientY: 10 }] })
-    fireEvent.touchEnd(vue, { touches: [] })
+    fireEvent.touchStart(vue, { touches: [ailleurs, ici], targetTouches: [ici] })
+    fireEvent.touchEnd(vue, { touches: [ailleurs], targetTouches: [] })
     expect(moteur.doigtsPoses).toHaveBeenLastCalledWith(0)
     expect(moteur.doigtsPoses).toHaveBeenCalledTimes(6)
   })
@@ -73,10 +78,19 @@ describe('le pont entre le DOM et le moteur', () => {
     const duRelais = ecoutes.mock.calls.filter(([type, ecouteur]) => {
       if (!['touchstart', 'touchend', 'touchcancel'].includes(type) || typeof ecouteur !== 'function') return false
       vi.mocked(moteur.doigtsPoses).mockClear()
-      ecouteur.call(vue, { touches: [] } as unknown as Event)
+      ecouteur.call(vue, { touches: [], targetTouches: [] } as unknown as Event)
       return vi.mocked(moteur.doigtsPoses).mock.calls.length > 0
     })
     expect(duRelais.map(([type]) => type).sort()).toEqual(['touchcancel', 'touchend', 'touchstart'])
     for (const [, , options] of duRelais) expect(options).toEqual({ passive: true })
+  })
+
+  // Plan 3a : le rappel neuf du moteur arrive à la page. Mutation : la ligne `entreeProche` retirée
+  // du relais (la page n'offrirait jamais « Prendre le train »).
+  it('relaie à la page l’entrée à portée de geste que dit le moteur', () => {
+    const banc = monter()
+    banc.rappels().entreeProche?.(1900)
+    banc.rappels().entreeProche?.(null)
+    expect(banc.page.entreeProche.mock.calls).toEqual([[1900], [null]])
   })
 })

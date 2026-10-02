@@ -3,7 +3,7 @@ import { A_L_ARRET, CORAIL, DUREE_DE_L_ENVOL, DUREE_DU_ROULEMENT, MAX_TUILES, Mo
 import { contexteFactice, type Appel } from '../test/contexteFactice'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, DateVraie, Monde, MusiqueDuMonde, SuiviGare, VueMonde } from '../mondes/types'
+import type { BobinePerdue, DateVraie, Monde, MusiqueDuMonde, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
 import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -43,7 +43,8 @@ const reactions: string[] = []
  * 1890 (cinq années du tracé « à venir »). Il tient ses cinq premières années sur un quai fixe, au
  * bas de l'écran, loin de la place que le tracé leur donne ; les suivantes sont hors de vue. Il
  * gare le Voyage suivi en `OU_SUIVI`, et joue sa propre musique. Il n'a d'arrêts que ceux qu'on lui
- * donne (option `arrets`) : sans eux, la caméra n'y est jamais rappelée.
+ * donne (option `arrets`) : sans eux, la caméra n'y est jamais rappelée. De même pour les temps de son
+ * passage d'entrée (option `entree`) : sans eux, aucun passage.
  */
 const HAUT_1900 = MARGE_HAUT + mondeAVenir(1890).trace([1895, 1896, 1897, 1898, 1899]).hauteur
 const quai = (annee: number) => (annee <= 1904 ? { x: 45 + (annee - 1900) * 75, y: 655 } : null)
@@ -51,7 +52,7 @@ const OU_SUIVI = { x: 330, y: 130 }
 const MUSIQUE_1900: MusiqueDuMonde = { battue: 0.5, temps: 16, volume: 0.4, filtre: 1800, jouer: () => undefined }
 /** Les Voyages suivis que le monde collant a été prié de dessiner. */
 const suivis: SuiviGare[] = []
-function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = []): Monde {
+function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = [], entree: readonly TempsDEntree[] = []): Monde {
   const base = mondeAVenir(decennie)
   const scene: Monde['scene'] =
     collant && decennie === 1900
@@ -62,7 +63,7 @@ function mondeDEssai(decennie: number, collant = false, arrets: readonly number[
             v.zone('roulotte', OU_SUIVI.x, OU_SUIVI.y, 36, undefined, 2)
           },
           dessinerBande: () => () => null,
-          entree: [],
+          entree,
           arrets,
         }
       : null
@@ -114,6 +115,8 @@ function monter(
     collant?: boolean
     /** Plan 3a : les arrêts de la section collante, en `y` de la section, un par année. */
     arrets?: readonly number[]
+    /** Plan 3a : les temps du passage d'entrée de la section collante, en `y` de la section. */
+    entree?: readonly TempsDEntree[]
   } = {},
 ) {
   vus.length = 0
@@ -137,7 +140,7 @@ function monter(
     annulerImage: vi.fn(),
     heure: () => options.heure ?? 12,
     mondeDe: (d) => {
-      const m = mondeDEssai(d, options.collant, options.arrets)
+      const m = mondeDEssai(d, options.collant, options.arrets, options.entree)
       const { chantier1898, particules } = options
       return {
         ...m,
@@ -155,7 +158,7 @@ function monter(
       }
     },
   }
-  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn() }
+  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn() }
   const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(options.calme ?? false)
@@ -1088,8 +1091,8 @@ describe('le moteur de la carte', () => {
       const BAS_1900 = HAUT_1900 + mondeAVenir(1900).trace([1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909]).hauteur
       const arret = (annee: number) => HAUT_1900 + ARRETS[annee - 1900]!
       /** Le banc, une première image jouée, et de quoi jouer les suivantes : une toutes les 40 ms d'horloge. */
-      const enGare = (options: Parameters<typeof auTrain>[0] & { ailleurs?: boolean; sansCollant?: boolean } = {}) => {
-        const banc = options.ailleurs ? monter({ collant: true, arrets: ARRETS, ...options }) : options.sansCollant ? monter(options) : auTrain({ arrets: ARRETS, ...options })
+      const enGare = (options: Parameters<typeof auTrain>[0] & { ailleurs?: boolean } = {}) => {
+        const banc = options.ailleurs ? monter({ collant: true, arrets: ARRETS, ...options }) : auTrain({ arrets: ARRETS, ...options })
         let ms = 1000
         banc.moteur.image(ms)
         const filer = (duree: number) => {
@@ -1584,6 +1587,425 @@ describe('le moteur de la carte', () => {
         void banc.moteur.direAdieu(1890)
         banc.filer(400)
         expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(MARGE_HAUT)
+      })
+
+      describe('le passage d’entrée (plan 3a)', () => {
+        /**
+         * Trois temps, en `y` de la section et en millisecondes de base : des durées et des pauses
+         * toutes différentes, et une durée au premier temps que personne ne doit lire. Le premier
+         * est au-dessus de la section : le bas de 1890 y est encore à l'écran.
+         */
+        const TEMPS: TempsDEntree[] = [
+          { y: -100, duree: 7000, arret: 200 },
+          { y: 300, duree: 500, arret: 100 },
+          { y: 700, duree: 800, arret: 300 },
+        ]
+        /** Les gares commencent où le passage finit : le premier arrêt est le dernier temps. */
+        const GARES = Array.from({ length: 10 }, (_, i) => 700 + i * 130)
+        const T = TEMPS.map((x) => HAUT_1900 + x.y)
+        /** Ce que dure le passage, dans un sens comme dans l'autre : ses deux segments et ses trois pauses. */
+        const BASE = TEMPS[0]!.arret + TEMPS[1]!.duree + TEMPS[1]!.arret + TEMPS[2]!.duree + TEMPS[2]!.arret
+        const auPassage = (options: Parameters<typeof enGare>[0] = {}) => enGare({ arrets: GARES, entree: TEMPS, ...options })
+        const entreeDe = (annee: number) => vueDe(annee)!.entree
+
+        // Mutation : la garde `temps.length === 0` retirée de `direBonjour`.
+        it('se résout aussitôt, sans bouger la caméra, pour un monde sans temps, sans scène, ou inconnu de la carte', async () => {
+          const sansTemps = enGare()
+          sansTemps.poserA(arret(1900))
+          const vide = sansTemps.temoin(sansTemps.moteur.direBonjour(1900, 'endroit'))
+          await Promise.resolve()
+          expect(vide.fini).toBe(true)
+          const banc = auPassage()
+          banc.poserA(T[2]!)
+          const sansScene = banc.temoin(banc.moteur.direBonjour(1890, 'endroit'))
+          const inconnu = banc.temoin(banc.moteur.direBonjour(1700, 'envers'))
+          await Promise.resolve()
+          expect(sansScene.fini).toBe(true)
+          expect(inconnu.fini).toBe(true)
+          banc.filer(200)
+          expect(sansTemps.rappels.defilerVers).not.toHaveBeenCalled()
+          expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+          expect(entreeDe(1900)).toBe(-1)
+        })
+
+        // Mutations : `auTempo` retiré d'une durée ou d'une pause (la promesse résolue trop tôt) ;
+        // appliqué deux fois (trop tard) ; la pose du premier temps retirée ; `this.passage = null`
+        // retiré (l'entrée ne reviendrait pas à -1) ; `entree` donnée à tous les mondes.
+        it('pose la caméra au premier temps où qu’elle soit, joue chaque durée et chaque pause au tempo, et rend l’entrée à -1 à la fin', async () => {
+          const banc = auPassage()
+          banc.poserA(HAUT_1900 + GARES[5]!)
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          expect(banc.vers()).toEqual([T[0]])
+          // La pause du premier temps, où la caméra a été posée d'un coup : rien ne bouge.
+          vus.length = 0
+          banc.filer(auTempo(TEMPS[0]!.arret) - 40)
+          expect(banc.vers()).toEqual([T[0]])
+          expect(entreeDe(1900)).toBeCloseTo((auTempo(TEMPS[0]!.arret) - 40) / 1000, 6)
+          // Le monde quitté, encore à l'écran, n'est pas en passage.
+          expect(entreeDe(1898)).toBe(-1)
+          // Le premier segment dure la durée du deuxième temps, puis sa pause.
+          banc.filer(auTempo(TEMPS[1]!.duree) + 80)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[1])
+          const n = banc.vers().length
+          banc.filer(auTempo(TEMPS[1]!.arret) - 80)
+          expect(banc.vers().length).toBe(n)
+          // En chemin, la caméra ne recule jamais et ne dépasse aucun temps.
+          banc.vers().forEach((y, i, tous) => expect(y >= (i ? tous[i - 1]! : T[0]!) && y <= T[1]!).toBe(true))
+          // Jusque-là : quarante millisecondes de moins que les deux pauses et le segment.
+          banc.filer(auTempo(BASE) - auTempo(TEMPS[0]!.arret + TEMPS[1]!.duree + TEMPS[1]!.arret))
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(false)
+          expect(entreeDe(1900)).toBeCloseTo((auTempo(BASE) - 40) / 1000, 6)
+          banc.filer(80)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+          expect(entreeDe(1900)).toBe(-1)
+          // Fini, il ne bouge plus rien : le dernier temps est un arrêt, le rappel n'a rien à y faire.
+          const fin = banc.vers().length
+          banc.filer(REPOS_DU_DEFILEMENT + 600)
+          expect(banc.vers().length).toBe(fin)
+        })
+
+        // Mutations : `sens` ignoré (il finirait au dernier temps) ; la durée d'un segment prise au
+        // temps où l'on arrive, comme à l'endroit, au lieu du temps d'où l'on vient.
+        it('à l’envers, part du dernier temps, finit au premier, et chaque segment garde sa durée', async () => {
+          const banc = auPassage()
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'envers'))
+          expect(banc.vers()).toEqual([T[2]])
+          // La pause du dernier temps, puis le segment qui le relie au deuxième : la caméra y est en pause.
+          banc.filer(auTempo(TEMPS[2]!.arret + TEMPS[2]!.duree) + 80)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[1])
+          banc.filer(auTempo(BASE) - auTempo(TEMPS[2]!.arret + TEMPS[2]!.duree) - 120)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(false)
+          banc.filer(80)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[0])
+        })
+
+        // Mutation : la garde `this.calme` retirée de `direBonjour` : la caméra posée au premier
+        // temps, puis une attente sans fin sous l'horloge figée.
+        it.each([
+          { sens: 'endroit' as const, dernier: T[2]! },
+          { sens: 'envers' as const, dernier: T[0]! },
+        ])('au calme, se résout aussitôt, d’un seul defilerVers, vers le dernier temps du sens joué ($sens)', async ({ sens, dernier }) => {
+          const banc = auPassage({ calme: true })
+          banc.poserA(HAUT_1900 + GARES[5]!)
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, sens))
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          banc.filer(REPOS_DU_DEFILEMENT + 600)
+          expect(banc.vers()).toEqual([dernier])
+          expect(entreeDe(1900)).toBe(-1)
+        })
+
+        // Mutations : le `return` retiré après `finirLePassage` dans `pointeur` (le toucher relayé
+        // ouvrirait l'année sous le doigt) ; `finirLePassage` retiré (le passage continuerait).
+        it('un toucher pendant le passage le pose à sa fin, sans ouvrir l’année qui se trouve sous le doigt', async () => {
+          const banc = auPassage()
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          toucher(banc.moteur, quai(1900)!.x, quai(1900)!.y)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          expect(banc.rappels.toucherAnnee).not.toHaveBeenCalled()
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+          const n = banc.vers().length
+          banc.filer(600)
+          expect(banc.vers().length).toBe(n)
+          expect(entreeDe(1900)).toBe(-1)
+          // Le témoin : le passage fini, le même toucher ouvre l'année.
+          toucher(banc.moteur, quai(1900)!.x, quai(1900)!.y)
+          expect(banc.rappels.toucherAnnee).toHaveBeenCalledTimes(1)
+          expect(banc.rappels.toucherAnnee).toHaveBeenLastCalledWith(1900)
+          // Un doigt posé avant le passage et levé pendant : un toucher lui aussi, qui n'ouvre rien.
+          vi.mocked(banc.rappels.toucherAnnee).mockClear()
+          banc.moteur.pointeur('bas', quai(1900)!.x, quai(1900)!.y, false)
+          const second = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          await Promise.resolve()
+          expect(second.fini).toBe(false)
+          banc.moteur.pointeur('haut', quai(1900)!.x, quai(1900)!.y, false)
+          await Promise.resolve()
+          expect(second.fini).toBe(true)
+          expect(banc.rappels.toucherAnnee).not.toHaveBeenCalled()
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+        })
+
+        // Mutations : le bloc du passage retiré d'`achever` (la promesse en suspens sous l'horloge
+        // figée) ; `this.poser(…)` retiré de `finirLePassage` (libérée, la caméra laissée en chemin).
+        it('s’achève quand le visiteur demande moins d’animations en chemin : la caméra au dernier temps, la promesse résolue', async () => {
+          const banc = auPassage()
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          expect(banc.vers()[banc.vers().length - 1]!).toBeLessThan(T[1]!)
+          banc.moteur.reglerCalme(true)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+          const n = banc.vers().length
+          banc.filer(600)
+          expect(banc.vers().length).toBe(n)
+          expect(entreeDe(1900)).toBe(-1)
+        })
+
+        // Mutation : la garde `if (enCours)` retirée de `direBonjour` : le second reposerait la
+        // caméra à son premier temps, et le premier ne se résoudrait jamais.
+        it('demandé pendant qu’un autre joue, ne relance rien et se résout avec lui', async () => {
+          const banc = auPassage()
+          const premier = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          const avant = entreeDe(1900)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          const second = banc.temoin(banc.moteur.direBonjour(1900, 'envers'))
+          expect(banc.vers()).toEqual([])
+          banc.filer(40)
+          expect(entreeDe(1900)).toBeCloseTo(avant + 0.04, 6)
+          banc.filer(auTempo(BASE) - auTempo(TEMPS[0]!.arret) - 200 - 80)
+          await Promise.resolve()
+          expect(premier.fini).toBe(false)
+          expect(second.fini).toBe(false)
+          banc.filer(80)
+          await Promise.resolve()
+          expect(premier.fini).toBe(true)
+          expect(second.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+        })
+
+        // Mutations : `|| this.doigt` retiré de `constaterLeRepos` (le passage partirait sous le
+        // doigt) ; le déclenchement retiré de `constaterLeRepos` ; le sens tiré du seul fait d'être
+        // dans la zone (`depart` ignoré).
+        it('le défilement qui entre par le haut dans la zone des temps lance le passage à l’endroit, une fois le dernier doigt levé', async () => {
+          const banc = auPassage()
+          banc.poserA(T[0]! - 200)
+          banc.moteur.doigtsPoses(1)
+          banc.moteur.pointeur('bas', 200, 300, false)
+          banc.moteur.defiler(T[0]! - 100)
+          banc.moteur.pointeur('annule', 200, 300, false)
+          banc.moteur.defiler(T[0]! + 150)
+          // Le geste continue dans la zone : c'est d'où il est parti qui dit par où il est entré.
+          banc.moteur.defiler(T[0]! + 180)
+          banc.filer(REPOS_DU_DEFILEMENT + 1000)
+          expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+          expect(entreeDe(1900)).toBe(-1)
+          banc.moteur.doigtsPoses(0)
+          banc.filer(80)
+          expect(banc.vers()).toEqual([T[0]])
+          expect(entreeDe(1900)).toBeGreaterThanOrEqual(0)
+          // La page rend ce que le passage pose : cet écho ne le relance pas, ni en chemin ni à la fin.
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          banc.moteur.defiler(Math.round(banc.vers()[banc.vers().length - 1]!))
+          banc.filer(auTempo(BASE))
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+          const n = banc.vers().length
+          banc.moteur.defiler(Math.round(T[2]!))
+          banc.filer(REPOS_DU_DEFILEMENT + 1000)
+          expect(banc.vers().length).toBe(n)
+          expect(entreeDe(1900)).toBe(-1)
+        })
+
+        // Mutations : le sens « envers » rendu pour toute entrée ; ou « endroit » ; le bord du bas
+        // lu sans sa marge (posée au dernier temps à un pixel près, la caméra relancerait le passage).
+        it('le défilement qui y entre par le bas le lance à l’envers ; celui qui ne fait que la traverser ne lance rien', () => {
+          const banc = auPassage()
+          // Du bas de la foire à la première gare, d'un trait : la zone est traversée, pas habitée.
+          banc.poserA(T[0]! - 200)
+          banc.moteur.defiler(T[2]! - 1)
+          banc.filer(REPOS_DU_DEFILEMENT + 1000)
+          expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+          banc.moteur.defiler(T[2]! - 250)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          expect(banc.vers()).toEqual([T[2]])
+          banc.filer(auTempo(BASE) + 80)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[0])
+          // Arrivée au premier temps, elle y reste : ni rappel, ni second passage.
+          const n = banc.vers().length
+          banc.moteur.defiler(Math.round(T[0]!))
+          banc.filer(REPOS_DU_DEFILEMENT + 1000)
+          expect(banc.vers().length).toBe(n)
+        })
+
+        // Un monde dont le passage descend sous son premier arrêt : le rappel de la tâche 4 y vaut
+        // aussi. Mutations : `if (this.passage) return` retiré de `constaterLeDefilement` (l'écho de
+        // ce que le passage pose serait pris pour un défilement, et le rappel au plus proche arrêt
+        // arrêterait le passage au repos suivant) ; le défilement en attente non oublié par
+        // `direBonjour` (le rappel qu'il devait lancer partirait en plein passage).
+        it('le rappel à l’arrêt ne prend pas la caméra au passage qui joue', async () => {
+          const banc = enGare({ entree: TEMPS })
+          banc.poserA(arret(1906))
+          // Un défilement que le passage interrompt avant son repos.
+          banc.moteur.defiler(arret(1905) + 90)
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'envers'))
+          // La pause du dernier temps, entre deux arrêts, dure plus que le repos du défilement.
+          expect(T[2]!).toBeGreaterThan(arret(1903) + A_L_ARRET)
+          expect(T[2]!).toBeLessThan(arret(1904) - A_L_ARRET)
+          expect(auTempo(TEMPS[2]!.arret)).toBeGreaterThan(REPOS_DU_DEFILEMENT + 200)
+          banc.filer(REPOS_DU_DEFILEMENT + 200)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(false)
+          expect(banc.vers()).toEqual([T[2]])
+          // En chemin, entre deux arrêts, la page rend ce que le passage vient de poser.
+          banc.filer(auTempo(TEMPS[2]!.arret) - REPOS_DU_DEFILEMENT - 200 + 400)
+          const ou = banc.vers()[banc.vers().length - 1]!
+          expect(ou).toBeGreaterThan(arret(1903) + A_L_ARRET)
+          expect(ou).toBeLessThan(T[2]!)
+          banc.moteur.defiler(Math.round(ou))
+          banc.filer(REPOS_DU_DEFILEMENT + 200)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(false)
+          expect(entreeDe(1900)).toBeGreaterThan(0)
+          banc.filer(auTempo(BASE))
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+        })
+
+        // Mutation : la borne retirée de `tempsDe` : un temps écrit sous le bas de la carte, que le
+        // défilement n'atteint pas, y enverrait la caméra.
+        it('borne un temps à ce que le défilement atteint', async () => {
+          const banc = enGare({ calme: true, entree: [TEMPS[0]!, { y: 1e6, duree: 500, arret: 0 }] })
+          banc.poserA(arret(1900))
+          await banc.moteur.direBonjour(1900, 'endroit')
+          expect(banc.vers()).toEqual([banc.moteur.hauteur - H])
+        })
+
+        // La carte cachée, la boucle ne tourne que pour ce qui doit finir. Mutation : `this.passage`
+        // retiré de `boucle` : le passage s'arrêterait à sa première image, sa promesse en suspens.
+        it('la boucle tient jusqu’au bout du passage, même quand la carte n’est pas visible', async () => {
+          const banc = auTrain({ arrets: GARES, entree: TEMPS })
+          let ms = 1000
+          const tourner = (duree: number) => {
+            for (const fin = ms + duree; ms < fin; ) {
+              ms += 40
+              for (const f of banc.demandees.splice(0)) f(ms)
+            }
+          }
+          banc.moteur.reglerVisible(false)
+          tourner(200)
+          expect(banc.demandees).toEqual([])
+          let fini = false
+          void banc.moteur.direBonjour(1900, 'endroit').then(() => void (fini = true))
+          tourner(auTempo(BASE) + 200)
+          await Promise.resolve()
+          expect(fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+        })
+
+        // Un seul glissement à la fois. Mutations : `arreterLeRoulement` retiré de `direBonjour` (le
+        // roulement d'avant se disputerait la caméra, et `marcher` resterait en suspens) ;
+        // `this.suivre = false` retiré de `direBonjour` (« Tu es ici » d'avant arrêterait le passage
+        // à sa première image) ; `arreterLePassage` retiré de `rouler`, de la ligne de `maj`,
+        // d'`allerIci` ou de `direAdieu` (le passage reprendrait la caméra à celui d'après).
+        it('le passage arrête le glissement d’avant, et cède à celui d’après, qui libère sa promesse', async () => {
+          const banc = auPassage()
+          banc.poserA(HAUT_1900 + GARES[0]!)
+          const marche = banc.temoin(banc.moteur.marcher(1903))
+          banc.filer(200)
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          await Promise.resolve()
+          expect(marche.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[0])
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          expect(banc.vers().slice(-5).every((y) => y >= T[0]! && y < T[1]!)).toBe(true)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(false)
+          // Un roulement demandé en chemin : le passage s'arrête où il est, la caméra roule.
+          const suite = banc.temoin(banc.moteur.marcher(1901))
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          banc.filer(40)
+          expect(entreeDe(1900)).toBe(-1)
+          banc.filer(ROULEMENT + 40)
+          await Promise.resolve()
+          expect(suite.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(HAUT_1900 + GARES[1]!)
+          // « Tu es ici », d'un coup : la caméra reste où il la pose.
+          const encore = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          banc.moteur.allerIci(true)
+          await Promise.resolve()
+          expect(encore.fini).toBe(true)
+          const n = banc.vers().length
+          banc.filer(600)
+          expect(banc.vers().length).toBe(n)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(HAUT_1900 + GARES[0]!)
+          // L'adieu d'un monde : la caméra reste en haut de sa section.
+          const adieu = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          void banc.moteur.direAdieu(1890)
+          await Promise.resolve()
+          expect(adieu.fini).toBe(true)
+          banc.filer(400)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(MARGE_HAUT)
+        })
+
+        // Le membre resté en 1898 : « Tu es ici » fait suivre l'avatar, 1898 ouverte sous les yeux
+        // fait viser son chantier. Avant, le passage arrête ce glissement ; après, il lui cède.
+        // Mutations : `this.suivre = false` ou `this.visee = null` retiré de `direBonjour` ;
+        // `arreterLePassage` retiré de la ligne « celui qui a commencé après l'emporte » de `maj`.
+        it.each(['suivre', 'visee'] as const)('le passage arrête le glissement d’avant (%s), et cède à celui d’après', async (glissement) => {
+          const banc = auPassage({ ailleurs: true, chantier1898: 0 })
+          const glisser = () => (glissement === 'suivre' ? banc.moteur.allerIci() : banc.moteur.ouvrirSousLesYeux(1898))
+          banc.poserA(T[0]! + 300)
+          glisser()
+          banc.filer(80)
+          expect(banc.vers().length).toBe(2)
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(false)
+          expect(banc.vers().length).toBeGreaterThan(0)
+          expect(banc.vers().every((y) => y >= T[0]!)).toBe(true)
+          glisser()
+          banc.filer(40)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          expect(entreeDe(1900)).toBe(-1)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          banc.filer(200)
+          expect(banc.vers().length).toBe(5)
+        })
+
+        // Mutations : la comparaison retirée de `signalerEntree` (dit à chaque image) ; la borne
+        // d'un écran retirée (dit de partout au-dessus) ; `this.passage ?` retiré (dit pendant le
+        // passage, posé à son premier temps) ; dit pour un monde sans temps.
+        it('dit à la page l’entrée à portée de geste, au bas de la section qui précède, quand cela change seulement', () => {
+          const banc = auPassage()
+          const dits = () => vi.mocked(banc.rappels.entreeProche!).mock.calls.map(([d]) => d)
+          const a = (y: number) => {
+            banc.moteur.defiler(y)
+            banc.filer(80)
+          }
+          // Loin au-dessus : rien n'est proche, et rien n'est dit.
+          a(T[0]! - H - 10)
+          expect(dits()).toEqual([])
+          a(T[0]! - H + 10)
+          expect(dits()).toEqual([1900])
+          a(T[0]! - 100)
+          a(T[0]!)
+          expect(dits()).toEqual([1900])
+          // Dans la zone des temps, puis en gare : l'entrée est derrière.
+          a(T[0]! + 10)
+          expect(dits()).toEqual([1900, null])
+          a(T[2]!)
+          a(T[0]! - H - 10)
+          expect(dits()).toEqual([1900, null])
+          a(T[0]! - 100)
+          expect(dits()).toEqual([1900, null, 1900])
+          // Pendant le passage, plus rien n'est à portée : la caméra est menée.
+          void banc.moteur.direBonjour(1900, 'endroit')
+          banc.filer(80)
+          expect(dits()).toEqual([1900, null, 1900, null])
+          banc.filer(auTempo(BASE) + 80)
+          expect(dits()).toEqual([1900, null, 1900, null])
+          // Un monde collant sans temps n'a pas d'entrée à offrir.
+          const sansTemps = enGare()
+          sansTemps.moteur.defiler(HAUT_1900 - 100)
+          sansTemps.filer(80)
+          expect(sansTemps.rappels.entreeProche).not.toHaveBeenCalled()
+        })
       })
     })
   })

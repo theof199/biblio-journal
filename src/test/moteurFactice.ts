@@ -21,6 +21,7 @@ export function moteurFactice() {
     marcher: vi.fn(async () => undefined),
     passerLaPorte: vi.fn(async () => undefined),
     direAdieu: vi.fn(async () => undefined),
+    direBonjour: vi.fn(async () => undefined),
     claquer: vi.fn(),
     ouvrirSousLesYeux: vi.fn(),
     ecranDeLAnnee: vi.fn(() => ({ x: 100, y: 100 })),
