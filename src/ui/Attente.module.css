@@ -23,6 +23,7 @@
 
 .barre {
   height: var(--attente-barre-hauteur);
+  margin-block: var(--attente-barre-marge);
   border-radius: var(--rayon-s);
   background: currentColor;
   opacity: var(--attente-barre-opacite);

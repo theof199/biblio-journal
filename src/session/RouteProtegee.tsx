@@ -1,5 +1,7 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import AccueilEnAttente from '../pages/AccueilEnAttente'
 import Panne from '../ui/Panne'
+import PageEnAttente from './PageEnAttente'
 import { SessionProvider, useSessionQuery } from './SessionContext'
 
 /**
@@ -8,8 +10,10 @@ import { SessionProvider, useSessionQuery } from './SessionContext'
  */
 export default function RouteProtegee() {
   const session = useSessionQuery()
+  const { pathname } = useLocation()
 
-  if (session.isPending) return <p role="status">Chargement…</p>
+  // La porte d'entrée connaît déjà sa forme ; ailleurs, on ne sait pas encore quelle page s'ouvrira.
+  if (session.isPending) return pathname === '/' ? <AccueilEnAttente /> : <PageEnAttente />
   if (session.error) return <Panne erreur={session.error} onReessayer={() => void session.refetch()} />
   if (!session.data) return <Navigate to="/connexion" replace />
 

@@ -24,6 +24,8 @@ import Eventail from '../accueil/Eventail'
 import Pellicule from '../accueil/Pellicule'
 import Fronton from '../accueil/Fronton'
 import VitrineVide from '../accueil/VitrineVide'
+import AccueilEnAttente from './AccueilEnAttente'
+import EnteteDuJournal from './EnteteDuJournal'
 import styles from './Accueil.module.css'
 import type { FilmRealisateur, Realisateur } from '../api/realisateurs'
 import type { FilmSaga, Saga } from '../api/sagas'
@@ -93,7 +95,9 @@ export default function Accueil() {
   }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
   const sentinelle = useChargementInfini(chargerLaSuite, !!hasNextPage)
 
-  if (journal.isPending) return <p role="status">Chargement…</p>
+  const compte = compteAccueil(stats.data?.dashboard.periods.year.counts.finished_by_type.movie)
+
+  if (journal.isPending) return <AccueilEnAttente compte={compte} />
   // `!journal.data`, pas `journal.error` (jumeau de `MesFilms.tsx`) : une fois la première page
   // arrivée, l'échec d'une page suivante ne doit pas effacer la grille déjà affichée derrière la
   // panne plein écran — il se dit en ligne, avec « Réessayer ».
@@ -103,7 +107,6 @@ export default function Accueil() {
   const vide = items.length === 0 && !journal.hasNextPage
 
   const maintenant = new Date()
-  const compte = compteAccueil(stats.data?.dashboard.periods.year.counts.finished_by_type.movie)
   const seance = voyage.data?.seance_prise
   const cartes = cartesEnsuite(plex.data?.films[0], ensuiteRealisateur, ensuiteSaga)
   const mois = journalParMois(items)
@@ -119,17 +122,7 @@ export default function Accueil() {
           <VitrineVide onAjouter={() => naviguer('/recherche')} />
         ) : (
           <section className={styles.journal} aria-labelledby="titre-journal">
-            <div className={styles.entete}>
-              <div className={styles.intitule}>
-                <h2 id="titre-journal" className={styles.titre}>
-                  Le journal
-                </h2>
-                {compte ? <p className={styles.compte}>{compte}</p> : null}
-              </div>
-              <Link to="/profil/mes-films" className={styles.mesFilms}>
-                Mes films <span aria-hidden="true">→</span>
-              </Link>
-            </div>
+            <EnteteDuJournal compte={compte} />
 
             {mois.map((groupe) => (
               <Pellicule key={groupe.cle} mois={groupe} deroulee={deroules.has(groupe.cle)} onBasculer={() => basculer(groupe.cle)} />

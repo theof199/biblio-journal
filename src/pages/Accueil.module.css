@@ -22,6 +22,13 @@
   margin-top: var(--espace-4);
 }
 
+/* Les mois en blanc de l'attente, dans le même écart que les pellicules du journal. */
+.pellicules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-5);
+}
+
 /* Le titre et son compte l'un sous l'autre à gauche, le lien vers la liste complète à droite. */
 .entete {
   display: flex;

@@ -308,7 +308,8 @@ describe('la façade de l’accueil', () => {
   it('ne met plus la dernière séance en avant : elle est dans la pellicule de son mois, une seule fois', async () => {
     servirJournal(JOURNAL)
     monter()
-    await screen.findByRole('heading', { level: 2, name: 'Le journal' })
+    // Le titre du journal est déjà dans le squelette : l'arrivée du journal, c'est le fronton.
+    await screen.findByRole('heading', { level: 1 })
     expect(screen.getAllByAltText('L’Aurore')).toHaveLength(1)
     expect(screen.queryByText('Dernière séance', { selector: 'span' })).not.toBeInTheDocument()
     const septembre = screen.getByRole('heading', { level: 3, name: 'Septembre 2026' }).closest('section')!
@@ -339,7 +340,8 @@ describe('la façade de l’accueil', () => {
   it('mène à la liste complète des films depuis l’en-tête du journal', async () => {
     servirJournal(JOURNAL)
     monter()
-    const journal = (await screen.findByRole('heading', { level: 2, name: 'Le journal' })).closest('section')!
+    await screen.findByRole('heading', { level: 1 })
+    const journal = screen.getByRole('heading', { level: 2, name: 'Le journal' }).closest('section')!
     expect(within(journal).getByRole('link', { name: 'Mes films' })).toHaveAttribute('href', '/profil/mes-films')
   })
 
@@ -434,5 +436,94 @@ describe('les mois déroulés de l’accueil', () => {
     premiere.unmount()
     monter()
     expect(await screen.findByRole('button', { name: 'Dérouler Septembre 2026' })).toBeInTheDocument()
+  })
+})
+
+describe('l’accueil qui attend son journal', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('IntersectionObserver', FauxObservateur)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  /** Le journal ne répond qu'au signal du test ; le reste de la page répond tout de suite. */
+  function journalRetenu(items: JournalPage['items'] = [ITEM]) {
+    let liberer!: () => void
+    const requetes = servir({
+      ...ROUTES_ACCUEIL,
+      'GET /api/stats': () => json(STATS_VIDES),
+      'GET /api/me/journal?limit=20': () => new Promise<Response>((r) => (liberer = () => r(json(page(items, null))))),
+    })
+    return { requetes, liberer: () => liberer() }
+  }
+
+  it('annonce « Chargement… » une seule fois', async () => {
+    journalRetenu()
+    monter()
+
+    expect(await screen.findAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+  })
+
+  it('montre déjà le titre du journal et le lien vers la liste complète', async () => {
+    journalRetenu()
+    monter()
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Le journal' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Mes films/ })).toHaveAttribute('href', '/profil/mes-films')
+  })
+
+  it('donne le compte de l’année dès que les statistiques ont répondu', async () => {
+    journalRetenu()
+    monter()
+
+    expect(await screen.findByText('3 films cette année')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
+  })
+
+  it('dessine deux mois en blanc', async () => {
+    journalRetenu()
+    monter()
+
+    expect(await screen.findAllByTestId('pellicule-en-attente')).toHaveLength(2)
+  })
+
+  it('n’allume aucune lettre du fronton : il dépend du journal, qui n’est pas là', async () => {
+    journalRetenu()
+    monter()
+
+    await screen.findByRole('status')
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Dernière séance|Prochainement|Ce soir/)).not.toBeInTheDocument()
+  })
+
+  it('n’offre pas encore d’ajouter un film', async () => {
+    journalRetenu()
+    monter()
+
+    await screen.findByRole('status')
+    expect(screen.queryByRole('link', { name: /J’ai vu un film/ })).not.toBeInTheDocument()
+  })
+
+  it('ne lance que les requêtes de la page, chacune une fois : le squelette n’en ajoute aucune', async () => {
+    const { requetes } = journalRetenu()
+    monter()
+
+    await screen.findByRole('status')
+    await patienter(20)
+    expect([...requetes].sort()).toEqual(Object.keys(ROUTES_ACCUEIL).sort())
+  })
+
+  it('cède la place au journal réel à l’arrivée : plus de statut, le fronton et les films', async () => {
+    const { liberer } = journalRetenu()
+    monter()
+    await screen.findByRole('status')
+
+    liberer()
+
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('pellicule-en-attente')).not.toBeInTheDocument()
+    expect(screen.getByAltText(ITEM.media.title)).toBeInTheDocument()
   })
 })

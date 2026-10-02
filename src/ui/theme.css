@@ -763,7 +763,8 @@
   /* L'attente : les objets d'une page laissés en blanc, qui respirent ensemble (`ui/Attente.tsx`). */
   --attente-duree: 1.2s; /* une demi-respiration, de pleine à creuse */
   --attente-creux: 0.5; /* l'opacité du creux de la respiration */
-  --attente-barre-hauteur: 0.75rem; /* une ligne de texte en blanc */
+  --attente-barre-hauteur: 0.7lh; /* une ligne de texte en blanc : une part de l'interligne de ce qui la porte, marges comprises elle en prend toute la hauteur */
+  --attente-barre-marge: 0.15lh;
   --attente-barre-opacite: 0.18; /* son encre, éclaircie : la couleur du texte qui la porte, jour et nuit */
   --attente-barre-longue: 90%;
   --attente-barre-moyenne: 65%;

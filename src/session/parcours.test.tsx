@@ -197,3 +197,56 @@ describe('la garde et la connexion', () => {
     expect(screen.queryByRole('heading', { name: 'Connexion' })).not.toBeInTheDocument()
   })
 })
+
+describe('la garde qui attend la session', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  /** La session ne répond qu'au signal du test. */
+  function sessionRetenue(reponse: Response) {
+    let liberer!: () => void
+    vi.mocked(fetch).mockImplementation(() => new Promise<Response>((r) => (liberer = () => r(reponse))))
+    return () => liberer()
+  }
+
+  it('à l’accueil, montre le squelette de l’accueil', async () => {
+    sessionRetenue(json(ALICE))
+    monter('/')
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Le journal' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+    expect(screen.getAllByTestId('pellicule-en-attente')).toHaveLength(2)
+  })
+
+  it('ailleurs, montre un titre et cinq lignes en blanc, sans l’accueil', async () => {
+    sessionRetenue(json(ALICE))
+    monter('/suivis')
+
+    expect(await screen.findAllByTestId('ligne-en-attente')).toHaveLength(5)
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+    expect(screen.queryByRole('heading', { name: 'Le journal' })).not.toBeInTheDocument()
+  })
+
+  it('n’annonce rien de plus qu’un seul statut', async () => {
+    sessionRetenue(json(ALICE))
+    monter('/suivis')
+
+    await screen.findByRole('status')
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+  })
+
+  it('une fois la session lue, le squelette cède la place', async () => {
+    const liberer = sessionRetenue(json(NON_CONNECTE, 401))
+    monter('/suivis')
+    await screen.findByRole('status')
+
+    liberer()
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
