@@ -1,5 +1,6 @@
 import { IconCheck } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
+import Attente, { Barre } from '../ui/Attente'
 import type { FilmSaga } from '../api/sagas'
 import { sagaALongNom } from './affichettes'
 import AfficheSuivi from './AfficheSuivi'
@@ -20,7 +21,8 @@ const DESCRIPTION_CASE: Record<EtatBande, string> = {
  * l'interrupteur « Masquer les introuvables » règle) : coché au crayon rouge, le prochain cerclé de
  * rouge, les autres grisés, un introuvable grisé et marqué « perdu » ; enfin « ensuite » et son film.
  * Bouclée, elle porte le bandeau « Complet » et sa date de clôture, et n'a plus de prochain film.
- * Filmographie en attente ou en panne : le nom, puis « … » ou « indisponible », rien d'autre.
+ * Filmographie en attente ou en panne : le nom, puis une ligne en blanc (« … » pour un lecteur d'écran)
+ * ou « indisponible », rien d'autre.
  *
  * Toute la planche ouvre la page de la saga (le lien s'étend sur elle), mais seul son nom nomme ce
  * lien : la rangée de films se lit case par case, pas en un seul nom de lien interminable.
@@ -55,7 +57,18 @@ export default function PlancheCycle({
             <span className={sagaALongNom(nom) ? `${styles.nom} ${styles.nomLong}` : styles.nom}>{nom}</span>
           </Link>
         </div>
-        {films ? <Compte films={films} masquerIntrouvables={masquerIntrouvables} /> : <p className={styles.attente}>{etat?.statut === 'indisponible' ? 'indisponible' : '…'}</p>}
+        {films ? (
+          <Compte films={films} masquerIntrouvables={masquerIntrouvables} />
+        ) : etat?.statut === 'indisponible' ? (
+          <p className={styles.attente}>indisponible</p>
+        ) : (
+          <div className={`${styles.attente} ${styles.attenteVide}`} data-testid="attente-carte">
+            <span className="sr-only">…</span>
+            <Attente muet>
+              <Barre largeur="longue" />
+            </Attente>
+          </div>
+        )}
       </div>
 
       {films ? (

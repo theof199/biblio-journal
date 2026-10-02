@@ -769,6 +769,7 @@
   --attente-barre-longue: 90%;
   --attente-barre-moyenne: 65%;
   --attente-barre-courte: 40%;
+  --attente-carte-largeur: 5rem; /* le compte d'une planche dont la filmographie n'est pas arrivée : sa place ne dépend pas d'un contenu qui n'y est pas */
   --taille-icone-inline: 1rem; /* une icône posée au fil du texte, à côté d'une ligne de « Mes films » */
   /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));

@@ -342,6 +342,11 @@ describe('la page Suivis', () => {
       expect(await within(enPanne).findByText('indisponible')).toBeInTheDocument()
       const enAttente = await objet('Prénom Réalisateur2')
       expect(within(enAttente).getByText('…')).toBeInTheDocument()
+      // Une ligne en blanc tient la place du compte, et la panne n'en a pas.
+      expect(within(enAttente).getByTestId('attente-carte')).toContainElement(within(enAttente).getByText('…'))
+      expect(within(enPanne).queryByTestId('attente-carte')).not.toBeInTheDocument()
+      // L'attente d'une carte est muette : plusieurs statuts « Chargement… » sur une page ne diraient rien de plus.
+      expect(within(enAttente).queryByRole('status')).not.toBeInTheDocument()
       for (const affichette of [enPanne, enAttente]) {
         // Mutation : un compte ou un « ensuite » dessiné sans filmographie s'afficherait ici.
         expect(within(affichette).queryByText(/séances? sur/)).not.toBeInTheDocument()
@@ -468,12 +473,95 @@ describe('la page Suivis', () => {
       expect(await within(enPanne).findByText('indisponible')).toBeInTheDocument()
       const enAttente = await objet('Saga 2')
       expect(within(enAttente).getByText('…')).toBeInTheDocument()
+      expect(within(enAttente).getByTestId('attente-carte')).toContainElement(within(enAttente).getByText('…'))
+      expect(within(enPanne).queryByTestId('attente-carte')).not.toBeInTheDocument()
+      expect(within(enAttente).queryByRole('status')).not.toBeInTheDocument()
       for (const planche of [enPanne, enAttente]) {
         // Mutation : une rangée de films dessinée sans filmographie s'afficherait ici.
         expect(within(planche).queryByRole('list')).not.toBeInTheDocument()
         expect(within(planche).queryByText(/séances? sur/)).not.toBeInTheDocument()
         expect(within(planche).queryByText(/^ensuite/)).not.toBeInTheDocument()
       }
+    })
+  })
+
+  describe('les panneaux qui attendent leur liste', () => {
+    const jamais = () => new Promise<Response>(() => undefined)
+
+    it('les rétrospectives : un seul « Chargement… » et quatre affichettes en blanc', async () => {
+      servir({ 'GET /api/me/realisateurs': jamais, 'GET /api/me/sagas': () => json([]) })
+      monter()
+
+      expect(await screen.findAllByTestId('affichette-en-attente')).toHaveLength(4)
+      expect(screen.getAllByRole('status')).toHaveLength(1)
+      expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+    })
+
+    it('les cycles : un seul « Chargement… » et deux planches en blanc', async () => {
+      servir({ 'GET /api/me/realisateurs': () => json([]), 'GET /api/me/sagas': jamais })
+      monter()
+      await screen.findByText('Tu ne suis aucun réalisateur.')
+
+      ouvrirCycles()
+
+      expect(screen.getAllByTestId('planche-en-attente')).toHaveLength(2)
+      expect(screen.getAllByRole('status')).toHaveLength(1)
+      expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+    })
+
+    it('le titre, « + Suivre » et les intercalaires sont déjà là', async () => {
+      servir({ 'GET /api/me/realisateurs': jamais, 'GET /api/me/sagas': jamais })
+      monter()
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Suivis' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '+ Suivre' })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: 'Rétrospectives' })).toHaveAttribute('aria-selected', 'true')
+      expect(screen.getByRole('tab', { name: 'Cycles' })).toBeInTheDocument()
+    })
+
+    it('ne lance que les requêtes de la page, chacune une fois : les squelettes n’en ajoutent aucune', async () => {
+      const requetes = servir({ 'GET /api/me/realisateurs': jamais, 'GET /api/me/sagas': jamais })
+      monter()
+
+      await screen.findAllByTestId('affichette-en-attente')
+      await new Promise((r) => setTimeout(r, 20))
+      expect([...requetes].sort()).toEqual(['GET /api/me/realisateurs', 'GET /api/me/sagas'])
+    })
+
+    it('à l’arrivée de la liste, le statut et les affichettes en blanc s’en vont', async () => {
+      let liberer!: () => void
+      servir({
+        'GET /api/me/realisateurs': () => new Promise<Response>((r) => (liberer = () => r(json([realisateur(1)])))),
+        'GET /api/me/sagas': () => json([]),
+        'GET /api/me/realisateurs/1/page': () => json(pageRealisateur(1, [filmRealisateur(11, null)])),
+      })
+      monter()
+      await screen.findAllByTestId('affichette-en-attente')
+
+      liberer()
+
+      expect(await screen.findByRole('link', { name: 'Prénom Réalisateur1' })).toBeInTheDocument()
+      expect(screen.queryByTestId('affichette-en-attente')).not.toBeInTheDocument()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('à l’arrivée des cycles, le statut et les planches en blanc s’en vont', async () => {
+      let liberer!: () => void
+      servir({
+        'GET /api/me/realisateurs': () => json([]),
+        'GET /api/me/sagas': () => new Promise<Response>((r) => (liberer = () => r(json([saga(10)])))),
+        'GET /api/me/sagas/10/films': () => json(filmsSaga([filmSaga(101, null)])),
+      })
+      monter()
+      await screen.findByText('Tu ne suis aucun réalisateur.')
+      ouvrirCycles()
+      expect(screen.getAllByTestId('planche-en-attente')).toHaveLength(2)
+
+      liberer()
+
+      expect(await screen.findByRole('link', { name: 'Saga 10' })).toBeInTheDocument()
+      expect(screen.queryByTestId('planche-en-attente')).not.toBeInTheDocument()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
     })
   })
 

@@ -65,6 +65,11 @@
   line-height: var(--interligne-serre);
 }
 
+/* Le titre d'une planche en blanc : sans nom, il n'aurait pas de largeur. */
+.titreVide {
+  flex: 1;
+}
+
 .seances {
   composes: seances from './Papier.module.css';
   margin: 0;
@@ -75,6 +80,11 @@
   composes: attente from './Papier.module.css';
   margin: 0;
   white-space: nowrap;
+}
+
+/* La ligne en blanc d'une filmographie qui n'est pas arrivée : dans la tête, elle prendrait la largeur de son contenu, qui est vide. */
+.attenteVide {
+  width: var(--attente-carte-largeur);
 }
 
 /* Les films d'un cycle, six par rangée, la dernière plus courte, alignée à gauche. */

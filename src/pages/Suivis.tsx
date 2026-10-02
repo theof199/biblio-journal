@@ -5,17 +5,24 @@ import { lireRealisateurs, type Realisateur } from '../api/realisateurs'
 import { lireSagas, type Saga } from '../api/sagas'
 import { filmsEnsuite } from '../suivis/affichettes'
 import Affichette from '../suivis/Affichette'
+import AffichetteEnAttente from '../suivis/AffichetteEnAttente'
 import Archives from '../suivis/Archives'
 import Intercalaires, { idIntercalaire } from '../suivis/Intercalaires'
 import { compteSuivis, repartirSuivis, type SourceSuivi } from '../suivis/liste'
 import { useMasquerIntrouvables } from '../suivis/masquer'
 import PlancheCycle from '../suivis/PlancheCycle'
+import PlancheCycleEnAttente from '../suivis/PlancheCycleEnAttente'
 import RangeeEnsuite from '../suivis/RangeeEnsuite'
 import RechercheSuivi from '../suivis/RechercheSuivi'
 import { useFilmographiesRealisateurs, useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useMemoireSuivis } from '../suivis/useMemoireSuivis'
+import Attente from '../ui/Attente'
 import Panne from '../ui/Panne'
 import styles from './Suivis.module.css'
+
+/** Ce que montre un intercalaire dont la liste n'est pas arrivée : de quoi remplir un écran, pas plus. */
+const AFFICHETTES_EN_ATTENTE = 4
+const PLANCHES_EN_ATTENTE = 2
 
 /**
  * L'onglet Suivis (reprise de `SuivisScreen.kt`) : le bureau de la programmation, dont le mur porte
@@ -136,6 +143,13 @@ export default function Suivis() {
           {onglet === 'realisateurs' ? (
             <Panneau
               enAttente={realisateurs.isPending}
+              squelette={
+                <ul className={styles.mur}>
+                  {Array.from({ length: AFFICHETTES_EN_ATTENTE }, (_, rang) => (
+                    <AffichetteEnAttente key={rang} />
+                  ))}
+                </ul>
+              }
               erreur={realisateurs.error}
               onReessayer={() => void realisateurs.refetch()}
               libelleVide="Tu ne suis aucun réalisateur."
@@ -147,6 +161,13 @@ export default function Suivis() {
           ) : (
             <Panneau
               enAttente={sagas.isPending}
+              squelette={
+                <ul className={styles.planches}>
+                  {Array.from({ length: PLANCHES_EN_ATTENTE }, (_, rang) => (
+                    <PlancheCycleEnAttente key={rang} />
+                  ))}
+                </ul>
+              }
               erreur={sagas.error}
               onReessayer={() => void sagas.refetch()}
               libelleVide="Tu ne suis aucune saga."
@@ -162,9 +183,10 @@ export default function Suivis() {
   )
 }
 
-/** Le contenu d'un intercalaire : « Chargement… », la panne et son retry, le message d'une liste vide, sinon ses suivis. */
+/** Le contenu d'un intercalaire : son squelette, la panne et son retry, le message d'une liste vide, sinon ses suivis. */
 function Panneau({
   enAttente,
+  squelette,
   erreur,
   onReessayer,
   libelleVide,
@@ -172,13 +194,14 @@ function Panneau({
   children,
 }: {
   enAttente: boolean
+  squelette: ReactNode
   erreur: unknown
   onReessayer: () => void
   libelleVide: string
   nombre: number
   children: ReactNode
 }) {
-  if (enAttente) return <p role="status">Chargement…</p>
+  if (enAttente) return <Attente>{squelette}</Attente>
   if (erreur) return <Panne erreur={erreur} onReessayer={onReessayer} />
   if (nombre === 0) return <p className={styles.vide}>{libelleVide}</p>
   return <>{children}</>

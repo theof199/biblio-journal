@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Attente, { Barre } from '../ui/Attente'
 import type { FilmRealisateur } from '../api/realisateurs'
 import { scinderNom, trousDeLaRetrospective } from './affichettes'
 import AfficheSuivi from './AfficheSuivi'
@@ -11,7 +12,8 @@ import styles from './Affichette.module.css'
  * l'encre bleue, l'affiche du prochain film collée à son coin, le nom (prénoms en petit, dernier
  * mot en grand), « 9 séances sur 22 » et un trou poinçonné par film, puis « ensuite » et son titre.
  * Bouclée, elle porte le bandeau « Complet » et sa date de clôture, et n'a plus de prochain film.
- * Filmographie en attente ou en panne : le portrait, le nom, puis « … » ou « indisponible ».
+ * Filmographie en attente ou en panne : le portrait, le nom, puis une ligne en blanc (« … » pour un
+ * lecteur d'écran) ou « indisponible ».
  *
  * Toute l'affichette ouvre la page du réalisateur (le lien s'étend sur elle), mais seul le nom nomme
  * ce lien (`aria-label` : ses deux corps ne se liraient pas séparés d'une espace) ; la vignette et les
@@ -55,7 +57,18 @@ export default function Affichette({
         {prenoms ? <span className={styles.prenom}>{prenoms}</span> : null}
         <span className={long ? `${styles.nom} ${styles.nomLong}` : styles.nom}>{dernier}</span>
       </Link>
-      {films ? <Compte films={films} /> : <p className={styles.attente}>{etat?.statut === 'indisponible' ? 'indisponible' : '…'}</p>}
+      {films ? (
+        <Compte films={films} />
+      ) : etat?.statut === 'indisponible' ? (
+        <p className={styles.attente}>indisponible</p>
+      ) : (
+        <div className={styles.attente} data-testid="attente-carte">
+          <span className="sr-only">…</span>
+          <Attente muet>
+            <Barre largeur="moyenne" />
+          </Attente>
+        </div>
+      )}
       {prochain ? (
         <p className={styles.suite}>
           ensuite<b>{prochain.title}</b>
