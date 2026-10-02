@@ -125,6 +125,8 @@ interface Marche {
 interface Roulement {
   y0: number
   y1: number
+  /** Où il en est : ce qu'il a posé en dernier. */
+  y: number
   t0: number
   dur: number
   fin: (() => void) | null
@@ -194,8 +196,10 @@ export class MoteurCarte {
   private defilement: { aDater: boolean; depuis: number | null } = { aDater: false, depuis: null }
   /** Au calme, l'arrêt que le geste en cours a posé ; nul hors d'un geste. */
   private pose: number | null = null
-  /** Vrai tant que le pointeur est bas. */
-  private doigt = false
+  /** Vrai tant que le pointeur est bas ; le navigateur le relève (`pointercancel`) dès qu'il prend le geste pour défiler. */
+  private pointeurBas = false
+  /** Le nombre de doigts posés sur l'écran, que la page relaie (`doigtsPoses`) : lui survit au défilement natif. */
+  private touchers = 0
   private readonly geste: Geste
   private readonly ctx: CanvasRenderingContext2D | null
   private readonly canvas: Toile
@@ -313,13 +317,9 @@ export class MoteurCarte {
 
   pointeur(type: 'bas' | 'bouge' | 'haut' | 'annule' | 'quitte', x: number, y: number, souris: boolean): void {
     if (type === 'bas') {
-      this.doigt = true
-      // Le doigt reprend la caméra au rappel et à « Tu es ici » ; son arrêt se constatera au lever.
-      if (this.roulement && !this.roulement.fin) {
-        this.arreterLeRoulement()
-        this.defilement.aDater = true
-      }
-    } else if (type !== 'bouge') this.doigt = false
+      this.pointeurBas = true
+      this.reprendreLaCamera()
+    } else if (type !== 'bouge') this.pointeurBas = false
     if (this.ens.cible) {
       if (type === 'haut') this.quitterEnsemble(y)
       return
@@ -329,6 +329,16 @@ export class MoteurCarte {
     else if (type === 'haut') this.geste.lever(x, y)
     else if (type === 'annule') this.geste.annulerAppui()
     else this.geste.quitter()
+  }
+
+  /**
+   * Le nombre de doigts posés sur l'écran (`touches.length` de `touchstart`, `touchend`,
+   * `touchcancel`). Tant qu'il en reste un, le moteur ne rappelle ni ne pose la caméra : il
+   * combattrait le défilement que le doigt mène. Il reprend au lever du dernier.
+   */
+  doigtsPoses(nombre: number): void {
+    this.touchers = nombre
+    if (nombre > 0) this.reprendreLaCamera()
   }
 
   /** Deux doigts : `ecart` nul les relâche. Rend vrai quand le geste est pris (la page appelle alors `preventDefault`). */
@@ -489,14 +499,28 @@ export class MoteurCarte {
     return this.arretsDe(c.section)[this.plan.sections[c.section]!.annees.indexOf(annee)] ?? null
   }
 
-  /** Les arrêts entre lesquels la caméra est laissée, sans être posée à l'un d'eux ; nul sinon. */
+  /** Vrai tant qu'un doigt est posé, d'où que vienne l'information : le pointeur, ou les touchers que la page relaie. */
+  private get doigt(): boolean {
+    return this.pointeurBas || this.touchers > 0
+  }
+
+  /** Le doigt qui se pose reprend la caméra au rappel et à « Tu es ici » ; l'arrêt du défilement se constatera au lever. */
+  private reprendreLaCamera(): void {
+    if (!this.roulement || this.roulement.fin) return
+    this.arreterLeRoulement()
+    this.defilement.aDater = true
+  }
+
+  /**
+   * Les arrêts de la section collante où la caméra est laissée sans être posée à l'un d'eux : du
+   * premier arrêt au bas de la section, sous le dernier arrêt compris. Nul avant le premier arrêt
+   * (la zone du passage d'entrée), dans une section ordinaire, et à un arrêt.
+   */
   private arretsAutour(): number[] | null {
-    for (let i = 0; i < this.plan.sections.length; i++) {
-      const arrets = this.arretsDe(i)
-      if (arrets.length < 2 || this.camY <= arrets[0]! || this.camY >= arrets[arrets.length - 1]!) continue
-      return arrets.some((a) => Math.abs(a - this.camY) <= A_L_ARRET) ? null : arrets
-    }
-    return null
+    const section = this.plan.sections.findIndex((s) => this.camY >= s.y0 && this.camY < s.y0 + s.hauteur)
+    const arrets = this.arretsDe(section)
+    if (arrets.length === 0 || this.camY <= arrets[0]!) return null
+    return arrets.some((a) => Math.abs(a - this.camY) <= A_L_ARRET) ? null : arrets
   }
 
   /** La caméra à `y`, d'un coup. */
@@ -519,7 +543,7 @@ export class MoteurCarte {
       this.poser(y)
       fin?.()
     } else {
-      this.roulement = { y0: this.camY, y1: y, t0: this.t, dur: auTempo(DUREE_DU_ROULEMENT) / 1000, fin }
+      this.roulement = { y0: this.camY, y1: y, y: this.camY, t0: this.t, dur: auTempo(DUREE_DU_ROULEMENT) / 1000, fin }
     }
     this.demander()
   }
@@ -538,11 +562,15 @@ export class MoteurCarte {
    * pose son arrêt, une fois : les défilements qui le suivent n'en posent pas d'autre.
    */
   private constaterLeDefilement(avant: number): void {
+    // Sans section collante sur la carte, il n'y a rien à constater : la boucle ne tient pas pour lui.
+    if (!this.bandes) return
     const r = this.roulement
     if (r) {
-      // La page rend ce que le roulement vient de poser : un écho, pas un geste. Un vrai geste
-      // reprend la caméra au rappel et à « Tu es ici » ; il ne détourne pas la marche qu'on attend.
-      if (r.fin || Math.abs(this.camY - avant) <= A_L_ARRET) return
+      // La page rend ce que le roulement a posé, tôt ou tard : tout ce qui tombe entre son départ
+      // et là où il en est est un écho, pas un geste. Un vrai geste reprend la caméra au rappel et
+      // à « Tu es ici » ; il ne détourne pas la marche qu'on attend.
+      const echo = this.camY >= Math.min(r.y0, r.y) - A_L_ARRET && this.camY <= Math.max(r.y0, r.y) + A_L_ARRET
+      if (r.fin || echo) return
       this.arreterLeRoulement()
     }
     this.defilement.aDater = true
@@ -554,13 +582,14 @@ export class MoteurCarte {
     const devant = descend ? arrets.filter((a) => a > avant + A_L_ARRET) : arrets.filter((a) => a < avant - A_L_ARRET).reverse()
     const franchis = devant.filter((a) => (descend ? a < this.camY : a > this.camY))
     this.pose = franchis[franchis.length - 1] ?? devant[0] ?? null
-    if (this.pose !== null) this.poser(this.pose)
+    // Sous un doigt posé, l'arrêt est choisi mais pas encore posé : il le sera au repos, le doigt levé.
+    if (this.pose !== null && !this.doigt) this.poser(this.pose)
   }
 
   /**
-   * Le défilement s'est arrêté : `defiler` s'est tu depuis `REPOS_DU_DEFILEMENT`, et le pointeur
-   * n'est pas bas (le rappel combattrait le doigt). La caméra laissée entre deux arrêts d'une
-   * section collante revient au plus proche en roulant ; au calme, elle se pose d'un coup à celui
+   * Le défilement s'est arrêté : `defiler` s'est tu depuis `REPOS_DU_DEFILEMENT`, et aucun doigt
+   * n'est posé (le rappel le combattrait). La caméra laissée dans une section collante, hors d'un
+   * arrêt, revient au plus proche en roulant ; au calme, elle se pose d'un coup à celui
    * que le geste a choisi.
    */
   private constaterLeRepos(maintenant: number): void {
@@ -584,7 +613,7 @@ export class MoteurCarte {
    * collante, il n'y a pas d'avatar : c'est la caméra posée à l'arrêt de l'année du membre.
    */
   private signalerAvatar(): void {
-    const arret = this.arretDe(this.etat.anneeAvatar)
+    const arret = this.bandes ? this.arretDe(this.etat.anneeAvatar) : undefined
     const y = pointA(this.route, this.avatar.d).y - this.camY
     const vu = arret === undefined ? y >= HAUT_MASQUE && y <= this.H - BAS_MASQUE : arret !== null && Math.abs(this.camY - arret) <= A_L_ARRET
     if (vu === this.avatarVu) return
@@ -848,7 +877,8 @@ export class MoteurCarte {
     const r = this.roulement
     if (r) {
       const pr = clamp((this.t - r.t0) / r.dur, 0, 1)
-      this.poser(pr >= 1 ? r.y1 : lerp(r.y0, r.y1, ease(pr)))
+      r.y = pr >= 1 ? r.y1 : lerp(r.y0, r.y1, ease(pr))
+      this.poser(r.y)
       if (pr >= 1) {
         this.roulement = null
         r.fin?.()

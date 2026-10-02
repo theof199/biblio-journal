@@ -6,7 +6,7 @@ import styles from './CarteCanvas.module.css'
 /** Ce que la page attend d'un moteur : `MoteurCarte`, ou sa doublure dans un test. */
 export type Moteur = Pick<
   MoteurCarte,
-  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'detruire'
+  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'detruire'
 >
 export type FabriqueMoteur = (canvas: HTMLCanvasElement, rappels: Rappels) => Moteur
 
@@ -122,6 +122,8 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
       const milieu = e.touches.length === 2 ? (e.touches[0]!.clientY + e.touches[1]!.clientY) / 2 - r.top : 0
       if (moteur.pincer(ecart(e.touches), milieu) && e.cancelable) e.preventDefault()
     }
+    // Le nombre de doigts posés : il survit au `pointercancel` du défilement natif, que le moteur ne doit pas combattre.
+    const doigts = (e: TouchEvent) => moteur.doigtsPoses(e.touches.length)
     const menu = (e: Event) => e.target === canvas && e.preventDefault()
     vue.addEventListener('pointerdown', bas)
     vue.addEventListener('pointermove', bouge)
@@ -132,6 +134,9 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
     vue.addEventListener('touchstart', touches, { passive: true })
     vue.addEventListener('touchmove', touches, { passive: false })
     vue.addEventListener('touchend', touches, { passive: true })
+    vue.addEventListener('touchstart', doigts, { passive: true })
+    vue.addEventListener('touchend', doigts, { passive: true })
+    vue.addEventListener('touchcancel', doigts, { passive: true })
     vue.addEventListener('contextmenu', menu)
     document.addEventListener('keydown', echap)
     const taille = typeof ResizeObserver === 'function' ? new ResizeObserver(mesurer) : null
@@ -150,6 +155,9 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
       vue.removeEventListener('touchstart', touches)
       vue.removeEventListener('touchmove', touches)
       vue.removeEventListener('touchend', touches)
+      vue.removeEventListener('touchstart', doigts)
+      vue.removeEventListener('touchend', doigts)
+      vue.removeEventListener('touchcancel', doigts)
       vue.removeEventListener('contextmenu', menu)
       document.removeEventListener('keydown', echap)
       taille?.disconnect()

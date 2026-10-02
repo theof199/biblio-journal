@@ -15,6 +15,7 @@ export function moteurFactice() {
     reglerVisible: vi.fn(),
     pointeur: vi.fn(),
     pincer: vi.fn(() => false),
+    doigtsPoses: vi.fn(),
     allerIci: vi.fn(),
     basculerEnsemble: vi.fn(),
     marcher: vi.fn(async () => undefined),

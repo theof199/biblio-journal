@@ -112,7 +112,7 @@ function monter(
     deuxBobines?: boolean
     /** Plan 3a : le monde d'essai de 1900 a une `scene`, sa section est collante. */
     collant?: boolean
-    /** Tâche 4 : les arrêts de la section collante, en `y` de la section, un par année. */
+    /** Plan 3a : les arrêts de la section collante, en `y` de la section, un par année. */
     arrets?: readonly number[]
   } = {},
 ) {
@@ -1081,13 +1081,15 @@ describe('le moteur de la carte', () => {
       expect(collant.rappels.roulotte).toHaveBeenCalledTimes(1)
     })
 
-    describe('la caméra roule d’arrêt en arrêt (tâche 4)', () => {
-      /** Un arrêt par année de 1900, tous les 250 px de la section : loin des cases du tracé (170 px). */
-      const ARRETS = Array.from({ length: 10 }, (_, i) => i * 250)
+    describe('la caméra d’une section collante (plan 3a)', () => {
+      /** Un arrêt par année de 1900, tous les 200 px de la section : loin des cases du tracé (170 px), le dernier 220 px au-dessus du bas de la section. */
+      const ARRETS = Array.from({ length: 10 }, (_, i) => i * 200)
+      /** Le bas de la section 1900 : le haut de la suivante. */
+      const BAS_1900 = HAUT_1900 + mondeAVenir(1900).trace([1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909]).hauteur
       const arret = (annee: number) => HAUT_1900 + ARRETS[annee - 1900]!
       /** Le banc, une première image jouée, et de quoi jouer les suivantes : une toutes les 40 ms d'horloge. */
-      const enGare = (options: Parameters<typeof auTrain>[0] & { ailleurs?: boolean } = {}) => {
-        const banc = options.ailleurs ? monter({ collant: true, arrets: ARRETS, ...options }) : auTrain({ arrets: ARRETS, ...options })
+      const enGare = (options: Parameters<typeof auTrain>[0] & { ailleurs?: boolean; sansCollant?: boolean } = {}) => {
+        const banc = options.ailleurs ? monter({ collant: true, arrets: ARRETS, ...options }) : options.sansCollant ? monter(options) : auTrain({ arrets: ARRETS, ...options })
         let ms = 1000
         banc.moteur.image(ms)
         const filer = (duree: number) => {
@@ -1233,16 +1235,136 @@ describe('le moteur de la carte', () => {
         ou.forEach((y) => expect(y >= bornes[0]! && y <= bornes[1]!).toBe(true))
       })
 
-      // Avant le premier arrêt (l'entrée de la section) et après le dernier, la caméra n'est pas
-      // entre deux arrêts. Mutation : les bornes retirées d'`arretsAutour`.
-      it('ne rappelle pas la caméra laissée avant le premier arrêt, ni après le dernier', () => {
+      // La spec, « Le posé à l'arrêt » : le rappel vaut dans toute la section, sous le dernier arrêt
+      // compris. Mutations : la borne `camY >= dernier arrêt` remise dans `arretsAutour` (la caméra
+      // resterait sous le dernier arrêt) ; la section cherchée par ses arrêts et non par ses bornes
+      // (un défilement arrêté dans la section suivante serait rappelé).
+      it('ramène au dernier arrêt la caméra laissée sous lui dans la section, jamais celle qui s’arrête dans la section suivante', () => {
         const banc = enGare()
-        banc.poserA(arret(1900))
-        banc.moteur.defiler(arret(1900) - 60)
+        banc.poserA(arret(1909))
+        expect(arret(1909) + 150).toBeLessThan(BAS_1900)
+        banc.moteur.defiler(arret(1909) + 150)
+        banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1909))
+        vi.mocked(banc.rappels.defilerVers).mockClear()
+        banc.moteur.defiler(BAS_1900 - 1)
+        banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1909))
+        vi.mocked(banc.rappels.defilerVers).mockClear()
+        banc.moteur.defiler(BAS_1900)
         banc.filer(REPOS_DU_DEFILEMENT + 600)
-        banc.moteur.defiler(arret(1909) + 60)
+        banc.moteur.defiler(BAS_1900 + 300)
         banc.filer(REPOS_DU_DEFILEMENT + 600)
         expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+      })
+
+      // Avant le premier arrêt, c'est la zone du passage d'entrée : la caméra y reste où on la laisse.
+      // Mutation : `this.camY <= arrets[0]!` retiré d'`arretsAutour`.
+      it('ne rappelle pas la caméra laissée dans la section avant le premier arrêt', () => {
+        const banc = enGare({ arrets: ARRETS.map((y) => y / 2 + 300) })
+        banc.poserA(HAUT_1900 + 300)
+        banc.moteur.defiler(HAUT_1900 + 150)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        banc.moteur.defiler(HAUT_1900 - 60)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+        // Le témoin : sous le premier arrêt, la même caméra est rappelée.
+        banc.moteur.defiler(HAUT_1900 + 330)
+        banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(HAUT_1900 + 300)
+      })
+
+      // Mutation : `arrets.length < 2` remis dans `arretsAutour` (une section à un seul arrêt
+      // laisserait la caméra n'importe où).
+      it('ramène la caméra à l’arrêt d’une section qui n’en a qu’un', () => {
+        const banc = enGare({ arrets: [400] })
+        banc.poserA(HAUT_1900 + 400)
+        banc.moteur.defiler(HAUT_1900 + 700)
+        banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(HAUT_1900 + 400)
+        // Au calme, d'un coup, une fois le défilement arrêté : aucun arrêt n'est devant le geste.
+        const calme = enGare({ arrets: [400], calme: true })
+        calme.poserA(HAUT_1900 + 400)
+        calme.moteur.defiler(HAUT_1900 + 700)
+        expect(calme.rappels.defilerVers).not.toHaveBeenCalled()
+        calme.filer(REPOS_DU_DEFILEMENT + 600)
+        expect(calme.vers()).toEqual([HAUT_1900 + 400])
+      })
+
+      // Sur une carte sans section collante (1890 aujourd'hui), le défilement ne se constate pas :
+      // au calme, la boucle joue une image par défilement et se rendort. Mutation : la garde
+      // `!this.bandes` retirée de `constaterLeDefilement` (la boucle tiendrait jusqu'au repos).
+      it('sans section collante sur la carte, la boucle ne tient pas après un défilement', () => {
+        const banc = monter({ calme: true })
+        for (const f of banc.demandees.splice(0)) f(1000)
+        expect(banc.demandees).toEqual([])
+        banc.moteur.defiler(300)
+        for (const f of banc.demandees.splice(0)) f(1040)
+        expect(banc.demandees).toEqual([])
+        // Le témoin : avec une section collante, elle tient.
+        const collant = monter({ calme: true, collant: true, arrets: ARRETS })
+        for (const f of collant.demandees.splice(0)) f(1000)
+        collant.moteur.defiler(300)
+        for (const f of collant.demandees.splice(0)) f(1040)
+        expect(collant.demandees.length).toBe(1)
+      })
+
+      // Sur un écran tactile, le navigateur relève le pointeur (`pointercancel`) dès qu'il prend le
+      // geste pour défiler : la page relaie alors le nombre de doigts posés. Mutations :
+      // `|| this.touchers > 0` retiré de `doigt` ; `reprendreLaCamera` retiré de `doigtsPoses` (le
+      // rappel en cours tirerait la caméra sous le doigt qui se pose) ; sa garde `nombre > 0` retirée
+      // (un `touchcancel` sans doigt arrêterait le rappel).
+      it('ne rappelle pas la caméra tant qu’un doigt est posé, même après le pointercancel, et reprend au lever du dernier', () => {
+        const banc = enGare()
+        banc.poserA(arret(1901))
+        banc.moteur.doigtsPoses(1)
+        banc.moteur.pointeur('bas', 200, 300, false)
+        banc.moteur.defiler(arret(1902) + 40)
+        banc.moteur.pointeur('annule', 200, 300, false)
+        banc.moteur.pointeur('quitte', 200, 300, false)
+        banc.moteur.defiler(arret(1902) + 90)
+        banc.filer(REPOS_DU_DEFILEMENT + 1000)
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+        // Un second doigt posé puis levé : le premier reste, rien ne part.
+        banc.moteur.doigtsPoses(2)
+        banc.moteur.pointeur('bas', 100, 300, false)
+        banc.moteur.pointeur('haut', 100, 300, false)
+        banc.moteur.doigtsPoses(1)
+        banc.filer(REPOS_DU_DEFILEMENT + 1000)
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+        // Le dernier doigt levé, le rappel part ; un doigt reposé en chemin l'arrête.
+        banc.moteur.doigtsPoses(0)
+        banc.filer(200)
+        expect(banc.vers().length).toBeGreaterThan(0)
+        // Aucun doigt posé (un `touchcancel` tardif) : le rappel continue.
+        const enRoute = banc.vers().length
+        banc.moteur.doigtsPoses(0)
+        banc.filer(40)
+        const n = banc.vers().length
+        expect(n).toBe(enRoute + 1)
+        expect(banc.vers()[n - 1]).not.toBe(arret(1902))
+        banc.moteur.doigtsPoses(1)
+        banc.filer(REPOS_DU_DEFILEMENT + 1000)
+        expect(banc.vers().length).toBe(n)
+        banc.moteur.doigtsPoses(0)
+        banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+        expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1902))
+      })
+
+      // Mutation : `&& !this.doigt` retiré de la pose du geste, dans `constaterLeDefilement` : au
+      // calme, l'arrêt serait posé sous le doigt qui défile.
+      it('au calme, ne pose l’arrêt du geste qu’une fois le doigt levé et le défilement arrêté', () => {
+        const banc = enGare({ calme: true })
+        banc.poserA(arret(1902))
+        banc.moteur.doigtsPoses(1)
+        banc.moteur.defiler(arret(1902) + 30)
+        banc.moteur.defiler(arret(1902) + 70)
+        banc.filer(REPOS_DU_DEFILEMENT + 1000)
+        expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+        banc.moteur.doigtsPoses(0)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
+        // L'arrêt suivant dans le sens du geste, pas le plus proche (1902, à 70 px).
+        expect(banc.vers()).toEqual([arret(1903)])
       })
 
       // Mutation : `this.arreterLeRoulement()` retiré de `rouler` : la promesse du roulement
@@ -1288,19 +1410,21 @@ describe('le moteur de la carte', () => {
         expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1902))
       })
 
-      // Sur un écran tactile, le navigateur prend le geste (`pointercancel`) : le moteur ne sait plus
-      // le doigt posé, il ne voit que le défilement. Mutations : la comparaison à `avant` retirée de
-      // `constaterLeDefilement` (l'écho de ce que le roulement vient de poser l'arrêterait) ;
+      // Un défilement sans doigt que le moteur connaisse (la molette, l'élan d'un lancer) : il ne voit
+      // que `defiler`. Mutations : la reconnaissance de l'écho retirée de `constaterLeDefilement`
+      // (ce que le roulement a posé, rendu par la page, l'arrêterait) ; l'écho reconnu à la seule
+      // dernière valeur posée (un `scroll` rendu deux images plus tard l'arrêterait) ;
       // `this.arreterLeRoulement()` retiré au même endroit (le rappel combattrait le défilement).
       it('le rappel en cours cède au défilement du membre, pas à l’écho de ce qu’il vient de poser', () => {
         const banc = enGare()
         banc.poserA(arret(1901))
         banc.moteur.defiler(arret(1902) + 90)
-        banc.filer(REPOS_DU_DEFILEMENT + 200)
+        banc.filer(REPOS_DU_DEFILEMENT + 600)
         const n = banc.vers().length
-        expect(n).toBeGreaterThan(0)
-        // L'écho : la page rend, arrondi, le défilement que le moteur vient de poser.
-        banc.moteur.defiler(Math.round(banc.vers()[n - 1]!))
+        // L'écho : la page rend, arrondi, un défilement que le moteur a posé, fût-ce quelques images plus tôt.
+        expect(n).toBeGreaterThan(3)
+        expect(Math.abs(banc.vers()[n - 1]! - banc.vers()[n - 3]!)).toBeGreaterThan(A_L_ARRET)
+        banc.moteur.defiler(Math.round(banc.vers()[n - 3]!))
         banc.filer(40)
         expect(banc.vers().length).toBe(n + 1)
         // Le geste : le membre repart vers le bas.
