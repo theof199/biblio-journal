@@ -13,8 +13,9 @@ import type { Monde } from '../mondes/types'
  *
  * Ce qui est figé : chaque appel au contexte, avec l'état que le banc tient (`contexteFactice`), et
  * chaque écriture de propriété (`lineWidth`, `font`, `lineCap`…), que le banc avale et qu'un témoin
- * local note (`temoin`). Les nombres sont arrondis à six décimales avant d'être hachés : un dernier
- * chiffre qui diffère d'une machine à l'autre ne fait pas tomber la référence, un pixel si.
+ * local note (`temoin`). Avant d'être hachés, les nombres sont arrondis à six décimales, ceux des
+ * arguments comme ceux écrits dans une chaîne (l'alpha d'un `rgba(…)`, une police) : un écart sous
+ * le millionième ne fait pas tomber la référence, un écart au-dessus si.
  *
  * Une empreinte ne se recopie pas pour faire passer un test : elle ne se refait (l'échec imprime
  * les empreintes reçues) que si le changement de dessin est voulu, et dit dans le commit.
@@ -22,7 +23,8 @@ import type { Monde } from '../mondes/types'
  * Lire un échec. Une empreinte ne dit pas quel appel a bougé : la suite, si. Avec la variable
  * `VITE_REFERENCE_1890_SORTIE` posée sur un dossier en chemin absolu, **hors du dépôt**, chaque cas
  * y écrit sa suite, un appel par ligne, dans un fichier à son nom (l'image, puis chaque toile).
- * Sans elle, rien ne s'écrit. Pour comparer deux commits :
+ * Sans elle, rien ne s'écrit ; un chemin relatif ou un dossier du dépôt est refusé. Pour comparer
+ * deux commits :
  *
  *   VITE_REFERENCE_1890_SORTIE=/tmp/reference-avant npx vitest run src/carte/reference1890.test.ts
  *   (changer de commit)
@@ -47,8 +49,8 @@ const CAMERA = {
   dans1900: 2030,
 } as const
 
-/** L'état de la carte : le départ (1898 en cours), 1900 ouverte (1890 quittée), ou 1890 bouclée (son tampon posé). */
-type Etat = 'depart' | '1900 ouverte' | '1890 bouclee'
+/** L'état de la carte : le départ (1898 en cours), 1898 quittée (1899 en cours), 1900 ouverte (1890 quittée), ou 1890 bouclée (son tampon posé). */
+type Etat = 'depart' | '1899 en cours' | '1900 ouverte' | '1890 bouclee'
 
 interface Cas {
   nom: string
@@ -58,6 +60,8 @@ interface Cas {
   roulotte?: EtatCarte['roulotte']
   bobines?: readonly string[]
   ensemble?: boolean
+  /** Après la première image, 1898 est quittée et l'avatar est en 1899 : la carte passe du départ à « 1899 en cours ». */
+  quitte?: boolean
   /** L'heure du visiteur ; midi sans elle. */
   heure?: number
   /** Les images jouées après la première, à 40 ms l'une de l'autre ; douze sans elle. Une seule au calme. */
@@ -88,16 +92,20 @@ const CAS: readonly Cas[] = [
   { nom: '1900 ouverte, sur la porte, au calme', calme: true, camera: CAMERA.porte, etat: '1900 ouverte' },
   { nom: '1900 ouverte, sur la porte, en mouvement', calme: false, camera: CAMERA.porte, etat: '1900 ouverte' },
   { nom: '1900 ouverte, à cheval sur la frontière, au calme', calme: true, camera: CAMERA.frontiere, etat: '1900 ouverte' },
+  // Une année vient d'être quittée : sa case pousse, le billet vole vers son ampoule (`recompense`,
+  // `mondes/1890/proches.ts`, entre 0,65 s et 2,05 s après), et le chantier de 1899 commence.
+  // Trente images : 1,2 s après, le billet est en vol.
+  { nom: '1898 vient d’être quittée, sur 1897, en mouvement', calme: false, camera: CAMERA.sur1897, quitte: true, images: 30 },
   // Les feux du décor (`VueMonde.feu`) ne se dessinent que la nuit.
   { nom: 'de nuit, sur 1897, en mouvement', calme: false, camera: CAMERA.sur1897, heure: 23 },
-  // Le seul cas qui tire `Math.random` : la décennie bouclée lance des confettis (`mondes/1890/proches.ts`).
+  // La fête : la décennie bouclée lance des confettis, tirés de `Math.random` (`mondes/1890/proches.ts`).
   // Quarante images : la première volée part à la trente et unième et vole encore à la dernière.
   { nom: FETE, calme: false, camera: CAMERA.haut, etat: '1890 bouclee', images: 40 },
 ]
 
 /** Les cases de 1895 à 1912 : 1890 (cinq années), 1900 (dix) et le début de 1910 (trois). */
 function casesDe(etat: Etat): CaseCarte[] {
-  const enCours = etat === 'depart' ? 1898 : 1900
+  const enCours = etat === 'depart' ? 1898 : etat === '1899 en cours' ? 1899 : 1900
   const recompenses = ['lion', 'passee', 'palme', 'ours', 'passee'] as const
   return Array.from({ length: 1912 - 1895 + 1 }, (_, i) => {
     const annee = 1895 + i
@@ -216,6 +224,7 @@ function jouer(cas: Cas, graine = GRAINE): Jeu {
   if (cas.bobines) moteur.reglerBobines(cas.bobines)
   moteur.defiler(cas.camera)
   moteur.image(1000)
+  if (cas.quitte) moteur.majEtat({ cases: casesDe('1899 en cours'), anneeAvatar: 1899, tampons: [], roulotte: cas.roulotte ?? null })
   if (cas.ensemble) moteur.basculerEnsemble(true)
   // L'horloge fixée : en mouvement, des images à 40 ms l'une de l'autre ; au calme, une seule de plus.
   const images = cas.calme ? 1 : (cas.images ?? 12)
@@ -231,8 +240,15 @@ function empreintes(jeu: Jeu): string[] {
   return [`image ${jeu.image.length} ${hacher(ecrire(jeu.image))}`, ...jeu.toiles.map((t) => `toile ${t.nom} ${t.appels.length} ${hacher(ecrire(t.appels))}`)]
 }
 
-/** Six décimales : sous le millionième de pixel, un écart n'est pas un dessin qui change. */
-const arrondir = (_cle: string, v: unknown): unknown => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v)
+/** Six décimales : sous le millionième, un écart n'est pas un dessin qui change. */
+const aSixDecimales = (n: number): number => Math.round(n * 1e6) / 1e6
+/**
+ * Un nombre à virgule écrit dans une chaîne (`rgba(0,0,0,0.42700622408563504)`, `6.5px`), ou en
+ * notation `1.2e-7`. Jamais au milieu d'un mot ni derrière un `#` : `#3e5360` est une couleur.
+ */
+const DECIMAL = /(?<![#\w.])-?(?:\d+\.\d+(?:e[-+]?\d+)?|\d+e-\d+)/g
+const arrondir = (_cle: string, v: unknown): unknown =>
+  typeof v === 'number' ? aSixDecimales(v) : typeof v === 'string' ? v.replace(DECIMAL, (n) => String(aSixDecimales(Number(n)))) : v
 
 /** Une suite en texte, une ligne par appel ou par écriture, les nombres arrondis : ce qui est haché, et ce que le diagnostic écrit. */
 const ecrire = (suite: readonly Appel[]): string => suite.map((a) => JSON.stringify(a, arrondir)).join('\n')
@@ -240,13 +256,23 @@ const ecrire = (suite: readonly Appel[]): string => suite.map((a) => JSON.string
 /** Le dossier du diagnostic (voir l'en-tête) ; vide : rien ne s'écrit. */
 const SORTIE: string = import.meta.env.VITE_REFERENCE_1890_SORTIE ?? ''
 
-/** Le diagnostic : la suite d'un cas, dans un fichier à son nom. Jamais sans `SORTIE`, jamais en chemin relatif. */
+/**
+ * La racine du dépôt, d'après l'adresse de ce fichier (`file:///…/src/carte/…`). Par le texte :
+ * Vite réécrit `new URL(…, import.meta.url)` en adresse de ressource.
+ */
+const DEPOT = decodeURIComponent(import.meta.url.replace(/^file:\/\//, '').replace(/\/src\/carte\/[^/]+$/, ''))
+
+/** Le diagnostic : la suite d'un cas, dans un fichier à son nom. Jamais sans `SORTIE`, jamais en chemin relatif, jamais dans le dépôt. */
 async function sortir(cas: Cas, jeu: Jeu): Promise<void> {
   if (!SORTIE) return
   if (!SORTIE.startsWith('/')) throw new Error(`VITE_REFERENCE_1890_SORTIE veut un chemin absolu, hors du dépôt : reçu « ${SORTIE} »`)
-  // Le dépôt n'a pas les types de Node : le module se charge par son nom, et ne sert qu'ici.
-  const module = 'node:fs'
-  const fs: { mkdirSync: (dossier: string, options: { recursive: boolean }) => void; writeFileSync: (fichier: string, texte: string) => void } = await import(/* @vite-ignore */ module)
+  // Le dépôt n'a pas les types de Node : les modules se chargent par leur nom, et ne servent qu'ici.
+  const modules = ['node:fs', 'node:path']
+  const fs: { mkdirSync: (dossier: string, options: { recursive: boolean }) => void; writeFileSync: (fichier: string, texte: string) => void } = await import(/* @vite-ignore */ modules[0]!)
+  const chemins: { resolve: (...morceaux: string[]) => string } = await import(/* @vite-ignore */ modules[1]!)
+  // Résolu : `/tmp/../var/www/…` ne passe pas la garde par ses `..`.
+  if (!DEPOT.startsWith('/')) throw new Error(`le dépôt est introuvable d'après « ${import.meta.url} » : le diagnostic n'écrit rien`)
+  if (`${chemins.resolve(SORTIE)}/`.startsWith(`${chemins.resolve(DEPOT)}/`)) throw new Error(`VITE_REFERENCE_1890_SORTIE veut un dossier hors du dépôt : reçu « ${SORTIE} »`)
   const fichier = cas.nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')
   const texte = [`# image`, ecrire(jeu.image), ...jeu.toiles.flatMap((t) => [`# toile ${t.nom}`, ecrire(t.appels)])].join('\n')
   fs.mkdirSync(SORTIE, { recursive: true })
@@ -263,133 +289,141 @@ const GRAIN: readonly string[] = [
 /** Les empreintes, cas par cas : `image`, le contexte principal à la dernière image (le nombre d'appels et d'écritures, puis leur empreinte) ; `toile`, chaque toile dans l'ordre de sa création (son rang, sa taille, ses appels). Les toiles de 780 × 1024 sont les tuiles du sol. */
 const REFERENCE: Record<string, readonly string[]> = {
   'en haut de 1890, au calme': [
-    'image 4193 1966bcdae370b8',
+    'image 4193 01130e9fb983b2',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'en haut de 1890, en mouvement': [
-    'image 4262 02bff8260c6761',
+    'image 4262 14a23e27beff1e',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'sur 1897, au calme': [
-    'image 4350 1025fa804c866e',
+    'image 4350 0bb04b73390b6f',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'sur 1897, en mouvement': [
-    'image 4419 02aa726e1c66f6',
+    'image 4419 1cd7ab85dd2e25',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'sur la porte, au calme': [
-    'image 4061 01249951890ee0',
+    'image 4061 1a8b3c2e8cc926',
     ...GRAIN,
-    'toile 3 780x1024 146 113ccfd3042ee9',
-    'toile 4 780x1024 146 02139b68ae2928',
+    'toile 3 780x1024 146 1b6bd2fcf33f4d',
+    'toile 4 780x1024 146 03465fa186084d',
   ],
   'sur la porte, en mouvement': [
-    'image 4122 0dd869e0800a46',
+    'image 4122 0ac6621941e78a',
     ...GRAIN,
-    'toile 3 780x1024 146 113ccfd3042ee9',
-    'toile 4 780x1024 146 02139b68ae2928',
+    'toile 3 780x1024 146 1b6bd2fcf33f4d',
+    'toile 4 780x1024 146 03465fa186084d',
   ],
   'à cheval sur la frontière de 1900, au calme': [
-    'image 4053 06701609f9bee6',
+    'image 4053 1ebc835637b104',
     ...GRAIN,
-    'toile 3 780x1024 146 02139b68ae2928',
-    'toile 4 780x1024 146 0700d6e654936f',
+    'toile 3 780x1024 146 03465fa186084d',
+    'toile 4 780x1024 146 1ea686aadcc257',
   ],
   'à cheval sur la frontière de 1900, en mouvement': [
-    'image 4106 1c6ebd2f9c10e0',
+    'image 4106 11fa7df0827a0f',
     ...GRAIN,
-    'toile 3 780x1024 146 02139b68ae2928',
-    'toile 4 780x1024 146 0700d6e654936f',
+    'toile 3 780x1024 146 03465fa186084d',
+    'toile 4 780x1024 146 1ea686aadcc257',
   ],
   'dans 1900, au calme': [
-    'image 1272 04e1363e742d68',
+    'image 1272 174294d662d6c9',
     ...GRAIN,
-    'toile 3 780x1024 146 0700d6e654936f',
-    'toile 4 780x1024 146 01f3b45f116c6a',
-    'toile 5 780x1024 146 05c99fc3ca5fcc',
+    'toile 3 780x1024 146 1ea686aadcc257',
+    'toile 4 780x1024 146 12bc0624c63111',
+    'toile 5 780x1024 146 0acf624fc183b9',
   ],
   'dans 1900, en mouvement': [
-    'image 1286 03980a31e34109',
+    'image 1286 01c80dc827245f',
     ...GRAIN,
-    'toile 3 780x1024 146 0700d6e654936f',
-    'toile 4 780x1024 146 01f3b45f116c6a',
-    'toile 5 780x1024 146 05c99fc3ca5fcc',
+    'toile 3 780x1024 146 1ea686aadcc257',
+    'toile 4 780x1024 146 12bc0624c63111',
+    'toile 5 780x1024 146 0acf624fc183b9',
   ],
   'la vue d’ensemble ouverte, au calme': [
     'image 346 044f4092c6b3e0',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'la vue d’ensemble qui s’ouvre, en mouvement': [
-    'image 4607 011cf019442224',
+    'image 4607 03f8d6bdd327a7',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'une roulotte garée en 1896, au calme': [
-    'image 4473 0298eff42fa85c',
+    'image 4473 088b0c2083f58a',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'une roulotte qui descend vers 1896, en mouvement': [
-    'image 4510 1a3ac52efa1638',
+    'image 4510 19890115a775a5',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   'une bobine déjà trouvée, au calme': [
-    'image 4020 13f9b4801dce83',
+    'image 4020 0d4caf1d931eba',
     ...GRAIN,
-    'toile 3 780x1024 146 113ccfd3042ee9',
-    'toile 4 780x1024 146 02139b68ae2928',
+    'toile 3 780x1024 146 1b6bd2fcf33f4d',
+    'toile 4 780x1024 146 03465fa186084d',
   ],
   'une bobine déjà trouvée, en mouvement': [
-    'image 4081 16908ef958d7cf',
+    'image 4081 1696c370095045',
     ...GRAIN,
-    'toile 3 780x1024 146 113ccfd3042ee9',
-    'toile 4 780x1024 146 02139b68ae2928',
+    'toile 3 780x1024 146 1b6bd2fcf33f4d',
+    'toile 4 780x1024 146 03465fa186084d',
   ],
   '1900 ouverte, sur la porte, au calme': [
-    'image 5135 185a7dce8ed9b8',
+    'image 5135 0d1233c4d99c4d',
     ...GRAIN,
-    'toile 3 780x1024 242 182073565237ab',
-    'toile 4 780x1024 242 1c0a48c9163572',
+    'toile 3 780x1024 242 17012ecc7f8014',
+    'toile 4 780x1024 242 140b590019161d',
   ],
   '1900 ouverte, sur la porte, en mouvement': [
-    'image 5204 1844f8a7923207',
+    'image 5204 0df843a6bf7775',
     ...GRAIN,
-    'toile 3 780x1024 242 182073565237ab',
-    'toile 4 780x1024 242 1c0a48c9163572',
+    'toile 3 780x1024 242 17012ecc7f8014',
+    'toile 4 780x1024 242 140b590019161d',
   ],
   '1900 ouverte, à cheval sur la frontière, au calme': [
-    'image 5077 03223a2fb1fc21',
+    'image 5077 152c317e528760',
     ...GRAIN,
-    'toile 3 780x1024 242 1c0a48c9163572',
-    'toile 4 780x1024 242 18177a5a7b7140',
+    'toile 3 780x1024 242 140b590019161d',
+    'toile 4 780x1024 242 15e3041e2897d9',
     'toile 5 52x76 5 19a5836027e192',
   ],
-  'de nuit, sur 1897, en mouvement': [
-    'image 4556 080e67614c93af',
+  '1898 vient d’être quittée, sur 1897, en mouvement': [
+    'image 5321 05acaacddccba0',
     ...GRAIN,
-    'toile 3 780x1024 146 1e22da48e2edd8',
-    'toile 4 780x1024 146 113ccfd3042ee9',
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
+    'toile 5 780x1024 178 0aca779a0d9c92',
+    'toile 6 780x1024 178 03bd0a8d9d6566',
+  ],
+  'de nuit, sur 1897, en mouvement': [
+    'image 4556 012a2ed6a9aa38',
+    ...GRAIN,
+    'toile 3 780x1024 146 1244f8f1627bf7',
+    'toile 4 780x1024 146 1b6bd2fcf33f4d',
   ],
   '1890 bouclée, en haut de 1890, en mouvement': [
-    'image 6542 0d178b4d829f03',
+    'image 6542 11ad06d6e6a2ca',
     ...GRAIN,
-    'toile 3 780x1024 242 17c4df36dc45e1',
-    'toile 4 780x1024 242 182073565237ab',
+    'toile 3 780x1024 242 0e87c36764198e',
+    'toile 4 780x1024 242 17012ecc7f8014',
   ],
 }
 
@@ -427,7 +461,7 @@ describe('la référence de 1890', () => {
     expect(empreintes(jouer(cas))).toEqual(empreintes(jouer(cas)))
   })
 
-  // Sans ce cas, aucune image de la référence ne tirerait au hasard, et la doublure ne garderait rien.
+  // Sans un cas qui tire au hasard, la doublure ne garderait rien : la fête en tire d'image en image.
   // Mutations : le tampon de 1890 retiré du cas de la fête (plus de tirage) ; ses images ramenées
   // à douze (la volée n'est pas encore partie).
   it('tire au hasard dans le cas de la fête, par la doublure', () => {
