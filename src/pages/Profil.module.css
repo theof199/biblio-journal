@@ -7,11 +7,18 @@
 }
 
 .page {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: var(--profil-colonnes);
   gap: var(--rythme-section);
-  max-width: var(--profil-largeur-max);
+  /* Les cases d'une rangée n'ont pas la même hauteur : un objet garde la sienne, il ne s'étire pas. */
+  align-items: start;
+  max-width: var(--profil-largeur-page);
   margin: 0 auto;
+}
+
+/* `min-width: 0` : sans lui, un objet plus large que sa piste l'élargirait au lieu de rester à sa taille. */
+.page > * {
+  min-width: 0;
 }
 
 .objets {

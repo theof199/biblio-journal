@@ -244,6 +244,8 @@
   --identite: var(--couleur-accent);
   --part: 0; /* la part du maximum, de 0 à 1 : chaque colonne de diodes et chaque billet pose la sienne, en ligne (`Vumetre.tsx`, `Tickets.tsx`) */
   --profil-largeur-max: 22.375rem; /* une colonne à la taille d'un téléphone : les écrans larges ne l'étirent pas */
+  --profil-largeur-page: var(--profil-largeur-max); /* celle du profil : sur grand écran, trois colonnes de cette largeur */
+  --profil-colonnes: minmax(0, 1fr); /* les colonnes du profil : une sur téléphone, trois sur grand écran */
   --rythme-section: 3.5rem; /* entre deux sections */
   --rythme-libelle: 1.25rem; /* de l'étiquette d'une section à son objet */
   --rythme-objet: 1.5rem; /* d'un objet à celui qui le suit dans la même section */
@@ -742,6 +744,7 @@
   --largeur-page: var(--largeur-contenu); /* celle d'une page qui s'élargit sur grand écran */
   --accueil-colonnes: minmax(0, 1fr); /* les colonnes de l'accueil : une sur téléphone, l'entrée à gauche et le journal sur grand écran */
   --accueil-entree-position: static; /* l'entrée ne suit le défilement que sur grand écran */
+  --fiche-bouton-alignement: stretch; /* les boutons d'une fiche prennent la largeur du téléphone ; sur grand écran, la leur */
   --barre-onglets-hauteur: 3.75rem; /* sans la zone sûre, ajoutée par la coque */
   --barre-onglets-icone: 24px;
   --barre-onglets-icone-trait: 1.75; /* l'épaisseur du trait des icônes */
@@ -810,6 +813,9 @@
     --grille-planche-colonnes: repeat(6, minmax(0, 1fr));
     --accueil-colonnes: var(--eventail-largeur-max) minmax(0, 1fr);
     --accueil-entree-position: sticky;
+    --profil-largeur-page: calc(3 * var(--profil-largeur-max) + 2 * var(--rythme-section));
+    --profil-colonnes: repeat(3, minmax(0, 1fr));
+    --fiche-bouton-alignement: flex-start;
   }
 }
 

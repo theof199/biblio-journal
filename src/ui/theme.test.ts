@@ -9,6 +9,7 @@ import suivis from '../pages/Suivis.module.css?raw'
 import mesFilms from '../pages/MesFilms.module.css?raw'
 import pageRealisateur from '../pages/PageRealisateur.module.css?raw'
 import pageSaga from '../pages/PageSaga.module.css?raw'
+import profil from '../pages/Profil.module.css?raw'
 import recherche from '../pages/Recherche.module.css?raw'
 import formulaire from '../pages/Formulaire.module.css?raw'
 import rangeeDeNote from '../formulaire/RangeeDeNote.module.css?raw'
@@ -306,6 +307,24 @@ describe('les colonnes de l’accueil', () => {
   it('le téléphone garde une seule colonne', () => {
     const valeur = regle(theme, ':root').match(/--accueil-colonnes:\s*([^;]+);/)?.[1]
     expect(valeur).toBe('minmax(0, 1fr)')
+  })
+})
+
+describe('les colonnes du profil', () => {
+  // Les enfants de la grille sont la carte, les sections et le ticket : sans `min-width: 0`, un objet plus
+  // large que sa piste l'élargirait.
+  it('les objets de la page peuvent rétrécir sous leur contenu', () => {
+    expect(regle(profil, '.page > *')).toMatch(/min-width:\s*0/)
+  })
+
+  it('le téléphone garde une seule colonne', () => {
+    const valeur = regle(theme, ':root').match(/--profil-colonnes:\s*([^;]+);/)?.[1]
+    expect(valeur).toBe('minmax(0, 1fr)')
+  })
+
+  it('la colonne du téléphone ne grandit pas', () => {
+    const valeur = regle(theme, ':root').match(/--profil-largeur-page:\s*([^;]+);/)?.[1]
+    expect(valeur).toBe('var(--profil-largeur-max)')
   })
 })
 
