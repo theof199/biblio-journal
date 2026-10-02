@@ -40,7 +40,9 @@ chiffres sur fond gris. Si une maquette ressemble à n'importe quelle app, elle 
 - La matière se dessine en CSS (dégradés, ombres, `clip-path`), jamais en image, sauf les affiches
   des films et les images du Voyage.
 - Un seul objet par section, à la taille d'un téléphone (390 px, et 320 px doit tenir) : l'app se
-  lit d'une main, les écrans larges n'ont qu'une colonne plus aérée.
+  lit d'une main. Hors du Voyage, au-delà de 64 rem, les pages prennent la largeur : les grilles
+  gagnent des colonnes, l'accueil et le profil se rangent en colonnes, mais chaque objet garde sa
+  taille. Le Voyage garde sa mise en page de téléphone.
 
 ## Le jour et la nuit
 

@@ -426,6 +426,14 @@ du bord ; dans un onglet du navigateur, `dvh` reste. Le texte, lui, garde sa tai
 quand le téléphone tourne (`text-size-adjust: 100%` sur `html`, onglet compris) : sans cela iOS le grossit
 en paysage et ne le ramène pas toujours au retour.
 
+Hors du Voyage, les pages prennent la largeur d'un écran de bureau : au-delà de 64rem, un seul bloc
+`@media` de `theme.css` redéfinit des jetons de mise en page (`--largeur-page`, les `--grille-*-colonnes`,
+`--accueil-colonnes`, `--profil-colonnes`…), et aucune feuille de composant ne porte de point de
+rupture. Une page qui devient une grille garde, sur téléphone, une unique piste `minmax(0, 1fr)`, et ses
+éléments portent `min-width: 0` ; `theme.test.ts` y veille. Les pages dessinées comme un objet (le
+billet du critique, la coupure de presse, le ticket de caisse, le panneau de connexion) gardent
+`--largeur-contenu` ou leur largeur propre : elles ne s'étirent pas. Le Voyage n'en reçoit rien.
+
 Le fronton de l'accueil change d'enseigne avec la décennie du film qu'il annonce (`data-decennie`
 sur son lien, `decennieDeAnnee` dans `src/accueil/fronton.ts`) : le cadre et ses ampoules restent, le
 panneau, l'encre et la police du titre sont ceux de la décennie, un bloc `[data-decennie='…']` par
