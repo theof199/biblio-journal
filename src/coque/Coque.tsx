@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { Suspense, useLayoutEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   IconArmchair,
@@ -8,7 +8,9 @@ import {
   IconTicket,
   type TablerIcon,
 } from '@tabler/icons-react'
+import PageEnAttente from '../session/PageEnAttente'
 import { useDefilementMemorise } from './defilement'
+import { Filet } from './Filet'
 import styles from './Coque.module.css'
 
 export interface Onglet {
@@ -53,7 +55,12 @@ export default function Coque() {
   return (
     <div className={styles.coque}>
       <main ref={contenu} className={styles.contenu}>
-        <Outlet />
+        {/* Le repli est ici et non plus haut : la barre reste à l'écran pendant qu'un morceau (le Voyage) se charge. */}
+        <Filet key={pathname}>
+          <Suspense fallback={<PageEnAttente />}>
+            <Outlet />
+          </Suspense>
+        </Filet>
       </main>
 
       <nav className={styles.barre} aria-label="Onglets">

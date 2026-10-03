@@ -361,8 +361,11 @@ describe('la manivelle', () => {
     // Un toucher bref.
     expect(tirer(plaque, 10).fin).toBe(true)
     fireEvent.click(plaque)
-    await waitFor(() => expect(screen.queryByRole('heading', { level: 1, name: '1897' })).toBeNull())
-    expect(requetes).toContain('GET /api/me/voyage/tickets')
+    // La page de la décennie est chargée à la demande : sans l'attendre, l'attente de `Suspense`
+    // ferait déjà disparaître le 1897, et la lecture des tickets n'aurait pas encore eu lieu.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Années 1890' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: '1897' })).toBeNull()
+    await waitFor(() => expect(requetes).toContain('GET /api/me/voyage/tickets'))
   })
 
   // Safari et Firefox donnent les `touchmove` d'un doigt qui tremble (Chrome les tait sous sa marge).

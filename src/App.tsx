@@ -8,14 +8,6 @@ import Formulaire from './pages/Formulaire'
 import Fiche from './pages/Fiche'
 import PapierRendu from './pages/PapierRendu'
 import MesFilms from './pages/MesFilms'
-import Carte from './pages/Carte'
-import VoyageAnnee from './pages/VoyageAnnee'
-import VoyageDecennie from './pages/VoyageDecennie'
-import VoyageBoite from './pages/VoyageBoite'
-import VoyageRecherche from './pages/VoyageRecherche'
-import VoyageFilm from './pages/VoyageFilm'
-import VoyageBillet from './pages/VoyageBillet'
-import VoyageSacoche from './pages/VoyageSacoche'
 import Suivis from './pages/Suivis'
 import PageRealisateur from './pages/PageRealisateur'
 import PageSaga from './pages/PageSaga'
@@ -25,6 +17,18 @@ import Profil from './pages/Profil'
 import Caisse from './pages/Caisse'
 import ImportLetterboxd from './pages/ImportLetterboxd'
 import AppariementSensCritique from './pages/AppariementSensCritique'
+import { paresseux } from './pwa/morceau'
+
+// Le Voyage (moteur de la carte, mondes, pages) pèse plus de 40 % du code de l'app : il ne se charge
+// qu'à la première visite d'une de ses pages (`test/decoupage.test.ts` garde qu'aucun import n'y est statique).
+const Carte = paresseux(() => import('./pages/Carte'))
+const VoyageAnnee = paresseux(() => import('./pages/VoyageAnnee'))
+const VoyageDecennie = paresseux(() => import('./pages/VoyageDecennie'))
+const VoyageBoite = paresseux(() => import('./pages/VoyageBoite'))
+const VoyageRecherche = paresseux(() => import('./pages/VoyageRecherche'))
+const VoyageFilm = paresseux(() => import('./pages/VoyageFilm'))
+const VoyageBillet = paresseux(() => import('./pages/VoyageBillet'))
+const VoyageSacoche = paresseux(() => import('./pages/VoyageSacoche'))
 
 export default function App() {
   return (

@@ -6,6 +6,20 @@ import { createQueryClient } from '../api/queryClient'
 import { exemple } from './contrat'
 import { json, servir } from './serveur'
 
+// Les pages du Voyage se chargent à la demande dans l'app (`paresseux`) : sans ce chargement
+// préalable, le premier test d'un fichier paierait la compilation de tout le Voyage dans le délai
+// d'un `waitFor`. Le test attend toujours la page, il ne compte plus la compilation.
+await Promise.all([
+  import('../pages/Carte'),
+  import('../pages/VoyageAnnee'),
+  import('../pages/VoyageDecennie'),
+  import('../pages/VoyageBoite'),
+  import('../pages/VoyageRecherche'),
+  import('../pages/VoyageFilm'),
+  import('../pages/VoyageBillet'),
+  import('../pages/VoyageSacoche'),
+])
+
 export const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)
 
 type Routes = Record<string, (init: RequestInit) => Response | Promise<Response>>
