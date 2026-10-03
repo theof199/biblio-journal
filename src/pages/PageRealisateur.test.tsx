@@ -18,6 +18,8 @@ const PAGE_SUIVI = exemple<RealisateurPage>('/me/realisateurs/{tmdbId}/page', 'g
 const PAGE_NON_SUIVI: RealisateurPage = { ...PAGE_SUIVI, suivi: false }
 const PERDU = { ...PAGE_SUIVI.films[0]!, tmdb_id: 999, title: 'Film perdu', year: 2001, vu: null, introuvable: true }
 const PAGE_AVEC_PERDU: RealisateurPage = { ...PAGE_SUIVI, films: [PAGE_SUIVI.films[0]!, PERDU] }
+const COURT = { ...PAGE_SUIVI.films[0]!, tmdb_id: 111, title: 'Un court', year: 2005, court: true, vu: null, voyage: null }
+const PAGE_AVEC_COURT: RealisateurPage = { ...PAGE_SUIVI, films: [PAGE_SUIVI.films[0]!, COURT] }
 const PAGE_SANS_FILMS: RealisateurPage = { ...PAGE_SUIVI, films: [] }
 /** Inception, que l'exemple du contrat place dans une salle de 2010 (`voyage`). */
 const INCEPTION = PAGE_SUIVI.films[0]!
@@ -43,7 +45,11 @@ function monter(tmdbId = 525, client = createQueryClient()) {
 }
 
 describe('la page d’un réalisateur', () => {
-  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    // Le mode de compte est gardé sur l'appareil : aucun test ne doit hériter du choix d'un autre.
+    localStorage.clear()
+  })
   afterEach(() => vi.unstubAllGlobals())
 
   it('affiche la fiche et la filmographie, la série écartée', async () => {
@@ -163,6 +169,118 @@ describe('la page d’un réalisateur', () => {
     const train = await screen.findByRole('link', { name: (n) => n.includes('L’Arrivée d’un train') })
     expect(within(train).getByText('· Voyage 1896')).toBeInTheDocument()
     expect(within(screen.getByRole('link', { name: (n) => n.includes('Un film des Suivis') })).queryByText(/Voyage/)).toBeNull()
+  })
+
+  it('range les longs métrages et les courts sous leur titre, les courts hors de la liste des longs', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_COURT) })
+    monter()
+
+    const longs = (await screen.findByRole('heading', { level: 2, name: 'Longs métrages' })).closest('section')!
+    const courts = screen.getByRole('heading', { level: 2, name: 'Courts métrages' }).closest('section')!
+    expect(within(longs).getByText('Inception (2010)')).toBeInTheDocument()
+    // Mutation : sans séparation, le court resterait dans la liste des longs.
+    expect(within(longs).queryByText('Un court (2005)')).not.toBeInTheDocument()
+    expect(within(courts).getByText('Un court (2005)')).toBeInTheDocument()
+    expect(within(courts).queryByText('Inception (2010)')).not.toBeInTheDocument()
+  })
+
+  it('sans court, ne montre pas le titre « Courts métrages »', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_SUIVI) })
+    monter()
+
+    await screen.findByRole('heading', { level: 2, name: 'Longs métrages' })
+    // Mutation : un titre posé sans condition resterait au-dessus d'une liste vide.
+    expect(screen.queryByRole('heading', { name: 'Courts métrages' })).not.toBeInTheDocument()
+  })
+
+  it('par défaut compte longs et courts séparément', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_COURT) })
+    monter()
+
+    expect(await screen.findByText('1 vus sur 1 · courts 0 sur 1')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'séparément' })).toBeChecked()
+  })
+
+  it('choisir « ensemble » additionne longs et courts', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_COURT) })
+    monter()
+
+    fireEvent.click(await screen.findByRole('radio', { name: 'ensemble' }))
+
+    // Mutation : un choix qui ne change pas le compte laisserait « courts 0 sur 1 ».
+    expect(screen.getByText('1 vus sur 2')).toBeInTheDocument()
+  })
+
+  it('choisir « longs seulement » ne compte que les longs', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_COURT) })
+    monter()
+
+    fireEvent.click(await screen.findByRole('radio', { name: 'longs seulement' }))
+
+    expect(screen.getByText('1 vus sur 1')).toBeInTheDocument()
+    expect(screen.queryByText(/courts 0 sur 1/)).not.toBeInTheDocument()
+  })
+
+  it('le choix du compte est retenu au retour sur la page', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_COURT) })
+    const premiere = monter()
+    fireEvent.click(await screen.findByRole('radio', { name: 'ensemble' }))
+    premiere.unmount()
+
+    monter()
+
+    // Mutation : un choix qui ne s'écrit pas, ou une lecture qui ignore la mémoire, rendrait « séparément ».
+    expect(await screen.findByRole('radio', { name: 'ensemble' })).toBeChecked()
+    expect(screen.getByText('1 vus sur 2')).toBeInTheDocument()
+  })
+
+  it('le sceau suit le compte : complet sur les longs, il n’apparaît qu’en « longs seulement »', async () => {
+    servir({ 'GET /api/me/realisateurs/525/page': () => json(PAGE_AVEC_COURT) })
+    monter()
+
+    await screen.findByRole('heading', { name: 'Christopher Nolan' })
+    // Mutation : un sceau toujours calculé sur tous les films ne s'allumerait jamais ici.
+    expect(screen.queryByRole('img', { name: 'Rétrospective complète' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'longs seulement' }))
+    expect(screen.getByRole('img', { name: 'Rétrospective complète' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'ensemble' }))
+    expect(screen.queryByRole('img', { name: 'Rétrospective complète' })).not.toBeInTheDocument()
+  })
+
+  it('« Sur le Plex » marque les films du Plex, vus ou à voir, et eux seuls', async () => {
+    const SUR_PLEX_A_VOIR = { ...COURT, tmdb_id: 112, title: 'Plex à voir', sur_le_plex: true, court: false }
+    servir({
+      'GET /api/me/realisateurs/525/page': () =>
+        json({ ...PAGE_SUIVI, films: [{ ...INCEPTION, sur_le_plex: true }, SUR_PLEX_A_VOIR, { ...COURT, title: 'Hors Plex' }] }),
+    })
+    monter()
+
+    const ligneDe = async (titre: string) => within(await screen.findByRole('link', { name: (n) => n.includes(titre) }))
+    // Mutation : le marqueur réservé aux films à voir ferait manquer Inception, déjà vu.
+    expect((await ligneDe('Inception')).getByText(/^Vu · 9\/10 · Sur le Plex$/)).toBeInTheDocument()
+    expect((await ligneDe('Plex à voir')).getByText('À voir · Sur le Plex')).toBeInTheDocument()
+    // Mutation : un marqueur posé sur toutes les lignes.
+    expect((await ligneDe('Hors Plex')).queryByText(/Sur le Plex/)).not.toBeInTheDocument()
+  })
+
+  it('le lien « Ouvrir dans Plex » n’existe qu’avec un `plex_url`, s’ouvre dans un autre onglet, hors du lien de la ligne', async () => {
+    const URL_PLEX = 'https://app.plex.tv/desktop/#!/server/abc/details?key=/library/metadata/42'
+    servir({
+      'GET /api/me/realisateurs/525/page': () =>
+        json({ ...PAGE_SUIVI, films: [{ ...INCEPTION, plex_url: URL_PLEX }, { ...COURT, court: false, title: 'Sans Plex' }] }),
+    })
+    monter()
+
+    const lien = await screen.findByRole('link', { name: 'Ouvrir Inception dans Plex' })
+    // Mutation : l'adresse d'un autre champ, ou un lien sans `target`/`rel` ouvrirait Plex dans la page du journal.
+    expect(lien).toHaveAttribute('href', URL_PLEX)
+    expect(lien).toHaveAttribute('target', '_blank')
+    expect(lien).toHaveAttribute('rel', 'noopener noreferrer')
+    // Mutation : le lien posé dans celui de la ligne (un lien emboîté dans un lien).
+    expect(lien.closest('a:not([target])')).toBeNull()
+    expect(lien.parentElement?.tagName).toBe('LI')
+    // Mutation : un lien rendu sans condition apparaîtrait aussi sur le film sans `plex_url`.
+    expect(screen.queryByLabelText('Ouvrir Sans Plex dans Plex')).not.toBeInTheDocument()
   })
 
   it('ne plus suivre invalide le cache : la page relue montre « Suivre »', async () => {

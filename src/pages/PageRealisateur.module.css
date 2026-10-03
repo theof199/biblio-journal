@@ -80,6 +80,70 @@
   min-width: 0;
 }
 
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.titreSection {
+  margin: 0;
+  font-size: var(--taille-l);
+}
+
+.ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.ligne > .film {
+  flex: 1;
+  min-width: 0;
+}
+
+.boutonPlex {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-1);
+  min-width: var(--cible-tactile);
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-accent);
+  border-radius: var(--rayon-m);
+  color: var(--couleur-accent);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-decoration: none;
+}
+
+.fieldsetDeCompte {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--taille-s);
+}
+
+.legendeDeCompte {
+  padding: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.choixDeCompte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--espace-3);
+}
+
+.choix {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-1);
+  min-height: var(--cible-tactile);
+}
+
 .film {
   display: flex;
   align-items: center;
