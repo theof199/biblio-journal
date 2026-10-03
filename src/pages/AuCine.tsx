@@ -231,7 +231,7 @@ function Tuile({
   const contenu = (
     <>
       <div className={styles.jaquette}>
-        <Affiche src={coverUrl} titre={title} taille="ligne" className={styles.afficheTuile} />
+        <Affiche src={coverUrl} titre={title} taille="ligne" className={styles.afficheTuile} chargement="lazy" />
         {dejaVu ? (
           <span className={styles.coche} aria-label="Déjà dans ton journal">
             <IconCheck aria-hidden="true" className={styles.iconeCoche} />
@@ -348,7 +348,7 @@ function LigneEnAttente() {
 function LigneSeance({ item }: { item: JournalItem }) {
   return (
     <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: '/au-cine' }} className={styles.ligne}>
-      <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} taille="ligne" />
+      <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} taille="ligne" chargement="lazy" />
       <div className={styles.infosLigne}>
         <p className={styles.titreLigne}>{item.media.title}</p>
         <p className={styles.sousTitreLigne}>{sousTitre(item.media.director, item.media.year)}</p>

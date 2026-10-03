@@ -305,7 +305,7 @@ function LigneFilm({ item, catalogue }: { item: JournalItem; catalogue: Reaction
   const mots = motsReactions(item.carnet.reactions, catalogue)
   return (
     <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: CHEMIN_MES_FILMS }} className={styles.ligne}>
-      <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} taille="ligne" />
+      <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} taille="ligne" chargement="lazy" />
       <div className={styles.infosLigne}>
         <p className={styles.titreLigne}>{item.media.title}</p>
         <p className={styles.sousTitreLigne}>{sousTitre(item.media.director, item.media.year)}</p>

@@ -191,7 +191,7 @@ export default function PageRealisateur() {
           {filmsAffiches.map((film) => (
             <li key={film.tmdb_id}>
               <Link {...destinationFilmRealisateur(film, { tmdb_id: id, name: fiche.name })} className={styles.film}>
-                <Affiche src={film.cover_url} titre={film.title} taille="ligne" />
+                <Affiche src={film.cover_url} titre={film.title} taille="ligne" chargement="lazy" />
                 <div className={styles.infosFilm}>
                   <p className={styles.titreFilm}>
                     {film.title}

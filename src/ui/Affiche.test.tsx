@@ -19,6 +19,27 @@ describe('Affiche', () => {
     expect(container.querySelector('img')).toHaveClass(styles.image!)
   })
 
+  // Mutation : retirer `decoding="async"` de l'image.
+  it('décode l’image hors du fil principal', () => {
+    const { container } = render(<Affiche src="/a.jpg" titre="Alien" />)
+
+    expect(container.querySelector('img')).toHaveAttribute('decoding', 'async')
+  })
+
+  // Mutation : le défaut `chargement = 'lazy'` : les affiches du haut de l'accueil attendraient le défilement.
+  it('charge l’image tout de suite par défaut : celles du premier écran ne se diffèrent pas', () => {
+    const { container } = render(<Affiche src="/a.jpg" titre="Alien" />)
+
+    expect(container.querySelector('img')).toHaveAttribute('loading', 'eager')
+  })
+
+  // Mutation : `loading={chargement}` retiré de l'image.
+  it('charge l’image à l’approche de l’écran quand la liste le demande', () => {
+    const { container } = render(<Affiche src="/a.jpg" titre="Alien" chargement="lazy" />)
+
+    expect(container.querySelector('img')).toHaveAttribute('loading', 'lazy')
+  })
+
   it('sans image, montre son substitut à la place du titre caché', () => {
     const { container } = render(<Affiche src={null} titre="Alien" substitut={<p>Enseigne</p>} />)
 

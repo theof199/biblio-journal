@@ -124,7 +124,7 @@ function AjouterFilm({ onChoisir, desactive }: { onChoisir: (filmId: number) => 
           <ul className={styles.liste}>
             {resultats.map((resultat) => (
               <li key={resultat.external_id} className={styles.ligneFilm}>
-                <Affiche src={resultat.cover_url} titre={resultat.title} taille="ligne" />
+                <Affiche src={resultat.cover_url} titre={resultat.title} taille="ligne" chargement="lazy" />
                 <div className={styles.infosFilm}>
                   <p className={styles.titreFilm}>{resultat.title}</p>
                   <p className={styles.etatFilm}>{sousTitre(resultat.metadata.director, resultat.year)}</p>
@@ -304,7 +304,7 @@ export default function PageSaga() {
           {filmsAffiches.map((film) => (
             <li key={film.tmdb_id} className={styles.ligneFilm}>
               <Link {...destinationFilmSaga(film)} className={styles.film}>
-                <Affiche src={film.cover_url} titre={film.title} taille="ligne" />
+                <Affiche src={film.cover_url} titre={film.title} taille="ligne" chargement="lazy" />
                 <div className={styles.infosFilm}>
                   <p className={styles.titreFilm}>
                     {film.title}

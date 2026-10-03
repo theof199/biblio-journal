@@ -30,7 +30,7 @@ export default function Programme({ monde, annee, film, programme }: Props) {
       <ul className={`${styles.bobines} ${TRAITEMENT[monde.traitement.affiches]}`}>
         {programme.bobines.map((b) => (
           <li key={b.tmdb_id} className={styles.bobine}>
-            {b.cover_url ? <img src={b.cover_url} alt="" loading="lazy" /> : <span className={styles.sansImage} />}
+            {b.cover_url ? <img src={b.cover_url} alt="" loading="lazy" decoding="async" /> : <span className={styles.sansImage} />}
             <span className={styles.texte}>
               <b>{b.title}</b>
               <small>{`${dureeLisible(b.duree_min)} · ${etiquetteEtat(b.etat, perdu)}`}</small>

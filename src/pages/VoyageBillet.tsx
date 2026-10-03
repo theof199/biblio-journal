@@ -363,7 +363,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     <div className={styles.notation}>
       <div className={styles.tete}>
         <span className={`${styles.cab} ${TRAITEMENT[monde.traitement.affiches]}`}>
-          {couverture ? <img src={couverture} alt="" /> : <span className={styles.sansImage} />}
+          {couverture ? <img src={couverture} alt="" decoding="async" /> : <span className={styles.sansImage} />}
         </span>
         <div>
           <span className={styles.sc}>Enregistrer un visionnage</span>

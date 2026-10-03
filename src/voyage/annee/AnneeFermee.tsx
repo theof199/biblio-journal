@@ -99,7 +99,7 @@ export default function AnneeFermee({ variante, monde, annee, voyage: v, profond
             {vus.map((item) => (
               <li key={item.entry.id}>
                 <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: `/voyage/${annee}` }} className={styles.cab}>
-                  {item.media.cover_url ? <img src={item.media.cover_url} alt="" /> : <span className={styles.sansImage} />}
+                  {item.media.cover_url ? <img src={item.media.cover_url} alt="" loading="lazy" decoding="async" /> : <span className={styles.sansImage} />}
                   <span className={styles.t}>{item.media.title}</span>
                   <span className={styles.e}>{item.entry.rating !== null ? `vu · ${item.entry.rating}/10` : 'vu'}</span>
                 </Link>

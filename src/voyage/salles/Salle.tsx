@@ -29,7 +29,7 @@ function Affiche({ film, annee, monde }: { film: FilmDeSalle; annee: number; mon
         className={`${styles.cab} ${film.etat === 'introuvable' ? styles.perdu : ''}`}
         aria-label={`${film.title}, ${etat}`}
       >
-        {film.cover_url ? <img src={film.cover_url} alt="" loading="lazy" /> : <span className={styles.sansImage} />}
+        {film.cover_url ? <img src={film.cover_url} alt="" loading="lazy" decoding="async" /> : <span className={styles.sansImage} />}
         {film.etat === 'vu' && film.note !== null ? (
           <span className={styles.tamponNote} aria-hidden="true">
             {film.note}

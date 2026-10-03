@@ -270,7 +270,7 @@ function LigneRapport({ ligne, tacheId, resolution, onResolue }: PropsLigne) {
               disabled={enregistrement.isPending}
               onClick={() => enregistrement.mutate(c)}
             >
-              <Affiche src={c.cover_url} titre={c.title} taille="ligne" />
+              <Affiche src={c.cover_url} titre={c.title} taille="ligne" chargement="lazy" />
               <span className={styles.candidatTexte}>
                 <span>{titreAnnee(c.title, c.year)}</span>
                 {c.original_title && c.original_title !== c.title ? (

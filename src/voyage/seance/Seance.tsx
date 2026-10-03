@@ -215,7 +215,7 @@ function Partie({ monde, annee, role, film }: { monde: Monde; annee: number; rol
   const etat = etiquetteEtat(film.etat, monde.pages.mots.introuvable)
   return (
     <div className={styles.partie}>
-      <span className={styles.cab}>{film.cover_url ? <img src={film.cover_url} alt="" /> : <span className={styles.sansImage} />}</span>
+      <span className={styles.cab}>{film.cover_url ? <img src={film.cover_url} alt="" decoding="async" /> : <span className={styles.sansImage} />}</span>
       <div>
         <span className={styles.role}>{role}</span>
         <b>{film.title}</b>
@@ -288,7 +288,7 @@ function Remplacements({ annee, seance, morceau, groupes, monde, onFermer }: Pro
             {g.candidats.map((c) => (
               <li key={`${c.filmId}-${c.type}-${c.tmdbId}`}>
                 <button type="button" className={`${styles.candidat} ${c.type === 'bobine' ? styles.bobine : ''}`} disabled={occupe} onClick={() => onChoisir(c)}>
-                  {c.affiche ? <img src={c.affiche} alt="" /> : <span className={styles.sansImage} />}
+                  {c.affiche ? <img src={c.affiche} alt="" loading="lazy" decoding="async" /> : <span className={styles.sansImage} />}
                   <span>
                     {c.titre}
                     <small>{`${c.type === 'bobine' ? 'bobine · ' : ''}${etiquetteEtat(c.etat, monde.pages.mots.introuvable)}`}</small>

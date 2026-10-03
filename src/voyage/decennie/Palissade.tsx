@@ -17,7 +17,7 @@ export default function Palissade({ monde, panneaux }: { monde: Monde; panneaux:
       {panneaux.map((p) => (
         <li key={p.annee} className={p.enAvance ? `${styles.panneau} ${styles.avance}` : styles.panneau}>
           <span className={styles.colle}>
-            {p.affiches.length > 0 ? p.affiches.map((url) => <img key={url} src={url} alt="" />) : <span className={styles.vide}>{m.decennie.prochainement}</span>}
+            {p.affiches.length > 0 ? p.affiches.map((url) => <img key={url} src={url} alt="" loading="lazy" decoding="async" />) : <span className={styles.vide}>{m.decennie.prochainement}</span>}
             {p.plus > 0 ? <span className={styles.plus}>{`+${p.plus}`}</span> : null}
           </span>
           <span className={styles.an}>{p.annee}</span>

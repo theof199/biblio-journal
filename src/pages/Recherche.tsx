@@ -54,6 +54,7 @@ function AfficheResultat({
         <Affiche
           src={candidat.cover_url}
           titre={candidat.title}
+          chargement="lazy"
           substitut={
             <span className={styles.sansAffiche} aria-hidden="true">
               {candidat.title}

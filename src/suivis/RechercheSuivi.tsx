@@ -144,7 +144,7 @@ function Groupe({
           const dejaSuivi = deja.has(resultat.tmdb_id)
           return (
             <li key={resultat.tmdb_id} className={styles.resultat}>
-              <Affiche src={resultat.image_url} titre={resultat.name} taille="ligne" />
+              <Affiche src={resultat.image_url} titre={resultat.name} taille="ligne" chargement="lazy" />
               <span className={styles.nom}>{resultat.name}</span>
               <button
                 type="button"

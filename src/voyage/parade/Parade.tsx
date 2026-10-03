@@ -150,7 +150,7 @@ function MarcheDuPodium({ place, marche, onOuvrir, onVider }: PropsMarche) {
     >
       {marche ? (
         <span className={styles.cab}>
-          {marche.cover_url ? <img src={marche.cover_url} alt="" /> : <span className={styles.sansImage} />}
+          {marche.cover_url ? <img src={marche.cover_url} alt="" decoding="async" /> : <span className={styles.sansImage} />}
           <span className={styles.t}>{marche.title}</span>
         </span>
       ) : (
@@ -201,7 +201,7 @@ function ChoixDeLaMarche({ annee, place, marche, salles, onFermer }: PropsChoix)
           ) : (
             <li key={l.candidat.type === 'film' ? `f${l.candidat.tmdbId}` : `p${l.candidat.programmeId}`}>
               <button type="button" className={styles.candidat} aria-pressed={l.occupant} disabled={occupe} onClick={() => onChoisir(l.candidat)}>
-                {l.candidat.affiche ? <img src={l.candidat.affiche} alt="" /> : <span className={styles.sansImage} />}
+                {l.candidat.affiche ? <img src={l.candidat.affiche} alt="" loading="lazy" decoding="async" /> : <span className={styles.sansImage} />}
                 <span>
                   {l.candidat.titre}
                   <small>{l.candidat.type === 'programme' ? 'programme vu' : l.candidat.note !== null ? `vu · ${l.candidat.note}/10` : 'vu'}</small>

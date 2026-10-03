@@ -134,7 +134,7 @@ function FilmAChoisir({ film }: { film: FilmAApparier }) {
               disabled={choix.isPending}
               onClick={() => choix.mutate(candidat.product_id)}
             >
-              <Affiche src={candidat.picture_url} titre={candidat.title} taille="ligne" />
+              <Affiche src={candidat.picture_url} titre={candidat.title} taille="ligne" chargement="lazy" />
               <span className={styles.candidatTexte}>
                 <span>{titreAnnee(candidat.title, candidat.year)}</span>
                 {precisions(candidat).map((precision) => (

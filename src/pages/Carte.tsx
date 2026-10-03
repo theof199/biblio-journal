@@ -467,7 +467,7 @@ export default function Carte() {
           <p>{date.texte}</p>
           {date.image ? (
             <figure>
-              <img src={date.image.url} alt="" />
+              <img src={date.image.url} alt="" decoding="async" />
               <figcaption>{date.image.legende}</figcaption>
             </figure>
           ) : null}

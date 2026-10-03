@@ -45,7 +45,7 @@ export default function Affichette({
       <span className={styles.punaise} aria-hidden="true" />
       <p className={styles.genre}>Rétrospective</p>
       <span className={styles.cadreCliche}>
-        <span className={styles.cliche}>{image ? <img src={image} alt="" /> : null}</span>
+        <span className={styles.cliche}>{image ? <img src={image} alt="" loading="lazy" decoding="async" /> : null}</span>
         {prochain ? (
           <span className={styles.vignette} aria-hidden="true">
             <AfficheSuivi film={prochain} className={styles.afficheVignette} />

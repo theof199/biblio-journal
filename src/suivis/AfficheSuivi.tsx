@@ -5,6 +5,7 @@ import SigneDeFilm from '../accueil/SigneDeFilm'
  * L'affiche d'un film de suivi : sa jaquette, ou, sans jaquette, la petite enseigne de sa décennie
  * (`SigneDeFilm`, celle du journal de l'accueil). L'enseigne se réduit avec le cadre : elle tient
  * aussi bien dans l'affiche de « Ensuite » que dans une case de planche ou la vignette d'un coin.
+ * Toujours en liste ou en grille : l'image se charge à l'approche de l'écran.
  */
 export default function AfficheSuivi({
   film,
@@ -18,6 +19,7 @@ export default function AfficheSuivi({
       src={film.cover_url}
       titre={film.title}
       className={className}
+      chargement="lazy"
       substitut={film.cover_url ? undefined : <SigneDeFilm titre={film.title} annee={film.year} />}
     />
   )
