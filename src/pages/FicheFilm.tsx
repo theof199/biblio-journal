@@ -3,15 +3,30 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { cles } from '../api/cles'
 import { curseurSuivant, itemAuJournal, lireJournal } from '../api/journal'
-import { lireRealisateursDuFilm } from '../api/personnes'
+import { lireFicheReference, lireRealisateursDuFilm } from '../api/personnes'
+import type { OuRegarder } from '../api/personnes'
 import { lireReactions } from '../api/reactions'
 import { demanderFilm, marquerIntrouvable, retirerIntrouvable } from '../api/realisateurs'
 import { candidatDepuisFilmSuivi } from '../formulaire/candidat'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
+import { formatDuree } from '../ui/format'
 import styles from './FicheFilm.module.css'
 
 const LIMITE = 20
+
+/** Les modes de « Où regarder », dans l'ordre où on les cherche : ce qu'on a déjà payé d'abord. */
+const MODES: { cle: 'subscription' | 'rent' | 'buy' | 'free' | 'ads'; libelle: string }[] = [
+  { cle: 'subscription', libelle: 'Abonnement' },
+  { cle: 'rent', libelle: 'Location' },
+  { cle: 'buy', libelle: 'Achat' },
+  { cle: 'free', libelle: 'Gratuit' },
+  { cle: 'ads', libelle: 'Avec publicité' },
+]
+
+function modesNonVides(ouRegarder: OuRegarder) {
+  return MODES.filter((mode) => ouRegarder[mode.cle].length > 0)
+}
 
 /**
  * Un film de filmographie ou de saga, réduit à ce que cette fiche affiche — `FilmRealisateur`
@@ -46,10 +61,16 @@ interface EtatFiche {
 /**
  * La fiche d'un film (reprise de `FicheFilmScreen.kt`) : à ne pas confondre avec la fiche d'un
  * visionnage (`Fiche.tsx`), qui porte le carnet. Celle-ci parle du **média** — nourrie par la ligne
- * de filmographie ou de saga d'où elle s'ouvre (état de navigation, comme `Fiche.tsx`), rien d'autre
- * à charger pour un réalisateur déjà connu. Sur une saga, le réalisateur n'est pas connu d'avance :
+ * de filmographie ou de saga d'où elle s'ouvre (état de navigation, comme `Fiche.tsx`) pour l'en-tête,
+ * le « Vu » et les marques. Sur une saga, le réalisateur n'est pas connu d'avance :
  * `GET /reference/films/{tmdbId}/realisateurs` le résout, comme `NomRealisateurTouchable` sur
  * l'appli.
+ *
+ * Ce que la ligne ne porte pas (durée, genres, synopsis, casting, où regarder) vient de
+ * `GET /reference/films/{tmdbId}`. Cette lecture est secondaire : rien d'autre sur la page ne
+ * l'attend et son échec ne se montre pas, les sections qu'elle nourrit sont simplement absentes.
+ * « Où regarder » ne se montre jamais sans la mention JustWatch, que les conditions de TMDB exigent
+ * sur chaque œuvre.
  *
  * `vu` ne porte que la note et la date de mon visionnage le plus récent (`{ entry_id, rating,
  * finished_at }`, `GET /me/realisateurs/…/films` et `GET /me/sagas/…/films`) — jamais la remarque
@@ -76,6 +97,11 @@ export default function FicheFilm() {
     queryKey: ['realisateurs-du-film', tmdbId],
     queryFn: ({ signal }) => lireRealisateursDuFilm(Number(tmdbId), signal),
     enabled: etat != null && etat.realisateur == null,
+  })
+  const fiche = useQuery({
+    queryKey: cles.ficheReference(Number(tmdbId)),
+    queryFn: ({ signal }) => lireFicheReference(Number(tmdbId), signal),
+    enabled: etat != null,
   })
   // Le journal et les réactions ne servent qu'à un film déjà vu : sans ça, deux appels inutiles
   // partiraient sur chaque film « à voir » de la filmographie.
@@ -160,6 +186,13 @@ export default function FicheFilm() {
   const phrase = (cle: string) => reactions.data?.reactions.find((r) => r.cle === cle)?.phrase ?? cle
   const emoji = (cle: string) => reactions.data?.reactions.find((r) => r.cle === cle)?.emoji ?? ''
 
+  const reference = fiche.data
+  const duree = reference?.runtime_min ? formatDuree(reference.runtime_min) : null
+  const genres = reference?.genres.join(', ') ?? ''
+  const ligneDuree = [duree, genres].filter((morceau) => morceau).join(' · ')
+  const ouRegarder = reference?.availability ?? null
+  const modes = ouRegarder ? modesNonVides(ouRegarder) : []
+
   const marquerCommeVu = () => {
     const nom = realisateurs[0]?.name ?? null
     naviguer('/journal/nouveau', { state: { candidat: candidatDepuisFilmSuivi(film, nom) } })
@@ -193,6 +226,55 @@ export default function FicheFilm() {
           ) : null}
         </div>
       </div>
+
+      {ligneDuree ? <p className={styles.duree}>{ligneDuree}</p> : null}
+      {reference?.summary ? <p className={styles.synopsis}>{reference.summary}</p> : null}
+
+      {reference && reference.cast.length > 0 ? (
+        <section aria-labelledby="titre-casting">
+          <h2 id="titre-casting" className={styles.titreSection}>
+            Casting
+          </h2>
+          <ul className={styles.casting}>
+            {reference.cast.map((tete) => (
+              <li key={`${tete.name}-${tete.character ?? ''}`} className={styles.tete}>
+                {/* Sans portrait, le cadre vide : le nom est dessous, l'annoncer deux fois n'apprend rien. */}
+                <Affiche src={tete.photo_url} titre="" taille="ligne" className={styles.portrait} />
+                <span className={styles.nomTete}>{tete.name}</span>
+                {tete.character ? <span className={styles.role}>{tete.character}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {ouRegarder && modes.length > 0 ? (
+        <section aria-labelledby="titre-ou-regarder">
+          <h2 id="titre-ou-regarder" className={styles.titreSection}>
+            Où regarder
+          </h2>
+          {modes.map((mode) => (
+            <div key={mode.cle} className={styles.mode}>
+              <h3 className={styles.libelleMode}>{mode.libelle}</h3>
+              <ul className={styles.plateformes}>
+                {ouRegarder[mode.cle].map((plateforme) => (
+                  <li key={plateforme.id} className={styles.plateforme}>
+                    {plateforme.logo_url ? (
+                      <img src={plateforme.logo_url} alt="" className={styles.logo} />
+                    ) : null}
+                    {plateforme.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <p className={styles.attribution}>
+            <a href={ouRegarder.attribution.url} target="_blank" rel="noreferrer">
+              {ouRegarder.attribution.text}
+            </a>
+          </p>
+        </section>
+      ) : null}
 
       {film.vu ? (
         <p className={styles.vu}>

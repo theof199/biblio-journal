@@ -10,6 +10,8 @@ export const cles = {
    * carton ne change pas avec le journal, et l'invalidation qui suit une écriture ne le relit pas.
    */
   carton: (tmdbId: number) => ['chroniques', 'film', tmdbId] as const,
+  /** La fiche TMDB d'un film (`GET /reference/films/{tmdbId}`) : indépendante du journal, jamais périmée par une écriture. */
+  ficheReference: (tmdbId: number) => ['reference', 'film', tmdbId] as const,
   journal: ['journal'] as const,
   reactions: ['reactions'] as const,
   stats: ['stats'] as const,

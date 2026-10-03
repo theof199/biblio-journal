@@ -77,3 +77,9 @@ export function moisEnLettres(iso: string): string {
  * comme « Batman : Le Défi » se coupe avant les deux-points et la ligne suivante commence par eux.
  */
 export const espaceInsecable = (texte: string): string => texte.replace(/ (?=[:;?!])/g, '\u00a0')
+
+/** « 2 h 49 », ou « 49 min » sous l'heure ; une heure pile se lit « 2 h 00 », pas « 2 h ». */
+export function formatDuree(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`
+}

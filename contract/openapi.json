@@ -30695,6 +30695,485 @@
         }
       }
     },
+    "/reference/films/{tmdbId}": {
+      "get": {
+        "summary": "La fiche d’un film de TMDB, où regarder compris",
+        "tags": [
+          "réalisateurs"
+        ],
+        "description": "Synopsis, durée, genres, casting et où regarder, pour **n’importe quel film de TMDB** — y compris ceux qui ne sont pas dans la bibliothèque, que `GET /media/{id}` ne sait pas servir. Les quatre premiers champs ont la forme exacte de la fiche (`metadata.cast`, `metadata.runtime_min`, `metadata.genres`, `summary`) ; `availability` est celle de `GET /media/{id}/availability`, attribution JustWatch comprise.\n\n**`availability` peut être nul, et ce n’est pas une erreur** — TMDB injoignable pour cette question, ou aucune plateforme dans le pays configuré. La réponse reste `200`. `404` si `tmdbId` est un film que TMDB ne connaît pas.\n\nSous `/reference`, pas `/me` : le résultat ne dépend d’aucun compte, et rien n’est écrit en base — le film n’entre pas dans la bibliothèque. Le film est mémorisé en Redis 7 jours ; la disponibilité n’en fait pas partie, elle a son propre cache de 6 h.\n\n`503` si `TMDB_API_KEY` n’est pas renseignée sur ce serveur.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "path",
+            "name": "tmdbId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Synopsis, durée, genres, casting et où regarder un film de TMDB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Synopsis, nul si TMDB n’en donne pas"
+                    },
+                    "runtime_min": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Durée en minutes, nulle si TMDB ne la donne pas"
+                    },
+                    "genres": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Genres, dans l’ordre de TMDB"
+                    },
+                    "cast": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "character": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Rôle interprété, nul si la source ne le donne pas"
+                          },
+                          "photo_url": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uri"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Portrait, déjà en URL absolue"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "character",
+                          "photo_url"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Membre du casting"
+                      },
+                      "description": "Têtes d’affiche, dans l’ordre du générique — la même liste que sur la fiche"
+                    },
+                    "availability": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "region": {
+                              "type": "string",
+                              "minLength": 2,
+                              "maxLength": 2,
+                              "description": "Pays interrogé, code ISO 3166-1 — « FR » par défaut"
+                            },
+                            "link": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Page « où regarder » de TMDB pour cette œuvre"
+                            },
+                            "subscription": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Identifiant TMDB de la plateforme"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Nom affichable — « Netflix », « Canal+ »"
+                                  },
+                                  "logo_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Logo carré, servi par le CDN de TMDB"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "logo_url"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Plateforme de diffusion"
+                              },
+                              "description": "Compris dans un abonnement"
+                            },
+                            "rent": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Identifiant TMDB de la plateforme"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Nom affichable — « Netflix », « Canal+ »"
+                                  },
+                                  "logo_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Logo carré, servi par le CDN de TMDB"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "logo_url"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Plateforme de diffusion"
+                              },
+                              "description": "En location"
+                            },
+                            "buy": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Identifiant TMDB de la plateforme"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Nom affichable — « Netflix », « Canal+ »"
+                                  },
+                                  "logo_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Logo carré, servi par le CDN de TMDB"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "logo_url"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Plateforme de diffusion"
+                              },
+                              "description": "À l’achat"
+                            },
+                            "free": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Identifiant TMDB de la plateforme"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Nom affichable — « Netflix », « Canal+ »"
+                                  },
+                                  "logo_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Logo carré, servi par le CDN de TMDB"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "logo_url"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Plateforme de diffusion"
+                              },
+                              "description": "Gratuit"
+                            },
+                            "ads": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Identifiant TMDB de la plateforme"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Nom affichable — « Netflix », « Canal+ »"
+                                  },
+                                  "logo_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Logo carré, servi par le CDN de TMDB"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "logo_url"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Plateforme de diffusion"
+                              },
+                              "description": "Gratuit avec publicité"
+                            },
+                            "attribution": {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "JustWatch"
+                                  ]
+                                },
+                                "text": {
+                                  "type": "string",
+                                  "description": "Mention à afficher telle quelle, à côté des plateformes"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "Lien vers JustWatch, à poser sur la mention"
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "text",
+                                "url"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Attribution obligatoire des données de disponibilité"
+                            },
+                            "fetched_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "region",
+                            "link",
+                            "subscription",
+                            "rent",
+                            "buy",
+                            "free",
+                            "ads",
+                            "attribution",
+                            "fetched_at"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Où regarder une œuvre, par mode"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Où regarder le film dans le pays configuré, avec l’attribution à JustWatch. Nul — et ce n’est pas une erreur — si TMDB est injoignable ou si aucune plateforme ne le propose"
+                    }
+                  },
+                  "required": [
+                    "summary",
+                    "runtime_min",
+                    "genres",
+                    "cast",
+                    "availability"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Synopsis, durée, genres, casting et où regarder un film de TMDB"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "summary": "Dom Cobb est un voleur expérimenté dans l’art périlleux de l’extraction.",
+                      "runtime_min": 148,
+                      "genres": [
+                        "Action",
+                        "Science-Fiction"
+                      ],
+                      "cast": [
+                        {
+                          "name": "Leonardo DiCaprio",
+                          "character": "Dom Cobb",
+                          "photo_url": "https://image.tmdb.org/t/p/w185/wo2hJpn04vbtmh0B9utCFdsQhxM.jpg"
+                        },
+                        {
+                          "name": "Joseph Gordon-Levitt",
+                          "character": "Arthur",
+                          "photo_url": "https://image.tmdb.org/t/p/w185/4U9G4YwTlIEbAymBaseltS38eH4.jpg"
+                        }
+                      ],
+                      "availability": {
+                        "region": "FR",
+                        "link": "https://www.themoviedb.org/tv/1399/watch?locale=FR",
+                        "subscription": [
+                          {
+                            "id": 8,
+                            "name": "Netflix",
+                            "logo_url": "https://image.tmdb.org/t/p/w92/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg"
+                          },
+                          {
+                            "id": 381,
+                            "name": "Canal+",
+                            "logo_url": "https://image.tmdb.org/t/p/w92/eZ4ln5Zn2iyeBnQq3P8OwUUFqfx.jpg"
+                          }
+                        ],
+                        "rent": [],
+                        "buy": [
+                          {
+                            "id": 2,
+                            "name": "Apple TV",
+                            "logo_url": "https://image.tmdb.org/t/p/w92/peURlLlr8jggOwK53fJ5wdQl05y.jpg"
+                          }
+                        ],
+                        "free": [],
+                        "ads": [],
+                        "attribution": {
+                          "source": "JustWatch",
+                          "text": "Données de disponibilité fournies par JustWatch",
+                          "url": "https://www.justwatch.com/"
+                        },
+                        "fetched_at": "2026-08-04T11:20:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reference/films/{tmdbId}/realisateurs": {
       "get": {
         "summary": "Les réalisateurs crédités sur un film",
