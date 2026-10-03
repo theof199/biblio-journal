@@ -12,6 +12,8 @@ export type ResultatSaga = Json<paths['/reference/sagas']['get']['responses'][20
 export type RealisateurDuFilm = Json<
   paths['/reference/films/{tmdbId}/realisateurs']['get']['responses'][200]
 >['realisateurs'][number]
+export type FicheReference = Json<paths['/reference/films/{tmdbId}']['get']['responses'][200]>
+export type OuRegarder = NonNullable<FicheReference['availability']>
 
 /** Dix réalisateurs au plus, dans l'ordre de pertinence de TMDB. */
 export const chercherRealisateurs = (q: string, signal?: AbortSignal) =>
@@ -24,3 +26,7 @@ export const chercherSagas = (q: string, signal?: AbortSignal) =>
 /** De quoi naviguer d'une fiche film vers la page d'un de ses réalisateurs. */
 export const lireRealisateursDuFilm = (tmdbId: number, signal?: AbortSignal) =>
   api.get<{ realisateurs: RealisateurDuFilm[] }>(`/reference/films/${tmdbId}/realisateurs`, undefined, signal)
+
+/** Synopsis, durée, genres, casting et où regarder un film de TMDB, qu'il soit ou non dans ma bibliothèque. */
+export const lireFicheReference = (tmdbId: number, signal?: AbortSignal) =>
+  api.get<FicheReference>(`/reference/films/${tmdbId}`, undefined, signal)

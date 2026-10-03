@@ -768,6 +768,8 @@
   --hauteur-remarque: 6rem; /* la remarque privée du carnet, dans le formulaire */
   --largeur-affiche-fiche: 7rem; /* la jaquette de la fiche d'un visionnage */
   --largeur-logo-tmdb: 6rem; /* le logo TMDB de la mention */
+  --cote-logo-plateforme: 2rem; /* le logo carré d'une plateforme, dans « Où regarder » */
+  --largeur-tete-affiche: 4.5rem; /* la colonne d'une tête d'affiche (portrait, nom, rôle) de la fiche d'un film */
   --hauteur-graphique: 3rem; /* un histogramme du profil */
   /* L'attente : les objets d'une page laissés en blanc, qui respirent ensemble (`ui/Attente.tsx`). */
   --attente-duree: 1.2s; /* une demi-respiration, de pleine à creuse */

@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import FicheFilm from './FicheFilm'
 import { createQueryClient } from '../api/queryClient'
 import { cles } from '../api/cles'
-import { json, servir } from '../test/serveur'
+import { json, servir as servirBrut } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import type { JournalPage } from '../api/journal'
+import type { FicheReference } from '../api/personnes'
 import type { ReactionsCatalogue } from '../api/reactions'
 import type { CandidatFilm } from '../formulaire/candidat'
 
@@ -47,6 +48,21 @@ const FILM_A_VOIR = {
   cover_url: null as string | null,
   vu: null,
   introuvable: false,
+}
+const FICHE = exemple<FicheReference>('/reference/films/{tmdbId}', 'get', 200)
+const routeFiche = (tmdbId: number) => `GET /api/reference/films/${tmdbId}`
+
+/**
+ * `servir` de `test/serveur`, plus la fiche TMDB des deux films de ce fichier : sans elle, chaque
+ * test qui n'en parle pas lèverait une « requête inattendue » de plus. Une route que le test pose
+ * lui-même l'emporte.
+ */
+function servir(routes: Parameters<typeof servirBrut>[0]) {
+  return servirBrut({
+    [routeFiche(27205)]: () => json(FICHE),
+    [routeFiche(27000)]: () => json(FICHE),
+    ...routes,
+  })
 }
 const REALISATEURS_DU_FILM = { realisateurs: [{ tmdb_id: 525, name: 'Christopher Nolan' }] }
 
@@ -99,7 +115,7 @@ describe('la fiche d’un film', () => {
     expect(lien).toHaveAttribute('href', '/suivis/realisateurs/525')
     // Mutation : un appel à `/reference/films/.../realisateurs` ici gâcherait un aller-retour que
     // la page réalisateur a déjà payé — la donnée est dans l'état de navigation.
-    expect(requetes).toEqual([])
+    expect(requetes).toEqual([routeFiche(27205)])
   })
 
   it('sans réalisateur connu (une saga n’en porte pas), les réalisateurs du film sont résolus et affichés en lien', async () => {
@@ -193,7 +209,11 @@ describe('la fiche d’un film', () => {
     expect(await screen.findByText('Marqué introuvable')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Le remettre à voir' }))
     await vi.waitFor(() => expect(screen.queryByText('Marqué introuvable')).not.toBeInTheDocument())
-    expect(requetes).toEqual(['PUT /api/me/introuvables/27000', 'DELETE /api/me/introuvables/27000'])
+    expect(requetes).toEqual([
+      routeFiche(27000),
+      'PUT /api/me/introuvables/27000',
+      'DELETE /api/me/introuvables/27000',
+    ])
   })
 
   it('poser la marque périme les filmographies, les sagas et le Voyage', async () => {
@@ -254,5 +274,122 @@ describe('la fiche d’un film', () => {
     // donc le moindre paramètre ajouté ferait déjà tomber ce test avant même l'assertion.
     expect(requetes).toContain('GET /api/me/journal?limit=20')
     expect(requetes.some((r) => r.includes('user_id'))).toBe(false)
+  })
+})
+
+describe('la fiche d’un film : ce que TMDB en dit', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => vi.unstubAllGlobals())
+
+  const NOLAN = { tmdb_id: 525, name: 'Christopher Nolan' }
+  const monterFilm = () => monter({ film: FILM_A_VOIR, realisateur: NOLAN }, 27000)
+  const avecFiche = (surcharge: Partial<FicheReference>) =>
+    servirBrut({ [routeFiche(27000)]: () => json({ ...FICHE, ...surcharge }) })
+
+  it('montre la durée au format « 2 h 49 » et les genres sur une seule ligne', async () => {
+    avecFiche({ runtime_min: 169, genres: ['Drame', 'Science-Fiction'] })
+    monterFilm()
+
+    expect(await screen.findByText('2 h 49 · Drame, Science-Fiction')).toBeInTheDocument()
+  })
+
+  it('montre le synopsis', async () => {
+    avecFiche({ summary: 'Un voleur entre dans les rêves.' })
+    monterFilm()
+
+    expect(await screen.findByText('Un voleur entre dans les rêves.')).toBeInTheDocument()
+  })
+
+  it('montre le casting, le nom et le rôle de chaque tête d’affiche', async () => {
+    avecFiche({ cast: [{ name: 'Leonardo DiCaprio', character: 'Dom Cobb', photo_url: null }] })
+    monterFilm()
+
+    expect(await screen.findByText('Leonardo DiCaprio')).toBeInTheDocument()
+    expect(screen.getByText('Dom Cobb')).toBeInTheDocument()
+  })
+
+  it('montre chaque plateforme sous le libellé de son mode, et aucun mode vide', async () => {
+    avecFiche({
+      availability: {
+        ...FICHE.availability!,
+        subscription: [{ id: 8, name: 'Netflix', logo_url: 'https://image.tmdb.org/netflix.jpg' }],
+        rent: [],
+        buy: [{ id: 2, name: 'Apple TV', logo_url: null }],
+        free: [],
+        ads: [],
+      },
+    })
+    monterFilm()
+
+    const abonnement = (await screen.findByRole('heading', { name: 'Abonnement' })).parentElement!
+    expect(within(abonnement).getByText('Netflix')).toBeInTheDocument()
+    const achat = screen.getByRole('heading', { name: 'Achat' }).parentElement!
+    expect(within(achat).getByText('Apple TV')).toBeInTheDocument()
+    for (const absent of ['Location', 'Gratuit', 'Avec publicité']) {
+      expect(screen.queryByRole('heading', { name: absent })).not.toBeInTheDocument()
+    }
+  })
+
+  it('pose la mention JustWatch en lien vers JustWatch sous « Où regarder »', async () => {
+    avecFiche({})
+    monterFilm()
+
+    const lien = await screen.findByRole('link', { name: FICHE.availability!.attribution.text })
+    expect(lien).toHaveAttribute('href', FICHE.availability!.attribution.url)
+  })
+
+  it('sans disponibilité (nulle), ne montre pas « Où regarder » mais montre le reste', async () => {
+    avecFiche({ availability: null })
+    monterFilm()
+
+    expect(await screen.findByText(FICHE.summary!)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Où regarder' })).not.toBeInTheDocument()
+  })
+
+  it('avec tous les modes vides, ne montre ni « Où regarder » ni la mention', async () => {
+    avecFiche({
+      availability: { ...FICHE.availability!, subscription: [], rent: [], buy: [], free: [], ads: [] },
+    })
+    monterFilm()
+
+    await screen.findByText(FICHE.summary!)
+    expect(screen.queryByRole('heading', { name: 'Où regarder' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: FICHE.availability!.attribution.text })).not.toBeInTheDocument()
+  })
+
+  it('une route en échec laisse l’en-tête et les boutons, sans aucune des nouvelles sections', async () => {
+    servirBrut({
+      [routeFiche(27000)]: () => json({ code: 'INTERNAL', message: 'TMDB est tombé.', retryable: false }, 500),
+    })
+    monterFilm()
+
+    expect(await screen.findByRole('button', { name: 'Marquer comme vu' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Un autre film' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Christopher Nolan' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Introuvable' })).toBeInTheDocument()
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('heading', { name: 'Casting' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Où regarder' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('les champs nuls ou vides ne rendent rien : ni durée, ni genres, ni synopsis, ni casting', async () => {
+    avecFiche({ summary: null, runtime_min: null, genres: [], cast: [], availability: null })
+    const { container } = monterFilm()
+
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('heading', { name: 'Casting' })).not.toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/min|\bh \d\d|·/)
+    expect(container.querySelectorAll('p')).toHaveLength(2)
+  })
+
+  it('une tête d’affiche sans rôle ne montre que son nom', async () => {
+    avecFiche({ cast: [{ name: 'Inconnu', character: null, photo_url: null }] })
+    monterFilm()
+
+    const tete = (await screen.findByText('Inconnu')).closest('li')!
+    expect(tete).toHaveTextContent(/^Inconnu$/)
   })
 })

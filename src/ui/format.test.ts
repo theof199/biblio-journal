@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { formatDateCourte, formatDateVisionnage, formatJourBref, jourLocal, espaceInsecable, moisEnLettres, normaliser, sousTitre, virgule } from './format'
+import { formatDateCourte, formatDateVisionnage, formatJourBref, jourLocal, espaceInsecable, formatDuree, moisEnLettres, normaliser, sousTitre, virgule } from './format'
 
 describe('sousTitre', () => {
   it('joint le réalisateur et l’année', () => {
@@ -114,5 +114,19 @@ describe('espaceInsecable', () => {
   it('laisse les autres espaces, et un deux-points collé, comme ils sont', () => {
     expect(espaceInsecable('Le Garçon et le Héron')).toBe('Le Garçon et le Héron')
     expect(espaceInsecable('Mission: Impossible')).toBe('Mission: Impossible')
+  })
+})
+
+describe('formatDuree', () => {
+  it('écrit les heures et les minutes sur deux chiffres : 169 donne « 2 h 49 »', () => {
+    expect(formatDuree(169)).toBe('2 h 49')
+  })
+
+  it('écrit « 49 min » sous l’heure', () => {
+    expect(formatDuree(49)).toBe('49 min')
+  })
+
+  it('complète les minutes d’une heure pile : « 2 h 00 »', () => {
+    expect(formatDuree(120)).toBe('2 h 00')
   })
 })

@@ -116,3 +116,89 @@
   align-items: center;
   justify-content: center;
 }
+
+.duree {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}
+
+.synopsis {
+  margin: 0;
+}
+
+.titreSection {
+  margin: 0 0 var(--espace-2);
+  font-size: var(--taille-l);
+}
+
+/* Une rangée qui défile de côté : le casting est long, la page ne doit pas s'allonger pour autant. */
+.casting {
+  display: flex;
+  gap: var(--espace-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.tete {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--espace-1);
+  width: var(--largeur-tete-affiche);
+  font-size: var(--taille-s);
+}
+
+.portrait {
+  width: 100%;
+}
+
+.nomTete {
+  font-weight: var(--graisse-forte);
+}
+
+.role {
+  color: var(--couleur-texte-doux);
+}
+
+.mode {
+  margin-bottom: var(--espace-3);
+}
+
+.libelleMode {
+  margin: 0 0 var(--espace-1);
+  font-size: var(--taille-s);
+  color: var(--couleur-texte-doux);
+}
+
+.plateformes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plateforme {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.logo {
+  width: var(--cote-logo-plateforme);
+  height: var(--cote-logo-plateforme);
+  border-radius: var(--rayon-s);
+  object-fit: cover;
+}
+
+.attribution {
+  margin: 0;
+  font-size: var(--taille-xs);
+}
+
+.attribution a {
+  color: var(--couleur-texte-doux);
+}

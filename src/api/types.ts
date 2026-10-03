@@ -4823,6 +4823,138 @@ export interface paths {
       };
     };
   };
+  "/reference/films/{tmdbId}": {
+    /**
+     * La fiche d’un film de TMDB, où regarder compris
+     * @description Synopsis, durée, genres, casting et où regarder, pour **n’importe quel film de TMDB** — y compris ceux qui ne sont pas dans la bibliothèque, que `GET /media/{id}` ne sait pas servir. Les quatre premiers champs ont la forme exacte de la fiche (`metadata.cast`, `metadata.runtime_min`, `metadata.genres`, `summary`) ; `availability` est celle de `GET /media/{id}/availability`, attribution JustWatch comprise.
+     *
+     * **`availability` peut être nul, et ce n’est pas une erreur** — TMDB injoignable pour cette question, ou aucune plateforme dans le pays configuré. La réponse reste `200`. `404` si `tmdbId` est un film que TMDB ne connaît pas.
+     *
+     * Sous `/reference`, pas `/me` : le résultat ne dépend d’aucun compte, et rien n’est écrit en base — le film n’entre pas dans la bibliothèque. Le film est mémorisé en Redis 7 jours ; la disponibilité n’en fait pas partie, elle a son propre cache de 6 h.
+     *
+     * `503` si `TMDB_API_KEY` n’est pas renseignée sur ce serveur.
+     */
+    get: {
+      parameters: {
+        path: {
+          tmdbId: number;
+        };
+      };
+      responses: {
+        /** @description Synopsis, durée, genres, casting et où regarder un film de TMDB */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Synopsis, nul si TMDB n’en donne pas */
+              summary: string | null;
+              /** @description Durée en minutes, nulle si TMDB ne la donne pas */
+              runtime_min: number | null;
+              /** @description Genres, dans l’ordre de TMDB */
+              genres: string[];
+              /** @description Têtes d’affiche, dans l’ordre du générique — la même liste que sur la fiche */
+              cast: ({
+                  name: string;
+                  /** @description Rôle interprété, nul si la source ne le donne pas */
+                  character: string | null;
+                  /** @description Portrait, déjà en URL absolue */
+                  photo_url: string | null;
+                })[];
+              /** @description Où regarder le film dans le pays configuré, avec l’attribution à JustWatch. Nul — et ce n’est pas une erreur — si TMDB est injoignable ou si aucune plateforme ne le propose */
+              availability: ({
+                /** @description Pays interrogé, code ISO 3166-1 — « FR » par défaut */
+                region: string;
+                /** @description Page « où regarder » de TMDB pour cette œuvre */
+                link: string | null;
+                /** @description Compris dans un abonnement */
+                subscription: ({
+                    /** @description Identifiant TMDB de la plateforme */
+                    id: number;
+                    /** @description Nom affichable — « Netflix », « Canal+ » */
+                    name: string;
+                    /** @description Logo carré, servi par le CDN de TMDB */
+                    logo_url: string | null;
+                  })[];
+                /** @description En location */
+                rent: ({
+                    /** @description Identifiant TMDB de la plateforme */
+                    id: number;
+                    /** @description Nom affichable — « Netflix », « Canal+ » */
+                    name: string;
+                    /** @description Logo carré, servi par le CDN de TMDB */
+                    logo_url: string | null;
+                  })[];
+                /** @description À l’achat */
+                buy: ({
+                    /** @description Identifiant TMDB de la plateforme */
+                    id: number;
+                    /** @description Nom affichable — « Netflix », « Canal+ » */
+                    name: string;
+                    /** @description Logo carré, servi par le CDN de TMDB */
+                    logo_url: string | null;
+                  })[];
+                /** @description Gratuit */
+                free: ({
+                    /** @description Identifiant TMDB de la plateforme */
+                    id: number;
+                    /** @description Nom affichable — « Netflix », « Canal+ » */
+                    name: string;
+                    /** @description Logo carré, servi par le CDN de TMDB */
+                    logo_url: string | null;
+                  })[];
+                /** @description Gratuit avec publicité */
+                ads: ({
+                    /** @description Identifiant TMDB de la plateforme */
+                    id: number;
+                    /** @description Nom affichable — « Netflix », « Canal+ » */
+                    name: string;
+                    /** @description Logo carré, servi par le CDN de TMDB */
+                    logo_url: string | null;
+                  })[];
+                /** @description Attribution obligatoire des données de disponibilité */
+                attribution: {
+                  /** @enum {string} */
+                  source: "JustWatch";
+                  /** @description Mention à afficher telle quelle, à côté des plateformes */
+                  text: string;
+                  /**
+                   * Format: uri
+                   * @description Lien vers JustWatch, à poser sur la mention
+                   */
+                  url: string;
+                };
+                /** Format: date-time */
+                fetched_at: string;
+              }) | null;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
   "/reference/films/{tmdbId}/realisateurs": {
     /**
      * Les réalisateurs crédités sur un film
