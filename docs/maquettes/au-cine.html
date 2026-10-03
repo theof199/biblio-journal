@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Au ciné — maquette</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700&family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=League+Gothic&family=Caveat:wght@600&display=swap');
+
+/* ---------- Jetons copiés de src/ui/theme.css (clair par défaut) ---------- */
+:root {
+  color-scheme: light dark;
+  
+  --couleur-fond: #eef1ff;
+  --couleur-surface: #ffffff;
+  --couleur-surface-2: #d3dbff;
+  --couleur-texte: #10133a;
+  --couleur-texte-doux: #474e8f;
+  --couleur-bordure: #aab6f2;
+  --couleur-accent: #d1122f;
+  --couleur-sur-accent: #ffffff;
+  --couleur-bloc: #2a3fd6;
+  --couleur-sur-bloc: #ffffff;
+  --fond-ciel: linear-gradient(180deg, #aebcff 0%, #d3dcff 30%, #e9edff 65%, #f3f5ff 100%);
+  --barre-onglets-fond: #f3f5ff;
+  --ombre-s: 0 1px 2px rgb(0 0 0 / 0.08);
+  --ombre-m: 0 4px 16px rgb(0 0 0 / 0.1);
+  --ombre-barre: 0 -1px 0 var(--couleur-bordure);
+  --fronton-panneau: #fffdf6;
+  --fronton-lettre: #10133a;
+  --fronton-lettre-rouge: #d1122f;
+  --fronton-rail: rgba(16, 19, 58, 0.13);
+  --fronton-cadre: #10133a;
+  --fronton-ampoule: #f4ead0;
+  --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.3));
+  --billet-onglet-penombre: none;
+  --billet-onglet-eclat: none;
+  --billet-onglet-papier-eclaire: var(--ticket-papier);
+
+  /* Fixes (identiques jour et nuit) */
+  --ticket-papier: linear-gradient(180deg, #fbf3dc, #efe3c2);
+  --ticket-encre: #1d1a2e;
+  --ticket-bande: #b8483a;
+  --ticket-bande-vive: #c92a3e;
+  --ticket-souche-fond: rgba(160, 120, 60, 0.1);
+  --ticket-pointille: rgba(26, 20, 10, 0.4);
+  --ticket-souche: 4.125rem;
+  --ticket-encoche: 6px;
+  --ticket-bande-largeur: 0.375rem;
+  --ticket-pointille-trait: 2px;
+  --ticket-masque: radial-gradient(circle var(--ticket-encoche) at calc(100% - var(--ticket-souche)) 0, #0000 96%, #000),
+    radial-gradient(circle var(--ticket-encoche) at calc(100% - var(--ticket-souche)) 100%, #0000 96%, #000),
+    radial-gradient(circle var(--ticket-encoche) at 0 50%, #0000 96%, #000),
+    radial-gradient(circle var(--ticket-encoche) at 100% 50%, #0000 96%, #000);
+  --billet-onglet-marge-haut: 2px;
+  --billet-onglet-marge-cote: 6px;
+  --billet-onglet-icone: 19px;
+  --billet-onglet-libelle-taille: 0.875rem;
+  --billet-onglet-encre-eteinte: rgba(29, 26, 46, 0.62);
+  --billet-onglet-levee: -7px;
+  --billet-onglet-inclinaison: -1.6deg;
+  --billet-onglet-bande-hauteur: 6px;
+  --billet-onglet-ombre: drop-shadow(0 4px 4px rgba(16, 19, 58, 0.25));
+  --billet-onglet-masque: radial-gradient(circle var(--ticket-encoche) at 0 0, #0000 98%, #000) top left,
+    radial-gradient(circle var(--ticket-encoche) at 100% 0, #0000 98%, #000) top right,
+    radial-gradient(circle var(--ticket-encoche) at 0 100%, #0000 98%, #000) bottom left,
+    radial-gradient(circle var(--ticket-encoche) at 100% 100%, #0000 98%, #000) bottom right;
+  --billet-onglet-masque-taille: 51% 51%;
+  --fronton-cadre-largeur: 0.1875rem;
+  --fronton-pas-rail: 1.75rem;
+  --fronton-trait-rail: 0.125rem;
+  --fronton-hauteur-titre-compact: 3.5rem;
+  --fronton-ampoules-hauteur: 1.125rem;
+  --fronton-ampoule-pas: 0.895rem;
+  --police-texte: 'Jost', system-ui, sans-serif;
+  --police-titre: 'Bodoni Moda', Georgia, serif;
+  --police-fronton: 'League Gothic', 'Arial Narrow', sans-serif;
+  --police-crayon: 'Caveat', cursive;
+  --graisse-normale: 400;
+  --graisse-moyenne: 500;
+  --graisse-forte: 700;
+  --interligne: 1.5;
+  --interligne-titre: 1.2;
+  --interligne-serre: 1;
+  --interlettre-capitales: 0.08em;
+  --taille-xs: 0.75rem;
+  --taille-s: 0.875rem;
+  --taille-m: 1rem;
+  --taille-l: 1.25rem;
+  --taille-xl: 1.75rem;
+  --espace-demi: 0.375rem;
+  --espace-1: 0.25rem;
+  --espace-2: 0.5rem;
+  --espace-3: 0.75rem;
+  --espace-4: 1rem;
+  --espace-5: 1.5rem;
+  --espace-6: 2.5rem;
+  --rayon-s: 0.375rem;
+  --rayon-m: 0.75rem;
+  --rayon-l: 1.25rem;
+  --rayon-plein: 999px;
+  --trait: 1px;
+  --cible-tactile: 44px;
+  --barre-onglets-hauteur: 3.75rem;
+  --ratio-affiche: 2 / 3;
+  --grille-sorties-colonnes: repeat(3, minmax(0, 1fr));
+  --largeur-affiche-ligne: 3.5rem;
+  --largeur-affiche-fiche: 7rem;
+  --cote-tuile-note: 1.5rem;
+  --taille-tuile-note: 1.3125rem;
+  --trait-tuile-note: 1.5px;
+  --taille-icone-inline: 1rem;
+
+  /* À ajouter au thème : rien n'est ajouté pour les variantes. Ces jetons ne servent qu'à la maquette
+     (de fausses affiches), jamais à l'app : les vraies affiches viennent de TMDB. */
+  --maquette-affiche-1: linear-gradient(160deg, #3b2a5c, #1c1238);
+  --maquette-affiche-2: linear-gradient(160deg, #0f5d63, #0a2f3a);
+  --maquette-affiche-3: linear-gradient(160deg, #7a3b32, #3a1a1a);
+  --maquette-affiche-4: linear-gradient(160deg, #4a5a22, #222b10);
+  --maquette-affiche-5: linear-gradient(160deg, #2d4a7a, #14233f);
+  --maquette-affiche-6: linear-gradient(160deg, #8a5a1a, #3f2808);
+  --maquette-affiche-7: linear-gradient(160deg, #6a2a52, #2f1124);
+  --maquette-affiche-8: linear-gradient(160deg, #1f5a45, #0d2a20);
+  --maquette-affiche-9: linear-gradient(160deg, #5a4a3a, #26201a);
+  --maquette-affiche-10: linear-gradient(160deg, #3a3a7a, #16163a);
+  --maquette-affiche-lettre: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) {
+
+  --couleur-fond: #080a26;
+  --couleur-surface: #121647;
+  --couleur-surface-2: #1b2160;
+  --couleur-texte: #f6f0e2;
+  --couleur-texte-doux: #e6dcc4;
+  --couleur-bordure: #2a3180;
+  --couleur-accent: #ff3b4e;
+  --couleur-sur-accent: #19040a;
+  --fond-ciel: radial-gradient(ellipse 300px 260px at 50% 170px, rgba(255, 196, 120, 0.14), rgba(255, 196, 120, 0) 72%),
+    linear-gradient(180deg, #1b2472 0%, #1e2a80 40%, #22328e 100%);
+  --barre-onglets-fond: #22328e;
+  --ombre-s: 0 1px 2px rgb(0 0 0 / 0.6);
+  --ombre-m: 0 10px 20px -2px rgba(1, 2, 16, 0.8), 0 3px 6px rgba(1, 2, 16, 0.55);
+  --fronton-panneau: #fbf3dc;
+  --fronton-rail: rgba(16, 19, 58, 0.16);
+  --fronton-cadre: #04051a;
+  --fronton-ampoule: #fff8e0;
+  --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.85));
+  --billet-onglet-penombre: brightness(0.62) saturate(0.9);
+  --billet-onglet-eclat: drop-shadow(0 0 9px rgba(255, 214, 140, 0.8));
+  --billet-onglet-papier-eclaire: radial-gradient(ellipse 90% 80% at 50% 115%, #fffdf2 0%, rgba(255, 253, 242, 0) 75%), var(--ticket-papier);
+  }
+}
+:root[data-theme='sombre'] {
+
+  --couleur-fond: #080a26;
+  --couleur-surface: #121647;
+  --couleur-surface-2: #1b2160;
+  --couleur-texte: #f6f0e2;
+  --couleur-texte-doux: #e6dcc4;
+  --couleur-bordure: #2a3180;
+  --couleur-accent: #ff3b4e;
+  --couleur-sur-accent: #19040a;
+  --fond-ciel: radial-gradient(ellipse 300px 260px at 50% 170px, rgba(255, 196, 120, 0.14), rgba(255, 196, 120, 0) 72%),
+    linear-gradient(180deg, #1b2472 0%, #1e2a80 40%, #22328e 100%);
+  --barre-onglets-fond: #22328e;
+  --ombre-s: 0 1px 2px rgb(0 0 0 / 0.6);
+  --ombre-m: 0 10px 20px -2px rgba(1, 2, 16, 0.8), 0 3px 6px rgba(1, 2, 16, 0.55);
+  --fronton-panneau: #fbf3dc;
+  --fronton-rail: rgba(16, 19, 58, 0.16);
+  --fronton-cadre: #04051a;
+  --fronton-ampoule: #fff8e0;
+  --ticket-ombre: drop-shadow(0 6px 5px rgba(1, 2, 16, 0.85));
+  --billet-onglet-penombre: brightness(0.62) saturate(0.9);
+  --billet-onglet-eclat: drop-shadow(0 0 9px rgba(255, 214, 140, 0.8));
+  --billet-onglet-papier-eclaire: radial-gradient(ellipse 90% 80% at 50% 115%, #fffdf2 0%, rgba(255, 253, 242, 0) 75%), var(--ticket-papier);
+  }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; padding: var(--espace-5) var(--espace-4) var(--espace-6);
+  background: var(--couleur-fond); color: var(--couleur-texte);
+  font-family: var(--police-texte); font-size: var(--taille-m); line-height: var(--interligne);
+  overflow-x: hidden;
+}
+h1, h2, h3 { font-family: var(--police-titre); font-weight: var(--graisse-forte); line-height: var(--interligne-titre); }
+a { color: var(--couleur-accent); }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--couleur-accent); outline-offset: 2px; }
+p { margin: 0; }
+ol, ul { margin: 0; padding: 0; list-style: none; }
+.ico { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- Le document de maquette ---------- */
+.tete { max-width: 52rem; margin: 0 auto var(--espace-5); text-align: center; }
+.tete .sur { font-size: var(--taille-xs); font-weight: var(--graisse-forte); letter-spacing: 0.24em; text-transform: uppercase; color: var(--couleur-texte-doux); }
+.tete h1 { margin: var(--espace-1) 0 var(--espace-2); font-size: var(--taille-xl); }
+.tete p { color: var(--couleur-texte-doux); font-size: var(--taille-s); max-width: 40rem; margin-inline: auto; }
+.bascule { margin-top: var(--espace-3); min-height: var(--cible-tactile); padding: 0 var(--espace-4); border-radius: var(--rayon-plein); border: var(--trait) solid var(--couleur-bordure); background: var(--couleur-surface); font-size: var(--taille-s); font-weight: var(--graisse-moyenne); }
+.regles { max-width: 52rem; margin: 0 auto var(--espace-6); padding: var(--espace-4); border-radius: var(--rayon-m); background: var(--couleur-surface); border: var(--trait) solid var(--couleur-bordure); }
+.regles h2 { margin: 0 0 var(--espace-2); font-size: var(--taille-l); }
+.regles li { margin-bottom: var(--espace-2); font-size: var(--taille-s); padding-left: var(--espace-4); position: relative; }
+.regles li::before { content: '–'; position: absolute; left: 0; color: var(--couleur-texte-doux); }
+.titre-bloc { max-width: 52rem; margin: var(--espace-6) auto var(--espace-4); font-size: var(--taille-l); text-align: center; }
+.variantes { display: grid; grid-template-columns: minmax(0, 390px); justify-content: center; gap: var(--espace-6); max-width: 1300px; margin: 0 auto; }
+@media (min-width: 1280px) { .variantes { grid-template-columns: repeat(3, 390px); gap: var(--espace-5); } }
+.variante-tete .num { font-size: var(--taille-xs); font-weight: var(--graisse-forte); letter-spacing: 0.22em; text-transform: uppercase; color: var(--couleur-texte-doux); }
+.variante-tete h2 { margin: 0 0 var(--espace-1); font-size: var(--taille-l); }
+.variante-tete p:last-child { font-size: var(--taille-s); color: var(--couleur-texte-doux); margin-bottom: var(--espace-3); }
+.notes { margin-top: var(--espace-4); font-size: var(--taille-s); }
+.notes h3 { margin: 0 0 var(--espace-2); font-size: var(--taille-m); }
+.notes ol { counter-reset: n; }
+.notes li { counter-increment: n; position: relative; padding: 0 0 var(--espace-2) var(--espace-5); }
+.notes li::before { content: counter(n); position: absolute; left: 0; top: 0.15rem; width: 1.25rem; height: 1.25rem; border-radius: var(--rayon-plein); background: var(--couleur-bloc); color: var(--couleur-sur-bloc); font-size: var(--taille-xs); font-weight: var(--graisse-forte); display: grid; place-items: center; line-height: 1; }
+.notes b { font-weight: var(--graisse-forte); }
+.extra { display: grid; grid-template-columns: minmax(0, 390px); justify-content: center; gap: var(--espace-4); max-width: 52rem; margin: 0 auto var(--espace-6); }
+.extra > div:first-child h3 { margin: 0 0 var(--espace-2); font-size: var(--taille-l); }
+@media (min-width: 880px) { .extra { grid-template-columns: 390px minmax(0, 1fr); gap: var(--espace-5); align-items: start; } .extra .notes { margin-top: var(--espace-6); } }
+.pied { max-width: 52rem; margin: var(--espace-6) auto 0; font-size: var(--taille-s); color: var(--couleur-texte-doux); }
+.pied li { margin-bottom: var(--espace-2); }
+
+/* ---------- Le téléphone ---------- */
+.ecran { width: 100%; max-width: 390px; margin: 0 auto; border-radius: 28px; overflow: hidden; background: var(--couleur-fond); background-image: var(--fond-ciel); background-repeat: no-repeat; box-shadow: 0 0 0 1px var(--couleur-bordure), 0 0 0 7px var(--fronton-cadre), var(--ombre-m); color: var(--couleur-texte); position: relative; }
+.page { display: flex; flex-direction: column; gap: var(--espace-5); padding: var(--espace-2) var(--espace-4) var(--espace-5); }
+.entete { display: flex; align-items: baseline; justify-content: space-between; gap: var(--espace-3); min-height: var(--cible-tactile); }
+.entete h1 { margin: 0; font-size: var(--taille-xl); }
+.compte { color: var(--couleur-texte-doux); font-size: var(--taille-s); white-space: nowrap; }
+.section { display: flex; flex-direction: column; gap: var(--espace-2); position: relative; }
+.enteteSection { display: flex; align-items: baseline; justify-content: space-between; gap: var(--espace-2); }
+.titreSection { font-size: var(--taille-s); font-weight: var(--graisse-forte); color: var(--couleur-texte-doux); text-transform: uppercase; letter-spacing: var(--interlettre-capitales); }
+.maj { font-size: var(--taille-xs); color: var(--couleur-texte-doux); white-space: nowrap; }
+.cinemaUnique { font-weight: var(--graisse-moyenne); }
+.pin { position: absolute; left: 1px; margin-left: calc(var(--espace-4) * -1); top: 0.1rem; z-index: 3; width: 0.9375rem; height: 0.9375rem; font-size: 0.6875rem !important; border-radius: var(--rayon-plein); background: var(--couleur-bloc); color: var(--couleur-sur-bloc); font-size: var(--taille-xs); font-weight: var(--graisse-forte); display: grid; place-items: center; line-height: 1; }
+.pin.dans { left: auto; right: -0.3rem; margin-left: 0; top: -0.6rem; width: 1.25rem; height: 1.25rem; font-size: var(--taille-xs) !important; }
+.hypothese { outline: 1.5px dashed var(--couleur-bloc); outline-offset: 3px; border-radius: var(--rayon-s); }
+.etiquette { display: inline-block; padding: 0 var(--espace-2); border-radius: var(--rayon-plein); background: var(--couleur-bloc); color: var(--couleur-sur-bloc); font-size: var(--taille-xs); font-weight: var(--graisse-forte); line-height: 1.4; }
+
+/* Affiches (de fausses affiches : des dégradés) */
+.affiche { position: relative; aspect-ratio: var(--ratio-affiche); overflow: hidden; border-radius: var(--rayon-s); background: var(--couleur-surface-2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: var(--espace-2) var(--espace-1); text-align: center; font-family: var(--police-titre); font-weight: var(--graisse-forte); font-size: var(--taille-xs); line-height: 1.15; color: var(--maquette-affiche-lettre); }
+.affiche.ligne { width: var(--largeur-affiche-ligne); font-size: 0.5rem; padding: var(--espace-1); }
+.affiche.fiche { width: var(--largeur-affiche-fiche); font-size: var(--taille-s); padding: var(--espace-2); }
+.p1 { background: var(--maquette-affiche-1); } .p2 { background: var(--maquette-affiche-2); } .p3 { background: var(--maquette-affiche-3); }
+.p4 { background: var(--maquette-affiche-4); } .p5 { background: var(--maquette-affiche-5); } .p6 { background: var(--maquette-affiche-6); }
+.p7 { background: var(--maquette-affiche-7); } .p8 { background: var(--maquette-affiche-8); } .p9 { background: var(--maquette-affiche-9); }
+.p10 { background: var(--maquette-affiche-10); }
+.note { position: absolute; right: var(--espace-1); bottom: var(--espace-1); display: flex; align-items: center; justify-content: center; min-width: var(--cote-tuile-note); min-height: var(--cote-tuile-note); padding: 0 var(--espace-1); border: var(--trait-tuile-note) solid var(--fronton-lettre); background: var(--fronton-panneau); color: var(--fronton-lettre); font-family: var(--police-fronton); font-size: var(--taille-tuile-note); line-height: var(--interligne-serre); }
+
+/* Tuiles de sorties (comme AuCine.module.css) */
+.grille { display: grid; grid-template-columns: var(--grille-sorties-colonnes); gap: var(--espace-2); }
+.tuile { min-width: 0; display: flex; flex-direction: column; gap: var(--espace-1); text-align: left; color: inherit; }
+.jaquette { position: relative; }
+.coche { position: absolute; right: var(--espace-1); bottom: var(--espace-1); display: flex; align-items: center; justify-content: center; width: var(--espace-5); height: var(--espace-5); border-radius: var(--rayon-plein); background: var(--couleur-accent); color: var(--couleur-sur-accent); }
+.coche .ico, .sceau .ico { width: var(--taille-icone-inline); height: var(--taille-icone-inline); }
+.sceau { display: flex; align-items: center; justify-content: center; width: var(--espace-5); height: var(--espace-5); border: var(--trait) solid var(--couleur-fond); border-radius: var(--rayon-plein); background: var(--couleur-accent); color: var(--couleur-sur-accent); flex-shrink: 0; }
+.jaquette .sceau { position: absolute; top: var(--espace-1); right: var(--espace-1); }
+.sceau.mini { width: 1.125rem; height: 1.125rem; }
+.sceau.mini .ico { width: 0.6875rem; height: 0.6875rem; }
+.titreTuile { font-size: var(--taille-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sousTitreTuile { font-size: var(--taille-xs); color: var(--couleur-texte-doux); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* NOUVEAU : la prochaine séance, posée sur l'affiche en bas à gauche, dans la langue de la tuile de note. */
+.heureTuile { position: absolute; left: var(--espace-1); bottom: var(--espace-1); min-height: var(--cote-tuile-note); padding: 0 var(--espace-1); display: flex; align-items: center; border: var(--trait-tuile-note) solid var(--fronton-lettre); background: var(--fronton-panneau); color: var(--fronton-lettre); font-family: var(--police-fronton); font-size: var(--taille-tuile-note); line-height: var(--interligne-serre); letter-spacing: 0.04em; }
+
+/* Tes séances */
+.liste { display: grid; grid-template-columns: minmax(0, 1fr); }
+.ligne { min-width: 0; display: flex; align-items: center; gap: var(--espace-3); padding: var(--espace-3) 0; border-bottom: var(--trait) solid var(--couleur-bordure); color: inherit; text-decoration: none; }
+.infosLigne { display: flex; flex-direction: column; gap: var(--espace-1); min-width: 0; flex: 1; }
+.titreLigne { font-weight: var(--graisse-moyenne); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sousTitreLigne, .dateLigne { color: var(--couleur-texte-doux); font-size: var(--taille-s); }
+
+/* Boutons (comme FicheFilm.module.css) */
+.bouton, .boutonSecondaire { min-height: var(--cible-tactile); padding: 0 var(--espace-4); border-radius: var(--rayon-m); font-size: var(--taille-m); display: inline-flex; align-items: center; justify-content: center; gap: var(--espace-2); text-align: center; text-decoration: none; }
+.bouton { border: none; background: var(--couleur-accent); color: var(--couleur-sur-accent); font-weight: var(--graisse-forte); }
+.boutonSecondaire { border: var(--trait) solid var(--couleur-bordure); background: var(--couleur-surface); color: var(--couleur-texte); }
+.lienTout { min-height: var(--cible-tactile); display: inline-flex; align-items: center; gap: var(--espace-1); font-size: var(--taille-s); font-weight: var(--graisse-forte); text-decoration: none; }
+.puce { display: inline-flex; align-items: center; min-height: var(--espace-5); padding: 0 var(--espace-2); border-radius: var(--rayon-plein); background: var(--couleur-surface-2); font-size: var(--taille-xs); font-weight: var(--graisse-forte); letter-spacing: 0.04em; }
+.reste { font-size: var(--taille-xs); font-weight: var(--graisse-forte); color: var(--couleur-accent); white-space: nowrap; }
+
+/* ---------- Variante A : le tableau (jetons du fronton) ---------- */
+.tableau { border: var(--fronton-cadre-largeur) solid var(--fronton-cadre); border-radius: var(--rayon-s); background: var(--fronton-cadre); overflow: hidden; box-shadow: var(--ombre-m); }
+.ampoules { height: var(--fronton-ampoules-hauteur); background: radial-gradient(circle at center, var(--fronton-ampoule) 0, var(--fronton-ampoule) 2.5px, transparent 3.5px) 0 0 / var(--fronton-ampoule-pas) 100% repeat-x; }
+.tableau-corps { color: var(--fronton-lettre); background: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--fronton-pas-rail) - var(--fronton-trait-rail)), var(--fronton-rail) calc(var(--fronton-pas-rail) - var(--fronton-trait-rail)), var(--fronton-rail) var(--fronton-pas-rail)), var(--fronton-panneau); padding: 0 var(--espace-3); }
+.tableau-tete { display: grid; grid-template-columns: 3.75rem 1fr auto; gap: var(--espace-2); height: var(--fronton-pas-rail); align-items: center; font-family: var(--police-fronton); font-size: var(--taille-s); letter-spacing: 0.14em; text-transform: uppercase; }
+.tableau-tete span:last-child { min-width: 2.75rem; text-align: center; }
+.tableau-ligne { display: grid; grid-template-columns: 3.75rem 1fr auto; gap: var(--espace-2); height: var(--fronton-hauteur-titre-compact); align-items: center; }
+.t-heure { font-family: var(--police-fronton); font-size: 2rem; line-height: var(--interligne-serre); letter-spacing: 0.03em; display: flex; flex-direction: column; }
+.t-heure .reste { color: var(--fronton-lettre-rouge); font-family: var(--police-texte); line-height: 1.1; }
+.tableau-ligne.prochaine .t-heure > span:first-child { color: var(--fronton-lettre-rouge); }
+.t-film { min-width: 0; }
+.t-titre { font-family: var(--police-fronton); font-size: 1.375rem; line-height: 1.1; letter-spacing: 0.05em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-meta { display: flex; align-items: center; gap: var(--espace-1); font-size: var(--taille-xs); line-height: 1.3; overflow: hidden; white-space: nowrap; }
+.t-meta span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.t-version { min-width: 2.75rem; padding: 0 var(--espace-1); border: var(--trait-tuile-note) solid var(--fronton-lettre); font-family: var(--police-fronton); font-size: 1.125rem; letter-spacing: 0.08em; text-align: center; line-height: 1.5; }
+.tableau-pied { display: flex; align-items: center; justify-content: space-between; gap: var(--espace-2); height: calc(var(--fronton-pas-rail) * 1.5); font-size: var(--taille-xs); }
+.tableau-pied a { color: var(--fronton-lettre-rouge); font-weight: var(--graisse-forte); font-size: var(--taille-s); text-decoration: none; display: inline-flex; align-items: center; min-height: var(--cible-tactile); gap: var(--espace-1); }
+.tableau-pied .legende { display: flex; align-items: center; gap: var(--espace-1); }
+
+/* ---------- Variante B : sobre ---------- */
+.carte { border-radius: var(--rayon-m); background: var(--couleur-surface); border: var(--trait) solid var(--couleur-bordure); box-shadow: var(--ombre-s); overflow: hidden; }
+.b-ligne { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; gap: var(--espace-3); align-items: center; padding: var(--espace-3); border-bottom: var(--trait) solid var(--couleur-bordure); }
+.b-heure { display: flex; flex-direction: column; gap: 2px; font-weight: var(--graisse-forte); font-size: var(--taille-l); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.b-ligne.prochaine .b-heure > span:first-child { color: var(--couleur-accent); }
+.b-titre { font-weight: var(--graisse-moyenne); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-meta { font-size: var(--taille-s); color: var(--couleur-texte-doux); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-suivi { display: flex; align-items: center; gap: var(--espace-1); margin-top: 2px; font-size: var(--taille-xs); font-weight: var(--graisse-forte); color: var(--couleur-texte-doux); }
+.b-pied { display: flex; align-items: center; justify-content: space-between; padding: 0 var(--espace-3); }
+.b-position { display: flex; align-items: center; gap: var(--espace-3); padding: var(--espace-3); background: var(--couleur-surface-2); font-size: var(--taille-s); }
+.b-position .boutonSecondaire { min-height: var(--cible-tactile); font-size: var(--taille-s); flex-shrink: 0; padding: 0 var(--espace-3); }
+.b-vide { padding: var(--espace-5) var(--espace-4); font-family: var(--police-titre); font-weight: var(--graisse-forte); font-size: var(--taille-l); text-align: center; }
+.b-vide small { display: block; margin-top: var(--espace-1); font-family: var(--police-texte); font-weight: var(--graisse-normale); font-size: var(--taille-s); color: var(--couleur-texte-doux); }
+
+/* ---------- Variante C : les tickets ---------- */
+.rail { display: flex; gap: var(--espace-3); overflow-x: auto; scroll-snap-type: x proximity; margin: 0 calc(var(--espace-4) * -1); padding: var(--espace-2) var(--espace-4) var(--espace-3); scrollbar-width: none; }
+.rail::-webkit-scrollbar { display: none; }
+.billet { flex: 0 0 14.5rem; scroll-snap-align: start; filter: var(--ticket-ombre); }
+.billet.dernier { flex-basis: 7.5rem; }
+.papier { position: relative; display: flex; height: 6.5rem; background: var(--ticket-papier); color: var(--ticket-encre); mask-image: var(--ticket-masque); -webkit-mask-image: var(--ticket-masque); mask-composite: intersect; -webkit-mask-composite: source-in; }
+.papier::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--ticket-bande-largeur); background: var(--ticket-bande); }
+.billet:first-child .papier::before { background: var(--ticket-bande-vive); }
+.corps { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 0 var(--espace-2) 0 var(--espace-4); }
+.c-heure { font-family: var(--police-fronton); font-size: 2.25rem; line-height: 1; letter-spacing: 0.03em; }
+.c-titre { font-family: var(--police-titre); font-weight: var(--graisse-forte); font-size: var(--taille-s); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-lieu { font-size: var(--taille-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-reste { font-size: var(--taille-xs); font-weight: var(--graisse-forte); color: var(--fronton-lettre-rouge); }
+.souche { width: var(--ticket-souche); flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--espace-1); border-left: var(--ticket-pointille-trait) dotted var(--ticket-pointille); background: var(--ticket-souche-fond); font-size: var(--taille-xs); text-align: center; line-height: 1.2; }
+.souche .c-version { padding: 0 var(--espace-1); border: var(--trait-tuile-note) solid var(--ticket-encre); font-family: var(--police-fronton); font-size: 1.125rem; letter-spacing: 0.08em; line-height: 1.4; }
+.souche .sceau { border-color: transparent; }
+.dernier .papier { justify-content: center; align-items: center; flex-direction: column; text-align: center; gap: var(--espace-1); font-family: var(--police-fronton); font-size: var(--taille-l); letter-spacing: 0.08em; text-transform: uppercase; }
+.dernier .papier small { font-family: var(--police-texte); font-size: var(--taille-xs); text-transform: none; letter-spacing: 0; }
+.c-legende { font-size: var(--taille-xs); color: var(--couleur-texte-doux); display: flex; align-items: center; gap: var(--espace-1); }
+
+/* ---------- Fiche film ---------- */
+.f-entete { display: flex; align-items: center; min-height: var(--cible-tactile); }
+.retour { width: var(--cible-tactile); height: var(--cible-tactile); display: grid; place-items: center; border-radius: var(--rayon-plein); border: var(--trait) solid var(--couleur-bordure); background: var(--couleur-surface); }
+.film { display: flex; gap: var(--espace-4); }
+.infos { display: flex; flex-direction: column; justify-content: center; gap: var(--espace-1); min-width: 0; }
+.infos h1 { margin: 0; font-size: var(--taille-xl); }
+.infos .annee, .infos .meta { color: var(--couleur-texte-doux); }
+.notes-pub { display: flex; flex-wrap: wrap; gap: var(--espace-2); margin-top: var(--espace-1); }
+.notes-pub .puce { background: var(--couleur-surface); border: var(--trait) solid var(--couleur-bordure); font-weight: var(--graisse-moyenne); font-size: var(--taille-s); letter-spacing: 0; }
+.notes-pub b { font-weight: var(--graisse-forte); margin-left: 4px; }
+.synopsis { font-size: var(--taille-m); }
+.seances { display: flex; flex-direction: column; gap: var(--espace-3); position: relative; }
+.s-cinema { padding: var(--espace-3); border-radius: var(--rayon-m); background: var(--couleur-surface); border: var(--trait) solid var(--couleur-bordure); box-shadow: var(--ombre-s); display: flex; flex-direction: column; gap: var(--espace-2); }
+.s-cinema header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--espace-2); }
+.s-cinema h3 { margin: 0; font-family: var(--police-texte); font-size: var(--taille-m); font-weight: var(--graisse-forte); }
+.s-dist { font-size: var(--taille-s); color: var(--couleur-texte-doux); white-space: nowrap; }
+.creneaux { display: flex; flex-wrap: wrap; gap: var(--espace-2); }
+.creneau { min-height: var(--cible-tactile); min-width: var(--cible-tactile); padding: 0 var(--espace-3); display: inline-flex; align-items: baseline; justify-content: center; gap: var(--espace-1); border-radius: var(--rayon-m); border: var(--trait) solid var(--couleur-bordure); background: var(--couleur-fond); color: var(--couleur-texte); font-weight: var(--graisse-forte); font-variant-numeric: tabular-nums; text-decoration: none; padding-top: 0.55rem; }
+.creneau small { font-size: var(--taille-xs); font-weight: var(--graisse-forte); color: var(--couleur-texte-doux); letter-spacing: 0.04em; }
+.creneau.passe { border-style: dashed; background: transparent; color: var(--couleur-texte-doux); font-weight: var(--graisse-normale); }
+.creneau.suivante { border: 2px solid var(--couleur-accent); }
+.s-reste { display: flex; align-items: center; justify-content: space-between; gap: var(--espace-2); font-size: var(--taille-s); }
+
+/* ---------- La barre d'onglets (Coque.module.css) ---------- */
+.barre { background: var(--barre-onglets-fond); box-shadow: var(--ombre-barre); position: relative; }
+.rouleau { display: flex; height: var(--barre-onglets-hauteur); padding: var(--billet-onglet-marge-haut) var(--billet-onglet-marge-cote) 0; filter: var(--billet-onglet-ombre); }
+.rouleau li { position: relative; flex: 1; display: flex; filter: var(--billet-onglet-penombre); }
+.rouleau li.courant { transform: translateY(var(--billet-onglet-levee)) rotate(var(--billet-onglet-inclinaison)); filter: var(--billet-onglet-eclat); }
+.onglet { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--espace-1); min-width: var(--cible-tactile); background: var(--ticket-papier); color: var(--billet-onglet-encre-eteinte); text-decoration: none; mask: var(--billet-onglet-masque); -webkit-mask: var(--billet-onglet-masque); mask-size: var(--billet-onglet-masque-taille); -webkit-mask-size: var(--billet-onglet-masque-taille); mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; }
+.rouleau li + li .onglet { border-left: var(--ticket-pointille-trait) dotted var(--ticket-pointille); }
+.rouleau li.courant .onglet { border-left: 0; background: var(--billet-onglet-papier-eclaire); color: var(--ticket-encre); box-shadow: inset 0 var(--billet-onglet-bande-hauteur) 0 var(--ticket-bande-vive); }
+.rouleau li.courant + li .onglet { border-left: 0; }
+.onglet .ico { width: var(--billet-onglet-icone); height: var(--billet-onglet-icone); stroke-width: 1.75; }
+.onglet span { font-family: var(--police-fronton); font-size: var(--billet-onglet-libelle-taille); letter-spacing: var(--interlettre-capitales); line-height: var(--interligne-serre); text-transform: uppercase; }
+.notes ul.sub{margin:var(--espace-1) 0 0;padding-left:var(--espace-4);list-style:disc}.notes ul.sub li{padding:0 0 var(--espace-1);counter-increment:none}.notes ul.sub li::before{content:none}
+.notes.plain li::before{content:'';width:.4rem;height:.4rem;top:.55rem;left:.4rem;background:var(--couleur-texte-doux)}
+.barre-sticky { margin-top: var(--espace-3); }
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/></symbol>
+<symbol id="i-movie" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"/><path d="M8 4v16M16 4v16M4 8h4M4 16h4M4 12h16M16 8h4M16 16h4"/></symbol>
+<symbol id="i-ticket" viewBox="0 0 24 24"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></symbol>
+<symbol id="i-route" viewBox="0 0 24 24"><path d="M3 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M19 7a2 2 0 1 0 0 -4a2 2 0 0 0 0 4z"/><path d="M11 19h5.5a3.5 3.5 0 0 0 0 -7h-8a3.5 3.5 0 0 1 0 -7h4.5"/></symbol>
+<symbol id="i-chair" viewBox="0 0 24 24"><path d="M7 21v-9M17 21v-9M5 12h14M7 12l10 -5M7 7l10 5M5 7h14"/></symbol>
+<symbol id="i-armchair" viewBox="0 0 24 24"><path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z"/><path d="M5 11v-3a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v3M6 19v2M18 19v2"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6l6 6"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6l-6 6"/></symbol>
+</defs></svg>
+<header class="tete"><p class="sur">Journal · maquette</p><h1>Au ciné : prochaines séances</h1>
+<p>Trois façons de poser la bande « Prochaines séances » en haut de l’onglet, puis les cas limites et la fiche film. Les couleurs sont celles de <code>theme.css</code>, clair et sombre.</p>
+<button class="bascule" id="bascule" type="button">Passer en sombre</button></header>
+<section class="regles"><h2>Règles de la bande « Prochaines séances »</h2><ul>
+<li><b>Aujourd’hui seulement</b>, les séances à venir, la plus proche dans le temps d’abord. À égalité d’heure, le cinéma le plus proche passe devant.</li>
+<li><b>Contenu</b> : les sorties de la semaine, plus les films plus anciens dont le réalisateur ou la saga est suivi (marqués du sceau).</li>
+<li><b>Environ cinq entrées</b> et « Tout voir ». Chaque entrée : heure, titre, cinéma, distance, version (VO, VF, VOST) ; la toute prochaine porte « dans 5&nbsp;min ».</li>
+<li><b>Données de maquette</b> : cinémas, distances et horaires d’après la page Allociné d’UGC Ciné Cité Les Halles ; l’heure courante est 18:55 (23:10 pour le cas « plus de séance »).</li>
+</ul></section>
+<h2 class="titre-bloc">Trois variantes</h2>
+<div class="variantes"><section class="variante" id="a"><div class="variante-tete"><p class="num">Variante A</p><h2>Le tableau du hall</h2><p>Le haut de la page devient un tableau des départs, peint avec le fronton du thème.</p></div>
+<div class="ecran"><div class="page"><div class="entete" style="position:relative"><span class="pin " aria-hidden="true">1</span><h1>Au ciné</h1><p class="compte">12&nbsp;séances cette année</p></div><section class="section"><span class="pin " aria-hidden="true">2</span><div class="enteteSection"><h2 class="titreSection" style="margin:0;font-family:var(--police-texte);line-height:inherit">Prochaines séances</h2><p class="maj">Aujourd’hui · dès 18:55</p></div>
+<div class="tableau"><div class="ampoules"></div><div class="tableau-corps">
+<div class="tableau-tete" aria-hidden="true"><span>Heure</span><span>Film · cinéma</span><span>Version</span></div>
+<ol><li class="tableau-ligne prochaine"><div class="t-heure"><span>19:00</span><span class="reste">dans&nbsp;5&nbsp;min</span></div><div class="t-film"><p class="t-titre">Digger</p><p class="t-meta"><span>UGC Les Halles · à&nbsp;1,2 km</span></p></div><span class="t-version">VF</span></li><li class="tableau-ligne"><div class="t-heure"><span>19:10</span></div><div class="t-film"><p class="t-titre">Le Chant des oliviers</p><p class="t-meta"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span><span>UGC Odéon · à&nbsp;1,9 km</span></p></div><span class="t-version">VOST</span></li><li class="tableau-ligne"><div class="t-heure"><span>19:15</span></div><div class="t-film"><p class="t-titre">Mémoire de fille</p><p class="t-meta"><span>UGC Les Halles · à&nbsp;1,2 km</span></p></div><span class="t-version">VF</span></li><li class="tableau-ligne"><div class="t-heure"><span>19:15</span></div><div class="t-film"><p class="t-titre">Raison et sentiments</p><p class="t-meta"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span><span>UGC Opéra · à&nbsp;2,6 km</span></p></div><span class="t-version">VOST</span></li><li class="tableau-ligne"><div class="t-heure"><span>19:20</span></div><div class="t-film"><p class="t-titre">Verity</p><p class="t-meta"><span>UGC Les Halles · à&nbsp;1,2 km</span></p></div><span class="t-version">VF</span></li></ol>
+<div class="tableau-pied"><span class="legende"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span> Réalisateur ou saga suivi</span><a href="#">Tout voir (14)<svg class="ico " aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
+</div><div class="ampoules"></div></div></section><section class="section"><span class="pin " aria-hidden="true">3</span><div class="enteteSection"><p class="titreSection">Sorti cette semaine dans mes cinémas</p><p class="maj">Mis à jour il y a 2&nbsp;h</p></div><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p1">Verity</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:20</span></div><p class="titreTuile">Verity</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p2">Kraken</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:05</span></div><p class="titreTuile">Kraken</p><p class="sousTitreTuile">3 cinémas</p></div><div class="tuile"><div class="jaquette"><div class="affiche p3">Mémoire de fille</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:15</span></div><p class="titreTuile">Mémoire de fille</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p4">Digger</div><span class="coche" role="img" aria-label="Déjà dans ton journal"><svg class="ico " aria-hidden="true"><use href="#i-check"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:00</span></div><p class="titreTuile">Digger</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p5">Notre salut</div><span class="sceau" role="img" aria-label="Saga suivie"><svg class="ico " aria-hidden="true"><use href="#i-movie"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:30</span></div><p class="titreTuile">Notre salut</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p6">Le Chant des oliviers</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:10</span></div><p class="titreTuile">Le Chant des oliviers</p><p class="sousTitreTuile">UGC Odéon</p></div></div></section><section class="section"><span class="pin " aria-hidden="true">4</span><p class="titreSection">La semaine prochaine</p><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p7">Les Heures claires</div></div><p class="titreTuile">Les Heures claires</p></div><div class="tuile"><div class="jaquette"><div class="affiche p8">Nuit de Saint-Jean</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span></div><p class="titreTuile">Nuit de Saint-Jean</p></div><div class="tuile"><div class="jaquette"><div class="affiche p9">Le Phare</div></div><p class="titreTuile">Le Phare</p></div></div></section><section class="section"><span class="pin " aria-hidden="true">4</span><p class="titreSection">Tes séances</p><div class="liste"><a class="ligne" href="#"><div class="affiche ligne p10">Anatomie d'une chute<span class="note">8</span></div><div class="infosLigne"><p class="titreLigne">Anatomie d'une chute</p><p class="sousTitreLigne">Justine Triet · 2023</p><p class="dateLigne">27 septembre 2026</p></div></a><a class="ligne" href="#"><div class="affiche ligne p5">Perfect Days<span class="note">7</span></div><div class="infosLigne"><p class="titreLigne">Perfect Days</p><p class="sousTitreLigne">Wim Wenders · 2023</p><p class="dateLigne">19 septembre 2026</p></div></a><a class="ligne" href="#"><div class="affiche ligne p3">Aftersun<span class="note">9</span></div><div class="infosLigne"><p class="titreLigne">Aftersun</p><p class="sousTitreLigne">Charlotte Wells · 2022</p><p class="dateLigne">6 septembre 2026</p></div></a></div></section></div><nav class="barre" aria-label="Onglets"><ul class="rouleau"><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-home"/></svg><span>Accueil</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-route"/></svg><span>Voyage</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-chair"/></svg><span>Suivis</span></a></li><li class=courant><a class="onglet" href="#" aria-current=page><svg class="ico " aria-hidden="true"><use href="#i-ticket"/></svg><span>Au ciné</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-armchair"/></svg><span>Profil</span></a></li></ul></nav></div><div class="notes"><h3>Notes de conception</h3><ol><li><b>En-tête inchangé</b> : titre Bodoni et compte à droite, comme aujourd’hui. Le compte reste absent tant que les séances ne sont pas là.</li><li><b>La bande « Prochaines séances »</b><ul class="sub"><li><b>Le panneau est celui du fronton</b> : crème, cadre, rail de 1,75&nbsp;rem et ampoules (<code>--fronton-*</code>). Une ligne fait exactement deux pas de rail, comme le titre compact. Aucun jeton nouveau.</li><li><b>Heure en League Gothic</b>, très grosse ; la prochaine séance passe en rouge fronton avec « dans 5&nbsp;min ». Tri : heure, puis cinéma le plus proche (voir 19:15).</li><li><b>Version dans un cadre</b> (VF, VOST), comme la tuile de note. Le sceau passe devant le cinéma ; la légende en pied l’explique.</li><li><b>Contrepartie</b> : c’est la variante la plus décorative ; la nuit, le panneau reste crème, donc c’est le point le plus clair de la page.</li></ul></li><li><b>Tuiles de la semaine</b> : la prochaine séance du jour s’ajoute en bas à gauche de l’affiche (même langage que la tuile de note, en bas à droite pour la coche « déjà dans ton journal »). Le sceau reste en haut à droite. Une tuile sans séance restante aujourd’hui n’a pas de repère. Le sous-titre garde le ou les cinémas.</li><li><b>« La semaine prochaine » et « Tes séances »</b> : inchangés. Aucune séance n’est connue pour la semaine prochaine, donc pas de repère horaire.</li></ol></div></section><section class="variante" id="b"><div class="variante-tete"><p class="num">Variante B</p><h2>Sobre</h2><p>Même langage que les onglets d’aujourd’hui : carte de surface, titres de section en petites capitales.</p></div>
+<div class="ecran"><div class="page"><div class="entete" style="position:relative"><span class="pin " aria-hidden="true">1</span><h1>Au ciné</h1><p class="compte">12&nbsp;séances cette année</p></div><section class="section"><span class="pin " aria-hidden="true">2</span><div class="enteteSection"><h2 class="titreSection" style="margin:0;font-family:var(--police-texte);line-height:inherit">Prochaines séances</h2><p class="maj">Aujourd’hui · dès 18:55</p></div><div class="carte"><ol><li class="b-ligne prochaine"><div class="b-heure"><span>19:00</span><span class="reste">dans&nbsp;5&nbsp;min</span></div><div style="min-width:0"><p class="b-titre">Digger</p><p class="b-meta">UGC Les Halles · à&nbsp;1,2 km</p></div><span class="puce">VF</span></li><li class="b-ligne"><div class="b-heure"><span>19:10</span></div><div style="min-width:0"><p class="b-titre">Le Chant des oliviers</p><p class="b-meta">UGC Odéon · à&nbsp;1,9 km</p><p class="b-suivi"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span>Réalisateur suivi</p></div><span class="puce">VOST</span></li><li class="b-ligne"><div class="b-heure"><span>19:15</span></div><div style="min-width:0"><p class="b-titre">Mémoire de fille</p><p class="b-meta">UGC Les Halles · à&nbsp;1,2 km</p></div><span class="puce">VF</span></li><li class="b-ligne"><div class="b-heure"><span>19:15</span></div><div style="min-width:0"><p class="b-titre">Raison et sentiments</p><p class="b-meta">UGC Opéra · à&nbsp;2,6 km</p><p class="b-suivi"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span>Réalisateur suivi</p></div><span class="puce">VOST</span></li><li class="b-ligne"><div class="b-heure"><span>19:20</span></div><div style="min-width:0"><p class="b-titre">Verity</p><p class="b-meta">UGC Les Halles · à&nbsp;1,2 km</p></div><span class="puce">VF</span></li></ol><div class="b-pied"><a class="lienTout" href="#">Tout voir (14&nbsp;séances)<svg class="ico " aria-hidden="true"><use href="#i-arrow"/></svg></a></div></div></section><section class="section"><span class="pin " aria-hidden="true">3</span><div class="enteteSection"><p class="titreSection">Sorti cette semaine dans mes cinémas</p><p class="maj">Mis à jour il y a 2&nbsp;h</p></div><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p1">Verity</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:20</span></div><p class="titreTuile">Verity</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p2">Kraken</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:05</span></div><p class="titreTuile">Kraken</p><p class="sousTitreTuile">3 cinémas</p></div><div class="tuile"><div class="jaquette"><div class="affiche p3">Mémoire de fille</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:15</span></div><p class="titreTuile">Mémoire de fille</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p4">Digger</div><span class="coche" role="img" aria-label="Déjà dans ton journal"><svg class="ico " aria-hidden="true"><use href="#i-check"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:00</span></div><p class="titreTuile">Digger</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p5">Notre salut</div><span class="sceau" role="img" aria-label="Saga suivie"><svg class="ico " aria-hidden="true"><use href="#i-movie"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:30</span></div><p class="titreTuile">Notre salut</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p6">Le Chant des oliviers</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:10</span></div><p class="titreTuile">Le Chant des oliviers</p><p class="sousTitreTuile">UGC Odéon</p></div></div></section><section class="section"><span class="pin " aria-hidden="true">4</span><p class="titreSection">La semaine prochaine</p><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p7">Les Heures claires</div></div><p class="titreTuile">Les Heures claires</p></div><div class="tuile"><div class="jaquette"><div class="affiche p8">Nuit de Saint-Jean</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span></div><p class="titreTuile">Nuit de Saint-Jean</p></div><div class="tuile"><div class="jaquette"><div class="affiche p9">Le Phare</div></div><p class="titreTuile">Le Phare</p></div></div></section><section class="section"><span class="pin " aria-hidden="true">4</span><p class="titreSection">Tes séances</p><div class="liste"><a class="ligne" href="#"><div class="affiche ligne p10">Anatomie d'une chute<span class="note">8</span></div><div class="infosLigne"><p class="titreLigne">Anatomie d'une chute</p><p class="sousTitreLigne">Justine Triet · 2023</p><p class="dateLigne">27 septembre 2026</p></div></a><a class="ligne" href="#"><div class="affiche ligne p5">Perfect Days<span class="note">7</span></div><div class="infosLigne"><p class="titreLigne">Perfect Days</p><p class="sousTitreLigne">Wim Wenders · 2023</p><p class="dateLigne">19 septembre 2026</p></div></a><a class="ligne" href="#"><div class="affiche ligne p3">Aftersun<span class="note">9</span></div><div class="infosLigne"><p class="titreLigne">Aftersun</p><p class="sousTitreLigne">Charlotte Wells · 2022</p><p class="dateLigne">6 septembre 2026</p></div></a></div></section></div><nav class="barre" aria-label="Onglets"><ul class="rouleau"><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-home"/></svg><span>Accueil</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-route"/></svg><span>Voyage</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-chair"/></svg><span>Suivis</span></a></li><li class=courant><a class="onglet" href="#" aria-current=page><svg class="ico " aria-hidden="true"><use href="#i-ticket"/></svg><span>Au ciné</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-armchair"/></svg><span>Profil</span></a></li></ul></nav></div><div class="notes"><h3>Notes de conception</h3><ol><li><b>En-tête inchangé</b> : titre Bodoni et compte à droite, comme aujourd’hui. Le compte reste absent tant que les séances ne sont pas là.</li><li><b>La bande « Prochaines séances »</b><ul class="sub"><li><b>Une carte, cinq lignes</b> : heure en gras à gauche, titre et « cinéma · distance » au centre, version en puce à droite. La première ligne a l’heure en accent et « dans 5&nbsp;min ».</li><li><b>Le sceau devient une ligne</b> « Réalisateur suivi » sous le cinéma : on lit pourquoi un vieux film est là sans deviner l’icône.</li><li><b>« Tout voir » dans la carte</b>, avec le total (14 séances).</li></ul></li><li><b>Tuiles de la semaine</b> : la prochaine séance du jour s’ajoute en bas à gauche de l’affiche (même langage que la tuile de note, en bas à droite pour la coche « déjà dans ton journal »). Le sceau reste en haut à droite. Une tuile sans séance restante aujourd’hui n’a pas de repère. Le sous-titre garde le ou les cinémas.</li><li><b>« La semaine prochaine » et « Tes séances »</b> : inchangés. Aucune séance n’est connue pour la semaine prochaine, donc pas de repère horaire.</li></ol></div></section><section class="variante" id="c"><div class="variante-tete"><p class="num">Variante C</p><h2>Les tickets</h2><p>Chaque séance est une souche perforée ; la bande défile sur le côté.</p></div>
+<div class="ecran"><div class="page"><div class="entete" style="position:relative"><span class="pin " aria-hidden="true">1</span><h1>Au ciné</h1><p class="compte">12&nbsp;séances cette année</p></div><section class="section"><span class="pin " aria-hidden="true">2</span><div class="enteteSection"><h2 class="titreSection" style="margin:0;font-family:var(--police-texte);line-height:inherit">Prochaines séances</h2><p class="maj">Aujourd’hui · dès 18:55</p></div>
+<ol class="rail" tabindex="0" aria-label="Prochaines séances, défile sur le côté"><li class="billet"><article class="papier"><div class="corps"><span class="c-heure">19:00</span><span class="c-titre">Digger</span><span class="c-lieu">UGC Les Halles</span><span class="c-reste">dans&nbsp;5&nbsp;min</span></div><div class="souche"><span class="c-version">VF</span><span>1,2 km</span></div></article></li><li class="billet"><article class="papier"><div class="corps"><span class="c-heure">19:10</span><span class="c-titre">Le Chant des oliviers</span><span class="c-lieu">UGC Odéon</span></div><div class="souche"><span class="c-version">VOST</span><span>1,9 km</span><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span></div></article></li><li class="billet"><article class="papier"><div class="corps"><span class="c-heure">19:15</span><span class="c-titre">Mémoire de fille</span><span class="c-lieu">UGC Les Halles</span></div><div class="souche"><span class="c-version">VF</span><span>1,2 km</span></div></article></li><li class="billet"><article class="papier"><div class="corps"><span class="c-heure">19:15</span><span class="c-titre">Raison et sentiments</span><span class="c-lieu">UGC Opéra</span></div><div class="souche"><span class="c-version">VOST</span><span>2,6 km</span><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span></div></article></li><li class="billet"><article class="papier"><div class="corps"><span class="c-heure">19:20</span><span class="c-titre">Verity</span><span class="c-lieu">UGC Les Halles</span></div><div class="souche"><span class="c-version">VF</span><span>1,2 km</span></div></article></li><li class="billet dernier"><a class="papier" href="#" style="color:var(--ticket-encre);text-decoration:none"><span>Tout voir</span><small>14&nbsp;séances</small><svg class="ico " aria-hidden="true"><use href="#i-arrow"/></svg></a></li></ol>
+<p class="c-legende"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span> Réalisateur ou saga suivi · glisse pour voir la suite</p></section><section class="section"><span class="pin " aria-hidden="true">3</span><div class="enteteSection"><p class="titreSection">Sorti cette semaine dans mes cinémas</p><p class="maj">Mis à jour il y a 2&nbsp;h</p></div><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p1">Verity</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:20</span></div><p class="titreTuile">Verity</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p2">Kraken</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:05</span></div><p class="titreTuile">Kraken</p><p class="sousTitreTuile">3 cinémas</p></div><div class="tuile"><div class="jaquette"><div class="affiche p3">Mémoire de fille</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:15</span></div><p class="titreTuile">Mémoire de fille</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p4">Digger</div><span class="coche" role="img" aria-label="Déjà dans ton journal"><svg class="ico " aria-hidden="true"><use href="#i-check"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:00</span></div><p class="titreTuile">Digger</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p5">Notre salut</div><span class="sceau" role="img" aria-label="Saga suivie"><svg class="ico " aria-hidden="true"><use href="#i-movie"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:30</span></div><p class="titreTuile">Notre salut</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p6">Le Chant des oliviers</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:10</span></div><p class="titreTuile">Le Chant des oliviers</p><p class="sousTitreTuile">UGC Odéon</p></div></div></section><section class="section"><span class="pin " aria-hidden="true">4</span><p class="titreSection">La semaine prochaine</p><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p7">Les Heures claires</div></div><p class="titreTuile">Les Heures claires</p></div><div class="tuile"><div class="jaquette"><div class="affiche p8">Nuit de Saint-Jean</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span></div><p class="titreTuile">Nuit de Saint-Jean</p></div><div class="tuile"><div class="jaquette"><div class="affiche p9">Le Phare</div></div><p class="titreTuile">Le Phare</p></div></div></section><section class="section"><span class="pin " aria-hidden="true">4</span><p class="titreSection">Tes séances</p><div class="liste"><a class="ligne" href="#"><div class="affiche ligne p10">Anatomie d'une chute<span class="note">8</span></div><div class="infosLigne"><p class="titreLigne">Anatomie d'une chute</p><p class="sousTitreLigne">Justine Triet · 2023</p><p class="dateLigne">27 septembre 2026</p></div></a><a class="ligne" href="#"><div class="affiche ligne p5">Perfect Days<span class="note">7</span></div><div class="infosLigne"><p class="titreLigne">Perfect Days</p><p class="sousTitreLigne">Wim Wenders · 2023</p><p class="dateLigne">19 septembre 2026</p></div></a><a class="ligne" href="#"><div class="affiche ligne p3">Aftersun<span class="note">9</span></div><div class="infosLigne"><p class="titreLigne">Aftersun</p><p class="sousTitreLigne">Charlotte Wells · 2022</p><p class="dateLigne">6 septembre 2026</p></div></a></div></section></div><nav class="barre" aria-label="Onglets"><ul class="rouleau"><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-home"/></svg><span>Accueil</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-route"/></svg><span>Voyage</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-chair"/></svg><span>Suivis</span></a></li><li class=courant><a class="onglet" href="#" aria-current=page><svg class="ico " aria-hidden="true"><use href="#i-ticket"/></svg><span>Au ciné</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-armchair"/></svg><span>Profil</span></a></li></ul></nav></div><div class="notes"><h3>Notes de conception</h3><ol><li><b>En-tête inchangé</b> : titre Bodoni et compte à droite, comme aujourd’hui. Le compte reste absent tant que les séances ne sont pas là.</li><li><b>La bande « Prochaines séances »</b><ul class="sub"><li><b>La souche est celle du profil</b> : papier, bande rouge, pointillé et encoches (<code>--ticket-*</code>), même masque. Souche à droite : version, distance, sceau. Bande vive pour le premier.</li><li><b>Défilement horizontal</b> : on voit un ticket et demi, ce qui dit qu’il y en a d’autres. Le dernier ticket est « Tout voir ». La rangée est focalisable au clavier.</li><li><b>Contrepartie</b> : cinq séances demandent un geste pour être vues, et le papier crème reste clair la nuit ; le rouge du « dans 5&nbsp;min » reprend le rouge fronton, lisible sur le papier.</li></ul></li><li><b>Tuiles de la semaine</b> : la prochaine séance du jour s’ajoute en bas à gauche de l’affiche (même langage que la tuile de note, en bas à droite pour la coche « déjà dans ton journal »). Le sceau reste en haut à droite. Une tuile sans séance restante aujourd’hui n’a pas de repère. Le sous-titre garde le ou les cinémas.</li><li><b>« La semaine prochaine » et « Tes séances »</b> : inchangés. Aucune séance n’est connue pour la semaine prochaine, donc pas de repère horaire.</li></ol></div></section></div>
+<h2 class="titre-bloc">Cas limites et fiche film</h2>
+<div class="extra"><div><h3>B · Sans autorisation de position</h3><div class="ecran"><div class="page"><div class="entete" style="position:relative"><h1>Au ciné</h1><p class="compte">12&nbsp;séances cette année</p></div><section class="section"><div class="enteteSection"><h2 class="titreSection" style="margin:0;font-family:var(--police-texte);line-height:inherit">Prochaines séances</h2><p class="maj">Aujourd’hui · dès 18:55</p></div><div class="carte"><ol><li class="b-ligne prochaine"><div class="b-heure"><span>19:00</span></div><div style="min-width:0"><p class="b-titre">Digger</p><p class="b-meta">UGC Les Halles</p></div><span class="puce">VF</span></li><li class="b-ligne"><div class="b-heure"><span>19:10</span></div><div style="min-width:0"><p class="b-titre">Le Chant des oliviers</p><p class="b-meta">UGC Odéon</p><p class="b-suivi"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span>Réalisateur suivi</p></div><span class="puce">VOST</span></li><li class="b-ligne"><div class="b-heure"><span>19:15</span></div><div style="min-width:0"><p class="b-titre">Mémoire de fille</p><p class="b-meta">UGC Les Halles</p></div><span class="puce">VF</span></li><li class="b-ligne"><div class="b-heure"><span>19:15</span></div><div style="min-width:0"><p class="b-titre">Raison et sentiments</p><p class="b-meta">UGC Opéra</p><p class="b-suivi"><span class="sceau mini" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span>Réalisateur suivi</p></div><span class="puce">VOST</span></li><li class="b-ligne"><div class="b-heure"><span>19:20</span></div><div style="min-width:0"><p class="b-titre">Verity</p><p class="b-meta">UGC Les Halles</p></div><span class="puce">VF</span></li></ol><div class="b-position hypothese" style="outline-offset:-3px"><svg class="ico " aria-hidden="true"><use href="#i-pin"/></svg><p>Autoriser la position pour voir les salles les plus proches</p><button class="boutonSecondaire" type="button">Autoriser</button></div><div class="b-pied"><a class="lienTout" href="#">Tout voir (14&nbsp;séances)<svg class="ico " aria-hidden="true"><use href="#i-arrow"/></svg></a></div></div></section><section class="section"><div class="enteteSection"><p class="titreSection">Sorti cette semaine dans mes cinémas</p><p class="maj">Mis à jour il y a 2&nbsp;h</p></div><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p1">Verity</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:20</span></div><p class="titreTuile">Verity</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p2">Kraken</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:05</span></div><p class="titreTuile">Kraken</p><p class="sousTitreTuile">3 cinémas</p></div><div class="tuile"><div class="jaquette"><div class="affiche p3">Mémoire de fille</div><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:15</span></div><p class="titreTuile">Mémoire de fille</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p4">Digger</div><span class="coche" role="img" aria-label="Déjà dans ton journal"><svg class="ico " aria-hidden="true"><use href="#i-check"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:00</span></div><p class="titreTuile">Digger</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p5">Notre salut</div><span class="sceau" role="img" aria-label="Saga suivie"><svg class="ico " aria-hidden="true"><use href="#i-movie"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>20:30</span></div><p class="titreTuile">Notre salut</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p6">Le Chant des oliviers</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span><span class="heureTuile"><span class="sr-only">Prochaine séance à </span>19:10</span></div><p class="titreTuile">Le Chant des oliviers</p><p class="sousTitreTuile">UGC Odéon</p></div></div></section></div><nav class="barre" aria-label="Onglets"><ul class="rouleau"><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-home"/></svg><span>Accueil</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-route"/></svg><span>Voyage</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-chair"/></svg><span>Suivis</span></a></li><li class=courant><a class="onglet" href="#" aria-current=page><svg class="ico " aria-hidden="true"><use href="#i-ticket"/></svg><span>Au ciné</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-armchair"/></svg><span>Profil</span></a></li></ul></nav></div></div>
+<div class="notes plain"><h3>Notes</h3><ol>
+<li><b>Tri par heure seule</b>, puis par nom de cinéma à égalité : sans position, « le plus proche » n’existe pas. Plus de distances ni de « dans 5&nbsp;min ».</li>
+<li><b>Une ligne discrète</b> et un bouton, pas de fenêtre au chargement : la permission ne se demande qu’au toucher.</li>
+<li><b>La position ne quitte jamais le téléphone</b> : elle sert à calculer les distances sur l’appareil, à partir des coordonnées des cinémas ; rien n’est envoyé au serveur ni mémorisé. À écrire aussi dans la ligne de confirmation.</li>
+<li>Les tuiles gardent leur heure : elle ne dépend pas de la position.</li>
+</ol></div></div><div class="extra"><div><h3>B · Plus de séance ce soir (23:10)</h3><div class="ecran"><div class="page"><div class="entete" style="position:relative"><h1>Au ciné</h1><p class="compte">12&nbsp;séances cette année</p></div><section class="section"><div class="enteteSection"><h2 class="titreSection" style="margin:0;font-family:var(--police-texte);line-height:inherit">Prochaines séances</h2><p class="maj">Aujourd’hui · 23:10</p></div><div class="carte"><p class="b-vide">Plus de séance ce soir.<small>Les séances de demain s’afficheront à minuit.</small></p></div></section><section class="section"><div class="enteteSection"><p class="titreSection">Sorti cette semaine dans mes cinémas</p><p class="maj">Mis à jour il y a 2&nbsp;h</p></div><div class="grille"><div class="tuile"><div class="jaquette"><div class="affiche p1">Verity</div></div><p class="titreTuile">Verity</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p2">Kraken</div></div><p class="titreTuile">Kraken</p><p class="sousTitreTuile">3 cinémas</p></div><div class="tuile"><div class="jaquette"><div class="affiche p3">Mémoire de fille</div></div><p class="titreTuile">Mémoire de fille</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p4">Digger</div><span class="coche" role="img" aria-label="Déjà dans ton journal"><svg class="ico " aria-hidden="true"><use href="#i-check"/></svg></span></div><p class="titreTuile">Digger</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p5">Notre salut</div><span class="sceau" role="img" aria-label="Saga suivie"><svg class="ico " aria-hidden="true"><use href="#i-movie"/></svg></span></div><p class="titreTuile">Notre salut</p><p class="sousTitreTuile">UGC Les Halles</p></div><div class="tuile"><div class="jaquette"><div class="affiche p6">Le Chant des oliviers</div><span class="sceau" role="img" aria-label="Réalisateur suivi"><svg class="ico " aria-hidden="true"><use href="#i-user"/></svg></span></div><p class="titreTuile">Le Chant des oliviers</p><p class="sousTitreTuile">UGC Odéon</p></div></div></section></div><nav class="barre" aria-label="Onglets"><ul class="rouleau"><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-home"/></svg><span>Accueil</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-route"/></svg><span>Voyage</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-chair"/></svg><span>Suivis</span></a></li><li class=courant><a class="onglet" href="#" aria-current=page><svg class="ico " aria-hidden="true"><use href="#i-ticket"/></svg><span>Au ciné</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-armchair"/></svg><span>Profil</span></a></li></ul></nav></div></div>
+<div class="notes plain"><h3>Notes</h3><ol>
+<li><b>La bande reste en place</b> avec « Plus de séance ce soir. » : une bande qui disparaît ferait croire à une panne ou à un chargement.</li>
+<li><b>Sous-ligne à décider</b> : « Les séances de demain s’afficheront à minuit » est une proposition ; une alternative serait un lien « Voir demain » (hors périmètre « aujourd’hui seulement »).</li>
+<li><b>Les tuiles perdent leur repère horaire</b>, plus rien n’étant à venir aujourd’hui ; le reste de la page ne bouge pas.</li>
+</ol></div></div><div class="extra"><div><h3>Fiche film · « Séances aujourd’hui »</h3><div class="ecran"><div class="page">
+<div class="f-entete"><a class="retour" href="#" aria-label="Retour" style="color:inherit"><svg class="ico " aria-hidden="true"><use href="#i-back"/></svg></a></div>
+<div class="film" style="position:relative"><span class="pin " aria-hidden="true">1</span>
+ <div class="affiche fiche p1">Verity</div>
+ <div class="infos"><h1>Verity</h1><p class="annee">2026</p><p><a href="#">Michael Showalter</a></p><p class="meta">Drame, Thriller · 1&nbsp;h&nbsp;54&nbsp;min</p>
+ <div class="notes-pub hypothese" style="position:relative;align-self:flex-start"><span class="pin dans" aria-hidden="true">2</span><span class="puce">Spectateurs<b>3,0</b></span><span class="puce">Presse<b>2,3</b></span></div></div>
+</div>
+<button class="bouton" type="button" style="position:relative"><span class="pin " aria-hidden="true">3</span>Ajouter à mon journal</button>
+<p class="synopsis" style="position:relative"><span class="pin " aria-hidden="true">4</span>Peinant à vivre de son métier, Lowen Ashleigh est une écrivaine qui accepte de devenir le prête-plume de l’autrice à succès Verity Crawford…</p>
+<section class="seances"><span class="pin " aria-hidden="true">5</span>
+ <div class="enteteSection"><h2 class="titreSection" style="margin:0;font-family:var(--police-texte);line-height:inherit">Séances aujourd’hui</h2><p class="maj">dès 18:55</p></div>
+ <p class="s-reste"><span class="reste">Prochaine séance dans&nbsp;25&nbsp;min</span></p>
+ <div style="position:relative"><span class="pin " aria-hidden="true">6</span><article class="s-cinema"><header><h3>UGC Ciné Cité Les Halles</h3><span class="s-dist">à&nbsp;1,2 km</span></header><div class="creneaux" role="list"><a class="creneau passe" href="#"><span>09:00</span><small>VF</small><span class=sr-only> (passée)</span></a><a class="creneau passe" href="#"><span>11:35</span><small>VF</small><span class=sr-only> (passée)</span></a><a class="creneau passe" href="#"><span>14:10</span><small>VF</small><span class=sr-only> (passée)</span></a><a class="creneau passe" href="#"><span>16:45</span><small>VF</small><span class=sr-only> (passée)</span></a><a class="creneau suivante" href="#"><span>19:20</span><small>VF</small></a><a class="creneau " href="#"><span>21:55</span><small>VF</small></a></div></article></div>
+ <article class="s-cinema"><header><h3>UGC Odéon</h3><span class="s-dist">à&nbsp;1,9 km</span></header><div class="creneaux" role="list"><a class="creneau passe" href="#"><span>17:30</span><small>VOST</small><span class=sr-only> (passée)</span></a><a class="creneau " href="#"><span>20:00</span><small>VOST</small></a><a class="creneau " href="#"><span>22:20</span><small>VOST</small></a></div></article>
+ <article class="s-cinema"><header><h3>UGC Danton</h3><span class="s-dist">à&nbsp;2,3 km</span></header><div class="creneaux" role="list"><a class="creneau passe" href="#"><span>18:40</span><small>VF</small><span class=sr-only> (passée)</span></a><a class="creneau " href="#"><span>21:10</span><small>VF</small></a></div></article>
+ <p class="maj">Sans la position : cinémas par ordre alphabétique, sans distance.</p>
+</section></div><nav class="barre" aria-label="Onglets"><ul class="rouleau"><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-home"/></svg><span>Accueil</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-route"/></svg><span>Voyage</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-chair"/></svg><span>Suivis</span></a></li><li class=courant><a class="onglet" href="#" aria-current=page><svg class="ico " aria-hidden="true"><use href="#i-ticket"/></svg><span>Au ciné</span></a></li><li><a class="onglet" href="#"><svg class="ico " aria-hidden="true"><use href="#i-armchair"/></svg><span>Profil</span></a></li></ul></nav></div></div>
+<div class="notes"><h3>Notes</h3><ol>
+<li><b>Contenu existant de FicheFilm</b> : affiche, titre, année, réalisateur (lien accent). La durée et les genres s’y ajoutent ; la page actuelle ne les porte pas.</li>
+<li><b>Notes Spectateurs et Presse : à décider</b> (cadre pointillé). Sous le réalisateur elles se lisent d’un coup d’œil ; aucune source n’est tranchée.</li>
+<li><b>Action « Ajouter à mon journal »</b>, bouton plein d’accent, comme « Marquer comme vu » aujourd’hui. Libellé à confirmer.</li>
+<li><b>Synopsis</b> repris tel quel. À décider : le remonter sous les séances, qui sont ce qu’on vient chercher quand le film est à l’affiche.</li>
+<li><b>Bloc « Séances aujourd’hui »</b>, présent seulement si le film passe. Un compte à rebours pour la prochaine séance.</li>
+<li><b>Un cadre par cinéma</b>, le plus proche en premier, distance à droite. Créneaux en pastilles de 44&nbsp;px avec la version. Les séances passées sont grisées et en pointillé (lues « passée » au lecteur d’écran), la prochaine est cerclée d’accent. <b>Réservation : chaque créneau pourrait ouvrir un lien fourni par Allociné, à décider.</b></li>
+</ol></div></div>
+<ul class="pied"><li><b>Ce que la maquette suppose du back</b> : les séances du jour par cinéma (heure, version, lien de réservation), les coordonnées des cinémas pour la distance, et la durée, les genres, le synopsis et les notes d’un film. Rien de cela n’est dans le contrat aujourd’hui.</li>
+<li>Les affiches sont des dégradés (jetons <code>--maquette-affiche-*</code>, propres à ce fichier). Les noms de cinémas, distances, réalisateurs et titres autres que ceux d’Allociné sont inventés.</li></ul>
+<script>
+const racine = document.documentElement, bouton = document.getElementById('bascule');
+const sombre = () => racine.dataset.theme ? racine.dataset.theme === 'sombre' : matchMedia('(prefers-color-scheme: dark)').matches;
+const libelle = () => { bouton.textContent = sombre() ? 'Passer en clair' : 'Passer en sombre'; };
+bouton.addEventListener('click', () => { racine.dataset.theme = sombre() ? 'clair' : 'sombre'; libelle(); });
+libelle();
+</script></body></html>
