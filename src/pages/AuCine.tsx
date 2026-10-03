@@ -6,15 +6,13 @@ import { cles } from '../api/cles'
 import { curseurSuivant, lireSeances } from '../api/journal'
 import { lireRealisateurs } from '../api/realisateurs'
 import { lireSagas } from '../api/sagas'
+import { lireProchainesSeances } from '../api/seances'
 import { lireSorties } from '../api/sorties'
-import {
-  candidatDepuisSortieEnCours,
-  candidatDepuisSortieProchaine,
-  sortieEnCoursOuvrable,
-} from '../formulaire/candidat'
+import { sortieEnCoursOuvrable } from '../formulaire/candidat'
 import {
   cinemaUniqueEnCours,
   dejaDansLeJournal,
+  dernierVisionnage,
   marqueEnCours,
   marqueProchaine,
   messageAuCine,
@@ -24,6 +22,10 @@ import {
   sousTitreCinemas,
   type MarqueSuivi,
 } from '../cinema/etats'
+import { entreesDuTableau, heureAffichee, prochaineSeanceParFilm } from '../cinema/seances'
+import { TableauDuHall, TableauEnAttente } from '../cinema/TableauDuHall'
+import { useMaintenant } from '../cinema/useMaintenant'
+import { usePosition } from '../cinema/usePosition'
 import { useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useChargementInfini } from '../accueil/useChargementInfini'
 import Affiche from '../ui/Affiche'
@@ -34,7 +36,7 @@ import { formatDateVisionnage, sousTitre } from '../ui/format'
 import styles from './AuCine.module.css'
 import type { JournalItem } from '../api/journal'
 import type { SortieEnCoursFilm, SortieProchaineFilm } from '../api/sorties'
-import type { CandidatFilm } from '../formulaire/candidat'
+import type { EtatFiche } from './FicheFilm'
 
 /** Deux rangées de la grille des sorties, trois tuiles chacune. */
 const TUILES_EN_ATTENTE = 6
@@ -54,7 +56,14 @@ const LIMITE = 40
  * (`GET /me/realisateurs`, `GET /me/sagas`, sans TMDB derrière) se demandent ici : une page ouverte
  * ou rechargée directement n'a pas eu l'accueil pour les amorcer.
  *
- * Deux appels indépendants, chacun avec son chargement et son erreur (même règle que
+ * « Prochaines séances » (`GET /me/cinema/seances`, une seule requête de plus) ouvre la page : le
+ * tableau du hall (`cinema/TableauDuHall.tsx`), puis, sur chaque tuile de la semaine, l'heure de sa
+ * prochaine séance. Les séances commencées s'en vont d'elles-mêmes (`useMaintenant`, une horloge qui
+ * refiltre, jamais un nouvel appel). La position du membre, qui ne sert qu'à classer les salles par
+ * distance, ne se demande qu'au toucher de « Autoriser » (`cinema/usePosition.ts`). Toucher un film
+ * ouvre sa fiche sous `au-cine/films/:tmdbId`, l'onglet restant marqué.
+ *
+ * Trois appels indépendants, chacun avec son chargement et son erreur (même règle que
  * `AuCineViewModel` : une panne TMDB n'a aucune raison d'effacer « Tes séances », qui vient d'une
  * route différente).
  */
@@ -66,6 +75,13 @@ export default function AuCine() {
   const sagasSuivies = useQuery({ queryKey: cles.sagas, queryFn: ({ signal }) => lireSagas(signal) })
   const filmographiesSagas = useFilmographiesSagas(sagasSuivies.data, false)
   const reperes = reperesSuivis(realisateursSuivis.data, filmographiesSagas)
+
+  const prochainesSeances = useQuery({
+    queryKey: cles.prochainesSeances,
+    queryFn: ({ signal }) => lireProchainesSeances(signal),
+  })
+  const position = usePosition()
+  const maintenant = useMaintenant()
 
   const seances = useInfiniteQuery({
     queryKey: cles.seances,
@@ -87,6 +103,19 @@ export default function AuCine() {
   const chargementComplet = !hasNextPage
   const compte = seancesCetteAnnee(items, new Date().getFullYear())
 
+  const entrees = useMemo(
+    () => entreesDuTableau(prochainesSeances.data, position.coordonnees, maintenant),
+    [prochainesSeances.data, position.coordonnees, maintenant],
+  )
+  const prochaineParFilm = useMemo(
+    () => prochaineSeanceParFilm(prochainesSeances.data?.seances, maintenant),
+    [prochainesSeances.data, maintenant],
+  )
+  // Offrir la position n'a de sens que si un cinéma a des coordonnées à rapprocher d'elle.
+  const proposerPosition =
+    position.statut === 'a_demander' && (prochainesSeances.data?.cinemas.some((cinema) => cinema.latitude != null && cinema.longitude != null) ?? false)
+  const ouvrir = (film: FilmOuvrable) => ({ to: `/au-cine/films/${film.tmdb_id}`, state: etatFiche(film, items) })
+
   const enCours = sorties.data?.en_cours
   const messageEnCours = enCours ? messageAuCine(enCours) : null
   const majAffichee = enCours ? miseAJourAffichee(enCours.calcule_le) : null
@@ -105,6 +134,26 @@ export default function AuCine() {
           </p>
         )}
       </div>
+
+      <section className={styles.section}>
+        <div className={styles.enteteSection}>
+          <p className={styles.titreSection}>Prochaines séances</p>
+          <p className={styles.maj}>Aujourd’hui</p>
+        </div>
+        {prochainesSeances.isPending ? (
+          <TableauEnAttente />
+        ) : prochainesSeances.error ? (
+          <Panne erreur={prochainesSeances.error} onReessayer={() => void prochainesSeances.refetch()} />
+        ) : (
+          <TableauDuHall
+            entrees={entrees}
+            maintenantMs={maintenant}
+            ouvrir={ouvrir}
+            proposerPosition={proposerPosition}
+            onAutoriser={position.demander}
+          />
+        )}
+      </section>
 
       <section className={styles.section}>
         <div className={styles.enteteSection}>
@@ -128,6 +177,8 @@ export default function AuCine() {
                   dejaVu={dejaDansLeJournal(items, film.tmdb_id)}
                   marque={marqueEnCours(reperes, film)}
                   avecCinemas={cinemaUnique == null}
+                  ouvrir={ouvrir}
+                  prochaineSeance={film.tmdb_id == null ? null : (prochaineParFilm.get(film.tmdb_id) ?? null)}
                 />
               ))}
             </div>
@@ -151,6 +202,7 @@ export default function AuCine() {
                 film={film}
                 dejaVu={dejaDansLeJournal(items, film.tmdb_id)}
                 marque={marqueProchaine(reperes, film)}
+                ouvrir={ouvrir}
               />
             ))}
           </div>
@@ -208,9 +260,44 @@ export default function AuCine() {
   )
 }
 
+/** Ce qu'il faut d'un film pour ouvrir sa fiche : les quatre champs que `FicheFilm` lit de son état de navigation. */
+interface FilmOuvrable {
+  tmdb_id: number
+  title: string
+  year: number | null
+  cover_url: string | null
+}
+
+type Ouvrir = (film: FilmOuvrable) => { to: string; state: unknown }
+
+/**
+ * L'état de navigation de la fiche d'un film ouvert depuis Au ciné : la fiche vit de lui. Ce que la
+ * ligne ne dit pas, la fiche le lit (`GET /reference/films/{id}`) ou le résout (ses réalisateurs).
+ * « Vu » vient des séances chargées de cet onglet, comme la coche des tuiles : un film vu hors salle,
+ * ou plus loin que les pages chargées, s'ouvre donc comme « à voir ».
+ */
+function etatFiche(film: FilmOuvrable, journal: JournalItem[]): EtatFiche {
+  const visionnage = dernierVisionnage(journal, film.tmdb_id)
+  return {
+    film: {
+      tmdb_id: film.tmdb_id,
+      title: film.title,
+      original_title: null,
+      year: film.year,
+      cover_url: film.cover_url,
+      vu: visionnage
+        ? { entry_id: visionnage.entry.id, rating: visionnage.entry.rating, finished_at: visionnage.entry.finished_at }
+        : null,
+      introuvable: false,
+    },
+    realisateur: null,
+  }
+}
+
 /**
  * Une tuile de sortie, commune aux deux grilles — l'affiche, la coche « déjà dans ton journal » en
- * bas à droite, le sceau d'un suivi en haut à droite, le titre, un sous-titre facultatif.
+ * bas à droite, l'heure de la prochaine séance en bas à gauche, le sceau d'un suivi en haut à droite,
+ * le titre, un sous-titre facultatif.
  */
 function Tuile({
   coverUrl,
@@ -218,15 +305,20 @@ function Tuile({
   sousTitre: sousTitreTexte,
   dejaVu,
   marque,
-  candidat,
+  film,
+  ouvrir,
+  prochaineSeance = null,
 }: {
   coverUrl: string | null
   title: string
   sousTitre?: string | null
   dejaVu: boolean
   marque: MarqueSuivi | null
-  /** `null` : la tuile n'est pas ouvrable (aucun `tmdb_id` résolu côté back), rien à préremplir. */
-  candidat: CandidatFilm | null
+  /** `null` : la tuile n'est pas ouvrable (aucun `tmdb_id` résolu côté back), pas de fiche à ouvrir. */
+  film: FilmOuvrable | null
+  ouvrir: Ouvrir
+  /** Le début de la prochaine séance à venir de ce film aujourd'hui, ou rien : alors aucun repère. */
+  prochaineSeance?: string | null
 }) {
   const contenu = (
     <>
@@ -244,16 +336,23 @@ function Tuile({
             className={styles.sceau}
           />
         ) : null}
+        {prochaineSeance ? (
+          <span className={styles.heureTuile}>
+            <span className="sr-only">Prochaine séance à </span>
+            {heureAffichee(prochaineSeance)}
+          </span>
+        ) : null}
       </div>
       <p className={styles.titreTuile}>{title}</p>
       {sousTitreTexte ? <p className={styles.sousTitreTuile}>{sousTitreTexte}</p> : null}
     </>
   )
 
-  if (!candidat) return <div className={styles.tuile}>{contenu}</div>
+  if (!film) return <div className={styles.tuile}>{contenu}</div>
 
+  const { to, state } = ouvrir(film)
   return (
-    <Link to="/journal/nouveau" state={{ candidat }} className={styles.tuile}>
+    <Link to={to} state={state} className={styles.tuile}>
       {contenu}
     </Link>
   )
@@ -268,11 +367,15 @@ function TuileEnCours({
   dejaVu,
   marque,
   avecCinemas,
+  ouvrir,
+  prochaineSeance,
 }: {
   film: SortieEnCoursFilm
   dejaVu: boolean
   marque: MarqueSuivi | null
   avecCinemas: boolean
+  ouvrir: Ouvrir
+  prochaineSeance: string | null
 }) {
   return (
     <Tuile
@@ -281,20 +384,33 @@ function TuileEnCours({
       sousTitre={avecCinemas ? sousTitreCinemas(film.cinemas) : null}
       dejaVu={dejaVu}
       marque={marque}
-      candidat={sortieEnCoursOuvrable(film) ? candidatDepuisSortieEnCours(film) : null}
+      film={sortieEnCoursOuvrable(film) ? film : null}
+      ouvrir={ouvrir}
+      prochaineSeance={prochaineSeance}
     />
   )
 }
 
-/** « La semaine prochaine » (TMDB) : toujours ouvrable, pas de cinéma à afficher. */
-function TuileProchaine({ film, dejaVu, marque }: { film: SortieProchaineFilm; dejaVu: boolean; marque: MarqueSuivi | null }) {
+/** « La semaine prochaine » (TMDB) : toujours ouvrable, pas de cinéma à afficher, ni d'heure : rien n'y passe encore. */
+function TuileProchaine({
+  film,
+  dejaVu,
+  marque,
+  ouvrir,
+}: {
+  film: SortieProchaineFilm
+  dejaVu: boolean
+  marque: MarqueSuivi | null
+  ouvrir: Ouvrir
+}) {
   return (
     <Tuile
       coverUrl={film.cover_url}
       title={film.title}
       dejaVu={dejaVu}
       marque={marque}
-      candidat={candidatDepuisSortieProchaine(film)}
+      film={film}
+      ouvrir={ouvrir}
     />
   )
 }

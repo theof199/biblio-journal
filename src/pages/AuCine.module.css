@@ -207,3 +207,21 @@
   font-size: var(--taille-m);
   cursor: pointer;
 }
+
+/* La prochaine séance du film, posée en bas à gauche de l'affiche : même tuile que la note, de l'autre côté de la coche. */
+.heureTuile {
+  position: absolute;
+  left: var(--espace-1);
+  bottom: var(--espace-1);
+  display: flex;
+  align-items: center;
+  min-height: var(--cote-tuile-note);
+  padding: 0 var(--espace-1);
+  border: var(--trait-tuile-note) solid var(--fronton-lettre);
+  background: var(--fronton-panneau);
+  color: var(--fronton-lettre);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-tuile-note);
+  letter-spacing: var(--tableau-interlettre-heure);
+  line-height: var(--interligne-serre);
+}

@@ -764,6 +764,17 @@
   --cote-tuile-note: 1.5rem; /* la tuile de note posée sur une affiche : au moins ce carré */
   --taille-tuile-note: 1.3125rem; /* le chiffre de cette tuile, en League Gothic */
   --trait-tuile-note: 1.5px; /* son cadre */
+  /* Le tableau des prochaines séances d'Au ciné : le panneau du fronton (`--fronton-*`), des lignes de deux pas de rail. */
+  --tableau-colonne-heure: 3.75rem; /* la colonne de l'heure, assez large pour « 19:05 » en grosses lettres */
+  --tableau-colonne-version: 2.75rem; /* la case « VOST » : au moins cette largeur, que VF remplit aussi */
+  --tableau-colonnes: var(--tableau-colonne-heure) minmax(0, 1fr) var(--tableau-colonne-version); /* l'heure, le film (qui prend le reste, sans déborder), la version */
+  --tableau-taille-heure: 2rem; /* l'heure d'une séance, en League Gothic */
+  --tableau-taille-titre: 1.375rem; /* le titre du film, en capitales */
+  --tableau-taille-version: 1.125rem; /* le mot de la version, dans sa case */
+  --tableau-interlettre-heure: 0.03em;
+  --tableau-interlettre-titre: 0.05em;
+  --sceau-mini-cote: 1.125rem; /* le sceau d'un suivi quand il se pose au fil d'une ligne, non sur une affiche */
+  --sceau-mini-icone: 0.6875rem;
   --largeur-vitrine-vide: 40%; /* le cadre d'affiche vide, avant le premier film */
   --hauteur-remarque: 6rem; /* la remarque privée du carnet, dans le formulaire */
   --largeur-affiche-fiche: 7rem; /* la jaquette de la fiche d'un visionnage */

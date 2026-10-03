@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import AuCine from './AuCine'
@@ -8,18 +8,29 @@ import { json, servir as servirBrut } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import type { JournalItem, JournalPage } from '../api/journal'
 import { cles } from '../api/cles'
+import type { CinemaDuJour, SeanceDuJour, SeancesDuJour } from '../api/seances'
 import type { Sorties } from '../api/sorties'
 import type { Realisateur } from '../api/realisateurs'
 import type { FilmsSaga, Saga } from '../api/sagas'
-import type { CandidatFilm } from '../formulaire/candidat'
+import type { EtatFiche } from './FicheFilm'
+import { FournisseurPosition } from '../cinema/FournisseurPosition'
+import { simulerNavigateur } from '../test/navigateur'
 
 /**
- * Depuis le sceau des Suivis, l'onglet demande aussi les deux listes suivies : vides ici, sauf
- * quand un test les pose lui-même (`routes` l'emporte sur ces défauts).
+ * Depuis le sceau des Suivis, l'onglet demande aussi les deux listes suivies, et depuis le tableau du
+ * hall les séances du jour : vides ici, sauf quand un test les pose lui-même (`routes` l'emporte sur
+ * ces défauts).
  */
 const servir = (routes: Parameters<typeof servirBrut>[0]) =>
-  servirBrut({ 'GET /api/me/realisateurs': () => json([]), 'GET /api/me/sagas': () => json([]), ...routes })
+  servirBrut({
+    'GET /api/me/realisateurs': () => json([]),
+    'GET /api/me/sagas': () => json([]),
+    [ROUTE_PROCHAINES_SEANCES]: () => json(SEANCES_VIDES),
+    ...routes,
+  })
 
+const ROUTE_PROCHAINES_SEANCES = 'GET /api/me/cinema/seances'
+const SEANCES_VIDES: SeancesDuJour = { jour: '2026-09-15', calcule_le: null, cinemas: [], seances: [] }
 const SORTIES_EXEMPLE = exemple<Sorties>('/reference/sorties', 'get', 200)
 const BASE_ITEM = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
 
@@ -72,14 +83,13 @@ const pannePassagere = async () => {
 const patienter = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const pagesDe = (requetes: string[]) => requetes.filter((r) => r.includes('cursor=page-2')).length
 
-/** Un lecteur de l'état de navigation : le formulaire de création (`candidat`). */
-function StubFormulaire() {
-  const location = useLocation()
-  const etat = location.state as { candidat?: CandidatFilm } | null
-  if (!etat?.candidat) return <p>Aucun candidat</p>
+/** Un lecteur de l'état de navigation : la fiche d'un film (`FicheFilm` vit de cet état). */
+function StubFicheFilm() {
+  const etat = useLocation().state as EtatFiche | null
+  if (!etat) return <p>Aucun état</p>
   return (
     <p>
-      Formulaire pour {etat.candidat.title} ({etat.candidat.source}:{etat.candidat.external_id})
+      Fiche du film {etat.film.title} ({etat.film.tmdb_id}), {etat.film.vu ? `vu (${etat.film.vu.entry_id})` : 'pas vu'}
     </p>
   )
 }
@@ -99,13 +109,15 @@ function StubFiche() {
 function monter(client = createQueryClient()) {
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/au-cine']}>
-        <Routes>
-          <Route path="/au-cine" element={<AuCine />} />
-          <Route path="/journal/nouveau" element={<StubFormulaire />} />
-          <Route path="/journal/:id" element={<StubFiche />} />
-        </Routes>
-      </MemoryRouter>
+      <FournisseurPosition>
+        <MemoryRouter initialEntries={['/au-cine']}>
+          <Routes>
+            <Route path="/au-cine" element={<AuCine />} />
+            <Route path="/au-cine/films/:tmdbId" element={<StubFicheFilm />} />
+            <Route path="/journal/:id" element={<StubFiche />} />
+          </Routes>
+        </MemoryRouter>
+      </FournisseurPosition>
     </QueryClientProvider>,
   )
 }
@@ -227,13 +239,27 @@ describe('Au ciné', () => {
     expect(screen.queryByLabelText('Déjà dans ton journal')).not.toBeInTheDocument()
   })
 
-  it('toucher une tuile ouvre le formulaire, prérempli sur ce film', async () => {
+  it('toucher une tuile ouvre la fiche du film sous Au ciné, pas le formulaire', async () => {
     servir({ 'GET /api/reference/sorties': () => json(SORTIES_EXEMPLE), ...routeSeances([]) })
     monter()
 
-    fireEvent.click(await screen.findByRole('link', { name: /Marée basse/ }))
+    const tuile = await screen.findByRole('link', { name: /Marée basse/ })
+    expect(tuile).toHaveAttribute('href', '/au-cine/films/1022789')
+    fireEvent.click(tuile)
 
-    expect(await screen.findByText('Formulaire pour Marée basse (tmdb:1022789)')).toBeInTheDocument()
+    expect(await screen.findByText('Fiche du film Marée basse (1022789), pas vu')).toBeInTheDocument()
+  })
+
+  it('une tuile d’un film déjà vu en salle ouvre sa fiche avec son visionnage, pour qu’elle ne propose pas de le marquer vu', async () => {
+    servir({
+      'GET /api/reference/sorties': () => json(SORTIES_EXEMPLE),
+      ...routeSeances([seance({ id: 'vu-1', finished_at: '2026-09-10', externalId: '912649' })]),
+    })
+    monter()
+
+    fireEvent.click(await screen.findByRole('link', { name: /Les Gardiens de la nuit/ }))
+
+    expect(await screen.findByText('Fiche du film Les Gardiens de la nuit (912649), vu (vu-1)')).toBeInTheDocument()
   })
 
   it('toucher une séance ouvre sa fiche, avec le retour vers Au ciné', async () => {
@@ -427,20 +453,37 @@ describe('Au ciné qui attend ses données', () => {
 
   const jamais = () => new Promise<Response>(() => {})
 
-  it('annonce « Chargement… » une fois par requête : les sorties, les séances', async () => {
-    servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
+  it('annonce « Chargement… » une fois par requête : les séances du jour, les sorties, les séances', async () => {
+    servir({
+      'GET /api/reference/sorties': jamais,
+      'GET /api/me/journal?limit=40&reaction=en_salle': jamais,
+      [ROUTE_PROCHAINES_SEANCES]: jamais,
+    })
     monter()
 
     const statuts = await screen.findAllByRole('status')
-    expect(statuts).toHaveLength(2)
+    expect(statuts).toHaveLength(3)
     for (const statut of statuts) expect(statut).toHaveTextContent('Chargement…')
   })
 
-  it('garde le titre de la page et ceux de ses trois sections', async () => {
+  it('les séances du jour en attente : le tableau en blanc, dans son panneau', async () => {
+    servir({
+      'GET /api/reference/sorties': jamais,
+      'GET /api/me/journal?limit=40&reaction=en_salle': jamais,
+      [ROUTE_PROCHAINES_SEANCES]: jamais,
+    })
+    monter()
+
+    expect(await screen.findAllByTestId('ligne-tableau-en-attente')).toHaveLength(3)
+    expect(screen.queryByText('Plus de séance ce soir.')).not.toBeInTheDocument()
+  })
+
+  it('garde le titre de la page et ceux de ses quatre sections', async () => {
     servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
     monter()
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Au ciné' })).toBeInTheDocument()
+    expect(screen.getByText('Prochaines séances')).toBeInTheDocument()
     expect(screen.getByText('Sorti cette semaine dans mes cinémas')).toBeInTheDocument()
     expect(screen.getByText('La semaine prochaine')).toBeInTheDocument()
     expect(screen.getByText('Tes séances')).toBeInTheDocument()
@@ -500,14 +543,502 @@ describe('Au ciné qui attend ses données', () => {
     expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
   })
 
-  it('ne lance que les quatre requêtes de la page, chacune une fois', async () => {
+  it('ne lance que les cinq requêtes de la page, chacune une fois — les séances du jour en une seule', async () => {
     const requetes = servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
     monter()
 
     await screen.findAllByRole('status')
     await patienter(20)
     expect([...requetes].sort()).toEqual(
-      ['GET /api/me/journal?limit=40&reaction=en_salle', 'GET /api/me/realisateurs', 'GET /api/me/sagas', 'GET /api/reference/sorties'].sort(),
+      [
+        'GET /api/me/cinema/seances',
+        'GET /api/me/journal?limit=40&reaction=en_salle',
+        'GET /api/me/realisateurs',
+        'GET /api/me/sagas',
+        'GET /api/reference/sorties',
+      ].sort(),
     )
+  })
+})
+
+describe('le tableau du hall : les prochaines séances', () => {
+  /** Dix-huit heures cinquante-cinq à Paris : l'heure de la maquette. */
+  const MAINTENANT = '2026-10-03T18:55:00+02:00'
+  const HALLES: CinemaDuJour = { id: 'C1', nom: 'UGC Les Halles', latitude: 48.8625, longitude: 2.3466 }
+  const ODEON: CinemaDuJour = { id: 'C2', nom: 'UGC Odéon', latitude: 48.8527, longitude: 2.3385 }
+  const CHAMPO: CinemaDuJour = { id: 'C3', nom: 'Le Champo', latitude: null, longitude: null }
+  /** À deux pas d'Odéon : plus près que les Halles, alors que « Halles » précède « Odéon » par ordre alphabétique. */
+  const PRES_D_ODEON = { reponse: 'position', latitude: 48.853, longitude: 2.339 } as const
+
+  function uneSeance(
+    hhmm: string,
+    cinema: CinemaDuJour,
+    titre: string,
+    tmdbId: number,
+    extra: Partial<SeanceDuJour> = {},
+  ): SeanceDuJour {
+    return {
+      debut: `2026-10-03T${hhmm}:00+02:00`,
+      version: 'VF',
+      cinema_id: cinema.id,
+      film: { tmdb_id: tmdbId, title: titre, year: 2026, cover_url: null },
+      nouveaute: true,
+      marque: null,
+      ...extra,
+    }
+  }
+  const jour = (cinemas: CinemaDuJour[], seances: SeanceDuJour[]): SeancesDuJour => ({
+    jour: '2026-10-03',
+    calcule_le: '2026-10-03T16:00:05.000Z',
+    cinemas,
+    seances,
+  })
+
+  const SOIREE = jour(
+    [HALLES, ODEON, CHAMPO],
+    [
+      uneSeance('19:00', HALLES, 'Digger', 101),
+      uneSeance('19:10', ODEON, 'Le Chant des oliviers', 102, { version: 'VOST', marque: 'realisateur', nouveaute: false }),
+      uneSeance('19:15', HALLES, 'Mémoire de fille', 103),
+      uneSeance('19:15', ODEON, 'Raison et sentiments', 104, { version: 'VOST', marque: 'saga', nouveaute: false }),
+      uneSeance('19:20', CHAMPO, 'Verity', 105),
+    ],
+  )
+
+  let navigateur: ReturnType<typeof simulerNavigateur> | undefined
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('IntersectionObserver', FauxObservateur)
+    // L'horloge avance d'elle-même (`shouldAdvanceTime`) : `findBy…` s'appuie sur de vraies minuteries.
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(MAINTENANT))
+  })
+  afterEach(() => {
+    navigateur?.retirer()
+    navigateur = undefined
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    localStorage.clear()
+  })
+
+  const tableau = () => within(screen.getByText('Prochaines séances').closest('section')!)
+  const sortiesDeLaSemaine = () => within(screen.getByText('Sorti cette semaine dans mes cinémas').closest('section')!)
+  // La première liste est celle des séances (la légende vient après) ; la deuxième cellule d'une ligne porte le titre en premier.
+  const titresDuTableau = () => {
+    const [lignes] = tableau().queryAllByRole('list')
+    if (!lignes) return []
+    return within(lignes)
+      .getAllByRole('listitem')
+      .map((ligne) => within(ligne).getByRole('link').children[1]?.children[0]?.textContent)
+  }
+  const SEANCES_DU_SOIR = { 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances([]) }
+  const avancer = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)))
+
+  it('une ligne par séance à venir, par heure, avec cinéma, version et sceau ; la toute prochaine dit « dans 5 min »', async () => {
+    servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+    monter()
+
+    await tableau().findByText('Digger')
+    expect(titresDuTableau()).toEqual(['Digger', 'Le Chant des oliviers', 'Mémoire de fille', 'Raison et sentiments', 'Verity'])
+    const premiere = tableau().getByRole('link', { name: /Digger/ })
+    expect(within(premiere).getByText('19:00')).toBeInTheDocument()
+    expect(within(premiere).getByText('dans 5 min')).toBeInTheDocument()
+    expect(within(premiere).getByText('UGC Les Halles')).toBeInTheDocument()
+    expect(within(premiere).getByText('VF')).toBeInTheDocument()
+    // « dans N min » n'est que pour la toute première ligne.
+    expect(tableau().getAllByText(/^dans /)).toHaveLength(1)
+    const oliviers = tableau().getByRole('link', { name: /Le Chant des oliviers/ })
+    expect(within(oliviers).getByText('VOST')).toBeInTheDocument()
+    expect(within(oliviers).getByRole('img', { name: 'Réalisateur suivi' })).toBeInTheDocument()
+    expect(within(tableau().getByRole('link', { name: /Raison et sentiments/ })).getByRole('img', { name: 'Saga suivie' })).toBeInTheDocument()
+    // Pas de sceau sur une nouveauté sans suivi.
+    expect(within(premiere).queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('une séance sans cinéma connu garde sa ligne, sans nom ni distance ; sa version reste dite', async () => {
+    servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(jour([], [uneSeance('19:00', HALLES, 'Digger', 101, { version: 'VO' })])) })
+    monter()
+
+    const ligne = await tableau().findByRole('link', { name: /Digger/ })
+    expect(ligne).toHaveTextContent('19:00')
+    expect(within(ligne).getByText('VO')).toBeInTheDocument()
+    expect(ligne).not.toHaveTextContent('UGC')
+  })
+
+  it('une légende n’explique que les sceaux présents', async () => {
+    servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+    monter()
+
+    await tableau().findByText('Digger')
+    const listes = tableau().getAllByRole('list')
+    const legende = listes[listes.length - 1]!
+    expect(within(legende).getByText('Réalisateur suivi')).toBeInTheDocument()
+    expect(within(legende).getByText('Saga suivie')).toBeInTheDocument()
+  })
+
+  it('sans aucun suivi dans la liste, aucune légende', async () => {
+    servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(jour([HALLES], [uneSeance('19:00', HALLES, 'Digger', 101)])) })
+    monter()
+
+    await tableau().findByText('Digger')
+    expect(tableau().queryByText('Réalisateur suivi')).not.toBeInTheDocument()
+    expect(tableau().queryByText('Saga suivie')).not.toBeInTheDocument()
+  })
+
+  it('sans la position : à heure égale, par nom de cinéma, et aucune distance', async () => {
+    servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+    monter()
+
+    await tableau().findByText('Digger')
+    // 19:15 : « UGC Les Halles » avant « UGC Odéon ».
+    expect(titresDuTableau().slice(2, 4)).toEqual(['Mémoire de fille', 'Raison et sentiments'])
+    expect(tableau().queryByText(/ km| m$/)).not.toBeInTheDocument()
+  })
+
+  it('avec la position : à heure égale, le cinéma le plus proche d’abord, la distance dite, ceux sans coordonnées après', async () => {
+    navigateur = simulerNavigateur({ permission: 'granted', geolocation: PRES_D_ODEON })
+    servir({
+      ...SEANCES_DU_SOIR,
+      [ROUTE_PROCHAINES_SEANCES]: () =>
+        json(jour([HALLES, ODEON, CHAMPO], [uneSeance('19:15', HALLES, 'Aux Halles', 1), uneSeance('19:15', ODEON, 'A Odéon', 2), uneSeance('19:15', CHAMPO, 'Au Champo', 3)])),
+    })
+    monter()
+
+    await tableau().findByText(/à \d+ m/)
+    // Mutation : un tri par nom seul (sans distance) mettrait les Halles avant Odéon.
+    expect(titresDuTableau()).toEqual(['A Odéon', 'Aux Halles', 'Au Champo'])
+    expect(tableau().getByRole('link', { name: /A Odéon/ })).toHaveTextContent('UGC Odéon · à ')
+    expect(tableau().getByRole('link', { name: /Aux Halles/ })).toHaveTextContent(/UGC Les Halles · à \d/)
+    expect(tableau().getByRole('link', { name: /Au Champo/ })).not.toHaveTextContent('à ')
+  })
+
+  it('toucher une ligne ouvre la fiche du film sous Au ciné', async () => {
+    servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+    monter()
+
+    const ligne = await tableau().findByRole('link', { name: /Digger/ })
+    expect(ligne).toHaveAttribute('href', '/au-cine/films/101')
+    fireEvent.click(ligne)
+
+    expect(await screen.findByText('Fiche du film Digger (101), pas vu')).toBeInTheDocument()
+  })
+
+  describe('« Tout voir »', () => {
+    const SEPT = jour(
+      [HALLES],
+      Array.from({ length: 7 }, (_, rang) => uneSeance(`19:${10 + rang * 5}`, HALLES, `Film ${rang + 1}`, 200 + rang)),
+    )
+
+    it('cinq entrées d’abord, puis « Tout voir (7) » déplie les autres en place, « Réduire » les replie', async () => {
+      const requetes = servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SEPT) })
+      monter()
+
+      await tableau().findByText('Film 1')
+      expect(titresDuTableau()).toHaveLength(5)
+      expect(tableau().queryByText('Film 6')).not.toBeInTheDocument()
+
+      const toutVoir = tableau().getByRole('button', { name: 'Tout voir (7)' })
+      expect(toutVoir).toHaveAttribute('aria-expanded', 'false')
+      fireEvent.click(toutVoir)
+
+      expect(titresDuTableau()).toHaveLength(7)
+      expect(tableau().getByRole('button', { name: 'Réduire' })).toHaveAttribute('aria-expanded', 'true')
+      // Déplier ne rappelle pas l'API : tout était déjà là.
+      expect(requetes.filter((requete) => requete === ROUTE_PROCHAINES_SEANCES)).toHaveLength(1)
+
+      fireEvent.click(tableau().getByRole('button', { name: 'Réduire' }))
+      expect(titresDuTableau()).toHaveLength(5)
+    })
+
+    it('le compte suit l’horloge : une séance commencée en retire une de « Tout voir (N) »', async () => {
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SEPT) })
+      monter()
+
+      await tableau().findByRole('button', { name: 'Tout voir (7)' })
+      await avancer(16 * 60_000)
+
+      // 19:10 est passée (il est 19:11) : six restent.
+      expect(tableau().getByRole('button', { name: 'Tout voir (6)' })).toBeInTheDocument()
+    })
+
+    it('cinq séances ou moins : pas de « Tout voir »', async () => {
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+      monter()
+
+      await tableau().findByText('Digger')
+      expect(tableau().queryByRole('button')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('le temps qui passe', () => {
+    const DEUX = jour([HALLES], [uneSeance('19:00', HALLES, 'Digger', 101), uneSeance('19:30', HALLES, 'Verity', 105)])
+
+    it('une séance commencée quitte le tableau sans rechargement, et « dans N min » suit', async () => {
+      const requetes = servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(DEUX) })
+      monter()
+
+      const premiere = await tableau().findByRole('link', { name: /Digger/ })
+      expect(within(premiere).getByText('dans 5 min')).toBeInTheDocument()
+
+      await avancer(60_000)
+      expect(within(tableau().getByRole('link', { name: /Digger/ })).getByText('dans 4 min')).toBeInTheDocument()
+
+      // 18:55 + 6 minutes : 19:00 a commencé.
+      await avancer(5 * 60_000)
+      // Mutation : sans l'horloge (`useMaintenant` figé), Digger resterait affiché.
+      expect(tableau().queryByText('Digger')).not.toBeInTheDocument()
+      // Verity devient la toute prochaine, dans 29 minutes (19:30 – 19:01).
+      expect(within(tableau().getByRole('link', { name: /Verity/ })).getByText('dans 29 min')).toBeInTheDocument()
+      // L'horloge ne rappelle jamais l'API.
+      expect(requetes.filter((requete) => requete === ROUTE_PROCHAINES_SEANCES)).toHaveLength(1)
+    })
+
+    it('« dans 1 h 05 » à partir d’une heure', async () => {
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(jour([HALLES], [uneSeance('20:00', HALLES, 'Digger', 101)])) })
+      monter()
+
+      expect(await tableau().findByText('dans 1 h 05')).toBeInTheDocument()
+    })
+
+    it('la dernière séance passée : « Plus de séance ce soir. », le panneau reste, les sorties aussi', async () => {
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(jour([HALLES], [uneSeance('19:00', HALLES, 'Digger', 101)])) })
+      monter()
+
+      await tableau().findByText('Digger')
+      expect(tableau().queryByText('Plus de séance ce soir.')).not.toBeInTheDocument()
+
+      await avancer(10 * 60_000)
+
+      expect(tableau().getByText('Plus de séance ce soir.')).toBeInTheDocument()
+      expect(screen.getByText('Prochaines séances')).toBeInTheDocument()
+      // Aucune promesse sur demain.
+      expect(screen.queryByText(/demain/i)).not.toBeInTheDocument()
+      expect(screen.getByText('Sorti cette semaine dans mes cinémas')).toBeInTheDocument()
+    })
+
+    it('une page qui n’a plus aucune séance dès l’arrivée dit la même chose', async () => {
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(jour([], [])) })
+      monter()
+
+      expect(await tableau().findByText('Plus de séance ce soir.')).toBeInTheDocument()
+      expect(tableau().queryByRole('button')).not.toBeInTheDocument()
+    })
+
+    it('une séance déjà commencée dans la réponse n’est jamais montrée', async () => {
+      servir({
+        ...SEANCES_DU_SOIR,
+        [ROUTE_PROCHAINES_SEANCES]: () => json(jour([HALLES], [uneSeance('18:30', HALLES, 'Déjà commencé', 1), uneSeance('19:00', HALLES, 'Digger', 101)])),
+      })
+      monter()
+
+      await tableau().findByText('Digger')
+      expect(screen.queryByText('Déjà commencé')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('en cas de panne', () => {
+    it('une requête en échec s’affiche telle quelle avec Réessayer, jamais « Plus de séance ce soir. »', async () => {
+      const message = 'Le programme des cinémas est momentanément indisponible.'
+      let enPanne = true
+      servir({
+        ...SEANCES_DU_SOIR,
+        [ROUTE_PROCHAINES_SEANCES]: () => (enPanne ? json({ code: 'INTERNAL', message, retryable: false }, 500) : json(SOIREE)),
+      })
+      monter()
+
+      const alerte = await screen.findByRole('alert')
+      expect(alerte).toHaveTextContent(message)
+      expect(screen.queryByText('Plus de séance ce soir.')).not.toBeInTheDocument()
+      // Les autres sections ne dépendent pas de cette route.
+      expect(await screen.findByText('Rien cette semaine.')).toBeInTheDocument()
+
+      enPanne = false
+      fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }))
+      expect(await tableau().findByText('Digger')).toBeInTheDocument()
+    })
+  })
+
+  describe('la position', () => {
+    const LIGNE = 'Autoriser la position pour voir les salles les plus proches'
+
+    it('« prompt » : une ligne discrète offre « Autoriser », rien n’est demandé avant le toucher, puis les distances et le tri apparaissent', async () => {
+      navigateur = simulerNavigateur({ permission: 'prompt', geolocation: PRES_D_ODEON })
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+      monter()
+
+      expect(await tableau().findByText(LIGNE, { exact: false })).toBeInTheDocument()
+      expect(tableau().getByText('Elle ne quitte pas ton téléphone.')).toBeInTheDocument()
+      await patienter(50)
+      // Mutation : lire la position dès l'affichage de la ligne ferait partir la demande sans geste.
+      expect(navigateur.getCurrentPosition).not.toHaveBeenCalled()
+      expect(titresDuTableau().slice(2, 4)).toEqual(['Mémoire de fille', 'Raison et sentiments'])
+
+      fireEvent.click(tableau().getByRole('button', { name: 'Autoriser' }))
+
+      await tableau().findAllByText(/à \d/)
+      expect(navigateur.getCurrentPosition).toHaveBeenCalledTimes(1)
+      // Plus proche d'Odéon : à 19:15 il passe avant les Halles.
+      expect(titresDuTableau().slice(2, 4)).toEqual(['Raison et sentiments', 'Mémoire de fille'])
+      expect(tableau().queryByRole('button', { name: 'Autoriser' })).not.toBeInTheDocument()
+      expect(tableau().queryByText(LIGNE, { exact: false })).not.toBeInTheDocument()
+    })
+
+    it('déjà accordée : lue sans toucher, sans la ligne', async () => {
+      navigateur = simulerNavigateur({ permission: 'granted', geolocation: PRES_D_ODEON })
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+      monter()
+
+      await tableau().findAllByText(/à \d/)
+      expect(navigateur.getCurrentPosition).toHaveBeenCalledTimes(1)
+      expect(tableau().queryByRole('button', { name: 'Autoriser' })).not.toBeInTheDocument()
+    })
+
+    it('refusée : ni bouton ni distance, tri par heure seule, et rien n’est demandé', async () => {
+      navigateur = simulerNavigateur({ permission: 'denied', geolocation: PRES_D_ODEON })
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+      monter()
+
+      await tableau().findByText('Digger')
+      await patienter(50)
+      expect(tableau().queryByRole('button', { name: 'Autoriser' })).not.toBeInTheDocument()
+      expect(tableau().queryByText(/à \d/)).not.toBeInTheDocument()
+      expect(navigateur.getCurrentPosition).not.toHaveBeenCalled()
+    })
+
+    it('un navigateur sans géolocalisation : ni bouton ni distance', async () => {
+      navigateur = simulerNavigateur({})
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+      monter()
+
+      await tableau().findByText('Digger')
+      expect(tableau().queryByRole('button', { name: 'Autoriser' })).not.toBeInTheDocument()
+    })
+
+    it('aucun cinéma n’a de coordonnées : la ligne n’est pas offerte, elle ne servirait à rien', async () => {
+      navigateur = simulerNavigateur({ permission: 'prompt', geolocation: PRES_D_ODEON })
+      servir({
+        ...SEANCES_DU_SOIR,
+        [ROUTE_PROCHAINES_SEANCES]: () => json(jour([CHAMPO], [uneSeance('19:00', CHAMPO, 'Digger', 101)])),
+      })
+      monter()
+
+      await tableau().findByText('Digger')
+      await patienter(50)
+      expect(tableau().queryByRole('button', { name: 'Autoriser' })).not.toBeInTheDocument()
+    })
+
+    it('un refus au toucher retire la ligne et laisse le tri par heure', async () => {
+      navigateur = simulerNavigateur({ permission: 'prompt', geolocation: { reponse: 'refus' } })
+      servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+      monter()
+
+      fireEvent.click(await tableau().findByRole('button', { name: 'Autoriser' }))
+
+      await vi.waitFor(() => expect(tableau().queryByRole('button', { name: 'Autoriser' })).not.toBeInTheDocument())
+      expect(tableau().queryByText(/à \d/)).not.toBeInTheDocument()
+      expect(titresDuTableau()[0]).toBe('Digger')
+    })
+
+    it('la position ne part dans aucune requête et ne s’écrit nulle part', async () => {
+      navigateur = simulerNavigateur({ permission: 'prompt', geolocation: PRES_D_ODEON })
+      const requetes = servir({ ...SEANCES_DU_SOIR, [ROUTE_PROCHAINES_SEANCES]: () => json(SOIREE) })
+      monter()
+
+      fireEvent.click(await tableau().findByRole('button', { name: 'Autoriser' }))
+      await tableau().findAllByText(/à \d/)
+      await avancer(2 * 60_000)
+
+      // Mutation : mettre la position dans la clé ou l'URL de la requête (`?lat=…`) ferait tomber l'une de ces lignes.
+      const appels = JSON.stringify(vi.mocked(fetch).mock.calls)
+      expect(appels).not.toContain('48.853')
+      expect(appels).not.toContain('2.339')
+      expect(requetes.every((requete) => !/lat|lon|geo|48\.8|2\.3/i.test(requete))).toBe(true)
+      expect(vi.mocked(fetch).mock.calls.every(([, init]) => init?.body === undefined)).toBe(true)
+      // Ni stockée : le choix de position ne survit pas à la page.
+      expect(localStorage.length).toBe(0)
+      expect(sessionStorage.length).toBe(0)
+      // Et la requête des séances n'est partie qu'une fois, avant comme après.
+      expect(requetes.filter((requete) => requete === ROUTE_PROCHAINES_SEANCES)).toHaveLength(1)
+    })
+  })
+
+  describe('les tuiles de « Sorti cette semaine »', () => {
+    const film = (tmdbId: number, titre: string) => ({
+      ...SORTIES_EXEMPLE.en_cours.films[0]!,
+      allocine_id: tmdbId,
+      tmdb_id: tmdbId,
+      title: titre,
+      cinemas: ['UGC Les Halles'],
+    })
+    const SORTIES: Sorties = {
+      ...SORTIES_EXEMPLE,
+      en_cours: {
+        ...SORTIES_EXEMPLE.en_cours,
+        films: [film(101, 'Digger'), film(105, 'Verity'), film(999, 'Sans séance')],
+      },
+      prochaine: { ...SORTIES_EXEMPLE.prochaine, films: [{ ...SORTIES_EXEMPLE.prochaine.films[0]!, tmdb_id: 101, title: 'Digger bis' }] },
+    }
+    const SEANCES = jour(
+      [HALLES, ODEON],
+      [
+        uneSeance('21:00', HALLES, 'Digger', 101),
+        uneSeance('19:20', ODEON, 'Digger', 101),
+        uneSeance('18:30', HALLES, 'Verity', 105),
+        uneSeance('22:10', HALLES, 'Verity', 105),
+      ],
+    )
+    const tuile = (titre: string) => sortiesDeLaSemaine().getByRole('link', { name: new RegExp(titre) })
+
+    it('portent, en bas à gauche, l’heure de leur prochaine séance (la plus tôt, tous cinémas) ; sans séance, rien', async () => {
+      servir({ 'GET /api/reference/sorties': () => json(SORTIES), ...routeSeances([]), [ROUTE_PROCHAINES_SEANCES]: () => json(SEANCES) })
+      monter()
+
+      const digger = await sortiesDeLaSemaine().findByRole('link', { name: /Digger/ })
+      expect(within(digger).getByText('19:20')).toBeInTheDocument()
+      expect(within(digger).getByText('Prochaine séance à')).toBeInTheDocument()
+      // Verity : 18:30 a commencé, il reste 22:10.
+      expect(within(tuile('Verity')).getByText('22:10')).toBeInTheDocument()
+      expect(tuile('Sans séance')).not.toHaveTextContent(/\d\d:\d\d/)
+    })
+
+    it('la tuile cesse de montrer l’heure d’une séance passée, et s’éteint quand il n’en reste plus', async () => {
+      servir({ 'GET /api/reference/sorties': () => json(SORTIES), ...routeSeances([]), [ROUTE_PROCHAINES_SEANCES]: () => json(SEANCES) })
+      monter()
+
+      await within(await sortiesDeLaSemaine().findByRole('link', { name: /Digger/ })).findByText('19:20')
+      // 19:25 : Digger passe à 21:00.
+      await avancer(30 * 60_000)
+      expect(within(tuile('Digger')).getByText('21:00')).toBeInTheDocument()
+      expect(within(tuile('Digger')).queryByText('19:20')).not.toBeInTheDocument()
+      // 23:00 : plus rien aujourd'hui.
+      await avancer(3 * 60 * 60_000)
+      expect(tuile('Digger')).not.toHaveTextContent(/\d\d:\d\d/)
+      expect(tuile('Verity')).not.toHaveTextContent(/\d\d:\d\d/)
+    })
+
+    it('« La semaine prochaine » n’a aucun repère horaire, même pour un film qui a des séances', async () => {
+      servir({ 'GET /api/reference/sorties': () => json(SORTIES), ...routeSeances([]), [ROUTE_PROCHAINES_SEANCES]: () => json(SEANCES) })
+      monter()
+
+      const prochaine = within((await screen.findByText('La semaine prochaine')).closest('section')!)
+      const diggerBis = await prochaine.findByRole('link', { name: /Digger bis/ })
+      await sortiesDeLaSemaine().findByText('22:10')
+      expect(diggerBis).not.toHaveTextContent(/\d\d:\d\d/)
+      // Mais elle s'ouvre, elle aussi, sur la fiche du film sous Au ciné.
+      expect(diggerBis).toHaveAttribute('href', '/au-cine/films/101')
+    })
+
+    it('sans les séances du jour (panne), les tuiles n’ont aucune heure et restent ouvrables', async () => {
+      servir({
+        'GET /api/reference/sorties': () => json(SORTIES),
+        ...routeSeances([]),
+        [ROUTE_PROCHAINES_SEANCES]: () => json({ code: 'INTERNAL', message: 'En panne.', retryable: false }, 500),
+      })
+      monter()
+
+      await screen.findByRole('alert')
+      expect(tuile('Digger')).not.toHaveTextContent(/\d\d:\d\d/)
+      expect(tuile('Digger')).toHaveAttribute('href', '/au-cine/films/101')
+    })
   })
 })

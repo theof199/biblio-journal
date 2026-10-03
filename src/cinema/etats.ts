@@ -32,6 +32,19 @@ export function dejaDansLeJournal(seances: JournalItem[], tmdbId: number | null)
 }
 
 /**
+ * Le visionnage le plus récent de ce film parmi les séances chargées, ou `undefined` : de quoi
+ * ouvrir sa fiche en sachant qu'il est déjà vu (`FicheFilm`, « Vu · noté… »). Même rapprochement
+ * que `dejaDansLeJournal` : par `tmdb_id`, jamais par le titre.
+ */
+export function dernierVisionnage(seances: JournalItem[], tmdbId: number | null): JournalItem | undefined {
+  if (tmdbId == null) return undefined
+  const cible = String(tmdbId)
+  return seances
+    .filter((item) => item.media.external_id === cible)
+    .sort((a, b) => b.entry.finished_at.localeCompare(a.entry.finished_at))[0]
+}
+
+/**
  * Sous-titre d'une tuile « à l'affiche dans mes cinémas » : le premier cinéma, puis « +N » s'il y
  * en a d'autres — reprise de `SortieCinemaFilm.sousTitreCinemas()`. Vide si la liste est vide (le
  * contrat en garantit au moins un depuis le back, mais un test peut en construire une vide).
@@ -72,7 +85,7 @@ export function messageAuCine(enCours: SortiesEnCours): string | null {
 }
 
 /** Fuseau fixe, comme côté back (`routes/reference.ts`) : une heure affichée qui ne varie pas avec l'appareil. */
-const FUSEAU_AU_CINE = 'Europe/Paris'
+export const FUSEAU_AU_CINE = 'Europe/Paris'
 
 /**
  * « mis à jour à 14 h », depuis `calcule_le` (ISO 8601, UTC) — nul tant que la tâche de fond n'a

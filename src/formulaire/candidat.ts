@@ -1,7 +1,7 @@
 import type { MovieSearchResult } from '../api/recherche'
 import type { PlexFilm } from '../api/plex'
 import type { FichePrete } from '../api/voyage'
-import type { SortieEnCoursFilm, SortieProchaineFilm } from '../api/sorties'
+import type { SortieEnCoursFilm } from '../api/sorties'
 
 /** Un film pas encore au journal, prêt pour le formulaire de création — quelle que soit sa provenance (recherche, Plex, Voyage). */
 export interface CandidatFilm {
@@ -55,35 +55,11 @@ export const candidatDepuisVoyageFilm = (film: AnneeVoyageFilm): CandidatFilm =>
 /**
  * Une tuile « à l'affiche dans mes cinémas » (Au ciné, brief du 15 septembre 2026) n'est ouvrable
  * que si TMDB a été retrouvé côté back — reprise de `SortieCinemaFilm.estOuvrable()` (Android).
- * Sans lien vers une fiche sinon, rien à préremplir dans le formulaire.
+ * Sans lien vers sa fiche (`au-cine/films/:tmdbId`) sinon : elle n'a pas d'identifiant à y mettre.
  */
 export function sortieEnCoursOuvrable(film: SortieEnCoursFilm): film is SortieEnCoursFilm & { tmdb_id: number } {
   return film.tmdb_id != null
 }
-
-/**
- * `director` reste nul : `en_cours` porte des réalisateurs (Allociné), mais aucune des autres
- * provenances de candidat ne préremplit ce champ — même geste, même formulaire pour toutes
- * (reprise de la décision du 25 septembre 2026, Android).
- */
-export const candidatDepuisSortieEnCours = (film: SortieEnCoursFilm & { tmdb_id: number }): CandidatFilm => ({
-  source: 'tmdb',
-  external_id: String(film.tmdb_id),
-  title: film.title,
-  year: film.year,
-  cover_url: film.cover_url,
-  director: null,
-})
-
-/** `SortieProchaineFilm` (TMDB) ne porte pas de réalisateur : le formulaire s'ouvre sans, comme depuis `en_cours`. */
-export const candidatDepuisSortieProchaine = (film: SortieProchaineFilm): CandidatFilm => ({
-  source: 'tmdb',
-  external_id: String(film.tmdb_id),
-  title: film.title,
-  year: film.year,
-  cover_url: film.cover_url,
-  director: null,
-})
 
 /**
  * Un film d'une filmographie suivie (réalisateur ou saga), ou de la fiche d'un film — le
