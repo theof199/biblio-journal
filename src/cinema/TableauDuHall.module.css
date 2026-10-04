@@ -1,0 +1,215 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css` (le panneau du fronton, les jetons `--tableau-*`). */
+
+.tableau {
+  border: var(--fronton-cadre-largeur) solid var(--fronton-cadre);
+  border-radius: var(--rayon-s);
+  background: var(--fronton-cadre);
+  overflow: hidden;
+  box-shadow: var(--ombre-m);
+}
+
+/* Les ampoules du fronton de l'accueil, tel quel : même motif, même halo la nuit. */
+.ampoules {
+  composes: ampoules from '../accueil/Fronton.module.css';
+}
+
+.corps {
+  padding: 0 var(--espace-3);
+  background: var(--fronton-panneau-fond);
+  color: var(--fronton-lettre);
+}
+
+.tete {
+  display: grid;
+  grid-template-columns: var(--tableau-colonnes);
+  gap: var(--espace-2);
+  align-items: center;
+  height: var(--fronton-pas-rail);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-s);
+  letter-spacing: var(--fronton-interlettre-date);
+  text-transform: uppercase;
+}
+
+.tete span:last-child {
+  text-align: center;
+}
+
+.lignes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une ligne : deux pas de rail, comme le titre compact du fronton. */
+.ligne {
+  display: grid;
+  grid-template-columns: var(--tableau-colonnes);
+  gap: var(--espace-2);
+  align-items: center;
+  height: var(--fronton-hauteur-titre-compact);
+  color: inherit;
+  text-decoration: none;
+}
+
+.heure {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--police-fronton);
+  font-size: var(--tableau-taille-heure);
+  line-height: var(--interligne-serre);
+  letter-spacing: var(--tableau-interlettre-heure);
+}
+
+.prochaine .heure > time {
+  color: var(--fronton-lettre-rouge);
+}
+
+.reste {
+  color: var(--fronton-lettre-rouge);
+  font-family: var(--police-texte);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.film {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.titre {
+  overflow: hidden;
+  font-family: var(--police-fronton);
+  font-size: var(--tableau-taille-titre);
+  letter-spacing: var(--tableau-interlettre-titre);
+  line-height: var(--interligne-serre);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-1);
+  overflow: hidden;
+  font-size: var(--taille-xs);
+  white-space: nowrap;
+}
+
+.lieu {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.version {
+  padding: 0 var(--espace-1);
+  border: var(--trait-tuile-note) solid var(--fronton-lettre);
+  font-family: var(--police-fronton);
+  font-size: var(--tableau-taille-version);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-titre);
+  text-align: center;
+}
+
+/* Le sceau d'un suivi, posé au fil de la ligne : plus petit que sur une affiche, qui le place en absolu. */
+.sceauMini {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--sceau-mini-cote);
+  height: var(--sceau-mini-cote);
+  border-radius: var(--rayon-plein);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+}
+
+.sceauMini svg {
+  width: var(--sceau-mini-icone);
+  height: var(--sceau-mini-icone);
+}
+
+.vide {
+  margin: 0;
+  padding: var(--espace-5) 0;
+  font-family: var(--police-fronton);
+  font-size: var(--tableau-taille-titre);
+  letter-spacing: var(--tableau-interlettre-titre);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.position {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  padding: var(--espace-2) 0;
+  font-size: var(--taille-xs);
+}
+
+.iconePosition {
+  flex: none;
+  width: var(--taille-icone-inline);
+  height: var(--taille-icone-inline);
+}
+
+.textePosition {
+  flex: 1;
+  margin: 0;
+}
+
+.promesse {
+  display: block;
+}
+
+.autoriser {
+  flex: none;
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
+  font-size: var(--taille-s);
+  cursor: pointer;
+}
+
+.pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-2);
+  min-height: var(--cible-tactile);
+  font-size: var(--taille-xs);
+}
+
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-1) var(--espace-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendeMarque {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-1);
+}
+
+.toutVoir {
+  min-height: var(--cible-tactile);
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--fronton-lettre-rouge);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}

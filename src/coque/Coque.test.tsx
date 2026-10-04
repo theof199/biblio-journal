@@ -48,6 +48,18 @@ function monter(chemin: string) {
   )
 }
 
+/** Une entrée avec son état de navigation : la fiche d'un film ne vit que de lui. */
+function monterAvecEtat(entree: { pathname: string; state: unknown }) {
+  return render(
+    <QueryClientProvider client={createQueryClient()}>
+      <MemoryRouter initialEntries={[entree]}>
+        <App />
+        <Ou />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
 const barre = () => screen.getByRole('navigation', { name: 'Onglets' })
 const chemin = () => screen.getByTestId('chemin').textContent
 
@@ -188,6 +200,27 @@ describe('la coque à onglets', () => {
       .filter((lien) => lien.getAttribute('aria-current') === 'page')
       .map((lien) => lien.textContent)
     expect(marques).toEqual(['Voyage'])
+  })
+
+  // Mutation : la route `au-cine/films/:tmdbId` déclarée à côté de `<Coque />`, ou sous un autre
+  // préfixe (`films/:tmdbId`) : la barre disparaîtrait, ou ce serait un autre onglet qui serait marqué.
+  it('la fiche d’un film ouverte depuis Au ciné garde la barre, l’onglet Au ciné seul marqué', async () => {
+    servir({
+      'GET /api/auth/me': () => json(SESSION),
+      'GET /api/reference/films/27205': () => json(exemple('/reference/films/{tmdbId}', 'get', 200)),
+      'GET /api/reference/films/27205/seances': () => json({ jour: '2026-10-03', calcule_le: null, cinemas: [] }),
+      'GET /api/reference/films/27205/realisateurs': () => json({ realisateurs: [] }),
+    })
+    const film = { tmdb_id: 27205, title: 'Inception', original_title: null, year: 2010, cover_url: null, vu: null, introuvable: false }
+    monterAvecEtat({ pathname: '/au-cine/films/27205', state: { film, realisateur: null } })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Inception' })).toBeInTheDocument()
+    const marques = within(barre())
+      .getAllByRole('link')
+      .filter((lien) => lien.getAttribute('aria-current') === 'page')
+      .map((lien) => lien.textContent)
+    expect(marques).toEqual(['Au ciné'])
+    expect(chemin()).toBe('/au-cine/films/27205')
   })
 
   it.each(['/nulle-part', '/voyage/1898/salles', '/profil/inconnu'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {

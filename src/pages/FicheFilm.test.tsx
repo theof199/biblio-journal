@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within, type BoundFunctions, type queries } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import FicheFilm from './FicheFilm'
@@ -8,6 +8,9 @@ import { cles } from '../api/cles'
 import { json, servir as servirBrut } from '../test/serveur'
 import { exemple } from '../test/contrat'
 import type { JournalPage } from '../api/journal'
+import type { CinemaDuFilm, SeancesDuFilm } from '../api/seances'
+import { FournisseurPosition } from '../cinema/FournisseurPosition'
+import { simulerNavigateur } from '../test/navigateur'
 import type { FicheReference } from '../api/personnes'
 import type { ReactionsCatalogue } from '../api/reactions'
 import type { CandidatFilm } from '../formulaire/candidat'
@@ -51,9 +54,11 @@ const FILM_A_VOIR = {
 }
 const FICHE = exemple<FicheReference>('/reference/films/{tmdbId}', 'get', 200)
 const routeFiche = (tmdbId: number) => `GET /api/reference/films/${tmdbId}`
+const routeSeances = (tmdbId: number) => `GET /api/reference/films/${tmdbId}/seances`
+const SEANCES_VIDES: SeancesDuFilm = { jour: '2026-10-03', calcule_le: null, cinemas: [] }
 
 /**
- * `servir` de `test/serveur`, plus la fiche TMDB des deux films de ce fichier : sans elle, chaque
+ * `servir` de `test/serveur`, plus la fiche TMDB et les séances du jour (vides) des deux films de ce fichier : sans elle, chaque
  * test qui n'en parle pas lèverait une « requête inattendue » de plus. Une route que le test pose
  * lui-même l'emporte.
  */
@@ -61,21 +66,26 @@ function servir(routes: Parameters<typeof servirBrut>[0]) {
   return servirBrut({
     [routeFiche(27205)]: () => json(FICHE),
     [routeFiche(27000)]: () => json(FICHE),
+    [routeSeances(27205)]: () => json(SEANCES_VIDES),
+    [routeSeances(27000)]: () => json(SEANCES_VIDES),
     ...routes,
   })
 }
 const REALISATEURS_DU_FILM = { realisateurs: [{ tmdb_id: 525, name: 'Christopher Nolan' }] }
 
-function monter(state: unknown, tmdbId = 27205, client = createQueryClient()) {
+function monter(state: unknown, tmdbId = 27205, client = createQueryClient(), prefixe = '/suivis/films') {
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[{ pathname: `/suivis/films/${tmdbId}`, state }]}>
-        <Routes>
-          <Route path="/suivis/films/:tmdbId" element={<FicheFilm />} />
-          <Route path="/journal/nouveau" element={<FormulaireFactice />} />
-          <Route path="/journal/:id/corriger" element={<output>formulaire de correction</output>} />
-        </Routes>
-      </MemoryRouter>
+      <FournisseurPosition>
+        <MemoryRouter initialEntries={[{ pathname: `${prefixe}/${tmdbId}`, state }]}>
+          <Routes>
+            <Route path="/suivis/films/:tmdbId" element={<FicheFilm />} />
+            <Route path="/au-cine/films/:tmdbId" element={<FicheFilm />} />
+            <Route path="/journal/nouveau" element={<FormulaireFactice />} />
+            <Route path="/journal/:id/corriger" element={<output>formulaire de correction</output>} />
+          </Routes>
+        </MemoryRouter>
+      </FournisseurPosition>
     </QueryClientProvider>,
   )
 }
@@ -114,8 +124,10 @@ describe('la fiche d’un film', () => {
     const lien = await screen.findByRole('link', { name: 'Christopher Nolan' })
     expect(lien).toHaveAttribute('href', '/suivis/realisateurs/525')
     // Mutation : un appel à `/reference/films/.../realisateurs` ici gâcherait un aller-retour que
-    // la page réalisateur a déjà payé — la donnée est dans l'état de navigation.
-    expect(requetes).toEqual([routeFiche(27205)])
+    // la page réalisateur a déjà payé — la donnée est dans l'état de navigation. Les séances du jour
+    // sont, elles, la seule requête que la fiche ajoute depuis Au ciné.
+    await vi.waitFor(() => expect(requetes).toHaveLength(2))
+    expect([...requetes].sort()).toEqual([routeFiche(27205), routeSeances(27205)].sort())
   })
 
   it('sans réalisateur connu (une saga n’en porte pas), les réalisateurs du film sont résolus et affichés en lien', async () => {
@@ -211,6 +223,7 @@ describe('la fiche d’un film', () => {
     await vi.waitFor(() => expect(screen.queryByText('Marqué introuvable')).not.toBeInTheDocument())
     expect(requetes).toEqual([
       routeFiche(27000),
+      routeSeances(27000),
       'PUT /api/me/introuvables/27000',
       'DELETE /api/me/introuvables/27000',
     ])
@@ -284,7 +297,7 @@ describe('la fiche d’un film : ce que TMDB en dit', () => {
   const NOLAN = { tmdb_id: 525, name: 'Christopher Nolan' }
   const monterFilm = () => monter({ film: FILM_A_VOIR, realisateur: NOLAN }, 27000)
   const avecFiche = (surcharge: Partial<FicheReference>) =>
-    servirBrut({ [routeFiche(27000)]: () => json({ ...FICHE, ...surcharge }) })
+    servir({ [routeFiche(27000)]: () => json({ ...FICHE, ...surcharge }) })
 
   it('montre la durée au format « 2 h 49 » et les genres sur une seule ligne', async () => {
     avecFiche({ runtime_min: 169, genres: ['Drame', 'Science-Fiction'] })
@@ -358,7 +371,7 @@ describe('la fiche d’un film : ce que TMDB en dit', () => {
   })
 
   it('une route en échec laisse l’en-tête et les boutons, sans aucune des nouvelles sections', async () => {
-    servirBrut({
+    servir({
       [routeFiche(27000)]: () => json({ code: 'INTERNAL', message: 'TMDB est tombé.', retryable: false }, 500),
     })
     monterFilm()
@@ -367,7 +380,7 @@ describe('la fiche d’un film : ce que TMDB en dit', () => {
     expect(screen.getByRole('heading', { name: 'Un autre film' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Christopher Nolan' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Introuvable' })).toBeInTheDocument()
-    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2))
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(screen.queryByRole('heading', { name: 'Casting' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Où regarder' })).not.toBeInTheDocument()
@@ -378,7 +391,7 @@ describe('la fiche d’un film : ce que TMDB en dit', () => {
     avecFiche({ summary: null, runtime_min: null, genres: [], cast: [], availability: null })
     const { container } = monterFilm()
 
-    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2))
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(screen.queryByRole('heading', { name: 'Casting' })).not.toBeInTheDocument()
     expect(container.textContent).not.toMatch(/min|\bh \d\d|·/)
@@ -391,5 +404,195 @@ describe('la fiche d’un film : ce que TMDB en dit', () => {
 
     const tete = (await screen.findByText('Inconnu')).closest('li')!
     expect(tete).toHaveTextContent(/^Inconnu$/)
+  })
+})
+
+describe('la fiche d’un film : « Séances aujourd’hui »', () => {
+  /** Dix-huit heures cinquante-cinq à Paris. */
+  const MAINTENANT = '2026-10-03T18:55:00+02:00'
+  const NOLAN = { tmdb_id: 525, name: 'Christopher Nolan' }
+  const HALLES = { id: 'C1', nom: 'UGC Les Halles', latitude: 48.8625, longitude: 2.3466 }
+  const ODEON = { id: 'C2', nom: 'UGC Odéon', latitude: 48.8527, longitude: 2.3385 }
+  const CHAMPO = { id: 'C3', nom: 'Le Champo', latitude: null, longitude: null }
+  /** À deux pas d'Odéon. */
+  const PRES_D_ODEON = { reponse: 'position', latitude: 48.853, longitude: 2.339 } as const
+
+  const duFilm = (cinema: Omit<CinemaDuFilm, 'seances'>, creneaux: [string, 'VF' | 'VOST' | 'VO'][]): CinemaDuFilm => ({
+    ...cinema,
+    seances: creneaux.map(([hhmm, version]) => ({ debut: `2026-10-03T${hhmm}:00+02:00`, version })),
+  })
+  const seancesDuFilm = (...cinemas: CinemaDuFilm[]): SeancesDuFilm => ({ jour: '2026-10-03', calcule_le: '2026-10-03T16:00:05.000Z', cinemas })
+  /** « celui de la prochaine séance d'abord », comme l'API les rend : Odéon (19:20), puis les Halles (19:40). */
+  const PROGRAMME = seancesDuFilm(
+    duFilm(HALLES, [['19:40', 'VF'], ['22:00', 'VF']]),
+    duFilm(ODEON, [['19:20', 'VOST'], ['21:10', 'VOST']]),
+    duFilm(CHAMPO, [['20:00', 'VO']]),
+  )
+
+  let navigateur: ReturnType<typeof simulerNavigateur> | undefined
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(MAINTENANT))
+  })
+  afterEach(() => {
+    navigateur?.retirer()
+    navigateur = undefined
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  const avecSeances = (programme: SeancesDuFilm) => servir({ [routeSeances(27000)]: () => json(programme) })
+  const monterFilm = (prefixe = '/au-cine/films') => monter({ film: FILM_A_VOIR, realisateur: NOLAN }, 27000, createQueryClient(), prefixe)
+  const bloc = async () => within((await screen.findByRole('heading', { name: 'Séances aujourd’hui' })).closest('section')!)
+  const nomsDeCinemas = (b: BoundFunctions<typeof queries>) => b.getAllByRole('heading', { level: 3 }).map((titre) => titre.textContent)
+  const avancer = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)))
+
+  it('placé sous l’en-tête du film, avant le synopsis, avec la prochaine séance annoncée', async () => {
+    servir({
+      [routeFiche(27000)]: () => json({ ...FICHE, summary: 'Un voleur entre dans les rêves.' }),
+      [routeSeances(27000)]: () => json(PROGRAMME),
+    })
+    monterFilm()
+
+    const titre = await screen.findByRole('heading', { name: 'Séances aujourd’hui' })
+    const synopsis = await screen.findByText('Un voleur entre dans les rêves.')
+    // Mutation : poser le bloc après le synopsis fait suivre le titre au lieu de le précéder.
+    expect(titre.compareDocumentPosition(synopsis) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Un autre film' }).compareDocumentPosition(titre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect((await bloc()).getByText('Prochaine séance dans 25 min')).toBeInTheDocument()
+  })
+
+  it('un cadre par cinéma, ses heures en pastilles avec leur version', async () => {
+    avecSeances(PROGRAMME)
+    monterFilm()
+
+    const b = await bloc()
+    const odeon = within(b.getByRole('heading', { name: 'UGC Odéon' }).closest('article')!)
+    expect(odeon.getAllByRole('listitem').map((pastille) => pastille.textContent)).toEqual(['19:20VOST', '21:10VOST'])
+    const halles = within(b.getByRole('heading', { name: 'UGC Les Halles' }).closest('article')!)
+    expect(halles.getAllByRole('listitem').map((pastille) => pastille.textContent)).toEqual(['19:40VF', '22:00VF'])
+  })
+
+  it('les pastilles ne sont pas interactives : ni lien ni bouton, aucune réservation', async () => {
+    avecSeances(PROGRAMME)
+    monterFilm()
+
+    const b = await bloc()
+    // Mutation : transformer une pastille en lien (ou en bouton) le ferait apparaître ici.
+    expect(b.queryAllByRole('link')).toEqual([])
+    expect(b.queryAllByRole('button')).toEqual([])
+  })
+
+  it('sans la position : le cinéma de la prochaine séance d’abord, sans distance, et rien n’est demandé ni offert', async () => {
+    navigateur = simulerNavigateur({ permission: 'prompt', geolocation: PRES_D_ODEON })
+    avecSeances(PROGRAMME)
+    monterFilm()
+
+    const b = await bloc()
+    expect(nomsDeCinemas(b)).toEqual(['UGC Odéon', 'UGC Les Halles', 'Le Champo'])
+    await vi.waitFor(() => expect(navigateur!.query).toHaveBeenCalled())
+    // La position ne se demande que depuis l'onglet : ici, ni bouton ni lecture.
+    expect(navigateur.getCurrentPosition).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: /Autoriser/ })).not.toBeInTheDocument()
+    expect(b.queryByText(/à \d/)).not.toBeInTheDocument()
+  })
+
+  it('avec la position déjà accordée : le plus proche d’abord, la distance dite, sans coordonnées en dernier', async () => {
+    navigateur = simulerNavigateur({ permission: 'granted', geolocation: PRES_D_ODEON })
+    // Un ordre d'API qui ne serait pas celui de la distance : les Halles, plus loin, d'abord.
+    avecSeances(seancesDuFilm(duFilm(HALLES, [['19:00', 'VF']]), duFilm(CHAMPO, [['19:05', 'VF']]), duFilm(ODEON, [['21:00', 'VF']])))
+    monterFilm()
+
+    const b = await bloc()
+    await b.findAllByText(/à \d/)
+    // Mutation : un tri par prochaine séance seule mettrait les Halles (19:00) avant Odéon.
+    expect(nomsDeCinemas(b)).toEqual(['UGC Odéon', 'UGC Les Halles', 'Le Champo'])
+    expect(within(b.getByRole('heading', { name: 'UGC Odéon' }).closest('article')!).getByText(/^à \d+ m$/)).toBeInTheDocument()
+    expect(within(b.getByRole('heading', { name: 'Le Champo' }).closest('article')!).queryByText(/à \d/)).not.toBeInTheDocument()
+    // « Prochaine séance » est la plus tôt de toutes (19:00 aux Halles), pas celle du premier cadre (21:00 à Odéon).
+    expect(b.getByText('Prochaine séance dans 5 min')).toBeInTheDocument()
+  })
+
+  it('absent quand le film n’a aucune séance aujourd’hui : ni titre ni cadre', async () => {
+    const requetes = avecSeances(seancesDuFilm())
+    monterFilm()
+
+    await screen.findByRole('heading', { level: 1, name: 'Un autre film' })
+    await vi.waitFor(() => expect(requetes).toContain(routeSeances(27000)))
+    await avancer(50)
+    expect(screen.queryByRole('heading', { name: 'Séances aujourd’hui' })).not.toBeInTheDocument()
+  })
+
+  it('une panne des séances ne montre rien et ne dérange pas la fiche', async () => {
+    servir({ [routeSeances(27000)]: () => json({ code: 'INTERNAL', message: 'Le programme est en panne.', retryable: false }, 500) })
+    monterFilm()
+
+    expect(await screen.findByRole('button', { name: 'Marquer comme vu' })).toBeInTheDocument()
+    await avancer(50)
+    expect(screen.queryByRole('heading', { name: 'Séances aujourd’hui' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('une séance commencée quitte sa pastille sans rechargement, un cinéma qui n’en a plus s’en va, et tout s’éteint à la dernière', async () => {
+    const requetes = avecSeances(seancesDuFilm(duFilm(ODEON, [['19:00', 'VOST'], ['21:00', 'VOST']]), duFilm(HALLES, [['19:10', 'VF']])))
+    monterFilm()
+
+    const b = await bloc()
+    expect(b.getByText('19:00')).toBeInTheDocument()
+    expect(nomsDeCinemas(b)).toEqual(['UGC Odéon', 'UGC Les Halles'])
+
+    // 19:03 : la séance de 19:00 a commencé, le cadre d'Odéon garde 21:00.
+    await avancer(8 * 60_000)
+    // Mutation : sans l'horloge (`useMaintenant` figé), 19:00 resterait affiché.
+    expect(b.queryByText('19:00')).not.toBeInTheDocument()
+    expect(b.getByText('21:00')).toBeInTheDocument()
+    expect(b.getByText('Prochaine séance dans 7 min')).toBeInTheDocument()
+
+    // 19:15 : les Halles n'ont plus rien, leur cadre s'en va.
+    await avancer(12 * 60_000)
+    expect(nomsDeCinemas(b)).toEqual(['UGC Odéon'])
+
+    // 21:05 : plus rien aujourd'hui, le bloc entier s'efface.
+    await avancer(110 * 60_000)
+    expect(screen.queryByRole('heading', { name: 'Séances aujourd’hui' })).not.toBeInTheDocument()
+    // L'horloge ne relance jamais l'API.
+    expect(requetes.filter((requete) => requete === routeSeances(27000))).toHaveLength(1)
+  })
+
+  it('une seule requête de plus pour la fiche : celle des séances du film, sans paramètre', async () => {
+    navigateur = simulerNavigateur({ permission: 'granted', geolocation: PRES_D_ODEON })
+    const requetes = avecSeances(PROGRAMME)
+    monter({ film: FILM_A_VOIR, realisateur: NOLAN }, 27000, createQueryClient(), '/au-cine/films')
+
+    await bloc()
+    await avancer(2 * 60_000)
+
+    // Mutation : une requête de plus (les séances de tous les films, un rappel périodique, la position en
+    // paramètre) fait grandir cette liste ; `servir` lève d'ailleurs sur toute URL qui n'est pas exactement celle-ci.
+    expect([...requetes].sort()).toEqual([routeFiche(27000), routeSeances(27000)].sort())
+    expect(JSON.stringify(vi.mocked(fetch).mock.calls)).not.toContain('48.853')
+  })
+
+  it('ouverte depuis Au ciné avec son état : la fiche s’affiche, les réalisateurs se résolvent et « Marquer comme vu » prérempli le formulaire', async () => {
+    servir({ 'GET /api/reference/films/27000/realisateurs': () => json(REALISATEURS_DU_FILM) })
+    monter({ film: FILM_A_VOIR, realisateur: null }, 27000, createQueryClient(), '/au-cine/films')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Un autre film' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Christopher Nolan' })).toHaveAttribute('href', '/suivis/realisateurs/525')
+    fireEvent.click(screen.getByRole('button', { name: 'Marquer comme vu' }))
+
+    expect(await screen.findByText('formulaire de création · 27000 · Un autre film · Christopher Nolan')).toBeInTheDocument()
+  })
+
+  it('ouverte d’un lien collé sous Au ciné (sans état) : elle renvoie vers Au ciné, pas vers les Suivis, et ne lit rien', async () => {
+    const requetes = servir({})
+    monter(null, 27000, createQueryClient(), '/au-cine/films')
+
+    expect(screen.getByText('Ce film n’est plus disponible. Repars d’Au ciné.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Retour à Au ciné' })).toHaveAttribute('href', '/au-cine')
+    expect(screen.queryByText(/Suivis/)).not.toBeInTheDocument()
+    await avancer(50)
+    expect(requetes).toEqual([])
   })
 })

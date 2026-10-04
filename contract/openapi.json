@@ -18093,6 +18093,454 @@
         }
       }
     },
+    "/me/cinema/seances": {
+      "get": {
+        "summary": "Les prochaines séances d’aujourd’hui dans mes cinémas",
+        "tags": [
+          "système"
+        ],
+        "description": "Pour l’onglet « Au ciné » : les séances **pas encore commencées** (horloge du serveur) d’**aujourd’hui** (fuseau Europe/Paris) dans les cinémas du propriétaire (`SORTIES_CINEMAS`), de la plus proche dans le temps à la plus lointaine. Lues dans le programme que la tâche de fond écrit en Redis après chaque lecture d’Allociné — jamais d’appel Allociné ni TMDB à la demande.\n\nUn film entre s’il est **une nouveauté de la semaine** (la règle de `en_cours` : sortie du mercredi au mardi), **ou** si l’un de ses réalisateurs est dans mes réalisateurs suivis, **ou** si sa saga est dans mes sagas suivies, **ou** s’il a été ajouté à la main à l’une d’elles. Mes suivis sont relus à chaque appel : un réalisateur suivi à l’instant compte tout de suite. `marque` dit pourquoi un film entre au-delà de sa nouveauté : `realisateur` l’emporte sur `saga`, sinon nulle. Un film dont le `tmdb_id` n’a pas été retrouvé ne sort jamais : rien à ouvrir.\n\n`cinemas` ne porte que les cinémas cités par `seances`, avec leur position quand `SORTIES_CINEMAS` la donne (`ID=Nom@latitude/longitude`) : la distance se calcule **sur le téléphone**, l’API ne reçoit ni n’envoie jamais la position de personne. Rien en Redis, ou un programme d’un autre jour : `seances` est vide, sans erreur ; `calcule_le` est nul tant que la tâche n’a jamais tourné.",
+        "responses": {
+          "200": {
+            "description": "Les prochaines séances d’aujourd’hui dans les cinémas du propriétaire, pour les films de la semaine et ceux dont le membre suit le réalisateur ou la saga",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jour": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                      "description": "Aujourd’hui, en fuseau Europe/Paris"
+                    },
+                    "calcule_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Horodatage de la dernière passe de la tâche de fond qui a lu le programme. Nul si elle n’a jamais tourné"
+                    },
+                    "cinemas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Identifiant Allociné du cinéma, tel qu’il figure dans `SORTIES_CINEMAS` (`C0159`)"
+                          },
+                          "nom": {
+                            "type": "string",
+                            "description": "Nom affiché, tel qu’il figure dans `SORTIES_CINEMAS`"
+                          },
+                          "latitude": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Latitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible"
+                          },
+                          "longitude": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Longitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "nom",
+                          "latitude",
+                          "longitude"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un cinéma du propriétaire, avec sa position quand elle est connue"
+                      },
+                      "description": "Les cinémas cités par `seances`, dans l’ordre de `SORTIES_CINEMAS`"
+                    },
+                    "seances": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "debut": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                            "description": "Début de la séance, ISO 8601 avec décalage (heure de Paris : `+01:00` l’hiver, `+02:00` l’été)"
+                          },
+                          "version": {
+                            "type": "string",
+                            "enum": [
+                              "VF",
+                              "VOST",
+                              "VO"
+                            ],
+                            "description": "Version de la séance, lue dans les `tags` Allociné et non dans le nom de leur groupe : `VF` (version française), `VOST` (version originale sous-titrée), `VO` (version originale sans sous-titres)"
+                          },
+                          "cinema_id": {
+                            "type": "string",
+                            "description": "`id` d’un élément de `cinemas`"
+                          },
+                          "film": {
+                            "type": "object",
+                            "properties": {
+                              "tmdb_id": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Identifiant du film chez TMDB — jamais nul : un film sans lui ne sort pas"
+                              },
+                              "title": {
+                                "type": "string",
+                                "description": "Titre en français, avec repli sur le titre original"
+                              },
+                              "year": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Année de sortie, nulle si Allociné ne la donne pas"
+                              },
+                              "cover_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Affiche Allociné, en URL absolue"
+                              }
+                            },
+                            "required": [
+                              "tmdb_id",
+                              "title",
+                              "year",
+                              "cover_url"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Le film d’une séance, de quoi ouvrir sa fiche"
+                          },
+                          "nouveaute": {
+                            "type": "boolean",
+                            "description": "Vrai si le film sort cette semaine de cinéma (du mercredi au mardi) — la règle de `en_cours`"
+                          },
+                          "marque": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "realisateur",
+                                  "saga"
+                                ],
+                                "description": "Pourquoi ce film entre chez ce membre en plus d’une éventuelle nouveauté : `realisateur` (un de ses réalisateurs suivis) ou `saga` (une saga suivie, ou un film ajouté à la main à une saga). `realisateur` l’emporte sur `saga`."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Nul si le film n’est là que par sa nouveauté"
+                          }
+                        },
+                        "required": [
+                          "debut",
+                          "version",
+                          "cinema_id",
+                          "film",
+                          "nouveaute",
+                          "marque"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une séance d’aujourd’hui, pas encore commencée"
+                      },
+                      "description": "Les séances pas encore commencées, de la plus proche dans le temps à la plus lointaine"
+                    }
+                  },
+                  "required": [
+                    "jour",
+                    "calcule_le",
+                    "cinemas",
+                    "seances"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Les prochaines séances d’aujourd’hui dans les cinémas du propriétaire, pour les films de la semaine et ceux dont le membre suit le réalisateur ou la saga"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "jour": "2026-10-01",
+                      "calcule_le": "2026-10-01T14:00:05.000Z",
+                      "cinemas": [
+                        {
+                          "id": "C0159",
+                          "nom": "UGC Ciné Cité Les Halles",
+                          "latitude": 48.8625,
+                          "longitude": 2.3466
+                        },
+                        {
+                          "id": "C0073",
+                          "nom": "Le Champo",
+                          "latitude": null,
+                          "longitude": null
+                        }
+                      ],
+                      "seances": [
+                        {
+                          "debut": "2026-10-01T18:30:00+02:00",
+                          "version": "VF",
+                          "cinema_id": "C0159",
+                          "film": {
+                            "tmdb_id": 912649,
+                            "title": "Les Gardiens de la nuit",
+                            "year": 2026,
+                            "cover_url": "https://fr.web.img6.acsta.net/pictures/gardiens-de-la-nuit.jpg"
+                          },
+                          "nouveaute": true,
+                          "marque": null
+                        },
+                        {
+                          "debut": "2026-10-01T21:30:00+02:00",
+                          "version": "VOST",
+                          "cinema_id": "C0073",
+                          "film": {
+                            "tmdb_id": 11216,
+                            "title": "Cinema Paradiso",
+                            "year": 1988,
+                            "cover_url": "https://fr.web.img6.acsta.net/pictures/cinema-paradiso.jpg"
+                          },
+                          "nouveaute": false,
+                          "marque": "realisateur"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reference/films/{tmdbId}/seances": {
+      "get": {
+        "summary": "Les séances d’aujourd’hui d’un film, cinéma par cinéma",
+        "tags": [
+          "système"
+        ],
+        "description": "Pour la fiche d’un film, « Séances aujourd’hui » : les séances **pas encore commencées** (horloge du serveur) d’**aujourd’hui** (fuseau Europe/Paris) de ce film dans les cinémas du propriétaire, groupées par cinéma — celui de la prochaine séance d’abord — avec leur position quand `SORTIES_CINEMAS` la donne.\n\nMême source que `GET /me/cinema/seances` : le programme écrit en Redis par la tâche de fond, jamais d’appel Allociné ni TMDB à la demande. Contrairement à elle, **aucun suivi n’est consulté** : la route répond pour n’importe quel film, qu’il soit une nouveauté ou non. `cinemas` est vide si le film n’est pas au programme d’aujourd’hui, ou que toutes ses séances ont commencé ; ce n’est pas une erreur, et `404` n’existe pas ici.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "path",
+            "name": "tmdbId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Les séances d’aujourd’hui d’un film, cinéma par cinéma",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jour": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                      "description": "Aujourd’hui, en fuseau Europe/Paris"
+                    },
+                    "calcule_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Horodatage de la dernière passe de la tâche de fond qui a lu le programme. Nul si elle n’a jamais tourné"
+                    },
+                    "cinemas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Identifiant Allociné du cinéma, tel qu’il figure dans `SORTIES_CINEMAS` (`C0159`)"
+                          },
+                          "nom": {
+                            "type": "string",
+                            "description": "Nom affiché, tel qu’il figure dans `SORTIES_CINEMAS`"
+                          },
+                          "latitude": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Latitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible"
+                          },
+                          "longitude": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Longitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible"
+                          },
+                          "seances": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "debut": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                                  "description": "Début de la séance, ISO 8601 avec décalage (heure de Paris : `+01:00` l’hiver, `+02:00` l’été)"
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "enum": [
+                                    "VF",
+                                    "VOST",
+                                    "VO"
+                                  ],
+                                  "description": "Version de la séance, lue dans les `tags` Allociné et non dans le nom de leur groupe : `VF` (version française), `VOST` (version originale sous-titrée), `VO` (version originale sans sous-titres)"
+                                }
+                              },
+                              "required": [
+                                "debut",
+                                "version"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Une séance d’aujourd’hui de ce film dans ce cinéma"
+                            },
+                            "description": "Séances pas encore commencées, de la plus proche à la plus lointaine"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "nom",
+                          "latitude",
+                          "longitude",
+                          "seances"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un cinéma où ce film passe encore aujourd’hui"
+                      },
+                      "description": "Les cinémas où le film passe encore aujourd’hui, celui de la prochaine séance d’abord. Vide si le film n’est pas au programme"
+                    }
+                  },
+                  "required": [
+                    "jour",
+                    "calcule_le",
+                    "cinemas"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Les séances d’aujourd’hui d’un film, cinéma par cinéma"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "jour": "2026-10-01",
+                      "calcule_le": "2026-10-01T14:00:05.000Z",
+                      "cinemas": [
+                        {
+                          "id": "C0159",
+                          "nom": "UGC Ciné Cité Les Halles",
+                          "latitude": 48.8625,
+                          "longitude": 2.3466,
+                          "seances": [
+                            {
+                              "debut": "2026-10-01T18:30:00+02:00",
+                              "version": "VF"
+                            },
+                            {
+                              "debut": "2026-10-01T21:00:00+02:00",
+                              "version": "VOST"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "summary": "Ouvrir une session",

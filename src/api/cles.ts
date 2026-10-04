@@ -27,6 +27,13 @@ export const cles = {
    */
   seances: ['journal', 'seances'] as const,
   sorties: ['sorties'] as const,
+  /**
+   * Les séances du jour (`GET /me/cinema/seances`, `GET /reference/films/{tmdbId}/seances`) : hors du
+   * préfixe `journal`, un visionnage écrit ne les change pas. Ce qui a commencé se filtre sur l'horloge
+   * (`cinema/seances.ts`) : l'écoulement du temps ne relance aucun appel.
+   */
+  prochainesSeances: ['cinema', 'seances'] as const,
+  seancesDuFilm: (tmdbId: number) => ['cinema', 'film', tmdbId, 'seances'] as const,
   realisateurs: ['realisateurs'] as const,
   pageRealisateur: (tmdbId: number) => ['realisateurs', tmdbId, 'page'] as const,
   sagas: ['sagas'] as const,

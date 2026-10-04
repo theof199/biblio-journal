@@ -441,6 +441,148 @@ export interface paths {
       };
     };
   };
+  "/me/cinema/seances": {
+    /**
+     * Les prochaines séances d’aujourd’hui dans mes cinémas
+     * @description Pour l’onglet « Au ciné » : les séances **pas encore commencées** (horloge du serveur) d’**aujourd’hui** (fuseau Europe/Paris) dans les cinémas du propriétaire (`SORTIES_CINEMAS`), de la plus proche dans le temps à la plus lointaine. Lues dans le programme que la tâche de fond écrit en Redis après chaque lecture d’Allociné — jamais d’appel Allociné ni TMDB à la demande.
+     *
+     * Un film entre s’il est **une nouveauté de la semaine** (la règle de `en_cours` : sortie du mercredi au mardi), **ou** si l’un de ses réalisateurs est dans mes réalisateurs suivis, **ou** si sa saga est dans mes sagas suivies, **ou** s’il a été ajouté à la main à l’une d’elles. Mes suivis sont relus à chaque appel : un réalisateur suivi à l’instant compte tout de suite. `marque` dit pourquoi un film entre au-delà de sa nouveauté : `realisateur` l’emporte sur `saga`, sinon nulle. Un film dont le `tmdb_id` n’a pas été retrouvé ne sort jamais : rien à ouvrir.
+     *
+     * `cinemas` ne porte que les cinémas cités par `seances`, avec leur position quand `SORTIES_CINEMAS` la donne (`ID=Nom@latitude/longitude`) : la distance se calcule **sur le téléphone**, l’API ne reçoit ni n’envoie jamais la position de personne. Rien en Redis, ou un programme d’un autre jour : `seances` est vide, sans erreur ; `calcule_le` est nul tant que la tâche n’a jamais tourné.
+     */
+    get: {
+      responses: {
+        /** @description Les prochaines séances d’aujourd’hui dans les cinémas du propriétaire, pour les films de la semaine et ceux dont le membre suit le réalisateur ou la saga */
+        200: {
+          content: {
+            "application/json": {
+              /**
+               * Format: date
+               * @description Aujourd’hui, en fuseau Europe/Paris
+               */
+              jour: string;
+              /** @description Horodatage de la dernière passe de la tâche de fond qui a lu le programme. Nul si elle n’a jamais tourné */
+              calcule_le: string | null;
+              /** @description Les cinémas cités par `seances`, dans l’ordre de `SORTIES_CINEMAS` */
+              cinemas: ({
+                  /** @description Identifiant Allociné du cinéma, tel qu’il figure dans `SORTIES_CINEMAS` (`C0159`) */
+                  id: string;
+                  /** @description Nom affiché, tel qu’il figure dans `SORTIES_CINEMAS` */
+                  nom: string;
+                  /** @description Latitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible */
+                  latitude: number | null;
+                  /** @description Longitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible */
+                  longitude: number | null;
+                })[];
+              /** @description Les séances pas encore commencées, de la plus proche dans le temps à la plus lointaine */
+              seances: ({
+                  /**
+                   * Format: date-time
+                   * @description Début de la séance, ISO 8601 avec décalage (heure de Paris : `+01:00` l’hiver, `+02:00` l’été)
+                   */
+                  debut: string;
+                  /**
+                   * @description Version de la séance, lue dans les `tags` Allociné et non dans le nom de leur groupe : `VF` (version française), `VOST` (version originale sous-titrée), `VO` (version originale sans sous-titres)
+                   * @enum {string}
+                   */
+                  version: "VF" | "VOST" | "VO";
+                  /** @description `id` d’un élément de `cinemas` */
+                  cinema_id: string;
+                  /** @description Le film d’une séance, de quoi ouvrir sa fiche */
+                  film: {
+                    /** @description Identifiant du film chez TMDB — jamais nul : un film sans lui ne sort pas */
+                    tmdb_id: number;
+                    /** @description Titre en français, avec repli sur le titre original */
+                    title: string;
+                    /** @description Année de sortie, nulle si Allociné ne la donne pas */
+                    year: number | null;
+                    /** @description Affiche Allociné, en URL absolue */
+                    cover_url: string | null;
+                  };
+                  /** @description Vrai si le film sort cette semaine de cinéma (du mercredi au mardi) — la règle de `en_cours` */
+                  nouveaute: boolean;
+                  /** @description Nul si le film n’est là que par sa nouveauté */
+                  marque: ("realisateur" | "saga") | null;
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/reference/films/{tmdbId}/seances": {
+    /**
+     * Les séances d’aujourd’hui d’un film, cinéma par cinéma
+     * @description Pour la fiche d’un film, « Séances aujourd’hui » : les séances **pas encore commencées** (horloge du serveur) d’**aujourd’hui** (fuseau Europe/Paris) de ce film dans les cinémas du propriétaire, groupées par cinéma — celui de la prochaine séance d’abord — avec leur position quand `SORTIES_CINEMAS` la donne.
+     *
+     * Même source que `GET /me/cinema/seances` : le programme écrit en Redis par la tâche de fond, jamais d’appel Allociné ni TMDB à la demande. Contrairement à elle, **aucun suivi n’est consulté** : la route répond pour n’importe quel film, qu’il soit une nouveauté ou non. `cinemas` est vide si le film n’est pas au programme d’aujourd’hui, ou que toutes ses séances ont commencé ; ce n’est pas une erreur, et `404` n’existe pas ici.
+     */
+    get: {
+      parameters: {
+        path: {
+          tmdbId: number;
+        };
+      };
+      responses: {
+        /** @description Les séances d’aujourd’hui d’un film, cinéma par cinéma */
+        200: {
+          content: {
+            "application/json": {
+              /**
+               * Format: date
+               * @description Aujourd’hui, en fuseau Europe/Paris
+               */
+              jour: string;
+              /** @description Horodatage de la dernière passe de la tâche de fond qui a lu le programme. Nul si elle n’a jamais tourné */
+              calcule_le: string | null;
+              /** @description Les cinémas où le film passe encore aujourd’hui, celui de la prochaine séance d’abord. Vide si le film n’est pas au programme */
+              cinemas: ({
+                  /** @description Identifiant Allociné du cinéma, tel qu’il figure dans `SORTIES_CINEMAS` (`C0159`) */
+                  id: string;
+                  /** @description Nom affiché, tel qu’il figure dans `SORTIES_CINEMAS` */
+                  nom: string;
+                  /** @description Latitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible */
+                  latitude: number | null;
+                  /** @description Longitude en degrés, nulle si `SORTIES_CINEMAS` n’en donne pas ou la donne illisible */
+                  longitude: number | null;
+                  /** @description Séances pas encore commencées, de la plus proche à la plus lointaine */
+                  seances: ({
+                      /**
+                       * Format: date-time
+                       * @description Début de la séance, ISO 8601 avec décalage (heure de Paris : `+01:00` l’hiver, `+02:00` l’été)
+                       */
+                      debut: string;
+                      /**
+                       * @description Version de la séance, lue dans les `tags` Allociné et non dans le nom de leur groupe : `VF` (version française), `VOST` (version originale sous-titrée), `VO` (version originale sans sous-titres)
+                       * @enum {string}
+                       */
+                      version: "VF" | "VOST" | "VO";
+                    })[];
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
   "/auth/login": {
     /**
      * Ouvrir une session

@@ -1,0 +1,77 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.seances {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.titre {
+  margin: 0;
+  font-size: var(--taille-l);
+}
+
+.reste {
+  margin: 0;
+  color: var(--couleur-accent);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+}
+
+.cinema {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+  padding: var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-surface);
+  box-shadow: var(--ombre-s);
+}
+
+.entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-2);
+}
+
+.nom {
+  margin: 0;
+  font-family: var(--police-texte);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+}
+
+.distance {
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-s);
+  white-space: nowrap;
+}
+
+.creneaux {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.creneau {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--espace-1);
+  padding: var(--espace-1) var(--espace-3);
+  border: var(--trait) solid var(--couleur-bordure);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-fond);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.version {
+  color: var(--couleur-texte-doux);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+}

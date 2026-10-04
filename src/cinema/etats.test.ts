@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   cinemaUniqueEnCours,
   dejaDansLeJournal,
+  dernierVisionnage,
   marqueEnCours,
   marqueProchaine,
   messageAuCine,
@@ -43,6 +44,24 @@ describe('seancesCetteAnnee', () => {
 
   it('une liste vide ne compte rien', () => {
     expect(seancesCetteAnnee([], 2026)).toBe(0)
+  })
+})
+
+describe('dernierVisionnage', () => {
+  const seances = [
+    seance({ id: 'ancien', finished_at: '2026-03-01', externalId: '27205' }),
+    seance({ id: 'recent', finished_at: '2026-09-10', externalId: '27205' }),
+    seance({ id: 'autre', finished_at: '2026-09-20', externalId: '11216' }),
+  ]
+
+  it('rend le visionnage le plus récent de ce tmdb_id, quel que soit l’ordre de la liste', () => {
+    expect(dernierVisionnage(seances, 27205)?.entry.id).toBe('recent')
+    expect(dernierVisionnage([...seances].reverse(), 27205)?.entry.id).toBe('recent')
+  })
+
+  it('rien quand le film n’est pas dans les séances chargées, ou quand son tmdb_id est nul', () => {
+    expect(dernierVisionnage(seances, 1)).toBeUndefined()
+    expect(dernierVisionnage(seances, null)).toBeUndefined()
   })
 })
 

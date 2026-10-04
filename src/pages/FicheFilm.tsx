@@ -6,8 +6,13 @@ import { curseurSuivant, itemAuJournal, lireJournal } from '../api/journal'
 import { lireFicheReference, lireRealisateursDuFilm } from '../api/personnes'
 import type { OuRegarder } from '../api/personnes'
 import { lireReactions } from '../api/reactions'
+import { lireSeancesDuFilm } from '../api/seances'
 import { demanderFilm, marquerIntrouvable, retirerIntrouvable } from '../api/realisateurs'
 import { candidatDepuisFilmSuivi } from '../formulaire/candidat'
+import { cinemasDuFilmAVenir } from '../cinema/seances'
+import { SeancesDuFilm } from '../cinema/SeancesDuFilm'
+import { useMaintenant } from '../cinema/useMaintenant'
+import { usePosition } from '../cinema/usePosition'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
 import { formatDuree } from '../ui/format'
@@ -33,7 +38,7 @@ function modesNonVides(ouRegarder: OuRegarder) {
  * (`api/realisateurs.ts`) et `FilmSaga` (`api/sagas.ts`) partagent tous ces champs, sauf
  * `plex_url`, propre au premier (facultatif ici : une saga n'en porte pas).
  */
-interface FilmPourFiche {
+export interface FilmPourFiche {
   tmdb_id: number
   title: string
   original_title: string | null
@@ -53,7 +58,7 @@ interface RealisateurConnu {
   name: string
 }
 
-interface EtatFiche {
+export interface EtatFiche {
   film: FilmPourFiche
   realisateur: RealisateurConnu | null
 }
@@ -71,6 +76,11 @@ interface EtatFiche {
  * l'attend et son échec ne se montre pas, les sections qu'elle nourrit sont simplement absentes.
  * « Où regarder » ne se montre jamais sans la mention JustWatch, que les conditions de TMDB exigent
  * sur chaque œuvre.
+ *
+ * « Séances aujourd'hui » (sous l'en-tête, avant le synopsis) vient d'une lecture de plus, tout aussi
+ * secondaire : `GET /reference/films/{tmdbId}/seances`, la même pour tout film. Les séances commencées
+ * en partent d'elles-mêmes (`useMaintenant`), la position — celle de l'onglet Au ciné, qui seul la
+ * demande — ne sert qu'à classer les cinémas.
  *
  * `vu` ne porte que la note et la date de mon visionnage le plus récent (`{ entry_id, rating,
  * finished_at }`, `GET /me/realisateurs/…/films` et `GET /me/sagas/…/films`) — jamais la remarque
@@ -117,6 +127,14 @@ export default function FicheFilm() {
     queryFn: ({ signal }) => lireReactions(signal),
     enabled: etat != null && etat.film.vu != null,
   })
+
+  const seances = useQuery({
+    queryKey: cles.seancesDuFilm(Number(tmdbId)),
+    queryFn: ({ signal }) => lireSeancesDuFilm(Number(tmdbId), signal),
+    enabled: etat != null,
+  })
+  const position = usePosition()
+  const maintenant = useMaintenant()
 
   const entryId = etat?.film.vu?.entry_id
   const item = entryId ? itemAuJournal(journal.data?.pages ?? [], entryId) : undefined
@@ -165,13 +183,24 @@ export default function FicheFilm() {
   })
 
   if (!etat) {
+    // La page vit de son état de navigation : sans lui (lien collé, onglet rouvert), elle renvoie à l'onglet d'où elle s'ouvre.
+    const depuisAuCine = location.pathname.startsWith('/au-cine/')
     return (
       <div className={styles.page}>
         <div className={styles.entete}>
-          <BoutonRetour vers="/suivis" />
+          <BoutonRetour vers={depuisAuCine ? '/au-cine' : '/suivis'} />
         </div>
-        <p>Ce film n’est plus disponible. Repars des Suivis.</p>
-        <Link to="/suivis">Retour aux Suivis</Link>
+        {depuisAuCine ? (
+          <>
+            <p>Ce film n’est plus disponible. Repars d’Au ciné.</p>
+            <Link to="/au-cine">Retour à Au ciné</Link>
+          </>
+        ) : (
+          <>
+            <p>Ce film n’est plus disponible. Repars des Suivis.</p>
+            <Link to="/suivis">Retour aux Suivis</Link>
+          </>
+        )}
       </div>
     )
   }
@@ -226,6 +255,8 @@ export default function FicheFilm() {
           ) : null}
         </div>
       </div>
+
+      <SeancesDuFilm cinemas={cinemasDuFilmAVenir(seances.data?.cinemas, position.coordonnees, maintenant)} maintenantMs={maintenant} />
 
       {ligneDuree ? <p className={styles.duree}>{ligneDuree}</p> : null}
       {reference?.summary ? <p className={styles.synopsis}>{reference.summary}</p> : null}
