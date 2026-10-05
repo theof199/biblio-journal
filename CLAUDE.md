@@ -116,6 +116,10 @@ absente de cette table.
 |---|---|
 | `docs/cerveau/carte-et-moteur.md` | Avant d'ouvrir `src/carte/moteur.ts` ou son test, d'ajouter un monde, de toucher à la caméra, aux zones, à l'enveloppe de `pages/Carte.tsx` ou à une célébration. |
 
+**La consigne de lecture** vaut pour toute session et tout sous-agent, sans que le brief la répète :
+chercher par `grep` avant de lire ; lire par plage (`offset`, `limit`) tout fichier de plus de 500
+lignes ; ne pas relire un fichier déjà lu, sauf s'il vient de changer.
+
 ## Le contrat de l'API
 
 `contract/openapi.json` est une copie de `../biblio-back/docs/openapi.json`, et `src/api/types.ts`
