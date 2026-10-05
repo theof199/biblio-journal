@@ -1035,6 +1035,102 @@ describe('le billet de séance', () => {
       expect(etat.creations).toBe(1)
     })
 
+    /**
+     * Ce que le billet offre sous le tampon : le dateur, le poinçon, les cartons, la remarque. Lu à
+     * chaque fois : rien n'est gardé d'un rendu à l'autre.
+     */
+    const champs = () => ({
+      hier: screen.getByRole('button', { name: 'Hier' }),
+      veille: screen.getByRole('button', { name: 'Jour précédent' }),
+      quatre: screen.getByRole('button', { name: '4 sur 10' }),
+      carton: screen.getByRole('button', { name: CATALOGUE.reactions[0]!.phrase }),
+      remarque: screen.getByLabelText('Remarque privée'),
+    })
+    /** Ce que le brouillon montre : le jour dit, la note lue, le carton choisi, la remarque. */
+    const montre = () => ({
+      jour: within(screen.getByRole('group', { name: 'Date du visionnage' })).getByText(/\d{4}$/, { selector: 'p' }).textContent,
+      note: screen.getByRole('group', { name: 'Note sur 10' }).nextElementSibling!.querySelector('b')!.textContent,
+      carton: champs().carton.getAttribute('aria-pressed'),
+      remarque: (champs().remarque as HTMLTextAreaElement).value,
+    })
+    /** Le geste brut sur chaque champ, tel que jsdom le livre (il ne connaît pas `inert`). */
+    const toutToucher = () => {
+      const c = champs()
+      fireEvent.click(c.hier)
+      fireEvent.click(c.veille)
+      fireEvent.click(c.quatre)
+      fireEvent.click(c.carton)
+      fireEvent.change(c.remarque, { target: { value: 'écrit sous le tampon' } })
+    }
+    /**
+     * Le clavier : jsdom donne le focus à un élément inerte, un navigateur non (constaté dans Chromium).
+     * Le geste est donc tenté comme un navigateur le livrerait : rien n'atteint ce qu'un `inert` couvre.
+     */
+    const prendLeFocus = (e: HTMLElement) => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+      if (!e.closest('[inert]')) e.focus()
+      return document.activeElement === e
+    }
+    const VIDE = { jour: formatDateVisionnage(jourLocal()), note: '—', carton: 'false', remarque: '' }
+
+    // Mutation : la garde de `retoucher` retirée (`if (envoi.current) return`) : la note, la date, le
+    // carton et la remarque changent à l'écran sous le tampon, sans être écrits.
+    it('sous le tampon, toucher le dateur, la note, un carton ou la remarque ne change rien', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { etat, routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      monterVoyage(billet(FAUCON), routes)
+      await screen.findByRole('button', { name: CATALOGUE.reactions[0]!.phrase })
+      expect(montre()).toEqual(VIDE)
+      fireEvent.click(await composter())
+      // Dès le toucher, pendant l'envoi : le brouillon est parti.
+      toutToucher()
+      expect(montre()).toEqual(VIDE)
+      await tamponne()
+      toutToucher()
+      expect(montre()).toEqual(VIDE)
+      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + FRAPPE.avantTalon + 20)
+      toutToucher()
+      expect(montre()).toEqual(VIDE)
+      await vi.advanceTimersByTimeAsync(FRAPPE.talon)
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(etat.creations).toBe(1)
+    })
+
+    // Mutation : `INERTE` retiré du billet (`{...(occupe ? INERTE : null)}`) : le focus entre sous le
+    // tampon, et le clavier avec lui.
+    it('sous le tampon, aucun champ du billet ne prend le focus ; « Retour » reste vivant', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const { routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      monterVoyage(billet(FAUCON), routes)
+      await screen.findByRole('button', { name: CATALOGUE.reactions[0]!.phrase })
+      // Au repos, chacun le prend : sans quoi la suite ne prouverait rien.
+      for (const champ of Object.values(champs())) expect(prendLeFocus(champ)).toBe(true)
+      fireEvent.click(await composter())
+      for (const champ of Object.values(champs())) expect(prendLeFocus(champ)).toBe(false)
+      await tamponne()
+      for (const champ of Object.values(champs())) expect(prendLeFocus(champ)).toBe(false)
+      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * FRAPPE.tirages + FRAPPE.avantTalon + 20)
+      for (const champ of Object.values(champs())) expect(prendLeFocus(champ)).toBe(false)
+      // Quitter le billet pendant le tampon est voulu (`CLAUDE.md`) : « Retour » n'est pas couvert.
+      expect(prendLeFocus(screen.getByRole('button', { name: 'Retour' }))).toBe(true)
+    })
+
+    // Mutations : `onError: relacher` retiré de `composter` (le billet resterait inerte et figé après
+    // un refus) ; `INERTE` posé sans condition.
+    it('un enregistrement refusé rend le billet : les champs reprennent le focus et les gestes', async () => {
+      const { routes } = serveur()
+      monterVoyage(billet(FAUCON), { ...routes, [JOURNAL]: () => json({ code: 'CONFLICT', message: 'Déjà noté aujourd’hui.', retryable: false }, 409) })
+      await screen.findByRole('button', { name: CATALOGUE.reactions[0]!.phrase })
+      fireEvent.click(await composter())
+      for (const champ of Object.values(champs())) expect(prendLeFocus(champ)).toBe(false)
+      expect(await screen.findByRole('alert')).toHaveTextContent('Déjà noté aujourd’hui.')
+      for (const champ of Object.values(champs())) expect(prendLeFocus(champ)).toBe(true)
+      fireEvent.click(champs().quatre)
+      fireEvent.click(champs().carton)
+      fireEvent.change(champs().remarque, { target: { value: 'corrigé après le refus' } })
+      expect(montre()).toEqual({ ...VIDE, note: '4', carton: 'true', remarque: 'corrigé après le refus' })
+    })
+
     // Mutations : le tampon joué en correction (l'année n'arriverait qu'après lui) ; le numéro pris
     // dans tout le journal (« N° 0003 ») ; le billet corrigé rangé comme un neuf.
     it('la correction dit son numéro et ne tamponne pas', async () => {

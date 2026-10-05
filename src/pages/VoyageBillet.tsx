@@ -58,6 +58,12 @@ const laBoite = (d: number) =>
 
 const attendre = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
+/**
+ * `inert` : ni toucher, ni focus, ni clavier, ni lecteur d'écran, sans rien changer à l'œil. React 18
+ * ne le connaît pas et le pose tel quel, d'où la chaîne vide ; à React 19, il devient un booléen.
+ */
+const INERTE = { inert: '' }
+
 /** Où en est le compostage (décision D4) : au repos, la frappe du tampon, le numéroteur, le talon qui part. */
 type Etape = 'repos' | Exclude<Frappe, 'fini'> | 'numerote' | 'talon'
 
@@ -283,6 +289,12 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     envoi.current = false
     setGarde(false)
   }
+  // Le brouillon parti ne se retouche plus : ce qu'on y changerait pendant l'envoi ou sous le tampon
+  // se verrait à l'écran sans être écrit. La même garde, lue au geste ; `INERTE` la dit au navigateur.
+  const retoucher = (f: (b: FormulaireBrouillon) => FormulaireBrouillon) => {
+    if (envoi.current) return
+    setBrouillon(f)
+  }
 
   const revenirALAnnee = () => {
     // Le retour est déjà confié (`onSuccess` de l'écriture). Depuis l'année, reculer : la remplacer par elle-même la doublerait dans l'historique.
@@ -374,27 +386,28 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
 
       {/* Le support porte le billet et ce qui le frappe : le masque du billet rognerait le marteau. */}
       <div ref={support} className={styles.support} data-etape={etape}>
-        <div className={styles.billet}>
+        {/* Sous le tampon, rien du billet ne répond, au doigt comme au clavier, focus compris. */}
+        <div className={styles.billet} {...(occupe ? INERTE : null)}>
           <div className={styles.entete}>
             <small>{m.billet.tete}</small>
             <strong>{m.billet.titre}</strong>
             <Numeroteur numero={numero} tirage={roue.tirage} />
           </div>
           <div className={`${styles.rubrique} ${styles.dateur}`}>
-            <Dateur date={brouillon.date} onChange={(date) => setBrouillon((b) => ({ ...b, date }))} />
+            <Dateur date={brouillon.date} onChange={(date) => retoucher((b) => ({ ...b, date }))} />
           </div>
           <div className={styles.rubrique}>
             <div className={styles.rubriqueTete}>
               Ta note <em>poinçonnez</em>
             </div>
-            <Poincon note={brouillon.note} onNote={(note) => setBrouillon((b) => ({ ...b, note }))} />
+            <Poincon note={brouillon.note} onNote={(note) => retoucher((b) => ({ ...b, note }))} />
           </div>
           <div className={styles.rubrique}>
             <div className={styles.rubriqueTete}>
               Tes réactions <em>douze cartons au plus</em>
             </div>
             {reactions.data ? (
-              <Cartons catalogue={reactions.data.reactions} choisis={brouillon.reactions} onChange={(r) => setBrouillon((b) => ({ ...b, reactions: r }))} />
+              <Cartons catalogue={reactions.data.reactions} choisis={brouillon.reactions} onChange={(r) => retoucher((b) => ({ ...b, reactions: r }))} />
             ) : reactions.error && !reactions.isFetching ? (
               <div className={styles.erreurCartons}>
                 <Panne erreur={reactions.error} onReessayer={() => void reactions.refetch()} />
@@ -419,7 +432,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
               aria-label="Remarque privée"
               placeholder="Ce que tu en retiens, pour toi…"
               value={brouillon.remarque}
-              onChange={(e) => setBrouillon((b) => ({ ...b, remarque: e.target.value }))}
+              onChange={(e) => retoucher((b) => ({ ...b, remarque: e.target.value }))}
             />
           </div>
         </div>
