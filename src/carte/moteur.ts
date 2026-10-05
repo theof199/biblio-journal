@@ -913,7 +913,12 @@ export class MoteurCarte {
     this.fogY = this.fogCible = c.y + 95
   }
 
+  /**
+   * L'avatar marche jusqu'à `d1`, d'où qu'il soit. Une seule marche à la fois : celle qui commence
+   * prend la place de celle qui jouait, et qui l'attendait est libéré (comme `rouler` et `direAdieu`).
+   */
   private marcherVers(d1: number, yCible: number): Promise<void> {
+    this.avatar.marche?.fin()
     this.fogCible = yCible + 95
     return new Promise((fin) => {
       if (this.calme) {

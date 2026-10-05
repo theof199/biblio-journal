@@ -154,6 +154,8 @@ export default function Carte() {
     if (av) {
       setAnneeAvatar(av.anneeQuittee)
       setAvancee({ av, vers: apres })
+      // La petite affiche d'une date est derrière l'avancée : ouverte, son « Refermer » ne répondrait plus.
+      setDate(null)
     } else if (anneeAvatar !== apres) {
       // Aucune année vue, ni ici ni en mémoire, au départ du Voyage : la toute première visite voit
       // la séance de 1895 s'installer. La mémoire écrite ici, la visite suivante ne la revoit pas.
@@ -196,26 +198,35 @@ export default function Carte() {
       // changement de décennie, `decennieQuittee` n'y est jamais nulle.
       passerLaPorte: async () => {
         await moteur.passerLaPorte()
-        if (avancee.av.decennieQuittee !== null) await moteur.direAdieu(avancee.av.decennieQuittee)
+        if (vivant && avancee.av.decennieQuittee !== null) await moteur.direAdieu(avancee.av.decennieQuittee)
       },
-      marcher: (vers) => moteur.marcher(vers),
+      marcher: async (vers) => {
+        if (vivant) await moteur.marcher(vers)
+      },
       montrerTampon: async (decennie) => {
+        if (!vivant) return
         setCalque({ type: 'tampon', decennie })
         await attendre(1800)
-        setCalque(null)
+        if (vivant) setCalque(null)
       },
       montrerCarton: async (annee) => {
+        if (!vivant) return
         setCalque({ type: 'carton', annee })
         await attendre(3100)
-        setCalque(null)
+        if (vivant) setCalque(null)
       },
       claquer: () => {
+        if (!vivant) return
         moteur.claquer()
         vibrer(20)
       },
     }).then(finir, finir)
+    // L'avancée abandonnée (rejouée parce que le Voyage est relu, ou page quittée) s'arrête là : chacun
+    // de ses temps relit `vivant` avant de commander le moteur ou de poser un calque, et le calque
+    // qu'elle montrait part avec elle. Une seule avancée mène le moteur à la fois.
     return () => {
       vivant = false
+      setCalque(null)
     }
   }, [avancee, moteur, v, attendre, user.id])
 

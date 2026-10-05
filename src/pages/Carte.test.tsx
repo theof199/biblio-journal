@@ -779,6 +779,97 @@ describe('le ticket', () => {
     expect(marche).toHaveLength(1)
   })
 
+  /**
+   * Le moteur d'avant sa correction, pour ce qu'il faisait d'une marche remplacée : `passerLaPorte` et
+   * `marcher` se partagent l'avatar, et la marche qui commence abandonne celle qui jouait, sans jamais
+   * rendre sa promesse. Deux avancées qui commanderaient le moteur ensemble s'y bloquent pour toujours.
+   */
+  function uneSeuleMarche(moteur: ReturnType<typeof monter>['moteur']) {
+    let enCours: (() => void) | null = null
+    const marche = () => new Promise<void>((fin) => void (enCours = fin))
+    vi.mocked(moteur.passerLaPorte).mockImplementation(marche)
+    vi.mocked(moteur.marcher).mockImplementation(marche)
+    return () => {
+      const fin = enCours
+      enCours = null
+      fin?.()
+    }
+  }
+
+  // Relecture de `918fac9`. Mutations : la garde `vivant` retirée de `marcher` (l'avancée abandonnée,
+  // son tampon expiré, prend l'avatar à celle qui la rejoue : plus personne n'arrive, la carte reste
+  // inerte), de `claquer`, de `montrerCarton`, ou du retrait du tampon (celui de l'avancée abandonnée
+  // retirerait à son heure le tampon de l'autre) ; `setCalque(null)` retiré du nettoyage (le tampon de
+  // l'avancée abandonnée reste affiché).
+  it('rejouée pendant le tampon, l’avancée abandonnée ne commande plus rien : une seule arrive au bout, et la carte rend la main', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1899')
+    const f = moteurFactice()
+    const arriver = uneSeuleMarche(f.moteur)
+    const { moteur, client } = monter(AVEC_TAMPON, {}, f)
+    await waitFor(() => expect(moteur.passerLaPorte).toHaveBeenCalledTimes(1))
+    await act(async () => arriver())
+    await screen.findByText('Années 1890')
+    await new Promise((r) => setTimeout(r, 1000))
+
+    // Le Voyage relu a changé pendant le tampon : l'avancée se rejoue depuis la porte, le tampon retiré.
+    act(() => void client.setQueryData(cles.voyage, { ...AVEC_TAMPON, annees: AVEC_TAMPON.annees.map((a) => (a.annee === 1895 ? { ...a, profondeur: a.profondeur + 1 } : a)) }))
+    await waitFor(() => expect(moteur.passerLaPorte).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('Années 1890')).toBeNull()
+    rienNeRepond(moteur, 'la porte rejouée')
+    await act(async () => arriver())
+    await screen.findByText('Années 1890')
+    // Le tampon de l'avancée abandonnée expire (à 1,8 s, celui de l'autre n'en est qu'à 0,8 s) : elle ne
+    // marche pas, ne claque pas, ne montre pas son carton, et laisse à l'autre son tampon.
+    await new Promise((r) => setTimeout(r, 1200))
+    expect(moteur.marcher).not.toHaveBeenCalled()
+    expect(moteur.claquer).not.toHaveBeenCalled()
+    expect(screen.queryByText('Années 1900')).toBeNull()
+    expect(screen.getByText('Années 1890')).toBeInTheDocument()
+
+    await waitFor(() => expect(moteur.marcher).toHaveBeenCalledTimes(1), { timeout: 4000 })
+    await act(async () => arriver())
+    await screen.findByText('Années 1900')
+    await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1900'), { timeout: 6000 })
+    expect(screen.queryByText('Années 1900')).toBeNull()
+    toutRepond(moteur)
+    expect(moteur.marcher).toHaveBeenCalledTimes(1)
+    expect(moteur.claquer).toHaveBeenCalledTimes(1)
+  }, 25000)
+
+  // Mutation : `vivant &&` retiré devant `direAdieu` (la porte de l'avancée abandonnée, que le moteur
+  // libère quand une autre marche prend sa place, lancerait son adieu par-dessus la porte de l'autre).
+  it('rejouée pendant la porte, l’avancée abandonnée ne dit pas adieu quand sa porte lui est rendue', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1899')
+    const f = moteurFactice()
+    const porte = tenir(f.moteur.passerLaPorte)
+    const { moteur, client } = monter(AVEC_TAMPON, {}, f)
+    await waitFor(() => expect(porte).toHaveLength(1))
+    act(() => void client.setQueryData(cles.voyage, { ...AVEC_TAMPON, annees: AVEC_TAMPON.annees.map((a) => (a.annee === 1895 ? { ...a, profondeur: a.profondeur + 1 } : a)) }))
+    await waitFor(() => expect(porte).toHaveLength(2))
+    // Ce que fait le moteur d'une marche remplacée : il rend sa promesse.
+    await act(async () => porte[0]!.lacher())
+    await new Promise((r) => setTimeout(r, 30))
+    expect(moteur.direAdieu).not.toHaveBeenCalled()
+    expect(screen.queryByText('Années 1890')).toBeNull()
+    await act(async () => porte[1]!.lacher())
+    await waitFor(() => expect(moteur.direAdieu).toHaveBeenCalledTimes(1))
+  })
+
+  // Mutation : `setDate(null)` retiré du départ de l'avancée (la petite affiche resterait ouverte
+  // derrière elle, son « Refermer » inerte jusqu'à la fin).
+  it('l’avancée qui part referme la petite affiche d’une date', async () => {
+    const f = moteurFactice()
+    const marche = tenir(f.moteur.marcher)
+    const { etats, rappels, client } = monter(VOYAGE, {}, f)
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().date({ an: 1895, x: 38, y: 112, court: '22 mars', lieu: 'Paris', titre: 'La première projection', jour: 'Vendredi 22 mars 1895', texte: 'Un texte.', image: null }))
+    expect(await screen.findByRole('dialog', { name: 'La première projection' })).toBeInTheDocument()
+    // Le ticket utilisé ailleurs : le Voyage relu est en 1899, l'avancée part.
+    act(() => void client.setQueryData(cles.voyage, { ...VOYAGE, annee_en_cours: 1899, annees: VOYAGE.annees.map((a) => (a.annee === 1899 ? { ...a, statut: 'en_cours' as const } : a.annee === 1898 ? { ...a, statut: 'ouverte' as const } : a)) }))
+    await waitFor(() => expect(marche).toHaveLength(1))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
   // Mutation : la petite affiche sans son image ou sans sa légende de crédit.
   it('la petite affiche montre l’image d’époque et sa légende de crédit', async () => {
     const { etats, rappels } = monter()

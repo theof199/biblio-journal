@@ -452,6 +452,25 @@ describe('le moteur de la carte', () => {
     expect(rappels.defilerVers).not.toHaveBeenCalled()
   })
 
+  // Mutation : `this.avatar.marche?.fin()` retiré de `marcherVers` : la marche remplacée ne rendrait
+  // jamais sa promesse, et qui l'attend (l'avancée de la page) attendrait pour toujours.
+  it('une marche qui en remplace une autre libère qui attendait la première, et court seule jusqu’au bout', async () => {
+    const { moteur } = monter()
+    const finies: string[] = []
+    void moteur.marcher(1899).then(() => void finies.push('première'))
+    moteur.image(1000)
+    void moteur.passerLaPorte().then(() => void finies.push('porte'))
+    await Promise.resolve()
+    expect(finies).toEqual(['première'])
+    void moteur.marcher(1899).then(() => void finies.push('seconde'))
+    await Promise.resolve()
+    expect(finies).toEqual(['première', 'porte'])
+    // La dernière n'est pas libérée d'avance : elle marche, et n'arrive qu'aux images.
+    for (let t = 1016; t < 8000; t += 16) moteur.image(t)
+    await Promise.resolve()
+    expect(finies).toEqual(['première', 'porte', 'seconde'])
+  })
+
   // Mutation : `reglerCalme` sans `achever()` : l'horloge figée, la marche en cours ne finirait jamais.
   it('achève la marche en cours quand le visiteur demande moins d’animations en chemin', async () => {
     const { moteur } = monter()
