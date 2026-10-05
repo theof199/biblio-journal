@@ -54,6 +54,12 @@ const LECTURE_MS = 3000
 const APRES_LA_DERNIERE_MS = 3300
 const LIBELLE = { palme: 'Palme', lion: 'Lion', ours: 'Ours', encours: 'en cours', passee: 'passée', verrou: 'à tourner' } as const
 
+/**
+ * `inert` : ni toucher, ni focus, ni clavier, sans rien changer à l'œil. React 18 ne le connaît pas et
+ * le pose tel quel, d'où la chaîne vide ; à React 19, il devient un booléen.
+ */
+const INERTE = { inert: '' }
+
 export default function Carte() {
   const { user } = useSession()
   const navigate = useNavigate()
@@ -339,159 +345,162 @@ export default function Carte() {
   return (
     <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }}>
       <h1 className="sr-only">Le Voyage de {user.pseudo}</h1>
-      {etat ? (
-        <CarteCanvas
-          etat={etat}
-          calme={calme}
-          bobines={trouvees}
-          surMoteur={setMoteur}
-          rappels={{
-            toucherAnnee: (a) => navigate(`/voyage/${a}`),
-            apercu: (annee, ancre) => setApercu({ annee, ancre }),
-            finApercu: () => setApercu(null),
-            ensemble: setEnsemble,
-            date: setDate,
-            roulotte: () => setRoulotteDite(true),
-            avatarVisible: setAvatarVu,
-            bobine: ramassee,
-            bobineArrivee: arrivee,
-            cibleBobines,
-            clap: () => ambiance.clap(),
-            presences: (liste, decennie) => {
-              ambiance.presences(liste)
-              montrerDecennie(decennie)
-            },
-          }}
-        />
-      ) : null}
+      {/* Ce que le tampon du passeport couvre : rien n'y répond tant qu'il joue, ni au doigt ni au clavier. */}
+      <div className={styles.fond} {...(calque?.type === 'tampon' ? INERTE : null)}>
+        {etat ? (
+          <CarteCanvas
+            etat={etat}
+            calme={calme}
+            bobines={trouvees}
+            surMoteur={setMoteur}
+            rappels={{
+              toucherAnnee: (a) => navigate(`/voyage/${a}`),
+              apercu: (annee, ancre) => setApercu({ annee, ancre }),
+              finApercu: () => setApercu(null),
+              ensemble: setEnsemble,
+              date: setDate,
+              roulotte: () => setRoulotteDite(true),
+              avatarVisible: setAvatarVu,
+              bobine: ramassee,
+              bobineArrivee: arrivee,
+              cibleBobines,
+              clap: () => ambiance.clap(),
+              presences: (liste, decennie) => {
+                ambiance.presences(liste)
+                montrerDecennie(decennie)
+              },
+            }}
+          />
+        ) : null}
 
-      <header className={styles.hud}>
-        <div>
-          {/* Le chapitre ouvre la page de la décennie en cours (plan 2c, décision D5). */}
-          <Link to={`/voyage/decennies/${decennieDe(v.annee_en_cours)}`} className={styles.chapitre}>
-            {[monde.chapitre, monde.nom].filter(Boolean).join(' · ')}
+        <header className={styles.hud}>
+          <div>
+            {/* Le chapitre ouvre la page de la décennie en cours (plan 2c, décision D5). */}
+            <Link to={`/voyage/decennies/${decennieDe(v.annee_en_cours)}`} className={styles.chapitre}>
+              {[monde.chapitre, monde.nom].filter(Boolean).join(' · ')}
+            </Link>
+            <span className={styles.annee}>{v.annee_en_cours}</span>
+          </div>
+          <p className={styles.recompenses} aria-label={`${compte.palme} Palmes, ${compte.lion} Lions, ${compte.ours} Ours`}>
+            <span>{compte.palme}</span> <span>{compte.lion}</span> <span>{compte.ours}</span>
+          </p>
+          {objectif ? (
+            <p className={styles.objectif}>
+              <span>{objectif}</span>
+              {j ? <b>{`${j.vus}/${j.total}`}</b> : null}
+            </p>
+          ) : null}
+          {v.source ? <p className={styles.source}>{`Tu suis le Voyage de ${v.source.pseudo}${rattrape ? ' · tu le rattrapes bientôt' : ''}`}</p> : null}
+          {/* Le compteur des bobines perdues : discret, il n'apparaît qu'à la première (maquette : `#hudBob`). */}
+          <p ref={compteurRef} key={pulsation} className={`${styles.bobines}${pulsation ? ` ${styles.pulse}` : ''}`} hidden={nBobines === 0 && enVol === null}>
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="10" r="8.6" fill="currentColor" />
+              <circle cx="10" cy="10" r="6.8" fill="#3a2a12" />
+              <g fill="currentColor">
+                <circle cx="10" cy="5.9" r="1.7" />
+                <circle cx="13.9" cy="8.7" r="1.7" />
+                <circle cx="12.4" cy="13.3" r="1.7" />
+                <circle cx="7.6" cy="13.3" r="1.7" />
+                <circle cx="6.1" cy="8.7" r="1.7" />
+              </g>
+              <circle cx="10" cy="10" r="1.1" fill="currentColor" />
+            </svg>
+            <span>{`Bobines retrouvées ${nBobines}/${bobinesDuCompteur.length}`}</span>
+          </p>
+        </header>
+
+        <nav className={`sr-only ${styles.annees}`} aria-label="Les années du Voyage">
+          <ul>
+            {etat?.cases.map((c) => (
+              <li key={c.annee}>
+                <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}${rattrape && c.annee === v.annee_en_cours ? ', tu le rattrapes bientôt' : ''}`}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className={styles.boutons}>
+          <button
+            type="button"
+            aria-label="Son"
+            title={sonEnMarche ? 'Son : allumé' : sonVoulu ? 'Son : touche pour le reprendre' : 'Son : coupé'}
+            aria-pressed={sonEnMarche}
+            onClick={basculerSon}
+          >
+            {sonEnMarche || sonVoulu ? <IconVolume size={20} aria-hidden="true" /> : <IconVolumeOff size={20} aria-hidden="true" />}
+          </button>
+          {/* La sacoche du voyageur : le passeport, le portefeuille et les coulisses, sur leur page. */}
+          <Link to="/voyage/sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur">
+            <IconBriefcase size={20} aria-hidden="true" />
           </Link>
-          <span className={styles.annee}>{v.annee_en_cours}</span>
+          {!avatarVu && !ensemble ? (
+            <button type="button" aria-label="Tu es ici" title="Tu es ici" onClick={() => moteur?.allerIci()}>
+              <IconCurrentLocation size={20} aria-hidden="true" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            aria-label={ensemble ? 'Revenir à la carte' : 'Vue d’ensemble'}
+            title={ensemble ? 'Revenir à la carte' : 'Vue d’ensemble'}
+            aria-pressed={ensemble}
+            onClick={() => moteur?.basculerEnsemble(!ensemble)}
+          >
+            <IconMap2 size={20} aria-hidden="true" />
+          </button>
         </div>
-        <p className={styles.recompenses} aria-label={`${compte.palme} Palmes, ${compte.lion} Lions, ${compte.ours} Ours`}>
-          <span>{compte.palme}</span> <span>{compte.lion}</span> <span>{compte.ours}</span>
-        </p>
-        {objectif ? (
-          <p className={styles.objectif}>
-            <span>{objectif}</span>
-            {j ? <b>{`${j.vus}/${j.total}`}</b> : null}
+
+        {ticket && !avancee ? (
+          <div className={styles.ticketOmbre}>
+            <button type="button" className={styles.ticket} disabled={utiliser.isPending} onClick={() => encaisser(ticket.annee)}>
+              <span>Utiliser le ticket</span>
+              <span>{`${v.annee_en_cours} → ${ticket.annee % 10 === 0 ? 'nouveau monde' : ticket.annee}`}</span>
+            </button>
+          </div>
+        ) : null}
+        {utiliser.error ? (
+          <p role="alert" className={styles.erreur}>
+            {utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.'}
           </p>
         ) : null}
-        {v.source ? <p className={styles.source}>{`Tu suis le Voyage de ${v.source.pseudo}${rattrape ? ' · tu le rattrapes bientôt' : ''}`}</p> : null}
-        {/* Le compteur des bobines perdues : discret, il n'apparaît qu'à la première (maquette : `#hudBob`). */}
-        <p ref={compteurRef} key={pulsation} className={`${styles.bobines}${pulsation ? ` ${styles.pulse}` : ''}`} hidden={nBobines === 0 && enVol === null}>
-          <svg viewBox="0 0 20 20" aria-hidden="true">
-            <circle cx="10" cy="10" r="8.6" fill="currentColor" />
-            <circle cx="10" cy="10" r="6.8" fill="#3a2a12" />
-            <g fill="currentColor">
-              <circle cx="10" cy="5.9" r="1.7" />
-              <circle cx="13.9" cy="8.7" r="1.7" />
-              <circle cx="12.4" cy="13.3" r="1.7" />
-              <circle cx="7.6" cy="13.3" r="1.7" />
-              <circle cx="6.1" cy="8.7" r="1.7" />
-            </g>
-            <circle cx="10" cy="10" r="1.1" fill="currentColor" />
-          </svg>
-          <span>{`Bobines retrouvées ${nBobines}/${bobinesDuCompteur.length}`}</span>
-        </p>
-      </header>
 
-      <nav className={`sr-only ${styles.annees}`} aria-label="Les années du Voyage">
-        <ul>
-          {etat?.cases.map((c) => (
-            <li key={c.annee}>
-              <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}${rattrape && c.annee === v.annee_en_cours ? ', tu le rattrapes bientôt' : ''}`}</Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className={styles.boutons}>
-        <button
-          type="button"
-          aria-label="Son"
-          title={sonEnMarche ? 'Son : allumé' : sonVoulu ? 'Son : touche pour le reprendre' : 'Son : coupé'}
-          aria-pressed={sonEnMarche}
-          onClick={basculerSon}
-        >
-          {sonEnMarche || sonVoulu ? <IconVolume size={20} aria-hidden="true" /> : <IconVolumeOff size={20} aria-hidden="true" />}
-        </button>
-        {/* La sacoche du voyageur : le passeport, le portefeuille et les coulisses, sur leur page. */}
-        <Link to="/voyage/sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur">
-          <IconBriefcase size={20} aria-hidden="true" />
-        </Link>
-        {!avatarVu && !ensemble ? (
-          <button type="button" aria-label="Tu es ici" title="Tu es ici" onClick={() => moteur?.allerIci()}>
-            <IconCurrentLocation size={20} aria-hidden="true" />
-          </button>
+        {apercu && apercuAnnee ? (
+          <Apercu annee={apercuAnnee} anneeEnCours={v.annee_en_cours} ia={v.ia} attente={etatDeCase(apercuAnnee, v.ia).attente} tropLent={lent} rattrape={rattrape} ancre={apercu.ancre} />
         ) : null}
-        <button
-          type="button"
-          aria-label={ensemble ? 'Revenir à la carte' : 'Vue d’ensemble'}
-          title={ensemble ? 'Revenir à la carte' : 'Vue d’ensemble'}
-          aria-pressed={ensemble}
-          onClick={() => moteur?.basculerEnsemble(!ensemble)}
-        >
-          <IconMap2 size={20} aria-hidden="true" />
-        </button>
+
+        {date ? (
+          <div className={styles.affiche} role="dialog" aria-modal="true" aria-labelledby="affiche-titre">
+            <small>{date.lieu}</small>
+            <strong id="affiche-titre">{date.titre}</strong>
+            <span>{date.jour}</span>
+            <p>{date.texte}</p>
+            {date.image ? (
+              <figure>
+                <img src={date.image.url} alt="" decoding="async" />
+                <figcaption>{date.image.legende}</figcaption>
+              </figure>
+            ) : null}
+            <button type="button" onClick={() => setDate(null)}>
+              Refermer
+            </button>
+          </div>
+        ) : null}
+        {message ? (
+          <p role="status" className={styles.message}>
+            <b>{message.titre}</b>
+            {message.texte ? (
+              <>
+                <br />
+                {message.texte}
+              </>
+            ) : null}
+          </p>
+        ) : null}
+        {roulotteDite && v.source ? (
+          <p role="status" className={styles.roulotte}>
+            {`La roulotte de ${v.source.pseudo} : il est rendu en ${v.source.annee_en_cours}, ses salles t’attendent là-bas.`}
+          </p>
+        ) : null}
       </div>
-
-      {ticket && !avancee ? (
-        <div className={styles.ticketOmbre}>
-          <button type="button" className={styles.ticket} disabled={utiliser.isPending} onClick={() => encaisser(ticket.annee)}>
-            <span>Utiliser le ticket</span>
-            <span>{`${v.annee_en_cours} → ${ticket.annee % 10 === 0 ? 'nouveau monde' : ticket.annee}`}</span>
-          </button>
-        </div>
-      ) : null}
-      {utiliser.error ? (
-        <p role="alert" className={styles.erreur}>
-          {utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.'}
-        </p>
-      ) : null}
-
-      {apercu && apercuAnnee ? (
-        <Apercu annee={apercuAnnee} anneeEnCours={v.annee_en_cours} ia={v.ia} attente={etatDeCase(apercuAnnee, v.ia).attente} tropLent={lent} rattrape={rattrape} ancre={apercu.ancre} />
-      ) : null}
-
-      {date ? (
-        <div className={styles.affiche} role="dialog" aria-modal="true" aria-labelledby="affiche-titre">
-          <small>{date.lieu}</small>
-          <strong id="affiche-titre">{date.titre}</strong>
-          <span>{date.jour}</span>
-          <p>{date.texte}</p>
-          {date.image ? (
-            <figure>
-              <img src={date.image.url} alt="" decoding="async" />
-              <figcaption>{date.image.legende}</figcaption>
-            </figure>
-          ) : null}
-          <button type="button" onClick={() => setDate(null)}>
-            Refermer
-          </button>
-        </div>
-      ) : null}
-      {message ? (
-        <p role="status" className={styles.message}>
-          <b>{message.titre}</b>
-          {message.texte ? (
-            <>
-              <br />
-              {message.texte}
-            </>
-          ) : null}
-        </p>
-      ) : null}
-      {roulotteDite && v.source ? (
-        <p role="status" className={styles.roulotte}>
-          {`La roulotte de ${v.source.pseudo} : il est rendu en ${v.source.annee_en_cours}, ses salles t’attendent là-bas.`}
-        </p>
-      ) : null}
 
       {calque?.type === 'tampon' ? (
         <div className={styles.tampon} role="status">

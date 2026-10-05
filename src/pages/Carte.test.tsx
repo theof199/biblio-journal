@@ -581,6 +581,59 @@ describe('le ticket', () => {
     expect(jour.parentElement).toHaveClass(stylesDuTampon.frappe!)
   })
 
+  /**
+   * jsdom ne connaît pas `inert` : il livre le clic et le focus à un élément inerte, un navigateur non
+   * (constaté dans Chromium, sur un calque `display: contents` comme `.fond`). Le geste est donc tenté
+   * comme un navigateur le livrerait : rien n'atteint ce qu'un `inert` couvre.
+   */
+  const toucher = (e: Element) => {
+    if (!e.closest('[inert]')) fireEvent.click(e)
+  }
+  const poserLeDoigt = (e: Element) => {
+    if (!e.closest('[inert]')) fireEvent.pointerDown(e)
+  }
+  const prendLeFocus = (e: HTMLElement) => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    if (!e.closest('[inert]')) e.focus()
+    return document.activeElement === e
+  }
+  /** Ce qui se touche derrière le tampon : la plaque du chapitre, les pastilles, une année de la liste. */
+  const derriere = () => [
+    screen.getByRole('link', { name: /Chapitre/i }),
+    screen.getByRole('button', { name: 'Son' }),
+    screen.getByRole('link', { name: 'Sacoche du voyageur' }),
+    screen.getByRole('button', { name: 'Vue d’ensemble' }),
+    screen.getByRole('link', { name: /^1899, / }),
+  ]
+
+  // Mutations : `INERTE` retiré de `.fond` (tout répond sous le tampon) ; `INERTE` posé sans condition,
+  // ou tant qu'un calque est là, carton compris (la carte ne rend pas la main après le tampon).
+  it('pendant le tampon du passeport, rien derrière ne répond, ni au doigt ni au clavier ; puis la carte rend la main', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1899')
+    const { moteur } = monter({ ...V1900, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] })
+    const tampon = (await screen.findByText('Années 1890')).closest<HTMLElement>('[role="status"]')!
+    expect(tampon.closest('[inert]')).toBeNull()
+
+    const toile = document.querySelector('canvas')!
+    poserLeDoigt(toile)
+    for (const e of derriere()) toucher(e)
+    expect(moteur.pointeur).not.toHaveBeenCalled()
+    expect(moteur.basculerEnsemble).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Son' })).toHaveAttribute('aria-pressed', 'false')
+    // Aucun lien suivi : la carte est toujours là, son tampon aussi.
+    expect(screen.getByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
+    expect(tampon).toBeInTheDocument()
+    for (const e of derriere()) expect(prendLeFocus(e), e.getAttribute('aria-label') ?? e.textContent ?? '').toBe(false)
+
+    // Le tampon parti (1,8 s), tout répond de nouveau.
+    await waitFor(() => expect(screen.queryByText('Années 1890')).toBeNull(), { timeout: 4000 })
+    for (const e of derriere()) expect(prendLeFocus(e), e.getAttribute('aria-label') ?? e.textContent ?? '').toBe(true)
+    poserLeDoigt(toile)
+    expect(moteur.pointeur).toHaveBeenCalled()
+    toucher(screen.getByRole('button', { name: 'Vue d’ensemble' }))
+    expect(moteur.basculerEnsemble).toHaveBeenCalledWith(true)
+  })
+
   // Mutation : la petite affiche sans son image ou sans sa légende de crédit.
   it('la petite affiche montre l’image d’époque et sa légende de crédit', async () => {
     const { etats, rappels } = monter()
