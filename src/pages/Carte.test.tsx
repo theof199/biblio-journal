@@ -12,6 +12,7 @@ import { exemple } from '../test/contrat'
 import { cles } from '../api/cles'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 import FEUILLE_DE_LA_CARTE from '../carte/Carte.module.css?raw'
+import stylesDeLaToile from '../carte/CarteCanvas.module.css'
 import { DoublureAudio, oublierDoublures } from '../test/audioFactice'
 import { Ambiance, oublierAmbianceDeLaPage } from '../carte/son'
 
@@ -27,8 +28,7 @@ const VOYAGE = voyage1890(1898, [
   { annee: 1899, statut: 'verrouillee', visitee: false, recompense: 'ours', progression: null },
 ])
 
-function monter(voyage = VOYAGE, routes: Record<string, (init: RequestInit) => Response> = {}) {
-  const f = moteurFactice()
+function monter(voyage = VOYAGE, routes: Record<string, (init: RequestInit) => Response> = {}, f = moteurFactice()) {
   const client = createQueryClient()
   const requetes = servir({
     'GET /api/auth/me': () => json(SESSION),
@@ -606,32 +606,177 @@ describe('le ticket', () => {
     screen.getByRole('link', { name: /^1899, / }),
   ]
 
-  // Mutations : `INERTE` retiré de `.fond` (tout répond sous le tampon) ; `INERTE` posé sans condition,
-  // ou tant qu'un calque est là, carton compris (la carte ne rend pas la main après le tampon).
-  it('pendant le tampon du passeport, rien derrière ne répond, ni au doigt ni au clavier ; puis la carte rend la main', async () => {
-    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1899')
-    const { moteur } = monter({ ...V1900, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] })
-    const tampon = (await screen.findByText('Années 1890')).closest<HTMLElement>('[role="status"]')!
-    expect(tampon.closest('[inert]')).toBeNull()
-
-    const toile = document.querySelector('canvas')!
-    poserLeDoigt(toile)
+  /** La toile et ce qui l'entoure : le doigt qu'on y pose, le défilement qu'on y mène. */
+  const laToile = () => document.querySelector('canvas')!
+  /**
+   * Tous les gestes d'un coup, au doigt puis au clavier, sur tout ce qui est derrière : rien ne doit
+   * en sortir. Rejouable à chaque temps de l'avancée, puisqu'aucun n'a d'effet.
+   */
+  const rienNeRepond = (moteur: ReturnType<typeof monter>['moteur'], temps: string) => {
+    vi.mocked(moteur.pointeur).mockClear()
+    poserLeDoigt(laToile())
     for (const e of derriere()) toucher(e)
-    expect(moteur.pointeur).not.toHaveBeenCalled()
-    expect(moteur.basculerEnsemble).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Son' })).toHaveAttribute('aria-pressed', 'false')
-    // Aucun lien suivi : la carte est toujours là, son tampon aussi.
-    expect(screen.getByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
-    expect(tampon).toBeInTheDocument()
-    for (const e of derriere()) expect(prendLeFocus(e), e.getAttribute('aria-label') ?? e.textContent ?? '').toBe(false)
-
-    // Le tampon parti (1,8 s), tout répond de nouveau.
-    await waitFor(() => expect(screen.queryByText('Années 1890')).toBeNull(), { timeout: 4000 })
+    expect(moteur.pointeur, temps).not.toHaveBeenCalled()
+    expect(moteur.basculerEnsemble, temps).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Son' }), temps).toHaveAttribute('aria-pressed', 'false')
+    // Aucun lien suivi : la carte est toujours là.
+    expect(screen.getByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` }), temps).toBeInTheDocument()
+    for (const e of derriere()) expect(prendLeFocus(e), `${temps} : ${e.getAttribute('aria-label') ?? e.textContent ?? ''}`).toBe(false)
+  }
+  const toutRepond = (moteur: ReturnType<typeof monter>['moteur']) => {
     for (const e of derriere()) expect(prendLeFocus(e), e.getAttribute('aria-label') ?? e.textContent ?? '').toBe(true)
-    poserLeDoigt(toile)
+    vi.mocked(moteur.pointeur).mockClear()
+    poserLeDoigt(laToile())
     expect(moteur.pointeur).toHaveBeenCalled()
     toucher(screen.getByRole('button', { name: 'Vue d’ensemble' }))
     expect(moteur.basculerEnsemble).toHaveBeenCalledWith(true)
+  }
+  /** Un temps du moteur que le test tient ouvert : chaque appel attend qu'on le lâche (ou qu'on le fasse échouer). */
+  function tenir(temps: (...a: never[]) => Promise<void>) {
+    const appels: { lacher: () => void; echouer: (e: Error) => void }[] = []
+    vi.mocked(temps).mockImplementation(() => new Promise<void>((lacher, echouer) => void appels.push({ lacher, echouer })))
+    return appels
+  }
+  const AVEC_TAMPON = { ...V1900, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] }
+  const CLE_ANNEE_VUE = `journal.carte.annee-vue.${SESSION.user.id}`
+
+  // Mutations : `INERTE` posé au seul tampon (`calque?.type === 'tampon'` : la porte, l'adieu, la marche
+  // et le carton laissent tout vivant) ; `INERTE` retiré de `.fond` ; `INERTE` posé sans condition, ou
+  // `setAvancee(null)` retiré de `finir` (la carte ne rend jamais la main).
+  it('pendant toute l’avancée d’une décennie à l’autre, rien derrière ne répond, ni au doigt ni au clavier ; puis la carte rend la main', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1899')
+    const f = moteurFactice()
+    const porte = tenir(f.moteur.passerLaPorte)
+    const adieu = tenir(f.moteur.direAdieu)
+    const marche = tenir(f.moteur.marcher)
+    const { moteur } = monter(AVEC_TAMPON, {}, f)
+
+    await waitFor(() => expect(porte).toHaveLength(1))
+    rienNeRepond(moteur, 'la porte')
+    await act(async () => porte[0]!.lacher())
+    await waitFor(() => expect(adieu).toHaveLength(1))
+    rienNeRepond(moteur, 'l’adieu')
+    await act(async () => adieu[0]!.lacher())
+    const tampon = (await screen.findByText('Années 1890')).closest<HTMLElement>('[role="status"]')!
+    // Le tampon, lui, se lit toujours : il n'est pas derrière.
+    expect(tampon.closest('[inert]')).toBeNull()
+    rienNeRepond(moteur, 'le tampon')
+    await waitFor(() => expect(marche).toHaveLength(1), { timeout: 4000 })
+    expect(screen.queryByText('Années 1890')).toBeNull()
+    rienNeRepond(moteur, 'la marche')
+    await act(async () => marche[0]!.lacher())
+    const carton = (await screen.findByText('Années 1900')).closest<HTMLElement>('[role="status"]')!
+    expect(carton.closest('[inert]')).toBeNull()
+    rienNeRepond(moteur, 'le carton')
+    expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1899')
+
+    // Le carton parti (3,1 s), l'avancée est finie : tout répond de nouveau.
+    await waitFor(() => expect(screen.queryByText('Années 1900')).toBeNull(), { timeout: 6000 })
+    await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1900'))
+    toutRepond(moteur)
+  }, 20000)
+
+  // La caméra reste au moteur : `inert` n'arrête que le membre. Le moteur écrit le défilement pendant
+  // la marche et l'adieu (`defilerVers`), et apprend toujours celui qui en résulte (`scroll`).
+  it('pendant l’avancée, le moteur mène toujours la caméra : le défilement qu’il écrit est posé et lui revient', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1897')
+    const f = moteurFactice()
+    const marche = tenir(f.moteur.marcher)
+    const { moteur, rappels } = monter(VOYAGE, {}, f)
+    await waitFor(() => expect(marche).toHaveLength(1))
+    const vue = laToile().closest<HTMLElement>(`.${stylesDeLaToile.vue!}`)!
+    expect(vue.closest('[inert]')).not.toBeNull()
+    act(() => rappels().defilerVers(321))
+    expect(vue.scrollTop).toBe(321)
+    // Un navigateur émet `scroll` pour un défilement écrit par script, inerte ou non (constaté dans Chromium).
+    fireEvent.scroll(vue)
+    expect(moteur.defiler).toHaveBeenLastCalledWith(321)
+  })
+
+  // Les chemins de sortie : un `inert` resté collé rendrait la carte morte.
+
+  // Mutation : `setAvancee(null)` retiré de `finir`.
+  it('une marche dans la même décennie : rien ne répond tant qu’elle dure, tout répond à l’arrivée', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1897')
+    const f = moteurFactice()
+    const marche = tenir(f.moteur.marcher)
+    const { moteur } = monter(VOYAGE, {}, f)
+    await waitFor(() => expect(marche).toHaveLength(1))
+    rienNeRepond(moteur, 'la marche')
+    await act(async () => marche[0]!.lacher())
+    await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1898'))
+    toutRepond(moteur)
+  })
+
+  // Mutation : `setAvancee(null)` retiré de `finir`. Au calme, le moteur rend ses temps aussitôt ; la
+  // page, elle, suit le même chemin.
+  it('avec moins d’animations, l’avancée finie rend la main aussi', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    localStorage.setItem(CLE_ANNEE_VUE, '1897')
+    const { moteur } = monter()
+    await waitFor(() => expect(moteur.marcher).toHaveBeenCalledWith(1898))
+    await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1898'))
+    expect(moteur.reglerCalme).toHaveBeenLastCalledWith(true)
+    toutRepond(moteur)
+  })
+
+  // Mutations : `setAvancee(null)` retiré de `finir` ; `if (!vivant) return` retiré (l'avancée d'avant,
+  // abandonnée, rendrait la main pendant que celle qui la rejoue marche encore).
+  it('rejouée parce que le Voyage est relu en chemin, l’avancée ne rend la main qu’à la fin de celle qui joue', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1897')
+    const f = moteurFactice()
+    const marche = tenir(f.moteur.marcher)
+    const { moteur, client } = monter(VOYAGE, {}, f)
+    await waitFor(() => expect(marche).toHaveLength(1))
+    // Le Voyage relu a changé (un film de plus en 1895) : l'effet rejoue l'avancée.
+    act(() => void client.setQueryData(cles.voyage, { ...VOYAGE, annees: VOYAGE.annees.map((a) => (a.annee === 1895 ? { ...a, profondeur: a.profondeur + 1 } : a)) }))
+    await waitFor(() => expect(marche).toHaveLength(2))
+    await act(async () => marche[0]!.lacher())
+    await new Promise((r) => setTimeout(r, 30))
+    rienNeRepond(moteur, 'la marche rejouée')
+    expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1897')
+    await act(async () => marche[1]!.lacher())
+    await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1898'))
+    toutRepond(moteur)
+  })
+
+  // Mutation : `setAvancee(null)` retiré de `finir`. La page quittée en chemin n'a rien écrit : au
+  // retour l'avancée se rejoue en entier, et c'est sa fin qui rend la main.
+  it('quittée pendant l’avancée puis rouverte, la carte la rejoue et rend la main à sa fin', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1897')
+    const f = moteurFactice()
+    const marche = tenir(f.moteur.marcher)
+    monter(VOYAGE, {}, f)
+    await waitFor(() => expect(marche).toHaveLength(1))
+    cleanup()
+    await act(async () => marche[0]!.lacher())
+    expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1897')
+
+    const g = moteurFactice()
+    const seconde = tenir(g.moteur.marcher)
+    const { moteur } = monter(VOYAGE, {}, g)
+    await waitFor(() => expect(seconde).toHaveLength(1))
+    rienNeRepond(moteur, 'la marche rejouée au retour')
+    await act(async () => seconde[0]!.lacher())
+    await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1898'))
+    toutRepond(moteur)
+  })
+
+  // Mutation : `.then(finir, finir)` réduit à `.then(finir)` : la carte reste inerte pour toujours, et
+  // l'avatar en chemin.
+  it('un temps de l’avancée qui échoue rend la main quand même, sans la rejouer', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1897')
+    const f = moteurFactice()
+    const marche = tenir(f.moteur.marcher)
+    const { moteur, etats } = monter(VOYAGE, {}, f)
+    await waitFor(() => expect(marche).toHaveLength(1))
+    rienNeRepond(moteur, 'la marche')
+    await act(async () => marche[0]!.echouer(new Error('le moteur a lâché')))
+    await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1898'))
+    toutRepond(moteur)
+    expect(etats[etats.length - 1]!.anneeAvatar).toBe(1898)
+    await new Promise((r) => setTimeout(r, 30))
+    expect(marche).toHaveLength(1)
   })
 
   // Mutation : la petite affiche sans son image ou sans sa légende de crédit.

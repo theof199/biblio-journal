@@ -183,6 +183,14 @@ export default function Carte() {
   useEffect(() => {
     if (!avancee || !moteur || !v) return
     let vivant = true
+    // La fin de l'avancée, quelle qu'elle soit : un temps qui échoue ne laisse ni l'avatar en chemin
+    // ni la carte inerte (`.fond`). La mise en scène est un décor, le membre est déjà dans son année.
+    const finir = () => {
+      if (!vivant) return
+      setAnneeAvatar(avancee.vers)
+      ecrireAnneeVue(user.id, avancee.vers)
+      setAvancee(null)
+    }
     void jouerAvancee(avancee.av, avancee.vers, v.tampons.map((t) => t.decennie), {
       // La porte passée, le monde quitté dit adieu (idée 7) : `passerLaPorte` n'est appelée qu'au
       // changement de décennie, `decennieQuittee` n'y est jamais nulle.
@@ -205,12 +213,7 @@ export default function Carte() {
         moteur.claquer()
         vibrer(20)
       },
-    }).then(() => {
-      if (!vivant) return
-      setAnneeAvatar(avancee.vers)
-      ecrireAnneeVue(user.id, avancee.vers)
-      setAvancee(null)
-    })
+    }).then(finir, finir)
     return () => {
       vivant = false
     }
@@ -345,8 +348,9 @@ export default function Carte() {
   return (
     <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }}>
       <h1 className="sr-only">Le Voyage de {user.pseudo}</h1>
-      {/* Ce que le tampon du passeport couvre : rien n'y répond tant qu'il joue, ni au doigt ni au clavier. */}
-      <div className={styles.fond} {...(calque?.type === 'tampon' ? INERTE : null)}>
+      {/* Ce qui est derrière l'avancée (la porte, l'adieu, le tampon, la marche, le carton) : rien n'y
+          répond tant qu'elle joue, ni au doigt ni au clavier. Le moteur, lui, mène toujours la caméra. */}
+      <div className={styles.fond} {...(avancee ? INERTE : null)}>
         {etat ? (
           <CarteCanvas
             etat={etat}
