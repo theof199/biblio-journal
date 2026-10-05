@@ -125,23 +125,25 @@ describe('les salles d’une année', () => {
     const films = [KANE, sansNote, programme, entame, FAUCON, PERDU]
     monterVoyage('/voyage/1897', { ...ROUTES, [ANNEE]: () => json(fiche({ salles: [salle({ id: 's-tout', nom: 'Toutes', films })] })) })
     const etagere = await laSalle('Toutes')
-    /** Ce que porte l'affiche : `[le texte du rond, le nom de sa coche]`, ou `null` sans rond. */
+    /** Ce que porte l'affiche : `[le texte du rond, s'il porte la coche dessinée]`, ou `null` sans rond. Le rond est tu : le lien dit l'état. */
     const rond = (nom: string) => {
       const ronds = within(etagere).getByRole('link', { name: nom }).querySelectorAll(`.${stylesDeLaSalle.tamponNote!}`)
       expect(ronds.length, nom).toBeLessThanOrEqual(1)
       const r = ronds[0]
       if (!r) return null
-      const coche = within(r as HTMLElement).queryByRole('img')
-      return [r.textContent, coche ? [coche.tagName, coche.getAttribute('aria-label')] : null]
+      expect(r.getAttribute('aria-hidden'), nom).toBe('true')
+      return [r.textContent, r.querySelector('svg') !== null]
     }
-    expect(rond('Citizen Kane, vu · 9/10')).toEqual(['9', null])
-    expect(rond('Vu sans note, vu')).toEqual(['', ['svg', 'vu']])
-    expect(rond('Programme vu, vu')).toEqual(['', ['svg', 'vu']])
+    expect(rond('Citizen Kane, vu · 9/10')).toEqual(['9', false])
+    expect(rond('Vu sans note, vu')).toEqual(['', true])
+    expect(rond('Programme vu, vu')).toEqual(['', true])
     expect(rond('Programme entamé, sur ton Plex')).toBeNull()
     expect(rond('Le Faucon maltais, à voir')).toBeNull()
     expect(rond('Une vue perdue, perdu')).toBeNull()
     // Aucune coche hors d'un rond : deux films en portent une, pas un de plus.
-    expect(within(etagere).getAllByRole('img', { name: 'vu' })).toHaveLength(2)
+    expect(etagere.querySelectorAll(`.${stylesDeLaSalle.coche!}`)).toHaveLength(2)
+    // Le rond ne se dit pas : rien dans l'étagère ne porte un second « vu » à lire.
+    expect(within(etagere).queryAllByRole('img')).toEqual([])
   })
 
   // Mutation : l'étagère sans le traitement des affiches du monde (1890 : `sepia`).

@@ -35,9 +35,10 @@ function Affiche({ film, annee, monde }: { film: FilmDeSalle; annee: number; mon
             {film.note}
           </span>
         ) : film.etat === 'vu' ? (
-          // Vu sans note (un programme n'en porte jamais) : la coche, dans le rond de la note.
-          <span className={styles.tamponNote}>
-            <svg className={styles.coche} viewBox="0 0 24 24" role="img" aria-label={etiquette}>
+          // Vu sans note (un programme n'en porte jamais) : la coche, dans le rond de la note. Tue comme
+          // ses voisins : le lien dit déjà « vu ».
+          <span className={styles.tamponNote} aria-hidden="true">
+            <svg className={styles.coche} viewBox="0 0 24 24">
               <path d="M5 12.5 10 17.5 19 7" />
             </svg>
           </span>
