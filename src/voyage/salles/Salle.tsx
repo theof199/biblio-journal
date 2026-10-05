@@ -34,6 +34,13 @@ function Affiche({ film, annee, monde }: { film: FilmDeSalle; annee: number; mon
           <span className={styles.tamponNote} aria-hidden="true">
             {film.note}
           </span>
+        ) : film.etat === 'vu' ? (
+          // Vu sans note (un programme n'en porte jamais) : la coche, dans le rond de la note.
+          <span className={styles.tamponNote}>
+            <svg className={styles.coche} viewBox="0 0 24 24" role="img" aria-label={etiquette}>
+              <path d="M5 12.5 10 17.5 19 7" />
+            </svg>
+          </span>
         ) : film.etat === 'sur_le_plex' ? (
           <span className={styles.emaille} aria-hidden="true">
             PLEX

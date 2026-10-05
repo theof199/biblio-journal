@@ -6,6 +6,7 @@ import { RELECTURES } from '../relecture'
 import { monterVoyage } from '../../test/pageVoyage'
 import { json } from '../../test/serveur'
 import { filmDeSalle, fichePrete, salle, voyage1890 } from '../../test/voyage'
+import stylesDeLaSalle from './Salle.module.css'
 
 const SOURCE = { id: '22222222-2222-4222-8222-222222222222', pseudo: 'theo', annee_en_cours: 1897 }
 const VOYAGE = voyage1890(
@@ -110,6 +111,37 @@ describe('les salles d’une année', () => {
     expect(within(essentiels).getByRole('link', { name: 'Le Faucon maltais, à voir' })).toHaveAttribute('href', '/voyage/1897/films/f-faucon')
     expect(within(complete).getByRole('link', { name: 'Une vue perdue, perdu' })).toHaveAttribute('href', '/voyage/1897/films/f-perdu')
     expect(within(complete).getByText('1 vu sur 2')).toBeInTheDocument()
+  })
+
+  // Mutations : la coche retirée (`film.etat === 'vu' ? …` : un film vu sans note redevient nu) ; la
+  // coche pour tout film vu, noté compris (la note disparaît) ; la coche sans condition d'état ; la
+  // coche hors du rond de la note (`tamponNote`).
+  it('sur l’affiche, le rond porte la note d’un film noté, une coche pour un film vu sans note ou un programme vu, rien sinon', async () => {
+    const bobine = (tmdb_id: number, etat: 'vu' | 'sur_le_plex') => ({ tmdb_id, title: `Vue ${tmdb_id}`, duree_min: 1, cover_url: null, plex_url: null, etat })
+    const sansNote = filmDeSalle({ id: 'f-muet', tmdb_id: 710, title: 'Vu sans note', etat: 'vu', note: null })
+    // Un programme ne porte jamais de note (API) : vu quand toutes ses bobines le sont.
+    const programme = filmDeSalle({ id: 'f-prog', tmdb_id: 711, title: 'Programme vu', etat: 'vu', note: null, programme: { duree_min: 2, bobines: [bobine(1, 'vu'), bobine(2, 'vu')] } })
+    const entame = filmDeSalle({ id: 'f-ent', tmdb_id: 712, title: 'Programme entamé', etat: 'sur_le_plex', note: null, programme: { duree_min: 2, bobines: [bobine(3, 'vu'), bobine(4, 'sur_le_plex')] } })
+    const films = [KANE, sansNote, programme, entame, FAUCON, PERDU]
+    monterVoyage('/voyage/1897', { ...ROUTES, [ANNEE]: () => json(fiche({ salles: [salle({ id: 's-tout', nom: 'Toutes', films })] })) })
+    const etagere = await laSalle('Toutes')
+    /** Ce que porte l'affiche : `[le texte du rond, le nom de sa coche]`, ou `null` sans rond. */
+    const rond = (nom: string) => {
+      const ronds = within(etagere).getByRole('link', { name: nom }).querySelectorAll(`.${stylesDeLaSalle.tamponNote!}`)
+      expect(ronds.length, nom).toBeLessThanOrEqual(1)
+      const r = ronds[0]
+      if (!r) return null
+      const coche = within(r as HTMLElement).queryByRole('img')
+      return [r.textContent, coche ? [coche.tagName, coche.getAttribute('aria-label')] : null]
+    }
+    expect(rond('Citizen Kane, vu · 9/10')).toEqual(['9', null])
+    expect(rond('Vu sans note, vu')).toEqual(['', ['svg', 'vu']])
+    expect(rond('Programme vu, vu')).toEqual(['', ['svg', 'vu']])
+    expect(rond('Programme entamé, sur ton Plex')).toBeNull()
+    expect(rond('Le Faucon maltais, à voir')).toBeNull()
+    expect(rond('Une vue perdue, perdu')).toBeNull()
+    // Aucune coche hors d'un rond : deux films en portent une, pas un de plus.
+    expect(within(etagere).getAllByRole('img', { name: 'vu' })).toHaveLength(2)
   })
 
   // Mutation : l'étagère sans le traitement des affiches du monde (1890 : `sepia`).

@@ -45,7 +45,7 @@ export const doitDemanderContexte = (s: Pick<Salle, 'contexte'>): boolean => s.c
 
 /**
  * L'étiquette d'un état sous une affiche (maquette 1890 : `ETIQ`). Le mot d'un introuvable est celui
- * du monde (« perdu » en 1890) ; « vu » se lit à sa note, pas ici.
+ * du monde (« perdu » en 1890) ; « vu » se lit aussi sur l'affiche, à sa note ou à sa coche.
  */
 export function etiquetteEtat(etat: EtatFilm, motIntrouvable: string): string {
   switch (etat) {

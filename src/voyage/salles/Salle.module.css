@@ -241,6 +241,18 @@ button.raison {
     inset 0 0 0 3px color-mix(in srgb, var(--m-rouge) 60%, transparent);
 }
 
+/* La coche d'un film vu sans note, dessinée : elle prend la place du chiffre, à l'encre du rond. */
+.coche {
+  display: block;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .emaille {
   position: absolute;
   top: 10px;
