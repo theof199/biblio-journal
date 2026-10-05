@@ -104,6 +104,18 @@ décennie »). Trois règles, que les plans 2b et 2c ont payées :
   ouvrir une page passe par `Toile.onChoisir` (le `click`, que le navigateur ne donne pas après un
   défilement), jamais par `onToucher`, qui ne sert qu'à animer (le manège qui s'emballe).
 
+## Les fiches
+
+Une fiche de `docs/cerveau/` dit, pour un sujet, où ça vit, ce qu'on casse sans le voir et les
+commandes : elle se lit **avant** d'ouvrir le code qu'elle décrit, et renvoie au `README.md` sans le
+recopier. Qui change le code change sa fiche dans le même commit ; `src/cerveau.test.ts` refuse un
+renvoi `` `chemin` › `symbole` `` devenu faux, une fiche de plus de soixante lignes, et une fiche
+absente de cette table.
+
+| Fiche | Quand la lire |
+|---|---|
+| `docs/cerveau/carte-et-moteur.md` | Avant d'ouvrir `src/carte/moteur.ts` ou son test, d'ajouter un monde, de toucher à la caméra, aux zones, à l'enveloppe de `pages/Carte.tsx` ou à une célébration. |
+
 ## Le contrat de l'API
 
 `contract/openapi.json` est une copie de `../biblio-back/docs/openapi.json`, et `src/api/types.ts`
