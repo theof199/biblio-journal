@@ -95,8 +95,12 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .fond .mer { background-image: var(--svg-mer), linear-gradient(#a7b2b0, #d2d3c3 48%, #eddcb6 66%); }
 .loin { top: 20%; height: 64%; display: flex; will-change: transform; }
 /* Deux vues voisines se fondent l'une dans l'autre sur toute leur marge ; le ciel de chacune s'efface, de --h0 à --h1, avant ce qui y dépasse. */
-.loin i { display: block; height: 100%; flex: none; margin-right: -130px; background-repeat: no-repeat; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 130px, #000 calc(100% - 130px), transparent), linear-gradient(transparent var(--h0, 0%), #000 var(--h1, 34%)); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 130px, #000 calc(100% - 130px), transparent), linear-gradient(transparent var(--h0, 0%), #000 var(--h1, 34%)); mask-composite: intersect; }
-.loin i.m { transform: scaleX(-1); }
+.loin i { --bord: linear-gradient(90deg, transparent 0, #000 130px); display: block; height: 100%; flex: none; margin-right: -130px; background-repeat: no-repeat; -webkit-mask-image: var(--bord), linear-gradient(transparent var(--h0, 0%), #000 var(--h1, 34%)); -webkit-mask-composite: source-in; mask-image: var(--bord), linear-gradient(transparent var(--h0, 0%), #000 var(--h1, 34%)); mask-composite: intersect; }
+/* Chaque vue ne se fond que sur la précédente, qui reste pleine dessous : le raccord ne laisse pas voir le ciel. */
+.loin i.m { transform: scaleX(-1); --bord: linear-gradient(270deg, transparent 0, #000 130px); }
+/* La plaque de la côte porte une marche de teinte dans la mer : sa partie claire est rabattue sur l'autre. */
+.loin i { position: relative; }
+.loin i.loin3::after { content: ''; position: absolute; left: 0; top: 40%; bottom: 0; width: 35.6%; mix-blend-mode: multiply; background: linear-gradient(90deg, #a6c6c5 calc(100% - 6px), rgba(166, 198, 197, 0)); -webkit-mask-image: linear-gradient(transparent, #000 9%); mask-image: linear-gradient(transparent, #000 9%); }
 .gares { top: 0; left: 0; height: 100%; width: 1px; will-change: transform; }
 .gare { position: absolute; bottom: 19%; }
 /* La gare est posée : son ciel se fond dans le paysage par le haut et les côtés, son pied dans le sol du ballast. */
@@ -105,16 +109,19 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
   mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent var(--d, 0%), #000 var(--haut, 24%)); mask-composite: intersect; }
 /* 1900 : le ciel blanc de la plaque de lanterne est ôté par sa clarté, jusqu'à l'horizon ; la tour reste, sur la ville et le ciel de l'heure. */
 .gare .photo.sans-ciel { filter: url(#sans-ciel); --d: 0%; --haut: 7%;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent 0, #000 7%, #000 55%, transparent 62%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent 0, #000 7%, #000 55%, transparent 62%); }
-.gare.fermee .photo { filter: invert(1) grayscale(1) contrast(1.3) brightness(1.06); opacity: .92; }
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent 0, #000 2.5%, #000 55%, transparent 62%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent 0, #000 2.5%, #000 55%, transparent 62%); }
+/* Derrière la tour, la brume du matin : elle porte la silhouette et cache la plaine de la toile lointaine. */
+.gare .brume { position: absolute; left: 3%; right: 3%; top: 5%; bottom: 30%; background: linear-gradient(#d3cab7, #e3d6bb 58%, #e9dcc0); -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 42%, transparent 100%); mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 42%, transparent 100%); }
+.gare.expo .emaillee { left: 79%; top: 21%; }
+.gare.fermee .photo { filter: invert(1) grayscale(1) contrast(1.65) brightness(1.12); opacity: .96; }
 .emaillee { position: absolute; left: 50%; top: 6%; transform: translateX(-50%); z-index: 2; display: grid; justify-items: center; padding: 5px 14px 6px; background: var(--email); color: #f4efe2; border-radius: 4px; white-space: nowrap; box-shadow: inset 0 0 0 2px #f4efe2, inset 0 0 0 3.5px var(--email), 0 5px 12px rgba(0, 0, 0, .5); }
 .emaillee b { font: 700 30px/1 var(--f-rail); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
 .emaillee small { font: 600 10.5px var(--f-rail); letter-spacing: .16em; text-transform: uppercase; }
 .gare.depart .emaillee { left: 73%; top: 8%; }
 .gare.fermee .emaillee { background: #3e3a35; box-shadow: inset 0 0 0 2px #bdb3a0, inset 0 0 0 3.5px #3e3a35; color: #d6ccb8; }
 .affiche-quai { position: absolute; left: calc(50% + var(--w, 390px) / 2 - 140px); bottom: 11%; width: 74px; aspect-ratio: 3 / 4; z-index: 2; background-size: cover; background-position: center; box-shadow: 0 0 0 3px #3a2414, 0 0 0 4px #1a0f07, 3px 6px 10px rgba(0, 0, 0, .5); }
-.gare.avec-voisin .affiche-quai { bottom: 35%; }
+.gare.avec-voisin .affiche-quai { bottom: 37%; width: 60px; margin-left: 16px; }
 .voisin { position: absolute; bottom: 12%; z-index: 3; background: var(--i-voisin) 0 0 / 100% 100%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
 .voisin .craie { position: absolute; left: 34%; top: 25%; padding: 2px 8px; background: #1b1814; color: #efe9dc; font: 700 13px var(--f-rail); letter-spacing: .1em; transform: rotate(-2deg); box-shadow: 0 0 0 1px rgba(239, 233, 220, .4); }
 .ballast { left: 0; right: 0; bottom: 0; height: 22%; background:
@@ -141,7 +148,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .hud .chap { font: 600 10.5px var(--f-rail); letter-spacing: .14em; text-transform: uppercase; color: var(--laiton); }
 .hud .an { display: block; font: 700 32px/1 var(--f-rail); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .hud .lieu { display: block; margin-top: 2px; font: italic 13.5px var(--f-corps); color: var(--doux); }
-.hud button { pointer-events: auto; margin-left: auto; flex: none; white-space: nowrap; padding: 6px 9px; border: 1px solid var(--laiton); border-radius: 3px; background: rgba(21, 17, 13, .8); color: var(--papier); font: 600 11px var(--f-rail); letter-spacing: .14em; text-transform: uppercase; }
+.hud button { position: relative; pointer-events: auto; margin-left: auto; flex: none; white-space: nowrap; padding: 6px 9px; border: 1px solid var(--laiton); border-radius: 3px; background: rgba(21, 17, 13, .8); color: var(--papier); font: 600 11px var(--f-rail); letter-spacing: .14em; text-transform: uppercase; }
 .bas { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; display: grid; gap: 8px; padding: 34px 14px 16px; background: linear-gradient(rgba(12, 8, 5, 0), rgba(12, 8, 5, .88) 40%); }
 .ligne { position: relative; height: 22px; }
 .ligne::before { content: ''; position: absolute; left: 6px; right: 6px; top: 10px; height: 2px; background: repeating-linear-gradient(90deg, #bba88a 0 6px, transparent 6px 9px); opacity: .6; }
@@ -180,7 +187,11 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .etapes li p { margin: 2px 0 0; font: 14.5px/1.5 var(--f-ui); color: var(--doux); }
 .etapes li[aria-current="step"] { background: linear-gradient(90deg, rgba(201, 162, 87, .12), transparent); }
 .etapes li[aria-current="step"] .h { color: var(--laiton); }
-.reglages { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.reglages { display: grid; gap: 14px; padding: 14px 16px 16px; border: 1px solid var(--filet); border-radius: 4px; background: rgba(12, 8, 5, .35); }
+.reglages .groupe { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.reglages .titre-g { flex: 0 0 100%; font: 600 11px var(--f-rail); letter-spacing: .18em; text-transform: uppercase; color: var(--laiton); }
+.reglages .bouton2 { min-height: 44px; }
+.reglages .interrupteur { min-height: 44px; padding-bottom: 10px; border-bottom: 1px solid var(--filet); }
 .bouton2 { padding: 8px 14px; border: 1px solid var(--laiton); border-radius: 3px; background: transparent; color: var(--papier); font: 600 12.5px var(--f-rail); letter-spacing: .12em; text-transform: uppercase; }
 .interrupteur { display: inline-flex; align-items: center; gap: 10px; font: 700 13px var(--f-ui); color: var(--doux); cursor: pointer; }
 .interrupteur input { appearance: none; -webkit-appearance: none; width: 42px; height: 24px; margin: 0; border-radius: 12px; background: #3a3129; position: relative; cursor: pointer; }
@@ -548,7 +559,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .lampe-labo { mix-blend-mode: screen; animation: lampe-labo 5s ease-in-out infinite alternate; background: radial-gradient(circle at var(--lx) var(--ly), #fff0d2 0 6px, #ff7445 10px, #e2371c 14px, rgba(214, 46, 24, .5) 17px, rgba(200, 40, 20, .26) 70px, rgba(200, 40, 20, .09) 170px, rgba(200, 40, 20, 0) 280px); }
 /* L'étiquette de la plaque, à la main : le lieu, et ce qui la sépare de l'année en cours. */
 .porte-etiquette { left: 50%; top: 52.5%; width: 0; height: 0; visibility: hidden; will-change: transform; }
-.etiquette { position: absolute; left: 0; top: 0; transform: translateX(-42%) rotate(-3deg); display: grid; gap: 1px; padding: 6px 13px 7px 24px; background: #eab9a0; color: #240b07; white-space: nowrap; font: italic 600 17px/1.15 var(--f-corps); box-shadow: 2px 4px 8px rgba(0, 0, 0, .5); clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%); }
+.etiquette { position: absolute; left: 0; top: 0; transform: translateX(-42%) rotate(var(--r, -3deg)); display: grid; gap: 1px; padding: 6px 13px 7px 24px; background: #eab9a0; color: #240b07; white-space: nowrap; font: italic 600 17px/1.15 var(--f-corps); box-shadow: 2px 4px 8px rgba(0, 0, 0, .5); clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%); }
 .etiquette::before { content: ''; position: absolute; left: 10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #240b07; }
 .etiquette small { font: italic 400 13px/1.2 var(--f-corps); }
 /* La borne de frontière entre 1899 et 1900 : elle passe dans la vitre au moment où l'année change. */
@@ -759,9 +770,13 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .action.ticket small { font: 700 12px var(--f-presse); letter-spacing: .04em; text-transform: none; }
 
 /* Une bobine perdue : une boîte de film oubliée dans le décor ; un éclat la trahit de loin en loin. */
-.bobine { position: absolute; z-index: 4; width: 40px; height: 40px; margin: 0 0 -8px -20px; padding: 0; border: 0; background: none; cursor: pointer; }
-.bobine::before { content: ''; position: absolute; left: 9px; top: 9px; width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle, #3a2a12 0 3px, #8a6c33 3.5px 4.5px, #3a2a12 5px 8px, #a8853f 8.5px); box-shadow: 0 2px 3px rgba(0, 0, 0, .55); }
-.bobine::after { content: ''; position: absolute; left: 13px; top: 11px; width: 7px; height: 7px; border-radius: 50%; background: #fff6d8; opacity: 0; animation: trahit 7s ease-in-out infinite; }
+.hud button::after, .pastilles button::after, .date-vraie::after { content: ''; position: absolute; inset: -8px -4px; }
+.pastilles button::after { inset: -2px; }
+.date-vraie::after { inset: -13px -6px; }
+.depeche button, .ensemble .bouton2 { min-height: 44px; }
+.bobine { position: absolute; z-index: 4; width: 44px; height: 44px; margin: 0 0 -10px -22px; padding: 0; border: 0; background: none; cursor: pointer; }
+.bobine::before { content: ''; position: absolute; left: 11px; top: 11px; width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle, #3a2a12 0 3px, #8a6c33 3.5px 4.5px, #3a2a12 5px 8px, #a8853f 8.5px); box-shadow: 0 2px 3px rgba(0, 0, 0, .55); }
+.bobine::after { content: ''; position: absolute; left: 15px; top: 13px; width: 7px; height: 7px; border-radius: 50%; background: #fff6d8; opacity: 0; animation: trahit 7s ease-in-out infinite; }
 @keyframes trahit { 0%, 86%, 100% { opacity: 0; transform: scale(.6); } 92% { opacity: .9; transform: scale(1.5); } }
 .bobine.trouvee { visibility: hidden; }
 .bobine-vol { position: absolute; z-index: 9; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, #3a2a12 0 3px, #8a6c33 3.5px 4.5px, #3a2a12 5px 8px, #c9a257 8.5px); box-shadow: 0 3px 8px rgba(0, 0, 0, .6); }
@@ -1083,7 +1098,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
   66% { transform: translate3d(-3px, 10px, 0); }
   100% { transform: translate3d(3px, calc(840px - var(--y)), 0); }
 }
-.embuee { left: 0; top: 0; filter: blur(2.5px); }
+.embuee { left: 0; top: 0; filter: blur(.9px); }
 
 /* Le tunnel : sa bouche de pierre arrive dans le paysage et le noir balaie la vitre dans le sens de la marche ; dedans, la paroi défile sous ses lampes, et la vitre garde un reflet léger du compartiment. */
 .tunnel { position: absolute; inset: 0; visibility: hidden; pointer-events: none; overflow: hidden; }
@@ -1103,7 +1118,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .tunnel .accroches i { width: 46px; }
 
 /* Le chef de gare, sur le quai d'une année bouclée : au départ du train, il lève son guidon. */
-.chef { position: absolute; left: calc(50% + var(--dx, -58px)); bottom: 8.5%; z-index: 4; width: 36px; height: 82px; margin-left: -18px; pointer-events: none; filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, .45)); }
+.chef { position: absolute; left: calc(50% + var(--dx, -58px)); bottom: 8.5%; z-index: 4; width: 46px; height: 105px; margin-left: -23px; pointer-events: none; filter: url(#matiere) drop-shadow(0 0 .7px rgba(244, 239, 226, .9)) drop-shadow(2px 3px 3px rgba(0, 0, 0, .5)); }
 .chef svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .chef .bras { transform-origin: 23px 24px; transition: transform .6s cubic-bezier(.3, 1.4, .5, 1); }
 .chef.leve .bras { transform: rotate(-152deg); }
@@ -1191,30 +1206,33 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .signal-embr svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, .4)); }
 .ligne .embr { position: absolute; top: -7px; width: 30px; height: 18px; margin-left: -4px; overflow: visible; }
 .a-la-halte .ligne b { background: var(--halte); }
-.halte { position: absolute; left: 0; top: 0; overflow: hidden; background: linear-gradient(#a9b8c4, #d6dbd0 34%, #e3dcc0 52%); }
+.halte { position: absolute; left: 0; top: 0; overflow: hidden; background: radial-gradient(ellipse 40% 9% at 30% 33%, rgba(245, 238, 220, .6), transparent), linear-gradient(#c6c9ba, #e0dcc6 30%, #eadfbe 50%, #cdc19f 62%); }
+.halte::before { content: ''; position: absolute; left: -6%; right: -6%; top: 36%; height: 40%; background: var(--i-loin1) 12% 0 / cover no-repeat; filter: sepia(.5) saturate(.8) contrast(.84) brightness(1.16); -webkit-mask-image: linear-gradient(transparent 6%, #000 36%); mask-image: linear-gradient(transparent 6%, #000 36%); }
+.halte::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: multiply; background: radial-gradient(ellipse 92% 62% at 50% 58%, rgba(226, 204, 160, .18) 45%, rgba(74, 48, 24, .28)); }
 .halte > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .halte.entre { animation: halte-entre .95s cubic-bezier(.2, .7, .2, 1); }
 @keyframes halte-entre { from { transform: translate3d(100%, 0, 0); } }
-.halte .emaillee { top: 19.5%; background: var(--halte); box-shadow: inset 0 0 0 2px #f4efe2, inset 0 0 0 3.5px var(--halte), 0 5px 12px rgba(0, 0, 0, .5); }
+.halte .emaillee { top: 18.4%; background: var(--halte); box-shadow: inset 0 0 0 2px #f4efe2, inset 0 0 0 3.5px var(--halte), 0 5px 12px rgba(0, 0, 0, .5); }
 .halte .emaillee b { font-size: 24px; letter-spacing: .06em; text-transform: uppercase; }
-.halte-ind { position: absolute; left: 50%; top: 29.5%; width: min(292px, 86%); transform: translateX(-50%) rotate(-.8deg); margin: 0; padding: 8px 10px 9px; background: #efe6d0; color: #211810; box-shadow: 0 6px 14px rgba(0, 0, 0, .45); }
+.halte-ind { position: absolute; z-index: 2; left: 50%; top: 27.6%; width: min(292px, 86%); transform: translateX(-50%) rotate(-.8deg); margin: 0; padding: 8px 10px 9px; background: #efe6d0; color: #211810; box-shadow: 0 6px 14px rgba(0, 0, 0, .45); }
 .halte-ind .ent { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 4px; border-bottom: 2px solid #211810; font: 700 10.5px var(--f-rail); letter-spacing: .16em; text-transform: uppercase; }
 .halte-ind .ent span { color: var(--halte); }
 .halte-ind ol { margin: 0; padding: 0; list-style: none; }
-.halte-ind li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; padding: 5px 2px; border-bottom: 1px dotted rgba(33, 24, 16, .45); font: 14px/1.25 var(--f-corps); }
+.halte-ind li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; padding: 4px 2px; border-bottom: 1px dotted rgba(33, 24, 16, .45); font: 14px/1.25 var(--f-corps); }
 .halte-ind li small { font: 700 12px var(--f-presse); }
 .halte-ind li em { min-width: 44px; text-align: right; font: normal 700 10px var(--f-ui); letter-spacing: .06em; text-transform: uppercase; }
 .halte-ind li.vu em { color: var(--violet); }
 .halte-ind li.a-voir em { color: var(--rouge); }
 
 /* Le contrôleur : il entre par la droite, la main tendue ; le billet du dernier film attend sa réponse. */
-.controle { position: absolute; inset: 0; z-index: 11; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 70px 16px 16px; overflow: hidden; background: linear-gradient(rgba(10, 6, 3, .5), rgba(10, 6, 3, .88) 62%), var(--i-interieur) 50% 40% / cover no-repeat; cursor: default; }
+.controle { position: absolute; inset: 0; z-index: 11; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 70px 16px 16px; overflow: hidden; background: radial-gradient(ellipse 58% 30% at 66% 3%, rgba(255, 200, 120, .3), rgba(255, 200, 120, 0) 72%), linear-gradient(rgba(10, 6, 3, .46), rgba(10, 6, 3, .9) 62%), var(--i-interieur) 50% 40% / cover no-repeat; cursor: default; }
 .controle .ctrl { position: absolute; right: -24px; top: 54px; width: 262px; height: 370px; }
-.controle .ctrl svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(-6px 8px 12px rgba(0, 0, 0, .6)); }
+.controle .ctrl svg { display: block; width: 100%; height: 100%; overflow: visible; filter: url(#matiere) sepia(.3) saturate(.86) drop-shadow(-8px 10px 14px rgba(0, 0, 0, .7)); }
 .controle.entre .ctrl { animation: ctrl-entre .9s cubic-bezier(.2, .8, .2, 1); }
 @keyframes ctrl-entre { from { transform: translate3d(115%, 0, 0); } 70% { transform: translate3d(-2%, 0, 0); } }
 .controle.entre .bulle-c { animation: fondu .4s ease-out .7s backwards; }
-.controle .bulle-c { position: absolute; left: 14px; top: 84px; width: 148px; margin: 0; padding: 9px 11px 10px; background: #efe6d0; color: #211810; font: italic 15.5px/1.3 var(--f-corps); box-shadow: 0 6px 14px rgba(0, 0, 0, .5); transform: rotate(-2deg); }
+.controle .bulle-c { position: absolute; left: 14px; top: 84px; width: 148px; margin: 0; padding: 9px 11px 10px; background: linear-gradient(172deg, #f4ecd8, #e7dbbd); color: #211810; font: italic 15.5px/1.3 var(--f-corps); border-radius: 2px; outline: 1px solid rgba(33, 24, 16, .22); outline-offset: -4px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .55)); transform: rotate(-2deg); }
+.controle .bulle-c::after { content: ''; position: absolute; left: calc(100% - 1px); top: 56%; width: 17px; height: 15px; background: #ebe0c5; clip-path: polygon(0 0, 100% 78%, 0 100%); }
 .controle .bulle-c b { display: block; margin-bottom: 2px; font: normal 600 10px var(--f-rail); letter-spacing: .18em; text-transform: uppercase; color: var(--rouge); }
 .controle .billet-ctrl { position: relative; width: 76%; margin: 0 auto 4px; transform: rotate(-3deg); }
 .controle .ctrl-etat { margin: 0; min-height: 40px; text-align: center; font: italic 14px/1.4 var(--f-corps); color: var(--papier); }
@@ -1225,6 +1243,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .edm .poincon-or { position: absolute; left: 45%; top: 56%; width: 14cqi; height: 14cqi; opacity: 0; pointer-events: none; }
 .edm .poincon-or svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .edm.dore .poincon-or { opacity: 1; }
+.controle .edm.dore .poincon-or { filter: drop-shadow(0 0 2.5px rgba(226, 178, 60, .85)) drop-shadow(0 1px 1px rgba(0, 0, 0, .5)); }
 .edm .poincon-or.perce { animation: perce .5s cubic-bezier(.3, 1.5, .5, 1); }
 
 /* L'horaire tenu : un filet doré autour de la plaque, et sa mention. */
@@ -1446,6 +1465,17 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
     <feColorMatrix in="t" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.7" result="m"/>
     <feComposite in="d" in2="m" operator="in"/>
   </filter>
+  <filter id="matiere" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="4" result="o"/>
+    <feDisplacementMap in="SourceGraphic" in2="o" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/>
+    <feGaussianBlur in="d" stdDeviation=".45" result="f"/>
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="9" result="g"/>
+    <feColorMatrix in="g" type="matrix" values="0 0 0 0 .13  0 0 0 0 .09  0 0 0 0 .05  1.7 0 0 0 -.92" result="gm"/>
+    <feComposite in="gm" in2="f" operator="in" result="gi"/>
+    <feColorMatrix in="g" type="matrix" values="0 0 0 0 .96  0 0 0 0 .9  0 0 0 0 .76  0 1.3 0 0 -.76" result="hm"/>
+    <feComposite in="hm" in2="f" operator="in" result="hi"/>
+    <feMerge><feMergeNode in="f"/><feMergeNode in="gi"/><feMergeNode in="hi"/></feMerge>
+  </filter>
 </svg>
 
 <main class="page">
@@ -1517,30 +1547,74 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
             <div class="meteo" id="meteo" aria-hidden="true"><div class="m-sol"></div><div class="m-voile n"></div><div class="m-voile p"></div><div class="m-vent" id="m-vent"><i class="m-pluie"></i><i class="m-neige n1"></i><i class="m-neige n2"></i><i class="m-neige n3"></i></div><div class="m-gouttes" id="m-gouttes"></div><canvas class="embuee" id="embuee"></canvas></div>
             <div class="tunnel" id="tunnel" aria-hidden="true"><div class="dedans"><div class="paroi"></div><div class="miroir"></div><div class="accroches"></div></div><div class="bouche"></div><div class="bouche"></div></div>
             <div class="halte" id="halte" hidden>
-              <svg viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Une petite gare de campagne au bout d’un embranchement ; au loin, un atelier vitré">
-                <path d="M0 388 C60 362 120 372 190 380 S320 352 390 372 V470 H0 Z" fill="#9aa283" opacity=".75"/>
-                <path d="M0 412 C80 394 170 408 250 402 S350 394 390 400 V480 H0 Z" fill="#7f8762"/>
-                <g fill="#5d6648"><ellipse cx="22" cy="398" rx="9" ry="24"/><ellipse cx="40" cy="404" rx="8" ry="19"/><ellipse cx="368" cy="392" rx="9" ry="25"/></g>
-                <g transform="translate(262 352)"><path d="M0 50 V18 L22 0 H70 L84 18 V50 Z" fill="#dfe9ea" opacity=".92"/><path d="M0 18 H84 M22 0 V50 M46 0 V50 M70 0 V50 M0 34 H84 M11 9 V50 M34 0 V50 M58 0 V50 M77 9 V50" stroke="#55646a" stroke-width="1.1" fill="none"/><path d="M0 50 V18 L22 0 H70 L84 18 V50" fill="none" stroke="#3b474c" stroke-width="1.6"/></g>
-                <rect x="0" y="470" width="390" height="70" fill="#6f7453"/>
-                <g transform="translate(52 0)">
-                  <path d="M-10 452 L20 404 H186 L216 452 Z" fill="#4a4843"/><path d="M-10 452 H216" stroke="#2b2925" stroke-width="3"/>
-                  <rect x="148" y="386" width="14" height="26" fill="#8a4a36"/><rect x="145" y="382" width="20" height="6" fill="#4a2a20"/>
-                  <rect x="4" y="452" width="198" height="84" fill="#e6d8b4"/>
-                  <g fill="#b5553f"><rect x="4" y="452" width="9" height="84"/><rect x="193" y="452" width="9" height="84"/><rect x="4" y="452" width="198" height="6"/></g>
-                  <g fill="#3a2a1c"><path d="M26 536 V488 a13 13 0 0 1 26 0 V536 Z"/><path d="M90 536 V484 a13 13 0 0 1 26 0 V536 Z"/><path d="M154 536 V488 a13 13 0 0 1 26 0 V536 Z"/></g>
-                  <g fill="#9fb4bb"><path d="M30 506 V489 a9 9 0 0 1 18 0 V506 Z"/><path d="M158 506 V489 a9 9 0 0 1 18 0 V506 Z"/></g>
-                  <circle cx="103" cy="430" r="11" fill="#f4efe2" stroke="#2b2925" stroke-width="2.4"/><path d="M103 430 V423 M103 430 L108 432" stroke="#2b2925" stroke-width="1.6" stroke-linecap="round"/>
-                  <path d="M-16 470 H222 L214 478 H-8 Z" fill="#3a2a1c"/><path d="M-8 478 H214" stroke="#c9a257" stroke-width="1.4" stroke-dasharray="5 4"/>
-                  <path d="M-4 478 V536 M210 478 V536" stroke="#3a2a1c" stroke-width="3.5"/>
-                  <rect x="60" y="520" width="22" height="4" fill="#3a2a1c"/><path d="M62 524 V536 M80 524 V536" stroke="#3a2a1c" stroke-width="2.4"/>
+              <svg viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Une petite gare de campagne au bout d’un embranchement ; à côté, un atelier vitré">
+                <defs>
+                  <pattern id="ha-h" width="4.400" height="4.400" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><path d="M0 2.200 H4.400" stroke="#2c2118" stroke-width=".8"/></pattern>
+                  <pattern id="ha-v" width="3.600" height="3.600" patternUnits="userSpaceOnUse" patternTransform="rotate(-48)"><path d="M0 1.800 H3.600" stroke="#2c2118" stroke-width=".6"/></pattern>
+                  <pattern id="ha-ard" width="9" height="6" patternUnits="userSpaceOnUse"><path d="M0 6 C0 2 9 2 9 6 M-4.500 3 C-4.500 -1 4.500 -1 4.500 3 M4.500 3 C4.500 -1 13.500 -1 13.500 3" fill="none" stroke="#221b16" stroke-width=".7"/></pattern>
+                  <pattern id="ha-bri" width="9" height="5" patternUnits="userSpaceOnUse"><path d="M0 .3 H9 M0 2.800 H9 M2 .3 V2.800 M6.500 2.800 V5" stroke="#4a241b" stroke-width=".55" fill="none"/></pattern>
+                  <pattern id="ha-bal" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="1.500" cy="2" r=".9" fill="#1c140d"/><circle cx="5" cy="5.200" r=".7" fill="#8f8168"/><circle cx="4.600" cy="1.200" r=".5" fill="#1c140d"/></pattern>
+                  <filter id="ha-poch" x="-8%" y="-8%" width="116%" height="116%"><feGaussianBlur stdDeviation="1.200"/></filter>
+                </defs>
+                <g filter="url(#matiere)">
+                  <path d="M0 506 C70 492 150 500 230 494 S340 486 390 492 V584 H0 Z" fill="#8f9470" opacity=".86"/>
+                  <path d="M0 506 C70 492 150 500 230 494 S340 486 390 492 V530 H0 Z" fill="url(#ha-v)" opacity=".3"/>
+                  <g filter="url(#ha-poch)" fill="#6c7852" opacity=".92" transform="translate(2 -2)"><ellipse cx="20" cy="446" rx="11" ry="38"/><ellipse cx="40" cy="456" rx="9" ry="28"/></g>
+                  <g fill="url(#ha-h)" opacity=".75"><ellipse cx="20" cy="446" rx="10" ry="37"/><ellipse cx="40" cy="456" rx="8" ry="27"/></g>
+                  <path d="M20 482 V496 M40 482 V496" stroke="#2c2118" stroke-width="1.600"/>
+                  <g transform="translate(288 450)">
+                    <path d="M-8 60 C20 54 70 54 98 60 V66 H-8 Z" fill="#7d8460" opacity=".9"/>
+                    <path d="M0 56 V20 L24 0 H68 L86 20 V56 Z" fill="#c4d8d3" opacity=".9" filter="url(#ha-poch)" transform="translate(2 -1.500)"/>
+                    <path d="M25 2 H45 V19 H13 Z M49 21 H71 V37 H49 Z" fill="#f3f5ea" opacity=".6"/>
+                    <path d="M49 2 H67 L84 20 H49 Z M0 38 H24 V56 H0 Z" fill="url(#ha-v)" opacity=".4"/>
+                    <path d="M0 20 H86 M24 0 V56 M48 0 V56 M68 0 V56 M0 38 H86 M12 10 V56 M36 0 V56 M59 0 V56 M78 11 V56" stroke="#3a4442" stroke-width=".9" fill="none"/>
+                    <path d="M0 56 V20 L24 0 H68 L86 20 V56" fill="none" stroke="#2c2118" stroke-width="1.600" stroke-linejoin="round"/>
+                    <rect x="-3" y="53" width="92" height="6" fill="#b3a382" stroke="#2c2118" stroke-width="1"/>
+                    <path d="M46 0 V-8 M43 -8 H49" stroke="#2c2118" stroke-width="1.200"/>
+                  </g>
+                  <g transform="translate(0 30)">
+                    <g transform="translate(52 0)">
+                      <rect x="149.500" y="382.500" width="14" height="27" fill="#9a5a45" filter="url(#ha-poch)"/><rect x="148" y="384" width="14" height="26" fill="url(#ha-bri)"/><rect x="148" y="384" width="14" height="26" fill="none" stroke="#2c2118" stroke-width="1.200"/><rect x="145" y="379.500" width="20" height="5.500" fill="#3b2a20"/>
+                      <path d="M-10 452 L20 404 H186 L216 452 Z" fill="#716e68"/>
+                      <path d="M-10 452 L20 404 H186 L216 452 Z" fill="url(#ha-ard)" opacity=".85"/>
+                      <path d="M-10 452 L20 404 H70 L46 452 Z" fill="#f4efe2" opacity=".13"/><path d="M150 404 H186 L216 452 H176 Z" fill="url(#ha-h)" opacity=".4"/>
+                      <path d="M20 404 H186 M20 404 v-8 M186 404 v-8" stroke="#2c2118" stroke-width="2" fill="none"/><path d="M-12 452 H218" stroke="#2c2118" stroke-width="2.800"/>
+                      <path d="M88 448 V425 L103 412 L118 425 V448 Z" fill="#dfd1ad" stroke="#2c2118" stroke-width="1.400" stroke-linejoin="round"/>
+                      <circle cx="103" cy="432" r="9.500" fill="#f4efe2" stroke="#2c2118" stroke-width="2"/><path d="M103 432 V425.500 M103 432 L107.500 434" stroke="#2c2118" stroke-width="1.500" stroke-linecap="round"/><path d="M103 424 v1.500 M103 438.500 v1.500 M95 432 h1.500 M109.500 432 h1.500" stroke="#2c2118" stroke-width=".8"/>
+                      <rect x="4" y="452" width="198" height="84" fill="#e2d4b0"/>
+                      <rect x="118" y="452" width="84" height="84" fill="url(#ha-v)" opacity=".2"/>
+                      <g fill="#a55746" opacity=".88" filter="url(#ha-poch)" transform="translate(1.500 -1.500)"><rect x="4" y="452" width="10" height="84"/><rect x="192" y="452" width="10" height="84"/><rect x="4" y="452" width="198" height="7"/><rect x="4" y="529" width="198" height="7"/></g>
+                      <g fill="none" stroke="#a55746" stroke-width="5" opacity=".85"><path d="M22 490 a17 17 0 0 1 34 0 M86 486 a17 17 0 0 1 34 0 M150 490 a17 17 0 0 1 34 0"/></g>
+                      <g fill="url(#ha-bri)" opacity=".85"><rect x="4" y="452" width="10" height="84"/><rect x="192" y="452" width="10" height="84"/><rect x="4" y="452" width="198" height="7"/><rect x="4" y="529" width="198" height="7"/></g>
+                      <rect x="4" y="452" width="198" height="84" fill="none" stroke="#2c2118" stroke-width="1.400"/>
+                      <g fill="#33271d" stroke="#1d150e" stroke-width="1"><path d="M26 536 V488 a13 13 0 0 1 26 0 V536 Z"/><path d="M90 536 V484 a13 13 0 0 1 26 0 V536 Z"/><path d="M154 536 V488 a13 13 0 0 1 26 0 V536 Z"/></g>
+                      <g fill="#aebdb8"><path d="M30 512 V489 a9 9 0 0 1 18 0 V512 Z"/><path d="M158 512 V489 a9 9 0 0 1 18 0 V512 Z"/><path d="M94 496 V485 a9 9 0 0 1 18 0 V496 Z"/></g>
+                      <path d="M31 508 L46 484 M159 508 L174 484" stroke="#f3f5ea" stroke-width="2.400" opacity=".45"/>
+                      <path d="M39 480 V512 M30 497 H48 M167 480 V512 M158 497 H176 M103 476 V496 M94 496 H112" stroke="#33271d" stroke-width="1.200" fill="none"/>
+                      <path d="M96 502 h14 v13 h-14 Z M96 519 h14 v13 h-14 Z M27 516 h24 M155 516 h24" fill="none" stroke="#6b543c" stroke-width=".9"/><circle cx="111.500" cy="517" r="1.300" fill="#c9a257"/>
+                      <rect x="4" y="478" width="198" height="11" fill="#2c2118" opacity=".24"/>
+                      <path d="M-16 470 H222 L214 478 H-8 Z" fill="#3b2e22"/><path d="M-16 470 H222" stroke="#8b7a5e" stroke-width="1" opacity=".7"/>
+                      <path d="M-8 478 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l3 4.500 V478 Z" fill="#4a3a2b"/>
+                      <path d="M-4 478 V536 M210 478 V536" stroke="#2c2118" stroke-width="3"/><path d="M-4 494 C4 492 10 486 12 478 M210 494 C202 492 196 486 194 478" fill="none" stroke="#2c2118" stroke-width="1.400"/>
+                      <path d="M60 512 H82" stroke="#33271d" stroke-width="2"/><rect x="59" y="520" width="24" height="3.500" fill="#33271d"/><path d="M62 512 V536 M80 512 V536" stroke="#33271d" stroke-width="2"/>
+                      <rect x="130" y="523" width="17" height="13" fill="#7a5a38" stroke="#2c2118" stroke-width="1"/><path d="M134 523 V536 M143 523 V536" stroke="#2c2118" stroke-width="1"/><rect x="133" y="515" width="11" height="8" fill="#8f6d45" stroke="#2c2118" stroke-width="1"/>
+                      <path d="M236 536 V488" stroke="#2c2118" stroke-width="2.400"/><path d="M231 488 l2 -11 h6 l2 11 Z" fill="#ece2b4" stroke="#2c2118" stroke-width="1.200" stroke-linejoin="round"/><path d="M232 477 h8 l-4 -5 Z" fill="#2c2118"/><path d="M232 536 h8" stroke="#2c2118" stroke-width="3"/>
+                    </g>
+                    <path d="M283 537 V507 M301 537 V507 M319 537 V507 M337 537 V507 M355 537 V507 M373 537 V507 M275 515 H390 M275 529 H390" stroke="#2c2118" stroke-width="3.200" opacity=".45" fill="none"/>
+                    <g stroke="#efe6d0" fill="none"><path d="M282 536 V506 M300 536 V506 M318 536 V506 M336 536 V506 M354 536 V506 M372 536 V506" stroke-width="2.400"/><path d="M274 514 H390 M274 528 H390" stroke-width="1.900"/></g>
+                    <rect x="0" y="536" width="390" height="40" fill="#c6b998"/>
+                    <path d="M44 536 H324 L340 550 H28 Z" fill="#2c2118" opacity=".2"/>
+                    <path d="M0 548 H390 M0 562 H390 M30 536 L18 576 M90 536 L82 576 M150 536 L146 576 M210 536 L210 576 M270 536 L274 576 M330 536 L338 576" stroke="#2c2118" stroke-width=".7" opacity=".3" fill="none"/>
+                    <rect x="250" y="536" width="140" height="40" fill="url(#ha-v)" opacity=".22"/>
+                    <path d="M0 536 H390" stroke="#2c2118" stroke-width="1.200" opacity=".7"/>
+                    <rect x="0" y="574" width="390" height="5" fill="#6a5d47"/>
+                    <rect x="0" y="579" width="390" height="181" fill="#5b4c3a"/><rect x="0" y="579" width="390" height="181" fill="url(#ha-bal)" opacity=".7"/>
+                    <rect x="0" y="579" width="390" height="9" fill="#1c140d" opacity=".5"/>
+                    <g fill="#2a2119"><rect x="10" y="596" width="10" height="62"/><rect x="50" y="596" width="10" height="62"/><rect x="90" y="596" width="10" height="62"/><rect x="130" y="596" width="10" height="62"/><rect x="170" y="596" width="10" height="62"/><rect x="210" y="596" width="10" height="62"/><rect x="250" y="596" width="10" height="62"/><rect x="290" y="596" width="10" height="62"/></g>
+                    <path d="M0 607 H318 M0 647 H318" stroke="#1c140d" stroke-width="5.500"/><path d="M0 605.500 H318 M0 645.500 H318" stroke="#c9c2b0" stroke-width="2.200"/>
+                    <g transform="translate(318 0)"><path d="M0 584 V664 M14 584 V664" stroke="#2a1d13" stroke-width="6"/><rect x="-8" y="596" width="30" height="12" fill="#8f3a2e" stroke="#2a1d13" stroke-width="1.600"/><rect x="-8" y="642" width="30" height="12" fill="#8f3a2e" stroke="#2a1d13" stroke-width="1.600"/><path d="M14 590 L42 664 M14 650 L34 664" stroke="#2a1d13" stroke-width="4"/></g>
+                  </g>
                 </g>
-                <g stroke="#f4efe2" stroke-width="2.4"><path d="M282 536 V506 M300 536 V506 M318 536 V506 M336 536 V506 M354 536 V506 M372 536 V506"/><path d="M274 514 H390 M274 528 H390" stroke-width="2"/></g>
-                <rect x="0" y="536" width="390" height="40" fill="#b9ad8f"/><rect x="0" y="574" width="390" height="5" fill="#75694f"/>
-                <rect x="0" y="579" width="390" height="181" fill="#4b3d2e"/>
-                <g fill="#2a2119"><rect x="10" y="596" width="9" height="62"/><rect x="50" y="596" width="9" height="62"/><rect x="90" y="596" width="9" height="62"/><rect x="130" y="596" width="9" height="62"/><rect x="170" y="596" width="9" height="62"/><rect x="210" y="596" width="9" height="62"/><rect x="250" y="596" width="9" height="62"/><rect x="290" y="596" width="9" height="62"/></g>
-                <path d="M0 606 H318 M0 646 H318" stroke="#b9b2a2" stroke-width="3.5"/>
-                <g transform="translate(318 0)"><path d="M0 584 V664 M14 584 V664" stroke="#2a1d13" stroke-width="6"/><rect x="-8" y="596" width="30" height="12" fill="#a8352a" stroke="#2a1d13" stroke-width="2"/><rect x="-8" y="642" width="30" height="12" fill="#a8352a" stroke="#2a1d13" stroke-width="2"/><path d="M14 590 L42 664 M14 650 L34 664" stroke="#2a1d13" stroke-width="4"/></g>
               </svg>
               <div class="emaillee"><b>Halte Méliès</b><small>hors ligne · embranchement</small></div>
               <div class="halte-ind"><div class="ent"><span>Halte · trois films</span><b id="halte-compte">2 sur 3</b></div><ol id="halte-films"></ol></div>
@@ -1561,23 +1635,69 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
         <div class="depeche" id="depeche" role="dialog" aria-modal="true" aria-labelledby="depeche-titre" hidden></div>
         <div class="controle" id="controle" role="dialog" aria-modal="true" aria-labelledby="ctrl-bulle" hidden>
           <div class="ctrl" aria-hidden="true"><svg viewBox="0 0 262 370">
-            <path d="M92 370 L100 232 C104 196 132 180 166 178 C206 180 236 196 244 236 L256 370 Z" fill="#1b2238"/>
-            <path d="M160 180 L150 250 L168 370 H178 L176 250 Z" fill="#11172a"/>
-            <g fill="#c9a257"><circle cx="150" cy="262" r="3.6"/><circle cx="153" cy="292" r="3.6"/><circle cx="156" cy="322" r="3.6"/><circle cx="159" cy="352" r="3.6"/></g>
-            <path d="M226 200 L132 340 L144 348 L238 214 Z" fill="#6b4324"/><rect x="104" y="322" width="56" height="48" rx="5" fill="#7a4a26" stroke="#2a1508" stroke-width="2.5"/><rect x="126" y="340" width="12" height="10" rx="2" fill="#c9a257"/>
-            <path d="M148 150 h34 v36 h-34 Z" fill="#c59a72"/>
-            <ellipse cx="160" cy="118" rx="36" ry="42" fill="#d6ad84"/>
-            <path d="M126 122 C120 126 118 136 126 140" fill="#c59a72"/>
-            <ellipse cx="192" cy="122" rx="6" ry="10" fill="#c59a72"/>
-            <path d="M120 142 C128 134 146 136 152 144 C146 150 128 150 114 152 Z" fill="#3a2a1c"/><path d="M152 144 C160 138 172 138 178 146 C170 150 160 150 152 144 Z" fill="#3a2a1c"/>
-            <circle cx="140" cy="114" r="3" fill="#221910"/><path d="M130 104 h18" stroke="#3a2a1c" stroke-width="3" stroke-linecap="round"/>
-            <path d="M124 92 C124 56 196 52 198 92 Z" fill="#1b2238"/><rect x="122" y="86" width="77" height="13" fill="#a8352a"/><path d="M100 100 C112 94 126 96 150 99 H122 Z" fill="#11172a"/><path d="M98 102 H152 V97 H122 Z" fill="#11172a"/>
-            <circle cx="160" cy="72" r="6" fill="#c9a257"/><path d="M122 86 H199" stroke="#c9a257" stroke-width="1.6"/>
-            <path d="M118 204 C88 212 56 232 34 250 L46 278 C70 262 100 250 126 244 Z" fill="#1b2238"/><path d="M40 246 L52 274" stroke="#c9a257" stroke-width="4"/>
-            <path d="M40 250 C26 250 10 256 2 266 C0 272 6 276 12 274 L4 284 C6 290 14 292 20 288 L30 284 C40 282 46 276 48 270 Z" fill="#d6ad84"/><path d="M12 274 L26 268 M8 282 L26 276" stroke="#b3855c" stroke-width="1.6" stroke-linecap="round"/>
-            <path d="M214 250 C222 270 222 296 214 316 L198 310 C204 292 204 272 198 256 Z" fill="#11172a"/>
-            <g transform="translate(196 300) rotate(24)"><rect x="-4" y="0" width="8" height="34" rx="3" fill="#8f9498"/><rect x="6" y="0" width="8" height="30" rx="3" fill="#6c7175"/><path d="M-6 0 h22 l-4 -14 h-14 Z" fill="#aeb3b6"/><circle cx="5" cy="-8" r="2.4" fill="#221910"/></g>
-            <ellipse cx="204" cy="312" rx="13" ry="10" fill="#d6ad84"/>
+            <defs>
+              <linearGradient id="ct-drap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#55535a"/><stop offset=".28" stop-color="#2d2d36"/><stop offset=".72" stop-color="#17171d"/><stop offset="1" stop-color="#0b0a0e"/></linearGradient>
+              <linearGradient id="ct-manche" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d5a5e"/><stop offset=".42" stop-color="#2d2d36"/><stop offset="1" stop-color="#101016"/></linearGradient>
+              <radialGradient id="ct-chair" cx=".28" cy=".3" r=".9"><stop offset="0" stop-color="#e3cba4"/><stop offset=".48" stop-color="#b9966e"/><stop offset="1" stop-color="#58402c"/></radialGradient>
+              <linearGradient id="ct-cuir" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#93663b"/><stop offset="1" stop-color="#35200f"/></linearGradient>
+              <linearGradient id="ct-laiton" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1dc9f"/><stop offset=".5" stop-color="#b48f48"/><stop offset="1" stop-color="#584220"/></linearGradient>
+              <linearGradient id="ct-acier" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d9d9d2"/><stop offset=".5" stop-color="#7c7f80"/><stop offset="1" stop-color="#34373a"/></linearGradient>
+              <pattern id="ct-h1" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><path d="M0 2 H4" stroke="#050508" stroke-width=".9"/></pattern>
+              <pattern id="ct-h2" width="3.4" height="3.4" patternUnits="userSpaceOnUse" patternTransform="rotate(-50)"><path d="M0 1.7 H3.4" stroke="#3a2818" stroke-width=".7"/></pattern>
+              <linearGradient id="ct-fond" x1="0" y1="0" x2="0" y2="1"><stop offset=".74" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
+              <mask id="ct-pied" maskUnits="userSpaceOnUse" x="-60" y="0" width="380" height="370"><rect x="-60" width="380" height="370" fill="url(#ct-fond)"/></mask>
+            </defs>
+            <g mask="url(#ct-pied)">
+              <path d="M86 370 L96 240 C99 206 124 187 150 181 L178 179 C212 183 238 200 246 240 L258 370 Z" fill="url(#ct-drap)"/>
+              <path d="M178 180 C212 183 238 200 246 240 L258 370 H188 C192 318 190 250 178 180 Z" fill="url(#ct-h1)" opacity=".6"/>
+              <path d="M104 262 C112 300 112 336 106 370 H130 C134 330 130 292 122 258 Z" fill="url(#ct-h1)" opacity=".35"/>
+              <path d="M99 236 C103 208 126 191 150 184" fill="none" stroke="#f0cd92" stroke-width="2.4" stroke-linecap="round" opacity=".55"/>
+              <path d="M163 186 L154 252 L170 370" fill="none" stroke="#06060a" stroke-width="1.8"/>
+              <path d="M167 186 L158 252 L174 370" fill="none" stroke="#6a6870" stroke-width=".7" opacity=".5"/>
+              <g fill="url(#ct-laiton)" stroke="#2a1e0c" stroke-width=".8"><circle cx="148" cy="214" r="4"/><circle cx="145.500" cy="244" r="4"/><circle cx="146.500" cy="274" r="4"/><circle cx="150" cy="304" r="4"/><circle cx="154" cy="334" r="4"/></g>
+              <path d="M148 150 H186 V178 C174 187 156 185 148 177 Z" fill="#9a7a58"/><path d="M148 162 C160 172 176 172 186 160 V178 C174 187 156 185 148 177 Z" fill="#3d2c1e" opacity=".55"/>
+              <path d="M140 170 C150 182 174 184 190 170 L192 187 C174 198 150 196 138 185 Z" fill="#1c1c24"/><path d="M140 170 C150 182 174 184 190 170" fill="none" stroke="#8c3a2e" stroke-width="1.6"/><circle cx="147" cy="183" r="2.2" fill="url(#ct-laiton)"/>
+              <path d="M176 92 H195 C199 104 199 114 196 124 L188 120 C186 110 182 100 176 92 Z" fill="#2a2018"/>
+              <path d="M126 94 C122 108 121 124 124 138 C126 152 136 164 152 167 C172 170 192 156 196 130 C198 112 196 100 192 92 Z" fill="url(#ct-chair)"/>
+              <path d="M170 94 H192 C198 112 198 132 192 148 C184 162 170 168 158 167 C170 150 173 120 170 94 Z" fill="url(#ct-h2)" opacity=".5"/>
+              <path d="M126 100 H192 L193 106 C170 102 146 102 126 108 Z" fill="#2a1c12" opacity=".5"/>
+              <path d="M187 117 C195 115 198 124 196 132 C194 138 189 139 187 135 Z" fill="#a98360" stroke="#553c28" stroke-width=".9"/><path d="M190 121 C193 123 193 130 190 133" fill="none" stroke="#553c28" stroke-width=".8"/>
+              <path d="M128 110 C122 120 116 130 120 135 C123 139 129 138 133 134" fill="#cdae87" stroke="#674a32" stroke-width="1.1" stroke-linejoin="round"/>
+              <path d="M129 106 q7 -5 14 -1 M151 105 q7 -4 14 0" fill="none" stroke="#2a2018" stroke-width="2.6" stroke-linecap="round"/>
+              <path d="M132 114 q5 -3 10 0 M153 114 q5 -3 10 0" fill="none" stroke="#2a1c12" stroke-width="1.3" stroke-linecap="round"/><circle cx="137.500" cy="115.200" r="1.900" fill="#1c130c"/><circle cx="158.500" cy="115.200" r="1.900" fill="#1c130c"/>
+              <path d="M148 122 C155 132 156 142 152 150" fill="none" stroke="#7a5c40" stroke-width=".9" opacity=".6"/>
+              <path d="M138 140 C128 135 116 140 108 150 C120 153 131 151 138 146 C146 151 160 153 172 147 C164 137 150 135 138 140 Z" fill="#2a2018"/>
+              <path d="M114 148 C122 144 130 143 137 144 M141 144 C150 142 160 143 167 146" fill="none" stroke="#7d6a55" stroke-width=".8" opacity=".7"/>
+              <path d="M133 155 q8 4 15 0" fill="none" stroke="#674a32" stroke-width="1.1" stroke-linecap="round"/>
+              <path d="M124 93 L128 58 C140 47 186 47 198 58 L201 93 Z" fill="url(#ct-drap)"/>
+              <path d="M128 58 C140 47 186 47 198 58 C186 65 140 65 128 58 Z" fill="#45444c"/>
+              <path d="M170 62 L172 93 H201 L198 58 C192 62 180 63 170 62 Z" fill="url(#ct-h1)" opacity=".55"/>
+              <path d="M123 81 H201 L201.500 95 H122.500 Z" fill="#7e3329"/><path d="M123 81 H201 M122.500 95 H201.500" stroke="#c7a45e" stroke-width="1"/>
+              <path d="M131 57 C143 50 170 49 186 53" fill="none" stroke="#f0cd92" stroke-width="1.8" stroke-linecap="round" opacity=".6"/>
+              <g fill="url(#ct-laiton)" stroke="#2a1e0c" stroke-width=".6"><path d="M151 71 C144 66 137 67 133 71 C139 71 144 73 149 76 Z M165 71 C172 66 179 67 183 71 C177 71 172 73 167 76 Z"/><circle cx="158" cy="72" r="5.200"/></g><circle cx="158" cy="72" r="2" fill="#2a1e0c"/>
+              <path d="M95 105 C103 95 119 93 124 93 L155 97 C150 103 126 101 96 108 Z" fill="#08080b"/><path d="M102 100 C110 96 121 95 132 96" fill="none" stroke="#a5a4a8" stroke-width="1.1" stroke-linecap="round" opacity=".75"/>
+              <path d="M222 196 L128 338 L140 346 L234 208 Z" fill="url(#ct-cuir)"/><path d="M226 205 L136 339" fill="none" stroke="#dcb97e" stroke-width=".7" stroke-dasharray="3 2.500" opacity=".6"/>
+              <rect x="176" y="258" width="13" height="10" rx="1.500" transform="rotate(-56 182 263)" fill="none" stroke="url(#ct-laiton)" stroke-width="2.200"/>
+              <path d="M100 326 h60 a5 5 0 0 1 5 5 v39 h-70 v-39 a5 5 0 0 1 5 -5 Z" fill="url(#ct-cuir)" stroke="#1f1107" stroke-width="1.600"/>
+              <path d="M95 331 a5 5 0 0 1 5 -5 h60 a5 5 0 0 1 5 5 v12 C150 357 110 357 95 343 Z" fill="#7d5532" stroke="#1f1107" stroke-width="1.200"/>
+              <path d="M132 330 h28 a5 5 0 0 1 5 5 v35 h-26 Z" fill="url(#ct-h1)" opacity=".4"/>
+              <rect x="124" y="345" width="12" height="11" rx="2" fill="url(#ct-laiton)" stroke="#3b2a10"/>
+              <path d="M226 206 C246 232 250 280 236 322 L208 314 C216 290 214 262 204 238 Z" fill="#17171e" stroke="#07070a" stroke-width="1"/>
+              <path d="M226 206 C246 232 250 280 236 322 L222 318 C232 284 232 244 216 214 Z" fill="url(#ct-h1)" opacity=".6"/>
+              <path d="M210 300 L239 308 M211.500 294 L240 302" stroke="url(#ct-laiton)" stroke-width="1.800"/>
+              <g transform="translate(206 324) rotate(26)"><path d="M-3 0 C-7 14 -7 28 -3 42" fill="none" stroke="url(#ct-acier)" stroke-width="5" stroke-linecap="round"/><path d="M8 0 C13 13 13 26 10 38" fill="none" stroke="#55585a" stroke-width="5" stroke-linecap="round"/><path d="M-8 3 L-4 -19 H10 L14 3 Z" fill="url(#ct-acier)" stroke="#1c1d1f" stroke-width=".9"/><path d="M-1 -19 V-11 H7 V-19" fill="#1c1d1f"/><circle cx="3" cy="-3" r="2.400" fill="#1c1d1f"/></g>
+              <path d="M205 312 C198 320 200 334 212 337 C225 339 236 331 235 320 L230 311 Z" fill="url(#ct-chair)" stroke="#553c28" stroke-width=".9"/><path d="M206 322 L226 318 M208 329 L228 325" fill="none" stroke="#6b4c33" stroke-width=".9" stroke-linecap="round"/>
+              <path d="M124 200 C96 206 60 226 34 246 L48 280 C72 264 104 252 132 246 C138 230 134 212 124 200 Z" fill="url(#ct-manche)"/>
+              <path d="M48 280 C72 264 104 252 132 246 L130 232 C100 240 68 254 42 270 Z" fill="url(#ct-h1)" opacity=".65"/>
+              <path d="M40 243 C64 226 96 210 122 203" fill="none" stroke="#f0cd92" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+              <path d="M39 243 L53 277 M47 238 L60 271" stroke="url(#ct-laiton)" stroke-width="2.200"/>
+              <g transform="translate(42 264) scale(1.16) translate(-42 -264)">
+                <path d="M34 248 C30 238 22 233 15 236 C13 242 19 248 26 253 Z" fill="url(#ct-chair)" stroke="#553c28" stroke-width=".9" stroke-linejoin="round"/>
+                <path d="M36 248 C26 246 16 250 8 256 L-7 262 C-11 265 -9 271 -4 270 L10 267 L-9 274 C-13 277 -10 283 -5 282 L12 277 L-3 284 C-6 288 -2 292 3 290 L22 284 C34 284 44 280 48 274 Z" fill="url(#ct-chair)" stroke="#553c28" stroke-width=".9" stroke-linejoin="round"/>
+                <path d="M12 260 C20 260 30 264 35 271 M22 255 C28 256 33 259 36 263" fill="none" stroke="#7a5c40" stroke-width=".9" stroke-linecap="round"/>
+                <path d="M22 284 C34 284 44 280 48 274 L46 268 C40 276 30 280 16 282 Z" fill="#3d2c1e" opacity=".45"/>
+              </g>
+            </g>
           </svg></div>
           <p class="bulle-c"><b>Le contrôleur</b><span id="ctrl-bulle">« Contrôle des billets, s’il vous plaît. »</span></p>
           <div class="billet-ctrl"><div class="edm" id="billet-ctrl">
@@ -1627,15 +1747,21 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
           <li data-etape="vitre"><span class="h">Départ</span><div><h3>Le quai s’éloigne, la borne passe</h3><p>Par la vitre, on revoit le quai qu’on vient de quitter, avec sa plaque « 1899 ». Le train s’ébranle, la vitre s’élargit, la borne de frontière passe et l’année tourne à 1900 (idée 49).</p></div></li>
           <li data-etape="gares"><span class="h">1900–09</span><div><h3>Dix gares, quatre toiles</h3><p>Le train freine en gare de 1900, la plaque prend la lumière. Le même glissement le fait ensuite rouler. Quatre plans aux vitesses du vrai mécanisme de 1900 ; les années fermées sont des négatifs sous la lanterne rouge (idées 50 à 53).</p></div></li>
         </ol>
-        <div class="reglages">
+        <div class="reglages" aria-label="Les réglages de la démonstration">
           <label class="interrupteur" for="calme"><input type="checkbox" id="calme"> Moins d’animations</label>
-          <button type="button" class="bouton2" id="b-rejouer">Rejouer le passage</button>
-          <button type="button" class="bouton2" id="b-foire">Revenir à la foire</button>
-          <button type="button" class="bouton2" id="b-1904">Aller en 1904</button>
-          <button type="button" class="bouton2" id="b-ticket-rejouer">Utiliser le ticket de 1905</button>
-          <button type="button" class="bouton2" id="b-heures" aria-pressed="false">Voir les dix heures</button>
-          <button type="button" class="bouton2" id="b-halte">Prendre l’aiguillage</button>
-          <button type="button" class="bouton2" id="b-controleur">Faire passer le contrôleur</button>
+          <div class="groupe" role="group" aria-labelledby="r-passage"><span class="titre-g" id="r-passage">Le passage</span>
+            <button type="button" class="bouton2" id="b-rejouer">Rejouer le passage</button>
+            <button type="button" class="bouton2" id="b-foire">Revenir à la foire</button>
+          </div>
+          <div class="groupe" role="group" aria-labelledby="r-ligne"><span class="titre-g" id="r-ligne">La ligne</span>
+            <button type="button" class="bouton2" id="b-1904">Aller en 1904</button>
+            <button type="button" class="bouton2" id="b-ticket-rejouer">Utiliser le ticket de 1905</button>
+            <button type="button" class="bouton2" id="b-heures" aria-pressed="false">Voir les dix heures</button>
+          </div>
+          <div class="groupe" role="group" aria-labelledby="r-jeu"><span class="titre-g" id="r-jeu">Le jeu</span>
+            <button type="button" class="bouton2" id="b-halte">Prendre l’aiguillage</button>
+            <button type="button" class="bouton2" id="b-controleur">Faire passer le contrôleur</button>
+          </div>
         </div>
         <p class="gestes"><b>Le passage</b> dure une douzaine de secondes, telles qu’on les verra dans l’appli ; il ne se traîne pas au doigt, il se joue, et se passe d’un toucher. <b>Dans le train</b>, le geste suit le doigt, puis le train se pose à la gare la plus proche ; à la molette, par crans ; au clavier, d’arrêt en arrêt. <b>Moins d’animations</b> (réglage du téléphone, ou l’interrupteur) : plus de passage joué, de roulement ni de parallaxe ; chaque geste pose l’arrêt suivant, en un court fondu (idée 65). <b>Sur la carte</b>, comme en 1890 : trois bobines perdues se cachent en gare de 1900, 1902 et 1904 (un éclat les trahit, un toucher les ramasse) ; la pastille « Son » est muette dans la maquette ; celle de la sacoche mène à l’écran 15 ; un appui long sur une gare déplie son aperçu ; les dépêches épinglées aux quais de 1900, 1902 et 1903 portent une date vraie ; en gare de 1904, le ticket de 1905 fait rouler le train et développe la plaque sous les yeux.</p>
         <p class="gestes"><b>L’heure et le temps</b> (idées 69 à 73) : chaque gare a son heure, de l’aube de 1900 à la nuit de 1909 ; il pleut à Couville, il neige à Allaman, la vitre est embuée à Creil, où un glissement <b>horizontal</b> l’essuie sans faire rouler le train. Entre 1903 et 1904, le seul tunnel de la ligne : sa bouche de pierre arrive, le noir balaie la vitre, la paroi défile sous ses lampes, et le jour revient sur la neige d’Allaman. Au départ d’une gare bouclée, le chef de gare lève son guidon. Les années fermées gardent leur lanterne rouge : « Voir les dix heures » développe toutes les plaques, le temps de regarder le crépuscule de 1907 et la nuit de 1909. Sur la pastille de la sacoche, un point rouge dit qu’une étiquette vient d’être collée (écran 18).</p>
@@ -2572,16 +2698,18 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   // Où finit le ciel de chaque photo (en % de sa hauteur), et la part de ses côtés qui se fond.
   const POSE = { quai: [10, 8], 1900: [16, 15], 1901: [22, 10], 1902: [22, 10], 1903: [14, 10], 1904: [16, 10], 1905: [20, 12], 1906: [26, 12], 1907: [14, 16], 1908: [18, 10], 1909: [18, 10] };
   let chambres = [];
+  // Sous la lanterne rouge, chaque plaque a la sienne : où pend la lampe (px du milieu, % de la vitre), où tient l'étiquette et de combien elle penche.
+  const LABO = { 1905: [-112, 27, 0, 0, -3], 1906: [104, 25, 30, 34, 2.5], 1907: [-30, 29.5, -34, 46, -5], 1908: [124, 26.5, 22, -6, 1.5], 1909: [-132, 28.5, -8, 40, -2] };
   // Les bobines perdues de la décennie : trois boîtes de film oubliées en gare (titres à vérifier, voir « Non vérifiés »).
   const BOBINES = [
     { cle: 'soldiers', i: 0, dx: -122, bas: 33, titre: 'Soldiers of the Cross', qui: 'Joseph Perry et Herbert Booth, 1900' },
-    { cle: 'hamlet', i: 2, dx: 150, bas: 37, titre: 'Hamlet', qui: 'Georges Méliès, 1907' },
+    { cle: 'hamlet', i: 1, dx: 24, bas: 27, titre: 'Hamlet', qui: 'Georges Méliès, 1907' },
     { cle: 'fairylogue', i: 4, dx: 112, bas: 41, titre: 'The Fairylogue and Radio-Plays', qui: 'L. Frank Baum, 1908' },
   ];
   const trouvees = new Set();
   // Les dates vraies de 1900 : une dépêche par année ouverte qui en porte une.
   const DATES = [
-    { i: 0, dx: 104, bas: 47, court: '14 avril', lieu: 'Paris', titre: 'L’Exposition ouvre', jour: 'Samedi 14 avril 1900', texte: 'L’Exposition universelle ouvre ses portes. Au Trocadéro, le Panorama transsibérien fait voyager des spectateurs assis dans de vraies voitures.' },
+    { i: 0, dx: -44, bas: 53, court: '14 avril', lieu: 'Paris', titre: 'L’Exposition ouvre', jour: 'Samedi 14 avril 1900', texte: 'L’Exposition universelle ouvre ses portes. Au Trocadéro, le Panorama transsibérien fait voyager des spectateurs assis dans de vraies voitures.' },
     { i: 2, dx: -128, bas: 47, court: '1er sept.', lieu: 'Paris · théâtre Robert-Houdin', titre: 'Le Voyage dans la Lune', jour: 'Lundi 1er septembre 1902', texte: 'Georges Méliès présente Le Voyage dans la Lune, tourné dans son studio de verre de Montreuil.' },
     { i: 3, dx: 110, bas: 47, court: 'déc. 1903', lieu: 'New York · Edison', titre: 'The Great Train Robbery', jour: 'Décembre 1903', texte: 'Edwin S. Porter sort The Great Train Robbery : un train arrêté dans le New Jersey, et un bandit qui tire vers la salle.' },
   ];
@@ -2632,6 +2760,10 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
       g.append(photo);
       if (a === 1900) {
         g.style.setProperty('--d', '53%'); g.style.setProperty('--haut', '60%');
+        g.classList.add('expo');
+        const brume = document.createElement('div');
+        brume.className = 'brume';
+        g.prepend(brume);
         const haut = document.createElement('div');
         haut.className = 'photo sans-ciel';
         haut.style.setProperty('--img', 'var(--i-g1900)');
@@ -2651,7 +2783,9 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
         ['chambre', 'lampe-labo', 'porte-etiquette'].forEach((c) => {
           const el = document.createElement('div');
           el.className = c;
-          if (c === 'porte-etiquette') el.innerHTML = `<div class="etiquette" data-i="${i}"><span></span><small></small></div>`;
+          const [lx, ly, ex, ey, er] = LABO[a];
+          el.style.setProperty('--lx', `calc(50% + ${lx}px)`); el.style.setProperty('--ly', `${ly}%`);
+          if (c === 'porte-etiquette') el.innerHTML = `<div class="etiquette" data-i="${i}" style="margin:${ey}px 0 0 ${ex}px;--r:${er}deg"><span></span><small></small></div>`;
           pano.append(el);
           chambres.push({ i, el });
         });
@@ -2716,7 +2850,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
       el.style.width = `${(hB * t[0] * (x1 - x0)) / t[1]}px`;
       el.style.background = `var(--i-${n}) ${((x0 / (1 - (x1 - x0))) * 100).toFixed(2)}% 0 / ${(100 / (x1 - x0)).toFixed(2)}% 100%`;
       el.style.setProperty('--h0', `${h0}%`); el.style.setProperty('--h1', `${h1}%`);
-      if (miroir) el.className = 'm';
+      el.className = n + (miroir ? ' m' : '');
       pLoin.append(el);
     });
   }
@@ -2818,8 +2952,9 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     $$('.gare', pGares).forEach((g) => {
       const depart = g.classList.contains('depart');
       const i = depart ? -1 : +g.dataset.i, t = depart ? TAILLE.quai : TAILLE[`g${ANNEES[i]}`];
-      const w = (hG * t[0]) / t[1];
-      g.style.width = `${w}px`; g.style.height = `${hG}px`;
+      // 1900 est la première gare qu'on voit : sa vue de l'Exposition emplit la vitre.
+      const h = g.classList.contains('expo') ? Math.min(H * 0.5, (W * 0.9 * t[1]) / t[0]) : hG, w = (h * t[0]) / t[1];
+      g.style.width = `${w}px`; g.style.height = `${h}px`;
       g.style.left = `${i * E + W / 2 - w / 2}px`;
     });
     $('.borne', pGares).style.left = `${-E / 2 + W / 2 - 60}px`;
@@ -3342,7 +3477,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   // ---------------------------------------------------------------- l'heure, la météo, le tunnel, le compartiment, le chef de gare (idées 69 à 73)
   // Une heure par gare : la teinte qui multiplie (haut et bas du ciel), la lueur de l'astre et sa place en % de la vitre, la part de nuit.
   const HEURES = [
-    { nom: 'aube', haut: [150, 150, 192], bas: [246, 200, 170], lueur: [255, 160, 110, 0.55], lx: 80, ly: 29, sol: 1, nuit: 0.3 },
+    { nom: 'aube', haut: [172, 168, 200], bas: [250, 212, 182], lueur: [255, 168, 118, 0.5], lx: 80, ly: 29, sol: 1, nuit: 0.3 },
     { nom: 'petit matin', haut: [204, 215, 232], bas: [255, 236, 208], lueur: [255, 226, 180, 0.3], lx: 72, ly: 23, sol: 1, nuit: 0 },
     { nom: 'matinée', haut: [228, 236, 242], bas: [255, 248, 232], lueur: [255, 240, 210, 0.2], lx: 64, ly: 14, sol: 0.5, nuit: 0 },
     { nom: 'fin de matinée', haut: [244, 247, 248], bas: [255, 253, 244], lueur: [255, 250, 230, 0.14], lx: 56, ly: 9, sol: 0, nuit: 0 },
@@ -3376,12 +3511,17 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   const ralenti = () => {
     if (calme) return 1;
     const p = xsDe(u) / E;
-    return lerp(1, TUNNEL.lent, lisse(TUNNEL.c - 0.38, TUNNEL.c - 0.25, p) * (1 - lisse(TUNNEL.c + 0.25, TUNNEL.c + 0.38, p)));
+    return lerp(1, TUNNEL.lent, lisse(TUNNEL.c - 0.5, TUNNEL.c - 0.18, p) * (1 - lisse(TUNNEL.c + 0.18, TUNNEL.c + 0.5, p)));
   };
 
-  const CHEF_SVG = '<svg viewBox="0 0 36 82" aria-hidden="true"><g fill="#17120d"><path d="M12 48 L11 80 h6 L18 56 L19 80 h6 L24 48 Z"/><path d="M9 24 C9 20 27 20 27 24 L28 54 H8 Z"/><path d="M9 25 L12.5 24 L11.5 43 L8 43 Z"/><circle cx="18" cy="13" r="5.4"/><rect x="12" y="5.4" width="12" height="5" rx="1.2"/><path d="M11.5 10.4 h13.5 l2.6 1.8 h-16.1 Z"/></g>' +
-    '<rect x="12" y="8.2" width="12" height="1.5" fill="#a8352a"/><g fill="#c9a257"><circle cx="18" cy="29" r=".9"/><circle cx="18" cy="34.5" r=".9"/><circle cx="18" cy="40" r=".9"/></g>' +
-    '<g class="bras"><path d="M22 23 L27 24 L28.4 42 L24.6 42 Z" fill="#17120d"/><path d="M26.5 41 V58" stroke="#6b4324" stroke-width="1.6"/><circle cx="26.5" cy="62" r="6" fill="#2f6b47" stroke="#f4efe2" stroke-width="1.4"/></g></svg>';
+  const CHEF_SVG = '<svg viewBox="0 0 36 82" aria-hidden="true"><defs><linearGradient id="chef-drap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4c4b55"/><stop offset=".45" stop-color="#25252d"/><stop offset="1" stop-color="#0e0e13"/></linearGradient></defs>' +
+    '<path d="M12 50 L11 78 h6 L18 58 L19 78 h6 L24 50 Z" fill="#1b1b22"/><path d="M9.500 78 h8 v3 h-8 Z M18.500 78 h8 v3 h-8 Z" fill="#0b0b0e"/>' +
+    '<path d="M9 24 C9 20 27 20 27 24 L28 55 H8 Z" fill="url(#chef-drap)"/><path d="M18 22 V55" stroke="#08080b" stroke-width=".8"/><rect x="8.300" y="41" width="19.400" height="2.200" fill="#08080b"/><rect x="16.600" y="40.600" width="2.800" height="3" fill="#c9a257"/>' +
+    '<g fill="#d8b96a"><circle cx="16" cy="27.500" r="1"/><circle cx="16" cy="32" r="1"/><circle cx="16" cy="36.500" r="1"/><circle cx="16" cy="47" r="1"/></g><path d="M14 21.500 h8 v2.400 h-8 Z" fill="#a8352a"/>' +
+    '<path d="M9 25 L12.500 24 L11.500 42 L8 42 Z" fill="#17171d"/><circle cx="9.800" cy="44" r="2.300" fill="#efe6d0"/>' +
+    '<path d="M13 9.500 C12.400 17 14.500 20.500 18 20.500 C21.500 20.500 23.600 17 23 9.500 Z" fill="#cdae87"/><path d="M18 9.500 H23 C23.600 17 21.500 20.500 18 20.500 Z" fill="#7a5c40" opacity=".45"/><path d="M14.600 16.200 C16.500 15 19.500 15 21.400 16.200" fill="none" stroke="#2a2018" stroke-width="1.500" stroke-linecap="round"/>' +
+    '<path d="M12 9.800 L12.600 4.600 C14.500 3 21.500 3 23.400 4.600 L24 9.800 Z" fill="#1b1b22"/><rect x="11.900" y="7.600" width="12.200" height="2.400" fill="#a8352a"/><path d="M11.900 7.600 h12.200" stroke="#d8b96a" stroke-width=".5"/><circle cx="18" cy="5.600" r="1" fill="#d8b96a"/><path d="M11.400 10 h13.600 l2.800 1.900 h-16.400 Z" fill="#08080b"/>' +
+    '<g class="bras"><path d="M22 23 L27 24 L28.400 41 L24.600 41 Z" fill="#2a2a33"/><circle cx="26.500" cy="42.600" r="2.300" fill="#efe6d0"/><path d="M26.500 43 V57" stroke="#6b4324" stroke-width="1.700"/><circle cx="26.500" cy="62" r="6.600" fill="#2f6b47" stroke="#f4efe2" stroke-width="1.700"/><circle cx="26.500" cy="62" r="2.200" fill="#f4efe2"/></g></svg>';
 
   function construireDecor() {
     chefs = [];
@@ -3497,12 +3637,25 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   // La buée : un voile peint une fois, plus fin au milieu ; le doigt y ôte de la matière.
   function embuer() {
     embuee.width = W; embuee.height = H;
-    const x = embuee.getContext('2d');
-    x.fillStyle = 'rgba(222, 228, 224, .74)'; x.fillRect(0, 0, W, H);
+    const x = embuee.getContext('2d'), alea = (k) => { const v = Math.sin(k * 127.1) * 43758.5453; return v - Math.floor(v); };
+    x.fillStyle = 'rgba(224, 230, 226, .8)'; x.fillRect(0, 0, W, H);
+    // Dense aux bords, déjà claire au milieu : on devine la gare, la plaque se lit.
     x.globalCompositeOperation = 'destination-out';
-    const g = x.createRadialGradient(W / 2, H * 0.47, 30, W / 2, H * 0.47, H * 0.56);
-    g.addColorStop(0, 'rgba(0, 0, 0, .42)'); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    const g = x.createRadialGradient(W / 2, H * 0.5, 36, W / 2, H * 0.5, H * 0.52);
+    g.addColorStop(0, 'rgba(0, 0, 0, .7)'); g.addColorStop(0.5, 'rgba(0, 0, 0, .44)'); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
     x.fillStyle = g; x.fillRect(0, 0, W, H);
+    // Les gouttes : des perles claires dans le voile ; quelques-unes ont coulé.
+    for (let k = 0; k < 120; k++) {
+      const px = alea(k) * W, py = H * (0.15 + alea(k + 200) * 0.68), r = 1.3 + alea(k + 400) * 2.9;
+      x.fillStyle = `rgba(0, 0, 0, ${(0.4 + alea(k + 600) * 0.45).toFixed(2)})`;
+      x.beginPath(); x.ellipse(px, py, r * 0.85, r, 0, 0, 7); x.fill();
+      if (k % 8 === 0) { const l = 26 + alea(k + 800) * 96; x.fillRect(px - r * 0.42, py - l, r * 0.84, l); }
+    }
+    x.globalCompositeOperation = 'source-over'; x.strokeStyle = 'rgba(255, 255, 255, .7)'; x.lineWidth = 0.9;
+    for (let k = 0; k < 120; k++) {
+      const px = alea(k) * W, py = H * (0.15 + alea(k + 200) * 0.68), r = 1.3 + alea(k + 400) * 2.9;
+      if (r > 2.2) { x.beginPath(); x.arc(px, py, r, 0.3, 1.9); x.stroke(); }
+    }
     bueeEssuyee = false;
   }
   const bueeIci = () => forceBuee > 0.4 && etapeDe(u) === 'gares';
