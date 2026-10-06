@@ -94,7 +94,8 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 26%); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 26%); mask-composite: intersect; }
 .fond .mer { background-image: var(--svg-mer), linear-gradient(#a7b2b0, #d2d3c3 48%, #eddcb6 66%); }
 .loin { top: 20%; height: 64%; display: flex; will-change: transform; }
-.loin i { display: block; height: 100%; flex: none; margin-right: -64px; background-size: 100% 100%; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent), linear-gradient(transparent 0, #000 34%); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent), linear-gradient(transparent 0, #000 34%); mask-composite: intersect; }
+/* Deux vues voisines se fondent l'une dans l'autre sur toute leur marge ; le ciel de chacune s'efface, de --h0 à --h1, avant ce qui y dépasse. */
+.loin i { display: block; height: 100%; flex: none; margin-right: -130px; background-repeat: no-repeat; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 130px, #000 calc(100% - 130px), transparent), linear-gradient(transparent var(--h0, 0%), #000 var(--h1, 34%)); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 130px, #000 calc(100% - 130px), transparent), linear-gradient(transparent var(--h0, 0%), #000 var(--h1, 34%)); mask-composite: intersect; }
 .loin i.m { transform: scaleX(-1); }
 .gares { top: 0; left: 0; height: 100%; width: 1px; will-change: transform; }
 .gare { position: absolute; bottom: 19%; }
@@ -1037,7 +1038,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .passes { margin: 14px 14px 0; font: 14px/1.5 var(--f-corps); color: var(--doux); }
 .passes summary { cursor: pointer; font: 600 12px var(--f-rail); letter-spacing: .14em; text-transform: uppercase; color: var(--laiton); }
 
-/* ---------- L'heure du jour, la météo, les tunnels, le compartiment, le chef de gare (idées 69 à 73) ---------- */
+/* ---------- L'heure du jour, la météo, le tunnel, le compartiment, le chef de gare (idées 69 à 73) ---------- */
 /* L'heure : une teinte qui multiplie tout le paysage, une lueur d'astre, les étoiles et les fenêtres allumées par-dessus. La lanterne rouge passe encore au-dessus. */
 .pano > .astre { left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; opacity: 0; pointer-events: none; will-change: transform, opacity; }
 .astre.soleil { background: radial-gradient(circle, #fffdf2 0 36%, rgba(255, 244, 210, .6) 48%, rgba(255, 244, 210, 0) 70%); }
@@ -1084,27 +1085,22 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 }
 .embuee { left: 0; top: 0; filter: blur(2.5px); }
 
-/* Le tunnel : un mur de soutènement monte à la vitre, puis le noir ; la vitre devient miroir, le plafonnier et les affiches s'y voient. */
-.bouche { position: absolute; top: 0; bottom: 19%; width: 470px; pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .34) 0 2px, transparent 2px 26px), repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 2px, transparent 2px 58px), linear-gradient(#3a352b, #1d1a14);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 38%, #000 62%, transparent); mask-image: linear-gradient(90deg, transparent, #000 38%, #000 62%, transparent); }
-.tunnel { position: absolute; inset: 0; opacity: 0; pointer-events: none; overflow: hidden; background: #060403; will-change: opacity; }
-.tunnel.passe { animation: tunnel 1.15s linear; }
-@keyframes tunnel { 0% { opacity: 0; } 11% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-.tunnel .miroir { position: absolute; inset: 0; transform: scaleX(-1); opacity: .5; background: var(--i-interieur) 50% 40% / cover no-repeat; filter: sepia(.5) brightness(.85); }
-.tunnel .parois { position: absolute; inset: 0 -240px 0 0; opacity: .5; background: repeating-linear-gradient(90deg, rgba(255, 214, 150, 0) 0 96px, rgba(255, 214, 150, .1) 104px, rgba(255, 214, 150, 0) 120px); mix-blend-mode: screen; animation: m-parois .22s linear infinite; }
-@keyframes m-parois { to { transform: translate3d(-120px, 0, 0); } }
-.tunnel::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 46% at 50% 30%, rgba(255, 196, 110, .16), rgba(6, 4, 3, 0) 60%), radial-gradient(ellipse at 50% 44%, transparent 30%, rgba(6, 4, 3, .82)); }
-.plafonnier { position: absolute; left: 50%; top: 19%; z-index: 1; width: 46px; height: 30px; margin-left: -23px; border-radius: 6px 6px 50% 50% / 6px 6px 100% 100%; background: radial-gradient(ellipse at 50% 30%, #fff6d8, #f1bd62 70%, #b9792c); box-shadow: 0 0 46px 22px rgba(255, 190, 96, .3), 0 0 110px 60px rgba(255, 170, 70, .16); animation: veilleuse 2.6s ease-in-out infinite; }
-.plafonnier::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 60px; height: 7px; margin-left: -30px; border-radius: 3px 3px 0 0; background: linear-gradient(#8a6c33, #c9a257); box-shadow: 0 -18px 0 -2px #2a180c; }
+/* Le tunnel : sa bouche de pierre arrive dans le paysage et le noir balaie la vitre dans le sens de la marche ; dedans, la paroi défile sous ses lampes, et la vitre garde un reflet léger du compartiment. */
+.tunnel { position: absolute; inset: 0; visibility: hidden; pointer-events: none; overflow: hidden; }
+.tunnel .dedans { position: absolute; inset: 0; overflow: hidden; background: #070504; will-change: clip-path; }
+.tunnel .paroi { position: absolute; left: 0; top: 0; bottom: 0; width: calc(100% + 480px); background-size: 480px 100%; will-change: transform; }
+.tunnel .miroir { position: absolute; inset: 0; transform: scaleX(-1); opacity: .14; background: var(--i-interieur) 50% 40% / cover no-repeat; filter: sepia(.5) brightness(.9); }
+.tunnel .dedans::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 96% 22% at 50% -7%, rgba(255, 196, 110, .13), rgba(255, 196, 110, 0) 72%), radial-gradient(ellipse at 50% 46%, transparent 42%, rgba(4, 3, 2, .62)); }
+.tunnel .bouche { position: absolute; left: 0; top: 0; width: 360px; height: 100%; transform-origin: 0 0; will-change: transform; }
+.tunnel .bouche svg { display: block; width: 100%; height: 100%; }
 /* Les affiches des films vus, pincées sur une ficelle : sous la vitre dans le compartiment, et dans le miroir du tunnel. */
 .accroches { position: absolute; left: 50%; display: flex; gap: 8px; transform: translateX(-50%); }
 .accroches::before { content: ''; position: absolute; left: -16px; right: -16px; top: 2px; height: 9px; border-bottom: 1px solid rgba(233, 220, 192, .75); border-radius: 0 0 50% 50% / 0 0 100% 100%; }
 .accroches i { position: relative; display: block; flex: none; width: 40px; aspect-ratio: 3 / 4; margin-top: 10px; background: #2a180c center / cover; box-shadow: 0 0 0 2px #efe6d0, 2px 4px 6px rgba(0, 0, 0, .6); transform: rotate(var(--r, 0deg)); transform-origin: 50% 0; }
 .accroches i::before { content: ''; position: absolute; left: 50%; top: -6px; width: 5px; height: 11px; margin-left: -2.5px; border-radius: 1px; background: linear-gradient(#e2c27a, #9c7a36); box-shadow: 0 1px 1px rgba(0, 0, 0, .5); }
 .interieur .accroches { top: 68.6%; }
-.tunnel .accroches { top: 45%; z-index: 1; gap: 13px; opacity: .88; }
-.tunnel .accroches i { width: 52px; }
+.tunnel .accroches { top: 47%; gap: 12px; opacity: .24; filter: sepia(.35) brightness(.85); }
+.tunnel .accroches i { width: 46px; }
 
 /* Le chef de gare, sur le quai d'une année bouclée : au départ du train, il lève son guidon. */
 .chef { position: absolute; left: calc(50% + var(--dx, -58px)); bottom: 8.5%; z-index: 4; width: 36px; height: 82px; margin-left: -18px; pointer-events: none; filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, .45)); }
@@ -1435,7 +1431,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
               <div class="heure-m" id="h-mult"></div><div class="heure-e" id="h-lueur"></div><div class="etoiles" id="h-etoiles"></div><div class="astre lune" id="h-lune"></div><div class="lumieres" id="p-lumieres"></div>
             </div>
             <div class="meteo" id="meteo" aria-hidden="true"><div class="m-sol"></div><div class="m-voile n"></div><div class="m-voile p"></div><div class="m-vent" id="m-vent"><i class="m-pluie"></i><i class="m-neige n1"></i><i class="m-neige n2"></i><i class="m-neige n3"></i></div><div class="m-gouttes" id="m-gouttes"></div><canvas class="embuee" id="embuee"></canvas></div>
-            <div class="tunnel" id="tunnel" aria-hidden="true"><div class="miroir"></div><div class="parois"></div><div class="plafonnier"></div><div class="accroches"></div></div>
+            <div class="tunnel" id="tunnel" aria-hidden="true"><div class="dedans"><div class="paroi"></div><div class="miroir"></div><div class="accroches"></div></div><div class="bouche"></div><div class="bouche"></div></div>
             <div class="halte" id="halte" hidden>
               <svg viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Une petite gare de campagne au bout d’un embranchement ; au loin, un atelier vitré">
                 <path d="M0 388 C60 362 120 372 190 380 S320 352 390 372 V470 H0 Z" fill="#9aa283" opacity=".75"/>
@@ -1558,7 +1554,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
           <button type="button" class="bouton2" id="b-controleur">Faire passer le contrôleur</button>
         </div>
         <p class="gestes"><b>Le passage</b> dure une douzaine de secondes, telles qu’on les verra dans l’appli ; il ne se traîne pas au doigt, il se joue, et se passe d’un toucher. <b>Dans le train</b>, le geste suit le doigt, puis le train se pose à la gare la plus proche ; à la molette, par crans ; au clavier, d’arrêt en arrêt. <b>Moins d’animations</b> (réglage du téléphone, ou l’interrupteur) : plus de passage joué, de roulement ni de parallaxe ; chaque geste pose l’arrêt suivant, en un court fondu (idée 65). <b>Sur la carte</b>, comme en 1890 : trois bobines perdues se cachent en gare de 1900, 1902 et 1904 (un éclat les trahit, un toucher les ramasse) ; la pastille « Son » est muette dans la maquette ; celle de la sacoche mène à l’écran 15 ; un appui long sur une gare déplie son aperçu ; les dépêches épinglées aux quais de 1900, 1902 et 1903 portent une date vraie ; en gare de 1904, le ticket de 1905 fait rouler le train et développe la plaque sous les yeux.</p>
-        <p class="gestes"><b>L’heure et le temps</b> (idées 69 à 73) : chaque gare a son heure, de l’aube de 1900 à la nuit de 1909 ; il pleut à Couville, il neige à Allaman, la vitre est embuée à Creil, où un glissement <b>horizontal</b> l’essuie sans faire rouler le train. Un tunnel passe entre 1903 et 1904. Au départ d’une gare bouclée, le chef de gare lève son guidon. Les années fermées gardent leur lanterne rouge : « Voir les dix heures » développe toutes les plaques, le temps de regarder le crépuscule de 1907 et la nuit de 1909. Sur la pastille de la sacoche, un point rouge dit qu’une étiquette vient d’être collée (écran 18).</p>
+        <p class="gestes"><b>L’heure et le temps</b> (idées 69 à 73) : chaque gare a son heure, de l’aube de 1900 à la nuit de 1909 ; il pleut à Couville, il neige à Allaman, la vitre est embuée à Creil, où un glissement <b>horizontal</b> l’essuie sans faire rouler le train. Entre 1903 et 1904, le seul tunnel de la ligne : sa bouche de pierre arrive, le noir balaie la vitre, la paroi défile sous ses lampes, et le jour revient sur la neige d’Allaman. Au départ d’une gare bouclée, le chef de gare lève son guidon. Les années fermées gardent leur lanterne rouge : « Voir les dix heures » développe toutes les plaques, le temps de regarder le crépuscule de 1907 et la nuit de 1909. Sur la pastille de la sacoche, un point rouge dit qu’une étiquette vient d’être collée (écran 18).</p>
         <p class="gestes"><b>Le jeu</b> (idées 74 à 79) : en gare de 1902, un levier d’aiguillage attend au bout du quai ; un toucher (jamais un glissement) mène à la <b>Halte Méliès</b>, hors ligne, trois films, et le bouton du bas ramène sur la ligne, qui se fait très bien sans elle. Entre 1902 et 1903, le poteau de l’embranchement passe à la vitre. Un <b>objet d’époque</b> est oublié sur les quais de 1901, 1903 et 1904 (et de 1905, une fois sa plaque développée) : un toucher le range dans la sacoche, dont le point rouge se rallume, comme pour une bobine ou une carte postale. Les plaques de 1901 et 1903 portent le <b>filet doré</b> d’un horaire tenu ; celle de 1904 dit l’horaire accepté. <b>Le contrôleur</b>, lui, passe à l’improviste dans l’appli, une fois par semaine au plus : ici un bouton le fait entrer. Au calme, ni entrée jouée ni aiguillage joué : des états fixes.</p>
       </div>
     </div>
@@ -2204,7 +2200,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
         <tr><td>L’année qui attend le Voyage suivi</td><td>La voie fermée, le sémaphore à l’arrêt (écran 16)</td><td class="neuf">ajouté</td></tr>
         <tr><td>La séance du soir</td><td>Le train de plaisir du soir (écran 17)</td><td class="neuf">ajouté</td></tr>
         <tr><td>Les badges de quête (un emoji, une couleur)</td><td>Quinze étiquettes de malle propres à la décennie : la malle (écran 18), sa ligne dans la sacoche (écran 15), sa fête au pinceau (écran 13), le point sur la pastille de la carte</td><td class="neuf">ajouté</td></tr>
-        <tr><td>Le décor qui vit : les particules, les halos</td><td>L’heure du jour par gare, la météo sur la vitre, trois tunnels, les affiches du compartiment, le chef de gare (carte)</td><td class="neuf">ajouté</td></tr>
+        <tr><td>Le décor qui vit : les particules, les halos</td><td>L’heure du jour par gare, la météo sur la vitre, un tunnel, les affiches du compartiment, le chef de gare (carte)</td><td class="neuf">ajouté</td></tr>
         <tr><td>Les bobines perdues, seules choses à ramasser</td><td>En plus des trois bobines, un objet d’époque par gare, caché dans le décor ; dix places dans la sacoche (carte, écran 15)</td><td class="neuf">en plus</td></tr>
         <tr><td>Une seule allée, sans détour</td><td>L’aiguillage : une halte hors ligne, facultative, trois films (carte)</td><td class="neuf">en plus</td></tr>
         <tr><td>Personne ne passe</td><td>Le contrôleur et son poinçon doré (carte, écran 7)</td><td class="neuf">en plus</td></tr>
@@ -2217,7 +2213,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 
   <section aria-labelledby="t-idees">
     <div class="titre-s"><small>Répondez par leurs numéros</small><h2 id="t-idees">Les idées 46 à 79</h2></div>
-    <ol class="idees"><li><b>46</b><div><h3>Un seul geste, un seul sens</h3><p>Le glissement vertical fait tout : un geste vers le haut lance le passage de la foire au train, les suivants font rouler le train. Jamais de bascule vers un défilement horizontal.</p></div></li><li><b>47</b><div><h3>La pellicule devient des rails</h3><p>Sous la baraque « Prochainement », le chemin-pellicule de 1890 se change en deux rails qui entrent sous une halle photographiée en 1899.</p></div></li><li><b>48</b><div><h3>On monte en voiture</h3><p>L’image s’approche de la voiture de troisième classe, la locomotive lâche sa vapeur, et le compartiment est là quand elle se dissipe.</p></div></li><li><b>49</b><div><h3>La vitre s’élargit</h3><p>Par la vitre, d’abord le quai de 1899 ; le train part, le cadre de teck grandit jusqu’à sortir de l’écran, la borne de 1900 passe, la première gare arrive.</p></div></li><li><b>50</b><div><h3>Les quatre toiles de 1900</h3><p>Quatre plans aux vitesses du vrai Transsibérien de l’Exposition : 5, 40, 120 et 300 mètres par minute.</p></div></li><li><b>51</b><div><h3>Une gare par année</h3><p>Dix gares photographiées vers 1900–1905 ; sur chaque quai ouvert, l’affiche ou le photogramme de l’année.</p></div></li><li><b>52</b><div><h3>L’avenir est une plaque de verre</h3><p>Les années fermées sont des négatifs ; utiliser leur ticket les plonge dans le révélateur.</p></div></li><li><b>53</b><div><h3>La couleur au pochoir</h3><p>Les photos virées reçoivent des aplats multipliés, décalés de quelques pixels, marbrés comme les copies coloriées de Pathé.</p></div></li><li><b>54</b><div><h3>Le bandeau</h3><p>Dans la vue d’ensemble, 1890 reste une allée qui descend et 1900 devient un bandeau de dix vignettes, lu de gauche à droite.</p></div></li><li><b>55</b><div><h3>La gare de l’année</h3><p>La fiche d’année est une gare : sa photo, sa plaque émaillée, son horloge (19 h 03 pour 1903), un indicateur Chaix pour les objectifs.</p></div></li><li><b>56</b><div><h3>La composition du train</h3><p>Une salle est une voiture, ses films des compartiments ; la plaque dit « occupé » ou « libre ».</p></div></li><li><b>57</b><div><h3>La séance Hale’s Tours</h3><p>La fiche film se regarde depuis une fausse voiture qui tangue, l’écran au bout de l’allée.</p></div></li><li><b>58</b><div><h3>Le composteur</h3><p>La date se presse sur la tranche, la note se perce un trou par point, les réactions sont des coupons.</p></div></li><li><b>59</b><div><h3>Le billet Edmondson</h3><p>Un carton de 57 sur 31 mm, sa bande de couleur, son numéro dans la décennie, le tampon « Vu ».</p></div></li><li><b>60</b><div><h3>Le casier du contrôleur</h3><p>La boîte à billets devient un casier à une case par année ; toucher une case sort sa liasse.</p></div></li><li><b>61</b><div><h3>Les tampons de frontière</h3><p>Le passeport reçoit des tampons à l’encre, de travers et baveux : la sortie d’une décennie, l’entrée dans la suivante.</p></div></li><li><b>62</b><div><h3>La voie parallèle</h3><p>L’autre joueur est une vraie voiture de 1900 garée à quai dans sa gare, son nom écrit à la craie.</p></div></li><li><b>63</b><div><h3>Les trois classes</h3><p>Le podium en trois portières numérotées en chiffres romains, la première au centre et plus haute.</p></div></li><li><b>64</b><div><h3>Le guichet grillagé</h3><p>La recherche se demande au guichetier ; la réponse s’affiche sur un tableau des départs peint.</p></div></li><li><b>65</b><div><h3>Le train s’arrête, il ne roule plus</h3><p>Au calme, plus de parallaxe ni de roulis : chaque geste mène à l’arrêt suivant, en un fondu de deux dixièmes de seconde.</p></div></li><li><b>66</b><div><h3>Les étiquettes de malle</h3><p>Quinze badges propres à la décennie, collés sur une malle comme les étiquettes d’hôtel et de compagnie : cinq formes, deux ou trois encres, un dessin par badge. La malle s’ouvre depuis la sacoche (écran 18) ; la pastille de la carte porte un point quand une étiquette vient d’être collée, et la fête la pose au pinceau (écran 13).</p></div></li><li><b>67</b><div><h3>La trace de colle</h3><p>Une étiquette pas encore gagnée laisse sa forme en colle pâle, avec sa progression (« 3 sur 4 ») ; au toucher, son nom, sa règle et ce qui manque.</p></div></li><li><b>68</b><div><h3>L’étiquette cachée</h3><p>Une seule ne se montre pas : le Billet de faveur, pour une séance compostée un 28 décembre. Sa place reste un « ? » jusqu’au jour où elle est gagnée.</p></div></li><li><b>69</b><div><h3>L’heure du jour</h3><p>Chaque gare a son heure : l’aube en 1900, plein midi en 1904, le crépuscule en 1907, la nuit en 1909, fenêtres allumées. La lumière se fond en roulant ; sous la lanterne rouge elle s’efface, et la plaque développée la révèle.</p></div></li><li><b>70</b><div><h3>La météo par la vitre</h3><p>Il pleut à Couville et à Brest, il neige sur les deux gares suisses, la vitre est embuée à Creil : un glissement horizontal l’essuie, sans faire rouler le train. Au calme, un état fixe.</p></div></li><li><b>71</b><div><h3>Les tunnels</h3><p>Sur trois tronçons, un mur monte à la vitre, puis une seconde de noir où la vitre devient miroir : le compartiment, le plafonnier allumé. Au calme, pas de tunnel.</p></div></li><li><b>72</b><div><h3>Le compartiment se remplit</h3><p>Les affiches des films vus se pincent sur une ficelle sous la vitre : on les voit en montant en voiture, et dans le miroir des tunnels.</p></div></li><li><b>73</b><div><h3>Le chef de gare</h3><p>Sur le quai d’une année bouclée, un chef de gare ; quand le train repart, il lève son guidon.</p></div></li><li><b>74</b><div><h3>L’aiguillage</h3><p>Entre 1902 et 1903, un embranchement facultatif mène à une halte hors ligne : la Halte Méliès, trois films. Un levier au bout du quai s’actionne d’un toucher, jamais d’un geste ; la halte se voit par la vitre, sa plaque est verte, un bouton ramène sur la ligne, qui se fait sans elle. Au calme, pas d’aiguillage joué.</p></div></li><li><b>75</b><div><h3>Le contrôleur</h3><p>Il passe à l’improviste, une fois par semaine au plus, et demande un billet récent. Le présenter vaut un coup de poinçon doré sur ce billet ; refuser ou n’en avoir pas ne coûte rien. Un billet « sans titre de transport » se présente comme un autre.</p></div></li><li><b>76</b><div><h3>La carte postale</h3><p>À chaque gare bouclée, une carte part chez le membre suivi : la photo d’archive de la gare au recto, un mot, un timbre et le tampon à date au verso, une gare pour adresse. Il la trouve dans sa sacoche (écrans 19 et 15).</p></div></li><li><b>77</b><div><h3>Le wagon-restaurant</h3><p>Une séance à deux : le même film proposé aux deux voyageurs le même soir, sur un menu de carton. Chacun prend sa place ou décline ; s’ils le voient tous deux, leurs billets portent le tampon commun « Vu ensemble » (écran 20).</p></div></li><li><b>78</b><div><h3>L’horaire à tenir</h3><p>Un objectif facultatif par gare : « arriver avant dimanche ». Tenu, la plaque reçoit un filet doré et la mention « à l’heure » ; manqué, rien ne se perd, et personne n’est obligé de l’accepter (carte, écrans 2 et 14).</p></div></li><li><b>79</b><div><h3>Les objets trouvés</h3><p>En plus des bobines, un objet d’époque par gare, caché dans le décor : une lanterne, un chapeau melon, un parapluie, une montre de gousset, un programme… Un toucher le ramasse ; la sacoche garde dix places, les objets manquants en silhouette, et son point rouge se rallume.</p></div></li></ol>
+    <ol class="idees"><li><b>46</b><div><h3>Un seul geste, un seul sens</h3><p>Le glissement vertical fait tout : un geste vers le haut lance le passage de la foire au train, les suivants font rouler le train. Jamais de bascule vers un défilement horizontal.</p></div></li><li><b>47</b><div><h3>La pellicule devient des rails</h3><p>Sous la baraque « Prochainement », le chemin-pellicule de 1890 se change en deux rails qui entrent sous une halle photographiée en 1899.</p></div></li><li><b>48</b><div><h3>On monte en voiture</h3><p>L’image s’approche de la voiture de troisième classe, la locomotive lâche sa vapeur, et le compartiment est là quand elle se dissipe.</p></div></li><li><b>49</b><div><h3>La vitre s’élargit</h3><p>Par la vitre, d’abord le quai de 1899 ; le train part, le cadre de teck grandit jusqu’à sortir de l’écran, la borne de 1900 passe, la première gare arrive.</p></div></li><li><b>50</b><div><h3>Les quatre toiles de 1900</h3><p>Quatre plans aux vitesses du vrai Transsibérien de l’Exposition : 5, 40, 120 et 300 mètres par minute.</p></div></li><li><b>51</b><div><h3>Une gare par année</h3><p>Dix gares photographiées vers 1900–1905 ; sur chaque quai ouvert, l’affiche ou le photogramme de l’année.</p></div></li><li><b>52</b><div><h3>L’avenir est une plaque de verre</h3><p>Les années fermées sont des négatifs ; utiliser leur ticket les plonge dans le révélateur.</p></div></li><li><b>53</b><div><h3>La couleur au pochoir</h3><p>Les photos virées reçoivent des aplats multipliés, décalés de quelques pixels, marbrés comme les copies coloriées de Pathé.</p></div></li><li><b>54</b><div><h3>Le bandeau</h3><p>Dans la vue d’ensemble, 1890 reste une allée qui descend et 1900 devient un bandeau de dix vignettes, lu de gauche à droite.</p></div></li><li><b>55</b><div><h3>La gare de l’année</h3><p>La fiche d’année est une gare : sa photo, sa plaque émaillée, son horloge (19 h 03 pour 1903), un indicateur Chaix pour les objectifs.</p></div></li><li><b>56</b><div><h3>La composition du train</h3><p>Une salle est une voiture, ses films des compartiments ; la plaque dit « occupé » ou « libre ».</p></div></li><li><b>57</b><div><h3>La séance Hale’s Tours</h3><p>La fiche film se regarde depuis une fausse voiture qui tangue, l’écran au bout de l’allée.</p></div></li><li><b>58</b><div><h3>Le composteur</h3><p>La date se presse sur la tranche, la note se perce un trou par point, les réactions sont des coupons.</p></div></li><li><b>59</b><div><h3>Le billet Edmondson</h3><p>Un carton de 57 sur 31 mm, sa bande de couleur, son numéro dans la décennie, le tampon « Vu ».</p></div></li><li><b>60</b><div><h3>Le casier du contrôleur</h3><p>La boîte à billets devient un casier à une case par année ; toucher une case sort sa liasse.</p></div></li><li><b>61</b><div><h3>Les tampons de frontière</h3><p>Le passeport reçoit des tampons à l’encre, de travers et baveux : la sortie d’une décennie, l’entrée dans la suivante.</p></div></li><li><b>62</b><div><h3>La voie parallèle</h3><p>L’autre joueur est une vraie voiture de 1900 garée à quai dans sa gare, son nom écrit à la craie.</p></div></li><li><b>63</b><div><h3>Les trois classes</h3><p>Le podium en trois portières numérotées en chiffres romains, la première au centre et plus haute.</p></div></li><li><b>64</b><div><h3>Le guichet grillagé</h3><p>La recherche se demande au guichetier ; la réponse s’affiche sur un tableau des départs peint.</p></div></li><li><b>65</b><div><h3>Le train s’arrête, il ne roule plus</h3><p>Au calme, plus de parallaxe ni de roulis : chaque geste mène à l’arrêt suivant, en un fondu de deux dixièmes de seconde.</p></div></li><li><b>66</b><div><h3>Les étiquettes de malle</h3><p>Quinze badges propres à la décennie, collés sur une malle comme les étiquettes d’hôtel et de compagnie : cinq formes, deux ou trois encres, un dessin par badge. La malle s’ouvre depuis la sacoche (écran 18) ; la pastille de la carte porte un point quand une étiquette vient d’être collée, et la fête la pose au pinceau (écran 13).</p></div></li><li><b>67</b><div><h3>La trace de colle</h3><p>Une étiquette pas encore gagnée laisse sa forme en colle pâle, avec sa progression (« 3 sur 4 ») ; au toucher, son nom, sa règle et ce qui manque.</p></div></li><li><b>68</b><div><h3>L’étiquette cachée</h3><p>Une seule ne se montre pas : le Billet de faveur, pour une séance compostée un 28 décembre. Sa place reste un « ? » jusqu’au jour où elle est gagnée.</p></div></li><li><b>69</b><div><h3>L’heure du jour</h3><p>Chaque gare a son heure : l’aube en 1900, plein midi en 1904, le crépuscule en 1907, la nuit en 1909, fenêtres allumées. La lumière se fond en roulant ; sous la lanterne rouge elle s’efface, et la plaque développée la révèle.</p></div></li><li><b>70</b><div><h3>La météo par la vitre</h3><p>Il pleut à Couville et à Brest, il neige sur les deux gares suisses, la vitre est embuée à Creil : un glissement horizontal l’essuie, sans faire rouler le train. Au calme, un état fixe.</p></div></li><li><b>71</b><div><h3>Le tunnel</h3><p>Un seul, entre 1903 et 1904, juste avant les Alpes. Sa bouche de pierre arrive dans le paysage (le talus, le mur de tête, l’arc et ses claveaux), et le noir balaie la vitre dans le sens de la marche. Dedans, la paroi défile sous ses lampes, la vitre garde un reflet léger du compartiment ; puis l’autre bouche passe et le jour revient sur la neige d’Allaman. Il suit le doigt, se joue aussi au retour. Au calme, pas de tunnel.</p></div></li><li><b>72</b><div><h3>Le compartiment se remplit</h3><p>Les affiches des films vus se pincent sur une ficelle sous la vitre : on les voit en montant en voiture, et en reflet léger sur la vitre du tunnel.</p></div></li><li><b>73</b><div><h3>Le chef de gare</h3><p>Sur le quai d’une année bouclée, un chef de gare ; quand le train repart, il lève son guidon.</p></div></li><li><b>74</b><div><h3>L’aiguillage</h3><p>Entre 1902 et 1903, un embranchement facultatif mène à une halte hors ligne : la Halte Méliès, trois films. Un levier au bout du quai s’actionne d’un toucher, jamais d’un geste ; la halte se voit par la vitre, sa plaque est verte, un bouton ramène sur la ligne, qui se fait sans elle. Au calme, pas d’aiguillage joué.</p></div></li><li><b>75</b><div><h3>Le contrôleur</h3><p>Il passe à l’improviste, une fois par semaine au plus, et demande un billet récent. Le présenter vaut un coup de poinçon doré sur ce billet ; refuser ou n’en avoir pas ne coûte rien. Un billet « sans titre de transport » se présente comme un autre.</p></div></li><li><b>76</b><div><h3>La carte postale</h3><p>À chaque gare bouclée, une carte part chez le membre suivi : la photo d’archive de la gare au recto, un mot, un timbre et le tampon à date au verso, une gare pour adresse. Il la trouve dans sa sacoche (écrans 19 et 15).</p></div></li><li><b>77</b><div><h3>Le wagon-restaurant</h3><p>Une séance à deux : le même film proposé aux deux voyageurs le même soir, sur un menu de carton. Chacun prend sa place ou décline ; s’ils le voient tous deux, leurs billets portent le tampon commun « Vu ensemble » (écran 20).</p></div></li><li><b>78</b><div><h3>L’horaire à tenir</h3><p>Un objectif facultatif par gare : « arriver avant dimanche ». Tenu, la plaque reçoit un filet doré et la mention « à l’heure » ; manqué, rien ne se perd, et personne n’est obligé de l’accepter (carte, écrans 2 et 14).</p></div></li><li><b>79</b><div><h3>Les objets trouvés</h3><p>En plus des bobines, un objet d’époque par gare, caché dans le décor : une lanterne, un chapeau melon, un parapluie, une montre de gousset, un programme… Un toucher le ramasse ; la sacoche garde dix places, les objets manquants en silhouette, et son point rouge se rallume.</p></div></li></ol>
   </section>
 
   <section aria-labelledby="t-cout">
@@ -2261,12 +2257,12 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
       <li><b>Par image</b> : quatre <code>drawImage</code> de plans, deux ou trois gares, une tuile de poteaux ; le grain en motif. C’est moins que le décor de 1890 (volumes en dégradés, halos).</li>
       <li><b>Le pochoir</b> se fait hors ligne, par script, une fois. Dans l’appli, rien ne lit les pixels.</li>
     </ul>
-    <h3>Ce que coûtent les étiquettes, l’heure, la météo et les tunnels</h3>
+    <h3>Ce que coûtent les étiquettes, l’heure, la météo et le tunnel</h3>
     <ul>
       <li><b>Les étiquettes.</b> L’API ne sait aujourd’hui qu’un badge « un emoji et une couleur, né d’une quête ». Six étiquettes demandent des règles calculées sur le journal (le Chef de gare, le Bonimenteur, la Correspondance, le Train de nuit, l’Express, Voie parallèle) ; trois demandent une liste de films tenue à la main (le Coloriste, la tête en caoutchouc, la Pionnière). Le reste n’est pas chiffré ici. Côté appli : quinze dessins en tracés, aucune image.</li>
       <li><b>L’heure du jour.</b> Dans la maquette, deux calques plein écran en <code>mix-blend-mode</code>. Sur le canvas du moteur : un aplat en <code>multiply</code> et un dégradé en <code>screen</code> par image, deux couleurs interpolées par gare. Les fenêtres allumées sont des rectangles posés à la main, photo par photo (trois gares ici) : c’est du travail d’atelier, pas du calcul.</li>
       <li><b>La météo.</b> Pluie et neige sont des motifs répétés qui glissent (trois plans pour la neige), pas des particules simulées ; une dizaine de gouttes. La buée est un second canvas de la taille de l’écran, où le doigt efface : environ 1,2 Mo décodé pour 390 × 760 à densité 1, neuf fois plus à densité 3, donc à tenir en basse définition et à ne créer qu’à l’approche d’une gare embuée. Le moteur n’a pas aujourd’hui de geste horizontal distinct du défilement : il faut le lui donner.</li>
-      <li><b>Les tunnels.</b> Un noir, un fondu, et l’image du compartiment déjà chargée. Le coût est dans le réglage (une seconde jouée quelle que soit la vitesse du doigt), pas dans le calcul.</li>
+      <li><b>Le tunnel.</b> Deux bouches dessinées en SVG, une paroi en motif répété, et l’image du compartiment déjà chargée : trois calques déplacés, un découpage. Le coût est dans le réglage (le train lève le pied dedans, pour que le clavier laisse le temps de voir), pas dans le calcul.</li>
       <li><b>Au calme</b>, tout cela est un état fixe : aucune boucle ne tourne à l’arrêt.</li>
     </ul>
     <h3>Ce que coûte le jeu (idées 74 à 79)</h3>
@@ -2508,16 +2504,20 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   }
   const eteindre = (i, oui) => chambres.forEach((c) => { if (c.i === i) c.el.classList.toggle('eteinte', oui); });
 
+  // Le cadre de chaque vue lointaine : gauche et droite en parts de l'image, puis le fondu du ciel en % de sa hauteur.
+  const CADRE_LOIN = { loin1: [0.01, 0.99, 0, 34], loin2: [0.19, 0.93, 14, 38], loin3: [0.01, 0.56, 6, 32] };
   function construireLoin(hB) {
     pLoin.textContent = '';
     // La plaine au canal vers Paris et Creil, les collines ensuite, la côte à partir des gares suisses (le lac) jusqu'à Monte-Carlo.
-    const suite = ['loin1', 'loin2', 'loin3', 'loin3', 'loin2', 'loin1', 'loin2', 'loin3', 'loin1'];
-    suite.forEach((n, i) => {
-      const t = TAILLE[n];
+    // Une vue retournée contre elle-même se raccorde sans couture ; chacune est recadrée hors de ce qui montait dans le ciel (les troncs du belvédère, la falaise).
+    const suite = ['loin1', 'loin2', 'loin3 m', 'loin3', 'loin2 m', 'loin2', 'loin3 m', 'loin3', 'loin2 m', 'loin1 m', 'loin1', 'loin2', 'loin3 m', 'loin3'];
+    suite.forEach((nom) => {
+      const [n, miroir] = nom.split(' '), t = TAILLE[n], [x0, x1, h0, h1] = CADRE_LOIN[n];
       const el = document.createElement('i');
-      el.style.width = `${(hB * t[0]) / t[1]}px`;
-      el.style.backgroundImage = `var(--i-${n})`;
-      if (i % 2 === 1) el.className = 'm';
+      el.style.width = `${(hB * t[0] * (x1 - x0)) / t[1]}px`;
+      el.style.background = `var(--i-${n}) ${((x0 / (1 - (x1 - x0))) * 100).toFixed(2)}% 0 / ${(100 / (x1 - x0)).toFixed(2)}% 100%`;
+      el.style.setProperty('--h0', `${h0}%`); el.style.setProperty('--h1', `${h1}%`);
+      if (miroir) el.className = 'm';
       pLoin.append(el);
     });
   }
@@ -2976,8 +2976,9 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     if (lecture) avancerPassage(now);
     else if (!glisse) {
       const d = cible - u;
-      vel += (d * RAIDEUR - vel * AMORTI) * dt;
-      u += vel * dt;
+      const pas = dt * ralenti();
+      vel += (d * RAIDEUR - vel * AMORTI) * pas;
+      u += vel * pas;
       if (Math.abs(d) < 0.5 && Math.abs(vel) < 0.25) { u = cible; vel = 0; anime = false; rendre(); saluerLaGare(); return; }
     }
     rendre();
@@ -3139,7 +3140,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   $('#e-1890').addEventListener('click', () => { fermerEnsemble(); allerA(U0, true); });
 
 
-  // ---------------------------------------------------------------- l'heure, la météo, les tunnels, le compartiment, le chef de gare (idées 69 à 73)
+  // ---------------------------------------------------------------- l'heure, la météo, le tunnel, le compartiment, le chef de gare (idées 69 à 73)
   // Une heure par gare : la teinte qui multiplie (haut et bas du ciel), la lueur de l'astre et sa place en % de la vitre, la part de nuit.
   const HEURES = [
     { nom: 'aube', haut: [150, 150, 192], bas: [246, 200, 170], lueur: [255, 160, 110, 0.55], lx: 80, ly: 29, sol: 1, nuit: 0.3 },
@@ -3154,9 +3155,10 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     { nom: 'nuit', haut: [58, 72, 124], bas: [88, 98, 146], lueur: [150, 170, 230, 0.16], lx: 72, ly: 19, sol: 0, nuit: 1 },
   ];
   const LUNE = [72, 19];
-  // Le temps qu'il fait, par indice de gare ; les tunnels, en gares (3,5 : entre 1903 et 1904).
+  // Le temps qu'il fait, par indice de gare ; le tunnel, en gares : son milieu (3,5 : entre 1903 et 1904), sa demi-longueur, et le pas du train dedans.
   const METEO = { 1: 'buee', 2: 'pluie', 4: 'neige', 5: 'neige', 6: 'pluie' };
-  const TUNNELS = [3.5, 5.5, 7.5];
+  const TUNNEL = { c: 3.5, demi: 0.17, lent: 0.36 };
+  const K_T = 2.4, K_PAROI = 4.8, L_BOUCHE = 360; // la bouche passe au premier plan, la paroi plus près encore
   // Les fenêtres allumées, en parts de la photo de la gare : [x, y, largeur, hauteur] ; un cinquième terme fait un halo.
   const rame1908 = Array.from({ length: 12 }, (_, k) => [0.112 + k * 0.027, 0.4 - k * 0.0068, 0.011 + k * 0.0004, 0.03 + k * 0.001]);
   const FENETRES = {
@@ -3169,8 +3171,14 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   const hMult = $('#h-mult'), hLueur = $('#h-lueur'), hEtoiles = $('#h-etoiles'), hSoleil = $('#h-soleil'), hLune = $('#h-lune'), pLumieres = $('#p-lumieres');
   const mSol = $('.m-sol'), mVoileN = $('.m-voile.n'), mVoileP = $('.m-voile.p'), mVent = $('#m-vent'), mPluie = $('.m-pluie'), mNeiges = $$('.m-neige'), mGouttes = $('#m-gouttes');
   const embuee = $('#embuee'), tunnelEl = $('#tunnel');
-  let chefs = [], heurePrec = '', tunnelPrec = 0, dernierArret = -1, forceBuee = 0, bueeEssuyee = false, toutJour = false;
-  tunnelEl.addEventListener('animationend', (ev) => { if (ev.target === tunnelEl) tunnelEl.classList.remove('passe'); });
+  let chefs = [], heurePrec = '', dernierArret = -1, forceBuee = 0, bueeEssuyee = false, toutJour = false;
+  const tDedans = $('.dedans', tunnelEl), tParoi = $('.paroi', tunnelEl), tBouches = $$('.bouche', tunnelEl);
+  // Dans le tunnel, le train lève le pied : la bouche a le temps de passer, la paroi de défiler.
+  const ralenti = () => {
+    if (calme) return 1;
+    const p = xsDe(u) / E;
+    return lerp(1, TUNNEL.lent, lisse(TUNNEL.c - 0.38, TUNNEL.c - 0.25, p) * (1 - lisse(TUNNEL.c + 0.25, TUNNEL.c + 0.38, p)));
+  };
 
   const CHEF_SVG = '<svg viewBox="0 0 36 82" aria-hidden="true"><g fill="#17120d"><path d="M12 48 L11 80 h6 L18 56 L19 80 h6 L24 48 Z"/><path d="M9 24 C9 20 27 20 27 24 L28 54 H8 Z"/><path d="M9 25 L12.5 24 L11.5 43 L8 43 Z"/><circle cx="18" cy="13" r="5.4"/><rect x="12" y="5.4" width="12" height="5" rx="1.2"/><path d="M11.5 10.4 h13.5 l2.6 1.8 h-16.1 Z"/></g>' +
     '<rect x="12" y="8.2" width="12" height="1.5" fill="#a8352a"/><g fill="#c9a257"><circle cx="18" cy="29" r=".9"/><circle cx="18" cy="34.5" r=".9"/><circle cx="18" cy="40" r=".9"/></g>' +
@@ -3185,11 +3193,8 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
       gareDe(i).append(el);
       chefs.push({ i, el });
     });
-    TUNNELS.forEach((c) => {
-      const el = document.createElement('div');
-      el.className = 'bouche'; el.dataset.c = c;
-      pGares.append(el);
-    });
+    tBouches.forEach((el) => { el.innerHTML = boucheSVG(); });
+    tParoi.style.backgroundImage = paroiSVG();
     pLumieres.textContent = '';
     Object.entries(FENETRES).forEach(([i, liste]) => liste.forEach((f, k) => {
       const el = document.createElement('i');
@@ -3213,6 +3218,63 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     }
     accrocher();
   }
+  // La bouche du tunnel, côté jour : le talus, le mur de tête en pierres de taille, l'arc et ses claveaux ; l'ouverture se perd dans le noir vers la droite. La sortie est la même, retournée.
+  function boucheSVG() {
+    const alea = (k) => { const x = Math.sin(k * 57.3) * 43758.5453; return x - Math.floor(x); };
+    let pierres = '', joints = '', claveaux = '', herbes = '';
+    for (let r = 0; r < 20; r++) {
+      const y = r * 35;
+      joints += `M92 ${y} H300 `;
+      for (let x = 92 + (r % 2) * 26 + alea(r) * 14, k = 0; x < 300; k++) {
+        const l = 44 + alea(r * 9 + k) * 22;
+        joints += `M${x.toFixed(0)} ${y} v35 `;
+        if (alea(r * 13 + k + 5) > 0.55) pierres += `<rect x="${x.toFixed(0)}" y="${y}" width="${l.toFixed(0)}" height="35" fill="${alea(r + k) > 0.5 ? '#000' : '#fff'}" opacity="${(0.04 + alea(r * 3 + k) * 0.07).toFixed(2)}"/>`;
+        x += l;
+      }
+    }
+    for (let a = 4; a < 90; a += 8.6) {
+      const c = Math.cos((a * Math.PI) / 180), si = Math.sin((a * Math.PI) / 180);
+      claveaux += `M${(300 - 122 * c).toFixed(1)} ${(330 - 330 * si).toFixed(1)} L${(300 - 151 * c).toFixed(1)} ${(330 - 359 * si).toFixed(1)} `;
+    }
+    for (let y = 330; y < 700; y += 41) {
+      claveaux += `M149 ${y} H178 `;
+      if (((y - 330) / 41) % 2 === 0) pierres += `<rect x="134" y="${y}" width="16" height="41" fill="#9a8f7a" stroke="#3c352a" stroke-width="1"/>`;
+    }
+    for (let k = 0; k < 24; k++) {
+      const t = k / 23, q = 1 - t, x = -60 * q * q * q - 30 * q * q * t + 135 * q * t * t + 96 * t * t * t, y = 636 * q * q * q + 1860 * q * q * t + 1470 * q * t * t + 240 * t * t * t;
+      herbes += `M${x.toFixed(0)} ${(y + 4).toFixed(0)} l${(-3 + alea(k) * 5).toFixed(1)} ${(-9 - alea(k + 20) * 9).toFixed(1)} M${(x + 3).toFixed(0)} ${(y + 4).toFixed(0)} l${(1 + alea(k + 40) * 4).toFixed(1)} ${(-7 - alea(k + 60) * 8).toFixed(1)} `;
+    }
+    return `<svg viewBox="-60 0 360 700" preserveAspectRatio="none" aria-hidden="true"><defs>` +
+      `<linearGradient id="tb-mur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c7260"/><stop offset="1" stop-color="#5b5343"/></linearGradient>` +
+      `<linearGradient id="tb-talus" x1="0" y1="0" x2="0" y2="1"><stop offset=".3" stop-color="#55543a"/><stop offset="1" stop-color="#2b291b"/></linearGradient>` +
+      `<linearGradient id="tb-noir" x1="178" y1="0" x2="300" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3a2f22"/><stop offset=".3" stop-color="#17110c" stop-opacity=".94"/><stop offset="1" stop-color="#0a0705" stop-opacity="0"/></linearGradient>` +
+      `<radialGradient id="tb-suie"><stop offset="0" stop-color="#0b0806" stop-opacity=".6"/><stop offset="1" stop-color="#0b0806" stop-opacity="0"/></radialGradient>` +
+      `<linearGradient id="tb-ombre" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>` +
+      `<path d="M-60 700 V636 C-10 620 45 490 96 240 V700 Z" fill="url(#tb-talus)"/><path d="${herbes}" stroke="#6d6c44" stroke-width="1.6" fill="none"/><path d="M88 250 V700 H100 V250 Z" fill="#000" opacity=".22"/>` +
+      `<rect x="92" width="208" height="700" fill="url(#tb-mur)"/>${pierres}<path d="${joints}" stroke="#3c352a" stroke-width="1.5" fill="none" opacity=".8"/>` +
+      `<rect x="92" width="208" height="700" fill="url(#tb-ombre)"/><ellipse cx="262" cy="70" rx="120" ry="170" fill="url(#tb-suie)"/>` +
+      `<path d="M163.5 700 V330 A136.5 344.5 0 0 1 300 -14.5" stroke="#a1957f" stroke-width="29" fill="none"/><path d="${claveaux}" stroke="#3c352a" stroke-width="1.5" fill="none"/>` +
+      `<path d="M149 700 V330 A151 359 0 0 1 300 -29" stroke="#3c352a" stroke-width="1.5" fill="none"/>` +
+      `<path d="M178 700 V330 A122 330 0 0 1 300 0 V700 Z" fill="url(#tb-noir)" stroke="#120d09" stroke-width="2.5"/></svg>`;
+  }
+  // La paroi : des assises de moellons noircis, et une lampe qui file en trait de lumière, une par motif.
+  function paroiSVG() {
+    const alea = (k) => { const x = Math.sin(k * 33.7) * 43758.5453; return x - Math.floor(x); };
+    let pierres = '';
+    for (let r = 0; r < 10; r++) {
+      for (let k = 0, x = -((r * 37) % 60); x < 480; k++) {
+        const l = 50 + alea(r * 7 + k) * 44;
+        pierres += `<rect x="${x.toFixed(0)}" y="${r * 30 + 1.5}" width="${(l - 4).toFixed(0)}" height="27" fill="#d8b98a" opacity="${(0.035 + alea(r * 11 + k + 3) * 0.075).toFixed(3)}"/>`;
+        x += l;
+      }
+    }
+    const corps = `<defs><filter id="f" x="-10%" width="120%"><feGaussianBlur stdDeviation="5 0.4"/></filter><filter id="g" x="-50%" y="-200%" width="200%" height="500%"><feGaussianBlur stdDeviation="9 1.2"/></filter>` +
+      `<radialGradient id="h"><stop offset="0" stop-color="#ffc878" stop-opacity=".5"/><stop offset=".45" stop-color="#ff9c46" stop-opacity=".14"/><stop offset="1" stop-color="#ff9c46" stop-opacity="0"/></radialGradient>` +
+      `<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#040302" stop-opacity=".9"/><stop offset=".3" stop-color="#040302" stop-opacity="0"/><stop offset=".72" stop-color="#040302" stop-opacity="0"/><stop offset="1" stop-color="#040302" stop-opacity=".85"/></linearGradient></defs>` +
+      `<g filter="url(#f)">${pierres}</g><ellipse cx="240" cy="98" rx="200" ry="64" fill="url(#h)"/><rect width="480" height="300" fill="url(#s)"/>` +
+      `<rect x="160" y="95.5" width="160" height="5" rx="2.5" fill="#ffdc9c" filter="url(#g)"/><rect x="204" y="96.8" width="72" height="2.4" rx="1.2" fill="#fff6e0" filter="url(#f)"/>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300" preserveAspectRatio="none">${corps}</svg>`)}")`;
+  }
   function accrocher() {
     $$('.accroches', scene).forEach((c) => {
       c.textContent = '';
@@ -3231,7 +3293,6 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
       el.style.left = `${i * E + W / 2 - w / 2 + f[0] * w}px`; el.style.top = `${haut + f[1] * hG}px`;
       el.style.width = `${Math.max(2, f[2] * w)}px`; el.style.height = `${Math.max(3, f[3] * hG)}px`;
     });
-    $$('.bouche', pGares).forEach((el) => { el.style.left = `${+el.dataset.c * E + W / 2 - 235}px`; });
     embuer();
   }
   // La buée : un voile peint une fois, plus fin au milieu ; le doigt y ôte de la matière.
@@ -3304,12 +3365,16 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     poser1(embuee, force.buee);
     mVent.style.transform = calme ? '' : `skewX(${clamp(-vitesseX * 1.5, -24, 24).toFixed(1)}deg)`;
 
-    // Le tunnel : le noir suit la position ; au passage, il se joue une bonne seconde, quelle que soit la vitesse du train.
-    let noir = 0;
-    if (!calme) TUNNELS.forEach((c) => { noir = Math.max(noir, lisse(c - 0.12, c - 0.05, pg) * (1 - lisse(c + 0.05, c + 0.12, pg))); });
-    tunnelEl.style.opacity = noir.toFixed(3);
-    if (noir > 0.6 && tunnelPrec <= 0.6 && !glisse) { tunnelEl.classList.remove('passe'); void tunnelEl.offsetWidth; tunnelEl.classList.add('passe'); }
-    tunnelPrec = noir;
+    // Le tunnel : tout suit la position, à l'aller comme au retour. Les deux bouches passent au premier plan ; le noir tient entre elles.
+    const xE = W / 2 + (TUNNEL.c - TUNNEL.demi - pg) * E * K_T, xS = W / 2 + (TUNNEL.c + TUNNEL.demi - pg) * E * K_T;
+    const sousTerre = !calme && etape === 'gares' && xE - L_BOUCHE < W && xS + L_BOUCHE > 0;
+    tunnelEl.style.visibility = sousTerre ? 'visible' : 'hidden';
+    if (sousTerre) {
+      tBouches[0].style.transform = `translate3d(${(xE - L_BOUCHE).toFixed(1)}px, 0, 0)`;
+      tBouches[1].style.transform = `translate3d(${(xS + L_BOUCHE).toFixed(1)}px, 0, 0) scaleX(-1)`;
+      tDedans.style.clipPath = `inset(0 ${Math.max(0, W - xS - 123).toFixed(1)}px 0 ${Math.max(0, xE - 123).toFixed(1)}px)`;
+      tParoi.style.transform = `translate3d(${(-mod(xs * K_PAROI, 480)).toFixed(1)}px, 0, 0)`;
+    }
 
     // Le chef de gare lève son guidon quand le train quitte sa gare.
     if (aLArret !== undefined && etape === 'gares') dernierArret = Math.round((aLArret - B1) / PAS);
