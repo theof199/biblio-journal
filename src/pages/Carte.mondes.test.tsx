@@ -1,25 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
+import { cles } from '../api/cles'
 import { createQueryClient } from '../api/queryClient'
+import type { Ticket, Voyage } from '../api/voyage'
 import { FabriqueMoteurContexte } from '../carte/CarteCanvas'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
-import { voyage1890 } from '../test/voyage'
+import { fichePrete, voyage1890 } from '../test/voyage'
 
 /**
  * Le registre de la page est une constante de module : ce fichier le double pour avoir deux mondes à
  * bobines. 1890 reste le vrai (trois bobines) ; 1900 est le monde « à venir » avec deux bobines
  * d'essai ; 1910 reste « à venir », sans bobine. `Carte.test.tsx` garde le vrai registre.
+ *
+ * `scene1900`, éteint par défaut : allumé, le monde de 1900 porte une scène collante d'essai, et les
+ * tests du déblocage l'allument et l'éteignent eux-mêmes. Le registre le relit à chaque appel, la
+ * page tenant le sien pour tout le fichier. Le moteur est factice : la scène n'est jamais jouée.
  */
 const essai = vi.hoisted(() => ({
   bobines1900: [
     { cle: 'essai-1900-a', titre: 'Essai A', qui: 'Personne, 1900' },
     { cle: 'essai-1900-b', titre: 'Essai B', qui: 'Personne, 1902' },
   ],
+  scene1900: false,
   /** Les rendus de la page : `useMouvementReduit` y est appelé une fois par rendu. */
   rendus: 0,
 }))
@@ -30,7 +37,11 @@ vi.mock('../mondes', async (original) => {
     creerRegistre: () => {
       const registre = vrai.creerRegistre()
       const de1900 = { ...registre(1900), bobines: essai.bobines1900 }
-      return (decennie: number) => (decennie === 1900 ? de1900 : registre(decennie))
+      const jamaisJouee = () => {
+        throw new Error('la scène d’essai ne se joue pas')
+      }
+      const de1900AScene = { ...de1900, scene: { ecranDeLaCase: jamaisJouee, dessinerSuivi: jamaisJouee, dessinerBande: jamaisJouee, entree: [], arrets: [] } }
+      return (decennie: number) => (decennie === 1900 ? (essai.scene1900 ? de1900AScene : de1900) : registre(decennie))
     },
   }
 })
@@ -223,5 +234,147 @@ describe('le compteur de bobines, par décennie', () => {
     // Le témoin : un changement de décennie, lui, rend la page.
     aLEcran(1900)
     expect(essai.rendus).toBeGreaterThan(avant)
+  })
+})
+
+/** 1895 à 1912, dans l'ordre. */
+const TOUTES = Array.from({ length: 1912 - 1895 + 1 }, (_, i) => 1895 + i)
+const AVANT_1900 = [1895, 1896, 1897, 1898, 1899]
+const SUIT = (annee: number) => ({ id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: annee })
+/** Le ticket de 1900 gagné, montré et gardé : jamais utilisé. */
+const TICKET_1900: Ticket = { annee: 1900, motif: '1899 t’a bien occupé, 1900 t’attend.', emis_le: '2026-09-21T21:00:00.000Z', montre_le: '2026-09-21T21:05:00.000Z', utilise_le: null }
+const TAMPON_1890 = { decennie: 1890, boucle_le: '2026-09-21T21:00:00.000Z' }
+
+/** La carte montée sur un Voyage donné ; les fiches de `enCache` sont posées avant le premier rendu. */
+async function ouvrir(v: Voyage, { tickets = [] as Ticket[], enCache = [] as ReturnType<typeof fichePrete>[] } = {}) {
+  const f = moteurFactice()
+  const client = createQueryClient()
+  for (const fiche of enCache) client.setQueryData(cles.annee(fiche.annee), fiche)
+  servir({
+    'GET /api/auth/me': () => json(SESSION),
+    'GET /api/me/voyage': () => json(v),
+    'GET /api/me/voyage/tickets': () => json({ tickets }),
+  })
+  render(
+    <QueryClientProvider client={client}>
+      <FabriqueMoteurContexte.Provider value={f.fabrique}>
+        <MemoryRouter initialEntries={['/voyage']}>
+          <App />
+        </MemoryRouter>
+      </FabriqueMoteurContexte.Provider>
+    </QueryClientProvider>,
+  )
+  await waitFor(() => expect(f.etats.length).toBeGreaterThan(0))
+  /** Les années de chaque état donné au moteur, du premier au dernier. */
+  const donnees = () => f.etats.map((e) => e.cases.map((c) => c.annee))
+  const dernier = () => f.etats[f.etats.length - 1]!
+  /** Les années du dernier état donné. */
+  const montrees = () => dernier().cases.map((c) => c.annee)
+  return { ...f, donnees, dernier, montrees }
+}
+
+const lues = () =>
+  within(screen.getByRole('navigation', { name: 'Les années du Voyage' }))
+    .getAllByRole('link')
+    .map((l) => Number(l.textContent!.slice(0, 4)))
+
+describe('le déblocage d’un monde à scène', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    localStorage.clear()
+    essai.scene1900 = true
+  })
+  afterEach(() => {
+    essai.scene1900 = false
+    vi.unstubAllGlobals()
+  })
+
+  // Le membre resté en 1899, son ticket de 1900 en poche et le tampon de 1890 posé : seule son année
+  // en cours ouvre 1900. 1910, « à venir » et sans scène, ne reparaît pas au-delà du trou.
+  // Mutations : l'année en cours remplacée par celle du ticket offert ; par 1900 dès que le tampon de
+  // 1890 est posé ; la règle bornée à la seule décennie à scène (1910 à 1912 donnés).
+  it('ne donne au moteur aucune année de 1900 ni d’après tant que l’année en cours est 1899, ticket de 1900 gagné, montré et gardé, tampon de 1890 posé', async () => {
+    const { donnees, montrees } = await ouvrir(voyage1890(1899, voyage(1899).annees, { tampons: [TAMPON_1890] }), { tickets: [TICKET_1900] })
+    // Le ticket est bien connu de la page : elle l'offre.
+    expect(await screen.findByRole('button', { name: /Utiliser le ticket/ })).toBeInTheDocument()
+    expect(montrees()).toEqual(AVANT_1900)
+    for (const annees of donnees()) expect(annees).toEqual(AVANT_1900)
+  })
+
+  // Mutation : `<=` dans `premiereDecennieCachee` (le `>` au lieu du `>=`) : 1900 resterait fermée à
+  // qui vient d'y entrer, et la carte n'aurait plus la case de son année en cours.
+  it('donne toutes les années dès que l’année en cours est 1900', async () => {
+    const { montrees } = await ouvrir(voyage(1900))
+    expect(montrees()).toEqual(TOUTES)
+  })
+
+  // Le Voyage suivi déjà en 1903 quand je suis en 1899 : sa roulotte n'a pas de case où se garer.
+  // Mutations : `v.source.annee_en_cours` passé tel quel (une roulotte garée en 1903) ; `annee: null`
+  // à la place de `roulotte: null` (« je mène », et le pseudo du voyageur suivi traverserait 1890).
+  it('ne donne aucune roulotte au moteur quand le Voyage suivi est rendu dans une décennie cachée, et le HUD dit toujours qui l’on suit', async () => {
+    const { etats } = await ouvrir(voyage1890(1899, voyage(1899).annees, { ia: false, source: SUIT(1903) }))
+    for (const e of etats) expect(e.roulotte).toBeNull()
+    expect(screen.getByText(/^Tu suis le Voyage de Théo/)).toBeInTheDocument()
+  })
+
+  // Les témoins du test d'avant. Mutations : la roulotte ôtée à tout Voyage suivi ; ôtée dès que le
+  // Voyage suivi est devant moi, sans regarder ce qui est caché.
+  it.each([
+    { cas: 'derrière moi, dans une décennie montrée', enCours: 1899, suivi: 1897 },
+    { cas: 'devant moi, dans une décennie montrée', enCours: 1896, suivi: 1899 },
+    { cas: 'en 1903 quand j’ai atteint 1900', enCours: 1900, suivi: 1903 },
+  ])('gare la roulotte du Voyage suivi dans son année : $cas', async ({ enCours, suivi }) => {
+    const { dernier } = await ouvrir(voyage1890(enCours, voyage(enCours).annees, { ia: false, source: SUIT(suivi) }))
+    expect(dernier().roulotte).toEqual({ pseudo: 'Théo', annee: suivi })
+  })
+
+  // Les fiches se demandent par les années du Voyage et se lisent par rang : le filtre passe après.
+  // La réponse est ici rangée 1900 à 1912 puis 1895 à 1899, pour que le rang d'une année montrée ne
+  // soit pas son rang dans le Voyage ; rangée par année, les cachées sont en queue et la mutation ne
+  // se verrait pas. Mutation : filtrer `v.annees` avant le `map` (1897 prendrait la fiche de 1902).
+  it('garde à chaque année montrée sa propre fiche en cache', async () => {
+    const marche = fichePrete().podium[0]!
+    const fiche = (annee: number) => fichePrete({ annee, podium: [{ ...marche, cover_url: `https://essai.test/${annee}.jpg` }, null, null], salles: [] })
+    const annees = voyage(1899).annees.map((a) => ({ ...a, affiche_url: `https://essai.test/carte-${a.annee}.jpg` }))
+    const melees = [...annees.filter((a) => a.annee >= 1900), ...annees.filter((a) => a.annee < 1900)]
+    const { dernier } = await ouvrir(voyage1890(1899, melees), { enCache: [fiche(1897), fiche(1902), fiche(1900)] })
+    const affiches = Object.fromEntries(dernier().cases.map((c) => [c.annee, c.affiches]))
+    expect(affiches).toEqual({
+      1895: ['https://essai.test/carte-1895.jpg'],
+      1896: ['https://essai.test/carte-1896.jpg'],
+      1897: ['https://essai.test/1897.jpg'],
+      1898: ['https://essai.test/carte-1898.jpg'],
+      1899: ['https://essai.test/carte-1899.jpg'],
+    })
+  })
+
+  // Qui ne voit pas le canvas ne lit pas davantage 1900. Mutation : la liste construite sur `v.annees`.
+  it('ne nomme, dans la liste des années lue par un lecteur d’écran, aucune année cachée', async () => {
+    await ouvrir(voyage1890(1899, voyage(1899).annees, { tampons: [TAMPON_1890] }), { tickets: [TICKET_1900] })
+    await screen.findByRole('button', { name: /Utiliser le ticket/ })
+    expect(lues()).toEqual(AVANT_1900)
+  })
+
+  it('nomme toutes les années dans cette liste une fois 1900 atteinte', async () => {
+    await ouvrir(voyage(1900))
+    expect(lues()).toEqual(TOUTES)
+  })
+})
+
+describe('sans monde à scène au registre', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    localStorage.clear()
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Le drapeau éteint, c'est le registre d'aujourd'hui : rien n'est caché, la roulotte se gare où en
+  // est le Voyage suivi. Mutation : la scène lue ailleurs qu'au registre (`d === 1900` en dur).
+  it('donne toutes les années, les nomme toutes, et gare la roulotte en 1903 pour un membre en 1899', async () => {
+    expect(essai.scene1900).toBe(false)
+    const { donnees, dernier } = await ouvrir(voyage1890(1899, voyage(1899).annees, { ia: false, source: SUIT(1903) }))
+    for (const annees of donnees()) expect(annees).toEqual(TOUTES)
+    expect(dernier().roulotte).toEqual({ pseudo: 'Théo', annee: 1903 })
+    expect(lues()).toEqual(TOUTES)
   })
 })

@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   affichesDeColonne,
+  anneesMontrees,
   apercuLitLaFiche,
   detecterFrontiereAvancee,
   etatDeCase,
   compterRecompenses,
+  estMontree,
   jauge,
+  premiereDecennieCachee,
   prochainPas,
   recompensesJusquaAnneeEnCours,
   ticketOffert,
@@ -154,5 +157,50 @@ describe('le ticket offert', () => {
     expect(ticketOffert(1897, [t(1898, '2026-09-02T00:00:00.000Z')])).toBeUndefined()
     expect(ticketOffert(1897, [t(1899)])).toBeUndefined()
     expect(ticketOffert(1897, [t(1897)])).toBeUndefined()
+  })
+})
+
+describe('le déblocage d’un monde à scène', () => {
+  const de = (debut: number, fin: number) => Array.from({ length: fin - debut + 1 }, (_, i) => ({ annee: debut + i }))
+  /** 1895 à 1912 : 1890 sans scène, 1900 avec, 1910 « à venir ». */
+  const ANNEES = de(1895, 1912)
+  const sceneEn1900 = (decennie: number): boolean => decennie === 1900
+  const montrees = (enCours: number, scene = sceneEn1900, annees = ANNEES) => anneesMontrees(annees, enCours, scene).map((a) => a.annee)
+
+  // Mutation : `anneeEnCours <= d` (le `>` au lieu du `>=`) cache encore 1900 à qui vient d'y entrer.
+  it('cache la décennie à scène tant que l’année en cours ne l’a pas atteinte, et la montre dès qu’elle y est', () => {
+    expect(montrees(1899)).toEqual([1895, 1896, 1897, 1898, 1899])
+    expect(premiereDecennieCachee(ANNEES, 1899, sceneEn1900)).toBe(1900)
+    expect(montrees(1900)).toEqual(ANNEES.map((a) => a.annee))
+    expect(premiereDecennieCachee(ANNEES, 1900, sceneEn1900)).toBeNull()
+  })
+
+  // Mutation : la règle bornée à la seule décennie à scène (`decennieDe(annee) !== cachee`) montre
+  // 1910 à 1912 au bout d'un trou.
+  it('cache aussi toute décennie qui suit une décennie cachée, « à venir » comprise', () => {
+    expect(montrees(1899).filter((a) => a >= 1910)).toEqual([])
+    expect(estMontree(1910, 1900)).toBe(false)
+    expect(estMontree(1899, 1900)).toBe(true)
+  })
+
+  // Mutation : la plus lointaine des décennies fermées prise pour borne (`Math.max`) montre 1900.
+  it('s’arrête à la première décennie fermée quand plusieurs le sont', () => {
+    expect(montrees(1899, (d) => d === 1900 || d === 1910)).toEqual([1895, 1896, 1897, 1898, 1899])
+    // Et une décennie à scène déjà atteinte n'en ferme aucune avant elle ni après.
+    expect(montrees(1903, (d) => d === 1900 || d === 1910)).toEqual(de(1895, 1909).map((a) => a.annee))
+  })
+
+  // Mutation : la borne rendue sans regarder la scène (toute décennie après l'année en cours fermée).
+  it('ne cache rien tant qu’aucun monde n’a de scène', () => {
+    expect(montrees(1896, () => false)).toEqual(ANNEES.map((a) => a.annee))
+    expect(premiereDecennieCachee(ANNEES, 1896, () => false)).toBeNull()
+    expect(estMontree(1912, null)).toBe(true)
+  })
+
+  // Mutation : un `slice` jusqu'au rang de la première année cachée, à la place d'un filtre année par
+  // année, garderait 1901 et perdrait 1897 dans une liste qui n'est pas rangée.
+  it('juge chaque ligne sur son année, sans rien supposer de l’ordre, et rend les lignes telles quelles', () => {
+    const lignes = [{ annee: 1901, x: 'a' }, { annee: 1897, x: 'b' }, { annee: 1910, x: 'c' }, { annee: 1895, x: 'd' }]
+    expect(anneesMontrees(lignes, 1899, sceneEn1900)).toEqual([{ annee: 1897, x: 'b' }, { annee: 1895, x: 'd' }])
   })
 })

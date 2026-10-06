@@ -145,6 +145,40 @@ export interface FrontiereAvancee {
 export const decennieDe = (annee: number) => Math.floor(annee / 10) * 10
 
 /**
+ * Le déblocage d'un monde à scène (plan 3b, tâche 10). Une décennie dont le monde a une `scene`
+ * reste fermée tant que mon année en cours ne l'a pas atteinte : ni un ticket gagné, montré ou
+ * gardé, ni le tampon de la décennie d'avant ne l'ouvrent, seule `annee_en_cours` le fait. Rend la
+ * première décennie fermée parmi celles de `annees`, nulle si aucune ne l'est. `aUneScene` est lue
+ * au registre par l'appelant : cette règle ne connaît aucun monde.
+ */
+export function premiereDecennieCachee(annees: readonly { annee: number }[], anneeEnCours: number, aUneScene: (decennie: number) => boolean): number | null {
+  let cachee: number | null = null
+  for (const { annee } of annees) {
+    const d = decennieDe(annee)
+    if (anneeEnCours < d && (cachee === null || d < cachee) && aUneScene(d)) cachee = d
+  }
+  return cachee
+}
+
+/**
+ * Une année se montre-t-elle ? `cachee` vient de `premiereDecennieCachee`. Tout ce qui suit une
+ * décennie fermée l'est aussi, monde « à venir » compris : la carte s'arrête au bas de la décennie
+ * d'avant, elle ne reprend pas au-delà d'un trou. Vaut pour une case comme pour l'année où est
+ * rendu le Voyage suivi.
+ */
+export const estMontree = (annee: number, cachee: number | null): boolean => cachee === null || annee < cachee
+
+/**
+ * Parmi des lignes qui portent une année (celles de `GET /me/voyage`, ou les cases que la carte en
+ * tire), celles que la carte montre. Chaque ligne est jugée sur son année, quel que soit l'ordre.
+ * La borne se lit sur les lignes données : leur donner toutes les années du Voyage, pas un extrait.
+ */
+export function anneesMontrees<A extends { annee: number }>(lignes: readonly A[], anneeEnCours: number, aUneScene: (decennie: number) => boolean): A[] {
+  const cachee = premiereDecennieCachee(lignes, anneeEnCours, aUneScene)
+  return lignes.filter((l) => estMontree(l.annee, cachee))
+}
+
+/**
  * Ce qu'une frontière qui avance vient de quitter (portée de `detecterFrontiereAvancee`,
  * `VoyageCarte.kt`) : `avant` est l'année en cours mémorisée, `apres` celle que la carte vient
  * de rendre. `avant` nul (première ouverture sur cet appareil) ne rejoue rien.

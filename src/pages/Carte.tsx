@@ -24,11 +24,14 @@ import { tamponDe } from '../voyage/passeport'
 import Tampon from '../voyage/passeport/Tampon'
 import {
   affichesDeColonne,
+  anneesMontrees,
   compterRecompenses,
   decennieDe,
   detecterFrontiereAvancee,
+  estMontree,
   etatDeCase,
   jauge,
+  premiereDecennieCachee,
   prochainPas,
   recompensesJusquaAnneeEnCours,
   rattrapeBientot,
@@ -39,6 +42,8 @@ import {
 import styles from '../carte/Carte.module.css'
 
 const mondes = creerRegistre()
+/** Le déblocage (plan 3b) : seul un monde à scène collante se ferme à qui ne l'a pas atteint. */
+const aUneScene = (decennie: number) => mondes(decennie).scene !== null
 /**
  * Hors du composant, donc stable : `useQueries` ne rend alors un nouveau tableau que si une
  * fiche change (constaté, TanStack Query 5.104). Sans lui, un tableau neuf à chaque rendu
@@ -232,23 +237,34 @@ export default function Carte() {
 
   const etat = useMemo<EtatCarte | null>(() => {
     if (!v || anneeAvatar === null) return null
+    // Le rang d'une année dans `v.annees` est celui de sa fiche dans `fiches` : chaque case prend la
+    // sienne d'abord, les années cachées sont ôtées ensuite (`anneesMontrees`), jamais l'inverse.
+    const cases = v.annees.map((a, i) => {
+      const { etat, attente } = etatDeCase(a, v.ia)
+      const fiche = fiches[i]
+      return {
+        annee: a.annee,
+        etat,
+        attente,
+        profondeur: a.profondeur,
+        jauge: jauge(a.progression, a.recompense),
+        affiches: affichesDeColonne(a, estPrete(fiche) ? fiche : undefined),
+      }
+    })
+    const cachee = premiereDecennieCachee(v.annees, v.annee_en_cours, aUneScene)
     return {
       anneeAvatar,
       tampons: v.tampons.map((t) => t.decennie),
-      // La roulotte (idée 1) : garée là où en est le Voyage suivi ; la sienne, pour qui le mène.
-      roulotte: v.source ? { pseudo: v.source.pseudo, annee: v.source.annee_en_cours } : { pseudo: user.pseudo, annee: null },
-      cases: v.annees.map((a, i) => {
-        const { etat, attente } = etatDeCase(a, v.ia)
-        const fiche = fiches[i]
-        return {
-          annee: a.annee,
-          etat,
-          attente,
-          profondeur: a.profondeur,
-          jauge: jauge(a.progression, a.recompense),
-          affiches: affichesDeColonne(a, estPrete(fiche) ? fiche : undefined),
-        }
-      }),
+      // La roulotte (idée 1) : garée là où en est le Voyage suivi ; la sienne, pour qui le mène. Le
+      // Voyage suivi rendu dans une décennie cachée n'a pas de case où se garer : aucune roulotte
+      // (`null`), et non `annee: null`, qui dirait « je mène » et ferait traverser son pseudo.
+      roulotte: !v.source
+        ? { pseudo: user.pseudo, annee: null }
+        : estMontree(v.source.annee_en_cours, cachee)
+          ? { pseudo: v.source.pseudo, annee: v.source.annee_en_cours }
+          : null,
+      // La liste pour lecteur d'écran se lit sur ces cases : elle ne nomme pas plus une année cachée.
+      cases: anneesMontrees(cases, v.annee_en_cours, aUneScene),
     }
   }, [v, anneeAvatar, fiches, user.pseudo])
 

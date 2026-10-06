@@ -24,7 +24,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
   `src/mondes/index.ts` › `FABRIQUES` ; le modèle est `src/mondes/1890/index.ts` › `creerMonde1890`,
   le plus court `src/mondes/avenir/index.ts` › `mondeAVenir`. `src/carte/placement.ts` › `placerCarte` pose les sections.
 - **Le pont et la page** : `src/carte/CarteCanvas.tsx` › `fabriqueReelle`, `FabriqueMoteurContexte` ;
-  `src/carte/avancee.ts` › `jouerAvancee` ; l'enveloppe `fond` par `src/pages/Carte.tsx` › `INERTE`.
+  `src/carte/avancee.ts` › `jouerAvancee` ; l'enveloppe `fond` par `src/pages/Carte.tsx` › `INERTE` ; les années cachées, `src/voyage/regles.ts` › `premiereDecennieCachee`.
 - **Les célébrations** : quoi jouer, `src/voyage/celebrations/scenes.ts` › `scenesDuRetour`,
   `sceneDuRattrapage` ; les pas, `src/voyage/celebrations/deroule.ts` › `useDeroule`, `PAS_DE_L_ANNEE` ;
   le ticket montré, `src/voyage/celebrations/Celebrations.tsx` › `useMontrerLeTicket`.
