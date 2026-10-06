@@ -206,6 +206,7 @@ export class MoteurCarte {
         tempsDe: (section) => this.tempsDe(section),
         zonesDesTemps: () => this.zonesDesTemps(),
         avatar: () => ({ y: pointA(this.route, this.avatar.d).y, marche: !!this.avatar.marche }),
+        ensemble: () => this.ens.cible === 1,
         demander: () => this.demander(),
       },
       rappels,
@@ -318,7 +319,12 @@ export class MoteurCarte {
     // Un toucher pendant le passage le pose à sa fin, et rien d'autre : le doigt qui se pose, comme
     // celui qui se lève d'un appui d'avant le passage, n'est pas relayé au geste, et n'ouvre pas
     // l'année qui se trouve sous lui.
-    if (this.meneur.pointeur(type)) return
+    if (this.meneur.pointeur(type)) {
+      // Le geste n'apprend pas ce lever : l'appui qu'il tenait est annulé, sans quoi sa minuterie
+      // ouvrirait l'aperçu d'une année sous un doigt déjà levé. Pas `lever`, qui émettrait un toucher.
+      this.geste.annulerAppui()
+      return
+    }
     if (this.ens.cible) {
       if (type === 'haut') this.quitterEnsemble({ x, y })
       return
@@ -666,7 +672,8 @@ export class MoteurCarte {
       this.rappels.roulotte()
       return
     }
-    const section = this.plan.sections.findIndex((s) => this.camY + y >= s.y0 && this.camY + y < s.y0 + s.hauteur)
+    // Le monde de la zone est celui qui l'a inscrite, pas celui que le `y` de carte du doigt désigne.
+    const section = z.section ?? -1
     const s = this.plan.sections[section]
     // Une bobine se ramasse aussi quand le visiteur demande moins d'animations : elle arrive d'un coup.
     if (z.id === 'bobine' && z.data !== null) {
@@ -677,8 +684,8 @@ export class MoteurCarte {
     // Une date s'ouvre aussi quand le visiteur demande moins d'animations : c'est une lecture, pas un décor.
     if (z.id === 'date' && z.data !== null) {
       const d = s ? this.deps.mondeDe(s.decennie).dates[z.data] : undefined
-      if (d) {
-        this.reactions.set(`date:${z.data}`, this.t)
+      if (s && d) {
+        this.reactions.set(cleDeReaction(s.decennie, `date:${z.data}`), this.t)
         this.rappels.date(d)
       }
       return
@@ -739,6 +746,7 @@ export class MoteurCarte {
   private entrerEnsemble(): void {
     if (this.ens.cible === 1) return
     this.ens.cible = 1
+    this.meneur.ouvrirLEnsemble()
     if (this.calme) this.ens.q = 1
     this.rappels.finApercu()
     this.rappels.ensemble(true)
@@ -850,7 +858,7 @@ export class MoteurCarte {
     const zone = (id: string, lx: number, ly: number, lr: number, data?: number, prio = 0) => {
       const m = ctx.getTransform()
       const p = ecranDe(m, this.dpr, lx, ly)
-      this.zones.push({ id, x: p.x, y: p.y, r: rayonEcran(m, this.dpr, lr), data: data ?? null, prio })
+      this.zones.push({ id, x: p.x, y: p.y, r: rayonEcran(m, this.dpr, lr), data: data ?? null, prio, section })
     }
     const t = horlogeDuMonde(this.t, monde.traitement.cadence)
     const trouvee = (i: number) => {
@@ -878,11 +886,12 @@ export class MoteurCarte {
         const p = ecranDe(m, this.dpr, x, y)
         this.feux.push({ x: p.x, y: p.y, r: (r * Math.hypot(m.a, m.b)) / this.dpr, c, w: force ?? ctx.globalAlpha })
       },
+      // Les réactions se rangent par monde : la date 0 de l'un n'est pas la date 0 de l'autre.
       age: (cle) => {
-        const t0 = this.reactions.get(cle)
+        const t0 = this.reactions.get(cleDeReaction(s.decennie, cle))
         return t0 === undefined ? 99 : this.t - t0
       },
-      marquer: (cle) => void this.reactions.set(cle, this.t),
+      marquer: (cle) => void this.reactions.set(cleDeReaction(s.decennie, cle), this.t),
       etincelles: (x, y, n, c) => (this.calme ? undefined : this.particules.etincelles(x, y, n, c)),
       confettis: (x, y, cs) => (this.calme ? undefined : this.particules.confettis(x, y, cs)),
       fumee: (x, y, n, l) => (this.calme ? undefined : this.particules.fumee(x, y, n, l)),
@@ -999,14 +1008,14 @@ export class MoteurCarte {
         const p = v && etat ? collante.ecranDeLaCase(v, c.annee) : null
         if (p) {
           chezLeMonde.set(c.annee, p)
-          this.zones.push({ id: 'case', x: p.x, y: p.y, r: 34, data: c.annee, prio: 1 })
+          this.zones.push({ id: 'case', x: p.x, y: p.y, r: 34, data: c.annee, prio: 1, section: c.section })
         }
         continue
       }
       if (y < -110 || y > this.H + 70 || !etat) continue
       const m = this.deps.mondeDe(this.plan.sections[c.section]!.decennie)
       dessinerCase(g, c.x * this.k, y, etat, m, this.t, !this.calme, (url) => afficheTraitee(url, m.traitement, this.deps, this.affiches, () => this.demander()))
-      this.zones.push({ id: 'case', x: c.x * this.k, y: y - 4, r: 34, data: c.annee, prio: 1 })
+      this.zones.push({ id: 'case', x: c.x * this.k, y: y - 4, r: 34, data: c.annee, prio: 1, section: c.section })
     }
     const pa = pointA(this.route, this.avatar.d)
     if (!this.collanteEn(pa.y)) {
@@ -1039,7 +1048,7 @@ export class MoteurCarte {
       const planche = url ? this.deps.image(url, () => this.demander()) : null
       dessinerRoulotte(g, rg.x, rg.y + 8, rg.dir, rg.roule, this.t, !this.calme, 0.42, roul.pseudo, m.couleur, ambiance.nuit, planche)
       if (rg.posee) dessinerPlaqueRoulotte(g, rg.x, rg.y - 48, `${roul.pseudo} est rendu en ${roul.annee}`, m.couleur)
-      this.zones.push({ id: 'roulotte', x: rg.x, y: rg.y - 8, r: 36, data: null, prio: 2 })
+      this.zones.push({ id: 'roulotte', x: rg.x, y: rg.y - 8, r: 36, data: null, prio: 2, section: rg.section })
     }
     // Ce qu'une année ouverte montre par-dessus la brume (idée 8 : le guichet de 1897, l'écriteau d'un chantier).
     for (const i of actifs) monde(i).dessinerSurLaBrume(vue(i))
@@ -1085,6 +1094,11 @@ export class MoteurCarte {
     this.tuiles.set(i, toile)
     return toile
   }
+}
+
+/** La clé d'une réaction, rangée par monde : ce qu'un monde écrit (`v.marquer`) et lit (`v.age`) ne nomme pas sa décennie. */
+function cleDeReaction(decennie: number, cle: string): string {
+  return `${decennie}:${cle}`
 }
 
 /** La moyenne des couleurs, pondérée (les poids des sections présentes somment à 1). */

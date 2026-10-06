@@ -50,6 +50,8 @@ export interface Terrain {
   zonesDesTemps: () => Array<{ decennie: number; haut: number; bas: number }>
   /** Où en est l'avatar sur la route, en `y` de carte, et s'il marche encore : de quoi le suivre. */
   avatar: () => { y: number; marche: boolean }
+  /** Vrai tant que la vue d'ensemble est ouverte, ou s'ouvre : la carte est sous elle, un défilement n'y est le geste de personne. */
+  ensemble: () => boolean
   /** Une image de plus est à dessiner. */
   demander: () => void
 }
@@ -119,6 +121,14 @@ export class Meneur {
    * écho, pas un geste du membre. Nul dès qu'un défilement mène ailleurs.
    */
   private sortie: number | null = null
+  /**
+   * Ce que la page doit encore rendre de ce que le meneur lui a demandé, hors du roulement, du
+   * passage et de la sortie de la vue d'ensemble, qui ont leur garde : tout `defiler` tombé entre
+   * `de` et `a` est un écho, pas un geste. Un intervalle tant que la caméra glisse (elle suit
+   * l'avatar, va chercher un chantier), ramené à son dernier point dès qu'elle ne glisse plus ; nul
+   * dès qu'un défilement mène ailleurs.
+   */
+  private attendu: { de: number; a: number } | null = null
 
   constructor(
     private readonly terrain: Terrain,
@@ -190,6 +200,7 @@ export class Meneur {
    * `defiler` que la page rendra (« Tu es ici » d'un coup et la marche au calme, hors section collante).
    */
   demanderALaPage(y: number): void {
+    this.attendu = { de: y, a: y }
     this.rappels.defilerVers(y)
   }
 
@@ -213,6 +224,16 @@ export class Meneur {
     this.arreterLePassage()
     this.suivre = false
     this.visee = null
+    // Elle ne glisse plus : de ce qu'elle a dit à la page, seul le dernier point reste à rendre.
+    if (this.attendu) this.attendu = { de: this.attendu.a, a: this.attendu.a }
+  }
+
+  /**
+   * La vue d'ensemble s'ouvre : le défilement qui attendait son repos est oublié. Il ne lancera ni
+   * rappel ni passage sous elle, ni à sa fermeture ; et la boucle ne tient plus pour lui.
+   */
+  ouvrirLEnsemble(): void {
+    this.oublierLeDefilement()
   }
 
   /** Le passage s'arrête où il en est : un autre glissement prend la caméra. Qui l'attendait est libéré. */
@@ -387,15 +408,23 @@ export class Meneur {
       const avatar = this.terrain.avatar()
       const cible = cibleCamera(avatar.y, this.terrain.H(), this.terrain.hauteur())
       const suivant = this.y + (cible - this.y) * Math.min(1, dt * 6)
+      this.attendu = { de: this.attendu?.de ?? this.y, a: suivant }
       this.rappels.defilerVers(suivant)
       this.y = suivant
-      if (!avatar.marche && Math.abs(cible - suivant) < 1.5) this.suivre = false
+      if (!avatar.marche && Math.abs(cible - suivant) < 1.5) {
+        this.suivre = false
+        this.attendu = { de: suivant, a: suivant }
+      }
     }
     if (this.visee !== null) {
       const suivant = this.y + (this.visee - this.y) * Math.min(1, dt * 6)
+      this.attendu = { de: this.attendu?.de ?? this.y, a: suivant }
       this.rappels.defilerVers(suivant)
       this.y = suivant
-      if (Math.abs(this.visee - suivant) < 1.5) this.visee = null
+      if (Math.abs(this.visee - suivant) < 1.5) {
+        this.visee = null
+        this.attendu = { de: suivant, a: suivant }
+      }
     }
   }
 
@@ -434,7 +463,10 @@ export class Meneur {
   private finirLePassage(): void {
     const p = this.passage
     if (!p) return
-    this.poser(p.cles[p.cles.length - 1]!.y)
+    const fin = p.cles[p.cles.length - 1]!.y
+    this.poser(fin)
+    // Le passage fini, sa garde tombe : l'écho de sa dernière pose reste à rendre.
+    this.attendu = { de: fin, a: fin }
     this.arreterLePassage()
     this.terrain.demander()
   }
@@ -486,6 +518,8 @@ export class Meneur {
   private constaterLeDefilement(avant: number): void {
     // Sans section collante sur la carte, il n'y a rien à constater : la boucle ne tient pas pour lui.
     if (!this.terrain.collante()) return
+    // La vue d'ensemble ouverte, la carte est sous elle : ce défilement n'est le geste de personne.
+    if (this.terrain.ensemble()) return
     // Le passage commande la caméra : ce que la page rend n'est que l'écho de ce qu'il pose, et un
     // défilement du membre ne le détourne pas (un toucher, lui, le pose à sa fin).
     if (this.passage) return
@@ -494,6 +528,14 @@ export class Meneur {
     if (this.sortie !== null) {
       if (Math.abs(this.y - this.sortie) <= A_L_ARRET) return
       this.sortie = null
+    }
+    // Ce que le meneur a demandé à la page sans roulement ni passage (« Tu es ici » d'un coup, la
+    // marche au calme, l'avatar suivi, un chantier visé, la fin d'un passage) : son écho n'est le
+    // départ d'aucun geste non plus.
+    const e = this.attendu
+    if (e) {
+      if (this.y >= Math.min(e.de, e.a) - A_L_ARRET && this.y <= Math.max(e.de, e.a) + A_L_ARRET) return
+      this.attendu = null
     }
     const r = this.roulement
     if (r) {

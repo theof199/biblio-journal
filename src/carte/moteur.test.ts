@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { A_L_ARRET, CORAIL, DUREE_DE_L_ENVOL, DUREE_DU_ROULEMENT, MAX_TUILES, MoteurCarte, REPOS_DU_DEFILEMENT, type CaseCarte, type Dependances, type EtatCarte, type Rappels } from './moteur'
 import { contexteFactice, type Appel } from '../test/contexteFactice'
+import { cibleCamera } from './camera'
+import { APPUI_LONG_MS } from './geste'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
 import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Monde, MusiqueDuMonde, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
@@ -58,7 +60,19 @@ const suivis: SuiviGare[] = []
  * son cadre.
  */
 const bandes: Array<{ cadre: CadreDeBande; etat: EtatDeBande }> = []
-function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = [], entree: readonly TempsDEntree[] = []): Monde {
+/**
+ * Plan 3b : le monde collant « garni » (option `garni`) porte sa propre date, sa propre bobine et un
+ * sémaphore qui réagit, tous trois posés à l'écran, en haut : là où, la caméra à la frontière, le
+ * bas de 1890 se voit encore. Les mêmes rangs que ceux de 1890 (la date 0, la bobine 0).
+ */
+const DEPECHE: DateVraie = { an: 1900, x: 0, y: 0, court: '14 avril', lieu: 'Paris', titre: 'L’Exposition ouvre', jour: 'Samedi 14 avril 1900', texte: 'Une dépêche.', image: null }
+const BOBINE_1900: BobinePerdue = { cle: 'le-voyage-a-travers-l-impossible', titre: 'Une bobine de 1900', qui: 'Inconnu, 1900' }
+const OU_DEPECHE = { x: 60, y: 50 }
+const OU_SEMAPHORE = { x: 200, y: 50 }
+const OU_BOBINE_1900 = { x: 330, y: 50 }
+/** Les réactions demandées aux mondes d'essai, avec le monde qui les a reçues. */
+const reagis: Array<{ decennie: number; id: string }> = []
+function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = [], entree: readonly TempsDEntree[] = [], garni = false): Monde {
   const base = mondeAVenir(decennie)
   const scene: Monde['scene'] =
     collant && decennie === 1900
@@ -84,8 +98,8 @@ function mondeDEssai(decennie: number, collant = false, arrets: readonly number[
     couleur: scene ? (hex, a = 1) => `collant(${hex},${a})` : base.couleur,
     palette: scene ? { ...base.palette, ciel: [250, 10, 10], cielJour: [250, 10, 10], cielCrepuscule: [250, 10, 10] } : base.palette,
     traitement: { cadence: 16, tremblement: 0.8, scintillement: 0.03, grain: 0.09, virage: { couleur: [150, 104, 58], alpha: 0.13 }, affiches: 'sepia' },
-    dates: decennie === 1890 ? [DATE] : [],
-    bobines: decennie === 1890 ? [BOBINE] : [],
+    dates: decennie === 1890 ? [DATE] : scene && garni ? [DEPECHE] : [],
+    bobines: decennie === 1890 ? [BOBINE] : scene && garni ? [BOBINE_1900] : [],
     musique: decennie === 1890 ? MUSIQUE : scene ? MUSIQUE_1900 : null,
     adieu: decennie === 1890 ? 2 : 0,
     dessinerCiel: (v) => {
@@ -97,8 +111,16 @@ function mondeDEssai(decennie: number, collant = false, arrets: readonly number[
       if (decennie === 1890) v.zone('date', DATE.x * v.k, v.ecranY(DATE.y, 1), 20, 0)
       if (decennie === 1890) v.zone('manege', MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 20)
       if (decennie === 1890) v.bobine(0, OU_BOBINE.x * v.k, v.ecranY(OU_BOBINE.y, 1), 8)
+      if (scene && garni) {
+        v.zone('date', OU_DEPECHE.x, OU_DEPECHE.y, 20, 0)
+        v.zone('semaphore', OU_SEMAPHORE.x, OU_SEMAPHORE.y, 20)
+        v.bobine(0, OU_BOBINE_1900.x, OU_BOBINE_1900.y, 8)
+      }
     },
-    reagir: (id) => void reactions.push(id),
+    reagir: (id) => {
+      reactions.push(id)
+      reagis.push({ decennie, id })
+    },
     // Idée 8 : un repère dans la suite des appels, pour lire où le moteur place ce plan.
     dessinerSurLaBrume: (v) => v.ctx.fillText('sur la brume', 0, 0),
     // Idée 8 : 1899 se bâtit en haut de la section, loin de sa case (850).
@@ -127,10 +149,13 @@ function monter(
     arrets?: readonly number[]
     /** Plan 3a : les temps du passage d'entrée de la section collante, en `y` de la section. */
     entree?: readonly TempsDEntree[]
+    /** Plan 3b : le monde collant porte une date, une bobine et un sémaphore (`DEPECHE`, `BOBINE_1900`). */
+    garni?: boolean
   } = {},
 ) {
   vus.length = 0
   reactions.length = 0
+  reagis.length = 0
   suivis.length = 0
   bandes.length = 0
   const principal = contexteFactice()
@@ -151,7 +176,7 @@ function monter(
     annulerImage: vi.fn(),
     heure: () => options.heure ?? 12,
     mondeDe: (d) => {
-      const m = mondeDEssai(d, options.collant, options.arrets, options.entree)
+      const m = mondeDEssai(d, options.collant, options.arrets, options.entree, options.garni)
       const { chantier1898, particules } = options
       return {
         ...m,
@@ -2398,6 +2423,322 @@ describe('le moteur de la carte', () => {
           sansTemps.moteur.defiler(HAUT_1900 - 100)
           sansTemps.filer(80)
           expect(sansTemps.rappels.entreeProche).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('les cinq défauts de la revue du lot 1 (plan 3b)', () => {
+        type Banc = ReturnType<typeof enGare>
+        /** Un passage dont la zone des temps commence dans le bas de 1890 : « Tu es ici », la marche et un chantier de 1890 y laissent la caméra. */
+        const ENTREE: TempsDEntree[] = [
+          { y: -900, duree: 0, arret: 200 },
+          { y: 300, duree: 500, arret: 100 },
+          { y: 700, duree: 800, arret: 300 },
+        ]
+        const ZONE = { haut: HAUT_1900 + ENTREE[0]!.y, bas: HAUT_1900 + ENTREE[2]!.y }
+        const dansLaZone = (y: number) => y > ZONE.haut + A_L_ARRET && y < ZONE.bas - A_L_ARRET
+        const passageJoue = () => vus.some((v) => v.entree >= 0)
+        /**
+         * Les images jouées comme la page les voit : après chacune, elle rend le dernier `defilerVers`
+         * reçu, au demi-pixel (l'écran du banc est de densité 2).
+         */
+        const enEcho = (banc: Banc, duree: number) => {
+          for (let i = 0; i < duree / 40; i++) {
+            const n = banc.vers().length
+            banc.filer(40)
+            const vers = banc.vers()
+            if (vers.length > n) banc.moteur.defiler(Math.round(vers[vers.length - 1]! * 2) / 2)
+          }
+        }
+        /** Où le tracé pose la case de `annee`, en `y` de carte. */
+        const yDeLaCase = (banc: Banc, annee: number) => banc.moteur.ecranDeLAnnee(annee).y
+        const ouvrir = (banc: Banc) => {
+          banc.moteur.basculerEnsemble(true)
+          banc.filer(1000)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+        }
+
+        // Défaut 1, « Tu es ici » d'un coup et la marche au calme (`demanderALaPage`) : la page est
+        // priée de défiler sans que la caméra soit écrite, et ce qu'elle rend, parti d'au-dessus de
+        // la zone des temps et arrivé dedans, passait pour un geste qui y entre.
+        // Mutation : `this.attendu = …` retiré de `demanderALaPage`.
+        it.each([
+          { site: '« Tu es ici », d’un coup', options: { enCours: 1899 }, demander: (b: Banc): void => b.moteur.allerIci(true), annee: 1899 },
+          { site: '« Tu es ici », au calme', options: { enCours: 1899, calme: true }, demander: (b: Banc): void => b.moteur.allerIci(), annee: 1899 },
+          { site: 'la marche, au calme', options: { ailleurs: true, calme: true }, demander: (b: Banc): void => void b.moteur.marcher(1899), annee: 1899 },
+        ])('l’écho du défilement demandé à la page ne lance pas le passage d’entrée ($site)', ({ options, demander, annee }) => {
+          const banc = enGare({ entree: ENTREE, ...options })
+          // La caméra en haut de la carte, au-dessus de la zone ; l'année visée, elle, la met dedans.
+          const cible = cibleCamera(yDeLaCase(banc, annee), H, banc.moteur.hauteur)
+          expect(ZONE.haut).toBeGreaterThan(A_L_ARRET)
+          expect(dansLaZone(cible)).toBe(true)
+          expect(cible).toBeLessThan(HAUT_1900)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          vus.length = 0
+          demander(banc)
+          expect(banc.vers()).toEqual([cible])
+          banc.moteur.defiler(Math.round(cible))
+          banc.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(passageJoue()).toBe(false)
+          expect(banc.vers()).toEqual([cible])
+          // Un vrai geste, ensuite, n'est pas avalé : sorti de la zone par le haut puis revenu dedans, il lance le passage.
+          banc.moteur.defiler(ZONE.haut - 50)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          banc.moteur.defiler(cible)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          expect(banc.vers()[1]).toBe(options.calme ? ZONE.bas : ZONE.haut)
+        })
+
+        // Défaut 1, la caméra qui suit l'avatar (`avancer`, `suivre`) : chaque image dit à la page où
+        // elle est, et la page le rend. Partie d'au-dessus de la zone des temps, arrivée dedans, la
+        // suite de ces échos passait pour un geste qui y entre. Mutation : `this.attendu = …` retiré
+        // du bloc `suivre` d'`avancer`.
+        it('l’écho de la caméra qui suit l’avatar ne lance pas le passage d’entrée', async () => {
+          const banc = enGare({ ailleurs: true, entree: ENTREE })
+          const cible = cibleCamera(yDeLaCase(banc, 1899), H, banc.moteur.hauteur)
+          expect(dansLaZone(cible)).toBe(true)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          vus.length = 0
+          const marche = banc.temoin(banc.moteur.marcher(1899))
+          enEcho(banc, 4000)
+          await Promise.resolve()
+          expect(marche.fini).toBe(true)
+          enEcho(banc, REPOS_DU_DEFILEMENT + 1500)
+          expect(passageJoue()).toBe(false)
+          expect(Math.abs(banc.vers()[banc.vers().length - 1]! - cible)).toBeLessThan(1.5)
+          // Arrivée, elle ne bouge plus ; et un vrai geste, ensuite, n'est pas avalé.
+          const n = banc.vers().length
+          enEcho(banc, 600)
+          expect(banc.vers().length).toBe(n)
+          banc.moteur.defiler(ZONE.haut - 50)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          banc.moteur.defiler(cible)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          expect(banc.vers()[n]).toBe(ZONE.haut)
+        })
+
+        // Défaut 1, la caméra qui va chercher un chantier (`avancer`, `visee`) : de même.
+        // Mutation : `this.attendu = …` retiré du bloc `visee` d'`avancer`.
+        it('l’écho de la caméra qui va chercher un chantier ne lance pas le passage d’entrée', () => {
+          // 1898 se bâtit cent pixels au-dessus de 1900 : hors de l'écran depuis le haut de la carte.
+          const banc = enGare({ ailleurs: true, entree: ENTREE, chantier1898: HAUT_1900 - 100 - MARGE_HAUT })
+          const cible = HAUT_1900 - 100 - H / 2
+          expect(dansLaZone(cible)).toBe(true)
+          vi.mocked(banc.rappels.defilerVers).mockClear()
+          vus.length = 0
+          banc.moteur.ouvrirSousLesYeux(1898)
+          enEcho(banc, 3000)
+          enEcho(banc, REPOS_DU_DEFILEMENT + 1500)
+          expect(passageJoue()).toBe(false)
+          expect(Math.abs(banc.vers()[banc.vers().length - 1]! - cible)).toBeLessThan(1.5)
+          const n = banc.vers().length
+          expect(n).toBeGreaterThan(5)
+          banc.moteur.defiler(ZONE.haut - 50)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          banc.moteur.defiler(cible)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          expect(banc.vers()[n]).toBe(ZONE.haut)
+        })
+
+        // Défaut 1, la suite : tant que la caméra glisse, tout ce qui tombe entre son départ et là où
+        // elle en est passe pour un écho. Un autre meneur la prend : il n'en reste que le dernier
+        // point, et un vrai geste dans l'ancien intervalle n'est pas avalé. Mutation : l'intervalle
+        // non ramené à son dernier point dans `prendreLaCamera`.
+        it('la caméra reprise à l’avatar qu’elle suivait, un geste là où elle a glissé reste un geste', async () => {
+          const banc = enGare({ ailleurs: true })
+          banc.poserA(arret(1905))
+          banc.moteur.allerIci()
+          enEcho(banc, 200)
+          const ou = banc.vers()[banc.vers().length - 1]!
+          expect(ou).toBeLessThan(arret(1903))
+          // Un roulement prend la caméra, et arrive.
+          const marche = banc.temoin(banc.moteur.marcher(1903))
+          enEcho(banc, ROULEMENT + 200)
+          await Promise.resolve()
+          expect(marche.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1903))
+          // Le geste : laissée plus près de 1904, là où elle glissait tout à l'heure, la caméra y est rappelée.
+          banc.moteur.defiler(arret(1904) - 60)
+          banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1904))
+        })
+
+        // Défaut 1, la fin du passage (`finirLePassage`, par `poser`) : un monde dont le passage finit
+        // entre deux arrêts y tient la caméra. Le passage fini, plus rien ne gardait l'écho de sa
+        // dernière pose : il passait pour un geste, et le rappel emmenait la caméra à l'arrêt voisin.
+        // Mutation : `this.attendu = …` retiré de `finirLePassage`.
+        it('l’écho de la fin du passage ne rappelle pas la caméra à un arrêt', async () => {
+          const banc = enGare({ entree: ENTREE })
+          banc.poserA(arret(1905))
+          expect(ZONE.bas).toBeGreaterThan(arret(1903) + A_L_ARRET)
+          expect(ZONE.bas).toBeLessThan(arret(1904) - A_L_ARRET)
+          const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          enEcho(banc, auTempo(ENTREE[0]!.arret + ENTREE[1]!.duree + ENTREE[1]!.arret + ENTREE[2]!.duree + ENTREE[2]!.arret) + 80)
+          await Promise.resolve()
+          expect(bonjour.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(ZONE.bas)
+          const n = banc.vers().length
+          enEcho(banc, REPOS_DU_DEFILEMENT + ROULEMENT + 400)
+          expect(banc.vers().length).toBe(n)
+          // Un vrai geste, ensuite, n'est pas avalé : laissée entre deux arrêts, la caméra est rappelée.
+          banc.moteur.defiler(arret(1905) + 90)
+          banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1905))
+        })
+
+        // Défaut 2 : un doigt posé sur une case avant le passage, levé pendant. Le passage prend ce
+        // lever, que le geste n'apprend pas : sa minuterie d'appui long courait toujours, et ouvrait
+        // l'aperçu de l'année sans qu'aucun doigt ne soit posé. Mutation : `this.geste.annulerAppui()`
+        // retiré de `pointeur`. (Pas `lever` : il émettrait un toucher, et ouvrirait l'année.)
+        it('le doigt levé pendant le passage ne laisse pas d’appui long derrière lui', () => {
+          vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+          try {
+            const GARES = Array.from({ length: 10 }, (_, i) => 700 + i * 130)
+            const TEMPS: TempsDEntree[] = [{ y: -100, duree: 7000, arret: 200 }, { y: 300, duree: 500, arret: 100 }, { y: 700, duree: 800, arret: 300 }]
+            const banc = enGare({ arrets: GARES, entree: TEMPS })
+            banc.poserA(HAUT_1900 + GARES[0]!)
+            const p = quai(1900)!
+            // Le témoin : sans passage, le même doigt tenu ouvre l'aperçu.
+            banc.moteur.pointeur('bas', p.x, p.y, false)
+            vi.advanceTimersByTime(APPUI_LONG_MS)
+            expect(banc.rappels.apercu).toHaveBeenCalledTimes(1)
+            banc.moteur.pointeur('haut', p.x, p.y, false)
+            vi.mocked(banc.rappels.apercu).mockClear()
+            // Le doigt posé avant le passage, levé pendant.
+            banc.moteur.pointeur('bas', p.x, p.y, false)
+            void banc.moteur.direBonjour(1900, 'endroit')
+            banc.filer(80)
+            banc.moteur.pointeur('haut', p.x, p.y, false)
+            vi.advanceTimersByTime(APPUI_LONG_MS + 100)
+            expect(banc.rappels.apercu).not.toHaveBeenCalled()
+            expect(banc.rappels.toucherAnnee).not.toHaveBeenCalled()
+          } finally {
+            vi.useRealTimers()
+          }
+        })
+
+        // Défaut 4 : le monde d'une zone se lisait à `camY + y`, le `y` de carte du doigt. Une section
+        // collante ne glisse pas : ce que son monde pose en haut de l'écran, la caméra à la frontière,
+        // tombe sur le bas de 1890. Mutations : dans `toucher`, la section relue par `camY + y` (la
+        // date et la bobine de 1890 sortent, `reagir` va à 1890) ; `reagir` seul envoyé au monde lu
+        // par `camY + y` ; la clé des réactions écrite sans monde (`date:0` marque aussi 1890).
+        describe('une zone appartient au monde qui l’a inscrite', () => {
+          const aLaFrontiere = (options: Options = {}) => {
+            const banc = auTrain({ garni: true, ...options })
+            banc.moteur.defiler(CAMERA)
+            banc.moteur.image(1000)
+            return banc
+          }
+
+          it('la date et la bobine du monde collant, touchées devant le bas de 1890, sont les siennes', () => {
+            // Le doigt est sur le bas de 1890, en `y` de carte : c'est là que l'ancien calcul lisait le monde.
+            expect(CAMERA + OU_DEPECHE.y).toBeLessThan(HAUT_1900)
+            const banc = aLaFrontiere()
+            toucher(banc.moteur, OU_DEPECHE.x, OU_DEPECHE.y)
+            expect(vi.mocked(banc.rappels.date).mock.calls).toEqual([[DEPECHE]])
+            toucher(banc.moteur, OU_BOBINE_1900.x, OU_BOBINE_1900.y)
+            expect(vi.mocked(banc.rappels.bobine).mock.calls).toEqual([[BOBINE_1900.cle]])
+            // Au calme aussi : une date se lit, une bobine se ramasse.
+            const calme = aLaFrontiere({ calme: true })
+            toucher(calme.moteur, OU_DEPECHE.x, OU_DEPECHE.y)
+            expect(vi.mocked(calme.rappels.date).mock.calls).toEqual([[DEPECHE]])
+          })
+
+          it('le décor du monde collant, touché devant le bas de 1890, réagit chez lui', () => {
+            const banc = aLaFrontiere()
+            toucher(banc.moteur, OU_SEMAPHORE.x, OU_SEMAPHORE.y)
+            expect(reagis).toEqual([{ decennie: 1900, id: 'semaphore' }])
+          })
+
+          it('la date 0 du monde collant, ouverte, ne marque pas la date 0 de 1890', () => {
+            const banc = aLaFrontiere()
+            expect(vueDe(1898)!.age('date:0')).toBe(99)
+            expect(vueDe(1900)!.age('date:0')).toBe(99)
+            toucher(banc.moteur, OU_DEPECHE.x, OU_DEPECHE.y)
+            banc.moteur.image(1040)
+            expect(vueDe(1900)!.age('date:0')).toBeLessThan(1)
+            expect(vueDe(1898)!.age('date:0')).toBe(99)
+            // Ce que le monde marque lui-même (`v.marquer`) est rangé de même : chez lui seul.
+            vueDe(1898)!.marquer('cloche')
+            expect(vueDe(1898)!.age('cloche')).toBeLessThan(1)
+            expect(vueDe(1900)!.age('cloche')).toBe(99)
+          })
+        })
+
+        // Défaut 5 : la vue d'ensemble ouverte, la carte est sous elle. Un défilement n'y lance ni
+        // rappel ni passage. Mutation : la garde `this.terrain.ensemble()` retirée de
+        // `constaterLeDefilement`.
+        it('la vue d’ensemble ouverte, un défilement ne lance ni rappel à un arrêt, ni passage d’entrée', () => {
+          const banc = enGare()
+          banc.poserA(arret(1901))
+          ouvrir(banc)
+          banc.moteur.defiler(arret(1902) + 90)
+          banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 400)
+          expect(banc.vers()).toEqual([])
+          const passage = enGare({ entree: ENTREE })
+          passage.poserA(MARGE_HAUT)
+          ouvrir(passage)
+          vus.length = 0
+          passage.moteur.defiler(arret(1902))
+          passage.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(passage.vers()).toEqual([])
+          expect(passageJoue()).toBe(false)
+        })
+
+        // Défaut 5 : le défilement qui attendait son repos quand la vue d'ensemble s'ouvre est oublié
+        // (choix du plan 3b : oublié, pas différé à la fermeture). Mutation : l'oubli retiré
+        // d'`entrerEnsemble`.
+        it('le défilement d’avant la vue d’ensemble ne lance rien pendant qu’elle est ouverte, ni à sa fermeture', () => {
+          const banc = enGare()
+          banc.poserA(arret(1901))
+          banc.moteur.defiler(arret(1902) + 90)
+          banc.moteur.basculerEnsemble(true)
+          banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 400)
+          expect(banc.vers()).toEqual([])
+          const passage = enGare({ entree: ENTREE })
+          passage.poserA(MARGE_HAUT)
+          vus.length = 0
+          passage.moteur.defiler(arret(1902))
+          passage.moteur.basculerEnsemble(true)
+          passage.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(passage.vers()).toEqual([])
+          expect(passageJoue()).toBe(false)
+          // Sous un doigt posé, le repos attend le lever : fermée sans désigner d'endroit, la vue
+          // d'ensemble ne rend pas la main à ce défilement-là.
+          for (const essai of [enGare(), enGare({ entree: ENTREE })]) {
+            essai.poserA(MARGE_HAUT)
+            vus.length = 0
+            essai.moteur.doigtsPoses(1)
+            essai.moteur.defiler(arret(1902) + 90)
+            essai.moteur.basculerEnsemble(true)
+            essai.filer(400)
+            essai.moteur.basculerEnsemble(false)
+            essai.moteur.doigtsPoses(0)
+            essai.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 1500)
+            expect(essai.vers()).toEqual([])
+            expect(passageJoue()).toBe(false)
+          }
+        })
+
+        // Défaut 5, au calme : la boucle tient tant qu'un défilement attend son repos, et sous un
+        // doigt posé il attend. La vue d'ensemble ouverte, plus rien ne bouge : aucune image de plus.
+        // Mutation : l'oubli retiré d'`entrerEnsemble`.
+        it('au calme, la vue d’ensemble ouverte, la boucle ne tient pas pour un défilement d’avant', () => {
+          const banc = auTrain({ calme: true, arrets: ARRETS })
+          let ms = 1000
+          const tourner = (images: number) => {
+            for (let i = 0; i < images && banc.demandees.length; i++) for (const f of banc.demandees.splice(0)) f((ms += 40))
+          }
+          tourner(50)
+          expect(banc.demandees).toEqual([])
+          banc.moteur.doigtsPoses(1)
+          banc.moteur.defiler(arret(1902) + 90)
+          // Le témoin : le doigt posé, le défilement attend, et la boucle tient.
+          tourner(50)
+          expect(banc.demandees.length).toBe(1)
+          banc.moteur.basculerEnsemble(true)
+          tourner(50)
+          expect(banc.demandees).toEqual([])
+          expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
         })
       })
     })
