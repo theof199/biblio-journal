@@ -3,6 +3,7 @@ import { A_L_ARRET, CORAIL, DUREE_DE_L_ENVOL, DUREE_DU_ROULEMENT, MAX_TUILES, Mo
 import { contexteFactice, type Appel } from '../test/contexteFactice'
 import { cibleCamera } from './camera'
 import { APPUI_LONG_MS } from './geste'
+import { TUILE } from './dessin/sol'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
 import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Monde, MusiqueDuMonde, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
@@ -943,6 +944,9 @@ describe('le moteur de la carte', () => {
       const { moteur, toiles } = auTrain({ calme: true })
       moteur.defiler(CAMERA)
       moteur.image(1000)
+      // Une tranche plus haut : celle d'en dessous, entièrement dans la section collante, n'a pas de tuile (plan 3b).
+      moteur.defiler(CAMERA - TUILE)
+      moteur.image(1040)
       const tuiles = toiles.filter((t) => t.some((a) => a.nom === 'stroke'))
       expect(tuiles.length).toBeGreaterThan(1)
       for (const tuile of tuiles) {
@@ -2585,6 +2589,27 @@ describe('le moteur de la carte', () => {
           expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1905))
         })
 
+        // Défaut 1, la fin du passage au calme (`direBonjour`, sa branche calme) : la jumelle de la
+        // précédente. Le passage se pose d'un coup à son dernier temps ; son écho, pris pour un geste,
+        // posait l'arrêt du dessus, puis rejouait le passage à l'envers. Mutation : `this.attendu = …`
+        // retiré de la branche calme de `direBonjour`.
+        it('au calme, l’écho de la fin du passage ne pose pas d’arrêt et ne rejoue pas le passage', async () => {
+          const banc = enGare({ entree: ENTREE, calme: true })
+          banc.poserA(arret(1905))
+          expect(ZONE.bas).toBeGreaterThan(arret(1903) + A_L_ARRET)
+          expect(ZONE.bas).toBeLessThan(arret(1904) - A_L_ARRET)
+          await banc.moteur.direBonjour(1900, 'endroit')
+          expect(banc.vers()).toEqual([ZONE.bas])
+          banc.moteur.defiler(Math.round(ZONE.bas))
+          banc.filer(REPOS_DU_DEFILEMENT + 1500)
+          expect(banc.vers()).toEqual([ZONE.bas])
+          // Un vrai geste, ensuite, n'est pas avalé : il pose le dernier arrêt qu'il a franchi.
+          banc.moteur.defiler(arret(1905) + 90)
+          banc.filer(REPOS_DU_DEFILEMENT + 80)
+          expect(banc.vers().slice(1).every((y) => y === arret(1905))).toBe(true)
+          expect(banc.vers().length).toBeGreaterThan(1)
+        })
+
         // Défaut 2 : un doigt posé sur une case avant le passage, levé pendant. Le passage prend ce
         // lever, que le geste n'apprend pas : sa minuterie d'appui long courait toujours, et ouvrait
         // l'aperçu de l'année sans qu'aucun doigt ne soit posé. Mutation : `this.geste.annulerAppui()`
@@ -2614,6 +2639,24 @@ describe('le moteur de la carte', () => {
           } finally {
             vi.useRealTimers()
           }
+        })
+
+        // Défaut 3 : une tranche du sol entièrement dans une section collante ne porte rien (le sol y
+        // est coupé), et sa tuile, une toile de la largeur de l'écran, était fabriquée et gardée quand
+        // même. Mutation : la garde `solEn` retirée de la boucle des tuiles de `scene`.
+        it('ne fabrique aucune tuile du sol pour une tranche entièrement dans la section collante', () => {
+          const banc = auTrain({ arrets: ARRETS })
+          // L'écran tient dans deux tranches, toutes deux dans la section.
+          const y = Math.ceil(HAUT_1900 / TUILE) * TUILE
+          expect(Math.floor((y + H) / TUILE) * TUILE + TUILE).toBeLessThanOrEqual(BAS_1900)
+          banc.moteur.defiler(y)
+          banc.moteur.image(1000)
+          banc.moteur.image(1040)
+          expect(banc.moteur.tuilesEnMemoire).toBe(0)
+          // Le témoin : à cheval sur la frontière, la tranche qui porte le bas de 1890 est fabriquée.
+          banc.moteur.defiler(CAMERA)
+          banc.moteur.image(1080)
+          expect(banc.moteur.tuilesEnMemoire).toBeGreaterThan(0)
         })
 
         // Défaut 4 : le monde d'une zone se lisait à `camY + y`, le `y` de carte du doigt. Une section

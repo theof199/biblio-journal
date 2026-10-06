@@ -986,6 +986,8 @@ export class MoteurCarte {
     const i0 = Math.floor(this.camY / TUILE)
     const i1 = Math.floor((this.camY + this.H) / TUILE)
     for (let i = Math.max(0, i0); i <= i1 && i * TUILE < this.plan.hauteur; i++) {
+      // Une tranche entièrement dans une section collante ne porte rien : aucune tuile pour elle.
+      if (!this.solEn(i)) continue
       g.drawImage(this.tuile(i) as unknown as CanvasImageSource, 0, i * TUILE - this.camY, this.W, TUILE)
     }
     this.effets.parcouru(g, this.route, this.avatar.d, this.camY, this.t, !this.calme, this.bandes)
@@ -1079,6 +1081,11 @@ export class MoteurCarte {
     // Dans une section collante, au point où le monde tient l'année ; rien si elle est hors de vue.
     const ou = !place ? undefined : this.sceneDe(place.section) ? chezLeMonde.get(place.annee) : { x: place.x * this.k, y: place.y - this.camY }
     if (enCours && ou) dessinerCorail(g, ou.x, ou.y, enCours, this.t, !this.calme)
+  }
+
+  /** Vrai quand la tranche `i` du sol touche une bande où le sol se dessine : faux quand elle tient toute dans une section collante. */
+  private solEn(i: number): boolean {
+    return !this.bandes || this.bandes.some((b) => b.y0 < (i + 1) * TUILE && b.y1 > i * TUILE)
   }
 
   private tuile(i: number): Toile {

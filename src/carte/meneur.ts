@@ -297,7 +297,10 @@ export class Meneur {
     // Le défilement qui a mené ici n'a plus rien à constater : le passage commande la caméra.
     this.oublierLeDefilement()
     if (this.terrain.calme()) {
-      this.poser(joues[joues.length - 1]!.y)
+      const fin = joues[joues.length - 1]!.y
+      this.poser(fin)
+      // Aucun passage ne joue, aucune garde ne tient : l'écho de cette pose reste à rendre, comme à `finirLePassage`.
+      this.attendu = { de: fin, a: fin }
       this.terrain.demander()
       return Promise.resolve()
     }
