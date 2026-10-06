@@ -318,8 +318,8 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .edm .trous { position: absolute; right: 11%; top: 12%; bottom: 12%; width: 12%; display: grid; grid-template-rows: repeat(5, 1fr); grid-template-columns: 1fr 1fr; gap: 1cqi; }
 .edm .trou { width: 3.2cqi; height: 3.2cqi; border-radius: 50%; justify-self: center; align-self: center; border: 1px dashed rgba(34, 25, 16, .3); }
 .edm .trou.on { border: 0; background: #0e0a07; box-shadow: inset 0 1px 1px rgba(255, 255, 255, .15); }
-.edm .vu { position: absolute; left: 34%; top: 22%; padding: 1cqi 3cqi; border: .9cqi solid rgba(93, 63, 140, .9); color: rgba(93, 63, 140, .9); font: 700 13cqi/1 var(--f-rail); letter-spacing: .12em; transform: rotate(-14deg) scale(1.6); opacity: 0; filter: url(#encre); }
-.edm .vu.frappe { opacity: 1; transform: rotate(-14deg) scale(1); transition: transform .18s cubic-bezier(.2, 1.6, .5, 1), opacity .1s; }
+.edm .vu { position: absolute; left: 34%; top: 22%; padding: 1cqi 3cqi; border: .9cqi solid rgba(93, 63, 140, .9); color: rgba(93, 63, 140, .9); font: 700 13cqi/1 var(--f-rail); letter-spacing: .12em; transform: rotate(-14deg); opacity: 0; filter: url(#encre); }
+.edm .vu.frappe { opacity: 1; }
 .billet-zone { margin: 22px 20px 0; transform: rotate(-2deg); }
 .formulaire { margin: 18px 14px 0; padding: 14px; background: #efe6d0; color: #221910; border-radius: 2px; box-shadow: 0 4px 12px rgba(0, 0, 0, .4); }
 .formulaire .rub + .rub { margin-top: 16px; }
@@ -487,11 +487,15 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .hors *, .hors *::before, .hors *::after { animation-play-state: paused !important; }
 .calme *, .calme *::before, .calme *::after { animation: none !important; transition: none !important; }
 .calme .fondu { animation: fondu .22s ease-out !important; }
+[data-pose] { animation: none !important; }
 @keyframes eclat { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
 @keyframes eclat-lent { 0%, 72% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
 @keyframes lanterne { from { opacity: .5; } to { opacity: 1; } }
 @keyframes lampe-labo { from { opacity: .66; } to { opacity: 1; } }
 @keyframes monte { from { transform: translateY(12px); opacity: 0; } }
+/* Le tampon, partout le même : il tombe en accélérant, s'écrase, se relève d'un rien ; l'encre ne paraît qu'au contact (à 0,17 s). */
+@keyframes tampon-frappe { 0% { scale: 1.9; animation-timing-function: cubic-bezier(.55, 0, .9, .45); } 40% { scale: .93; animation-timing-function: ease-out; } 68% { scale: 1.025; animation-timing-function: ease-in-out; } }
+@keyframes tampon-encre { from { opacity: 0; } }
 @keyframes glisse-d { from { transform: translateX(-10px); opacity: 0; } }
 @keyframes s-eclaire { from { opacity: 1; } }
 @keyframes tour { to { transform: rotate(360deg); } }
@@ -581,13 +585,13 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .affiche-tete::before { content: ''; position: absolute; inset: 0 -9%; background: var(--i-aff1900) center 40% / cover; animation: panorama 28s ease-in-out infinite alternate; }
 @keyframes panorama { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
 .arret .rail::before { transform-origin: 50% 0; }
-.joue .arret .rail::before { animation: rail-pose .5s ease-out backwards; animation-delay: calc(var(--i) * 150ms + 300ms); }
+.joue .arret .rail::before { animation: rail-pose .5s ease-out backwards; animation-delay: calc(var(--i) * 110ms + 150ms); }
 @keyframes rail-pose { from { transform: scaleY(0); } }
-.joue .arret .rail::after { animation: point-pose .45s cubic-bezier(.3, 1.4, .5, 1) backwards; animation-delay: calc(var(--i) * 150ms + 420ms); }
+.joue .arret .rail::after { animation: point-pose .45s cubic-bezier(.3, 1.4, .5, 1) backwards; animation-delay: calc(var(--i) * 110ms + 250ms); }
 @keyframes point-pose { from { transform: scale(0); } }
-.joue .arret > span:not(.rail) { animation: glisse-d .6s ease-out backwards; animation-delay: calc(var(--i) * 150ms + 460ms); }
-.arret.ici .rail::after { animation: lampe 2.6s ease-in-out infinite alternate; }
-.joue .arret.ici .rail::after { animation: point-pose .45s cubic-bezier(.3, 1.4, .5, 1) backwards, lampe 2.6s ease-in-out 2s infinite alternate; animation-delay: calc(var(--i) * 150ms + 420ms), 2s; }
+.joue .arret > span:not(.rail) { animation: glisse-d .6s ease-out backwards; animation-delay: calc(var(--i) * 110ms + 280ms); }
+.arret.ici .rail::after { animation: lampe 2.6s ease-in-out 2s infinite alternate; }
+.joue .arret.ici .rail::after { animation: point-pose .45s cubic-bezier(.3, 1.4, .5, 1) backwards, lampe 2.6s ease-in-out 2s infinite alternate; animation-delay: calc(var(--i) * 110ms + 250ms), 2s; }
 .arret:active, .voie:active { transform: translateX(5px); }
 
 /* 2. La gare : la fumée d'un train traverse la photo, l'horloge va de 18 h à 19 h 03, les arrivées se pointent, le tampon tombe. */
@@ -604,10 +608,9 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .joue .g-tete .plaque::after { animation: eclat 1.8s ease-in-out .6s; }
 .joue .chaix td.e { animation: pointe .45s ease-out backwards; animation-delay: calc(var(--i) * 260ms + 900ms); }
 @keyframes pointe { from { transform: scale(1.5); opacity: 0; } }
-.joue .tampon-rouge { animation: tampon-r .55s cubic-bezier(.2, .9, .3, 1) 2.5s backwards; }
-@keyframes tampon-r { from { transform: rotate(-11deg) scale(2); opacity: 0; } }
-.joue .chaix { animation: secousse .4s ease-out 2.78s; }
-@keyframes secousse { 30% { transform: translateY(3px); } }
+.joue .tampon-rouge { animation: tampon-frappe .42s linear 2.5s backwards, tampon-encre .16s ease-in 2.5s backwards; }
+.joue .chaix { animation: secousse .36s ease-out 2.67s; }
+@keyframes secousse { 22% { transform: translateY(2.5px); } 58% { transform: translateY(-.8px); } }
 .joue .voie { animation: glisse-d .7s ease-out backwards; animation-delay: calc(var(--i) * 200ms + 1.2s); }
 
 /* 3. Les trois classes : la voiture entre en gare et freine, les compartiments s'éclairent, une portière s'ouvre au toucher. */
@@ -650,28 +653,27 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 @keyframes griffe { from { transform: translateX(34px); opacity: 0; } }
 
 /* 6. Le composteur : la pince perce, la confetti tombe, la molette tourne, le tampon frappe. */
-.joue #billet-c { animation: delivre 1s cubic-bezier(.2, .8, .2, 1) .2s backwards; }
+.joue #billet-c { animation: delivre .8s cubic-bezier(.2, .8, .2, 1) .1s backwards; }
 @keyframes delivre { from { transform: translateY(-46px); opacity: 0; } }
-.joue .formulaire .rub { animation: monte .7s ease-out backwards; animation-delay: calc(var(--i) * 160ms + .6s); }
-.edm .trou.perce { animation: perce .45s cubic-bezier(.3, 1.5, .5, 1); }
-@keyframes perce { from { transform: scale(2.2); opacity: .2; } }
-#billet-c.pince { animation: pince .35s ease-out; }
-@keyframes pince { 35% { transform: translateY(2.5px) rotate(.4deg); } }
-.edm .chute { position: absolute; width: 3.2cqi; height: 3.2cqi; border-radius: 50%; background: var(--carton); box-shadow: 0 0 0 1px #b39c6f; pointer-events: none; animation: chute .95s ease-in forwards; }
-@keyframes chute { to { transform: translate(var(--cx, 6px), 74px) rotate(200deg); opacity: 0; } }
+.joue .formulaire .rub { animation: monte .5s ease-out backwards; animation-delay: calc(var(--i) * 90ms + .3s); }
+.edm .trou.perce { animation: perce .3s cubic-bezier(.3, .7, .3, 1) var(--q, 0s) backwards; }
+@keyframes perce { 0% { transform: scale(.3); opacity: 0; } 45% { transform: scale(1.3); opacity: 1; } 75% { transform: scale(.94); } }
+#billet-c.pince, #billet-ctrl.pince { animation: pince .32s ease-out; }
+@keyframes pince { 22% { transform: translateY(1.5px); } 58% { transform: translateY(-.5px); } }
+.edm .chute { position: absolute; width: 3.2cqi; height: 3.2cqi; border-radius: 50%; background: var(--carton); box-shadow: 0 0 0 1px #b39c6f; pointer-events: none; animation: chute .8s cubic-bezier(.5, 0, .9, .5) both; }
+@keyframes chute { 0% { transform: scale(.6); opacity: 0; } 8% { transform: translate(calc(var(--cx, 6px) * .1), 1px) scale(1); opacity: 1; } 75% { opacity: 1; } 100% { transform: translate(var(--cx, 6px), 74px) rotate(200deg); opacity: 0; } }
 .poincons button { transition: transform .25s ease, background-color .3s, color .3s; }
 .poincons button:active { transform: scale(.86); }
 .roues output i.tourne { animation: molette .55s ease-out; }
 @keyframes molette { from { transform: rotateX(-88deg); } }
-.edm .presse.presse-j { animation: presse-date .6s ease-out; }
+.edm .presse.presse-j { animation: presse-date .35s cubic-bezier(.3, .7, .3, 1); }
 @keyframes presse-date { from { opacity: 0; transform: translateY(-50%) rotate(90deg) scale(1.25); } }
 .coupons button { transition: transform .3s ease; }
 .coupons button[aria-pressed="true"] { transform: rotate(-2deg) translateY(-1px); }
 #billet-c.composte { animation: compostage 1.3s ease-in-out; }
 @keyframes compostage { 0%, 100% { transform: none; } 30%, 48% { transform: translateY(12px); } 54% { transform: translateY(16px) rotate(.5deg); } }
-.edm .vu { transition: opacity .4s; }
-#billet-c .vu.frappe { transition: none; animation: frappe-vu .5s cubic-bezier(.2, .9, .3, 1) .62s backwards; }
-@keyframes frappe-vu { from { opacity: 0; transform: rotate(-14deg) scale(1.9); } }
+.edm .vu { transition: opacity .25s; }
+#billet-c .vu.frappe { transition: none; animation: tampon-frappe .42s linear .53s backwards, tampon-encre .16s ease-in .53s backwards; }
 
 /* 7. Le billet : il tombe du composteur, la date se presse, les trous se percent, le tampon frappe ; il penche sous le doigt. */
 #e-billet .billet-zone { touch-action: pan-y; }
@@ -679,10 +681,9 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 #e-billet .edm::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: var(--lu, 0); transition: opacity .6s ease-out; background: linear-gradient(110deg, rgba(255, 250, 230, 0) 30%, rgba(255, 250, 230, .45) 50%, rgba(255, 250, 230, 0) 70%); }
 #e-billet .joue .edm { animation: tombe 1.1s cubic-bezier(.2, .8, .2, 1) .2s backwards; }
 @keyframes tombe { from { transform: translateY(-70px) rotate(5deg); opacity: 0; } }
-#e-billet .joue .presse { animation: presse-date .6s ease-out 1.2s backwards; }
-#e-billet .joue .trou.on { animation: perce .45s cubic-bezier(.3, 1.5, .5, 1) backwards; animation-delay: calc(var(--i) * 130ms + 1.6s); }
-#e-billet .joue .vu.frappe { animation: frappe-billet .5s cubic-bezier(.2, .9, .3, 1) 2.9s backwards; }
-@keyframes frappe-billet { from { opacity: 0; transform: rotate(-14deg) scale(1.9); } }
+#e-billet .joue .presse { animation: presse-date .35s cubic-bezier(.3, .7, .3, 1) 1s backwards; }
+#e-billet .joue .trou.on { animation: perce .3s cubic-bezier(.3, .7, .3, 1) backwards; animation-delay: calc(var(--i) * 90ms + 1.3s); }
+#e-billet .joue .vu.frappe { animation: tampon-frappe .42s linear 2.35s backwards, tampon-encre .16s ease-in 2.35s backwards; }
 #e-billet .edm.range, #e-billet .joue .edm.range { animation: range 2.8s ease-in-out; }
 @keyframes range { 0%, 100% { transform: none; opacity: 1; } 30% { transform: translateY(150px) scale(.5) rotate(-6deg); opacity: 0; } 62% { transform: translateY(-70px) rotate(5deg); opacity: 0; } }
 
@@ -699,8 +700,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 /* 9. Le passeport : les deux tampons frappent l'un après l'autre, la place vide tourne en attendant. */
 .joue .passeport { animation: monte .8s ease-out backwards; }
 .tampons svg.t-enc { transform: rotate(var(--r)); }
-.joue .tampons svg.t-enc { animation: tampon .5s cubic-bezier(.2, .9, .3, 1) backwards; animation-delay: var(--quand); }
-@keyframes tampon { from { transform: rotate(var(--r)) scale(1.9); opacity: 0; } }
+.joue .tampons svg.t-enc { animation: tampon-frappe .42s linear var(--quand) backwards, tampon-encre .16s ease-in var(--quand) backwards; }
 .tampons .attente { cursor: pointer; }
 .tampons .attente circle { transform-origin: 0 0; animation: tour 80s linear infinite; }
 .tampons .attente.refus { animation: refus .7s ease-in-out; }
@@ -853,7 +853,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .malle .pinceau { position: absolute; z-index: 3; left: 70px; top: 30px; width: 14px; height: 78px; border-radius: 3px 3px 6px 6px; background: linear-gradient(#c9a257 0 52%, #2a1d13 52% 60%, #e9dcc0 60%); transform-origin: 50% 0; opacity: 0; }
 .s-recompense.joue .malle .pinceau { animation: pinceau 1.3s ease-in-out .15s; }
 @keyframes pinceau { 0% { transform: translate(-30px, -40px) rotate(24deg); opacity: 0; } 15% { opacity: 1; } 35% { transform: translate(10px, 10px) rotate(-14deg); } 60% { transform: translate(64px, 14px) rotate(18deg); } 85% { opacity: 1; } 100% { transform: translate(120px, -40px) rotate(-10deg); opacity: 0; } }
-.s-recompense.joue .malle { animation: secousse .4s ease-out 2.05s; }
+.s-recompense.joue .malle { animation: secousse .36s ease-out 2.05s; }
 
 /* L'année bouclée : les cinq arrivées se pointent, le tampon rouge tombe sous les confettis du poinçon, le guichet tend le billet. */
 .s-annee { justify-content: flex-start; gap: 8px; padding-top: 58px; }
@@ -866,8 +866,8 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .a-arrivees li i { font: normal 700 9px var(--f-ui); letter-spacing: .06em; text-transform: uppercase; }
 .s-annee.joue .a-arrivees li i { animation: pointe .45s ease-out backwards; animation-delay: calc(var(--i) * .35s + .6s); }
 .a-arrivees .tampon-rouge { right: 10px; bottom: 10px; font-size: 14px; }
-.s-annee.joue .a-arrivees .tampon-rouge { animation: tampon-r .55s cubic-bezier(.2, .9, .3, 1) 2.5s backwards; }
-.s-annee.joue .a-arrivees { animation: secousse .4s ease-out 2.78s; }
+.s-annee.joue .a-arrivees .tampon-rouge { animation: tampon-frappe .42s linear 2.5s backwards, tampon-encre .16s ease-in 2.5s backwards; }
+.s-annee.joue .a-arrivees { animation: secousse .36s ease-out 2.67s; }
 .s-annee .f-titre { font-size: 26px; }
 .s-annee { --texte: 3.3s; }
 .a-chads { position: absolute; inset: 0; pointer-events: none; }
@@ -890,14 +890,13 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .t-page { position: relative; width: 250px; height: 250px; padding: 10px 12px; background: repeating-linear-gradient(60deg, rgba(168, 53, 42, .05) 0 1px, rgba(168, 53, 42, 0) 1px 7px), #ece3cc; color: #221910; border-radius: 3px; box-shadow: 0 8px 18px rgba(0, 0, 0, .5); }
 .t-page .ent { display: flex; justify-content: space-between; padding-bottom: 5px; border-bottom: 1px solid #221910; font: 600 9.5px var(--f-rail); letter-spacing: .2em; text-transform: uppercase; }
 .t-page svg { position: absolute; left: 31px; top: 40px; overflow: visible; transform: rotate(-8deg); }
-.s-tampon.joue .t-page svg { animation: tampon-d .5s cubic-bezier(.2, .9, .3, 1) 1.25s backwards; }
-@keyframes tampon-d { from { transform: rotate(-8deg) scale(1.7); opacity: 0; } }
-.s-tampon.joue .t-page { animation: secousse .4s ease-out 1.5s; }
+.s-tampon.joue .t-page svg { animation: tampon-encre .1s ease-out 1.32s backwards; }
+.s-tampon.joue .t-page { animation: secousse .36s ease-out 1.32s; }
 .t-outil { position: absolute; left: 50%; top: 0; width: 150px; height: 150px; margin-left: -75px; opacity: 0; pointer-events: none; }
 .t-outil::before { content: ''; position: absolute; left: 55px; top: -70px; width: 40px; height: 120px; border-radius: 20px 20px 6px 6px; background: linear-gradient(90deg, #4a2a15, #7a4a26, #4a2a15); }
 .t-outil::after { content: ''; position: absolute; left: 10px; top: 48px; width: 130px; height: 22px; border-radius: 4px; background: #1c120b; box-shadow: 0 6px 0 rgba(168, 53, 42, .7); }
 .s-tampon.joue .t-outil { animation: frappe-outil 1.7s ease-in-out .2s; }
-@keyframes frappe-outil { 0% { transform: translateY(-190px); opacity: 0; } 20% { opacity: 1; } 58% { transform: translateY(-120px); } 66% { transform: translateY(26px); } 78% { transform: translateY(26px); opacity: 1; } 100% { transform: translateY(-190px); opacity: 0; } }
+@keyframes frappe-outil { 0% { transform: translateY(-190px); opacity: 0; } 20% { opacity: 1; } 58% { transform: translateY(-120px); animation-timing-function: cubic-bezier(.55, 0, .9, .45); } 66% { transform: translateY(26px); } 78% { transform: translateY(26px); opacity: 1; } 100% { transform: translateY(-190px); opacity: 0; } }
 
 /* ---------- 14. Le retour en gare, et la courroie ---------- */
 .courroie-zone { position: relative; z-index: 3; display: grid; justify-items: center; height: 0; }
@@ -928,14 +927,14 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .sacoche-tete small { font: 600 10.5px var(--f-rail); letter-spacing: .26em; text-transform: uppercase; color: #d9b769; }
 .sacoche-tete b { display: block; font: 700 24px/1.1 var(--f-rail); letter-spacing: .05em; text-transform: uppercase; color: #e9cf8a; }
 .sacoche-tete::after { content: ''; position: absolute; left: 50%; bottom: -9px; width: 30px; height: 18px; margin-left: -15px; border-radius: 3px; background: var(--laiton); box-shadow: inset 0 0 0 2px #6e5222; }
-.joue .sacoche-tete { animation: rabat 1.1s cubic-bezier(.2, .8, .2, 1) backwards; transform-origin: 50% 0; }
+.joue .sacoche-tete { animation: rabat .85s cubic-bezier(.2, .8, .2, 1) backwards; transform-origin: 50% 0; }
 @keyframes rabat { from { transform: perspective(600px) rotateX(-70deg); opacity: 0; } }
 .pages-p { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 14px; }
 .page-p { position: relative; padding: 10px 8px 12px; background: #ece3cc; color: #221910; border-radius: 3px; box-shadow: 0 4px 10px rgba(0, 0, 0, .4); text-align: center; border: 0; }
 .page-p b { display: block; font: 700 14px var(--f-rail); letter-spacing: .06em; text-transform: uppercase; }
 .page-p small { display: block; margin-top: 4px; font: italic 12px/1.3 var(--f-corps); }
 .page-p svg { display: block; width: 104px; height: 104px; margin: 6px auto 0; overflow: visible; }
-.joue .page-p { animation: monte .7s ease-out backwards; animation-delay: calc(var(--i) * 200ms + .6s); }
+.joue .page-p { animation: monte .55s ease-out backwards; animation-delay: calc(var(--i) * 120ms + .3s); }
 .portefeuille { display: grid; gap: 8px; margin: 0 14px; }
 .tk { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px 8px 14px; background: linear-gradient(90deg, rgba(168, 53, 42, .85) 0 6px, rgba(0, 0, 0, 0) 6px), var(--carton); color: var(--encre); border-radius: 2px; box-shadow: 0 2px 0 #b39c6f; text-align: left; }
 .tk small { display: block; font: 600 10px var(--f-rail); letter-spacing: .16em; text-transform: uppercase; }
@@ -943,7 +942,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .tk em { font: italic 12.5px var(--f-corps); }
 .tk button { padding: 8px 12px; border: 0; border-radius: 3px; background: var(--corail); color: var(--corail-encre); font: 700 12.5px var(--f-rail); letter-spacing: .08em; text-transform: uppercase; }
 .tk.utilise { opacity: .55; }
-.joue .tk { animation: sort .6s ease-out backwards; animation-delay: calc(var(--i) * 160ms + 1s); }
+.joue .tk { animation: sort .5s ease-out backwards; animation-delay: calc(var(--i) * 110ms + .55s); }
 .coulisses { margin: 18px 14px 0; border: 1px solid rgba(201, 162, 87, .3); border-radius: 3px; background: #1f150e; }
 .coulisses summary { padding: 10px 12px; cursor: pointer; font: 600 13px var(--f-rail); letter-spacing: .14em; text-transform: uppercase; color: var(--laiton); }
 .coulisses div { padding: 0 12px 12px; font: 13.5px/1.5 var(--f-ui); color: var(--doux); }
@@ -1029,7 +1028,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 
 /* 17. Le train du soir (la séance du soir) : une affichette de train de plaisir, ses talons, son tampon. */
 .plaisir { position: relative; margin: 0 14px; padding: 14px 14px 12px; background: #efe6d0; color: #211810; box-shadow: 0 4px 12px rgba(0, 0, 0, .4); }
-.joue .plaisir { animation: monte .9s ease-out .3s backwards; }
+.joue .plaisir { animation: monte .65s ease-out .1s backwards; }
 .plaisir .gros { margin: 0; text-align: center; font: 700 28px/1 var(--f-rail); text-transform: uppercase; letter-spacing: .03em; }
 .plaisir .gros small { display: block; margin-top: 4px; font: italic 400 15px var(--f-corps); text-transform: none; letter-spacing: 0; color: var(--rouge); }
 .plaisir .num { display: flex; justify-content: space-between; margin-top: 8px; padding: 4px 0; border-block: 1px solid #211810; font: 700 11px var(--f-presse); text-transform: uppercase; }
@@ -1039,15 +1038,14 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .plaisir .partie b { display: block; font: 600 16px/1.2 var(--f-corps); }
 .plaisir .partie b.change { animation: molette .6s ease-out; }
 .plaisir .partie em { font: italic 12.5px var(--f-corps); }
-.joue .plaisir .partie { animation: glisse-d .7s ease-out backwards; animation-delay: calc(var(--i) * 260ms + 1s); }
+.joue .plaisir .partie { animation: glisse-d .55s ease-out backwards; animation-delay: calc(var(--i) * 160ms + .5s); }
 .plaisir .entracte { margin: 10px 0 0; font: italic 13.5px/1.4 var(--f-corps); }
 .plaisir .entracte span { display: block; font: normal 600 10px var(--f-rail); letter-spacing: .16em; text-transform: uppercase; color: var(--rouge); }
 .talons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 2px dashed rgba(33, 24, 16, .6); }
 .talons button { padding: 6px 10px; border: 1px solid #211810; border-radius: 2px; background: none; color: #211810; font: 700 12px var(--f-rail); letter-spacing: .08em; text-transform: uppercase; }
 .talons button.plein { background: #211810; color: #efe6d0; }
 .plaisir .pris { position: absolute; right: 8px; top: 12px; padding: 2px 12px; border: 3px double rgba(93, 63, 140, .9); color: rgba(93, 63, 140, .9); font: 700 22px var(--f-rail); letter-spacing: .14em; transform: rotate(-12deg); filter: url(#encre); }
-.plaisir .pris.frappe { animation: tampon-p .55s cubic-bezier(.2, .9, .3, 1); }
-@keyframes tampon-p { from { transform: rotate(-12deg) scale(1.9); opacity: 0; } }
+.plaisir .pris.frappe { animation: tampon-frappe .42s linear backwards, tampon-encre .16s ease-in backwards; }
 .plaisir.ignoree { opacity: .5; }
 .plaisir { transition: opacity .6s; }
 .passes { margin: 14px 14px 0; font: 14px/1.5 var(--f-corps); color: var(--doux); }
@@ -1181,7 +1179,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .s-etiquette.joue .etiq-f.neuve { animation: colle 1s cubic-bezier(.2, .9, .3, 1) 1.3s backwards; }
 .s-etiquette.joue .malle .colle { animation: allume .5s ease-out .6s backwards; }
 .s-etiquette.joue .malle .pinceau { animation: pinceau 1.3s ease-in-out .15s; }
-.s-etiquette.joue .malle { animation: secousse .4s ease-out 2.05s; }
+.s-etiquette.joue .malle { animation: secousse .36s ease-out 2.05s; }
 .malle-choix { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px; }
 .malle-choix .bouton2[aria-pressed="true"] { background: var(--laiton); color: #15110d; }
 .reglages .bouton2[aria-pressed="true"] { background: var(--laiton); color: #15110d; }
@@ -1230,7 +1228,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .controle .ctrl svg { display: block; width: 100%; height: 100%; overflow: visible; filter: url(#matiere) sepia(.3) saturate(.86) drop-shadow(-8px 10px 14px rgba(0, 0, 0, .7)); }
 .controle.entre .ctrl { animation: ctrl-entre .9s cubic-bezier(.2, .8, .2, 1); }
 @keyframes ctrl-entre { from { transform: translate3d(115%, 0, 0); } 70% { transform: translate3d(-2%, 0, 0); } }
-.controle.entre .bulle-c { animation: fondu .4s ease-out .7s backwards; }
+.controle.entre .bulle-c { animation: monte .35s ease-out .7s backwards; }
 .controle .bulle-c { position: absolute; left: 14px; top: 84px; width: 148px; margin: 0; padding: 9px 11px 10px; background: linear-gradient(172deg, #f4ecd8, #e7dbbd); color: #211810; font: italic 15.5px/1.3 var(--f-corps); border-radius: 2px; outline: 1px solid rgba(33, 24, 16, .22); outline-offset: -4px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .55)); transform: rotate(-2deg); }
 .controle .bulle-c::after { content: ''; position: absolute; left: calc(100% - 1px); top: 56%; width: 17px; height: 15px; background: #ebe0c5; clip-path: polygon(0 0, 100% 78%, 0 100%); }
 .controle .bulle-c b { display: block; margin-bottom: 2px; font: normal 600 10px var(--f-rail); letter-spacing: .18em; text-transform: uppercase; color: var(--rouge); }
@@ -1244,7 +1242,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .edm .poincon-or svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .edm.dore .poincon-or { opacity: 1; }
 .controle .edm.dore .poincon-or { filter: drop-shadow(0 0 2.5px rgba(226, 178, 60, .85)) drop-shadow(0 1px 1px rgba(0, 0, 0, .5)); }
-.edm .poincon-or.perce { animation: perce .5s cubic-bezier(.3, 1.5, .5, 1); }
+.edm .poincon-or.perce { animation: perce .34s cubic-bezier(.3, .7, .3, 1); }
 
 /* L'horaire tenu : un filet doré autour de la plaque, et sa mention. */
 .emaillee.a-l-heure, .plaque.a-l-heure { box-shadow: inset 0 0 0 2px #f4efe2, inset 0 0 0 3.5px var(--email), 0 0 0 2px var(--or), 0 0 0 3.5px #7a5a16, 0 5px 12px rgba(0, 0, 0, .5); }
@@ -1291,7 +1289,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .cp .timbre { position: absolute; right: 0; top: 0; width: 42px; height: 52px; }
 .cp .cachet { position: absolute; right: 22px; top: 2px; width: 64px; height: 64px; opacity: .22; transform: rotate(-14deg); filter: url(#encre); }
 .cp.postee .cachet { opacity: .92; }
-.cp.postee .cachet.frappe { animation: tampon-p .55s cubic-bezier(.2, .9, .3, 1); }
+.cp.postee .cachet.frappe { animation: tampon-frappe .42s linear backwards, tampon-encre .16s ease-in backwards; }
 .cp.postee textarea { pointer-events: none; }
 
 /* Le wagon-restaurant (écran 20) : la table vue du bout de la nappe, la vitre au fond, la lampe entre les deux couverts. */
@@ -1344,8 +1342,8 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .duo .edm:last-child { right: 0; top: 122px; transform: rotate(2.5deg); }
 .edm .ensemble-t { position: absolute; left: 24%; top: 50%; padding: 1cqi 2.4cqi; border: 1.2cqi dashed rgba(34, 25, 16, .28); color: rgba(34, 25, 16, .2); font: 700 9.6cqi/1 var(--f-rail); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transform: rotate(-8deg); }
 .duo.vus .ensemble-t { border: 1.5cqi double rgba(47, 107, 71, .95); color: rgba(47, 107, 71, .95); filter: url(#encre); background: rgba(220, 199, 156, .5); }
-.duo.vus .ensemble-t.frappe { animation: tampon-p .55s cubic-bezier(.2, .9, .3, 1); }
-.duo.vus .edm:last-child .ensemble-t.frappe { animation-delay: .28s; animation-fill-mode: backwards; }
+.duo.vus .ensemble-t.frappe { animation: tampon-frappe .42s linear backwards, tampon-encre .16s ease-in backwards; }
+.duo.vus .edm:last-child .ensemble-t.frappe { animation-delay: .28s; }
 .joue .wr-noir { animation: wr-allume 1.5s linear backwards; }
 .joue .wr-lueur { animation: wr-lueur 1.5s linear backwards; }
 @keyframes wr-allume { 0%, 20% { opacity: .74; } 23% { opacity: .3; } 29% { opacity: .66; } 38% { opacity: .2; } 45% { opacity: .42; } 70% { opacity: 0; } }
@@ -2675,11 +2673,26 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   appliquerCalme();
 
   // Rejoue une animation ponctuelle : la classe s'enlève d'elle-même, l'état de repos reste l'état final.
+  // Tant que l'écran joue encore son entrée, l'élément est « posé » : sans cela, la classe ôtée, son entrée repartirait.
   const rejouer = (el, cls) => {
     if (calme || !el) return;
-    el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
-    const fin = (ev) => { if (ev.target !== el) return; el.classList.remove(cls); el.removeEventListener('animationend', fin); };
+    el.classList.remove(cls); delete el.dataset.pose; void el.offsetWidth; el.classList.add(cls);
+    const fin = (ev) => {
+      if (ev.target !== el) return;
+      el.classList.remove(cls); el.removeEventListener('animationend', fin);
+      if (el.closest('.ecr.joue') && !getComputedStyle(el).animationIterationCount.includes('infinite')) el.dataset.pose = '';
+    };
     el.addEventListener('animationend', fin);
+  };
+  // L'entrée en scène d'un écran : « joue » ne dure que le temps de l'entrée. Une fois tout posé, la classe s'en va,
+  // et plus rien (une classe ôtée, un élément reconstruit ou remontré) ne peut relancer une entrée.
+  const entrer = (ecr) => {
+    $$('[data-pose]', ecr).forEach((e) => delete e.dataset.pose);
+    ecr.classList.remove('joue'); void ecr.offsetWidth; ecr.classList.add('joue');
+    const tour = ecr.dataset.tour = String(+(ecr.dataset.tour || 0) + 1);
+    const finies = ecr.getAnimations ? ecr.getAnimations({ subtree: true }).filter((a) => a.effect && a.effect.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {})) : [];
+    Promise.all(finies).then(() => { if (ecr.dataset.tour === tour) ecr.classList.remove('joue'); });
+    ecr.dispatchEvent(new CustomEvent('entree'));
   };
 
   // ---------------------------------------------------------------- le trajet
@@ -3250,7 +3263,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   function ouvrirDepeche(d) {
     depeche.innerHTML = '<small>Dépêche télégraphique</small><em></em><strong id="depeche-titre"></strong><span></span><p></p><button type="button">Refermer</button>';
     $('em', depeche).textContent = d.lieu; $('strong', depeche).textContent = d.titre; $('span', depeche).textContent = d.jour; $('p', depeche).textContent = d.texte;
-    depeche.hidden = false;
+    apercu.hidden = true; depeche.hidden = false;
     const b = $('button', depeche);
     b.addEventListener('click', () => { depeche.hidden = true; tel.focus({ preventScroll: true }); });
     b.focus({ preventScroll: true });
@@ -3863,7 +3876,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     if (etatMalle === 'rien' && choisie === 15) choisie = NEUVE;
     construireMalle();
     const ecr = $('#e-malle .ecr');
-    if (!calme) { ecr.classList.remove('joue'); void ecr.offsetWidth; ecr.classList.add('joue'); }
+    if (!calme) entrer(ecr);
   }));
   construireMalle();
 
@@ -4169,15 +4182,15 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     const io = new IntersectionObserver((es) => es.forEach((e) => {
       const el = e.target;
       el.classList.toggle('hors', !e.isIntersecting);
-      if (e.isIntersecting && e.intersectionRatio >= 0.15 && !el.dataset.vu && el !== tel) { el.dataset.vu = '1'; el.classList.add('joue'); el.dispatchEvent(new CustomEvent('entree')); }
+      if (e.isIntersecting && e.intersectionRatio >= 0.15 && !el.dataset.vu && el !== tel) { el.dataset.vu = '1'; entrer(el); }
     }), { threshold: [0, 0.15] });
     [tel, ...$$('.ecr')].forEach((el) => io.observe(el));
   }
   $$('.ecr .retour').forEach((b) => b.addEventListener('click', () => {
     const ecr = b.closest('.ecr');
-    $('.defil', ecr).scrollTop = 0;
-    ecr.classList.remove('joue'); void ecr.offsetWidth; ecr.classList.add('joue');
-    ecr.dispatchEvent(new CustomEvent('entree'));
+    const d = $('.defil', ecr);
+    if (d) d.scrollTop = 0;
+    entrer(ecr);
   }));
 
   // ---------------------------------------------------------------- les fêtes
@@ -4303,17 +4316,18 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     $$('.trou', trous).forEach((t, i) => {
       t.classList.toggle('on', i < n);
       if (!auDoigt || calme || i < avant || i >= n) return;
-      // La pince perce : le trou s'ouvre, la confetti de carton tombe.
+      // La pince perce : le trou s'ouvre, la confetti de carton tombe ; un trou après l'autre.
+      t.style.setProperty('--q', `${(i - avant) * 55}ms`);
       rejouer(t, 'perce');
       const c = document.createElement('span');
       c.className = 'chute';
       c.style.left = `${t.offsetLeft}px`; c.style.top = `${t.offsetTop}px`;
       c.style.setProperty('--cx', `${(i % 2 ? 9 : -7)}px`);
-      c.style.animationDelay = `${(i - avant) * 70}ms`;
+      c.style.animationDelay = `${(i - avant) * 55 + 90}ms`;
       c.addEventListener('animationend', () => c.remove());
       trous.append(c);
     });
-    if (auDoigt && n !== avant) rejouer(billetC, 'pince');
+    if (auDoigt && n > avant) rejouer(billetC, 'pince');
     noteTxt.textContent = n ? `${n} / 10` : '·· / 10';
   };
   for (let i = 1; i <= 10; i++) {
