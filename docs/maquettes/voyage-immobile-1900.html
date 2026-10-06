@@ -26,6 +26,7 @@
   --f-presse: 'Courier Prime', 'Courier New', ui-monospace, monospace;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { background: var(--nuit); }
 body { margin: 0; padding-inline: 16px; padding-block: 0 80px; background: var(--nuit); color: var(--papier); font: 16px/1.55 var(--f-corps); -webkit-text-size-adjust: 100%; overflow-x: hidden; }
 button, input, textarea { font: inherit; color: inherit; }
@@ -73,8 +74,9 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .plaque-quai small { font: 500 11px var(--f-rail); letter-spacing: .14em; text-transform: uppercase; }
 .legende-photo { position: absolute; left: 10px; bottom: 8px; font: italic 11px var(--f-corps); color: rgba(244, 239, 226, .75); text-shadow: 0 1px 2px #000; }
 
-.interieur { position: absolute; inset: 0; background: var(--i-interieur) 50% 40% / cover no-repeat; opacity: 0; will-change: transform, opacity; transform-origin: 50% 29%; }
-.interieur::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, transparent 30%, rgba(8, 5, 3, .7)); }
+.interieur { position: absolute; inset: 0; background: var(--i-interieur) 50% 40% / cover no-repeat; opacity: 0; will-change: transform, opacity; transform-origin: 50% 36%; }
+.interieur::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 38%, rgba(8, 5, 3, .62)); }
+.interieur svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .vitre { position: absolute; overflow: hidden; opacity: 0; border-radius: 14px; }
 .vitre .cadre { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 var(--ep, 12px) #4a2a17, inset 0 0 0 calc(var(--ep, 12px) + 2px) #1c0f07, inset 0 0 0 calc(var(--ep, 12px) + 3px) rgba(201, 162, 87, .55), inset 0 18px 30px rgba(0, 0, 0, .45); }
 .vitre .reflet { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, rgba(255, 250, 235, .09) 0 18%, transparent 18% 44%, rgba(255, 250, 235, .06) 44% 52%, transparent 52%); mix-blend-mode: screen; }
@@ -82,20 +84,36 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .pano { position: absolute; left: 0; top: 0; overflow: hidden; }
 .pano > div { position: absolute; }
 .ciel { inset: 0; background: linear-gradient(#b9b7a6, #ddd3bb 45%, #cfc2a3 70%, #8f7d61); }
-.fond { top: 2%; height: 44%; filter: contrast(.88) brightness(1.05); aspect-ratio: 941 / 419; background: var(--i-fond) 0 0 / 100% 100%; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); will-change: transform; }
+.fond { top: 0; width: 800px; height: 46%; -webkit-mask-image: linear-gradient(#000 74%, transparent); mask-image: linear-gradient(#000 74%, transparent); will-change: transform; }
+/* Le fond change avec la ligne : ciel de ville, campagne, montagne, mer. Un seul est visible à l'arrêt, deux se fondent en route. */
+.fond i { position: absolute; inset: 0; opacity: 0; background-repeat: no-repeat; background-size: 100% 100%; will-change: opacity; }
+.fond .ville { background-image: var(--svg-ville), linear-gradient(#a4a297, #cbc2ad 52%, #dcd0b6 72%); }
+.fond .campagne { background-image: var(--svg-campagne), radial-gradient(ellipse 30% 9% at 62% 36%, rgba(245, 238, 220, .6), transparent), linear-gradient(#b3b8a8, #dad6c0 50%, #e6dab8 72%); }
+.fond .montagne { background-image: linear-gradient(#a2a69d, #c4c4b5 55%, #d0cab7 75%); }
+.fond .montagne::before { content: ''; position: absolute; left: 165px; top: 24%; width: 530px; aspect-ratio: 941 / 419; background: var(--i-fond) 0 0 / 100% 100%; filter: contrast(.88) brightness(1.05);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 26%); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 26%); mask-composite: intersect; }
+.fond .mer { background-image: var(--svg-mer), linear-gradient(#a7b2b0, #d2d3c3 48%, #eddcb6 66%); }
 .loin { top: 20%; height: 64%; display: flex; will-change: transform; }
 .loin i { display: block; height: 100%; flex: none; margin-right: -64px; background-size: 100% 100%; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent), linear-gradient(transparent 0, #000 34%); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent), linear-gradient(transparent 0, #000 34%); mask-composite: intersect; }
 .loin i.m { transform: scaleX(-1); }
 .gares { top: 0; left: 0; height: 100%; width: 1px; will-change: transform; }
 .gare { position: absolute; bottom: 19%; }
-.gare .photo { position: absolute; inset: 0; background-size: 100% 100%; -webkit-mask-image: radial-gradient(ellipse 60% 62% at 50% 58%, #000 62%, transparent 100%); mask-image: radial-gradient(ellipse 60% 62% at 50% 58%, #000 62%, transparent 100%); }
-.gare.fermee .photo { filter: invert(1) grayscale(1) contrast(.72) brightness(.95) sepia(.25); opacity: .7; }
-.gare.fermee::after { content: ''; position: absolute; inset: -10% -6%; background: radial-gradient(ellipse at 50% 60%, rgba(214, 205, 186, .28), rgba(214, 205, 186, 0) 70%); }
+/* La gare est posée : son ciel se fond dans le paysage par le haut et les côtés, son pied dans le sol du ballast. */
+.gare .photo { position: absolute; inset: 0; background-image: linear-gradient(var(--voile, #c6b99c) 0, #fff var(--haut, 24%)), var(--img); background-size: 100% 100%; background-blend-mode: multiply, normal;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent var(--d, 0%), #000 var(--haut, 24%)); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent var(--d, 0%), #000 var(--haut, 24%)); mask-composite: intersect; }
+/* 1900 : le ciel blanc de la plaque de lanterne est ôté par sa clarté, sur la moitié haute seulement ; la tour reste. */
+.gare .photo.sans-ciel { filter: url(#sans-ciel); --d: 0%; --haut: 7%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent 0, #000 7%, #000 44%, transparent 58%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--cote, 12%), #000 calc(100% - var(--cote, 12%)), transparent), linear-gradient(transparent 0, #000 7%, #000 44%, transparent 58%); }
+.gare.fermee .photo { filter: invert(1) grayscale(1) contrast(1.3) brightness(1.06); opacity: .92; }
 .emaillee { position: absolute; left: 50%; top: 6%; transform: translateX(-50%); z-index: 2; display: grid; justify-items: center; padding: 5px 14px 6px; background: var(--email); color: #f4efe2; border-radius: 4px; white-space: nowrap; box-shadow: inset 0 0 0 2px #f4efe2, inset 0 0 0 3.5px var(--email), 0 5px 12px rgba(0, 0, 0, .5); }
 .emaillee b { font: 700 30px/1 var(--f-rail); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
 .emaillee small { font: 600 10.5px var(--f-rail); letter-spacing: .16em; text-transform: uppercase; }
+.gare.depart .emaillee { left: 73%; top: 8%; }
 .gare.fermee .emaillee { background: #3e3a35; box-shadow: inset 0 0 0 2px #bdb3a0, inset 0 0 0 3.5px #3e3a35; color: #d6ccb8; }
-.affiche-quai { position: absolute; right: 4%; bottom: 7%; width: 23%; aspect-ratio: 3 / 4; z-index: 2; background-size: cover; background-position: center; box-shadow: 0 0 0 3px #3a2414, 0 0 0 4px #1a0f07, 3px 6px 10px rgba(0, 0, 0, .5); }
+.affiche-quai { position: absolute; left: calc(50% + var(--w, 390px) / 2 - 140px); bottom: 11%; width: 74px; aspect-ratio: 3 / 4; z-index: 2; background-size: cover; background-position: center; box-shadow: 0 0 0 3px #3a2414, 0 0 0 4px #1a0f07, 3px 6px 10px rgba(0, 0, 0, .5); }
+.gare.avec-voisin .affiche-quai { bottom: 35%; }
 .voisin { position: absolute; bottom: 12%; z-index: 3; background: var(--i-voisin) 0 0 / 100% 100%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
 .voisin .craie { position: absolute; left: 34%; top: 25%; padding: 2px 8px; background: #1b1814; color: #efe9dc; font: 700 13px var(--f-rail); letter-spacing: .1em; transform: rotate(-2deg); box-shadow: 0 0 0 1px rgba(239, 233, 220, .4); }
 .ballast { left: 0; right: 0; bottom: 0; height: 22%; background:
@@ -104,17 +122,21 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
   radial-gradient(circle at 20% 30%, rgba(255, 245, 225, .16) 0 1px, transparent 2px),
   linear-gradient(#5f5040, #3c2f22 55%, #221910);
   background-size: 100% 100%, auto 32%, 9px 7px, 100% 100%; background-repeat: no-repeat, repeat-x, repeat, no-repeat; will-change: background-position; }
+.ballast::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 17%; background: linear-gradient(rgba(95, 80, 64, 0), rgba(95, 80, 64, .7) 60%, #5f5040); }
 .talus { left: 0; right: 0; bottom: 19%; height: 13%; background: var(--i-grain) 0 0 / 180px 180px, linear-gradient(rgba(62, 70, 44, 0), #3d4029 35%, #2c2618); background-blend-mode: multiply, normal; -webkit-mask-image: radial-gradient(ellipse 34px 22px at 50% 100%, #000 60%, transparent 62%), linear-gradient(transparent 22%, #000 40%); -webkit-mask-size: 60px 100%, 100% 100%; -webkit-mask-repeat: repeat-x, no-repeat; -webkit-mask-composite: source-over; opacity: .95; will-change: background-position; }
 .poteaux { inset: 0; background-repeat: repeat-x; will-change: background-position; }
-.vapeur { left: 0; right: 0; top: 0; height: 45%; opacity: 0; background:
-  radial-gradient(ellipse 120px 60px at 20% 40%, rgba(236, 230, 216, .75), transparent 70%),
-  radial-gradient(ellipse 150px 70px at 60% 25%, rgba(236, 230, 216, .6), transparent 70%),
-  radial-gradient(ellipse 110px 55px at 88% 55%, rgba(236, 230, 216, .65), transparent 70%); background-size: 420px 100%; background-repeat: repeat-x; }
+.vapeur { left: 0; right: 0; top: 0; height: 45%; opacity: 0; filter: url(#fumee-large); background:
+  radial-gradient(ellipse 110px 34px at 18% 42%, rgba(236, 230, 216, .75), transparent 72%),
+  radial-gradient(ellipse 60px 30px at 31% 33%, rgba(236, 230, 216, .55), transparent 72%),
+  radial-gradient(ellipse 150px 38px at 58% 27%, rgba(236, 230, 216, .6), transparent 72%),
+  radial-gradient(ellipse 70px 26px at 71% 40%, rgba(236, 230, 216, .5), transparent 72%),
+  radial-gradient(ellipse 100px 30px at 90% 54%, rgba(236, 230, 216, .65), transparent 72%),
+  radial-gradient(ellipse 46px 22px at 44% 58%, rgba(236, 230, 216, .45), transparent 72%); background-size: 420px 100%; background-repeat: repeat-x; }
 .grain { position: absolute; inset: -40px; z-index: 6; pointer-events: none; opacity: .23; mix-blend-mode: overlay; background-image: var(--i-grain); background-size: 180px 180px; animation: grain .5s steps(4) infinite; }
 @keyframes grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-14px, 9px); } 50% { transform: translate(11px, -13px); } 75% { transform: translate(-7px, -5px); } 100% { transform: translate(0, 0); } }
 .vignette { position: absolute; inset: 0; z-index: 6; pointer-events: none; background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 55%, rgba(10, 6, 3, .55)); animation: palpite 3.2s steps(8) infinite; }
 @keyframes palpite { 50% { opacity: .82; } }
-.hud { position: absolute; left: 0; right: 0; top: 0; z-index: 8; display: flex; align-items: flex-start; gap: 10px; padding: 14px 14px 30px; pointer-events: none; background: linear-gradient(rgba(12, 8, 5, .82), rgba(12, 8, 5, 0)); }
+.hud { position: absolute; left: 0; right: 0; top: 0; z-index: 8; display: flex; align-items: flex-start; gap: 10px; padding: 14px 14px 34px; pointer-events: none; background: linear-gradient(rgba(12, 8, 5, .9), rgba(12, 8, 5, .84) 70%, rgba(12, 8, 5, 0)); }
 .hud .chap { font: 600 10.5px var(--f-rail); letter-spacing: .14em; text-transform: uppercase; color: var(--laiton); }
 .hud .an { display: block; font: 700 32px/1 var(--f-rail); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .hud .lieu { display: block; margin-top: 2px; font: italic 13.5px var(--f-corps); color: var(--doux); }
@@ -129,7 +151,8 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .ligne b::after { content: ''; position: absolute; left: 4px; right: 4px; top: 5px; height: 6px; background: repeating-linear-gradient(90deg, #15110d 0 4px, transparent 4px 7px); }
 .consigne { margin: 0; text-align: center; font: italic 14px/1.35 var(--f-corps); color: var(--doux); min-height: 19px; }
 .action { display: grid; place-items: center; min-height: 48px; padding: 8px 14px; border: 0; border-radius: 3px; background: var(--corail); color: var(--corail-encre); font: 700 15px var(--f-rail); letter-spacing: .06em; text-transform: uppercase; }
-.action[hidden] { display: none !important; }
+.actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.actions.deux .action { padding-inline: 6px; font-size: 13.5px; letter-spacing: .03em; white-space: nowrap; }
 .fondu { animation: fondu .22s ease-out; }
 @keyframes fondu { from { opacity: .25; } }
 
@@ -455,6 +478,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 @keyframes eclat { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
 @keyframes eclat-lent { 0%, 72% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
 @keyframes lanterne { from { opacity: .5; } to { opacity: 1; } }
+@keyframes lampe-labo { from { opacity: .66; } to { opacity: 1; } }
 @keyframes monte { from { transform: translateY(12px); opacity: 0; } }
 @keyframes glisse-d { from { transform: translateX(-10px); opacity: 0; } }
 @keyframes s-eclaire { from { opacity: 1; } }
@@ -474,23 +498,36 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 
 /* La bouffée qui porte la montée en voiture : pilotée par le passage, pas par une horloge. */
 .buee { position: absolute; inset: 0; z-index: 5; pointer-events: none; visibility: hidden; }
-.buee i { position: absolute; left: 0; top: 0; width: 150%; aspect-ratio: 1; border-radius: 50%; opacity: 0; will-change: transform, opacity;
-  background: radial-gradient(closest-side, rgba(240, 234, 220, .96), rgba(236, 230, 216, .6) 48%, rgba(236, 230, 216, 0) 72%); }
+.buee i { position: absolute; left: 0; top: 0; width: 150%; aspect-ratio: 1; opacity: 0; will-change: transform, opacity; background: var(--volute); filter: url(#fumee-large); }
 
-/* Les panaches : la locomotive respire, à quai comme en gare. */
+/* Les panaches : la locomotive respire, à quai comme en gare. Une volute a plusieurs lobes, un bord déchiré ; elle monte, tourne, s'étire au vent et se défait. */
+:root { --volute:
+  radial-gradient(ellipse 30% 27% at 40% 44%, rgba(244, 238, 226, .95), rgba(238, 232, 218, .5) 58%, rgba(236, 230, 216, 0)),
+  radial-gradient(ellipse 24% 26% at 63% 38%, rgba(240, 234, 220, .85), rgba(236, 230, 216, .4) 60%, rgba(236, 230, 216, 0)),
+  radial-gradient(ellipse 27% 21% at 56% 64%, rgba(236, 230, 216, .8), rgba(236, 230, 216, .35) 60%, rgba(236, 230, 216, 0)),
+  radial-gradient(ellipse 19% 22% at 27% 63%, rgba(232, 226, 212, .7), rgba(236, 230, 216, .3) 60%, rgba(236, 230, 216, 0)),
+  radial-gradient(ellipse 16% 15% at 76% 60%, rgba(236, 230, 216, .6), rgba(236, 230, 216, 0)),
+  radial-gradient(ellipse 15% 17% at 46% 20%, rgba(244, 238, 226, .6), rgba(236, 230, 216, 0)); }
 .bouffees { position: absolute; width: 0; height: 0; pointer-events: none; }
-.bouffees i { position: absolute; left: -30px; top: -30px; width: 60px; height: 60px; border-radius: 50%; opacity: 0;
-  background: radial-gradient(closest-side, rgba(240, 234, 220, .85), rgba(236, 230, 216, .4) 55%, rgba(236, 230, 216, 0) 75%); animation: bouffee 5.4s linear infinite; }
-.bouffees i:nth-child(2) { animation-delay: -1.8s; }
-.bouffees i:nth-child(3) { animation-delay: -3.6s; }
-@keyframes bouffee { 0% { transform: translate3d(0, 0, 0) scale(.45); opacity: 0; } 14% { opacity: .75; } 100% { transform: translate3d(var(--dx, -46px), var(--dy, -170px), 0) scale(var(--gros, 2.6)); opacity: 0; } }
+.bouffees i { position: absolute; left: -40px; top: -40px; width: 80px; height: 80px; opacity: 0; background: var(--volute); filter: url(#fumee);
+  animation: bouffee var(--duree, 5.4s) linear infinite; animation-delay: calc(var(--duree, 5.4s) * var(--n, 0) / -5); }
+.bouffees i:nth-child(2) { --n: 1; --r0: 70deg; --r1: 20deg; --sx: -9px; }
+.bouffees i:nth-child(3) { --n: 2; --r0: 190deg; --r1: 250deg; --sx: 7px; }
+.bouffees i:nth-child(4) { --n: 3; --r0: 300deg; --r1: 255deg; --sx: -5px; }
+.bouffees i:nth-child(5) { --n: 4; --r0: 130deg; --r1: 185deg; --sx: 11px; }
+@keyframes bouffee {
+  0% { transform: translate3d(0, 0, 0) rotate(var(--r0, 0deg)) scale(.28); opacity: 0; }
+  9% { opacity: .9; }
+  40% { transform: translate3d(calc(var(--dx, -46px) * .22 + var(--sx, 0px)), calc(var(--dy, -170px) * .5), 0) rotate(calc(var(--r0, 0deg) * .6 + var(--r1, 50deg) * .4)) scale(calc(var(--gros, 2.6) * .5), calc(var(--gros, 2.6) * .46)); opacity: .62; }
+  72% { opacity: .3; }
+  100% { transform: translate3d(var(--dx, -46px), var(--dy, -170px), 0) rotate(var(--r1, 50deg)) scale(calc(var(--gros, 2.6) * 1.2), calc(var(--gros, 2.6) * .74)); opacity: 0; } }
+/* Moins d'animations : un panache immobile, étagé le long de sa montée. */
+.calme .bouffees i { opacity: calc(.5 - var(--n, 0) * .09); transform: translate3d(calc(var(--dx, -46px) * var(--n, 0) * var(--n, 0) / 20), calc(var(--dy, -170px) * var(--n, 0) / 5.5), 0) rotate(var(--r0, 0deg)) scale(calc(.4 + var(--n, 0) * var(--gros, 2.6) / 7)); }
 .panache { left: 57%; top: 31%; }
-.fumee-attente { left: 37%; top: 172px; --dx: 22px; --dy: -120px; --gros: 2.2; }
-.haleine { right: -20px; top: 36%; --dx: -330px; --dy: -110px; --gros: 4.2; opacity: 0; transition: opacity 1.4s ease; }
-.haleine i { animation-duration: 9s; }
-.haleine i:nth-child(2) { animation-delay: -3s; }
-.haleine i:nth-child(3) { animation-delay: -6s; }
+.fumee-attente { left: 37%; top: 172px; --dx: 26px; --dy: -120px; --gros: 1.9; }
+.haleine { right: -20px; top: 36%; --dx: -330px; --dy: -110px; --gros: 3.6; --duree: 9s; opacity: 0; transition: opacity 1.4s ease; }
 .a-l-arret .haleine { opacity: 1; }
+.a-l-arret.au-noir .haleine { opacity: .28; }
 
 .hud .an.roule-h { animation: roule-h .7s cubic-bezier(.2, .7, .2, 1); }
 .hud .an.roule-b { animation: roule-b .7s cubic-bezier(.2, .7, .2, 1); }
@@ -503,7 +540,16 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .gare.arrive .emaillee::after { animation: eclat 1.8s ease-in-out .25s; }
 .plaque-quai::after { animation: eclat-lent 7s ease-in-out infinite; }
 /* Une année fermée attend sous la lanterne rouge du laboratoire. */
-.gare.fermee::before { content: ''; position: absolute; z-index: 1; inset: -6% -4%; pointer-events: none; background: radial-gradient(ellipse at 50% 20%, rgba(200, 40, 20, .42), rgba(200, 40, 20, 0) 68%); mix-blend-mode: screen; animation: lanterne 5s ease-in-out infinite alternate; }
+.chambre, .lampe-labo { top: 0; bottom: 0; left: 50%; width: 1100px; margin-left: -550px; pointer-events: none; visibility: hidden; will-change: transform; --lx: calc(50% - 112px); --ly: 27%; }
+.chambre { mix-blend-mode: multiply; background: radial-gradient(circle 540px at var(--lx) var(--ly), #ffdccb 0, #f28a68 17%, #b53c2b 42%, #4a130e 74%, #1f0806);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 31%, #000 69%, transparent); mask-image: linear-gradient(90deg, transparent, #000 31%, #000 69%, transparent); }
+.chambre::before { content: ''; position: absolute; left: calc(var(--lx) - 15px); top: 0; width: 30px; height: calc(var(--ly) - 10px); background: linear-gradient(#140605, #140605) 50% 0 / 2px 100% no-repeat, linear-gradient(#140605, #140605) 50% 100% / 30px 7px no-repeat, linear-gradient(#140605, #140605) 50% calc(100% - 7px) / 14px 6px no-repeat; }
+.lampe-labo { mix-blend-mode: screen; animation: lampe-labo 5s ease-in-out infinite alternate; background: radial-gradient(circle at var(--lx) var(--ly), #fff0d2 0 6px, #ff7445 10px, #e2371c 14px, rgba(214, 46, 24, .5) 17px, rgba(200, 40, 20, .26) 70px, rgba(200, 40, 20, .09) 170px, rgba(200, 40, 20, 0) 280px); }
+/* L'étiquette de la plaque, à la main : le lieu, et ce qui la sépare de l'année en cours. */
+.porte-etiquette { left: 50%; top: 52.5%; width: 0; height: 0; visibility: hidden; will-change: transform; }
+.etiquette { position: absolute; left: 0; top: 0; transform: translateX(-42%) rotate(-3deg); display: grid; gap: 1px; padding: 6px 13px 7px 24px; background: #eab9a0; color: #240b07; white-space: nowrap; font: italic 600 17px/1.15 var(--f-corps); box-shadow: 2px 4px 8px rgba(0, 0, 0, .5); clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%); }
+.etiquette::before { content: ''; position: absolute; left: 10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #240b07; }
+.etiquette small { font: italic 400 13px/1.2 var(--f-corps); }
 /* La borne de frontière entre 1899 et 1900 : elle passe dans la vitre au moment où l'année change. */
 .borne { position: absolute; bottom: 19%; width: 120px; height: 46%; }
 .borne::before { content: ''; position: absolute; left: 50%; bottom: 0; width: 9px; height: 100%; margin-left: -4.5px; background: repeating-linear-gradient(#f4efe2 0 14px, var(--email) 14px 28px); box-shadow: inset -2px 0 0 rgba(0, 0, 0, .25); }
@@ -690,12 +736,14 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .bas { pointer-events: none; }
 .bas button { pointer-events: auto; }
 .poteaux, .ballast, .vapeur, .talus, .pano .ciel { pointer-events: none; }
-.hud .recomp { display: block; margin-top: 3px; font: 700 10.5px var(--f-ui); letter-spacing: .04em; color: var(--pale); }
+.hud .recomp { display: block; margin-top: 3px; font: 700 10.5px var(--f-ui); letter-spacing: .04em; color: var(--doux); }
+.hud .lieu { color: var(--papier); }
 .hud .bobines-hud { display: inline-flex; align-items: center; gap: 6px; margin: 5px 0 0; padding: 2px 8px 2px 4px; border-radius: 10px; background: rgba(21, 17, 13, .78); box-shadow: inset 0 0 0 1px rgba(201, 162, 87, .5); font: 700 10.5px var(--f-ui); color: var(--laiton); }
 .hud .bobines-hud svg { width: 15px; height: 15px; display: block; }
 .hud .bobines-hud.pulse { animation: pulse-bob .9s ease-out; }
 @keyframes pulse-bob { 30% { transform: scale(1.18); } }
-.pastilles { position: absolute; right: 12px; bottom: 132px; z-index: 8; display: grid; gap: 8px; }
+/* Les pastilles et le message tiennent au bord haut du bandeau : quelle que soit sa hauteur, ils restent au-dessus de la ligne. */
+.pastilles { position: absolute; right: 12px; bottom: calc(100% - 22px); display: grid; gap: 8px; }
 .pastilles button { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid rgba(201, 162, 87, .7); background: rgba(21, 17, 13, .82); color: var(--papier); transition: transform .25s ease; }
 .pastilles button:active { transform: scale(.92); }
 .pastilles button[aria-pressed="true"] { background: var(--laiton); color: #15110d; }
@@ -704,10 +752,10 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 .pastilles button[aria-pressed="true"] .onde { opacity: 1; }
 .pastilles .barre { transition: opacity .3s; }
 .pastilles button[aria-pressed="true"] .barre { opacity: 0; }
-.message { position: absolute; left: 14px; right: 62px; bottom: 132px; z-index: 9; margin: 0; padding: 9px 12px; background: rgba(14, 10, 7, .92); box-shadow: inset 0 0 0 1px rgba(201, 162, 87, .6); border-radius: 3px; font: 14px/1.35 var(--f-corps); color: var(--doux); animation: monte .5s ease-out; }
+.message { position: absolute; left: 14px; right: 62px; bottom: calc(100% - 22px); z-index: 9; margin: 0; padding: 9px 12px; background: rgba(14, 10, 7, .92); box-shadow: inset 0 0 0 1px rgba(201, 162, 87, .6); border-radius: 3px; font: 14px/1.35 var(--f-corps); color: var(--doux); animation: monte .5s ease-out; }
 .message b { display: block; font: 600 12px var(--f-rail); letter-spacing: .12em; text-transform: uppercase; color: var(--laiton); }
-.action.ticket { background: var(--carton); color: var(--encre); box-shadow: inset 0 0 0 1px #b39c6f; grid-auto-flow: column; gap: 10px; }
-.action.ticket small { font: 700 13px var(--f-presse); letter-spacing: .04em; text-transform: none; }
+.action.ticket { background: var(--carton); color: var(--encre); box-shadow: inset 0 0 0 1px #b39c6f; gap: 1px; padding-inline: 8px; font-size: 13.5px; }
+.action.ticket small { font: 700 12px var(--f-presse); letter-spacing: .04em; text-transform: none; }
 
 /* Une bobine perdue : une boîte de film oubliée dans le décor ; un éclat la trahit de loin en loin. */
 .bobine { position: absolute; z-index: 4; width: 40px; height: 40px; margin: 0 0 -8px -20px; padding: 0; border: 0; background: none; cursor: pointer; }
@@ -720,7 +768,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 /* Le ticket ouvre l'année : la plaque se développe sous les yeux, l'éclair de magnésium part, les confettis du poinçon tombent. */
 .gare .photo.positif { filter: none !important; opacity: 0; transition: opacity 2.6s ease-in; }
 .gare .photo.positif.monte { opacity: 1 !important; }
-.gare.se-developpe::before, .gare.se-developpe::after { transition: opacity 2.6s ease-in; opacity: 0; animation: none; }
+.chambre.eteinte, .lampe-labo.eteinte, .porte-etiquette.eteinte { transition: opacity 2.6s ease-in; opacity: 0; animation: none; }
 .magnesium { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0; background: radial-gradient(ellipse 70% 50% at 50% 38%, rgba(255, 252, 240, .95), rgba(255, 252, 240, 0) 75%); animation: magnesium 1.3s ease-out; }
 @keyframes magnesium { 0% { opacity: 0; } 8% { opacity: .9; } 22% { opacity: .35; } 30% { opacity: .7; } 100% { opacity: 0; } }
 .confetto { position: absolute; top: -12px; z-index: 5; width: 7px; height: 7px; border-radius: 50%; pointer-events: none; opacity: 0; animation: confetto var(--d, 2.6s) ease-in var(--q, 0s) both; }
@@ -1024,6 +1072,17 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
 --i-grain: url("data:image/webp;base64,UklGRuI3AABXRUJQVlA4INY3AACweACdASq0ALQAPslIm02npCIiOsDwGQlpANjMr1b8YiPknzj+l/tnrnfUH0B3u+d/2l9Qf51+JfQfoJ+yfiT8E/oj2Avzb+teTF7f+zv+370zP/7h+xnsBe0/1z9kPFt+kvUD80/sX/h/xnwAfzv+tfsV6k/3j9hPIi+bf2r/v/5z4Af5v/Z//T/hvc8/c//d/iv9V6Dvy/+1f+3/Gf675Av5r/Zv/T/hf9V7uv/r/c3/////6cfrh/5vz/+jj9df/Z+e//3LVxtv3MbzR4P72CpjS/bFciNKq4J3vW5IA+AVKMAcEiUsi6IOj3QKfFDdYO21A+MVGW2ZnQ5lJyr/j6Ndh7rdURSxd+xiiUMWXUtSoU/VkK4UqvnTDD7q8Y6uRCZZ+Y6OsH9hTkkMsZLAYg9Y35QBtdH/DoJPlW67uesEM35ynKc5Jvd98tq3V/3VWqcY3+arMQ9EHt7OUI8asiACJXirrsCD8J1hHQG/hUzigpyUleHhb+tctdMeg663IJY1HnAoQEKF8a2JjDJospH5x6WKKeFJTVpY434uwLOGxQGLaNUyh5tPC+81y71+vt1Z2VPuZX9vJxwROVxGmeOKAhQoEDepg1eS1crShdQ8c3xyhMz55F0KbBgjNtqYvbrv4PCRPSSRedI5eblDQJvGrvLma48RVmPnbrN9tj/k013sGU9BVnE2taFUoIL/RBxQh53xpIvnv/ipcsPX9xPY19AUy39suy0eD8F4K6um4f4ue1issdKUDPepQTTmwQTgCmPAMlJ+I68zrQk6/a/VCuAxjfn4LQj1gQwXDV+CpDfYazLZad76vFFf216LEiQoPT+IREFIDAqBPzPKAKtyEVuLNnKDYDTOX89ZymGDk9I33CN9441tg4aa1INwYjxugJdy7emNZLIfJZaxczOfZpxhGuutY1wo37lpKsmLoM0A+clvRnurLFLW5xlSV/25sJYcmvy095yvug0ETB3lDlLvVTIb9Wsj1efCe1D4AkN2eMJMM9hfXbC12aLeRpy0bvOPxLLu8Wbw7aQTZITeYPhHpkBxO/o5+H6PlYxQITQfCAF0uvr5nJ+kboH390IDtrQRGj1ahZhusCXQm0ZgGPrqeU0xZ+z9iz8sIgX/tznWsYM2z5x26zk8XH10mVnfEuUSLgqNORhIqIDAtEXf1RK9qA4nRKiMQxQXazGDp4lTMGK6nqcYVFyOzTZODiSLRRXrj8/sXNZXwaEEvnv2r56iHds8xMm6K2iEv+NNqN5L/AEpfF7TXgeecM9kLDY0k3t/2MaqJivX0AD+7CR9x4oG/KEcBn11elVfNkL6Utl4sa/+RT/kEabvZFrk03Zvm/KFvBkamd67J2tqSCW4rtLxmSQiiHGjLUq942/s3R/g2vY2TE7T0VuCSrNyhDpecIwnTxrlvCIOO71k4KITGV2dCRwvs+Dt8Tm+PKDdeq1S+wWBAx+UMOejtOZ8gjWQTAzO3eYEwhmwa5m1rsfENSSQaGJBQ7jOdI7G66O+qqxfR1Qrpoyl/lVXOYTfPxQa/YseyW6OYdmx1gvExPpzFPrhwzPc+SQpS9Lti+ouqpLDV8qxpOoWWhXChYxANfsyQJ4gk/RWi+b/zRMz7++Mp5O/bHxH/vrHTqir5BNUicw8cskHzZFoF0gon3gbXGQE8cUJsN0uk5Iu/mD5pX6JkWAB/RGZWhu8LQJ5UhRqUTkF1yOiLMOyeafhbJ0Ymv3SzvLWDaCBjF6GqcPXvjLiA2cg9XP56y+AGhV3OcMmScY5WurbO1yp4kD3ydw+a1k/O4siRP/LU2z3gf3YrWIj+jS3ZB4UnXZZil6vQZ4l+PLhRX0LxgOjc0bJKmtx4mzovfIl3kvOaeQDhkWMAKRJUovSUQtkXoRzYvdUOSURRt+5EXCnq3HaQR65I+gMZlxvVdSdJOlRlBfMszZcaKKqXRblnYDbIQ6pK3q4wyutGgyxaHBMxB+S9tpu6E18eG9BnEOZC3j3BtJEA2pMT2nbkBQ9Lg23M6PzGim0mD1WeiT5FswaeK3hlPhUwskjZuslKGPdayqCGiKJBohvs8Xsqxu3bLoaI4SB7Z6xTOs0+Jju8ZIJJif6Ay4SS14uzcKdDxXbyCT7ZCLLRQjrecSMkYbJsHC8jIFqJ5j1lXbG1tkkF6wz1iNqD0679lpOLDJK5+GECzxDk82wC2QR9IW9s2/dBiLBdsDTF8pgWjjWrsvUS047p4S5/WWJ/V8kXbS5uQCzyIdZgKrVgbBUadU5RMbhrJDYETCIWTZOhIoHHayWeMenDN/MBxtft8es9pWnmd8/O6wa6x2JPHtznFmswtFxhDrdubx+pzW0iqqbh/d5o+kaaePzB4sEBHrNT10bx8T1zi3ilQgB4lch/Mo2TGA0BzC/YGKT/OsGGVoCQDdl1vBIl9VULzkPzGuZU29kmhQ2YZbr5aYRv8l/bq7rjWVWStq8x3j0Yf69gg4e56ZBrewpidbMa7eODAUfiDPIeJQevF9a2QVIPDbbr9111kDMXKnelNjnVRu4iRAo5wgjOe9AHxttjz7EMSCAZ1P6zofyQ1NE0JNvyRbHn6Ex/f5uf9EVda8GWt4l8a7AMqrcbF/KUONg9jY2dmc6Av+s54i0yRd34KxIAW4n+bCXH2i7lrCsIldXHU5kkeMQBoHgWUJCkiR9os5SKSoThdZD5MKqAIdJBq8lWe2e1NXrQJ/nTm/YsEJSEWFCPGGoKrggOHVkejqO/g4Ls3VUBBq7wbLJ7Ds08CikljFXT31eMhGFxIL31L38r9Amprf4rnS2xEle+WnowkfG6mJQOen8JwYzmTf8cZowZkjRd9YA8s0AAwTML8oY/I2cr4Y79vpDvAwX76L7xGFvMZ7yCgg3VrCsd8A7s3bewWaLCiyDvbgkHt9vORnludtjChzAegNH6A7EMeJS5p/P7ZsaQMzvACrvoJ4XyjbhAbgp3TvKhhHdH+mCto1uh7MJvDjaSKfhnlpAth/wFY2Ke/Uv2ipATWTi6Bc2dYrIfRJjuua7ZCOEE3cxDmTHIInVJEr7GqItoTSBpA8z4gODzOWYue+fhLonsCtsq4O9N0oEK9cHJf+6l1EeRCE9Utz0vEbdrsOJZshp+OnUfK9dnZcixnrSyZvdZI+5ulYsEu/RM2h2A4qeM95NUvu6j+gH6g0dIltMWId50ue01s16fKitjG6UPeputb6lb+4MRpfJURasWRbOhBkReeyrbG/HSVhufwBtui8LCjhoI97fwdvuxrQdeboyqp224EENXlxEZD942elske6b61wEN7vQJ2RKyZQrlhfq/vf/lFzS7TSVeHIrOmE1p5p4KJXmJx6KBgLZU7fXLi5dE6Cw1ZG9Rp0dgTzGGa74JiSPukh+Yyg/0ZdI6ElIc9U/0YO0z4Lcid51SJ+KtV+f1Ury/JPZcBBX4Sb2ByUGjEIDPx6uxvPQdtr+cq3H+qyQXw0khWrOImhV3y78TtaIUagA2or8s9z6+vgPxLLjUWwDmR8cwCp298FourrEGvw7Ep19gPN/l/vvNryMpwJR7+M3ItuWCmGzIlmXVaKPA5LWdZ8RPTejGMuKK7qcxIPreF+pCVr2ZYosqacOYzlBAFdbDDTVCZ1SGQP63xU5wTNmw5YE6+jJ0oJasLRRI72O551ZlxM+nQtvZgKuLqrR6MmzD3LBdYIpZmjVmvchoDyElY3Bt/b8jQZ8B6zdbtHcuupisAiHvlK8SIPHjOsLqFdQs0huPI13t6DqLrbQnNyeGDQ3Nu01C4G8oGBihi3DjdWLaTJRIwauoU0+0QJ3Pvvx91EJj5+cK5WJYtch5DbapT3PG+uXDaQJEQsJTbiy00TsIeU3Pfn+XN07qWNqDE+ovjJE8h5cx7blvkcOSt8Qcy6xG5KEQy9waCUsLMQd6mc+bF8UXdmdk6ns4wyC6aMIt1enzpYZyf5om3qe6Gl25hb6t6S0wspIFYIrhhFVeCUE8EHSmjSr7Mr302Hb8Er8GM7zKKuO8edr3tRap49mLJ6ToYkTVNFLMBLafBN9Q4EQC2yjV1DL2JVzgOctkGROTWtJSbRkG+dyqB3Ud7XnXloGfMcamFDyD0YxYkS7cWVBSPayx2vte0kAi5tt4SA4hUvs2mM1O7dHi/ikrkFRmsZQcaA9uqg9zmSNXSLFvb/Rt1ypZUEcfAUPEzTvy3wnrmzs5eViU51N7dwQxTeiyf7+Tu/gsFscUeA27m78xk8iIuMbkBTxmLU7wdWQy/zwDONSOpobhVE1VweKFV2ZLneLbh5Ud4R6W7Xrg2ohQksyzqD0bQ0ZBh4bx+/V5WnvURdzxek8qv74scriSLsAsOTqZnuP6Lw8n0UgcipmHiXU2/QgaB1n3DJW+C2dmy3UAN1gbOiBMJ0ZxiwPLK+0WFsV7HTPwyFDhhfrNdf+0HK4y0y/SSb7y1je/SI0HrAPMtAhWXoElHUsuKvPffpbf8TSgvWhbj5t645R/NJ7gczxGLJ8vqRpql5VhgI/vV773kDmbZbPSIbNVIzzv1p983A4dmj1qIVlhnNpmDh4NPjTAV56z3Xoov6D815lUNU9QIMbKqwUvinzQs9XAkDjUr8oJ/PAlRiCTcQeFrNhdEMnKX1t3tb2ic4b9NXufevKgjW2LhMIEIllnAx0APYVUt7qMuR4sr8YG8AnwXpkhz4QoHPuVeDZs5CpDE0vCrFN5tAAlpZ/jBAvV2QuMql3ZMKmXnhWQ2vNP30hoomc28wecr4Tq+ZVoNz60k2ul1pH4TQ9HF++IONP+YhaUlp7AvvB038zcmQa6sBvOXCkVBsaHKrTIAhJQuyZUybdnkY+sfJSl4NIL+zvGLqPVF8ogE3uUnF9+Ky3g3dtY0fPmgbZ/d1jV5E2FQzU/pNJ2dl8ldQtHopu0Wx4MC10Qo0Z6DmxyQkyqo8/b5rjmkvjzUazhWDEtHu9Fzp4zGbwy575y+u875601MBIsTwJmVuUcFt6fmURBFRWMoJszEo3e1VPLd23YUTmJj+P5aYv4RLH6pDM0fpZgH5zJKFbR5TyNAY+dW+eozzz1ymEqNhPbNsPAw+C1YtknOB1Ry8dHPWzU1ALVMFX8PwXWY5Jm4tGRUi62xZAQi8gnECEBRJOpbPcYE429OgpsZbsWJwGfKzxk7GpCg6QDVu7+vo+4JoWRkknB/9afJHp4h5SpGLy7/fz6E1fMTmLzrXfa0V6K+644g/3FYHe7Z2BTx6plNGIXE6z1epVP4PEuni3k4P/3mG8BprbA2D8/nZowX3sbsG7U+I29SpFkbq+iPNVvPyAWZXrZbNQh80WICNpZYsPhHk4QVtAKAqVdMk8beYf+S34qLLUmtCOLsKWNkLHcWMmFerVW7dTnT89Eo25GKk4iLqzQVxkPUBC2DLuuLwyOE/UyWULz8KbyFbp/eRjuQ72qfRhsu8r3HLAJ1xm8l7ICLBdmM8LDwb5cx5pb4ABdU5Ja8YiDLkHbapB4dzTPTUT2XfGk5DQfEJXH9nGHVSF+SSpvt2Sw5GIBrKEkRwqEGKlG/PWdppfYtcUuA7oiLna+4Hw9su0pELI0sa1Kp26C8Ntv+XOzphM0OPdKUfN6M4yq8g6CWlAeoSMeGCtfRKY/9QeYK09+MTRqL91pvPTDB9Sx+HfjjmD9To2CwYpofcYK1j1RHHSHErg604kFx4U/1K5ZsntptVCq+ECuBWiPlRrpZm4tyIyp4AZ8jw/NjNNb9Ms8xQHRJJoJHS6bIUJId4/L4yYOuwPYjzUD+KjMS0lw6ZTmUFfB6MtE6ajfwv1U7nlzRBwlXQvpFaSi0Ii1bNzyPPD+8tQuzZdcns+bWnqp44khPhMsJ72IXr/mNHQjBWZacfX3cySt++yMg4zt5C7DHempVxN0rDigCwhm1ZN7+A74sbB80S0Lg/iE7ZkHVoonxZ+/xF9rByxGOykK14VF9p4mJsCVb6BGLo2yOJOkTDwpdDNZz/tOpYvWYjebbLi4H9LqVq/OoAo0HXYZRtjpC4bXGRPvT3Lj8gK7a3cot0NVNkFOy2/KkO3DVzmtFddNVHXpWGVTD3WoLjmOtougO8dTJQjogokMnrgj79Pi80jxmgP/PSgwImkiI0f/vUCcUYUQkT8/mfuGnE3Ev/GM7gXvR1eoqzT9DO9RvSD2H0wHJBm9aNMygK0ESf9j+8zG3hB9BWhO3SdGB/Epry+TVCr6a+9ZZ/NLrl66mGiTAMEgRJ20Gq2nvF4j1CqtwIehNCfjcZ0pmbI6BWujs6PblWdBU07jE2LeuV/KeE2u3ZiKBOCo1LLy254j5UopPJy4TDk9ZUp5N8+kQyk3z90W9DhHtPLQp9/CtDB6E5sV1z14yvf1UcSvKw7XphNdcqpJ+Ok/dkY7VQVSKrnrdHoWGINn36FXjxAEDwuPocHlfQXy8dClK1FtmzJNlgi5FyEh8asmm5OrFj9cbiixyHGWe+g8zj8DD2/mqj8TZ+hVZMGKXpeFcGbJI1870/PZ3n/y+eyMRG5kD+CuwhCcsrh0sF1qKFcr2LSG/K6/1v0BCBdPe3h/zn4p9iKOrJ17sqrrT48VKDmKTTG3fHvcexZGw2tumM+5EGwgudlg4c0PjCigZJeeFfDYdT9meDO1pNhJCIkcuUM5dieM4jdNmD9oNnK/I+LcKRamyvQqV1APRPNTA5mIqSbfR+dtb1/+8LxI2ch4bWEUbh/RXSBjuMLuLKQikXUcWPHiZOZzBqCVccmtVYMLEAaERIR15uoehwLyctE+D0DT55kPNgD8NPD39LpcdprzdScIU1PnWLXlCgjGRzyln56bSeQ/yCK3q4Ddx8Ej2f9tKYpGm3gAZE55gZbHZGmuUhyiPRSqFlLydi2/PYs+W4ZvjmqGo+SC4KWUKtPYrpcH9do4EttmIQsC2T4skIZipoKfcLJdF4QSZv0ErAdRSiwr5RolWVDcJd0XkjsuH1oDqmNN9/Oq1JQn16DWCx6wNf/g8LHM6/bhuXNkNvf/ERsLQgMWtrsTy/zTaQy8XJWZW/MhR1RB9dsrHwyOEFdcXJlnOae/lnAg0+eHpZdmVHeKsiWjf4m+4PhePLRaNrmOFq6DvGPwIaLe9CMr/clZkhNkQAm6dR7xFyYk9n39nxVA85U6GMrwOu0oKZBmfXlC8AFJxM+wioqi7Hw9a1BnLFjqK+u6L5fZIpgYKSGpvPc6x1OnbP5yHKtvGDGDhEEF/ZA8kGOT2sBGU3vitom0VZrKPldTfSH+BcPYLX/J0Qg0DEvat57xAq0n/xLlzx8SGVm/vo74Mibl4tJyiFJzFMHyEf8ZEwbKqmMRzPLhUfXPEMK3Y860ghjPG5peGwO5k6evTbL0EkDU9EYjabtt4IFhMS/6OHtGhz3BfC63S/INpekaAFAig0FOzO/TXVQ6ZvVY7iazq8+tDi7ot65V0FYPH9HioGVAoUiel9iV6qz+bh9H/hneVP+JYaSPkFMxp4umiq2w9L5ammvqpasvOIMpPFa+2BrSO089N0xvRxPVIywfPBUcTiwa8CXG/LIItHi8PzXhenfpnd/Pa/0VwoFxL1+MpZzlKywC1S0eeJeKrbj3ITvePcTc0qbQLJsZaD0cUyGuMU5LrsIK7Pg+ogBRQwOrYI3Fa5fOBq+zFRqmnrXVrA7e7h9C5+UgJ7xk9pRv8/3oX6cVMzZpw+HxQpNpuVV2X3Boam1lyBTa/xTV/llGlUjW7L4Q5Fh6OKbNEwjwTUaLzVHSYk19s+BbPPneyTPivYRNkPBTiZCM8lUTnBMY35wG5LPbLjCSLPrdGbv+F87uSwViesKSG/bocMLxnmISZUPlxaEmj59Pr9NnRaYYU9MoHZJmxh6gQ3zU9TJlnH69SZ4a2mLWcysOyaOoeM2fCNbUtn94zuKWCZPhrw19L+nRxwAYyQ8NpRWi4CR99l+KMAYPWAJl0+xcZHS7mfU1nIOqnvNg0QY3LZkFtd4mJhJcAhGJEf6mEDWscNafmN/zJnuaDzkBYwwLk3qMclLuFgwcTNGN3w8VhMvqKb6xIAC7QnTeFQf7X8hSrLGJ6Ys9BuuzCOzO0+lFyIObPjgKHXqlHtYQOh1wOMEVgAsW6mD0efEpBjH2lmXrNP7V+VZ9qiovITiubYbDzBRZcgmIrEp+DR4iWw7K23gHkL2IWQ0Jl0w2QIyj/eaA0sBs+Qwdt5BsAFO/yFMbNMAU6tf1WEDKyy8T+jr83EiYxwZMqSTj5vfz6jPBrz4jbY0U5k+K6Pw2W++xPk1pHCaHgnnxAa+yqj0TtUDI0xfrX9gUZzIEjE5C/NfXTzbuDSvTPasGDkcjTH+uummMKDG9TQdwKd1ueOa4mJqKs4wFneeFNn8G7moYbOg/LZWPEMyb0ELC6jx+s9yTpl8d6NsCzzYxcoq72qTQLFyExRh0pe6vvbPOdFojr04jh3XAcTWRb5AJIKNL+BU3adSZTXEMYu3T12NKAzFn7gCA/aOzm7MfyJja4wsKj0bkyT/KQdm1RSbNt0BVyvmoBWFfNcPQNNdKxgnf0SQFg+Qf6yskr4vxd8XtgKJFDGJgOxkp1t1ccyt8yWiXqu5+m1x3rKahRfsByMslCGoNm+MBb9utpEg9g9gWiPowN6cKIlQnzPg1Mzsa0Own9J3EGJ01sEplqKRSr3rndmQrBur4gPVX5IEioumHxl3Ff7TnBVJZ46INE2OKIPu6xba7B0HNA3Xkl6BQMHxHZ2N9uuTPhmz/1+nJVbM6XyYpxvkqYdrjiF2P9u0+d28HXACBN49uyJLR1p/FBEFnbmUUgEwFfSk6LdYEYn3GDQ06o+DpcjO8uBzUdwImelImVZA15r2vh/NaryhTmdMy0hpY14RuqQIso++0P/6D37tg24snArghNJewt6mm/j8cgGMTDySX7CjvVn/Gh1ccIh6bRRi+vkTDdPd7hN+69JRJs2FVyfOhGTYhjI7Q2iTeakvrk9ZJki0Z9Efvkhs8eNQKFETmb8ITxmwUAEGvaifT/v0tMIQ4amtVifxZHdYfmsABATWRpiwfTIQG46+j9oNY0xDRQv2SDIWjmPwG7fQs1qUZdoFJYx0s+blpjqopMHZIgxtACwnD0JoYgGGsH5hddnVT+oMe0oed+ldzUw61Hp690Xi29vVHh7heB1qyGXuPqSwUA1oSGOBNkRs1b/C1BDQ+fObVBwyLm2nHVwIVU/rXEc3NxE4UGCEOSBG9WvTcsECVpzm/Mdg1vuGTxJqdEpNsDWxIGcRxAi+hD5ldyrODK+SBokyH7yyYjmFopoC1GYKtt09erPArQ4xwWU9edYrtJuUHblyFzVvG8sGpgqrqi1wWJEFDrrKCHUSPPo4taCqQIB5Ai0NgMz8LC8Mstftkp4pW1vfYU+JmIZvYE/PhDlBKd18qT9Y7R2xO+yoFvGs3SZSp6Ng+l1QUR/D1bIo4aX+Gloy9YhommI+Yj0+A9436had+fcpAThkMkY2AjPz/4P532RZCGJmNYMP1ZFx6bj6Q3TUtrcNrfqlwj0niFH7Ec1CZCUX6MswoHE9tliHIKqBXaoI313nBkZ4Qwvpyy33iPnqvgkfcfzT9h0tUPNDj4YtO925EHy+VYiJMOozJlbREnaKf5h+f2kbqc8RJfxIwi65ohWzkRVaJJ6XStUh+HLxE+2hUAb1YWJ5I2QM4ZmYUjkl8OhyggnRxQWzqVw70xMZ45mTiU16Bx2onK+6qlEifLYJevjFcgilKO8OqaPG7/IcPIjMdn4Oz7MFNycdoadIqiG1xOKEbyUCBTA0yUfOllMb1lFIay0X3AGFgaqO1cq4Oz1lJMOYgv5Y9UIH0XyPAAcgaktIswA3dZsDOEQ3ncKXkx/Q8dlAUxJ7IkaEVLa/nnApGFAh+vstbnCYQeHfo44EIDduwcWt4mAg+pZD/Tw4alVFn3VEAIAWGUErxkB7P+n9sY3zBF+96AsPLRSzYKZ0/SoKX5qb0AGa1EOWOtlpr8nDjiHPxtDQPC3rx0vfoc3pnp6VwlatJW+B4Wc44Lc5LvZWw13gA2iy1HGaiLcDoZ49AY7vC7Px1/S1jhgUqyCGfBGhqHDjL2XdsqB9qDAKOa7wpjDB0KN6oLFnhOy9w/XcayL2u2aWitXHlbupwguCgWMX8vKjvWeDEjOu1xvIOY3OHx3hMT6UdjsFk3BtknmLAy1xbOkpOVtUHA80jJI3krgepMwUIXpijDgTjC3sMFP9kz/3c74Jq2gGEStUh1GU/GmmOXglpZcNUZvZVbo9IqHDZsxXnu0HpDdDHbl2hIy9J+lt9EmePAQWH5NERkoUO1u6uk6H2JQVzh/K3Uj0jldo+vjkuPhe6y9kGX34asG2ccS0BTJaTwXJMf4RLRkTGVHRqGcEZ5fdMLMTJjVCCQdDF3aDhQZ1O4w6ET7dHTgfmfJF8fyZWaUf/FKAhUiFlYKnHCy+5+m1/D5oxXAH3HpN23fx4csGNVX1eTqfc/Om/vHR8TdTd7hKe5SXWM4Kv36n4KDzzYygOcP42Ragbzz74oBVmwY18W6AA8jxdB1AwOfiUEgzaLoseaY+kN0pk6wk6qDid64F2GR/aAmNuU1FvP78zc45uON4PxJQH6BBB6UJwzbovOgUqwJZPk/a6T5mYvjrytBzYbBxG09/sgRynW8igKMsfk87ANtXBikyDQrZPdy9IV5xmrEVdJa2O3CHVBDzft9n9XAOptuAFTNHCUjXs021wDNKTUN0AT1DssxWDwL/z86W+4ojFY/Cj/0M12M1FRZdKHXZc58S/20zmhCebde3UNRy9Yw4XeCfM61YrJxB9tqs9CzTNYoHkCYaBIBzhAD1rdvWdxCwiexR/9bvWrm6lEQf4aIoLS3FHFX4svRTmeDW3LhSp9rWT8REhQN7jVFlgvxP50GAjyszrSzg4DH+JC8/ClrqmE4bvfn5BxTVSWI/7hHWbTyCxvK6BYE6+ErUFjuG6uCxW9YczX1Q32+tjdCo8kc0pFGQauJM8OO1mtMa5tuewaOD2ln1ZLYr73g/gC5msDC2VzvaPirT3GMsA7G5rJhGkJ4XsJl2GIa+yIKZEHEnR6Iyr7pylXsx9tAiFawDfLRx12jsXpPUziXrZJx2iTXCgRqiJ5gYZPeBzMBttfSRIuUTyKOppX3R5gEoJ0DUJXLJ6RCBtc0to1SKddWhx309DfJJACQciDnmDMRJFTWNKNImXfla7NhhU7623idlDi9UphLVeqYsBrB8x/CT1UWVQC5il1jPYv9aXTZNT05nldM7UNrQ9H3jYaR1vY7WrNhgkk1tHTJqi4gm/vP1EGWWnW/i/ASXOdoP2a7Ddg+cYUnNXdj1Qsr5GSjuqDk3QMWl4yj/jP648FYQPARmaw73zV7Hl9HVtfIowwIiKGglkLUIKyxxstgaBv1VnIAyyxWDVkEX/MWGZcF7o1CoUrYDh83PEaiXTS8UIiakUkmYMTqFg9p6xD78NCViZFnhBG9KZc5P/D34dNi5MmIfIr+vJFIQXnK2v9fWlnAbBOQnnoNh2ITHnqnsT8rMNII6ApwRIEyeEqvEwmOVEdwRWeJRid7oo5WZdGKcI7GRXnkQp0Qtd6R8/KzNzidd4vfGZ7vj3oX7ZANh+GwoWrjrLl+Hx2w2wLvJj/Vm7UkvBGSe0vvl+bXqrgeKAwBmN+Ao1pYXwz1cxKt49x/K9H2PVLAGJO/JOn6CBPwSfnVTYWeneTw2oamARzKi3tPLirVlFlz4CHzIs31lJefCtvZVSXYCaTgDkGNZ+F2PfboJSVCDMtbYF23pl5CEgm1E6Eu0Nj6/SYdfq4TyupkCVjuFC6UgPLZ2aLa/DcVvxCuCa55PGBmeSN8X+PQp3U/KPc7I4X5DityGpLMj5SipUJV61WyE6R6V34TdvQvFo1ACdxIRqggKDRHSCo0KrnthSPwbWdj29KqcIy12IjPo7K4BvXnjVVpvZFr5A03KUcwNyUyRVXOGUQjNRGtF/VfmJFGJ3rOiSKlEuIXkMeidHL47o1+7oWOY6EYIJDqcRYt7sUyPb55tnrWPDPg3722ycRir+2/7S5hwIsfePUF845QW4c5IJPKjbjSAWa21dGzbZ0RMeX4e3/E4Xmw1ssSAdnh9JW8Akq8bOa79taTyAHXnpjIX5ML9euoBbaCdWbemZsUMAbOW8eVKrExSmPBh6++y5IBOw+DqC5ZYhjoyXO39/j501RNVmE1wOhgR7o0URz2P7JSwnRsHk1BvcguTBBnqPFYr/mOj04qxnr1Rz7JRY3YfFrA3AVsTdKSuXCMiljcvlyZe+AU80YPteblO8rQ5AO7gWlKP5Rpwwbr9QE7QgVZBO09EkCxGluTOele2/I0yjVPPXgR6TfPNhl64dfrlhvl11UBL3jmZ+QY1Oupp1iOZc3hzIdjxmcNPYEtGdQSJ6IC1f++TumlRDX+ksaqbCk10BaGhI9R/M0TLGcc2N+JqJl+swEzHVkmTkKrTl1c20wP69IJB/sAIMXW52f6y/XPKKwgbjzpWHfFiLRgiet3PLbO8Qt0jw/dClYwqHcIrHqJkIzDDOBn+j0S9bNsEZYCp/vcPYx3WnXjn0zZQP/iKZ7gcfPQounXWuOIOKbNn0IkzkLSz8enUlpXXYRKK/8goPvAiA7yxvsaEdds/UETBG7RgVsCZt6aT55APp+vgrHdIlepD/SB6f/mBTEyXyySq1iUXbnp93G22B+uteCskuDJoiAG7stu3dRLOhvEv9h72PYrho3qN0nAjls2Jo+L27s84gQEM3k2rAo86L8j2BNuilMcHO3xuuhYDlBYWi5wtiZmyR2GAucxOrUyUrHiTe0E9Ip5RqRKJAXxINa+V3RyVGOcFP5DDr2dN4VMaxcZCczAkbt7CCpxU0JZl9Uf+6lwll04Eaj5ShM3SJhwV9/3ANRCZ2JFGoh+vk3K021rYO0kQGXN9PF8PuJqRET97FSl+T914Vps3d3aHwnVPmoboj+Ffd1ghLn2fEYuxZ0oHuFP7JoRTa0Yw+VtzQEEWrf9cNaKQ+SGBJZ5aVbHGK8gSZ9/7Eq+XRFXhNS1sbBRPM6Q6AY0JgWFv6kU9Sc9MbYWK2HJcUm/3FxwvznD2uh352AN5kiZ8Zpa82v9pHR9NqBa9Lx8I+u5jsq+db0SXuqVOZlNRl1luOoec6JB54SUxLOp4N/fXk/SaQMRarFRYsDxOxQ0oKaT71vLMVuq4cHlBkhLmDI4kOEWveMo6tp1O8aH+oxCQrCtFVBcFcvBY3aymjXr/K9nlYYeu5MiVzoelmZ88XvUKsbjRvLEcPIoQ4YK/3rQ4m0HR/c0bwM2dB9nli5bKvP1j0dXBeetuBx6wSiHBrmDNgcxMNAbapqOsgE4S/ZmMkLPqFWjrShBWqSleMxfrnhELoBDsxNm8+hx9ZwW8zx6+XfTtHoRsoJEWyJH9N8DMZZmwWpd+ZWA4qP0xSMWB+ESPoqcT5KAxmRsxgz2/GAC7iC17FV9jYLe7LP0aQvSyEQY9HWukafO591265GbaqDfkIow/VnEDs/F9YoijfdnkhqDucqE6BvmUDmmZL4KtAtHF3AZdO1yUU6bJCFcJ4B+TGba97Tg/PJO1k865Dy+Y9Mkp2DHwGlWO8xRAgjlTaOYLdRI+QJaRRBKmOLG18ZngACmKH0+qY15thjkALnsNNtilBmN5y/Vq5JrFMvRl5AR/UB+iYRgFs5n1Zppjzlpq7d6AT+EYWwrUhsSfibe4poIbARizcrJQyg6UTu8/p75Ay/fF07jvCjWW+zKw2RZ/Nu2MDrMGCzOyArL7vZRtCn4dTjNEwAKf/+lLv2SRlSHhZATbeKETv5gA2PPom4c2RofihElcJxUMTwG2BJV7pSl8GMtgpOtQOCR6jAjjGm2dSnG66YKpgrY+KcneskAVp6/Qok6pKk3BcnzopWG70pX5fLD5ttxII6XkIiQVjvd3V6h7MeF40tmCKC/rrkt0fYybiYea/DbbZ01jeD8qR7FRRRGcaFPdzDSuYnnJvQXr+RTgrP1FQJlsaboQoF6prdWr26+ieJgdOO54JfYibj+4qvGD3zi8adTOm6+5/rWLnFAcc1bri0GXaTnZ3rpPz17P4XIiP9pPmrsoA/kbBQj2GIvVwypDijcK6I+zJqNdni4H/fRULVv8uW+HMlc1ZpPnCGjz7L9XCN25LLfpuk8At1GtMvQlDU/qB/1UwLlX65CA6Gy3LDLTJLFrntDXu7xqzGnDaevDppywCq0W7FgPOzxWBtdQwz5NvY9F0WGBHUc4RfFxMXrLPlWkq9V3KTVebPd8O4SycXD0JnJCp3ZCerbwlypQY++QngOpQjQueZEvcJXu7HkomX+NsKNf+EJsLSb9T0YniTWheAkd+iSiCvgf0JR/5X6hM0M/aHssJPghmhH48d1hhZeiiVNFx5FQaicq9JxTqBZ7oQzNKfbetOzAKqgZZfq26Bppk5UZPPt6pT5MhaKB4pKq4SLqa5g3DnViLf8ld/YyZIHGDiHpg+c5Y/sdDcYZpqy/Cws4UYPZ9Kc1FI1yjLZznpW3E+O1nOuLQdC/8xZl2Ai1VmIp90PzdvDx8aEsVvFlj5D9gv7K2b17arfI5p1Cdcrr9B8MEt3XfeQpxNM5FaJWiKo+wGTrMT6ZAeE5Zy+rxwjRH1nw/G0GxZxg7PC543w1IHNu/9m3Ts69z2xB/72/NdSYKC7xpzbeNqv+4hZpgoPm5CNOzgzpzFpSehR1jAZLojuPRezSl5n1ZkjAJ3kh6Xi62WmpfqjkRdVT4qnHGjM48NUaIEq2h/0nn9lxsUe+lrCYvPFKfjRrnmwJh5DSPIa30ewkpEF2mt3gkS3QfiOX4qykRof3XoYS1SW3p5cQa1PGHgcjuvrGv2+W+BEljMnBczHBzyfVTE+2mT2GjLQEmRQSCS55C/dpnPGEZgcN42ihnH6uSZol6lS5gGi7NAlBLzz92W38QkLKfcRA3WcpRm1glU5JGKnsjRfinvFnYOY5TlEgnBRIW9KP0AqdtbdTfAhYWD2IIYNqaSnVY21/pk8YuZ4wOFsVtEV6mDiEO0RjFP9nV0RbNkYAL0txjhIhp/8ih9Te7tP7Rx0hQYQJpS5uHc/6xpBDKtxPtzBRLH1VM1Em9wUmCTDi0ylLr4ZyQnvXEWmZq1IIjuliQ6GykPKClu1P8nkbSDdj8rvWHxH12wi76b4JLuJwsfNdw6mub5X9UAaA1jO/jvvDRbekZs4iNGhejYSVDsmNj0mznijbqiKLMYIkDowXEE2ww0q7/ggLhw9hJ8gzNECRtAu3KyTNDK+humArYD5iDqYS6RV2OOOhrAKZgmBsNYbNRBFCsyjut6k+cC4wUPopym3GmHOjJHacDRVAK0BNcJLeNHDcm3uJ9xD+ueElViZSk594F8h4BXoA5y1QmGKnQ9Y8aCb0jFKM+X1bgQrJVoIu59phCepF/VpN2XBQf85IuEM421yOGY+9ODVmBskBzv40b5Eo/iLo8x25modRSNPUpXHSmcnJGBemPCa0prlnAf2hIcMz8k8HtmOXakt9mT/I1Jnyu4UQ9TqtHQOWJdWuD/ecI92UsfgacCC8hfwKovWv/hl7rYIKt61evX1au46i2ExyVTsYfsAsiwCbpM6ob36B3+IoiNXdZ7g3HVXjBCFf2RQ+VGbvoBZ1K3eLPBBadTgYpXH8qjno69iCLumpz9e1gEOdfSNu06vVntPI1MsrbaSKRx1k2oMFdYNCNiWk9weEkPHeXSUJVXEFvASLz18Wvdq3Lri0s7O1blKonF9Xw8U6AztQWXozznrH1RBy+rAzwq9yNSVsltiBOZKnWm981fpU6d2mFRvoannm/XnPaHTNXvYUx18e8DbopOM+dEX9sO1bh82Nxh9HET07Et4iefQLyOwk18Sv8wRrc9gYaHe+j83CQDmko4EXm+vJ0k2lwCSCw74ZZc1N+KQRhF3mto67lyxi0NZNZ1V3LC8UgoSCQdDch08XghnmZAaCuo/jWHJVhufX68R6WhnF8GTr5ilsQKt1KNewx/cI90Wp/WCaowi1KCK8C31Za1ZJs4wZBY7yXim7ZQhaI/ZRu0hMFmzu5Bl3JOS4QwF57R8HS70+hISL8CIOWf1uirNoJJonrSO+X6og+91YDdvMQ4EFKNbSKTU2PQHTK0qLSWF4erpQIPTVgwYif2yq6Vb1zy/VYIowCu1lJ+rD2lknGfgmk/UynhIxPXRWWAgdRC653J2apqiX6w6Ma7CgZX4ewxu3ODKONAu+/QzBeF7SUEWvepmqj+oe88ZR6B3ZyTJ+I2a++uDqekfWojX4CIrHbEumuqE+OOcKe0TXXxA8s1T/ZP47Mae9KYZQn3KEjpSH4YV4cK3gHzs5zNSG6eoOAz3/C9BDra0Evdlpt0MzwirmMhzHXVv8HWFIUXFyfOvJGAmbgCG+aI9ffUd3+RSTgxZLbFPPTqavr0N+ieMPZ7BztPQAxMqDdzsg0NbPuWO0XV13rvjRgMy2ZSyML+NvsH/2eE7j+ZSAhOpJIdhw2XSarjSW1CYkjEjJ0w3qZHNWCQUHMpfr05Sf2LPXlnsjDLS7bJPJGKC5+J35hvfzuLUjJNwrPNUFKx6wmlaEhpyBIAw3P4KQrZO/DiAPiUbts/H4Q8MUnGh9rT/CfMxSg9gk0QyvIeMUGyMv8PY1Tg9BYM8XNkFEUiCftNWpryqRXFKRj5LRL+kRYRWMLHjFXgnwvKoG1soX82YbCKmHxOjqPUXZ1IrUXjD8wdWDiReuNRA6Vl/nVdtkuj9q0K33w+a35bYZHQ8oevd2gBMqIzHtPRXfeIZMGx1jB8nhvOJA56hOKTzDPIhI07SBhHRSVQKdhM1i61uDG7M/8KtgU8dT1tIwApA9azpg11/arFrOcJl2FzJKBz/8G3TVK65/BnAYRbj1FCUHtGGzYTI3XinhRZuQOw5pmKlM8POFrYEzHSW4CCUJyvLK6qEgQZVa3dJO/NuHma0piecz7/AaatJUU14Nwe7Hvb+slN8eOI+DYN50v0uFSzblBnPDa0jyLaI8FWa3zziXBMaoMztCVeioN9XJQ8dGM351xgBC+NQM4CEeigpiuNHGpOgO+aOSq7q0bqfi0AeB90rqF86NRvuXAK4CemtpJPV/PAm20EGm6Dut84wRkdEABN0A0MJKJ3wt0FSety5BdjM6FmEKTc43LEyzB1MDbZhsMuGyEUTjE38B6qFr401SNUz8SykMvb9KuuDdo25SwWJoPou5gxtdKLUOV2arAQq9BP/v+cVLmbcCF0D+nmJjOCRo3j9CXs/bYhrWL7OBzIya6x1KeDO6jawNpN3OcR+hPQpTEMSnD6F6a6LaNNG7KZJ8e1rqVTdMiaFIvrpJkmglAqa49/qpdPpGhX1cd7NOVR+hIRG5ppHrewrZWh9YLgBQN4NEkQDcnSfJiRtTI47dkIp5MGDNzzAWEP69p+CFEd6I1/HpKPz+6ABGT85nqJxkcDArxG3jTFnvawicow1FmL4RfH045znqs0dr1DZZoasxzPdvmsYX5UBGSX/Oq7NOgAlrzb/PesWQ9kkuPwaDh0q/3yr886zjUttnZbRoZEtNFVvAbHIA8/lQF20OjshVOsGMcJhSQhK7DexPODFCIMYt8TRN0Y265ZtLxtbHRq/EZh3fUyVPSnPuLIj83DlCrIhByyBNBeIOXTWn384j4pnAUnLpNtaKkQLhlzupI2vXyLNPpe1/vaGBZga6mV7+vkZPbjnv327w7sCi2Y0KmIS/zOemZ2UJg8MHeFaCeD8dOMWJ+6hr9qzQVn19RIAtTjJb7wp/vMydgpO2B2yOyMiwGYc3Nc+W8D/3RSFcy5V0jcXmcp4CEYXXAWAmA4zarom6/To9oZ9YTsLFB5N8d+QmtizADjvXM72nGVDknzmSfN4P+KUEoGqhCgOuOmA+LdfIr0mRZpDQA8QKOxvXZtEp6a0VF+1V6OltOmJ+fZ5I2es2kPCDnYPS00qMRbWnP8DwN4A545eFK9Jphh1fchwqwzn02GzuJPtSV3uNJHop4dZy24EaGe20Gfh32hJgT94WcbtdBgtQuod+bJ2kCRAHrk0HxHJIXBDhjGD8HvSL8l1SWh2jC/+LkoWz+W8UVeiG1/DSaZ3ZGemlaCxAQDs8Q/jiEek0opk/icrp5exMqsdLL8HS+H4SeZ6WgF9/WpCFUdGNDYvBJfMDqKRIl5V7qSjMemkTrOr4u58rRsvid4fMxoXx2uDjEBZZ91cW3Ly0KQq7cIoKj7vq+QY3Ru10P6Pg0olm/efA7AW4eKm6kCfj7aeWd7Jm2+uFX/7fmci//q0c+ElgirSnDkvZPQ+M+al/higyTvAGhe186+bVMaaNO4c0QXwHYTXVIt1H+YJU4B+9gKvgCClVRNLZvc5nlZ2xuwsO3o6Cuag9Se2oZBG98IBMK1n5GALrAA241kfq8FpdEjeQd8NXjh6ofVamlKt5xWtQFveUfrczc3RtKStYEBeNAVmEJOdZK8ewR7vkVmc3yDlXB43jjBAXVaPLzY/LXkKxhV/w0rp/69zny8X2KyEEh5L+02d44RO3QHy5HdlPcvScWWn3fUJRbeinfWmcX5pTOJcueyZ3bNgU0qWR+X7jhOX6IFquSRDpFORYXPj0c9tWNucni7Pk/4fwvl2DdtcGJ5TFL+4GuL7JeRDCEgjnCvPqOgDMLxyivTqE/8YIqswLB9E1UohByx/7L5rG3doSOJyu40AgvXVIEXE4tb/JEIPhnbEnPVKr2++A/7FyM1ZczRTmBcc+VNPftB34AL4GAh1f3QH5JiFTu3HupRd/ympAevuJlo2rkXfPbAbcrhBHKDK4X6lZ9k3hA9Rf5DJfiVCEIZejngBIqtq0f4M62WHntVBC0szDXb51sHpYZxzaNiespF/Sjbln5O0CnMASd8HA9nlahE9BvMlxQNlbzKfvsM/GtwtIGhgOETGiIAg7gQXZORgXtewoyiA2BEfSM7UyKa2T+jRwTb85zcUSAH2Fxt+2FrswoY0ib08+HWv44RKQSZYelysKSfgLbWF2UgCpAJySoAAAAA=="); }</style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="sans-ciel" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -1.33 -4.47 -.45 0 5.375"/></filter>
+  <filter id="fumee" x="-30%" y="-30%" width="160%" height="160%">
+    <feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="3" seed="5" result="b"/>
+    <feDisplacementMap in="SourceGraphic" in2="b" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+    <feGaussianBlur stdDeviation="1.1"/>
+  </filter>
+  <filter id="fumee-large" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency=".007" numOctaves="4" seed="11" result="b"/>
+    <feDisplacementMap in="SourceGraphic" in2="b" scale="120" xChannelSelector="R" yChannelSelector="G"/>
+    <feGaussianBlur stdDeviation="3"/>
+  </filter>
   <filter id="encre" x="-10%" y="-10%" width="120%" height="120%">
     <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3" result="b"/>
     <feDisplacementMap in="SourceGraphic" in2="b" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
@@ -1056,19 +1115,39 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
           <div class="couche carte1890" id="carte" role="img" aria-label="La carte des années 1890, de 1895 à 1899, jusqu’à la baraque « Prochainement »"></div>
           <div class="couche jonction" id="jonction" aria-hidden="true">
             <svg id="jonction-svg" viewBox="0 0 390 180" preserveAspectRatio="none"></svg>
-            <div class="bouffees fumee-attente"><i></i><i></i><i></i></div>
+            <div class="bouffees fumee-attente"><i></i><i></i><i></i><i></i><i></i></div>
           </div>
           <div class="quai" id="quai">
             <div class="photo" role="img" aria-label="Gare Matabiau à Toulouse, 4 octobre 1899 : une locomotive à quai, une voiture de troisième classe, des diables"></div>
             <div class="plaque-quai"><small>Quai de départ</small><b>Pour les années 1900</b></div>
             <span class="legende-photo">Toulouse-Matabiau, 4 octobre 1899 · E. Trutat</span>
-            <div class="bouffees panache" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="bouffees panache" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
           </div>
-          <div class="interieur" id="interieur" role="img" aria-label="Un compartiment boisé vers 1905"></div>
+          <div class="interieur" id="interieur" role="img" aria-label="Un compartiment boisé vers 1905">
+            <svg viewBox="0 0 390 760" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="bq-drap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a1412"/><stop offset="1" stop-color="#6e2621"/></linearGradient>
+                <linearGradient id="bq-assise" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d2c26"/><stop offset="1" stop-color="#2b0e0c"/></linearGradient>
+                <g id="bq">
+                  <path d="M0 500 L66 522 L66 664 L0 706 Z" fill="url(#bq-drap)"/>
+                  <path d="M0 500 L66 522" stroke="#c9a257" stroke-width="2" opacity=".7"/>
+                  <g fill="#1f0a09"><circle cx="18" cy="548" r="2.4"/><circle cx="46" cy="556" r="2.4"/><circle cx="18" cy="600" r="2.4"/><circle cx="46" cy="604" r="2.4"/><circle cx="18" cy="652" r="2.4"/><circle cx="46" cy="650" r="2.4"/></g>
+                  <path d="M0 574 L66 580 M0 626 L66 627" stroke="#1f0a09" stroke-width="1" opacity=".55"/>
+                  <path d="M0 706 L66 664 L138 664 L112 760 L0 760 Z" fill="url(#bq-assise)"/>
+                  <path d="M66 664 L138 664 L112 760" stroke="#c9a257" stroke-width="1.5" fill="none" opacity=".55"/>
+                  <path d="M58 668 C56 640 86 636 88 664 L84 690 L62 690 Z" fill="#4a2812"/><path d="M60 660 C62 644 82 642 86 660" stroke="#8a5a34" stroke-width="2" fill="none"/>
+                </g>
+              </defs>
+              <rect x="16" y="472" width="358" height="10" fill="#5e351b"/><rect x="16" y="482" width="358" height="3" fill="#1c0f07"/><rect x="16" y="472" width="358" height="1.5" fill="#c9a257" opacity=".5"/>
+              <rect x="162" y="512" width="66" height="5" rx="2.5" fill="#c9a257"/><circle cx="165" cy="514.5" r="5.5" fill="#8a6c33"/><circle cx="225" cy="514.5" r="5.5" fill="#8a6c33"/>
+              <use href="#bq"/><use href="#bq" transform="translate(390 0) scale(-1 1)"/>
+              <g transform="translate(286 618) rotate(-4)"><rect width="74" height="48" rx="4" fill="#6b4324"/><rect x="0" y="0" width="74" height="48" rx="4" fill="none" stroke="#2a180c" stroke-width="2"/><rect x="14" y="0" width="6" height="48" fill="#3a2212"/><rect x="54" y="0" width="6" height="48" fill="#3a2212"/><path d="M27 0 C27 -11 47 -11 47 0" stroke="#3a2212" stroke-width="3.5" fill="none"/><rect x="33" y="19" width="8" height="7" fill="#c9a257"/></g>
+            </svg>
+          </div>
           <div class="vitre" id="vitre">
             <div class="pano" id="pano">
               <div class="ciel"></div>
-              <div class="fond" id="p-fond"></div>
+              <div class="fond" id="p-fond"><i class="ville" data-amb="ville"></i><i class="campagne" data-amb="campagne"></i><i class="montagne" data-amb="montagne"></i><i class="mer" data-amb="mer"></i></div>
               <div class="loin" id="p-loin"></div>
               <div class="vapeur" id="p-vapeur"></div>
               <div class="talus" id="p-talus"></div>
@@ -1076,7 +1155,7 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
               <div class="ballast" id="p-ballast"></div>
               <div class="poteaux" id="p-poteaux"></div>
             </div>
-            <div class="bouffees haleine"><i></i><i></i><i></i></div>
+            <div class="bouffees haleine"><i></i><i></i><i></i><i></i><i></i></div>
             <div class="reflet"></div>
           </div>
           <div class="cadre-vitre" id="cadre-vitre"><div class="courroie" id="courroie"></div></div>
@@ -1088,18 +1167,20 @@ code { font: 13px ui-monospace, 'SFMono-Regular', Menlo, monospace; background: 
           <div><span class="chap" id="hud-chap">Chapitre I · Les origines</span><span class="an" id="hud-an">1899</span><span class="lieu" id="hud-lieu">La foire, en chantier</span><span class="recomp" aria-label="1 Palme, 1 Lion, 1 Ours">1 Palme · 1 Lion · 1 Ours</span><span class="bobines-hud" id="hud-bobines" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="currentColor"/><circle cx="10" cy="10" r="6.8" fill="#3a2a12"/><g fill="currentColor"><circle cx="10" cy="5.9" r="1.7"/><circle cx="13.9" cy="8.7" r="1.7"/><circle cx="12.4" cy="13.3" r="1.7"/><circle cx="7.6" cy="13.3" r="1.7"/><circle cx="6.1" cy="8.7" r="1.7"/></g></svg><span id="hud-bobines-n">Bobines retrouvées 0/3</span></span></div>
           <button type="button" id="b-ensemble">Vue d’ensemble</button>
         </div>
-        <div class="pastilles">
-          <button type="button" id="b-son" aria-label="Son" aria-pressed="false" title="Son : coupé"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path class="onde" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.6 7.6 0 0 1 0 11"/><path class="barre" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
-          <button type="button" id="b-sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8" width="17" height="11.5" rx="2"/><path d="M9 8V6.2A1.7 1.7 0 0 1 10.7 4.5h2.6A1.7 1.7 0 0 1 15 6.2V8M3.5 13h17M12 12v2"/></svg></button>
-        </div>
         <div class="apercu" id="apercu" role="status" hidden></div>
         <div class="depeche" id="depeche" role="dialog" aria-modal="true" aria-labelledby="depeche-titre" hidden></div>
-        <p class="message" id="message" role="status" hidden></p>
         <div class="bas">
+          <div class="pastilles">
+            <button type="button" id="b-son" aria-label="Son" aria-pressed="false" title="Son : coupé"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path class="onde" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.6 7.6 0 0 1 0 11"/><path class="barre" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
+            <button type="button" id="b-sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8" width="17" height="11.5" rx="2"/><path d="M9 8V6.2A1.7 1.7 0 0 1 10.7 4.5h2.6A1.7 1.7 0 0 1 15 6.2V8M3.5 13h17M12 12v2"/></svg></button>
+          </div>
+          <p class="message" id="message" role="status" hidden></p>
           <div class="ligne" id="ligne" aria-hidden="true"></div>
           <p class="consigne" id="consigne">Le train pour 1900 attend sous la foire. Glissez vers le haut.</p>
-          <button type="button" class="action ticket" id="b-ticket" hidden>Utiliser le ticket<small>1904 → 1905</small></button>
-          <button type="button" class="action" id="b-action">Prendre le train pour 1900</button>
+          <div class="actions" id="actions">
+            <button type="button" class="action ticket" id="b-ticket" hidden>Utiliser le ticket<small>1904 → 1905</small></button>
+            <button type="button" class="action" id="b-action">Prendre le train pour 1900</button>
+          </div>
         </div>
         <div class="ensemble" id="ensemble" hidden>
           <h3>Vue d’ensemble</h3>
@@ -1802,11 +1883,17 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   const buee = $('#buee'), bouffeesBuee = $$('i', buee);
   const pFond = $('#p-fond'), pLoin = $('#p-loin'), pGares = $('#p-gares'), pBallast = $('#p-ballast'), pPoteaux = $('#p-poteaux'), pVapeur = $('#p-vapeur'), pTalus = $('#p-talus');
   const hudChap = $('#hud-chap'), hudAn = $('#hud-an'), hudLieu = $('#hud-lieu');
-  const consigne = $('#consigne'), bAction = $('#b-action'), bTicket = $('#b-ticket'), ligne = $('#ligne');
+  const consigne = $('#consigne'), bAction = $('#b-action'), bTicket = $('#b-ticket'), ligne = $('#ligne'), actions = $('#actions');
+  const ambiances = $$('i', pFond);
+  // L'ambiance du fond, gare par gare : Paris et Creil, la campagne normande et briarde, les gares suisses, Brest et Monte-Carlo, puis la campagne.
+  const AMBIANCE = ['ville', 'ville', 'campagne', 'campagne', 'montagne', 'montagne', 'mer', 'mer', 'campagne', 'campagne'];
+  // Où finit le ciel de chaque photo (en % de sa hauteur), et la part de ses côtés qui se fond.
+  const POSE = { quai: [10, 8], 1900: [16, 15], 1901: [22, 10], 1902: [22, 10], 1903: [14, 10], 1904: [16, 10], 1905: [20, 12], 1906: [26, 12], 1907: [14, 16], 1908: [18, 10], 1909: [18, 10] };
+  let chambres = [];
   // Les bobines perdues de la décennie : trois boîtes de film oubliées en gare (titres à vérifier, voir « Non vérifiés »).
   const BOBINES = [
     { cle: 'soldiers', i: 0, dx: -122, bas: 33, titre: 'Soldiers of the Cross', qui: 'Joseph Perry et Herbert Booth, 1900' },
-    { cle: 'hamlet', i: 2, dx: 150, bas: 33, titre: 'Hamlet', qui: 'Georges Méliès, 1907' },
+    { cle: 'hamlet', i: 2, dx: 150, bas: 37, titre: 'Hamlet', qui: 'Georges Méliès, 1907' },
     { cle: 'fairylogue', i: 4, dx: 112, bas: 41, titre: 'The Fairylogue and Radio-Plays', qui: 'L. Frank Baum, 1908' },
   ];
   const trouvees = new Set();
@@ -1845,7 +1932,8 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     // Le quai de 1899, tel qu'on le revoit par la vitre une fois assis : le même lieu, la même plaque.
     const dep = document.createElement('div');
     dep.className = 'gare depart';
-    dep.innerHTML = '<div class="photo" style="background-image:var(--i-quai)"></div><div class="emaillee"><b>1899</b><small>quai de départ</small></div>';
+    dep.innerHTML = '<div class="photo" style="--img:var(--i-quai)"></div><div class="emaillee"><b>1899</b><small>quai de départ</small></div>';
+    dep.style.setProperty('--haut', `${POSE.quai[0]}%`); dep.style.setProperty('--cote', `${POSE.quai[1]}%`);
     pGares.append(dep);
     const borne = document.createElement('div');
     borne.className = 'borne';
@@ -1857,8 +1945,16 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
       g.dataset.i = i;
       const photo = document.createElement('div');
       photo.className = 'photo';
-      photo.style.backgroundImage = `var(--i-g${a})`;
+      photo.style.setProperty('--img', `var(--i-g${a})`);
+      g.style.setProperty('--haut', `${POSE[a][0]}%`); g.style.setProperty('--cote', `${POSE[a][1]}%`);
       g.append(photo);
+      if (a === 1900) {
+        g.style.setProperty('--d', '40%'); g.style.setProperty('--haut', '56%');
+        const haut = document.createElement('div');
+        haut.className = 'photo sans-ciel';
+        haut.style.setProperty('--img', 'var(--i-g1900)');
+        g.append(haut);
+      }
       const pl = document.createElement('div');
       pl.className = 'emaillee';
       pl.innerHTML = `<b>${a}</b><small>${ouverte(a) ? ETAT[a] : 'plaque à développer'}</small>`;
@@ -1868,9 +1964,19 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
         af.className = 'affiche-quai';
         af.style.backgroundImage = `var(--i-aff${a})`;
         g.append(af);
+      } else {
+        // La lanterne rouge du laboratoire : une ombre qui multiplie, une lampe qui éclaire, posées au-dessus de tout le paysage.
+        ['chambre', 'lampe-labo', 'porte-etiquette'].forEach((c) => {
+          const el = document.createElement('div');
+          el.className = c;
+          if (c === 'porte-etiquette') el.innerHTML = `<div class="etiquette" data-i="${i}"><span></span><small></small></div>`;
+          pano.append(el);
+          chambres.push({ i, el });
+        });
       }
       pGares.append(g);
       if (a === 1902) {
+        g.classList.add('avec-voisin'); // l'affiche monte au-dessus de la voiture de Léa
         const v = document.createElement('div');
         v.className = 'voisin';
         v.dataset.i = i;
@@ -1903,11 +2009,22 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     const loco = document.createElement('b');
     loco.id = 'ligne-train';
     ligne.append(loco);
+    etiqueter();
   }
+  function etiqueter() {
+    const enCours = Math.max(...ANNEES.filter(ouverte));
+    $$('.etiquette', pano).forEach((et) => {
+      const a = ANNEES[+et.dataset.i], n = a - enCours;
+      $('span', et).textContent = LIEU[a];
+      $('small', et).textContent = n > 0 ? `à ${n} ticket${n > 1 ? 's' : ''} de ${enCours}` : '';
+    });
+  }
+  const eteindre = (i, oui) => chambres.forEach((c) => { if (c.i === i) c.el.classList.toggle('eteinte', oui); });
 
   function construireLoin(hB) {
     pLoin.textContent = '';
-    const suite = ['loin3', 'loin1', 'loin2', 'loin3', 'loin2', 'loin1', 'loin3', 'loin2', 'loin1'];
+    // La plaine au canal vers Paris et Creil, les collines ensuite, la côte à partir des gares suisses (le lac) jusqu'à Monte-Carlo.
+    const suite = ['loin1', 'loin2', 'loin3', 'loin3', 'loin2', 'loin1', 'loin2', 'loin3', 'loin1'];
     suite.forEach((n, i) => {
       const t = TAILLE[n];
       const el = document.createElement('i');
@@ -1919,7 +2036,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
   }
 
   function poteauxSVG(h) {
-    const w = 450, top = h * 0.07, sol = h * 0.83;
+    const w = 450, top = Math.max(h * 0.19, 134), sol = h * 0.83; // la tête du poteau et ses fils passent sous le texte du HUD
     const fils = [0, 1, 2].map((k) => {
       const y = top + 14 + k * 9;
       return `<path d="M24 ${y} Q ${w / 2 + 12} ${y + 20 + k * 2} ${w + 24} ${y}" stroke="#1d150e" stroke-width="1.3" fill="none" opacity=".85"/>`;
@@ -1949,10 +2066,49 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
       traverses +
       `<path d="M126 74 Q 110 130 70 180" stroke="#9c9486" stroke-width="3" fill="none"/>` +
       `<path d="M162 74 Q 190 130 240 180" stroke="#9c9486" stroke-width="3" fill="none"/>` +
-      `<g transform="translate(222 18)"><rect width="150" height="38" rx="3" fill="#1d3767" stroke="#f4efe2" stroke-width="2"/>` +
-      `<text x="75" y="17" fill="#f4efe2" font-family="Oswald, Arial Narrow, sans-serif" font-size="11" font-weight="600" letter-spacing="1.6" text-anchor="middle">QUAI · DÉPARTS</text>` +
-      `<text x="75" y="31" fill="#f4efe2" font-family="Oswald, Arial Narrow, sans-serif" font-size="10" letter-spacing="1.2" text-anchor="middle">POUR LES ANNÉES 1900 ↓</text>` +
-      `<rect x="72" y="38" width="4" height="30" fill="#1b140e"/></g>`;
+      // Un poteau indicateur de bois peint, à flèche : la plaque émaillée, elle, attend sur le quai.
+      `<g transform="translate(212 14)"><rect x="148" y="-6" width="7" height="92" fill="#3a2414"/><rect x="146" y="-9" width="11" height="5" fill="#1b140e"/>` +
+      `<g transform="rotate(-5 150 22)"><path d="M22 2 H160 V42 H22 L0 22 Z" fill="#e6d8b4" stroke="#3a2414" stroke-width="2" stroke-linejoin="round"/>` +
+      `<path d="M26 7 H155 V37 H26 L9 22 Z" fill="none" stroke="#a8352a" stroke-width="1.2"/>` +
+      `<circle cx="151" cy="22" r="2.2" fill="#3a2414"/>` +
+      `<text x="88" y="19" fill="#221910" font-family="Oswald, Arial Narrow, sans-serif" font-size="11" font-weight="600" letter-spacing="1.6" text-anchor="middle">QUAI · DÉPARTS</text>` +
+      `<text x="88" y="32" fill="#221910" font-family="Oswald, Arial Narrow, sans-serif" font-size="9.5" letter-spacing="1" text-anchor="middle">POUR LES ANNÉES 1900 ↓</text></g></g>`;
+  }
+
+  // Les trois fonds dessinés (la montagne est une photographie) : une silhouette pâle sur l'horizon, sous le ciel de chaque ambiance.
+  function fondsSVG() {
+    const alea = (k) => { const x = Math.sin(k * 127.1) * 43758.5453; return x - Math.floor(x); };
+    const uri = (corps) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 350" preserveAspectRatio="none"><defs><filter id="b"><feGaussianBlur stdDeviation="5"/></filter></defs>${corps}</svg>`)}")`;
+    let toits = '', x = 0, k = 0;
+    while (x < 800) {
+      const l = 14 + alea(++k) * 30, h = 14 + alea(k + 50) * 30;
+      toits += `<path d="M${x.toFixed(1)} 252 V${(252 - h).toFixed(1)} L${(x + l / 2).toFixed(1)} ${(252 - h - (alea(k + 9) > 0.5 ? 7 : 0)).toFixed(1)} L${(x + l).toFixed(1)} ${(252 - h).toFixed(1)} V252 Z"/>`;
+      if (alea(k + 20) > 0.55) toits += `<rect x="${(x + l * 0.3).toFixed(1)}" y="${(240 - h).toFixed(1)}" width="3.5" height="12"/>`;
+      x += l - 1;
+    }
+    const ville = `<g fill="#6f675c" opacity=".3" transform="translate(-23 -146) scale(1.06 1.58)">${toits}</g>` +
+      `<g filter="url(#b)" fill="#6f6860" opacity=".42"><ellipse cx="402" cy="160" rx="30" ry="8"/><ellipse cx="444" cy="146" rx="42" ry="10"/><ellipse cx="486" cy="158" rx="30" ry="7"/><ellipse cx="352" cy="150" rx="26" ry="7"/></g>` +
+      `<g fill="#5b5349" opacity=".5">${toits}<rect y="251" width="800" height="99"/>` +
+      `<path d="M226 252 V212 h46 V252 Z"/><path d="M229 213 a20 24 0 0 1 40 0 Z"/><rect x="247" y="176" width="4" height="15"/><circle cx="249" cy="188" r="4"/>` +
+      `<path d="M377 252 L380 168 h5 L388 252 Z"/><path d="M418 252 L420 184 h4.5 L427 252 Z"/><path d="M332 252 L334 176 h4.5 L341 252 Z"/></g>`;
+    const arbres = [38, 52, 66, 148, 162, 366, 380, 394, 408, 498, 606, 620, 634, 728, 742].map((ax, n) => `<ellipse cx="${ax}" cy="${226 + (n % 3) * 3}" rx="3.6" ry="${13 + (n % 4) * 2}"/>`).join('');
+    const campagne = `<path d="M0 226 C 90 196, 170 210, 260 220 S 420 190, 520 212 S 700 198, 800 216 V350 H0 Z" fill="#8f9278" opacity=".6"/>` +
+      `<path d="M0 244 C 120 222, 210 240, 330 234 S 560 222, 660 238 S 760 232, 800 236 V350 H0 Z" fill="#71765b" opacity=".8"/>` +
+      `<g fill="#565d45" opacity=".8">${arbres}</g>` +
+      `<g fill="#5d5548" opacity=".85"><path d="M288 238 V216 L292.5 198 L297 216 V238 Z"/><rect x="296" y="224" width="24" height="14"/><path d="M294 224 L308 215 L322 224 Z"/>` +
+      `<rect x="566" y="226" width="18" height="10"/><path d="M563 226 L575 218 L587 226 Z"/></g>`;
+    const eclats = Array.from({ length: 46 }, (_, n) => `<rect x="${(alea(n + 300) * 800).toFixed(0)}" y="${(240 + alea(n + 400) * 100).toFixed(0)}" width="${(8 + alea(n + 500) * 34).toFixed(0)}" height="1.2"/>`).join('');
+    const mer = `<defs><linearGradient id="m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9b9b4"/><stop offset="1" stop-color="#6c8483"/></linearGradient></defs>` +
+      `<rect y="236" width="800" height="114" fill="url(#m)"/><g fill="#f4ead0" opacity=".55">${eclats}</g>` +
+      `<path d="M520 237 C 570 230, 600 206, 660 204 S 760 190, 800 192 V237 Z" fill="#69735f" opacity=".85"/>` +
+      `<path d="M296 237 C 322 232, 352 230, 378 237 Z" fill="#6f7868" opacity=".8" transform="translate(60 0)"/>` +
+      `<g transform="translate(122 0)"><rect x="273" y="208" width="4.5" height="24" fill="#ece3cd"/><rect x="271.5" y="203" width="7.5" height="6" fill="#5a3a2c"/><circle cx="275.2" cy="206" r="1.8" fill="#fff3c9"/></g>` +
+      `<g fill="#f1e8d2"><path d="M452 236 l8 -21 l6 21 Z"/><path d="M590 236 l5 -14 l5 14 Z"/><path d="M700 236 l6 -17 l5 17 Z" opacity=".8"/></g>` +
+      `<g fill="#4a4843" opacity=".8"><path d="M492 236 l-3 -4 h26 l-3 4 Z"/><rect x="500" y="226" width="2.6" height="6"/></g>` +
+      `<g filter="url(#b)" fill="#77736c" opacity=".4"><ellipse cx="486" cy="220" rx="16" ry="4"/><ellipse cx="464" cy="213" rx="20" ry="5"/></g>`;
+    pFond.style.setProperty('--svg-ville', uri(ville));
+    pFond.style.setProperty('--svg-campagne', uri(campagne));
+    pFond.style.setProperty('--svg-mer', uri(mer));
   }
 
   let r0 = { x: 0, y: 0, w: 1, h: 1 };
@@ -1968,7 +2124,8 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     carte.style.height = `${mapH}px`;
     jonction.style.height = `${J}px`;
     pano.style.width = `${W}px`; pano.style.height = `${H}px`;
-    r0 = { x: W * 0.16, y: H * 0.1, w: W * 0.68, h: H * 0.37 };
+    pano.style.setProperty('--w', `${W}px`);
+    r0 = { x: W * 0.07, y: H * 0.115, w: W * 0.86, h: H * 0.5 };
     cadre.style.width = `${r0.w}px`; cadre.style.height = `${r0.h}px`;
     voieLigne = ligne.clientWidth * 0.88;
     const hG = H * 0.4;
@@ -2073,6 +2230,15 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     pPoteaux.style.transform = `translate3d(${-mod(xs * K_D + 8, 450)}px, 0, 0)`;
     pVapeur.style.transform = `translate3d(${-mod(xs * 1.6, 420)}px, 0, 0)`;
     pVapeur.style.opacity = bouge ? Math.min(0.8, Math.abs(vitesseX) * 0.05).toFixed(2) : 0;
+    // Le fond suit la ligne : d'une gare à l'autre, une ambiance s'efface pendant que la suivante monte.
+    const pg = clamp(xs / E, 0, 9), g0 = Math.floor(pg), fg = lisse(0.3, 0.7, pg - g0);
+    const a0 = AMBIANCE[g0], a1 = AMBIANCE[Math.min(9, g0 + 1)];
+    ambiances.forEach((el) => { const n = el.dataset.amb; el.style.opacity = n === a0 && n === a1 ? 1 : n === a0 ? (1 - fg).toFixed(3) : n === a1 ? fg.toFixed(3) : 0; });
+    chambres.forEach((c) => {
+      const dx = c.i * E - xs, pres = Math.abs(dx) < W / 2 + 560;
+      c.el.style.visibility = pres ? 'visible' : 'hidden';
+      if (pres) c.el.style.transform = `translate3d(${dx.toFixed(1)}px, 0, 0)`;
+    });
 
     // Le HUD, la ligne, la consigne, l'action.
     const etape = etapeDe(u);
@@ -2095,6 +2261,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     ligne.style.opacity = t > 0.9 ? 1 : 0;
     $$('i', ligne).forEach((p) => p.classList.toggle('ici', +p.dataset.an === an && etape === 'gares'));
     tel.classList.toggle('a-l-arret', aLArret !== undefined && etape === 'gares');
+    tel.classList.toggle('au-noir', etape === 'gares' && gareDe(ANNEES.indexOf(an)).classList.contains('fermee'));
 
     let texte = '', action = null;
     if (lecture) texte = lecture.sens > 0 ? 'Touchez l’écran pour passer.' : 'Le train recule jusqu’au quai. Touchez pour passer.';
@@ -2110,6 +2277,8 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     bAction.hidden = !action;
     if (action && bAction.textContent !== action) bAction.textContent = action;
     bTicket.hidden = !(aLArret !== undefined && etape === 'gares' && an === 1904 && !ouverte(1905));
+    actions.hidden = bAction.hidden && bTicket.hidden;
+    actions.classList.toggle('deux', !bAction.hidden && !bTicket.hidden);
     if (etape !== etapePrec) {
       $$('#etapes li').forEach((li) => li.toggleAttribute('aria-current', false));
       const li = $(`#etapes li[data-etape="${etape}"]`);
@@ -2142,16 +2311,18 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     const finir = () => {
       g.classList.remove('fermee', 'se-developpe');
       if (pos) pos.remove();
+      etiqueter();
       $('.emaillee small', g).textContent = ETAT[an];
       const point = $(`i[data-an="${an}"]`, ligne); if (point) point.classList.add('ouverte');
       const vignette = $$('button', $('#e-1900'))[i]; if (vignette) vignette.classList.remove('fermee');
       rendre();
       if (!calme) { void g.offsetWidth; g.classList.add('arrive'); }
     };
+    eteindre(i, true);
     if (calme) { finir(); return; }
     pos = document.createElement('div');
     pos.className = 'photo positif';
-    pos.style.backgroundImage = `var(--i-g${an})`;
+    pos.style.setProperty('--img', `var(--i-g${an})`);
     g.append(pos);
     g.classList.add('se-developpe');
     const eclair = document.createElement('div');
@@ -2184,6 +2355,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
     delete ETAT[1905]; aDevelopper = null;
     g.classList.add('fermee'); g.classList.remove('arrive', 'se-developpe');
     $$('.positif', g).forEach((x) => x.remove());
+    eteindre(5, false); etiqueter();
     $('.emaillee small', g).textContent = 'plaque à développer';
     const point = $('i[data-an="1905"]', ligne); if (point) point.classList.remove('ouverte');
     const vignette = $$('button', $('#e-1900'))[5]; if (vignette) vignette.classList.add('fermee');
@@ -2465,6 +2637,7 @@ window.TAILLES = {"quai": [624, 459], "interieur": [720, 1037], "fond": [941, 41
 
   construireGares();
   jonctionSVG();
+  fondsSVG();
   mesurer();
   u = cible = U0; xsPrec = xsDe(u);
   rendre();
