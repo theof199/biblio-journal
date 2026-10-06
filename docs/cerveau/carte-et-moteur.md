@@ -8,12 +8,12 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 
 - **Le plan** : `src/carte/moteur.ts` › `MoteurCarte`, trois bandeaux `// --- …` (ce que la page relaie,
   ce qu'elle commande, l'intérieur), après les types `EtatCarte`, `Rappels` et `Dependances`.
-- **Une image** : `src/carte/moteur.ts` › `constaterLeRepos`, puis `maj` (tout ce qui avance avec
-  l'horloge), `src/carte/moteur.ts` › `signalerAvatar`, `signalerEntree`, puis `dessiner`. L'ordre des
+- **Une image** : `src/carte/meneur.ts` › `constaterLeRepos`, puis `maj` (l'horloge ; la caméra par
+  `src/carte/meneur.ts` › `avancer`), `src/carte/moteur.ts` › `signalerAvatar`, `dessiner`. L'ordre des
   couches est dans la méthode `scene` du moteur, sept blocs numérotés `// 1.` à `// 7.`.
-- **La caméra** : cinq meneurs de `camY`. Le défilement natif, l'avatar (`suivre`), un chantier
-  (`visee`), le roulement, le passage : `src/carte/moteur.ts` › `constaterLeDefilement`,
-  `montrerChantier`, `arreterLeRoulement`, `finirLePassage`, `arretsAutour`, `entreeAuGeste`.
+- **La caméra** : `camY` ne s'écrit que dans `src/carte/meneur.ts` › `Meneur`, `Terrain` (ce que le moteur
+  lui donne à lire). Cinq meneurs, le défilement natif, l'avatar, un chantier, le roulement, le passage :
+  `src/carte/meneur.ts` › `constaterLeDefilement`, `suivreLAvatar`, `viser`, `rouler`, `direBonjour`, `arretsAutour`.
   Les calculs purs : `src/carte/camera.ts` › `cibleCamera`, `poidsSections`, `presencesSections`.
 - **Le toucher** : `src/carte/geste.ts` › `APPUI_LONG_MS` (la classe `Geste`), `src/carte/zones.ts` › `trouverZone`,
   puis la méthode `toucher` du moteur ; une bobine ramassée, `src/carte/moteur.ts` › `ouVole`, `atterrir`.
@@ -36,9 +36,9 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 - **L'horloge du décor s'arrête au calme.** Ce qu'on date pour l'animer passe par la méthode `instant`
   (-9 : déjà fini), se finit dans `src/carte/moteur.ts` › `achever`, et entre dans la condition de
   `boucle`. Sinon sa promesse ne se résout jamais, et la page, qui attend `jouerAvancee`, reste inerte.
-- **Tout glissement passe par `src/carte/moteur.ts` › `prendreLaCamera`.** `suivre` et `visee`
-  arrêtent le roulement et le passage à chaque image. La caméra s'écrit avec `defilerVers` : la page
-  rend un `defiler`, un écho que `constaterLeDefilement` ne doit pas prendre pour un geste.
+- **Tout glissement passe par `src/carte/meneur.ts` › `prendreLaCamera`.** `suivre` et `visee`
+  arrêtent le roulement et le passage à chaque image. La caméra s'écrit avec `defilerVers`, jamais du
+  moteur (`meneur.test.ts`) : la page rend un `defiler`, un écho à ne pas prendre pour un geste.
 - **Chaque `majEtat` vide les tuiles du sol** : son état reste mémoïsé (`src/pages/Carte.tsx` › `donneesDesFiches`).
 - **Cinq identifiants de zone sont au moteur** : `case`, `clap`, `roulotte`, `bobine`, `date`. Les deux
   derniers lisent `data` comme un rang dans `bobines` et `dates` du monde sous le doigt ; tout autre va à
@@ -48,7 +48,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 - **Le tracé d'un monde vit hors de son dossier** (`src/mondes/trace.ts` › `trace1890`, `traceAVenir`,
   `HAUTEUR_MIN_SECTION`) ; `src/mondes/1890/ciel.ts` › `VIDE_DU_HAUT` voisine une copie de sa hauteur.
 - **`src/voyage/tempo.test.ts` ne lit ni `src/carte/` ni un sous-dossier de `src/voyage/celebrations/`.**
-  Dans le moteur, seuls l'envol, le roulement et le passage sont au tempo ; ni la marche, ni l'adieu.
+  Seuls l'envol (moteur), le roulement et le passage (meneur) sont au tempo ; ni la marche, ni l'adieu.
 
 ## Les commandes
 

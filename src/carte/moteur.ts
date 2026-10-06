@@ -21,6 +21,7 @@ import { dessinerPlaqueRoulotte, dessinerRoulotte } from './dessin/roulotte'
 import { imageCommune } from './images'
 import { dessinerBobinePerdue, dessinerEnvol } from './dessin/bobines'
 import { auTempo } from '../voyage/tempo'
+import { A_L_ARRET, Meneur, type SensDuPassage } from './meneur'
 
 /** Le corail : ce que le joueur déclenche. Jamais sous un voile, jamais teinté (spec, « Le rendu »). */
 export const CORAIL = '#FF6B57'
@@ -28,22 +29,7 @@ export const CORAIL = '#FF6B57'
 export const DUREE_DE_L_ENVOL = auTempo(1000) / 1000
 /** Les tuiles du sol gardées en mémoire (voir `Lru`). */
 export const MAX_TUILES = 6
-/**
- * Le roulement de la caméra vers un arrêt d'une section collante (plan 3a), en millisecondes **de
- * base** : `rouler` le joue au tempo (`voyage/tempo.ts`), là et nulle part ailleurs. La même durée
- * quelle que soit la distance.
- */
-export const DUREE_DU_ROULEMENT = 600
-/**
- * Le défilement est arrêté quand `defiler` s'est tu depuis ce temps, en millisecondes de l'horloge
- * des images. Un seuil de détection, comme ceux du geste (`geste.ts`), pas une animation : il ne
- * suit pas le tempo.
- */
-export const REPOS_DU_DEFILEMENT = 150
-/** À moins de cet écart d'un arrêt, en px, la caméra y est posée : la page rend un défilement arrondi. */
-export const A_L_ARRET = 1.5
-/** Le sens d'un passage d'entrée (`direBonjour`) : dans l'ordre de `SceneCollante.entree`, ou retourné. */
-export type SensDuPassage = 'endroit' | 'envers'
+export { A_L_ARRET, DUREE_DU_ROULEMENT, REPOS_DU_DEFILEMENT, type SensDuPassage } from './meneur'
 
 export interface CaseCarte {
   annee: number
@@ -135,29 +121,6 @@ interface Marche {
   fin: () => void
 }
 
-/** La caméra qui roule vers un arrêt. `fin` : la promesse de `marcher` ; nul quand personne n'attend (le rappel, « Tu es ici »). */
-interface Roulement {
-  y0: number
-  y1: number
-  /** Où il en est : ce qu'il a posé en dernier. */
-  y: number
-  t0: number
-  dur: number
-  fin: (() => void) | null
-}
-
-/**
- * Le passage d'entrée qui se joue (`direBonjour`). `cles` : où la caméra doit être, en `y` de carte,
- * à chaque moment charnière, en secondes depuis `t0` : elle tient la pause d'un temps entre deux
- * clés de même `y`, et glisse entre deux clés de `y` différents. `fins` : qui attend sa fin.
- */
-interface Passage {
-  decennie: number
-  t0: number
-  cles: Array<{ t: number; y: number }>
-  fins: Array<() => void>
-}
-
 /**
  * Le moteur de la carte (spec du Journal web, « La carte est un moteur à part ») : un état, un
  * `<canvas>`, des touchers rendus en rappels. Aucun import de React ni de l'API, aucun écouteur
@@ -169,7 +132,6 @@ export class MoteurCarte {
   private H = 700
   private k = 1
   private dpr = 1
-  private camY = 0
   private t = 0
   private dernier = 0
   private raf = 0
@@ -194,7 +156,6 @@ export class MoteurCarte {
   private readonly pops = new Map<number, number>()
   private readonly particules = new Particules()
   private readonly avatar: { d: number; marche: Marche | null; claque: number } = { d: 0, marche: null, claque: -9 }
-  private suivre = false
   /** Ce que la page sait de l'avatar ; nul tant qu'on ne le lui a pas dit. */
   private avatarVu: boolean | null = null
   private ens = { q: 0, cible: 0 }
@@ -207,43 +168,19 @@ export class MoteurCarte {
   private adieu: { decennie: number; t0: number; fin: () => void } | null = null
   /** L'année ouverte au monde et le moment où l'avatar y est arrivé (idée 8) ; -9 : déjà fini. */
   private ouverte = { annee: 0, t0: -9 }
-  /** Où la caméra glisse pour montrer un chantier qui commence hors de l'écran (idée 8) ; nulle sinon. */
-  private visee: number | null = null
   /** Les bobines perdues trouvées sur cet appareil (plan 2d), par clé : ni dessinées, ni touchables. */
   private trouvees = new Set<string>()
   /** La bobine qui vole vers le compteur, d'où elle part et depuis quand ; nulle sinon. */
   private envol: { cle: string; x0: number; y0: number; t0: number } | null = null
-  /** La caméra qui roule vers un arrêt d'une section collante (plan 3a) ; nul sinon. */
-  private roulement: Roulement | null = null
-  /**
-   * Le défilement à constater : `aDater` dit qu'il vient de bouger (la prochaine image le date),
-   * `depuis` le moment de l'image qui l'a daté ; nul une fois son arrêt constaté.
-   */
-  private defilement: { aDater: boolean; depuis: number | null } = { aDater: false, depuis: null }
-  /** Au calme, l'arrêt que le geste en cours a posé ; nul hors d'un geste. */
-  private pose: number | null = null
-  /** Vrai tant que le pointeur est bas ; le navigateur le relève (`pointercancel`) dès qu'il prend le geste pour défiler. */
-  private pointeurBas = false
-  /** Le nombre de doigts posés sur l'écran, que la page relaie (`doigtsPoses`) : lui survit au défilement natif. */
-  private touchers = 0
-  /** Le passage d'entrée qui se joue (plan 3a) ; nul sinon. */
-  private passage: Passage | null = null
-  /** D'où est parti le défilement à constater, en `y` de carte : de quoi dire par quel bord il est entré dans une zone des temps. Nul au repos. */
-  private depart: number | null = null
-  /** Ce que la page sait de l'entrée à portée de geste (`Rappels.entreeProche`). */
-  private entreeDite: number | null = null
   /**
    * Ce que les mondes à `scene` ont rendu à la dernière image dessinée de la vue d'ensemble
    * (`SceneCollante.dessinerBande`) : de quoi lire l'année sous un toucher ou un pincement. Vide
    * tant qu'aucune image de la vue d'ensemble n'est dessinée, et dès qu'elle ne l'est plus.
    */
   private lectures: BandeLue[] = []
-  /**
-   * Où la sortie de la vue d'ensemble vient de poser la caméra : ce que la page en rend est son
-   * écho, pas un geste du membre. Nul dès qu'un défilement mène ailleurs.
-   */
-  private sortie: number | null = null
   private readonly geste: Geste
+  /** Qui mène la caméra (`meneur.ts`) : `camY` ne s'écrit que là, la page n'apprend que là où on la veut. */
+  private readonly meneur: Meneur
   private readonly ctx: CanvasRenderingContext2D | null
   private readonly canvas: Toile
 
@@ -257,6 +194,22 @@ export class MoteurCarte {
     this.ctx = canvas.getContext('2d')
     this.canvas = canvas
     this.effets = new Effets(deps.creerToile)
+    this.meneur = new Meneur(
+      {
+        t: () => this.t,
+        calme: () => this.calme,
+        H: () => this.H,
+        hauteur: () => this.plan.hauteur,
+        sections: () => this.plan.sections,
+        collante: () => this.bandes !== null,
+        arretsDe: (section) => this.arretsDe(section),
+        tempsDe: (section) => this.tempsDe(section),
+        zonesDesTemps: () => this.zonesDesTemps(),
+        avatar: () => ({ y: pointA(this.route, this.avatar.d).y, marche: !!this.avatar.marche }),
+        demander: () => this.demander(),
+      },
+      rappels,
+    )
     // L'horloge du geste est celle du mur, pas celle du décor : figée quand le visiteur demande
     // moins d'animations, elle ferait d'un appui de dix secondes un toucher.
     this.geste = new Geste(
@@ -286,6 +239,11 @@ export class MoteurCarte {
     this.reconstruire()
   }
 
+  /** Où est la caméra, en `y` de carte : le meneur la tient, le moteur la lit. */
+  private get camY(): number {
+    return this.meneur.camY
+  }
+
   /** La hauteur du défilement à donner à l'espaceur (`hauteur - H`). */
   get hauteur(): number {
     return this.plan.hauteur
@@ -296,9 +254,7 @@ export class MoteurCarte {
   }
 
   defiler(scrollTop: number): void {
-    const avant = this.camY
-    this.camY = scrollTop
-    this.constaterLeDefilement(avant)
+    this.meneur.defiler(scrollTop)
     this.demander()
   }
 
@@ -359,17 +315,10 @@ export class MoteurCarte {
   }
 
   pointeur(type: 'bas' | 'bouge' | 'haut' | 'annule' | 'quitte', x: number, y: number, souris: boolean): void {
-    if (type === 'bas') {
-      this.pointeurBas = true
-      this.reprendreLaCamera()
-    } else if (type !== 'bouge') this.pointeurBas = false
     // Un toucher pendant le passage le pose à sa fin, et rien d'autre : le doigt qui se pose, comme
     // celui qui se lève d'un appui d'avant le passage, n'est pas relayé au geste, et n'ouvre pas
     // l'année qui se trouve sous lui.
-    if (this.passage && (type === 'bas' || type === 'haut')) {
-      this.finirLePassage()
-      return
-    }
+    if (this.meneur.pointeur(type)) return
     if (this.ens.cible) {
       if (type === 'haut') this.quitterEnsemble({ x, y })
       return
@@ -387,8 +336,7 @@ export class MoteurCarte {
    * combattrait le défilement que le doigt mène. Il reprend au lever du dernier.
    */
   doigtsPoses(nombre: number): void {
-    this.touchers = nombre
-    if (nombre > 0) this.reprendreLaCamera()
+    this.meneur.doigtsPoses(nombre)
   }
 
   /**
@@ -419,17 +367,17 @@ export class MoteurCarte {
    */
   allerIci(instant = false): void {
     this.basculerEnsemble(false)
-    this.arreterLePassage()
+    this.meneur.arreterLePassage()
     const arret = this.arretDe(this.etat.anneeAvatar)
     if (arret !== undefined) {
-      if (arret !== null && instant) this.poser(arret)
-      else if (arret !== null) this.rouler(arret, null)
+      if (arret !== null && instant) this.meneur.poser(arret)
+      else if (arret !== null) this.meneur.rouler(arret, null)
       this.demander()
       return
     }
     const p = pointA(this.route, this.avatar.d)
-    if (instant || this.calme) this.rappels.defilerVers(cibleCamera(p.y, this.H, this.plan.hauteur))
-    else this.suivre = true
+    if (instant || this.calme) this.meneur.demanderALaPage(cibleCamera(p.y, this.H, this.plan.hauteur))
+    else this.meneur.suivreLAvatar()
     this.demander()
   }
 
@@ -448,7 +396,7 @@ export class MoteurCarte {
     if (!c) return Promise.resolve()
     const arret = this.arretDe(annee)
     if (arret === null) return Promise.resolve()
-    if (arret !== undefined) return new Promise((fin) => this.rouler(arret, fin))
+    if (arret !== undefined) return new Promise((fin) => this.meneur.rouler(arret, fin))
     return this.marcherVers(this.route.dWay[c.w] ?? 0, c.y)
   }
 
@@ -472,9 +420,8 @@ export class MoteurCarte {
     const duree = this.deps.mondeDe(decennie).adieu
     if (!s || duree <= 0 || this.calme) return Promise.resolve()
     this.adieu?.fin()
-    this.prendreLaCamera()
-    this.camY = s.y0
-    this.rappels.defilerVers(s.y0)
+    this.meneur.prendreLaCamera()
+    this.meneur.poser(s.y0)
     return new Promise((fin) => {
       this.adieu = { decennie, t0: this.t, fin }
       this.demander()
@@ -485,7 +432,7 @@ export class MoteurCarte {
    * Le monde de `decennie` dit bonjour (plan 3a) : son passage d'entrée se joue, à l'endroit ou à
    * l'envers. La caméra est d'abord posée, d'un coup, au premier temps du sens joué, où qu'elle
    * soit ; elle y tient sa pause, puis glisse d'un temps au suivant, chaque durée et chaque pause
-   * au tempo (`voyage/tempo.ts`), ici et nulle part ailleurs. Le monde reçoit `VueMonde.entree`.
+   * au tempo (`voyage/tempo.ts`), dans `meneur.ts` et nulle part ailleurs. Le monde reçoit `VueMonde.entree`.
    * La promesse se résout à la fin : après la pause du dernier temps joué ; aussitôt pour un monde
    * sans `scene` ou sans temps ; aussitôt quand le visiteur demande moins d'animations, la caméra
    * posée au dernier temps du sens joué. Un seul passage à la fois : demandé pendant qu'un autre
@@ -493,35 +440,7 @@ export class MoteurCarte {
    * d'avant.
    */
   direBonjour(decennie: number, sens: SensDuPassage): Promise<void> {
-    const enCours = this.passage
-    if (enCours) return new Promise((fin) => enCours.fins.push(fin))
-    const temps = this.tempsDe(this.plan.sections.findIndex((s) => s.decennie === decennie))
-    if (temps.length === 0) return Promise.resolve()
-    // Les temps dans l'ordre joué, chacun avec la durée du segment qui y mène : à l'envers, celle
-    // que la liste donne au temps d'où l'on vient (la durée appartient au segment, pas au sens).
-    const joues = sens === 'envers' ? temps.map((x, i) => ({ ...x, duree: temps[i + 1]?.duree ?? 0 })).reverse() : temps
-    // Aucun passage ne joue ici (plus haut) : il n'y en a pas à arrêter.
-    this.prendreLaCamera()
-    // Le défilement qui a mené ici n'a plus rien à constater : le passage commande la caméra.
-    this.oublierLeDefilement()
-    if (this.calme) {
-      this.poser(joues[joues.length - 1]!.y)
-      this.demander()
-      return Promise.resolve()
-    }
-    this.poser(joues[0]!.y)
-    const cles: Passage['cles'] = []
-    let t = 0
-    joues.forEach((x, i) => {
-      if (i > 0) t += auTempo(x.duree) / 1000
-      cles.push({ t, y: x.y })
-      t += auTempo(x.arret) / 1000
-      cles.push({ t, y: x.y })
-    })
-    return new Promise((fin) => {
-      this.passage = { decennie, t0: this.t, cles, fins: [fin] }
-      this.demander()
-    })
+    return this.meneur.direBonjour(decennie, sens)
   }
 
   /** Où se tient la roulotte garée, à l'écran ; nulle quand elle traverse, ou sans roulotte. */
@@ -547,10 +466,10 @@ export class MoteurCarte {
     const dt = this.dernier ? Math.min(0.05, (maintenant - this.dernier) / 1000) : 0.016
     this.dernier = maintenant
     if (!this.calme) this.t += dt
-    this.constaterLeRepos(maintenant)
+    this.meneur.constaterLeRepos(maintenant)
     this.maj(dt)
     this.signalerAvatar()
-    this.signalerEntree()
+    this.meneur.signalerEntree()
     this.dessiner()
   }
 
@@ -621,196 +540,6 @@ export class MoteurCarte {
   }
 
   /**
-   * Le passage que le geste lance : la caméra est laissée dans une zone des temps, entre ses deux
-   * bords, par un défilement parti de `depart`, au-dessus (il est entré par le haut : à l'endroit)
-   * ou au-dessous (par le bas : à l'envers). Nul pour un défilement parti dans la zone.
-   */
-  private entreeAuGeste(depart: number): { decennie: number; sens: SensDuPassage } | null {
-    for (const z of this.zonesDesTemps()) {
-      if (this.camY <= z.haut + A_L_ARRET || this.camY >= z.bas - A_L_ARRET) continue
-      if (depart <= z.haut + A_L_ARRET) return { decennie: z.decennie, sens: 'endroit' }
-      if (depart >= z.bas - A_L_ARRET) return { decennie: z.decennie, sens: 'envers' }
-    }
-    return null
-  }
-
-  /** Le passage s'arrête où il en est : un autre glissement prend la caméra. Qui l'attendait est libéré. */
-  private arreterLePassage(): void {
-    const p = this.passage
-    if (!p) return
-    this.passage = null
-    for (const fin of p.fins) fin()
-  }
-
-  /** Le passage est posé à sa fin, d'un coup : son dernier temps joué. Qui l'attendait est libéré. */
-  private finirLePassage(): void {
-    const p = this.passage
-    if (!p) return
-    this.poser(p.cles[p.cles.length - 1]!.y)
-    this.arreterLePassage()
-    this.demander()
-  }
-
-  /**
-   * Dit à la page la décennie dont l'entrée est à portée de geste, quand cela change seulement : la
-   * caméra au-dessus du premier temps d'une section collante, à un écran au plus (elle est donc au
-   * bas de la section qui précède), ou posée à ce temps. Nulle tant qu'un passage se joue.
-   */
-  private signalerEntree(): void {
-    if (!this.bandes) return
-    const proche = this.passage ? undefined : this.zonesDesTemps().find((z) => this.camY >= z.haut - this.H && this.camY <= z.haut + A_L_ARRET)
-    const decennie = proche?.decennie ?? null
-    if (decennie === this.entreeDite) return
-    this.entreeDite = decennie
-    this.rappels.entreeProche?.(decennie)
-  }
-
-  /** Vrai tant qu'un doigt est posé, d'où que vienne l'information : le pointeur, ou les touchers que la page relaie. */
-  private get doigt(): boolean {
-    return this.pointeurBas || this.touchers > 0
-  }
-
-  /** Le doigt qui se pose reprend la caméra au rappel et à « Tu es ici » ; l'arrêt du défilement se constatera au lever. */
-  private reprendreLaCamera(): void {
-    if (!this.roulement || this.roulement.fin) return
-    this.arreterLeRoulement()
-    this.defilement.aDater = true
-  }
-
-  /**
-   * Les arrêts de la section collante où la caméra est laissée sans être posée à l'un d'eux : du
-   * premier arrêt au bas de la section, sous le dernier arrêt compris. Nul avant le premier arrêt
-   * (la zone du passage d'entrée), dans une section ordinaire, et à un arrêt.
-   */
-  private arretsAutour(): number[] | null {
-    const section = this.plan.sections.findIndex((s) => this.camY >= s.y0 && this.camY < s.y0 + s.hauteur)
-    const arrets = this.arretsDe(section)
-    if (arrets.length === 0 || this.camY <= arrets[0]!) return null
-    return arrets.some((a) => Math.abs(a - this.camY) <= A_L_ARRET) ? null : arrets
-  }
-
-  /**
-   * Un seul glissement à la fois : qui prend la caméra arrête le roulement et le passage en cours
-   * (qui les attendait est libéré), et la caméra cesse de suivre l'avatar comme de viser un chantier.
-   */
-  private prendreLaCamera(): void {
-    this.arreterLeRoulement()
-    this.arreterLePassage()
-    this.suivre = false
-    this.visee = null
-  }
-
-  /** Le défilement en cours n'a plus rien à constater : ni son départ, ni son repos, ni l'arrêt qu'il a choisi au calme. */
-  private oublierLeDefilement(): void {
-    this.defilement = { aDater: false, depuis: null }
-    this.pose = null
-    this.depart = null
-  }
-
-  /** La caméra à `y`, d'un coup. */
-  private poser(y: number): void {
-    this.camY = y
-    this.rappels.defilerVers(y)
-  }
-
-  /**
-   * La caméra roule jusqu'à l'arrêt `y`, en `DUREE_DU_ROULEMENT` au tempo, et `fin` est rappelé à
-   * l'arrivée. D'un coup quand le visiteur demande moins d'animations (l'horloge figée, le
-   * roulement n'arriverait jamais), et quand elle y est déjà. Un seul glissement à la fois : celui
-   * qui commence arrête les autres.
-   */
-  private rouler(y: number, fin: (() => void) | null): void {
-    this.prendreLaCamera()
-    if (this.calme || Math.abs(y - this.camY) <= A_L_ARRET) {
-      this.poser(y)
-      fin?.()
-    } else {
-      this.roulement = { y0: this.camY, y1: y, y: this.camY, t0: this.t, dur: auTempo(DUREE_DU_ROULEMENT) / 1000, fin }
-    }
-    this.demander()
-  }
-
-  /** Le roulement en cours s'arrête où il est ; qui l'attendait est libéré. */
-  private arreterLeRoulement(): void {
-    const r = this.roulement
-    if (!r) return
-    this.roulement = null
-    r.fin?.()
-  }
-
-  /**
-   * `defiler` vient de bouger la caméra depuis `avant`. Le moteur n'a pas d'autre signal : l'arrêt
-   * du défilement se constate aux images (`constaterLeRepos`). Au calme, c'est ici que le geste
-   * pose son arrêt, une fois : les défilements qui le suivent n'en posent pas d'autre.
-   */
-  private constaterLeDefilement(avant: number): void {
-    // Sans section collante sur la carte, il n'y a rien à constater : la boucle ne tient pas pour lui.
-    if (!this.bandes) return
-    // Le passage commande la caméra : ce que la page rend n'est que l'écho de ce qu'il pose, et un
-    // défilement du membre ne le détourne pas (un toucher, lui, le pose à sa fin).
-    if (this.passage) return
-    // La sortie de la vue d'ensemble a posé la caméra : la page le rend, à l'arrondi près. Cet écho
-    // n'est le départ d'aucun geste : il ne lance ni passage d'entrée, ni rappel.
-    if (this.sortie !== null) {
-      if (Math.abs(this.camY - this.sortie) <= A_L_ARRET) return
-      this.sortie = null
-    }
-    const r = this.roulement
-    if (r) {
-      // La page rend ce que le roulement a posé, tôt ou tard : tout ce qui tombe entre son départ
-      // et là où il en est est un écho, pas un geste. Un vrai geste reprend la caméra au rappel et
-      // à « Tu es ici » ; il ne détourne pas la marche qu'on attend.
-      const echo = this.camY >= Math.min(r.y0, r.y) - A_L_ARRET && this.camY <= Math.max(r.y0, r.y) + A_L_ARRET
-      if (r.fin || echo) return
-      this.arreterLeRoulement()
-    }
-    this.defilement.aDater = true
-    if (this.depart === null) this.depart = avant
-    if (!this.calme || this.pose !== null) return
-    const arrets = this.arretsAutour()
-    if (!arrets) return
-    // L'arrêt suivant dans le sens du geste : le dernier que ce défilement a franchi, sinon le premier devant lui.
-    const descend = this.camY > avant
-    const devant = descend ? arrets.filter((a) => a > avant + A_L_ARRET) : arrets.filter((a) => a < avant - A_L_ARRET).reverse()
-    const franchis = devant.filter((a) => (descend ? a < this.camY : a > this.camY))
-    this.pose = franchis[franchis.length - 1] ?? devant[0] ?? null
-    // Sous un doigt posé, l'arrêt est choisi mais pas encore posé : il le sera au repos, le doigt levé.
-    if (this.pose !== null && !this.doigt) this.poser(this.pose)
-  }
-
-  /**
-   * Le défilement s'est arrêté : `defiler` s'est tu depuis `REPOS_DU_DEFILEMENT`, et aucun doigt
-   * n'est posé (le rappel le combattrait). La caméra laissée dans une section collante, hors d'un
-   * arrêt, revient au plus proche en roulant ; au calme, elle se pose d'un coup à celui
-   * que le geste a choisi. Laissée dans une zone des temps où le geste est entré par un bord, elle
-   * joue le passage d'entrée, sous la même garde : jamais sous un doigt posé. Les deux ne se
-   * disputent pas la même fin de défilement : le passage passe d'abord, et le rappel ne vaut pas
-   * avant le premier arrêt.
-   */
-  private constaterLeRepos(maintenant: number): void {
-    const d = this.defilement
-    if (d.aDater) {
-      d.aDater = false
-      d.depuis = maintenant
-    }
-    if (d.depuis === null || maintenant - d.depuis < REPOS_DU_DEFILEMENT || this.doigt) return
-    d.depuis = null
-    const pose = this.pose
-    this.pose = null
-    const depart = this.depart
-    this.depart = null
-    const entree = depart === null ? null : this.entreeAuGeste(depart)
-    if (entree) {
-      void this.direBonjour(entree.decennie, entree.sens)
-      return
-    }
-    const arrets = this.arretsAutour()
-    if (!arrets || this.roulement) return
-    const proche = arrets.reduce((a, b) => (Math.abs(b - this.camY) < Math.abs(a - this.camY) ? b : a))
-    this.rouler(pose ?? proche, null)
-  }
-
-  /**
    * Dit à la page si l'avatar est à l'écran, quand cela change seulement. Dans une section
    * collante, il n'y a pas d'avatar : c'est la caméra posée à l'arrêt de l'année du membre.
    */
@@ -833,22 +562,8 @@ export class MoteurCarte {
   }
 
   private achever(): void {
-    // La caméra qui glissait vers un chantier s'y pose d'un coup. L'année ouverte, elle, n'est pas
-    // achevée : son chantier reprend là où il en était quand les animations reviennent.
-    if (this.visee !== null) {
-      this.camY = this.visee
-      this.rappels.defilerVers(this.visee)
-      this.visee = null
-    }
-    // La caméra qui roulait vers un arrêt s'y pose d'un coup, et qui l'attendait est libéré.
-    const r = this.roulement
-    if (r) {
-      this.roulement = null
-      this.poser(r.y1)
-      r.fin?.()
-    }
-    // Le passage d'entrée est posé à sa fin, et qui l'attendait est libéré.
-    this.finirLePassage()
+    // La caméra d'abord : la visée, le roulement et le passage arrivent d'un coup (`Meneur.achever`).
+    this.meneur.achever()
     const m = this.avatar.marche
     if (m) {
       this.avatar.marche = null
@@ -902,8 +617,7 @@ export class MoteurCarte {
     if (y >= this.camY + 60 && y <= this.camY + this.H - 60) return
     // La caméra cesse de suivre l'avatar (au bout d'une marche, elle le rejoint encore) : deux
     // glissements à la fois la laisseraient à mi-chemin.
-    this.suivre = false
-    this.visee = clamp(y - this.H / 2, 0, Math.max(0, this.plan.hauteur - this.H))
+    this.meneur.viser(clamp(y - this.H / 2, 0, Math.max(0, this.plan.hauteur - this.H)))
   }
 
   private poserAvatar(annee: number): void {
@@ -924,14 +638,14 @@ export class MoteurCarte {
       if (this.calme) {
         this.avatar.d = d1
         this.fogY = this.fogCible
-        this.rappels.defilerVers(cibleCamera(pointA(this.route, d1).y, this.H, this.plan.hauteur))
+        this.meneur.demanderALaPage(cibleCamera(pointA(this.route, d1).y, this.H, this.plan.hauteur))
         this.demander()
         fin()
         return
       }
       const dur = clamp(650 + Math.abs(d1 - this.avatar.d) * 1.5, 700, 2200)
       this.avatar.marche = { d0: this.avatar.d, d1, t0: this.t, dur: dur / 1000, fin }
-      this.suivre = true
+      this.meneur.suivreLAvatar()
       this.demander()
     })
   }
@@ -1039,21 +753,7 @@ export class MoteurCarte {
   private quitterEnsemble(point: { x: number; y: number } | null): void {
     if (this.ens.cible === 0 && this.ens.q === 0) return
     const y = point ? this.sortieDeLEnsemble(point.x, point.y) : null
-    if (y !== null) {
-      // La sortie prend la caméra, sur toute carte : un seul glissement à la fois, et celle qui
-      // suivait l'avatar ou visait un chantier reste où l'on a touché (la marche finit hors champ
-      // s'il le faut).
-      this.prendreLaCamera()
-      // Sur une carte à section collante, le défilement d'avant n'a plus rien à constater (son
-      // départ dirait un geste entré dans une zone des temps, son repos un rappel), et l'écho de la
-      // sortie est attendu. Sans section collante, le défilement ne se constate pas : rien à
-      // oublier, et un écho attendu que personne ne lèverait.
-      if (this.bandes) {
-        this.oublierLeDefilement()
-        this.sortie = y
-      }
-      this.poser(y)
-    }
+    if (y !== null) this.meneur.poserALaSortie(y)
     this.ens.cible = 0
     if (this.calme) this.ens.q = 0
     this.rappels.ensemble(false)
@@ -1105,8 +805,7 @@ export class MoteurCarte {
     this.raf = 0
     this.image(maintenant)
     const anime = !this.calme && this.visible
-    const defile = this.defilement.aDater || this.defilement.depuis !== null
-    if (anime || this.avatar.marche || this.adieu || this.suivre || this.envol || this.roulement || this.passage || defile || this.ens.q !== this.ens.cible) this.demander()
+    if (anime || this.avatar.marche || this.adieu || this.envol || this.meneur.occupe || this.ens.q !== this.ens.cible) this.demander()
     else this.dernier = 0
   }
 
@@ -1125,47 +824,7 @@ export class MoteurCarte {
       this.adieu = null
       a.fin()
     }
-    // Un seul glissement à la fois : celui qui a commencé après le roulement ou le passage l'emporte.
-    if (this.suivre || this.visee !== null) {
-      this.arreterLeRoulement()
-      this.arreterLePassage()
-    }
-    const p = this.passage
-    if (p) {
-      const ecoule = this.t - p.t0
-      const i = p.cles.findIndex((c) => c.t > ecoule)
-      if (i < 0) this.finirLePassage()
-      else {
-        const avant = p.cles[i - 1]!
-        const apres = p.cles[i]!
-        const y = avant.y === apres.y ? avant.y : lerp(avant.y, apres.y, ease((ecoule - avant.t) / (apres.t - avant.t)))
-        // Pendant une pause, la caméra y est déjà : rien à redire à la page.
-        if (y !== this.camY) this.poser(y)
-      }
-    }
-    const r = this.roulement
-    if (r) {
-      const pr = clamp((this.t - r.t0) / r.dur, 0, 1)
-      r.y = pr >= 1 ? r.y1 : lerp(r.y0, r.y1, ease(pr))
-      this.poser(r.y)
-      if (pr >= 1) {
-        this.roulement = null
-        r.fin?.()
-      }
-    }
-    if (this.suivre) {
-      const cible = cibleCamera(pointA(this.route, this.avatar.d).y, this.H, this.plan.hauteur)
-      const suivant = this.camY + (cible - this.camY) * Math.min(1, dt * 6)
-      this.rappels.defilerVers(suivant)
-      this.camY = suivant
-      if (!this.avatar.marche && Math.abs(cible - suivant) < 1.5) this.suivre = false
-    }
-    if (this.visee !== null) {
-      const suivant = this.camY + (this.visee - this.camY) * Math.min(1, dt * 6)
-      this.rappels.defilerVers(suivant)
-      this.camY = suivant
-      if (Math.abs(this.visee - suivant) < 1.5) this.visee = null
-    }
+    this.meneur.avancer(dt)
     this.fogY += (this.fogCible - this.fogY) * Math.min(1, dt * 1.6)
     if (this.ens.q !== this.ens.cible) this.ens.q = this.ens.cible > this.ens.q ? Math.min(1, this.ens.q + dt / 0.85) : Math.max(0, this.ens.q - dt / 0.85)
     if (!this.calme) this.particules.maj(dt)
@@ -1250,7 +909,7 @@ export class MoteurCarte {
       },
       bobineTrouvee: trouvee,
       avance: this.camY - s.y0,
-      entree: this.passage && this.passage.decennie === s.decennie ? this.t - this.passage.t0 : -1,
+      entree: this.meneur.ageDuPassage(s.decennie),
     }
   }
 
