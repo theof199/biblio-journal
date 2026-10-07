@@ -37,7 +37,7 @@
 .lanterne {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--m-rouge) 80%, transparent), color-mix(in srgb, var(--m-rouge) 22%, transparent) 70%);
+  background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--m-rouge) 55%, transparent), var(--m-rouge) 85%);
   mix-blend-mode: multiply;
 }
 
