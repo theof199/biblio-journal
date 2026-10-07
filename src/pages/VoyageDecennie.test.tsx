@@ -241,14 +241,16 @@ describe('la page d’une décennie', () => {
     expect(manege.dernier().bouclee).toBe(true)
     quittee.unmount()
 
+    // 1900 compose sa page (brief 8 du plan des pages 1900) : son monument est une affiche, son
+    // registre l'indicateur de la ligne, où se lisent les mêmes années, et le tampon n'y est pas posé.
     monterVoyage('/voyage/decennies/1900', routes)
     expect(await screen.findByRole('heading', { level: 1, name: 'Années 1900' })).toBeInTheDocument()
-    await waitFor(() => expect(monument1900).toHaveBeenCalled())
-    const vue = monument1900.mock.calls[monument1900.mock.calls.length - 1]![0]
-    expect(vue.annees.map((a) => a.annee)).toEqual([1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909])
-    expect(vue.cases.map((c) => c.annee)).toEqual([1900, 1901, 1902, 1903])
-    expect(vue.bouclee).toBe(false)
-    expect(await screen.findByText('Le tampon se pose ici')).toBeInTheDocument()
+    const arrets = within(await screen.findByRole('list', { name: 'Les arrêts de la ligne' }))
+    expect(arrets.getAllByRole('listitem')).toHaveLength(10)
+    expect(arrets.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/voyage/1900', '/voyage/1901', '/voyage/1902', '/voyage/1903'])
+    expect(monument1900).not.toHaveBeenCalled()
+    expect(await screen.findByText('La place du tampon des années 1900')).toBeInTheDocument()
+    expect(screen.queryByText('14 janvier 2026')).not.toBeInTheDocument()
   })
 
   // L'invitation à toucher est un mot du monde : celui du monde « à venir » n'en a pas, son monument

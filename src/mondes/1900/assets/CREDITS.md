@@ -186,3 +186,10 @@ Aucun fondu n’y est cuit : le dessin le pose (`docs/maquettes/voyage-immobile-
 - Source : https://commons.wikimedia.org/wiki/File:1900_Appareil_contr%C3%B4leur_CMP_mod%C3%A8le_billets.jpg
 - Licence : domaine public, selon la page du fichier : « Public domain » (publié en France en 1901). Page relue le 7 octobre 2026, par l’API de Wikimedia Commons.
 - Traitement : préparée pour la maquette (réduite et recadrée, de 1 114 × 722), 640 × 385, extraite à l’octet près de sa variable `--i-billets-metro` (l. 1441). Elle montre « Le modèle » sous le billet de séance (pages 1900, brief 6).
+
+## `douane.webp`
+
+- Œuvre : *Cabane dans les Vosges. Sommet du Donon. Hôtel P. Mathieu et une diligence. Groupe devant le Bureau des douanes françaises*, photographe inconnu, 1900 (sans nom d’éditeur) : un groupe devant le poste des douanes françaises du Donon, sur la frontière de 1871. Bibliothèque nationale et universitaire de Strasbourg, par Gallica (btv1b10214523z).
+- Source : https://commons.wikimedia.org/wiki/File:Cabane_dans_les_Vosges._Sommet_du_Donon._H%C3%B4tel_P._Mathieu_et_une_diligence._Groupe_devant_le_Bureau_des_douanes_fran%C3%A7aises_-_btv1b10214523z.jpg
+- Licence : domaine public, selon la page du fichier : « Public domain » (catégories PD France, PD US expired, CC-PD-Mark ; crédit : Bibliothèque nationale de France). Page relue le 7 octobre 2026, par l’API de Wikimedia Commons.
+- Traitement : préparée pour la maquette (recadrée sur le groupe et réduite, de 1 161 × 1 434), 465 × 387, extraite à l’octet près de sa variable `--i-douane` (l. 1442). Elle illustre le passeport de la page d’une décennie (pages 1900, brief 8).

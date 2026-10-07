@@ -1,4 +1,5 @@
 import type { HabillagePages, JetonDePage } from '../types'
+import Affiche from './pages/Affiche'
 import BilletDuCasier from './pages/BilletDuCasier'
 import CasierDuControleur from './pages/CasierDuControleur'
 import Classes from './pages/Classes'
@@ -6,14 +7,19 @@ import Composteur from './pages/Composteur'
 import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
 import Courroie from './pages/Courroie'
+import Frontiere from './pages/Frontiere'
 import Gare from './pages/Gare'
 import GuichetDuFilm from './pages/GuichetDuFilm'
 import Guide from './pages/Guide'
 import Hale from './pages/Hale'
 import Indicateur from './pages/Indicateur'
+import IndicateurDeLaLigne from './pages/IndicateurDeLaLigne'
+import LiensDeLaLigne from './pages/LiensDeLaLigne'
+import LigneDesAnnees from './pages/LigneDesAnnees'
 import NoticeDuFilm from './pages/NoticeDuFilm'
 import SousLaTete from './pages/SousLaTete'
 import Tete from './pages/Tete'
+import TitreDeLaLigne from './pages/TitreDeLaLigne'
 import TrainDuSoir from './pages/TrainDuSoir'
 import Voie from './pages/Voie'
 import VoieFermee from './pages/VoieFermee'
@@ -94,7 +100,9 @@ export const PAGES_1900: HabillagePages = {
   // La fiche d'un film se regarde du fond d'un Hale's Tours : la fausse voiture tient la place de la
   // projection, la notice et le guichet sont ceux de l'écran 5. Le billet de séance est un carton
   // Edmondson sous son composteur (écrans 6 et 7). La boîte à billets est le casier du contrôleur, une
-  // case par année, d'où sort une liasse de cartons (écran 8).
+  // case par année, d'où sort une liasse de cartons (écran 8). La page d'une décennie est la ligne :
+  // l'affiche à la place du monument, l'indicateur de la ligne à celle du registre, le passeport en
+  // page à tampons de frontière, sans palissade (écrans 1 et 9).
   gabarits: {
     teteDAnnee: Tete,
     fronton: SousLaTete,
@@ -114,6 +122,12 @@ export const PAGES_1900: HabillagePages = {
     billetDeSeance: Composteur,
     casier: CasierDuControleur,
     billetEnGrand: BilletDuCasier,
+    monument: Affiche,
+    frontonDeDecennie: TitreDeLaLigne,
+    livret: Frontiere,
+    registre: IndicateurDeLaLigne,
+    liensDeDecennie: LiensDeLaLigne,
+    ordreDeDecennie: LigneDesAnnees,
   },
   hauteurs: { bandeau: 230, scene: 240, estrade: 150, monument: 240, guichet: 140 },
   // La tête de la fiche d'année est un gabarit : cette toile ne se peint plus sur sa page.
@@ -122,6 +136,7 @@ export const PAGES_1900: HabillagePages = {
   dessinerScene: unie,
   // L'estrade du chroniqueur, que la maquette ne dessine pas : un fond uni (plan des pages 1900, décision 9).
   dessinerEstrade: unie,
+  // Le monument de la décennie est un gabarit (`Affiche`) : cette toile ne se peint plus sur sa page.
   dessinerMonument: unie,
   dessinerGuichet: unie,
 }

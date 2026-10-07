@@ -101,6 +101,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/mondes/1900/pages/Carton.module.css',
         '/src/mondes/1900/pages/Composteur.module.css',
         '/src/mondes/1900/pages/Casier.module.css',
+        '/src/mondes/1900/pages/Ligne.module.css',
       ]),
     )
   })

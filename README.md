@@ -598,7 +598,7 @@ le titre du HUD de la carte (la décennie de l'année en cours) et la plaque du 
   (`figureTouchee`, le plan que chaque figure inscrit). Le monde « à
   venir » ne dessine qu'un fond, sans rien à toucher. Le libellé de la toile finit par un mot du
   monde (`mots.decennie.toucher`, « touchez un cheval pour ouvrir son année » en 1890) ; nul, il
-  s'arrête à la décennie : c'est le cas du monde « à venir », dont 1900 porte encore les pages.
+  s'arrête à la décennie : c'est le cas du monde « à venir ».
 - **Le passeport** (`voyage/decennie/Livret.tsx`) : l'anneau des années de la décennie qui portent
   leur récompense, puis ce qui manque en clair (« Il manque une récompense en 1897 et 1899, et le
   ticket de 1900. », `ceQuiManque`, le jumeau de `calculerTampons` de l'API). Le ticket se juge sur
@@ -610,6 +610,24 @@ le titre du HUD de la carte (la décennie de l'année en cours) et la plaque du 
   une année qui a sa page en est le lien, le chemin du clavier et du lecteur d'écran.
 - **Les liens** vers la boîte et le guichet, ceux de `PAGES_DE_LA_DECENNIE` (`voyage/decennie.ts`)
   seulement : une page sans route y ramènerait à l'accueil, hors du Voyage.
+
+**En 1900, la page est la ligne des années** (maquette « Voyage immobile 1900 », écrans 1 et 9 ;
+`mondes/1900/pages/`, par les six clés de gabarit de la page). En tête, l'affiche du Transsibérien à
+la place du monument (`Affiche` : rien ne s'y touche), le titre de la page (« Années 1900 », en petit au-dessus du nom du monde) et une phrase qui dit
+où j'en suis, calculée sur les arrêts (`phraseDeLaLigne`, `mondes/1900/pages/ligne.ts`). Puis
+**l'indicateur de la ligne** à la place du registre (`IndicateurDeLaLigne`) : dix arrêts, l'année en
+heure (« 19.04 »), le lieu de sa photographie (`LIEU`), et son état : la récompense, « Bouclée »
+(comme la fiche de l'année le dit, `estBouclee`), le compte de l'année en cours (`jauge`), « à
+développer ». « Tu es ici » marque mon année en cours, « Léa y est » celle du Voyage suivi
+(`voyageurSuivi`, jamais au compte IA). Un arrêt qui a sa page en est le lien : c'est le seul chemin
+vers une année, pour le doigt comme pour le clavier. Ni les films vus (sauf en avance) ni la meilleure
+note du registre n'y sont dits. Puis les liens, le casier avec le compte de mes billets et le guichet.
+Puis **le passeport** (`Frontiere`), une page à tampons de frontière : la sortie de la décennie d'avant,
+datée du `boucle_le` de son tampon à Paris et absente sans lui (`sortieDe`), l'entrée une fois mon année
+en cours dans la décennie (`entreeFaite`), le tampon de la décennie (celui de la carte) ou sa place, la
+photo de la douane du Donon (`douane`), et « Il manque… », tu tant que les tickets ne sont pas lus. La
+palissade n'y est pas (plan des pages 1900, décision 5) : une panne de mon journal ne s'y dit donc nulle
+part, et ne coûte que le compte du casier.
 
 Pour un membre hors IA, une année que le Voyage suivi n'a pas encore ouverte (`etatDeCase`,
 `attente`) n'est jamais « en cours » : son cheval est terne au pointillé or, comme sa case de la
