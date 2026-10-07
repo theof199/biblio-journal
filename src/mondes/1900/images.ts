@@ -2,7 +2,7 @@
  * Les images du monde 1900 : les vingt-deux fichiers de `assets/`, chacun avec son entrée au
  * `CREDITS.md` du dossier (tâche 9). Le dessin prend une image si elle est là, et s'en passe sinon.
  */
-const fichiers = import.meta.glob('./assets/*.{webp,png,webm}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>
+const fichiers = import.meta.glob<string>('./assets/*.{webp,png,webm}', { eager: true, query: '?url', import: 'default' })
 
 export const imageDu1900 = (nom: string): string | null => fichiers[`./assets/${nom}.webp`] ?? null
 
