@@ -12,6 +12,7 @@ import { exemple } from '../test/contrat'
 import { cles } from '../api/cles'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
 import FEUILLE_DE_LA_CARTE from '../carte/Carte.module.css?raw'
+import stylesDeLaCarte from '../carte/Carte.module.css'
 import stylesDeLaToile from '../carte/CarteCanvas.module.css'
 import { DoublureAudio, oublierDoublures } from '../test/audioFactice'
 import { Ambiance, oublierAmbianceDeLaPage } from '../carte/son'
@@ -1270,6 +1271,38 @@ describe('le ticket', () => {
     expect(toutCeQuiSeLit()).toContain('1899')
     expect(toutCeQuiSeLit()).toContain('Les années du Voyage')
     expect(toutCeQuiSeLit()).not.toContain('1900')
+  })
+
+  // Revue du lot 2 (M5 de la tâche 13) : l'erreur du ticket couvrait le bouton du train posé au-dessus
+  // du ticket. La feuille la monte par un sélecteur de frère : il ne vaut que si l'erreur suit le bouton
+  // dans le même parent. Mutations : l'erreur rendue avant le bouton du train ; la classe
+  // `auDessusDuTicket` retirée du bouton ; la règle `.trainOmbre.auDessusDuTicket ~ .erreur` retirée
+  // de la feuille, ou son `bottom` ramené à 84 px.
+  it('l’erreur du ticket se tient au-dessus du bouton du train, lui-même au-dessus du ticket', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1901')
+    const { rappels, etats } = monter(EN_1901, {
+      'GET /api/me/voyage/tickets': () => json({ tickets: [{ ...TICKET, annee: 1902 }] }),
+      'POST /api/me/voyage/tickets/1902/utiliser': () => json({ code: 'INTERNAL', message: 'Une erreur est survenue. Réessaie.', retryable: true }, 500),
+    })
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Utiliser le ticket/ })).not.toBeNull(), { timeout: 5000 })
+    act(() => rappels().entreeProche?.(1900))
+    fireEvent.click(screen.getByRole('button', { name: /Utiliser le ticket/ }))
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeNull(), { timeout: 5000 })
+    // Les trois sont là ensemble, et l'erreur est bien le frère que la feuille vise.
+    expect(leTrain()).not.toBeNull()
+    expect(screen.getByRole('button', { name: /Utiliser le ticket/ })).toBeInTheDocument()
+    expect(document.querySelector(`.${stylesDeLaCarte.trainOmbre}.${stylesDeLaCarte.auDessusDuTicket} ~ .${stylesDeLaCarte.erreur}`)).toBe(screen.getByRole('alert'))
+    // La feuille : chacun commence au-dessus du haut de celui qu'il surmonte (son `bottom` et sa hauteur minimale).
+    const regle = (selecteur: string) => new RegExp(`(?:^|\\n)${selecteur.replace(/[.~]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(FEUILLE_DE_LA_CARTE)?.[1] ?? ''
+    const px = (selecteur: string, propriete: string) => Number(new RegExp(`(?:^|[;\\s])${propriete}:\\s*(\\d+)px`).exec(regle(selecteur))?.[1] ?? NaN)
+    const hautDuTicket = px('.ticketOmbre', 'bottom') + px('.ticket', 'min-height')
+    const basDuTrain = px('.trainOmbre.auDessusDuTicket', 'bottom')
+    const hautDuTrain = basDuTrain + px('.train', 'min-height')
+    expect(basDuTrain).toBeGreaterThanOrEqual(hautDuTicket)
+    expect(px('.trainOmbre.auDessusDuTicket ~ .erreur', 'bottom')).toBeGreaterThanOrEqual(hautDuTrain)
+    // Sans bouton du train au-dessus du ticket, l'erreur reste au-dessus du ticket seul.
+    expect(px('.erreur', 'bottom')).toBeGreaterThanOrEqual(hautDuTicket)
   })
 
   // Mutation : la garde de l'avancée retirée (`!avancee`).
