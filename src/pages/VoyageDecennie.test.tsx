@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { JournalPage } from '../api/journal'
 import type { Voyage } from '../api/voyage'
 import { PAGES_1890 } from '../mondes/1890/pages'
+import { PAGES_1900 } from '../mondes/1900/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import type { VueMonument } from '../mondes/types'
 import { exemple } from '../test/contrat'
@@ -211,7 +212,7 @@ describe('la page d’une décennie', () => {
   // filtre retiré) ; les chevaux de la première décennie (`chevaux(v, 1890)`).
   it('lit la décennie de la page, pas celle de l’année en cours ni la première', async () => {
     const manege = doublerLeManege()
-    const monument1900 = vi.spyOn(PAGES_A_VENIR, 'dessinerMonument').mockImplementation(() => undefined)
+    const monument1900 = vi.spyOn(PAGES_1900, 'dessinerMonument').mockImplementation(() => undefined)
     const en1903 = voyage1890(
       1903,
       [
@@ -247,9 +248,9 @@ describe('la page d’une décennie', () => {
   // L'invitation à toucher est un mot du monde : celui du monde « à venir » n'en a pas, son monument
   // n'ayant rien à toucher. Mutation : le mot rempli dans les pages du monde « à venir ».
   it('une décennie « à venir » nomme son monument sans inviter à toucher', async () => {
-    monterVoyage('/voyage/decennies/1900', { ...ROUTES, 'GET /api/me/journal?limit=100&sortie_min=1900&sortie_max=1909': journal([]) })
-    expect(await screen.findByRole('heading', { level: 1, name: 'Années 1900' })).toBeInTheDocument()
-    expect(await screen.findByRole('img', { name: `${PAGES_A_VENIR.mots.decennie.annonce} 1900.` })).toBeInTheDocument()
+    monterVoyage('/voyage/decennies/1910', { ...ROUTES, 'GET /api/me/journal?limit=100&sortie_min=1910&sortie_max=1919': journal([]) })
+    expect(await screen.findByRole('heading', { level: 1, name: 'Années 1910' })).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: `${PAGES_A_VENIR.mots.decennie.annonce} 1910.` })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /touche/i })).not.toBeInTheDocument()
   })
 

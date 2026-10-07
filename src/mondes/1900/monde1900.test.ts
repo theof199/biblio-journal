@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { creerMonde1900 } from '.'
 import { mondeAVenir } from '../avenir'
+import { PAGES_1900 } from './pages'
 import { trace1890, traceAVenir, HAUTEUR_MIN_SECTION, type Trace } from '../trace'
 import type { CaseVue, VueMonde } from '../types'
 import { placerCarte } from '../../carte/placement'
@@ -56,11 +57,12 @@ const PHOTO = {} as CanvasImageSource
 const lus = (appels: unknown): unknown => JSON.parse(JSON.stringify(appels))
 
 describe('le monde des années 1900', () => {
-  // Mutations : `pages` propre au monde ; `siteDuChantier` qui rend un `y` ; `entree` vidée (le passage : `passage.test.ts`).
-  it('porte les champs du voyage immobile, les pages du monde « à venir », aucun chantier, et son passage', () => {
+  // Mutations : `pages: PAGES_A_VENIR` (les pages du monde « à venir ») ; `siteDuChantier` qui rend un `y` ; `entree` vidée (le passage : `passage.test.ts`).
+  it('porte les champs du voyage immobile, ses propres pages, aucun chantier, et son passage', () => {
     const m = creerMonde1900()
     expect([m.cle, m.decennie, m.aVenir, m.chapitre, m.nom, m.sous, m.titreVoyageur, m.adieu]).toEqual(['1900', 1900, false, 'Chapitre II', 'Le voyage immobile', 'le train', 'Spectateur du voyage immobile', 0])
-    expect(m.pages).toBe(mondeAVenir(1900).pages)
+    expect(m.pages).toBe(PAGES_1900)
+    expect(m.pages).not.toBe(mondeAVenir(1900).pages)
     expect(ANNEES.map((a) => m.siteDuChantier(a))).toEqual(ANNEES.map(() => null))
     expect(m.scene!.entree).toBe(ENTREE)
     expect(ENTREE.length).toBeGreaterThan(0)

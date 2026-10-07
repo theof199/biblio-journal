@@ -1,5 +1,5 @@
 import type { Monde } from '../types'
-import { PAGES_A_VENIR } from '../avenir/pages'
+import { PAGES_1900 } from './pages'
 import { dessinerCiel } from './ciel'
 import { dessinerLointain } from './lointain'
 import { dessinerMoyen, ecranDeLaCase } from './gares'
@@ -67,8 +67,8 @@ export function creerMonde1900(): Monde {
     dessinerAdieu: () => undefined,
     // Aucun toucher du décor ne sonne ni ne s'anime (décision 4 de la spec).
     reagir: () => undefined,
-    // Les pages de 1900 restent celles du monde « à venir » : leur habillage est un autre lot.
-    pages: PAGES_A_VENIR,
+    // Les pages de ses années : son costume, et les sections qu'il compose lui-même (`pages.ts`).
+    pages: PAGES_1900,
     musique: ROULEMENT,
     bobines: BOBINES,
     objets: [],

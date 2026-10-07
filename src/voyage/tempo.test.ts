@@ -62,6 +62,8 @@ const DUREE = /(?<![\w.#-])-?\d*\.?\d+m?s\b/g
  */
 const AMBIANCE: Record<string, (selecteur: string) => boolean> = {
   '/src/voyage/annee/Corde.module.css': (s) => /^\.billet\b/.test(s),
+  // La tête de la gare 1900 : la trotteuse de l'horloge, la lanterne du laboratoire et le feu du sémaphore, en boucle.
+  '/src/mondes/1900/pages/Tete.module.css': (s) => /^\.tete\[data-vivante='oui'\] \.(trotteuse|lanterne|feu)$/.test(s),
 }
 
 /** Le sélecteur de la règle où tombe la position `i`. */

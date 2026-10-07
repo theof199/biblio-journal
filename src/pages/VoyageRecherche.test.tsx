@@ -6,6 +6,7 @@ import App from '../App'
 import { createQueryClient } from '../api/queryClient'
 import type { AnneeCarte } from '../api/voyage'
 import { PAGES_1890 } from '../mondes/1890/pages'
+import { PAGES_1900 } from '../mondes/1900/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import type { VueGuichet } from '../mondes/types'
 import { contexteFactice } from '../test/contexteFactice'
@@ -273,7 +274,7 @@ describe('le guichet, la recherche du Voyage', () => {
     page.unmount()
 
     const suivante = monter('/voyage/decennies/1900/recherche', routes)
-    await screen.findByRole('heading', { level: 1, name: PAGES_A_VENIR.mots.recherche.catalogue })
+    await screen.findByRole('heading', { level: 1, name: PAGES_1900.mots.recherche.catalogue })
     await waitFor(() => expect(screen.queryByText('Le catalogue se charge…')).not.toBeInTheDocument())
     expect(suivante.requetes.filter((r) => r.startsWith('GET /api/me/voyage/annees/')).sort()).toEqual([1900, 1901, 1902, 1903].map(FICHE))
   })
@@ -509,7 +510,8 @@ describe('le guichet, la recherche du Voyage', () => {
   // (`mondes(1890)`) ; les jetons retirés de la racine.
   it.each([
     [1890, PAGES_1890],
-    [1900, PAGES_A_VENIR],
+    [1900, PAGES_1900],
+    [1910, PAGES_A_VENIR],
   ])('s’habille du monde de sa décennie (%i)', async (d, pages) => {
     monter(`/voyage/decennies/${d}/recherche`)
     expect(await screen.findByRole('heading', { level: 1, name: pages.mots.recherche.catalogue })).toBeInTheDocument()

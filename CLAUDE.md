@@ -51,6 +51,7 @@ la page monte à sa place par `gabaritDe` (`src/voyage/gabarit.ts`). Sans gabari
 1890 et le monde « à venir » n'en ont aucun. La page garde les lectures, les mutations, les calques,
 le retour d'un billet, les fêtes et la navigation : un gabarit ne lit jamais l'API. **Une clé s'ajoute
 dans la tâche qui la remplit**, jamais d'avance, avec le test de page qui prouve que le défaut reste.
+Trois clés à ce jour (`anneeFermee`, `teteDAnnee`, `fronton`), que seul 1900 remplit (`docs/cerveau/pages-1900.md`).
 Les composants et les feuilles d'un monde vivent dans son dossier, où `habillage.test.ts` et
 `src/voyage/tempo.test.ts` les balaient tous : aucune durée en dur dans une feuille de monde, sauf
 déclarée dans `AMBIANCE` du second.
@@ -130,6 +131,7 @@ absente de cette table.
 |---|---|
 | `docs/cerveau/carte-et-moteur.md` | Avant d'ouvrir `src/carte/moteur.ts`, `src/carte/meneur.ts` ou leurs tests, d'ajouter un monde, de toucher à la caméra, aux zones, à la mémoire des images, à l'enveloppe de `pages/Carte.tsx` ou à une célébration. |
 | `docs/cerveau/monde-1900.md` | Avant d'ouvrir `src/mondes/1900/` : le tracé et les gares, les quatre toiles, le passage de la foire au train, l'habillage (l'heure, la lanterne), la météo, le tunnel, la ficelle d'affiches, ses images, ou la règle du déblocage. |
+| `docs/cerveau/pages-1900.md` | Avant d'ouvrir `src/mondes/1900/pages.ts` ou `src/mondes/1900/pages/`, d'ajouter une clé de gabarit, ou de changer un mot ou un jeton des pages 1900 : ce que 1900 compose déjà, ce qui reste par défaut, les gardes qui balaient ses feuilles. |
 
 **La consigne de lecture** vaut pour toute session et tout sous-agent, sans que le brief la répète :
 chercher par `grep` avant de lire ; lire par plage (`offset`, `limit`) tout fichier de plus de 500

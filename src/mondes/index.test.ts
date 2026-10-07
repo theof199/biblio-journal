@@ -18,16 +18,19 @@ describe('le registre des mondes', () => {
   })
 
   // Plan 3b, tâche 13 : la ligne `1900`. C'est elle qui rend le déblocage effectif (la carte ne
-  // ferme qu'un monde à scène) et qui fait jouer le passage. Les pages de ses années restent celles
-  // du monde « à venir » : leur habillage est un autre lot. Mutations : la ligne `1900` retirée de
-  // `FABRIQUES` ; un `pages` propre à 1900 (`{ ...PAGES_A_VENIR }` suffit à tomber) ; une ligne `1910`.
-  it('donne aux années 1900 leur monde, à scène et à passage, habillé des pages du monde « à venir »', () => {
+  // ferme qu'un monde à scène) et qui fait jouer le passage. Depuis le brief 1 du plan des pages 1900,
+  // ses années ont leurs propres pages : ses mots, et les sections qu'il compose. Mutations : la ligne
+  // `1900` retirée de `FABRIQUES` ; `pages: PAGES_A_VENIR` remis au monde 1900 ; une ligne `1910`.
+  it('donne aux années 1900 leur monde, à scène et à passage, habillé de ses propres pages', () => {
     const registre = creerRegistre()
     const de1900 = registre(1900)
     expect(de1900.aVenir).toBe(false)
     expect(de1900.decennie).toBe(1900)
     expect(de1900.scene?.entree.length).toBeGreaterThan(0)
-    expect(de1900.pages).toBe(PAGES_A_VENIR)
+    expect(de1900.pages).not.toBe(PAGES_A_VENIR)
+    expect(de1900.pages.mots.annonce).not.toEqual(PAGES_A_VENIR.mots.annonce)
+    expect(Object.keys(de1900.pages.gabarits).sort()).toEqual(expect.arrayContaining(['anneeFermee', 'fronton', 'teteDAnnee']))
+    expect(registre(1910).pages).toBe(PAGES_A_VENIR)
     expect(registre(1890).scene).toBeNull()
     expect(registre(1910).aVenir).toBe(true)
     expect(registre(1910).scene).toBeNull()

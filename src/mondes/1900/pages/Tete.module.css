@@ -1,0 +1,294 @@
+/* La tête de la gare (maquette « Voyage immobile 1900 » : `.g-tete`, `.photo-tete`, `.plaque`,
+   `.horloge`, `.cuve`, `.att-tete`, `.semaphore`). Les couleurs et les polices viennent des jetons du
+   monde ; ce qui bouge ne bouge que sous `data-vivante='oui'`, que le composant ne pose pas au calme. */
+.tete {
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.cadre {
+  position: relative;
+  height: 230px;
+  overflow: hidden;
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--m-fond);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Le haut s'assombrit sous le lien de retour, le bas se fond dans le teck de la page. */
+.cadre::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(color-mix(in srgb, var(--m-fond) 45%, transparent), transparent 30%, transparent 60%, var(--m-tel));
+  pointer-events: none;
+}
+
+/* Une année fermée : la plaque de verre encore négative, sous la lanterne rouge du laboratoire. */
+.fermee .photo {
+  filter: invert(1) grayscale(1) contrast(0.72) brightness(0.95) sepia(0.25);
+}
+
+.lanterne {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--m-rouge) 80%, transparent), color-mix(in srgb, var(--m-rouge) 22%, transparent) 70%);
+  mix-blend-mode: multiply;
+}
+
+.tete[data-vivante='oui'] .lanterne {
+  animation: respire 4.6s ease-in-out infinite alternate;
+}
+
+/* Une année qui attend le Voyage suivi : la gare assombrie. */
+.attente .photo {
+  filter: grayscale(0.5) brightness(0.72);
+}
+
+.plaque {
+  position: absolute;
+  z-index: 2;
+  bottom: -22px;
+  left: 16px;
+  display: inline-grid;
+  justify-items: center;
+  overflow: hidden;
+  padding: 6px 16px 7px;
+  border-radius: 5px;
+  background: var(--m-email);
+  color: var(--m-papier);
+  box-shadow:
+    inset 0 0 0 2px var(--m-papier),
+    inset 0 0 0 3.5px var(--m-email),
+    0 6px 14px var(--m-ombre);
+}
+
+.plaque small {
+  font: 600 11px var(--m-f-capitales);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.plaque h1 {
+  margin: 0;
+  font: 700 44px/1 var(--m-f-affiche);
+  letter-spacing: 0.03em;
+}
+
+/* L'émail prend la lumière, une fois, à l'arrivée en gare. */
+.plaque::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 38%, color-mix(in srgb, var(--m-papier) 50%, transparent) 50%, transparent 62%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+
+.tete[data-vivante='oui'] .plaque::after {
+  animation: eclat calc(1800ms * var(--tempo)) ease-in-out calc(600ms * var(--tempo));
+}
+
+/* Fermée : la plaque grise d'une année à développer. */
+.fermee .plaque {
+  background: var(--m-encre2);
+  color: var(--m-carton);
+  box-shadow:
+    inset 0 0 0 2px var(--m-carton),
+    inset 0 0 0 3.5px var(--m-encre2),
+    0 6px 14px var(--m-ombre);
+}
+
+/* En attente : la plaque éteinte, au pointillé or. */
+.attente .plaque {
+  background: var(--m-encre2);
+  color: var(--m-or2);
+  box-shadow:
+    inset 0 0 0 2px var(--m-encre2),
+    0 6px 14px var(--m-ombre);
+  outline: 2px dashed var(--m-or);
+  outline-offset: -6px;
+}
+
+.fermee .plaque::after,
+.attente .plaque::after {
+  display: none;
+}
+
+/* Le tampon rouge d'une ligne bouclée (maquette : `.tampon-rouge`). */
+.tampon {
+  position: absolute;
+  z-index: 2;
+  top: 64px;
+  right: 16px;
+  margin: 0;
+  padding: 4px 10px 3px;
+  border: 2px solid var(--m-rouge);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-papier) 82%, transparent);
+  color: var(--m-rouge);
+  font: 700 13px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
+}
+
+.horloge {
+  position: absolute;
+  z-index: 2;
+  right: 14px;
+  bottom: -34px;
+  width: 92px;
+  height: 92px;
+}
+
+.boitier {
+  fill: var(--m-bois);
+}
+
+.cadran {
+  fill: var(--m-papier);
+  stroke: var(--m-encre);
+  stroke-width: 1;
+}
+
+.chiffres {
+  fill: var(--m-encre);
+  font: 600 10px var(--m-f-capitales);
+}
+
+.aiguilleDesHeures,
+.aiguilleDesMinutes {
+  stroke: var(--m-encre);
+  stroke-linecap: round;
+}
+
+.aiguilleDesHeures {
+  stroke-width: 4;
+}
+
+.aiguilleDesMinutes {
+  stroke-width: 2.4;
+}
+
+.trotteuse {
+  stroke: var(--m-rouge);
+  stroke-width: 1;
+}
+
+.axe {
+  fill: var(--m-encre);
+}
+
+/* À l'arrivée, les aiguilles viennent de six heures et d'un tour entier jusqu'à l'heure de la gare,
+   que le composant pose sur chacune. */
+.tete[data-vivante='oui'] .aiguilleDesHeures {
+  animation: heures calc(2400ms * var(--tempo)) cubic-bezier(0.3, 0.1, 0.2, 1) calc(300ms * var(--tempo)) backwards;
+}
+
+.tete[data-vivante='oui'] .aiguilleDesMinutes {
+  animation: minutes calc(2400ms * var(--tempo)) cubic-bezier(0.3, 0.1, 0.2, 1) calc(300ms * var(--tempo)) backwards;
+}
+
+.tete[data-vivante='oui'] .trotteuse {
+  animation: tour 60s steps(60) infinite;
+}
+
+.semaphore {
+  position: absolute;
+  z-index: 2;
+  top: 58px;
+  right: 30px;
+  width: 8px;
+  height: 150px;
+  background: var(--m-fond);
+}
+
+.bras {
+  position: absolute;
+  top: 10px;
+  left: 4px;
+  width: 74px;
+  height: 14px;
+  margin-left: -66px;
+  background: linear-gradient(90deg, var(--m-papier) 0 16px, var(--m-rouge) 16px);
+  box-shadow: 0 2px 4px var(--m-ombre);
+  transform-origin: 66px 50%;
+}
+
+/* Le bras retombe à l'entrée ; au calme il est déjà à l'arrêt. */
+.tete[data-vivante='oui'] .bras {
+  animation: retombe calc(1600ms * var(--tempo)) cubic-bezier(0.3, 1.2, 0.5, 1) calc(500ms * var(--tempo)) backwards;
+}
+
+.feu {
+  position: absolute;
+  top: 30px;
+  left: -9px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--m-papier), var(--m-rouge) 50%, transparent 72%);
+}
+
+.tete[data-vivante='oui'] .feu {
+  animation: respire 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes eclat {
+  from {
+    transform: translateX(-130%);
+  }
+  to {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes heures {
+  from {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes minutes {
+  from {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes tour {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes retombe {
+  from {
+    transform: rotate(-52deg);
+  }
+}
+
+@keyframes respire {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sous la tête, là où 1890 dresse son fronton : l'heure de la gare, et ce que la fiche y accroche. */
+.sous {
+  margin: 0 16px;
+}
+
+.heure {
+  margin: 0;
+  font: italic 15px var(--m-f-texte);
+  color: var(--m-doux);
+}

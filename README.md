@@ -379,8 +379,20 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Première clé : `anneeFermee`, le corps d'une année fermée ou en attente. Aucun monde n'en
-  fournit encore : rien ne change à l'écran.
+  à la page. Trois clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
+  restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation) et `anneeFermee`
+  (le corps d'une année fermée ou en attente). 1890 et le monde « à venir » n'en fournissent aucune.
+- **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
+  `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
+  trois sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
+  le titre de la page et le rang de la gare, et selon le mode l'horloge (l'année est l'heure :
+  19 h 03 en 1903, `heureDeLaGare`) avec le tampon d'une ligne bouclée, le négatif sous la lanterne
+  rouge d'une année fermée, ou la gare assombrie et le sémaphore à l'arrêt d'une voie qui attend le
+  Voyage suivi. Au calme, rien n'y bouge. **Le reste d'une année ouverte garde encore les
+  composants par défaut** (la corde, le boniment, le programme, la parade, la séance, les salles, la
+  ligne du bas), aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, la scène d'un film, le
+  monument et le guichet sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
 `generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`. Le geste

@@ -786,10 +786,12 @@ describe('la fiche d’une année', () => {
     await waitFor(() => expect(screen.getByRole('dialog', { name: 'Générique Le générique de fin' })).toHaveTextContent('Tu as bouclé 1895 sur la Palme.'))
   })
 
-  // Mutation : un registre qui rend toujours le monde 1890 : 1902 porterait la baraque.
+  // Mutations : un registre qui rend toujours le monde 1890 : 1902 porterait la baraque ; `pages:
+  // PAGES_A_VENIR` remis au monde 1900 : 1902 porterait le papier d'un monde « à venir ».
   it.each([
     [1897, '#e8d8bf'],
-    [1902, '#f2e8d5'],
+    [1902, '#eee4cf'],
+    [1912, '#f2e8d5'],
   ])('pose sur la page de %i les jetons de son monde', async (an, papier) => {
     monterVoyage(`/voyage/${an}`, {
       ...ROUTES,
@@ -932,13 +934,14 @@ describe('la fiche d’une année', () => {
     it('ne tient pas une décennie pour bouclée sur le tampon d’une autre', async () => {
       calme()
       const dernier = epierLeBandeau(PAGES_A_VENIR)
-      monterVoyage('/voyage/1902', {
+      // Une année d'un monde « à venir », qui peint encore son bandeau sur une toile (1900 compose sa tête).
+      monterVoyage('/voyage/1912', {
         ...ROUTES,
         'GET /api/me/voyage': () => json({ ...VOYAGE, tampons: [{ decennie: 1890, boucle_le: '2026-09-28T12:00:00.000Z' }] }),
-        'GET /api/me/voyage/annees/1902': () => json(ficheVerrouillee(1902)),
-        [JOURNAL(1902)]: journal([]),
+        'GET /api/me/voyage/annees/1912': () => json(ficheVerrouillee(1912)),
+        [JOURNAL(1912)]: journal([]),
       })
-      await screen.findByRole('heading', { level: 1, name: '1902' })
+      await screen.findByRole('heading', { level: 1, name: '1912' })
       await waitFor(() => expect(dernier().mode).toBe('fermee'))
       expect(dernier().bouclee).toBe(false)
       expect(dernier().cases).toEqual([])

@@ -7,6 +7,7 @@ import { cles } from '../api/cles'
 import type { JournalItem, JournalPage } from '../api/journal'
 import { createQueryClient } from '../api/queryClient'
 import { PAGES_1890 } from '../mondes/1890/pages'
+import { PAGES_1900 } from '../mondes/1900/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { exemple } from '../test/contrat'
 import { visionnage } from '../test/journal'
@@ -124,7 +125,8 @@ describe('la boîte à billets', () => {
   // (`mondes(1890)`) ; les jetons retirés de la racine.
   it.each([
     [1890, PAGES_1890],
-    [1900, PAGES_A_VENIR],
+    [1900, PAGES_1900],
+    [1910, PAGES_A_VENIR],
   ])('s’habille du monde de sa décennie (%i)', async (d, pages) => {
     monter(`/voyage/decennies/${d}/billets`, { ...ROUTES, [`GET /api/me/journal?limit=100&sortie_min=${d}&sortie_max=${d + 9}`]: journal([]) })
     expect(await screen.findByRole('heading', { level: 1, name: pages.mots.boite.titre })).toBeInTheDocument()

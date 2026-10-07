@@ -86,6 +86,8 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/sacoche/Portefeuille.module.css',
         '/src/voyage/sacoche/Coulisses.module.css',
         '/src/voyage/celebrations/Celebrations.module.css',
+        '/src/mondes/1900/pages/Tete.module.css',
+        '/src/mondes/1900/pages/VoieFermee.module.css',
       ]),
     )
   })
