@@ -563,6 +563,26 @@ recomptées). La fiche est celle que la page de l'année tient (`fiche`) ; la ca
 passe pas, et le dessin reçoit alors des manques. `salve` dit au dessin de l'année que le pas de la
 médaille s'est joué : rien n'éclate au calme ni d'un toucher impatient.
 
+**En 1900, les fêtes se jouent dans le train** (maquette, écran 13 ; `mondes/1900/pages/`, une seule
+feuille, `Fetes.module.css`, mots et règles dans `fetes.ts`). La salle bouclée est une **voiture
+complète** (`VoitureComplete.tsx`) : la voiture à quai, sa voie (le numéro de la salle), les affiches
+de ses quatre derniers films aux fenêtres (la fenêtre et la plaque du compartiment de
+`Voies.module.css`, reprises et non copiées), la dernière qui s'allume, « Complet » qui tombe, le
+guidon qui se lève, puis le carton « Voiture complète » ; à plusieurs salles, ou sans fiche, une
+voiture sans voie ni film nommé. La récompense est une **étiquette de malle** (`EtiquetteDeMalle.tsx`) :
+la malle porte celles des années d'avant de la décennie, le pinceau passe, l'étiquette de l'année se
+colle au pas de la frappe. L'année bouclée est une **ligne bouclée** (`LigneBouclee.tsx`) : la plaque
+de la gare, les lignes de l'indicateur (`lignesDeLAnnee`, `ligneDeLIndicateur` : celles de la fiche
+d'année) qui se pointent une à une, jamais une ligne encore attendue, le tampon rouge au pas de la
+médaille sous les confettis du poinçon, puis le guichet tend le carton Edmondson du « Bon pour »
+(`Carton.tsx`, sans note ni trous ; `trajetDuBon` dit la gare où le ticket mène) ; « Le garder » et
+« L’utiliser » restent les boutons de la scène. Au rattrapage de la carte, sans fiche, la ligne
+bouclée n'a pas d'indicateur. Les durées de la feuille suivent les pas de `deroule.ts`, qui n'a pas
+changé. Le nom du dialogue reste celui de la scène (« Salle complète : … »). **N'en sont pas** : la
+scène « Étiquette collée » d'un badge (lot Étiquettes), le tampon du douanier et l'adieu par la vitre
+arrière, qui se joueront sur la carte avec les années 1910 ; le vert du guidon et de la Palme, sans
+jeton, est le bleu de l'émail.
+
 Le séquenceur (`Celebrations.tsx`) pose les jetons du monde et le tempo sur son calque. Chaque pas
 attend au tempo (`deroule.ts`, `useDeroule`), et **une scène démontée n'écrit plus rien** : ni état,
 ni son, ni vibration. Chaque scène est un dialogue qui garde le focus (`Cadre.tsx` : Tab tourne entre
@@ -585,7 +605,8 @@ ne vole, aucun confetti ne tombe du poinçon, et le téléphone ne vibre pas. Le
 tamponne pas (l'année revient aussitôt), la manivelle ne tourne pas, le guichetier ne bouge pas, le
 manège se fige à un angle où aucun cheval n'est derrière le pilier (`ANGLE_AU_CALME`,
 `mondes/1890/monument.ts`), et aucun tampon du passeport ne frappe. Une célébration pose son état
-final d'un coup : le carton et son bouton, sans minuterie, sans confettis ni vibration.
+final d'un coup : le carton et son bouton, sans minuterie, sans confettis ni vibration ; en 1900,
+la voiture est complète, l'étiquette collée et les lignes pointées d'emblée, sans pinceau.
 
 **La manivelle** (`voyage/annee/Manivelle.tsx`, règles dans `voyage/manivelle.ts`) enveloppe la
 fiche de toute année, quelle que soit sa forme. Tout en haut de la page (le `<main>` de la coque à

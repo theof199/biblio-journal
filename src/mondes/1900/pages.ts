@@ -8,6 +8,7 @@ import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
 import CoulissesDeLaSacoche from './pages/CoulissesDeLaSacoche'
 import Courroie from './pages/Courroie'
+import EtiquetteDeMalle from './pages/EtiquetteDeMalle'
 import Frontiere from './pages/Frontiere'
 import Gare from './pages/Gare'
 import Grille from './pages/Grille'
@@ -17,6 +18,7 @@ import Hale from './pages/Hale'
 import Indicateur from './pages/Indicateur'
 import IndicateurDeLaLigne from './pages/IndicateurDeLaLigne'
 import LiensDeLaLigne from './pages/LiensDeLaLigne'
+import LigneBouclee from './pages/LigneBouclee'
 import LigneDesAnnees from './pages/LigneDesAnnees'
 import NoticeDuFilm from './pages/NoticeDuFilm'
 import PageDeLaSacoche from './pages/PageDeLaSacoche'
@@ -30,6 +32,7 @@ import TitreDeLaLigne from './pages/TitreDeLaLigne'
 import TrainDuSoir from './pages/TrainDuSoir'
 import Voie from './pages/Voie'
 import VoieFermee from './pages/VoieFermee'
+import VoitureComplete from './pages/VoitureComplete'
 
 /** Le teck des panneaux : le fond de toute page du monde (maquette : `.ecr`, `--bois`). */
 const TECK = '#2b1d13'
@@ -112,6 +115,8 @@ export const PAGES_1900: HabillagePages = {
   // page à tampons de frontière, sans palissade (écrans 1 et 9). Le guichet est une grille de laiton,
   // sa réponse un tableau des départs (écran 11). La sacoche est de cuir, à fermoir de laiton : ses
   // pages de passeport en papier, ses tickets en carton, ses coulisses dans un casier (écran 15).
+  // Les fêtes se jouent dans le train : la voiture complète, l'étiquette de malle, la ligne bouclée
+  // et son « Bon pour » en carton (écran 13).
   gabarits: {
     teteDAnnee: Tete,
     fronton: SousLaTete,
@@ -144,6 +149,9 @@ export const PAGES_1900: HabillagePages = {
     pageDuPasseport: PageDeLaSacoche,
     portefeuille: PortefeuilleDeLaSacoche,
     coulisses: CoulissesDeLaSacoche,
+    feteDeLaSalle: VoitureComplete,
+    feteDeLaRecompense: EtiquetteDeMalle,
+    feteDeLAnnee: LigneBouclee,
   },
   // `guichet` : ce qui tient au-dessus de la tablette (le retour, le fronton, la grille), la place que la
   // page ajoute en bas pour que la tablette monte au-dessus du clavier.

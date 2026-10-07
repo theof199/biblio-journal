@@ -1,0 +1,659 @@
+/* Les fêtes des années 1900 (maquette « Voyage immobile 1900 », écran 13 : `.s-voiture`,
+   `.s-recompense`, `.s-annee`) : la voiture complète, l'étiquette de malle, la ligne bouclée. Trois
+   dessins, une racine (`.fete`) que chacun pose, dans le cadre de la scène (`voyage/celebrations/`),
+   qui garde le dialogue, le déroulé et le choix. Les couleurs et les polices viennent des jetons du
+   monde : le vert du guidon et de la Palme de la maquette, qui n'a pas de jeton, est le bleu de
+   l'émail. Rien ne bouge hors d'une racine vivante, et tout y est au tempo (`--tempo`, posé par la
+   racine) : les durées suivent les pas de `deroule.ts`, que la scène joue seule. */
+.fete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding-top: 34px;
+}
+
+.annee {
+  position: relative;
+  padding-top: 20px;
+}
+
+.sur {
+  margin: 14px 0 0;
+  font: 600 12px var(--m-f-capitales);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--m-or);
+}
+
+.titre {
+  margin: 6px 0 0;
+  font: 700 32px/1.04 var(--m-f-titre);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--m-papier);
+}
+
+.sous {
+  max-width: 30ch;
+  margin: 8px 0 0;
+  font: italic 16px/1.4 var(--m-f-texte);
+  text-wrap: balance;
+  color: var(--m-doux);
+}
+
+.fete[data-vivante='oui'] .sur,
+.fete[data-vivante='oui'] .titre,
+.fete[data-vivante='oui'] .sous,
+.fete[data-vivante='oui'] .guichet {
+  animation: monte calc(250ms * var(--tempo)) ease-out both;
+}
+
+@keyframes monte {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- La voiture complète ---------- */
+
+.quai {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  padding: 26px 0 30px;
+}
+
+.voiture {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  /* La place du guidon, au bout du quai. */
+  margin-right: 26px;
+  padding: 8px 6px 10px;
+  border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(color-mix(in srgb, var(--m-velours) 82%, var(--m-or)), var(--m-velours));
+  box-shadow:
+    inset 0 0 0 2px var(--m-fond),
+    inset 0 0 0 3px var(--m-filet),
+    0 12px 18px var(--m-ombre);
+}
+
+/* Le toit. */
+.voiture::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  right: -2%;
+  left: -2%;
+  height: 12px;
+  border-radius: 8px 8px 0 0;
+  background: var(--m-fond);
+}
+
+.voie {
+  margin: 0;
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--m-or2);
+}
+
+.fenetres {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fenetres li {
+  position: relative;
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Une fenêtre éclairée, quand rien n'y est affiché. */
+  background: radial-gradient(ellipse at 50% 30%, var(--m-or2), var(--m-or3) 80%);
+}
+
+.fenetres li > * {
+  width: 66px;
+  height: 86px;
+  background: transparent;
+  color: var(--m-encre);
+}
+
+/* La dernière fenêtre s'allume : le noir du compartiment vide s'en va. */
+.fenetres li:last-child::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--m-fond);
+  opacity: 0;
+}
+
+.fete[data-vivante='oui'] .fenetres li:last-child::after {
+  animation: eclaire calc(500ms * var(--tempo)) ease-out backwards;
+}
+
+@keyframes eclaire {
+  from {
+    opacity: 0.9;
+  }
+}
+
+/* La plaque « Complet » : celle d'un compartiment occupé, en grand, tombée dans ses glissières. */
+.complet {
+  min-width: 120px;
+  margin: 0;
+  letter-spacing: 0.3em;
+  box-shadow: 0 3px 6px var(--m-ombre);
+}
+
+.fete[data-vivante='oui'] .complet {
+  animation: glissiere calc(350ms * var(--tempo)) cubic-bezier(0.3, 1.3, 0.5, 1) calc(350ms * var(--tempo)) backwards;
+}
+
+@keyframes glissiere {
+  from {
+    opacity: 0;
+    transform: translateY(-110px);
+  }
+}
+
+.roues {
+  position: absolute;
+  right: 12%;
+  bottom: -18px;
+  left: 12%;
+  height: 34px;
+  background:
+    radial-gradient(circle at 17px 17px, var(--m-bois) 0 4px, var(--m-fond) 5px 12px, var(--m-encre2) 13px 17px, transparent 18px),
+    radial-gradient(circle at calc(100% - 17px) 17px, var(--m-bois) 0 4px, var(--m-fond) 5px 12px, var(--m-encre2) 13px 17px, transparent 18px);
+}
+
+.rail {
+  position: absolute;
+  right: -16px;
+  bottom: 8px;
+  left: -16px;
+  height: 4px;
+  background: var(--m-encre2);
+  box-shadow: 0 5px 0 var(--m-fond);
+}
+
+/* Le guidon de départ : un mât, son disque. */
+.guidon {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 8px;
+  bottom: 12px;
+  width: 5px;
+  background: var(--m-or3);
+  transform-origin: 50% 100%;
+}
+
+.guidon::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -14px;
+  width: 33px;
+  height: 33px;
+  border-radius: 50%;
+  background: var(--m-email);
+  box-shadow:
+    inset 0 0 0 3px var(--m-papier),
+    0 0 14px var(--m-filet);
+}
+
+.fete[data-vivante='oui'] .guidon {
+  animation: leve calc(600ms * var(--tempo)) cubic-bezier(0.3, 1.2, 0.5, 1) calc(700ms * var(--tempo)) backwards;
+}
+
+@keyframes leve {
+  from {
+    opacity: 0;
+    transform: rotate(70deg);
+  }
+}
+
+/* ---------- L'étiquette de malle ---------- */
+
+.malle {
+  position: relative;
+  width: 250px;
+  height: 190px;
+  border-radius: 10px;
+  background: linear-gradient(color-mix(in srgb, var(--m-velours) 78%, var(--m-or)), var(--m-velours));
+  box-shadow:
+    inset 0 0 0 3px var(--m-fond),
+    0 14px 22px var(--m-ombre);
+}
+
+/* Les deux sangles. */
+.malle::before,
+.malle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  background: color-mix(in srgb, var(--m-velours) 60%, var(--m-fond));
+}
+
+.malle::before {
+  left: 30px;
+}
+
+.malle::after {
+  right: 30px;
+}
+
+.coin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: var(--m-or);
+}
+
+.coin:nth-of-type(1) {
+  top: 0;
+  left: 0;
+  border-radius: 10px 0 12px;
+}
+
+.coin:nth-of-type(2) {
+  top: 0;
+  right: 0;
+  border-radius: 0 10px 0 12px;
+}
+
+.coin:nth-of-type(3) {
+  bottom: 0;
+  left: 0;
+  border-radius: 0 12px 0 10px;
+}
+
+.coin:nth-of-type(4) {
+  right: 0;
+  bottom: 0;
+  border-radius: 12px 0 10px;
+}
+
+.malle ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etiquette {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: var(--m-papier);
+  color: var(--m-rouge);
+  box-shadow:
+    inset 0 0 0 3px var(--m-papier),
+    inset 0 0 0 5px currentcolor,
+    inset 0 0 0 7px var(--m-papier),
+    inset 0 0 0 8px currentcolor,
+    1px 2px 4px var(--m-ombre);
+}
+
+.etiquette[data-forme='carree'] {
+  border-radius: 10px;
+  color: var(--m-bois);
+}
+
+.etiquette[data-forme='ovale'] {
+  border-radius: 50% / 38%;
+  color: var(--m-email);
+}
+
+.etiquette b {
+  font: 700 17px/1 var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.etiquette small {
+  font: 700 11px/1.2 var(--m-f-presse);
+}
+
+.etiquette em {
+  max-width: 50px;
+  font: normal 600 6px/1.25 var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.passee {
+  width: 62px;
+  height: 62px;
+  opacity: 0.8;
+}
+
+.passee b {
+  font-size: 13px;
+}
+
+.passee small {
+  font-size: 9px;
+}
+
+.neuve {
+  z-index: 3;
+  top: 56px;
+  left: 86px;
+  transform: rotate(-7deg);
+}
+
+.fete[data-vivante='oui'] .neuve {
+  animation: colle calc(300ms * var(--tempo)) cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+
+@keyframes colle {
+  0% {
+    opacity: 0;
+    transform: translateY(-170px) rotate(-26deg) scale(1.3);
+  }
+
+  70% {
+    opacity: 1;
+    transform: rotate(-7deg) scale(1.04);
+  }
+
+  85% {
+    transform: rotate(-7deg) scale(0.95);
+  }
+}
+
+.colle {
+  position: absolute;
+  z-index: 1;
+  top: 50px;
+  left: 80px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--m-pale), transparent 70%);
+}
+
+.fete[data-vivante='oui'] .colle {
+  animation: eclaire-colle calc(300ms * var(--tempo)) ease-out calc(250ms * var(--tempo)) backwards;
+}
+
+@keyframes eclaire-colle {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Le pinceau : la virole de laiton, le manche sombre, les soies claires. Il passe, puis s'en va. */
+.pinceau {
+  position: absolute;
+  z-index: 4;
+  top: 30px;
+  left: 70px;
+  width: 14px;
+  height: 78px;
+  border-radius: 3px 3px 6px 6px;
+  background: linear-gradient(var(--m-or) 0 52%, var(--m-fond) 52% 60%, var(--m-papier2) 60%);
+  transform-origin: 50% 0;
+  opacity: 0;
+}
+
+.fete[data-vivante='oui'] .pinceau {
+  animation: pinceau calc(550ms * var(--tempo)) ease-in-out;
+}
+
+@keyframes pinceau {
+  0% {
+    opacity: 0;
+    transform: translate(-30px, -40px) rotate(24deg);
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  35% {
+    transform: translate(10px, 10px) rotate(-14deg);
+  }
+
+  60% {
+    transform: translate(64px, 14px) rotate(18deg);
+  }
+
+  85% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(120px, -40px) rotate(-10deg);
+  }
+}
+
+/* ---------- La ligne bouclée ---------- */
+
+/* La plaque émaillée de la gare : son rang, l'année. */
+.plaque {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+  padding: 6px 22px 8px;
+  border-radius: 4px;
+  background: var(--m-email);
+  color: var(--m-papier);
+  box-shadow:
+    inset 0 0 0 2px var(--m-email),
+    inset 0 0 0 3.5px var(--m-papier),
+    0 6px 14px var(--m-ombre);
+}
+
+.plaque small {
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.plaque b {
+  font: 700 36px/1.05 var(--m-f-titre);
+  letter-spacing: 0.04em;
+}
+
+/* La feuille de l'indicateur, et son tampon. */
+.papier {
+  position: relative;
+  width: 100%;
+  min-height: 30px;
+  margin: 12px 0 28px;
+}
+
+.papier ol {
+  margin: 0;
+  padding: 6px 10px 8px;
+  list-style: none;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  text-align: left;
+  box-shadow: 0 4px 12px var(--m-ombre);
+}
+
+.papier li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 2px;
+  border-bottom: 1px dotted color-mix(in srgb, var(--m-encre) 45%, transparent);
+  font: 13.5px/1.25 var(--m-f-texte);
+}
+
+.papier li b {
+  font: 700 12.5px var(--m-f-presse);
+}
+
+.papier li i {
+  font: normal 700 10px var(--m-f-corps);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-encre2);
+}
+
+.papier li[data-pointee='oui'] i {
+  color: var(--m-rouge);
+}
+
+.fete[data-vivante='oui'] .papier li[data-pointee='oui'] i {
+  animation: pointe calc(175ms * var(--tempo)) ease-out;
+}
+
+@keyframes pointe {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.tampon {
+  position: absolute;
+  right: 10px;
+  bottom: -27px;
+  margin: 0;
+  padding: 4px 10px 3px;
+  border: 3px double var(--m-rouge);
+  background: color-mix(in srgb, var(--m-papier) 80%, transparent);
+  color: var(--m-rouge);
+  font: 700 14px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(-5deg);
+}
+
+.fete[data-vivante='oui'] .tampon {
+  animation: frappe calc(250ms * var(--tempo)) ease-in backwards;
+}
+
+@keyframes frappe {
+  from {
+    opacity: 0;
+    transform: rotate(-5deg) scale(2.2);
+  }
+}
+
+/* Le guichet : la grille de laiton, la tablette qui tend le carton. */
+.guichet {
+  width: 100%;
+  max-width: 300px;
+  margin-top: 14px;
+}
+
+.grille {
+  display: block;
+  height: 26px;
+  border-radius: 13px 13px 0 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 13px, var(--m-or3) 13px 15px, var(--m-bois) 15px 16px),
+    var(--m-fond);
+}
+
+.tablette {
+  padding: 10px 34px 12px;
+  border-radius: 2px;
+  background: linear-gradient(var(--m-or3), var(--m-bois));
+  box-shadow: 0 6px 12px var(--m-ombre);
+}
+
+/* Les confettis du poinçon : huit ronds de carton, qui tombent une fois. */
+.chads {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.chads i {
+  position: absolute;
+  top: -10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--m-carton);
+  opacity: 0;
+}
+
+.chads i:nth-child(odd) {
+  background: var(--m-or2);
+}
+
+.chads i:nth-child(1) {
+  left: 8%;
+}
+
+.chads i:nth-child(2) {
+  left: 21%;
+}
+
+.chads i:nth-child(3) {
+  left: 34%;
+}
+
+.chads i:nth-child(4) {
+  left: 47%;
+}
+
+.chads i:nth-child(5) {
+  left: 58%;
+}
+
+.chads i:nth-child(6) {
+  left: 70%;
+}
+
+.chads i:nth-child(7) {
+  left: 82%;
+}
+
+.chads i:nth-child(8) {
+  left: 93%;
+}
+
+.fete[data-vivante='oui'] .chads i {
+  animation: tombe calc(1400ms * var(--tempo)) ease-in;
+}
+
+.fete[data-vivante='oui'] .chads i:nth-child(3n) {
+  animation-delay: calc(180ms * var(--tempo));
+}
+
+.fete[data-vivante='oui'] .chads i:nth-child(3n + 1) {
+  animation-delay: calc(90ms * var(--tempo));
+}
+
+@keyframes tombe {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(420px) rotate(200deg);
+  }
+}
