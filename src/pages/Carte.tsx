@@ -524,9 +524,10 @@ export default function Carte() {
           </div>
         ) : null}
         {/* Le passage au geste (maquette « Voyage immobile 1900 », `#b-action`) : offert quand le moteur
-            dit l'entrée d'un monde à portée, à qui a atteint sa décennie, jamais pendant une avancée. Il
+            dit l'entrée d'un monde à portée, à qui a atteint sa décennie, jamais pendant une avancée ni
+            sous la vue d'ensemble (le passage s'y jouerait sans être vu). Il
             ne joue que le passage : ni porte ni adieu, qui n'appartiennent qu'à l'avancée. */}
-        {proche !== null && !avancee && v.annee_en_cours >= proche ? (
+        {proche !== null && !avancee && !ensemble && v.annee_en_cours >= proche ? (
           <div className={`${styles.trainOmbre}${ticket ? ` ${styles.auDessusDuTicket}` : ''}`}>
             <button type="button" className={styles.train} onClick={() => void moteur?.direBonjour(proche, 'endroit')}>
               {`Prendre le train pour ${proche}`}

@@ -520,7 +520,6 @@ describe('le ticket', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  // Mutation : `passerLaPorte` sans l'adieu, ou l'adieu dit avant la porte.
   /** Le passage à 1900 : les années 1890 toutes bouclées d'un Ours, 1900 en cours. Le monde de 1900 a un passage d'entrée. */
   const V1900 = voyage1890(1900, [
     ...[1895, 1896, 1897, 1898, 1899].map((annee) => ({ annee, statut: 'ouverte' as const, visitee: true, recompense: 'ours' as const, progression: P })),
@@ -536,6 +535,7 @@ describe('le ticket', () => {
     { annee: 1910, statut: 'en_cours' as const, visitee: false, recompense: null, progression: null },
   ])
 
+  // Mutation : `passerLaPorte` sans l'adieu, ou l'adieu dit avant la porte.
   // Mutation (plan 3b) : `aUnPassage` qui rend toujours vrai (le monde sans passage se verrait dire
   // bonjour et perdrait son carton).
   it('au changement de décennie, le monde quitté dit adieu une fois la porte passée', async () => {
@@ -1212,6 +1212,31 @@ describe('le ticket', () => {
     // Loin du bas de la foire, ou le passage lancé : le moteur le dit, le bouton s'en va.
     act(() => rappels().entreeProche?.(null))
     expect(leTrain()).toBeNull()
+  })
+
+  // La borne du déblocage : la première année du monde le débloque. Mutation : `>=` devenu `>` (le
+  // bouton manquerait pendant toute l'année 1900).
+  it('« Prendre le train pour 1900 » s’offre dès 1900, la première année du monde', async () => {
+    localStorage.setItem(CLE_ANNEE_VUE, '1900')
+    const { moteur, rappels, etats } = monter(V1900)
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(leTrain()).toBeNull()
+    act(() => rappels().entreeProche?.(1900))
+    toucher(leTrain()!)
+    expect(vi.mocked(moteur.direBonjour).mock.calls).toEqual([[1900, 'endroit']])
+    expect(moteur.passerLaPorte).not.toHaveBeenCalled()
+  })
+
+  // Sous la vue d'ensemble, le passage se jouerait sans être vu. Mutation : `!ensemble` retiré.
+  it('« Prendre le train » se tait sous la vue d’ensemble, et revient quand elle se referme', async () => {
+    const { rappels, etats } = monter(EN_1901)
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    act(() => rappels().entreeProche?.(1900))
+    expect(leTrain()).not.toBeNull()
+    act(() => rappels().ensemble(true))
+    expect(leTrain()).toBeNull()
+    act(() => rappels().ensemble(false))
+    expect(leTrain()).not.toBeNull()
   })
 
   // Mutation : la garde du déblocage retirée (`v.annee_en_cours >= proche`).

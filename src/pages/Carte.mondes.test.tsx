@@ -290,6 +290,17 @@ describe('le déblocage d’un monde à scène', () => {
     vi.unstubAllGlobals()
   })
 
+  // Plan 3b, tâche 13. La scène d'essai n'a aucun temps (`entree: []`) : un monde à scène sans
+  // passage garde la marche et le carton. Mutation : `aUnPassage` réduit à `scene !== null` (le
+  // bonjour dit à un monde qui n'a rien à jouer, sa marche et son carton perdus).
+  it('vers un monde à scène dont l’entrée est vide, l’avancée marche et montre le carton, sans bonjour', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1899')
+    const { moteur } = await monter(1900)
+    await waitFor(() => expect(moteur.marcher).toHaveBeenCalledWith(1900))
+    expect(await screen.findByText('Le voyage immobile')).toBeInTheDocument()
+    expect(moteur.direBonjour).not.toHaveBeenCalled()
+  })
+
   // Le membre resté en 1899, son ticket de 1900 en poche et le tampon de 1890 posé : seule son année
   // en cours ouvre 1900. 1910, « à venir » et sans scène, ne reparaît pas au-delà du trou.
   // Mutations : l'année en cours remplacée par celle du ticket offert ; par 1900 dès que le tampon de
