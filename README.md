@@ -245,7 +245,8 @@ appel ; le meneur arbitre. La vue d'ensemble ouverte, il ne lance ni rappel ni p
 l'Exposition : quatre toiles défilent à des vitesses différentes derrière la vitre d'un train qui
 ne bouge pas (`toiles.ts`, `RAPPORTS`), et tout se tire de l'avance de la caméra. La section porte
 en haut la zone du passage, puis dix gares, une par année, à 700 px de geste l'une de l'autre
-(`trace.ts`, `ARRETS`, `PAS`) ; chaque gare est une photographie d'époque. Une année fermée, ou où
+(`trace.ts`, `ARRETS`, `PAS`) ; chaque gare est une photographie d'époque. Une année fermée, en
+attente du Voyage suivi (`gares.ts`, `estFermee`, que la bande de la vue d'ensemble lit aussi), ou où
 le membre n'est pas encore arrivé, se montre en plaque négative (`gares.ts`, `aDevelopper`), sous une
 lanterne rouge de 1901 à 1909 ; la plaque se développe sous les yeux à l'arrivée du membre
 (`durees.ts`, `DEVELOPPEMENT`). L'heure est celle de la gare, de l'aube de 1900 à la nuit de 1909

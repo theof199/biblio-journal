@@ -899,6 +899,7 @@ export class MoteurCarte {
       cases: bati.map((c) => ({
         annee: c.annee,
         etat: etats.get(c.annee)?.etat ?? 'verrou',
+        attente: etats.get(c.annee)?.attente ?? false,
         profondeur: etats.get(c.annee)?.profondeur ?? 0,
         x: c.x * this.k,
         y: c.y - this.camY,

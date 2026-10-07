@@ -1,7 +1,7 @@
 import type { CadreDeBande, EtatDeBande, LectureDeBande } from '../types'
 import { c, F_RAIL } from './couleur'
 import { imageDu1900 } from './images'
-import { negatif } from './gares'
+import { estFermee, negatif } from './gares'
 
 interface Rect { x: number; y: number; w: number; h: number }
 
@@ -42,7 +42,7 @@ export function dessinerBande(g: CanvasRenderingContext2D, cadre: CadreDeBande, 
   etat.annees.forEach((a, i) => {
     const r = vignette(cadre, n, i)
     const p = { x: r.x + 1.5, y: r.y + 3, w: r.w - 3, h: r.h - 6 - chiffres }
-    const fermee = a.etat === 'verrou' || a.attente
+    const fermee = estFermee(a)
     const url = imageDu1900(`g${a.annee}`)
     const photo = url ? cadre.image(url) : null
     if (photo) {

@@ -7,7 +7,8 @@ import { placerCarte } from '../../carte/placement'
 import { construireRoute } from '../../carte/route'
 import { vueFactice } from '../../test/vueFactice'
 import { contexteFactice } from '../../test/contexteFactice'
-import { aDevelopper, developpement, ecranDeLaCase, gareALEcran, milieuDeLaGare } from './gares'
+import { aDevelopper, developpement, ecranDeLaCase, estFermee, gareALEcran, milieuDeLaGare } from './gares'
+import { aUnChef, forceDeLaLanterne, lanterneALEcran } from './habillage'
 import { decalages, fenetre, RAPPORTS } from './toiles'
 import { ANNEES, ARRETS, B1, E, HAUTEUR, PAS, S1, trace1900 } from './trace'
 import { ENTREE } from './entree'
@@ -200,6 +201,64 @@ describe('la plaque d’une année', () => {
     const enRoute = { cases: cases(4), ouverte: { annee: 1902, t0: -9 } }
     expect(aDevelopper(enRoute, 1903)).toBe(true)
     expect(aDevelopper({ ...enRoute, ouverte: { annee: 1903, t0: 4 } }, 1903)).toBe(false)
+  })
+})
+
+// Revue du lot 2 (I1) : un membre hors IA arrivé dans une année que le Voyage suivi n'a pas encore
+// ouverte. La case commune, le corail et la bande la tiennent pour fermée : la gare aussi.
+describe('une année en attente du Voyage suivi', () => {
+  /** Les `ouvertes` premières années ouvertes, le membre arrivé dans la dernière ; `annee` porte `sur`. */
+  const avec = (ouvertes: number, annee: number, sur: Partial<CaseVue>) => cases(ouvertes).map((k) => (k.annee === annee ? { ...k, ...sur } : k))
+  const moyen = (annee: number, ouvertes: number, lesCases: CaseVue[]) => {
+    const f = enGare(annee, ouvertes, { cases: lesCases, image: () => PHOTO })
+    creerMonde1900().dessinerMoyen(f.vue)
+    return { appels: lus(f.appels), dates: f.zones.filter((z) => z.id === 'date').length, bobines: f.bobine.mock.calls.length }
+  }
+
+  // Mutation : `|| a.attente === true` retiré d'`estFermee` (la garde de la gare et celle de la bande, d'un coup).
+  it('est fermée, quel que soit son état, comme une année verrouillée ou sans case', () => {
+    expect(estFermee({ etat: 'encours', attente: true })).toBe(true)
+    expect(estFermee({ etat: 'lion', attente: true })).toBe(true)
+    expect(estFermee({ etat: 'verrou', attente: false })).toBe(true)
+    expect(estFermee(undefined)).toBe(true)
+    expect(estFermee({ etat: 'encours', attente: false })).toBe(false)
+    expect(estFermee({ etat: 'passee' })).toBe(false)
+  })
+
+  // Mutations : la garde d'`estFermee` retirée ; `aDevelopper` revenu à la seule lecture de `etat`.
+  it('n’est pas développée dans sa gare : la plaque à développer sous sa lanterne, ni dépêche, ni bobine, ni chef', () => {
+    // Le membre est arrivé en 1903, en cours, et le Voyage suivi ne l'a pas ouverte.
+    const v = { cases: avec(4, 1903, { attente: true }), ouverte: { annee: 1903, t0: -9 }, t: 3, vivant: true, W: 390, H: 700, avance: ARRETS[3]! }
+    expect(ANNEES.map((a) => aDevelopper(v, a))).toEqual([false, false, false, true, true, true, true, true, true, true])
+    expect(forceDeLaLanterne(v, 1903)).toBe(1)
+    expect(lanterneALEcran(v, 1903)).not.toBeNull()
+    // Une année quittée en attente n'a pas son chef de gare ; ouverte, elle l'a.
+    expect(aUnChef({ ...v, cases: avec(4, 1902, { attente: true }) }, 1902)).toBe(false)
+    expect(aUnChef({ ...v, cases: cases(4) }, 1902)).toBe(true)
+    // 1903 porte une dépêche, 1904 une bobine.
+    expect(moyen(1903, 4, cases(4)).dates).toBe(1)
+    expect(moyen(1903, 4, avec(4, 1903, { attente: true })).dates).toBe(0)
+    expect(moyen(1904, 5, cases(5)).bobines).toBe(1)
+    expect(moyen(1904, 5, avec(5, 1904, { attente: true })).bobines).toBe(0)
+  })
+
+  // Deux images comparées entre elles, aucune suite d'appels attendue. Mutation : la garde d'`estFermee` retirée.
+  it('se dessine dans sa gare comme la même année verrouillée, pas comme une année ouverte', () => {
+    const attente = moyen(1903, 4, avec(4, 1903, { attente: true })).appels
+    expect(attente).toEqual(moyen(1903, 4, avec(4, 1903, { etat: 'verrou' })).appels)
+    expect(attente).not.toEqual(moyen(1903, 4, cases(4)).appels)
+  })
+
+  // Mutation : `dessinerBande` revenu à `a.etat === 'verrou'` seul.
+  it('se dessine dans la bande comme la même année verrouillée, pas comme une année ouverte', () => {
+    const bande = (etat: CaseVue['etat'], attente: boolean) => {
+      const { ctx, appels } = contexteFactice()
+      const annees = ANNEES.map((annee) => (annee === 1903 ? { annee, etat, attente } : { annee, etat: 'passee' as const, attente: false }))
+      creerMonde1900().scene!.dessinerBande(ctx, { x: 10, y: 400, w: 370, h: 60, e: 1, image: () => PHOTO }, { annees, anneeAvatar: 1903 })
+      return lus(appels)
+    }
+    expect(bande('encours', true)).toEqual(bande('verrou', false))
+    expect(bande('encours', true)).not.toEqual(bande('encours', false))
   })
 })
 

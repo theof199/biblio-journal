@@ -1,4 +1,4 @@
-import type { VueMonde } from '../types'
+import type { CaseVue, VueMonde } from '../types'
 import { clamp } from '../../carte/outils'
 import { c, F_PRESSE, F_RAIL } from './couleur'
 import { cuire, fondre } from './cuisson'
@@ -53,13 +53,20 @@ export function ecranDeLaCase(v: VueMonde, annee: number): { x: number; y: numbe
 }
 
 /**
- * Vrai tant que la gare d'une année est une plaque à développer : l'année est fermée, ou le membre
- * n'y est pas encore arrivé. La page ouvre l'année avant la marche et n'avance `ouverte.annee`
- * qu'après : sans la seconde garde, la plaque paraîtrait développée le temps du trajet, puis
- * redeviendrait négative à l'arrivée pour se développer.
+ * La seule règle de « fermée » du monde, lue par la gare (`aDevelopper`) comme par la bande de la vue
+ * d'ensemble : une année sans case, verrouillée, ou en attente du Voyage suivi. Une année en attente
+ * se montre fermée partout, plaque comprise, comme la case commune et le corail du moteur.
+ */
+export const estFermee = (a: Pick<CaseVue, 'etat' | 'attente'> | undefined): boolean => !a || a.etat === 'verrou' || a.attente === true
+
+/**
+ * Vrai tant que la gare d'une année est une plaque à développer : l'année est fermée (`estFermee`),
+ * ou le membre n'y est pas encore arrivé. La page ouvre l'année avant la marche et n'avance
+ * `ouverte.annee` qu'après : sans la seconde garde, la plaque paraîtrait développée le temps du
+ * trajet, puis redeviendrait négative à l'arrivée pour se développer.
  */
 export const aDevelopper = (v: Pick<VueMonde, 'cases' | 'ouverte'>, annee: number): boolean =>
-  (v.cases.find((k) => k.annee === annee)?.etat ?? 'verrou') === 'verrou' || annee > v.ouverte.annee
+  estFermee(v.cases.find((k) => k.annee === annee)) || annee > v.ouverte.annee
 
 /**
  * Le développement de la plaque d'une année ouverte, de 0 (négative) à 1 (développée). Il ne se

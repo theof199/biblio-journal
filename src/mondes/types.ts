@@ -78,6 +78,11 @@ export interface DateVraie {
 export interface CaseVue {
   annee: number
   etat: EtatCase
+  /**
+   * En attente du Voyage suivi (`EtatCarte.cases`) : à montrer fermée, quel que soit `etat`. Le moteur
+   * le remplit toujours ; absent (une vue de banc de test), il vaut faux.
+   */
+  attente?: boolean
   profondeur: number
   /** À l'écran, en px CSS. */
   x: number

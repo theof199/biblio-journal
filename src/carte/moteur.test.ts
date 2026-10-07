@@ -912,6 +912,23 @@ describe('le moteur de la carte', () => {
     const estLaPoussiere = (a: Appel) => String(a.fillStyle).startsWith('rgba(255,242,218')
     const estLaBrume = (a: Appel) => a.nom === 'fillRect' && a.args[0] === -8 && (a.fillStyle as { arrets?: unknown[] }).arrets?.length === 3
 
+    // Revue du lot 2 (I1). Mutation : la ligne `attente` retirée des `cases` de `vueMonde` : le monde ne
+    // saurait plus qu'une année attend le Voyage suivi, et montrerait sa gare ouverte.
+    it('dit au monde quelles années attendent le Voyage suivi', () => {
+      const banc = auTrain({ calme: true, enCours: 1902 })
+      banc.moteur.majEtat({ cases: banc.cases.map((c) => (c.annee === 1902 ? { ...c, attente: true } : c)), anneeAvatar: 1902, tampons: [], roulotte: null })
+      banc.moteur.defiler(CAMERA)
+      vus.length = 0
+      banc.moteur.image(1000)
+      const lues = vus.find((v) => v.cases.some((c) => c.annee === 1902))!.cases
+      expect(lues.filter((c) => c.annee >= 1900 && c.annee <= 1903).map((c) => [c.annee, c.etat, c.attente])).toEqual([
+        [1900, 'lion', false],
+        [1901, 'lion', false],
+        [1902, 'encours', true],
+        [1903, 'verrou', false],
+      ])
+    })
+
     // Mutations : la garde retirée autour de `dessinerCase` (les cases communes de 1901 et 1902
     // reviennent) ; la garde retirée autour de l'avatar, de sa zone `clap` ou de sa lumière.
     it('n’y dessine ni case commune, ni avatar, ni lumière, et n’y inscrit pas la zone du clap', () => {
