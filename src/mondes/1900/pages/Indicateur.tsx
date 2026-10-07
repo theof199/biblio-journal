@@ -2,25 +2,27 @@ import { useMouvementReduit } from '../../../ui/mouvement'
 import { NOM_DE_RECOMPENSE } from '../../../voyage/annee/Embleme'
 import type { PropsProgramme } from '../../../voyage/annee/Programme'
 import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
-import { gainDe, ligneDeLIndicateur } from './lignes'
+import { gainDe, ligneDeLIndicateur, lignesDeLAnnee } from './lignes'
 import Rubrique from './Rubrique'
 import styles from './Indicateur.module.css'
 
 /**
  * L'indicateur de la gare, à la place du programme (maquette, écrans 2 et 14 : `.chaix`) : une ligne
- * par arrivée que la fiche compte, arrivée ou attendue, sur toute année prête. Une année bouclée
- * porte le tampon rouge, avec sa récompense. Au retour d'un billet, la ligne gagnée se pointe en
+ * par arrivée que la fiche compte, arrivée ou attendue, sur toute année prête (`lignesDeLAnnee` : une
+ * année derrière soi sans ticket ne le promet plus). Une année bouclée porte le tampon rouge, avec sa
+ * récompense quand elle en a une. Au retour d'un billet, la ligne gagnée se pointe en
  * rouge (le « +1 » monte au compteur, sous la tête) ; au calme, elle est pointée d'un coup.
  */
 export default function Indicateur({ monde, annee, arrivees, gains, bouclee, recompense, ia }: PropsProgramme) {
   const m = monde.pages.mots
   const calme = useMouvementReduit()
-  const n = arrivees.filter((a) => a.arrivee).length
+  const lignes = lignesDeLAnnee(arrivees, bouclee)
+  const n = lignes.filter((a) => a.arrivee).length
   return (
     <section className={styles.indicateur} aria-label={m.programme.sur} style={STYLE_DU_TEMPO} data-vivante={calme ? 'non' : 'oui'}>
       <Rubrique>
         {m.programme.sur}
-        <small>{`${n} sur ${arrivees.length}`}</small>
+        <small>{`${n} sur ${lignes.length}`}</small>
       </Rubrique>
       <div className={styles.chaix}>
         <p className={styles.ent}>
@@ -29,7 +31,7 @@ export default function Indicateur({ monde, annee, arrivees, gains, bouclee, rec
         </p>
         <table>
           <tbody>
-            {arrivees.map((a) => {
+            {lignes.map((a) => {
               const ligne = ligneDeLIndicateur(a, annee, ia)
               const gain = gainDe(a, gains)
               return (

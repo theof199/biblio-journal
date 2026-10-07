@@ -67,7 +67,9 @@ export interface Arrivee {
  * et le Lion, les salles complètes et la Palme, le ticket. Rien d'autre : ce que `prochainPas` promet,
  * dit en lignes qui restent une fois atteintes. Une ligne est arrivée là où `prochainPas` se tait :
  * par la récompense que l'API a donnée (le Lion compte des introuvables que `essentiels_vus` ignore),
- * sinon par le compte. Sans progression, seuls les films et le ticket se disent.
+ * sinon par le compte. La Palme n'arrive que par la récompense : l'API ne la donne qu'avec le Lion
+ * (`recompenseEtProgressionDeLAnnee`, `routes/voyage.ts`), deux salles complètes sans lui ne la font
+ * pas. Sans progression, seuls les films et le ticket se disent.
  */
 export function arriveesDeLAnnee(profondeur: number, progression: Progression | null, recompense: Recompense | null, ticket: TicketDeLAnnee | null): Arrivee[] {
   const lion = recompense === 'lion' || recompense === 'palme'
@@ -75,7 +77,7 @@ export function arriveesDeLAnnee(profondeur: number, progression: Progression | 
   if (progression) {
     const { essentiels_vus: e, essentiels_total: t, salles_completes: s } = progression
     liste.push(t === 0 ? { cle: 'essentiels', arrivee: lion, valeur: null, total: null } : { cle: 'essentiels', arrivee: lion || e >= t, valeur: e, total: t })
-    liste.push({ cle: 'salles', arrivee: recompense === 'palme' || s >= PALME_SALLES_MIN, valeur: s, total: PALME_SALLES_MIN })
+    liste.push({ cle: 'salles', arrivee: recompense === 'palme', valeur: s, total: PALME_SALLES_MIN })
   }
   liste.push({ cle: 'ticket', arrivee: ticket !== null, valeur: null, total: null })
   return liste

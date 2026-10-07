@@ -72,11 +72,19 @@ describe('les arrivées de l’année', () => {
 
   // Une ligne est arrivée là où `prochainPas` se tait : au compte, chacune à son palier.
   // Mutations : `>` au lieu de `>=` sur un palier ; le ticket arrivé d'après le Lion.
-  it('arrivent au compte : trois films, tous les essentiels, deux salles, le ticket émis', () => {
+  it('arrivent au compte : trois films, tous les essentiels, le ticket émis', () => {
     expect(etats(3, P(1, 5, 1), null, null)).toEqual(['films oui', 'essentiels non', 'salles non', 'ticket non'])
     expect(etats(2, P(5, 5, 1), null, null)).toEqual(['films non', 'essentiels oui', 'salles non', 'ticket non'])
-    expect(etats(2, P(1, 5, 2), null, null)).toEqual(['films non', 'essentiels non', 'salles oui', 'ticket non'])
     expect(etats(2, P(1, 5, 1), null, TICKET)).toEqual(['films non', 'essentiels non', 'salles non', 'ticket oui'])
+  })
+
+  // L'API ne donne la Palme qu'avec le Lion (`recompenseEtProgressionDeLAnnee`, `routes/voyage.ts`) :
+  // deux salles complètes sans lui ne la font pas arriver, quel que soit le reste. Mutation : la
+  // Palme arrivée au compte des salles (`|| s >= PALME_SALLES_MIN`).
+  it('la Palme n’arrive pas au compte des salles : seulement par la récompense', () => {
+    expect(etats(2, P(1, 5, 2), null, null)).toEqual(['films non', 'essentiels non', 'salles non', 'ticket non'])
+    expect(etats(4, P(1, 5, 3), 'ours', null)).toEqual(['films oui', 'essentiels non', 'salles non', 'ticket non'])
+    expect(etats(4, P(5, 5, 2), 'palme', null)).toEqual(['films oui', 'essentiels oui', 'salles oui', 'ticket non'])
   })
 
   // Le Lion compte des introuvables que `essentiels_vus` ignore : la récompense que l'API a donnée

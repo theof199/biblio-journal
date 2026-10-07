@@ -13,7 +13,7 @@ import { confierLeRetour } from '../../../voyage/annee/retour'
 import { PAGES_A_VENIR } from '../../avenir/pages'
 import { PAGES_1900 } from '../pages'
 import { heureDeLaGare, libelleDeLaPhoto, mentionDeLaPlaque, rangDeLaGare } from './gare'
-import { gainDe, ligneDeLIndicateur, phraseDuCompteur, venuesDArriver } from './lignes'
+import { gainDe, ligneDeLIndicateur, lignesDeLAnnee, phraseDuCompteur, venuesDArriver } from './lignes'
 
 /**
  * Les pages d'une année 1900 (plan des pages 1900, brief 1) : son costume, la tête de la gare dans
@@ -319,6 +319,35 @@ describe('les règles de l’indicateur', () => {
     expect(mots(15, P(3, 5, 2), 'palme', TICKET(1904))).toEqual(['Ours | 3 films de 1903 | arrivé · 15', 'Lion | Tous les essentiels | arrivé', 'Palme | 2 salles complètes | arrivé · 2', 'Ticket | Le ticket pour 1904 | arrivé'])
   })
 
+  // Une récompense plus haute fait arriver l'Ours sous son palier (un Lion tenu par des introuvables,
+  // deux films vus) : la ligne ne redit pas un compte qui la contredit, comme le Lion. Mutation : le
+  // compte gardé sur l'Ours arrivé (« arrivé · 2 » sous « 3 films »).
+  it('l’Ours arrivé par la récompense, sous son palier, ne redit pas son compte', () => {
+    expect(mots(2, P(1, 3, 0), 'lion', null)[0]).toBe('Ours | 3 films de 1903 | arrivé')
+    expect(mots(3, P(1, 3, 0), 'lion', null)[0]).toBe('Ours | 3 films de 1903 | arrivé · 3')
+  })
+
+  // Deux salles complètes sans le Lion ne font pas la Palme : la ligne reste attendue et dit ce qui
+  // lui manque, seulement alors. Mutations : la note retirée (« attendu · 2 sur 2 », sans raison) ; la
+  // note posée sous le palier, ou gardée sur la Palme arrivée.
+  it('des salles complètes sans le Lion attendent la Palme, et la ligne dit qu’il la faut', () => {
+    const palme = (...a: Parameters<typeof arriveesDeLAnnee>) => ligneDeLIndicateur(arriveesDeLAnnee(...a)[2]!, 1903, true)
+    expect(palme(4, P(2, 5, 2), 'ours', null)).toEqual({ nom: 'Palme', libelle: '2 salles complètes', note: 'avec le Lion', etat: 'attendu · 2 sur 2' })
+    expect([palme(4, P(2, 5, 1), 'ours', null).note, palme(9, P(5, 5, 2), 'palme', null).note]).toEqual([null, null])
+  })
+
+  // Une année derrière soi sans ticket (ouverte par le rattrapage du Voyage suivi) ne le promet plus :
+  // jumeau de `ligneDuBas`. L'année en cours garde sa ligne attendue, une année bouclée par son ticket
+  // sa ligne arrivée. Mutations : le filtre retiré de `lignesDeLAnnee` ; `bouclee` ignoré (l'année en
+  // cours perdrait sa promesse) ; `!a.arrivee` retiré (le ticket arrivé disparaîtrait).
+  it('une année bouclée sans ticket ne montre pas la ligne du ticket, et ne la compte pas', () => {
+    const cles = (ticket: ReturnType<typeof TICKET> | null, bouclee: boolean) => lignesDeLAnnee(arriveesDeLAnnee(4, P(2, 5, 1), 'ours', ticket), bouclee).map((a) => a.cle)
+    expect(cles(null, true)).toEqual(['films', 'essentiels', 'salles'])
+    expect(cles(null, false)).toEqual(['films', 'essentiels', 'salles', 'ticket'])
+    expect(cles(TICKET(1902), true)).toEqual(['films', 'essentiels', 'salles', 'ticket'])
+    expect(phraseDuCompteur(arriveesDeLAnnee(4, P(2, 5, 1), 'ours', null), true)).toBe('arrivée sur 3 : la ligne est bouclée.')
+  })
+
   // Mutation : la branche `a.total === null` retirée de `ligneDeLIndicateur`.
   it('une année sans essentiel le dit, sans compte', () => {
     expect(mots(2, P(0, 0, 0), null, null)[1]).toBe('Lion | Aucun essentiel encore | attendu')
@@ -423,6 +452,20 @@ describe('le corps d’une année 1900 ouverte', () => {
     expect(compteur()).toHaveTextContent('3arrivées sur 4 : la ligne est bouclée.')
     // Le ticket qui attend reste offert au bas de la page.
     expect(screen.getByRole('button', { name: 'Utiliser' })).toBeInTheDocument()
+  })
+
+  // Une année derrière soi sans ticket : fiche de 1901, mon année est 1903. Sous le tampon, aucune
+  // ligne ne promet un ticket pour 1902, et le compteur comme le titre comptent sur trois. Mutations :
+  // `Indicateur` qui rendrait `arrivees` sans `lignesDeLAnnee` ; son titre compté sur `arrivees` ;
+  // `phraseDuCompteur` comptée sur `arrivees`.
+  it('une année derrière soi sans ticket ne promet plus son ticket, ni dans l’indicateur ni au compteur', async () => {
+    monterVoyage('/voyage/1901', { ...ROUTES, [FICHE(1901)]: () => json(nue({ annee: 1901, profondeur: 4, progression: P(2, 5, 1), recompense: 'ours' })) })
+    const indicateur = await screen.findByRole('region', { name: 'L’indicateur' })
+    expect(within(indicateur).getByText('Ligne bouclée · Ours')).toBeInTheDocument()
+    expect(lignes()).toEqual(['Ours | 3 films de 1901 | arrivé · 4', 'Lion | Tous les essentiels | attendu · 2 sur 5', 'Palme | 2 salles complètes | attendu · 1 sur 2'])
+    expect(indicateur).not.toHaveTextContent(/ticket/i)
+    expect(within(indicateur).getByRole('heading', { level: 2 })).toHaveTextContent('L’indicateur1 sur 3')
+    expect(compteur()).toHaveTextContent('1arrivée sur 3 : la ligne est bouclée.')
   })
 
   // Le guide garde les deux gestes du boniment. Mutations, dans `Guide` : `onLire` ou `onGenerique`

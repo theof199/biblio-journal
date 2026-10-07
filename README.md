@@ -416,6 +416,8 @@ Où vit quoi :
   ses deux gestes), l'**indicateur** à la place du programme (`Indicateur`), sur toute fiche prête :
   quatre lignes, celles d'`arriveesDeLAnnee`, arrivées ou attendues, sans titre de film ni heure
   (leurs mots : `mondes/1900/pages/lignes.ts`) ; le jury n'y est promis qu'au compte IA. Une année
+  derrière soi sans ticket n'a pas la ligne du ticket (`lignesDeLAnnee`), et la Palme n'y arrive que
+  par la récompense : deux salles complètes sans le Lion l'attendent, « avec le Lion ». Une année
   bouclée (`estBouclee`) y porte le tampon rouge « Ligne bouclée » et sa récompense. Au retour d'un
   billet, la ligne gagnée se pointe en rouge, un « +1 » monte au compteur et sa molette tourne quand
   une ligne vient d'arriver (`venuesDArriver`), au tempo ; au calme, la ligne est pointée et le nombre
