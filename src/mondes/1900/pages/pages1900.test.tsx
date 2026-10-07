@@ -459,6 +459,17 @@ describe('le corps d’une année 1900 ouverte', () => {
     expect(compteur()).toHaveTextContent('1arrivée sur 3 : la ligne est bouclée.')
   })
 
+  // Le ticket donné par le jury avant toute récompense : la ligne est bouclée, sans récompense à
+  // nommer. La tête tamponne du même mot : c'est le tampon de l'indicateur qu'on lit ici. Mutations,
+  // dans `Indicateur` : le tampon rendu seulement avec une récompense ; « · null » écrit à sa suite.
+  it('une ligne bouclée sans récompense porte le tampon seul', async () => {
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, profondeur: 1, progression: P(1, 5, 0), recompense: null, ticket: TICKET(1904) })) })
+    const indicateur = await screen.findByRole('region', { name: 'L’indicateur' })
+    expect(within(indicateur).getByText('Ligne bouclée')).toBeInTheDocument()
+    expect(within(indicateur).queryByText(/^Ligne bouclée ·/)).toBeNull()
+    expect(lignes().map((l) => l.split(' | ')[2])).toEqual(['attendu · 1 sur 3', 'attendu · 1 sur 5', 'attendu · 0 sur 2', 'arrivé'])
+  })
+
   // Le guide garde les deux gestes du boniment. Mutations, dans `Guide` : `onLire` ou `onGenerique`
   // non branché ; le générique offert sans `generique` ; l'ouverture entière ; les faits oubliés ;
   // `Guide` retiré des gabarits (le boniment par défaut porte le même nom et les mêmes gestes).

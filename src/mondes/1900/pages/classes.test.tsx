@@ -6,6 +6,7 @@ import { exemple } from '../../../test/contrat'
 import { monterVoyage } from '../../../test/pageVoyage'
 import { json } from '../../../test/serveur'
 import { ficheEnAttente, fichePrete, filmDeSalle, morceau, salle, seance, voyage1890 } from '../../../test/voyage'
+import { RELECTURES } from '../../../voyage/relecture'
 import { classeDe, filmDeLaMarche, MOTS_DES_CLASSES } from './classes'
 
 /**
@@ -261,6 +262,29 @@ describe('le train du soir', () => {
     expect(await within(soir).findByRole('status')).toHaveTextContent('Le chroniqueur compose la séance…')
     expect(soir).toHaveTextContent('Train de plaisiren composition')
     expect(envois).toBe(1)
+  })
+
+  // Le guet d'une composition s'arrête au plafond : l'affichette le dit à la place de « compose… », et
+  // « Réessayer » le reprend sans recomposer (aucun appel au chroniqueur que le membre n'a pas
+  // demandé). Sur le modèle du défaut (`Seance.test.tsx`). Mutations, dans `TrainDuSoir` : l'abandon
+  // tu (« compose… » rendu quand même) ; « Réessayer » non branché.
+  it('une composition restée sans réponse le dit sur l’affichette, et « Réessayer » reprend le guet sans recomposer', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { requetes } = monterVoyage('/voyage/1903', { ...routes(VOYAGE, () => fiche({ seances: [], seance_en_cours: true })), 'POST /api/me/voyage/annees/1903/seances': () => json({}, 202) })
+    const lectures = () => requetes.filter((r) => r === FICHE).length
+    const soir = await leSoir()
+    expect(within(soir).getByRole('status')).toHaveTextContent('Le chroniqueur compose la séance…')
+    for (let i = 0; i < RELECTURES.seance.plafond + 4; i += 1) await vi.advanceTimersByTimeAsync(RELECTURES.seance.ms)
+    expect(await within(soir).findByRole('alert')).toHaveTextContent('Le chroniqueur n’a pas répondu, reviens plus tard.')
+    expect(within(soir).queryByRole('status')).toBeNull()
+    expect(soir).toHaveTextContent('Train de plaisiren composition')
+    expect(lectures()).toBe(1 + RELECTURES.seance.plafond)
+    fireEvent.click(within(soir).getByRole('button', { name: 'Réessayer' }))
+    await waitFor(() => expect(lectures()).toBe(2 + RELECTURES.seance.plafond))
+    expect(within(soir).queryByRole('alert')).toBeNull()
+    expect(within(soir).getByRole('status')).toHaveTextContent('Le chroniqueur compose la séance…')
+    await vi.advanceTimersByTimeAsync(RELECTURES.seance.ms)
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
   })
 
   // La page décide seule qui voit le train du soir ; le gabarit ne le redécide pas. Mutations, dans

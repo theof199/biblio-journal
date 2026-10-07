@@ -4,6 +4,7 @@ import type { FichePrete, Voyage } from '../../../api/voyage'
 import { monterVoyage } from '../../../test/pageVoyage'
 import { json } from '../../../test/serveur'
 import { filmDeSalle, fichePrete, salle, voyage1890 } from '../../../test/voyage'
+import { RELECTURES } from '../../../voyage/relecture'
 import { PAGES_1900 } from '../pages'
 import { MOTS_DES_VOIES, lettreDuCompartiment, mentionDeLaVoie, phraseDeLaVoiture, plaqueDuCompartiment } from './voies'
 
@@ -285,6 +286,30 @@ describe('la voiture d’une salle', () => {
       await vi.advanceTimersByTimeAsync(3_000)
       await waitFor(() => expect(requetes.filter((r) => r === FICHE)).toHaveLength(2))
       await waitFor(async () => expect((await voies())[0]).toHaveAttribute('aria-label', 'Voie 3, Méliès, toujours, 1 vu sur 4'))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // Le guet d'une fournée s'arrête au plafond : la voiture le dit, et « Réessayer » le reprend sans
+  // rien redemander au chroniqueur. Sur le modèle du défaut (`Salles.test.tsx`). Mutations, dans
+  // `Voiture` : l'abandon tu (le bloc `fournee.abandon` retiré) ; « Réessayer » non branché.
+  it('une fournée restée sans réponse le dit dans la voiture, et « Réessayer » reprend le guet', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const { requetes } = ouverte(VOYAGE, fiche({ salles: [{ ...MELIES, fournee_en_cours: true }, ESSENTIELS] }))
+      const lectures = () => requetes.filter((r) => r === FICHE).length
+      const v = await screen.findByRole('dialog', { name: 'Méliès, toujours' })
+      expect(within(v).queryByRole('alert')).toBeNull()
+      for (let i = 0; i < RELECTURES.fournee.plafond + 4; i += 1) await vi.advanceTimersByTimeAsync(RELECTURES.fournee.ms)
+      expect(await within(v).findByRole('alert')).toHaveTextContent('Le chroniqueur n’a pas répondu, reviens plus tard.')
+      expect(lectures()).toBe(1 + RELECTURES.fournee.plafond)
+      fireEvent.click(within(v).getByRole('button', { name: 'Réessayer' }))
+      await waitFor(() => expect(lectures()).toBe(2 + RELECTURES.fournee.plafond))
+      expect(within(v).queryByRole('alert')).toBeNull()
+      await vi.advanceTimersByTimeAsync(RELECTURES.fournee.ms)
+      expect(lectures()).toBe(3 + RELECTURES.fournee.plafond)
+      expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
     } finally {
       vi.useRealTimers()
     }
