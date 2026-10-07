@@ -22,6 +22,7 @@ import { useCalque } from '../voyage/calque'
 import Celebrations from '../voyage/celebrations/Celebrations'
 import { etatDeFete, scenesDuRetour, type EtatDeFete, type Scene } from '../voyage/celebrations/scenes'
 import Feuille from '../voyage/Feuille'
+import { gabaritDe } from '../voyage/gabarit'
 import { decennieDe, etatDeCase, prochainPas } from '../voyage/regles'
 import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
 import AnneeFermee from '../voyage/annee/AnneeFermee'
@@ -236,8 +237,10 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
       </>
     )
   } else if (fermee) {
+    // Le corps d'une année fermée est une section que le monde peut composer (`gabarits.anneeFermee`).
+    const Fermee = gabaritDe(monde, 'anneeFermee', AnneeFermee)
     corps = (
-      <AnneeFermee
+      <Fermee
         variante={fermee.statut === 'verrouillee' ? 'fermee' : 'attente'}
         monde={monde}
         annee={annee}

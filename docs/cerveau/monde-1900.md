@@ -32,7 +32,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
   cuit une fois et se pose d'un remplissage par plan : pas de particules ; sous la lanterne, le voile de neige s'efface.
 - **L'essuyage est la seule mémoire du monde hors d'`avance`** : une liste bornée de traits (`PLAFOND_DES_TRAITS`), dont la toile n'est que le cache, jamais recuite pour un trait de plus. Elle s'oublie dès que la buée n'a plus de force et dès qu'on quitte la carte (le moteur renaît au montage), ne lit pas l'horloge, vaut au calme ; la prise se décide au `debut`, la suite essuie tant qu'il reste de la force. La `fin` d'un glissement n'est pas un lever : les deux gouttes coulent quand même. Le repli si un navigateur défile avant que le geste soit reconnu : `src/mondes/1900/buee.ts` › `PORTEE_DE_L_ESSUYAGE`, une ligne.
 - **Deux fichiers de durées, deux règles contraires.** `durees.ts` ne porte que des `auTempo(…)` ;
-  `entree.ts` s'écrit en base, sans tempo, que le meneur seul applique. `src/voyage/tempo.test.ts` refuse l'inverse.
+  `entree.ts` s'écrit en base, sans tempo, que le meneur seul applique. `src/voyage/tempo.test.ts` refuse l'inverse, et balaie tout le dossier : un `.tsx` ou une feuille qu'on y pose n'écrit aucune durée en dur (`src/voyage/habillage.test.ts` y refuse de même couleur et police hors jeton).
 - **Une plaque a deux gardes** (`aDevelopper`) : l'année fermée, et l'année où le membre n'est pas encore
   arrivé. Sans la seconde, la plaque paraît développée le temps du trajet, puis redevient négative. « Fermée »
   n'a qu'une règle, `estFermee`, que la bande lit aussi : verrouillée, ou en attente du Voyage suivi (`CaseVue.attente`).

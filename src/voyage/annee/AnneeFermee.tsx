@@ -13,7 +13,8 @@ import styles from './AnneeFermee.module.css'
 /** L'espace insécable qui tient les guillemets à leur mot : jamais « » seul en début de ligne. */
 export const INSECABLE = String.fromCharCode(0xa0)
 
-interface Props {
+/** Ce que la page passe au corps d'une année fermée ou en attente ; un gabarit de monde reçoit les mêmes (`GabaritsDesPages`). */
+export interface PropsAnneeFermee {
   variante: 'fermee' | 'attente'
   monde: Monde
   annee: number
@@ -31,7 +32,7 @@ interface Props {
  * 282) : fermée jusqu'au ticket, ou en attente du Voyage suivi (« Théo est trop lent », `tropLent`). Mes
  * films de l'année déjà vus y comptent déjà ; ils se lisent dans mon journal.
  */
-export default function AnneeFermee({ variante, monde, annee, voyage: v, profondeur, journal, parade }: Props) {
+export default function AnneeFermee({ variante, monde, annee, voyage: v, profondeur, journal, parade }: PropsAnneeFermee) {
   const m = monde.pages.mots
   const attente = variante === 'attente'
   const lent = tropLent(v.source)

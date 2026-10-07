@@ -39,10 +39,21 @@ monde précis (seuls `mondes/types`, `mondes/trace` et le registre s'importent).
 **Un monde habille aussi les pages** de ses années (`pages` : les jetons CSS, les mots, les hauteurs
 et cinq dessins : le bandeau, la scène, l'estrade, le monument, le guichet). Une page ou un composant de `src/voyage/`
 n'importe jamais un monde précis : il passe par le registre. **Une couleur ou une police de page
-passe par un jeton** : aucune feuille de `src/voyage/` ni `src/pages/Voyage*.module.css` ne porte de
+passe par un jeton** : aucune feuille de `src/voyage/`, aucune `src/pages/Voyage*.module.css` ni aucune feuille de `src/mondes/` ne porte de
 couleur ni de police en dur, ni ne lit une variable hors des jetons du monde, de `--corail`, de `--coque-bas` et des
 `--z-*` (`src/voyage/habillage.test.ts`). Une couleur de maquette sans jeton en gagne un, dans
 `JETONS_DE_PAGE` et dans chaque monde ; une feuille neuve s'ajoute au plancher du même test.
+
+**Un monde peut composer une section de page** (`pages.gabarits`, `GabaritsDesPages` ; le mécanisme
+est la recommandation du plan des pages 1900, que le propriétaire n'a pas encore tranchée) : pour une
+clé, un composant qui reçoit les mêmes propriétés que le composant par défaut de `src/voyage/`, et que
+la page monte à sa place par `gabaritDe` (`src/voyage/gabarit.ts`). Sans gabarit, le défaut reste :
+1890 et le monde « à venir » n'en ont aucun. La page garde les lectures, les mutations, les calques,
+le retour d'un billet, les fêtes et la navigation : un gabarit ne lit jamais l'API. **Une clé s'ajoute
+dans la tâche qui la remplit**, jamais d'avance, avec le test de page qui prouve que le défaut reste.
+Les composants et les feuilles d'un monde vivent dans son dossier, où `habillage.test.ts` et
+`src/voyage/tempo.test.ts` les balaient tous : aucune durée en dur dans une feuille de monde, sauf
+déclarée dans `AMBIANCE` du second.
 
 Si l'interface ne
 suffit pas au monde qu'on écrit, **elle s'étend d'abord, dans une tâche à part, avec le monde « à

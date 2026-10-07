@@ -30,12 +30,17 @@ export const PAGES_1890: HabillagePages = {
     '--m-grain': 'rgba(90, 62, 36, 0.1)',
     '--m-or3': '#b8904f',
     '--m-bois': '#6b4a2a',
+    // Hors de la maquette 1890, qui n'a ni plaque d'émail ni encre de tampon à part : son velours et
+    // son rouge. Aucune feuille ne les lit encore (plan des pages 1900, brief 0).
+    '--m-email': '#602e1e',
+    '--m-violet': '#794229',
     '--m-f-titre': "'Fraunces', Georgia, serif",
     '--m-f-affiche': "'Limelight', Didot, Georgia, serif",
     '--m-f-texte': "'IM Fell English', 'Iowan Old Style', Georgia, serif",
     '--m-f-capitales': "'IM Fell English SC', Georgia, serif",
     '--m-f-corps': "'Manrope', system-ui, sans-serif",
     '--m-f-pochoir': "'Stardos Stencil', Georgia, serif",
+    '--m-f-presse': "'IM Fell English SC', Georgia, serif",
   },
   mots: {
     annonce: { enCours: 'Grande attraction', bouclee: 'Soirée de gala', fermee: 'Prochainement', attente: 'En montage' },
@@ -57,6 +62,7 @@ export const PAGES_1890: HabillagePages = {
     recherche: { champ: 'Quel film cherchez-vous ?', catalogue: 'Catalogue des vues', affiche: 'Les plus demandées au guichet', vide: 'Aucune vue à ce nom au catalogue.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher hors du Voyage' },
     manivelle: { tirer: 'Tirez pour recharger la bobine', relacher: 'Relâchez : la bobine se recharge', charge: 'La bobine se recharge…', fait: 'La bobine est rechargée, le Voyage est à jour.', bouton: 'Recharger la bobine' },
   },
+  gabarits: {},
   hauteurs: { bandeau: 250, scene: 300, estrade: 190, monument: 330, guichet: 170 },
   // Portés de la maquette : `dessinBandeau`, `dessinTheatre`, `dessinEstrade`.
   dessinerBandeau,

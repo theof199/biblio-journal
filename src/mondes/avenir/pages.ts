@@ -25,12 +25,16 @@ export const PAGES_A_VENIR: HabillagePages = {
     '--m-grain': 'rgba(61, 52, 42, 0.08)',
     '--m-or3': '#b88f2e',
     '--m-bois': '#5a4636',
+    // Sans plaque ni tampon à lui : le velours et le rouge de sa palette.
+    '--m-email': '#4a2a22',
+    '--m-violet': '#9a4a36',
     '--m-f-titre': "'Fraunces', Georgia, serif",
     '--m-f-affiche': "'Limelight', Georgia, serif",
     '--m-f-texte': "'Fraunces', Georgia, serif",
     '--m-f-capitales': "'Manrope', system-ui, sans-serif",
     '--m-f-corps': "'Manrope', system-ui, sans-serif",
     '--m-f-pochoir': "'Fraunces', Georgia, serif",
+    '--m-f-presse': "'Manrope', system-ui, sans-serif",
   },
   mots: {
     annonce: { enCours: 'L’année en cours', bouclee: 'Une année bouclée', fermee: 'Prochainement', attente: 'Bientôt ouverte' },
@@ -52,6 +56,7 @@ export const PAGES_A_VENIR: HabillagePages = {
     recherche: { champ: 'Quel film cherches-tu ?', catalogue: 'Le catalogue', affiche: 'À voir en priorité', vide: 'Aucun film à ce nom dans les salles.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher partout' },
     manivelle: { tirer: 'Tire pour recharger', relacher: 'Relâche pour recharger', charge: 'Rechargement…', fait: 'Le Voyage est à jour.', bouton: 'Recharger' },
   },
+  gabarits: {},
   hauteurs: { bandeau: 200, scene: 240, estrade: 150, monument: 240, guichet: 140 },
   dessinerBandeau: (v) => {
     v.ctx.fillStyle = '#151009'

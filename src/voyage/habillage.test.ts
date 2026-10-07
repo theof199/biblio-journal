@@ -2,11 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { creerRegistre } from '../mondes'
 import { JETONS_DE_PAGE } from '../mondes/types'
 
-/** Les feuilles des pages du Voyage : sous `src/voyage/`, ou nommées `Voyage*.module.css` sous `src/pages/`. */
-const FEUILLES = {
-  ...import.meta.glob<string>('/src/voyage/**/*.module.css', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob<string>('/src/pages/Voyage*.module.css', { query: '?raw', import: 'default', eager: true }),
-}
+/** Toutes les feuilles de l'app : le filtre en tire celles que ce fichier garde. */
+const TOUTES = import.meta.glob<string>('/src/**/*.css', { query: '?raw', import: 'default', eager: true })
+
+/**
+ * Les feuilles des pages du Voyage : sous `src/voyage/`, nommées `Voyage*.module.css` sous
+ * `src/pages/`, et **toute** feuille d'un monde (`src/mondes/`, module ou non) : un gabarit de monde
+ * (`Monde.pages.gabarits`) apporte sa feuille, qui ne doit pas échapper aux jetons.
+ */
+const estGardee = (chemin: string) =>
+  /^\/src\/voyage\/.+\.module\.css$/.test(chemin) || /^\/src\/pages\/Voyage[^/]*\.module\.css$/.test(chemin) || /^\/src\/mondes\/.+\.css$/.test(chemin)
+const FEUILLES: Record<string, string> = Object.fromEntries(Object.entries(TOUTES).filter(([chemin]) => estGardee(chemin)))
 
 /** Les polices embarquées, telles que `ui/polices.ts` les importe. */
 const POLICES = Object.values(import.meta.glob<string>('/src/ui/polices.ts', { query: '?raw', import: 'default', eager: true }))[0] ?? ''
@@ -84,6 +90,25 @@ describe('l’habillage des pages du Voyage', () => {
     )
   })
 
+  // Le jumeau du plancher, pour les mondes, dont aucune feuille n'existait quand la garde s'est
+  // étendue (plan des pages 1900, brief 0) : le filtre se prouve sur des chemins écrits. Mutations :
+  // la branche `mondes` retirée du filtre, ou réduite aux `.module.css` ; le glob ramené à
+  // `/src/voyage/**` (il ne verrait plus un monde).
+  it('garde toute feuille d’un monde, et rien hors du Voyage', () => {
+    expect(Object.keys(TOUTES)).toEqual(expect.arrayContaining(['/src/ui/theme.css', '/src/pages/VoyageAnnee.module.css']))
+    const gardees = ['/src/mondes/1900/pages/Gare.module.css', '/src/mondes/1910/pages/tete/plaque.css', '/src/voyage/annee/Corde.module.css', '/src/pages/VoyageAnnee.module.css']
+    expect(gardees.filter((chemin) => !estGardee(chemin))).toEqual([])
+    const libres = ['/src/ui/theme.css', '/src/ui/voyage.css', '/src/pages/Accueil.module.css', '/src/pages/voyage/Voyage.module.css', '/src/voyage/Toile.css']
+    expect(libres.filter(estGardee)).toEqual([])
+  })
+
+  // Rien ne change à l'écran tant qu'un monde ne compose rien : 1890 et le monde « à venir » n'ont
+  // aucun gabarit, leurs pages sont les composants par défaut. Mutation : un gabarit posé dans
+  // `PAGES_1890` ou `PAGES_A_VENIR`.
+  it.each([1890, 1950])('le monde de %i ne compose aucune section : ses pages sont les défauts', (decennie) => {
+    expect(creerRegistre()(decennie).pages.gabarits).toEqual({})
+  })
+
   // Le jumeau des jetons du monde : ce qu'une feuille lit de `ui/theme.css` (la zone sûre, les étages)
   // doit y être défini, sinon la valeur retombe en silence. Mutation : `var(--z-calqeu)` dans une feuille.
   it.each(Object.entries(FEUILLES))('%s ne lit de theme.css que ce qu’il définit', (_chemin, css) => {
@@ -104,7 +129,7 @@ describe('l’habillage des pages du Voyage', () => {
   // Mutations : `z-index: 30` en dur, ou `bottom: 0`, sur le `.calque` de la feuille ou du feuillet
   // (le calque couvrirait la barre d'onglets, ou son bas passerait dessous).
   it.each(['/src/voyage/Feuille.module.css', '/src/voyage/Feuillet.module.css', '/src/voyage/boite/Visionneuse.module.css', '/src/voyage/celebrations/Celebrations.module.css'])('%s pose son calque à l’étage des calques, au-dessus de la barre', (chemin) => {
-    const css = sansCommentaires(FEUILLES[chemin as keyof typeof FEUILLES] ?? '')
+    const css = sansCommentaires(FEUILLES[chemin] ?? '')
     const debut = css.indexOf('.calque {')
     expect(debut).toBeGreaterThanOrEqual(0)
     const regle = css.slice(debut, css.indexOf('}', debut))

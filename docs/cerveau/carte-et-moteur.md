@@ -20,7 +20,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 - **La vue d'ensemble** : `src/carte/moteur.ts` › `quitterEnsemble`, `sortieDeLEnsemble` ; ouverte, ni rappel
   ni passage (`src/carte/meneur.ts` › `ouvrirLEnsemble`) ; `src/carte/ensemble.ts` › `genreDeBande` ; `src/carte/dessin/ensemble.ts` › `dessinerEnsemble`.
 - **Un monde** : ce qu'il reçoit se fabrique dans `src/carte/moteur.ts` › `vueMonde` (dont, par année, les adresses de ses affiches, `src/mondes/types.ts` › `CaseVue`, `passer`, le passage du monde d'après qu'un décor lance depuis `reagir` par le `direBonjour` du bouton, et `ticketDApres`) ; ce qu'il doit,
-  `src/mondes/types.ts` › `SceneCollante`, `HabillagePages`, `JETONS_DE_PAGE`. Il se branche par
+  `src/mondes/types.ts` › `SceneCollante`, `HabillagePages`, `JETONS_DE_PAGE`, `GabaritsDesPages` (une section de page qu'il compose, lue par `src/voyage/gabarit.ts` › `gabaritDe`). Il se branche par
   `src/mondes/index.ts` › `FABRIQUES` ; le modèle est `src/mondes/1890/index.ts` › `creerMonde1890`,
   le plus court `src/mondes/avenir/index.ts` › `mondeAVenir`, le seul à `scene` `src/mondes/1900/index.ts` › `creerMonde1900` (sa fiche : `docs/cerveau/monde-1900.md`). `src/carte/placement.ts` › `placerCarte` pose les sections.
 - **Le pont et la page** : `src/carte/CarteCanvas.tsx` › `fabriqueReelle`, `FabriqueMoteurContexte`, `imagesDesMondes`, `affichesDecodees` (deux tables d'images, plus bas) ;
@@ -47,7 +47,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
   page n'est pas celui que le moteur dessine, et ne sait rien de ce que l'autre garde entre deux images.
 - **Le tracé de 1890 et du monde « à venir » vit hors de leur dossier** (`src/mondes/trace.ts` › `trace1890`, `traceAVenir`, `HAUTEUR_MIN_SECTION`), celui de 1900 dans le sien ; `src/mondes/1890/ciel.ts` › `VIDE_DU_HAUT` voisine une copie de sa hauteur.
 - **Une image de monde se reconnaît à son adresse exacte** (`src/carte/CarteCanvas.tsx` › `ADRESSES_DES_MONDES`), jamais à un préfixe : elle n'est alors jamais évincée. Hors de l'ensemble, elle passe par le `Lru` des affiches et peut sortir ; sa borne (`BORNE_DES_AFFICHES`) tient au-dessus de ce qu'une seule image demande, colonnes (`AFFICHES_DES_COLONNES`) et monde (`AFFICHES_D_UN_MONDE`).
-- **`src/voyage/tempo.test.ts` ne lit ni `src/carte/` ni un sous-dossier de `src/voyage/celebrations/`.**
+- **`src/voyage/tempo.test.ts` ne lit ni `src/carte/` ni un sous-dossier de `src/voyage/celebrations/`, mais tout `src/mondes/`, composants et feuilles compris.**
   Seuls l'envol (moteur), le roulement et le passage (meneur) sont au tempo ; ni la marche, ni l'adieu. Un ralenti est une allure, pas une durée : `rouler` seul le lit, jamais le doigt, le calme ni un passage ; sans ralenti sur le trajet, `trajetRalenti` rend nul et le roulement garde son calcul d'avant, au bit près (ne pas l'y faire passer par le coût). Côté page, l'annonce hors de vue seule (`src/pages/Carte.tsx` › `DUREE_DE_L_ANNONCE`). Les temps d'un passage s'écrivent en base (`src/mondes/1900/entree.ts` › `ENTREE`).
 
 ## Les commandes

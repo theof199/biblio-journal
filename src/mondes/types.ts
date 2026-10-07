@@ -4,6 +4,8 @@ import type { Trace } from './trace'
 import type { EtatCase } from '../voyage/regles'
 import type { EtatCheval } from '../voyage/decennie'
 import type { Recompense } from '../api/voyage'
+import type { ComponentType } from 'react'
+import type { PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
 
 /**
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
@@ -455,8 +457,8 @@ export interface Monde {
 
 /**
  * Les variables CSS des pages du Voyage. Un monde les pose toutes sur la racine de chaque page ; une
- * feuille de `src/voyage/` ou `src/pages/Voyage*.module.css` ne lit aucune couleur ni police
- * ailleurs (`src/voyage/habillage.test.ts`). Une couleur de maquette qui n'y trouve pas sa place
+ * feuille de `src/voyage/`, `src/pages/Voyage*.module.css` ou d'un monde (`src/mondes/`) ne lit
+ * aucune couleur ni police ailleurs (`src/voyage/habillage.test.ts`). Une couleur de maquette qui n'y trouve pas sa place
  * s'ajoute ici, et dans chaque monde.
  */
 export const JETONS_DE_PAGE = [
@@ -481,6 +483,10 @@ export const JETONS_DE_PAGE = [
   '--m-or3',
   /** Le bois : l'ombre portée d'un bouton doré, les cadres (maquette 1890 : `#6b4a2a`). */
   '--m-bois',
+  /** L'émail : l'aplat d'une plaque (maquette 1900 : `--email`, le bleu des plaques de gare). */
+  '--m-email',
+  /** L'encre des tampons (maquette 1900 : `--violet`). */
+  '--m-violet',
   '--m-f-titre',
   '--m-f-affiche',
   '--m-f-texte',
@@ -488,6 +494,8 @@ export const JETONS_DE_PAGE = [
   '--m-f-corps',
   /** Les millésimes au pochoir (maquette 1890 : `--f-poch`, la palissade de l'écran IV). */
   '--m-f-pochoir',
+  /** Ce qu'une presse ou un composteur frappe : dates, numéros (maquette 1900 : `--f-presse`). */
+  '--m-f-presse',
 ] as const
 
 export type JetonDePage = (typeof JETONS_DE_PAGE)[number]
@@ -616,9 +624,30 @@ export interface VueGuichet {
   frappe: number
 }
 
+/**
+ * Les sections de page qu'un monde peut composer lui-même (plan des pages 1900, brief 0) : pour une
+ * clé, un composant qui reçoit **les mêmes propriétés** que le composant par défaut de `src/voyage/`
+ * et se monte à sa place (`gabaritDe`, `src/voyage/gabarit.ts`). La page garde tout le reste : les
+ * lectures, les mutations, les calques de l'adresse, le retour d'un billet, les fêtes, la navigation.
+ * Un gabarit ne lit donc jamais l'API, et ne monte pas la section d'un autre.
+ *
+ * **Une clé s'ajoute dans la tâche qui la remplit, jamais d'avance** : la clé ici, typée par les
+ * propriétés exportées du composant par défaut, la lecture dans la page, et le test qui prouve que le
+ * défaut reste sans gabarit.
+ */
+export interface GabaritsDesPages {
+  /** Le corps d'une année fermée ou en attente, son fronton compris (`voyage/annee/AnneeFermee.tsx`). */
+  anneeFermee: ComponentType<PropsAnneeFermee>
+}
+
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>
   mots: MotsDesPages
+  /**
+   * Les sections que ce monde compose lui-même ; une clé absente garde le composant par défaut.
+   * Aucune (`{}`) : 1890 et le monde « à venir », dont les pages sont les défauts mêmes.
+   */
+  gabarits: Readonly<Partial<GabaritsDesPages>>
   /** Les hauteurs logiques des toiles (la maquette : 250, 300, 190, puis 330 et 170). */
   hauteurs: { bandeau: number; scene: number; estrade: number; monument: number; guichet: number }
   dessinerBandeau: (v: VueBandeau) => void

@@ -8,22 +8,39 @@ import { auTempo } from './tempo'
  * se désynchronise de celles qui le suivent.
  */
 
-const FEUILLES: Record<string, string> = {
-  ...import.meta.glob<string>('/src/voyage/billet/Tampon.module.css', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob<string>('/src/pages/VoyageBillet.module.css', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob<string>('/src/voyage/annee/Corde.module.css', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob<string>('/src/voyage/celebrations/Celebrations.module.css', { query: '?raw', import: 'default', eager: true }),
+/** Tout le code et toutes les feuilles de l'app, hors tests : les filtres en tirent ce que ce fichier garde. */
+const TOUT = import.meta.glob<string>(['/src/**/*.{ts,tsx,css}', '!**/*.test.*'], { query: '?raw', import: 'default', eager: true })
+
+/**
+ * Les animations de chaque feuille qui suivent le geste « vu » : le plancher de l'inventaire, sans
+ * lequel une feuille vidée de ses animations le passerait sans rien garder.
+ */
+const ANIMATIONS: Record<string, string[]> = {
+  '/src/voyage/billet/Tampon.module.css': ['eclat', 'descend', 'remonte'],
+  '/src/pages/VoyageBillet.module.css': ['choc', 'part'],
+  '/src/voyage/annee/Corde.module.css': ['rouler'],
+  '/src/voyage/celebrations/Celebrations.module.css': ['leve', 'parait', 'fermeGauche', 'fermeDroite', 'efface', 'lance', 'frappe', 'eclair', 'sort', 'allume', 'tombe', 'tend'],
 }
-const SOURCES: Record<string, string> = {
-  ...import.meta.glob<string>('/src/pages/VoyageBillet.tsx', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob<string>('/src/pages/VoyageAnnee.tsx', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob<string>('/src/voyage/annee/Corde.tsx', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob<string>('/src/voyage/billet.ts', { query: '?raw', import: 'default', eager: true }),
-  // Les célébrations, qui suivent le même geste : leur déroulé, leur séquenceur, leurs scènes.
-  ...import.meta.glob<string>(['/src/voyage/celebrations/*.{ts,tsx}', '!**/*.test.*'], { query: '?raw', import: 'default', eager: true }),
-  // Le monde 1900 (plan 3b) : tout son dossier pour les motifs généraux, et `durees.ts` pour son assertion.
-  ...import.meta.glob<string>(['/src/mondes/1900/**/*.ts', '!**/*.test.*'], { query: '?raw', import: 'default', eager: true }),
-}
+
+/** Le code qui suit le geste « vu », nommé fichier par fichier. */
+const SUIVENT_LE_GESTE = ['/src/pages/VoyageBillet.tsx', '/src/pages/VoyageAnnee.tsx', '/src/voyage/annee/Corde.tsx', '/src/voyage/billet.ts']
+
+/**
+ * Une feuille gardée : celles d'`ANIMATIONS`, et **toute** feuille d'un monde. Un gabarit de monde
+ * (`Monde.pages.gabarits`) peut porter le « +1 », le compostage ou une fête : aucune de ses feuilles
+ * n'échappe, et ce qui y bouge sans suivre le geste se déclare dans `AMBIANCE`.
+ */
+const feuilleGardee = (chemin: string) => chemin in ANIMATIONS || /^\/src\/mondes\/.+\.css$/.test(chemin)
+/**
+ * Une source gardée : le code nommé, les célébrations (leur déroulé, leur séquenceur, leurs scènes,
+ * sans leurs sous-dossiers), et tout le code des mondes, composants compris (`.tsx`).
+ */
+const sourceGardee = (chemin: string) =>
+  !/\.test\./.test(chemin) &&
+  (SUIVENT_LE_GESTE.includes(chemin) || /^\/src\/voyage\/celebrations\/[^/]+\.tsx?$/.test(chemin) || /^\/src\/mondes\/.+\.tsx?$/.test(chemin))
+
+const FEUILLES: Record<string, string> = Object.fromEntries(Object.entries(TOUT).filter(([chemin]) => feuilleGardee(chemin)))
+const SOURCES: Record<string, string> = Object.fromEntries(Object.entries(TOUT).filter(([chemin]) => sourceGardee(chemin)))
 /** La page de la carte : lue pour sa seule annonce hors de vue. Ses autres attentes (le carton, le tampon) sont hors tempo. */
 const PAGE_DE_LA_CARTE = import.meta.glob<string>('/src/pages/Carte.tsx', { query: '?raw', import: 'default', eager: true })['/src/pages/Carte.tsx'] ?? ''
 const DEROULE = '/src/voyage/celebrations/deroule.ts'
@@ -39,19 +56,9 @@ const AU_TEMPO = /calc\(\s*\d+ms\s*\*\s*var\(--tempo\)\s*\)/g
 const DUREE = /(?<![\w.#-])-?\d*\.?\d+m?s\b/g
 
 /**
- * Les animations de chaque feuille qui suivent le geste « vu » : le plancher de l'inventaire, sans
- * lequel une feuille vidée de ses animations le passerait sans rien garder.
- */
-const ANIMATIONS: Record<string, string[]> = {
-  '/src/voyage/billet/Tampon.module.css': ['eclat', 'descend', 'remonte'],
-  '/src/pages/VoyageBillet.module.css': ['choc', 'part'],
-  '/src/voyage/annee/Corde.module.css': ['rouler'],
-  '/src/voyage/celebrations/Celebrations.module.css': ['leve', 'parait', 'fermeGauche', 'fermeDroite', 'efface', 'lance', 'frappe', 'eclair', 'sort', 'allume', 'tombe', 'tend'],
-}
-
-/**
  * Ce qui bouge sans suivre le geste : le balancement des billets de la corde, en boucle sur toute
- * année prête. Il n'est pas une étape de la séquence, et ne passe pas par le tempo.
+ * année prête. Il n'est pas une étape de la séquence, et ne passe pas par le tempo. Une feuille de
+ * monde y déclare de même, par son sélecteur, ce qui tourne en boucle ou répond à un survol.
  */
 const AMBIANCE: Record<string, (selecteur: string) => boolean> = {
   '/src/voyage/annee/Corde.module.css': (s) => /^\.billet\b/.test(s),
@@ -62,7 +69,7 @@ const selecteur = (css: string, i: number) => css.slice(css.lastIndexOf('}', i) 
 
 describe('le tempo de ce qui suit le geste « vu »', () => {
   it('trouve les fichiers qu’il garde', () => {
-    expect(Object.keys(FEUILLES).sort()).toEqual(Object.keys(ANIMATIONS).sort())
+    expect(Object.keys(FEUILLES).filter((chemin) => !chemin.startsWith('/src/mondes/')).sort()).toEqual(Object.keys(ANIMATIONS).sort())
     expect(Object.keys(SOURCES)).toEqual(
       expect.arrayContaining([
         '/src/pages/VoyageBillet.tsx',
@@ -84,11 +91,26 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     expect(Object.keys(SOURCES).filter((chemin) => chemin.includes('.test.'))).toEqual([])
   })
 
+  // Le jumeau du plancher, pour ce qu'un monde n'a pas encore (plan des pages 1900, brief 0 : aucun
+  // composant ni aucune feuille sous `src/mondes/` à ce jour) : les filtres se prouvent sur des
+  // chemins écrits. Mutations : `tsx?` ramené à `ts` dans le filtre des mondes ; la branche `mondes`
+  // retirée du filtre des feuilles ; le glob ramené aux `.ts`.
+  it('garde les composants et les feuilles d’un monde, jamais ses tests', () => {
+    expect(Object.keys(TOUT)).toEqual(expect.arrayContaining(['/src/ui/theme.css', '/src/pages/Carte.tsx']))
+    expect(['/src/mondes/1900/pages/Gare.tsx', '/src/mondes/1910/pages/tete/Plaque.tsx', '/src/mondes/1900/durees.ts'].filter((chemin) => !sourceGardee(chemin))).toEqual([])
+    expect(['/src/mondes/1900/pages/Gare.module.css', '/src/mondes/1910/pages/tete/plaque.css'].filter((chemin) => !feuilleGardee(chemin))).toEqual([])
+    expect(['/src/mondes/1900/pages/Gare.test.tsx', '/src/pages/Carte.tsx', '/src/voyage/celebrations/sous/Scene.tsx'].filter(sourceGardee)).toEqual([])
+    expect(['/src/voyage/annee/Fronton.module.css', '/src/ui/theme.css'].filter(feuilleGardee)).toEqual([])
+  })
+
   // Mutations : `animation: eclat 260ms` (ou `choc 0.35s`, `part 700ms`, `rouler 0.8s 0.35s`) remis
   // dans une feuille.
-  it.each(Object.keys(ANIMATIONS))('%s n’écrit aucune durée hors du tempo', (chemin) => {
+  // Une feuille de monde est gardée sans y être nommée, sans plancher d'animations : toute durée s'y
+  // écrit au tempo ou se déclare dans `AMBIANCE`. Mutation : `transition: opacity 0.3s` dans une
+  // feuille posée sous `src/mondes/`.
+  it.each(Object.keys(FEUILLES))('%s n’écrit aucune durée hors du tempo', (chemin) => {
     const css = sansCommentaires(FEUILLES[chemin]!)
-    for (const nom of ANIMATIONS[chemin]!) expect(css).toMatch(new RegExp(`animation:\\s*${nom}\\s+calc\\(\\s*\\d+ms\\s*\\*\\s*var\\(--tempo\\)`))
+    for (const nom of ANIMATIONS[chemin] ?? []) expect(css).toMatch(new RegExp(`animation:\\s*${nom}\\s+calc\\(\\s*\\d+ms\\s*\\*\\s*var\\(--tempo\\)`))
     const reste = css.replace(AU_TEMPO, 'TEMPO')
     const enDur = [...reste.matchAll(DUREE)]
       .filter((m) => !(AMBIANCE[chemin]?.(selecteur(reste, m.index)) ?? false))

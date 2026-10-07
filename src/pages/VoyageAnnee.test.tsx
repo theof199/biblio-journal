@@ -8,7 +8,7 @@ import type { HabillagePages, VueBandeau } from '../mondes/types'
 import { PAGES_1890 } from '../mondes/1890/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { RELECTURES } from '../voyage/relecture'
-import { INSECABLE } from '../voyage/annee/AnneeFermee'
+import { INSECABLE, type PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
 import { confierLeRetour, oublierLeRetour } from '../voyage/annee/retour'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
@@ -954,6 +954,91 @@ describe('la fiche d’une année', () => {
       act(() => void vi.advanceTimersByTime(20))
       expect(dernier().touche).toBeGreaterThan(1.9)
       expect(dernier().touche).toBeLessThan(dernier().t)
+    })
+  })
+  // Plan des pages 1900, brief 0 : un monde peut composer une section à la place de la page
+  // (`Monde.pages.gabarits`). Le monde de test est celui de 1890, auquel on prête un gabarit.
+  describe('les gabarits du monde', () => {
+    let remettre: (() => void) | null = null
+    afterEach(() => {
+      remettre?.()
+      remettre = null
+    })
+
+    /** Prête à un monde un gabarit du corps d'une année fermée, qui dit ce qu'il a reçu. */
+    function preterUnGabarit(pages: HabillagePages = PAGES_1890) {
+      const recues: PropsAnneeFermee[] = []
+      const Gabarit = (p: PropsAnneeFermee) => {
+        recues.push(p)
+        return (
+          <section aria-label="Le gabarit du monde">
+            {`${p.annee} ${p.variante}`}
+            {p.parade}
+          </section>
+        )
+      }
+      const avant = pages.gabarits
+      pages.gabarits = { anneeFermee: Gabarit }
+      remettre = () => void (pages.gabarits = avant)
+      return () => recues[recues.length - 1]!
+    }
+
+    // Mutations : `gabaritDe` qui rend toujours le défaut ; la page qui monte `AnneeFermee` sans
+    // passer par lui ; une propriété que la page ne passerait plus au gabarit.
+    it('monte le gabarit du monde à la place du corps d’une année fermée, avec les mêmes propriétés', async () => {
+      const derniere = preterUnGabarit()
+      const { requetes } = monterVoyage('/voyage/1898', {
+        ...ROUTES,
+        'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898, { profondeur: 1 })),
+        [JOURNAL(1898)]: journal([vu('e1', 'Un film de 1898', 1898)]),
+      })
+      expect(await screen.findByRole('region', { name: 'Le gabarit du monde' })).toHaveTextContent('1898 fermee')
+      // Le défaut n'est plus là : ni sa pancarte, ni son chemin.
+      expect(screen.queryByText('Cette année s’ouvre avec le ticket de 1897.')).toBeNull()
+      expect(screen.queryByRole('list', { name: /^Chemin/ })).toBeNull()
+      // La page garde ses lectures et les passe : le gabarit ne lit rien lui-même.
+      await waitFor(() => expect(derniere().journal.items?.map((e) => e.entry.id)).toEqual(['e1']))
+      expect(requetes).toContain(JOURNAL(1898))
+      const { monde, voyage, profondeur, parade, annee, variante } = derniere()
+      expect({ decennie: monde.decennie, enCours: voyage.annee_en_cours, profondeur, parade, annee, variante }).toEqual({
+        decennie: 1890,
+        enCours: 1897,
+        profondeur: 1,
+        parade: null,
+        annee: 1898,
+        variante: 'fermee',
+      })
+    })
+
+    // Le jumeau : une année en attente passe par le même gabarit, et sa parade reste un nœud que la
+    // page monte. Mutations : le gabarit lu pour la seule année verrouillée ; la parade retirée de ce
+    // que la page passe.
+    it('passe au gabarit l’année en attente et sa parade toute montée', async () => {
+      preterUnGabarit()
+      monterVoyage('/voyage/1897', {
+        ...ROUTES,
+        'GET /api/me/voyage': () => json({ ...VOYAGE, ia: false, source: { id: SOURCE_ID, pseudo: 'theo', annee_en_cours: 1896 } }),
+        'GET /api/me/voyage/annees/1897': () => json(ficheEnAttente(1897)),
+        [JOURNAL(1897)]: journal([]),
+      })
+      const gabarit = await screen.findByRole('region', { name: 'Le gabarit du monde' })
+      expect(gabarit).toHaveTextContent('1897 attente')
+      expect(within(gabarit).getByRole('region', { name: 'La parade, le podium' })).toBeInTheDocument()
+      expect(screen.queryByText('theo est trop lent')).toBeNull()
+    })
+
+    // Le gabarit est celui du monde de l'année, pas d'un autre : prêté au monde « à venir », il ne
+    // change rien à 1890, qui rend son défaut. Mutation : le gabarit lu dans un autre monde que
+    // celui de la décennie.
+    it('ne prend que le gabarit du monde de l’année : un autre monde garde le défaut', async () => {
+      preterUnGabarit(PAGES_A_VENIR)
+      monterVoyage('/voyage/1898', {
+        ...ROUTES,
+        'GET /api/me/voyage/annees/1898': () => json(ficheVerrouillee(1898)),
+        [JOURNAL(1898)]: journal([]),
+      })
+      expect(await screen.findByText('Cette année s’ouvre avec le ticket de 1897.')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Le gabarit du monde' })).toBeNull()
     })
   })
 })

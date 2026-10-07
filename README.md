@@ -374,7 +374,13 @@ Où vit quoi :
   l'estrade du chroniqueur, puis, pour les pages d'une décennie, le monument et le guichet). Le
   monde « à venir » habille les années sans chantier. En 1890, les pages s'écrivent en IM Fell
   English et IM Fell English SC, les millésimes au pochoir en Stardos Stencil (`@fontsource`,
-  précachées, `ui/polices.ts`).
+  précachées, `ui/polices.ts`). Les polices de la maquette 1900 y sont aussi, aux seules graisses
+  qu'elle emploie : Oswald 600 et 700, Spectral 400, 400 italique et 600, Courier Prime 700.
+- `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
+  lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
+  propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
+  à la page. Première clé : `anneeFermee`, le corps d'une année fermée ou en attente. Aucun monde n'en
+  fournit encore : rien ne change à l'écran.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
 `generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`. Le geste
