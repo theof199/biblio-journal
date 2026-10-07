@@ -47,7 +47,7 @@ export const PAGES_A_VENIR: HabillagePages = {
     intertitre: 'Un monde à venir.',
     feuille: { tete: 'La feuille', titre: 'Le chroniqueur', sous: 'écrit pour toi', pied: 'Le chroniqueur', imprimeur: 'Le Voyage' },
     billet: { tete: 'Le visionnage', titre: 'Vu le', valider: 'Je l’ai vu', validerSous: 'enregistrer', tampon: 'VU', tamponAutour: 'Le Voyage · vu le' },
-    decennie: { annonce: 'La décennie', passeport: 'Passeport', palissade: { titre: 'Les affiches', sous: 'par année' }, registre: 'Les années', prochainement: 'À venir' },
+    decennie: { annonce: 'La décennie', toucher: null, passeport: 'Passeport', palissade: { titre: 'Les affiches', sous: 'par année' }, registre: 'Les années', prochainement: 'À venir' },
     boite: { sur: 'Collection', titre: 'Les billets', etiquette: 'LE VOYAGE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger le billet' },
     recherche: { champ: 'Quel film cherches-tu ?', catalogue: 'Le catalogue', affiche: 'À voir en priorité', vide: 'Aucun film à ce nom dans les salles.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher partout' },
     manivelle: { tirer: 'Tire pour recharger', relacher: 'Relâche pour recharger', charge: 'Rechargement…', fait: 'Le Voyage est à jour.', bouton: 'Recharger' },

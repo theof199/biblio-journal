@@ -98,7 +98,7 @@ function PageDeLaDecennie({ decennie: d }: { decennie: number }) {
       <div className={styles.bandeau}>
         <Toile
           hauteur={hauteurs.monument}
-          libelle={monde.aVenir ? `${m.decennie.annonce} ${d}.` : `${m.decennie.annonce} ${d} : touchez un cheval pour ouvrir son année.`}
+          libelle={m.decennie.toucher === null ? `${m.decennie.annonce} ${d}.` : `${m.decennie.annonce} ${d} : ${m.decennie.toucher}.`}
           // Le premier contact emballe le manège hors d'une année qui s'ouvre ; il n'ouvre jamais
           // rien : un défilement de la page commence aussi par là.
           onToucher={(p) => {

@@ -122,9 +122,11 @@ describe('l’habillage des pages du Voyage', () => {
 
   // Le jumeau des dates du monde 1890 (`monde1890.test.ts`) : les mots s'affichent tels quels.
   // Mutations : une apostrophe droite (`Boniment d'ouverture`), un mot vide.
+  // Un mot nul n'est pas un mot vide : le monde dit par là qu'il n'a rien à écrire à cet endroit
+  // (`decennie.toucher` du monde « à venir »), et la page ne l'affiche pas.
   it.each([1890, 1900])('le monde de %i donne des mots complets, en français typographique', (decennie) => {
     const textes = (valeur: unknown): string[] =>
-      typeof valeur === 'string' ? [valeur] : Object.values(valeur as Record<string, unknown>).flatMap(textes)
+      valeur === null ? [] : typeof valeur === 'string' ? [valeur] : Object.values(valeur as Record<string, unknown>).flatMap(textes)
     const mots = textes(creerRegistre()(decennie).pages.mots)
     expect(mots.length).toBeGreaterThan(20)
     for (const mot of mots) {

@@ -411,8 +411,12 @@ export interface MotsDesPages {
    * court autour de lui avant la date (maquette 1890 : `encreVu`).
    */
   billet: { tete: string; titre: string; valider: string; validerSous: string; tampon: string; tamponAutour: string }
-  /** La page d'une décennie (plan 2c ; maquette 1890, écran IV). */
-  decennie: { annonce: string; passeport: string; palissade: { titre: string; sous: string }; registre: string; prochainement: string }
+  /**
+   * La page d'une décennie (plan 2c ; maquette 1890, écran IV). `toucher` finit la phrase qui nomme
+   * le monument, après « annonce décennie : » et sans point (« touchez un cheval pour ouvrir son
+   * année ») ; nul, la phrase s'arrête à la décennie : le monument du monde n'a rien à toucher.
+   */
+  decennie: { annonce: string; toucher: string | null; passeport: string; palissade: { titre: string; sous: string }; registre: string; prochainement: string }
   /** La boîte à billets (idée 5 ; maquette 1890, écran VII). */
   boite: { sur: string; titre: string; etiquette: string; tous: string; vide: string; ranger: string }
   /** Le guichet, la recherche du Voyage (maquette 1890, écran X). */

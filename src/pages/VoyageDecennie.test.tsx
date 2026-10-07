@@ -29,6 +29,28 @@ vi.mock('../voyage/decennie', async (original) => {
 })
 
 /**
+ * Le registre de la page, doublé pour un seul test : `sansMot` allumé, le monde de 1890 reste ce
+ * qu'il est (il n'est pas « à venir ») mais ses mots n'invitent plus à toucher. Le registre le relit
+ * à chaque appel, la page tenant le sien pour tout le fichier.
+ */
+const essai = vi.hoisted(() => ({ sansMot: false }))
+vi.mock('../mondes', async (original) => {
+  const vrai = await original<typeof import('../mondes')>()
+  return {
+    ...vrai,
+    creerRegistre: () => {
+      const registre = vrai.creerRegistre()
+      return (d: number) => {
+        const monde = registre(d)
+        if (!essai.sansMot || d !== 1890) return monde
+        const { mots } = monde.pages
+        return { ...monde, pages: { ...monde.pages, mots: { ...mots, decennie: { ...mots.decennie, toucher: null } } } }
+      }
+    },
+  }
+})
+
+/**
  * 1895 Palme, 1896 Lion, 1897 en cours (deux films, pas encore l'Ours), 1898 verrouillée mais
  * portant déjà l'Ours par des films vus en avance, 1899 verrouillée sans rien : trois années sur
  * cinq portent leur récompense ; il manque 1897 et 1899.
@@ -99,6 +121,7 @@ describe('la page d’une décennie', () => {
     localStorage.clear()
   })
   afterEach(() => {
+    essai.sansMot = false
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
@@ -219,6 +242,26 @@ describe('la page d’une décennie', () => {
     expect(vue.cases.map((c) => c.annee)).toEqual([1900, 1901, 1902, 1903])
     expect(vue.bouclee).toBe(false)
     expect(await screen.findByText('Le tampon se pose ici')).toBeInTheDocument()
+  })
+
+  // L'invitation à toucher est un mot du monde : celui du monde « à venir » n'en a pas, son monument
+  // n'ayant rien à toucher. Mutation : le mot rempli dans les pages du monde « à venir ».
+  it('une décennie « à venir » nomme son monument sans inviter à toucher', async () => {
+    monterVoyage('/voyage/decennies/1900', { ...ROUTES, 'GET /api/me/journal?limit=100&sortie_min=1900&sortie_max=1909': journal([]) })
+    expect(await screen.findByRole('heading', { level: 1, name: 'Années 1900' })).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: `${PAGES_A_VENIR.mots.decennie.annonce} 1900.` })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /touche/i })).not.toBeInTheDocument()
+  })
+
+  // La page ne lit que le mot, plus `monde.aVenir` : un monde qui a son chantier et dont le mot est
+  // nul ne dit pas la phrase. Mutation : la condition remise sur `monde.aVenir`.
+  it('un monde qui n’est pas « à venir » et sans mot n’invite pas à toucher', async () => {
+    essai.sansMot = true
+    monterVoyage('/voyage/decennies/1890', ROUTES)
+    await decennie()
+    // Le monde d'essai est bien celui de 1890, pas le monde « à venir » : son nom de rubrique le dit.
+    expect(await screen.findByRole('img', { name: 'Le manège des années 1890.' })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: MANEGE })).not.toBeInTheDocument()
   })
 
   // Mutation : la garde `ouvrable` retirée (1893 ouvrirait une page qui n'existe pas au Voyage).

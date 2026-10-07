@@ -9,6 +9,7 @@ import { c } from './couleur'
 import { avancerManege, departDuManege, dessinerMonument } from './monument'
 import { figureTouchee } from '../../voyage/decennie'
 import { dessinerGuichet } from './guichetPage'
+import { PAGES_1890 } from './pages'
 import { MEDAILLES } from '../../carte/dessin/cases'
 import type { VueBandeau, VueEstrade, VueGuichet, VueMonument, VueScene } from '../types'
 
@@ -622,5 +623,13 @@ describe('le guichet de la recherche', () => {
     expect(eclat(image(4.9))).toBeGreaterThan(eclat(image(-9)))
     expect(penche(image(4.9))).toBeGreaterThan(0)
     expect(penche(image(-9))).toBe(0)
+  })
+})
+
+describe('les mots de la page de la décennie', () => {
+  // La fin de la phrase du manège, que la page écrivait elle-même avant d'être un mot du monde : elle
+  // se reprend mot pour mot. Mutations : le mot vidé (`toucher: null`, ou `''`) ; un mot changé.
+  it('le manège invite à toucher un cheval, mot pour mot', () => {
+    expect(PAGES_1890.mots.decennie.toucher).toBe('touchez un cheval pour ouvrir son année')
   })
 })
