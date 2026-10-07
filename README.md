@@ -464,7 +464,7 @@ Où vit quoi :
   photogrammes », le studio, le mois de sortie et le nombre de séances de la maquette n'y sont pas :
   aucune donnée ne les porte sans une lecture de plus. **Le billet de séance** est un carton Edmondson
   sous son composteur (écrans 6 et 7 ; `Composteur`, pour `billetDeSeance`) : le carton (`Carton`, que
-  la liasse du casier et le « Bon pour » d'une année bouclée reprendront) porte le titre de la page, la
+  la liasse du casier reprend et que le « Bon pour » d'une année bouclée reprendra) porte le titre de la page, la
   ligne du film et de sa gare, le numéro, et montre ce qu'on écrit dessous : la date se presse sur sa
   tranche (« 30 SE 26 », `datePressee`), la note s'y perce, un trou par point (`trousDuCarton`), ou
   « sans note ». Le formulaire garde tous les gestes du billet par défaut : « Aujourd’hui », « Hier »,
@@ -627,6 +627,16 @@ focus, se ferme à Échap ou par le geste « retour ». « Corriger le billet »
 de l'année du film est déjà en cache (`voyage/boite/correction.ts`) : la boîte ne la lit jamais. Le
 billet que la séance vient de ranger (`voyage/billet/range.ts`, en mémoire, par membre) y est mis en
 avant une fois, son casier ouvert, d'un liseré or.
+
+Dans les années 1900, la boîte est **le casier du contrôleur** (maquette, écran 8 ;
+`mondes/1900/pages/CasierDuControleur.tsx`, pour la clé `casier`) : un meuble à une case par année du
+Voyage, les cartons empilés dans leur fente, « Tous » sur une plaque de laiton, et sous lui la liasse
+de la case choisie, du plus ancien billet au plus récent (`liasseDe`, `mondes/1900/pages/casier.ts`),
+deux cartons Edmondson de front, chacun à son numéro de séance, sa note percée, sa date pressée et
+son tampon. Le billet sorti en grand (`BilletDuCasier`, pour `billetEnGrand`) montre le carton, la
+date de la séance en toutes lettres, les réactions en coupons et ma remarque sur le carnet, puis
+« Corriger le billet » (le bouton corail, quand la page l'offre) et « Ranger au casier ». La page
+garde tout le reste : sa tête, son pied, ses deux lectures, l'adresse, le billet rangé.
 
 **Le billet numéroté.** Composter sur le billet de séance (« Tamponner « Vu » » · « et ranger le
 billet ») joue la séquence de la maquette (`FRAPPE` et `DUREE_DU_COMPOSTAGE`, `voyage/billet.ts`) :
