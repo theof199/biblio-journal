@@ -1,15 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cles } from '../../../api/cles'
 import type { FicheEnPreparation, FichePrete } from '../../../api/voyage'
 import type { JournalPage } from '../../../api/journal'
 import { exemple } from '../../../test/contrat'
 import { visionnage } from '../../../test/journal'
-import { monterVoyage } from '../../../test/pageVoyage'
+import { SESSION, monterVoyage } from '../../../test/pageVoyage'
 import { json } from '../../../test/serveur'
 import { ficheEnAttente, fichePrete, ficheVerrouillee, voyage1890 } from '../../../test/voyage'
+import { arriveesDeLAnnee } from '../../../voyage/annee'
+import { confierLeRetour } from '../../../voyage/annee/retour'
 import { PAGES_A_VENIR } from '../../avenir/pages'
 import { PAGES_1900 } from '../pages'
 import { heureDeLaGare, libelleDeLaPhoto, mentionDeLaPlaque, rangDeLaGare } from './gare'
+import { gainDe, ligneDeLIndicateur, phraseDuCompteur, venuesDArriver } from './lignes'
 
 /**
  * Les pages d'une année 1900 (plan des pages 1900, brief 1) : son costume, la tête de la gare dans
@@ -277,5 +281,282 @@ describe('une année 1900 en attente', () => {
     expect(attendant).toHaveTextContent('Le Voyage que tu suis n’a pas encore ouvert 1904.')
     await waitFor(() => expect(screen.getByRole('listitem', { name: '0 film vu en avance' })).toBeInTheDocument())
     expect(screen.queryByText(/trop lent/)).toBeNull()
+  })
+})
+
+/**
+ * Brief 2 : le corps d'une année ouverte. Le compteur des arrivées tient la place de la corde, le
+ * guide celle du boniment, l'indicateur celle du programme, la courroie celle de la manivelle dessinée.
+ */
+const P = (vus: number, total: number, completes: number) => ({ essentiels_vus: vus, essentiels_total: total, salles_completes: completes, salles_autres: 3 })
+const TICKET = (annee: number, utiliseLe: string | null = null) => ({ annee, emis_le: '2026-09-21T21:00:00.000Z', utilise_le: utiliseLe })
+/** Les lignes de l'indicateur, telles qu'elles se lisent : une chaîne par ligne, ses cellules séparées. */
+const lignes = () => within(screen.getByRole('region', { name: 'L’indicateur' })).getAllByRole('row').map((r) => [...r.children].map((c) => [...c.childNodes].map((n) => n.textContent).join(' — ')).join(' | '))
+const pointees = () => within(screen.getByRole('region', { name: 'L’indicateur' })).getAllByRole('row').filter((r) => r.getAttribute('data-pointee') === 'oui').map((r) => r.children[0]!.textContent)
+const compteur = () => screen.getByText(/^arrivées? sur \d/).parentElement!
+const plus = () => [...compteur().querySelectorAll('[aria-hidden="true"]')].map((e) => e.textContent).filter((t) => t?.startsWith('+'))
+
+describe('les règles de l’indicateur', () => {
+  const mots = (...a: Parameters<typeof arriveesDeLAnnee>) => arriveesDeLAnnee(...a).map((l) => ligneDeLIndicateur(l, 1903, true)).map((l) => `${l.nom} | ${l.libelle} | ${l.etat}`)
+
+  // Mutations : « arrivé » et « attendu » échangés ; le compte d'une ligne attendue sans son total ;
+  // le Lion arrivé qui redirait son compte (faussé par les introuvables) ; l'année du ticket en dur.
+  it('une ligne dit ce qu’elle fait gagner, ce qu’elle compte, et si elle est arrivée', () => {
+    expect(mots(2, P(2, 5, 1), null, null)).toEqual(['Ours | 3 films de 1903 | attendu · 2 sur 3', 'Lion | Tous les essentiels | attendu · 2 sur 5', 'Palme | 2 salles complètes | attendu · 1 sur 2', 'Ticket | Le ticket pour 1904 | attendu'])
+    expect(mots(15, P(3, 5, 2), 'palme', TICKET(1904))).toEqual(['Ours | 3 films de 1903 | arrivé · 15', 'Lion | Tous les essentiels | arrivé', 'Palme | 2 salles complètes | arrivé · 2', 'Ticket | Le ticket pour 1904 | arrivé'])
+  })
+
+  // Mutation : la branche `a.total === null` retirée de `ligneDeLIndicateur`.
+  it('une année sans essentiel le dit, sans compte', () => {
+    expect(mots(2, P(0, 0, 0), null, null)[1]).toBe('Lion | Aucun essentiel encore | attendu')
+  })
+
+  // Mutations : `ia` ignoré (le jury promis à tous) ; la note gardée sur un ticket arrivé.
+  it('le ticket attendu dit d’où il viendra, et ne promet le jury qu’au compte IA', () => {
+    const ticket = (ia: boolean, t: ReturnType<typeof TICKET> | null) => ligneDeLIndicateur(arriveesDeLAnnee(2, P(2, 5, 1), null, t)[3]!, 1903, ia).note
+    expect([ticket(true, null), ticket(false, null), ticket(true, TICKET(1904))]).toEqual(['au Lion, ou plus tôt si le jury le décide', 'au Lion', null])
+  })
+
+  // Mutations : la garde `g.apres === a.valeur` retirée (un gain dépassé pointerait encore) ; un gain
+  // lu sur la ligne d'une autre clé.
+  it('un gain ne pointe que sa ligne, et pour la valeur qu’il annonce', () => {
+    const [films, essentiels] = arriveesDeLAnnee(3, P(2, 5, 1), null, null)
+    const gain = { cle: 'films' as const, avant: 2, apres: 3 }
+    expect([gainDe(films!, [gain]), gainDe(essentiels!, [gain]), gainDe(films!, [{ ...gain, apres: 2 }])]).toEqual([gain, undefined, undefined])
+  })
+
+  // Mutations : toute ligne gagnée tenue pour venue d'arriver ; `<=` sur l'avant (un palier déjà tenu).
+  it('une ligne vient d’arriver quand son gain franchit le palier, pas au-delà ni en deçà', () => {
+    const venues = (profondeur: number, avant: number) => venuesDArriver(arriveesDeLAnnee(profondeur, P(2, 5, 1), null, null), [{ cle: 'films', avant, apres: profondeur }]).map((a) => a.cle)
+    expect([venues(3, 2), venues(4, 1), venues(4, 3), venues(2, 1)]).toEqual([['films'], ['films'], [], []])
+  })
+
+  // Mutations : le pluriel figé ; « la ligne est bouclée » dite d'après le compte.
+  it('le compteur dit combien d’arrivées, et la ligne bouclée seulement quand elle l’est', () => {
+    const quatre = arriveesDeLAnnee(15, P(5, 5, 2), 'palme', TICKET(1904))
+    expect([phraseDuCompteur(quatre, true), phraseDuCompteur(quatre, false), phraseDuCompteur(arriveesDeLAnnee(3, P(2, 5, 1), null, null), false)]).toEqual(['arrivées sur 4 : la ligne est bouclée.', 'arrivées sur 4.', 'arrivée sur 4.'])
+  })
+})
+
+describe('le corps d’une année 1900 ouverte', () => {
+  // Les lignes viennent de la fiche, et d'elle seule. Mutations : une ligne en dur dans `Indicateur`
+  // ou dans `arriveesDeLAnnee` ; `Indicateur`, `Compteur` ou `Guide` retiré des gabarits (le défaut
+  // reviendrait) ; `ia` ignoré.
+  it('l’indicateur et le compteur disent ce que la fiche compte, à la place de la corde et du programme', async () => {
+    const { requetes } = monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, profondeur: 4, progression: P(2, 5, 1), recompense: 'ours' })) })
+    const indicateur = await screen.findByRole('region', { name: 'L’indicateur' })
+    expect(lignes()).toEqual([
+      'Ours | 3 films de 1903 | arrivé · 4',
+      'Lion | Tous les essentiels | attendu · 2 sur 5',
+      'Palme | 2 salles complètes | attendu · 1 sur 2',
+      'Ticket | Le ticket pour 1904 — au Lion, ou plus tôt si le jury le décide | attendu',
+    ])
+    expect(within(indicateur).getByRole('heading', { level: 2 })).toHaveTextContent('L’indicateur1 sur 4')
+    expect(indicateur).toHaveTextContent('Ligne 1903Arrivées')
+    expect(compteur()).toHaveTextContent('1arrivée sur 4.')
+    // Ni la corde, ni le programme par défaut, ni tampon tant que le ticket n'est pas émis.
+    expect(screen.queryByRole('list', { name: 'La progression de l’année' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Arrivées' })).toBeNull()
+    expect(screen.queryByText(/^Ligne bouclée/)).toBeNull()
+    expect(pointees()).toEqual([])
+    expect(plus()).toEqual([])
+    // Les gabarits ne lisent rien : la fiche, la carte, et ce que la page lisait déjà.
+    expect(requetes.filter((r) => r.startsWith('GET /api/me/voyage/annees/'))).toEqual([FICHE(1903)])
+    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([])
+  })
+
+  // Mutation : la branche `essentiels_total === 0` retirée d'`arriveesDeLAnnee` (« attendu · 0 sur 0 »,
+  // ou une ligne arrivée à zéro), ou `a.total === null` de `ligneDeLIndicateur`.
+  it('« Aucun essentiel » ne se rend jamais en « 0 sur 0 »', async () => {
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, profondeur: 1, progression: P(0, 0, 0), recompense: null })) })
+    await screen.findByRole('region', { name: 'L’indicateur' })
+    expect(lignes()[1]).toBe('Lion | Aucun essentiel encore | attendu')
+    expect(screen.queryByText(/0 sur 0/)).toBeNull()
+    expect(compteur()).toHaveTextContent('0arrivée sur 4.')
+  })
+
+  // Une année bouclée garde son indicateur, tamponné, avec sa récompense ; l'année en cours l'est dès
+  // son ticket émis (réponse du propriétaire du 7 octobre 2026). Mutations : le tampon posé d'après
+  // `!enCours` seul ; la récompense retirée du tampon ; l'indicateur rendu pour la seule année en cours.
+  it('une ligne bouclée porte le tampon rouge et sa récompense, dès le ticket émis', async () => {
+    const bouclee = monterVoyage('/voyage/1902', { ...ROUTES, [FICHE(1902)]: () => json(nue({ annee: 1902, profondeur: 15, progression: P(5, 5, 2), recompense: 'palme', ticket: TICKET(1903, '2026-09-22T08:00:00.000Z') })) })
+    expect(await screen.findByText('Ligne bouclée · Palme')).toBeInTheDocument()
+    expect(lignes().map((l) => l.split(' | ')[2])).toEqual(['arrivé · 15', 'arrivé', 'arrivé · 2', 'arrivé'])
+    expect(compteur()).toHaveTextContent('4arrivées sur 4 : la ligne est bouclée.')
+    bouclee.unmount()
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, profondeur: 5, progression: P(5, 5, 0), recompense: 'lion', ticket: TICKET(1904) })) })
+    expect(await screen.findByText('Ligne bouclée · Lion')).toBeInTheDocument()
+    // La Palme reste attendue : la ligne est bouclée par le ticket, pas par le compte.
+    expect(compteur()).toHaveTextContent('3arrivées sur 4 : la ligne est bouclée.')
+    // Le ticket qui attend reste offert au bas de la page.
+    expect(screen.getByRole('button', { name: 'Utiliser' })).toBeInTheDocument()
+  })
+
+  // Le guide garde les deux gestes du boniment. Mutations, dans `Guide` : `onLire` ou `onGenerique`
+  // non branché ; le générique offert sans `generique` ; l'ouverture entière ; les faits oubliés ;
+  // `Guide` retiré des gabarits (le boniment par défaut porte le même nom et les mêmes gestes).
+  it('le guide montre le premier paragraphe et les faits, lit l’ouverture, et n’offre le générique qu’avec le ticket', async () => {
+    const ouverture = 'Le premier paragraphe du guide.\n\nLe second, que seule la feuille montre.'
+    const sans = monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, ouverture, faits: ['Un fait de 1903.'] })) })
+    const guide = await screen.findByRole('region', { name: 'Guide du voyageur' })
+    expect(within(guide).getByText('Le premier paragraphe du guide.')).toBeInTheDocument()
+    // Le guide, pas le boniment par défaut au même nom : son titre de rubrique, et les faits en dessous.
+    expect(within(guide).getAllByRole('heading').map((h) => `${h.tagName} ${h.textContent}`)).toEqual(['H2 Guide du voyageur1903', 'H3 Les faits de l’année'])
+    expect(within(guide).queryByText(/Le second/)).toBeNull()
+    expect(within(within(guide).getByRole('list')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Un fait de 1903.'])
+    expect(within(guide).queryByRole('button', { name: 'Le générique de fin' })).toBeNull()
+    fireEvent.click(within(guide).getByRole('button', { name: 'Lire l’ouverture' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Le second, que seule la feuille montre.')
+    sans.unmount()
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, ouverture, ticket: TICKET(1904), generique: 'Le générique écrit.' })) })
+    fireEvent.click(await screen.findByRole('button', { name: 'Le générique de fin' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Le générique écrit.')
+  })
+
+  // Le jury n'appartient qu'au compte IA : ni la ligne du bas, ni la ligne du ticket ne le promettent
+  // à un autre membre. Mutations, dans la page : `fiche.maturite` passée telle quelle à `ligneDuBas` ;
+  // `ia` passé vrai à l'indicateur.
+  it('ne promet le jury qu’au compte IA, au bas de la page comme sur la ligne du ticket', async () => {
+    const verdict = nue({ annee: 1903, maturite: { mure: false, motif: 'il manque encore deux essentiels.', jugee_le: '2026-09-21T21:00:00.000Z' } })
+    const ia = monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(verdict) })
+    expect(await screen.findByText(/Pas encore mûre : il manque encore deux essentiels\./)).toBeInTheDocument()
+    expect(lignes()[3]).toMatch(/jury/)
+    ia.unmount()
+    monterVoyage('/voyage/1903', { ...ROUTES, 'GET /api/me/voyage': () => json({ ...SUIVI, source: { ...SUIVI.source, annee_en_cours: 1903 } }), [FICHE(1903)]: () => json(verdict) })
+    await screen.findByRole('region', { name: 'L’indicateur' })
+    expect(lignes()[3]).toBe('Ticket | Le ticket pour 1904 — au Lion | attendu')
+    expect(screen.queryByText(/Pas encore mûre/)).toBeNull()
+    expect(screen.queryByText(/jury/i)).toBeNull()
+  })
+})
+
+describe('le retour d’un billet en gare', () => {
+  const AVANT = { profondeur: 2, progression: P(2, 5, 1) }
+  const apres = () => json(nue({ annee: 1903, profondeur: 3, progression: P(2, 5, 1), recompense: 'ours' }))
+  const enCache = (c: Parameters<NonNullable<Parameters<typeof monterVoyage>[2]>>[0]) => c.setQueryData(cles.annee(1903), nue({ annee: 1903, ...AVANT, recompense: null }))
+
+  // Mutations : dans la page, le gain joué sur la fiche du cache (sans attendre `relue`) ; dans
+  // `Compteur`, le « +1 » ou le rouleau retiré ; dans `Indicateur`, la ligne non pointée.
+  it('la ligne gagnée se pointe, un « +1 » monte, la molette tourne, et la région d’état le dit', async () => {
+    confierLeRetour(1903, SESSION.user.id, { avant: AVANT, guet: null })
+    // La relecture attend : la fiche du cache est à l'écran, telle qu'avant le billet.
+    let lacher = () => undefined as void
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => new Promise<Response>((r) => (lacher = () => r(apres()))) }, enCache)
+    // La région d'état est là dès la fiche montée, vide : elle ne se lit qu'à son changement.
+    await screen.findByRole('region', { name: 'L’indicateur' })
+    const etat = screen.getAllByRole('status').find((e) => e.classList.contains('sr-only'))!
+    expect(etat).toBeEmptyDOMElement()
+    expect([pointees(), plus(), compteur().textContent]).toEqual([[], [], '0arrivée sur 4.'])
+    lacher()
+    await waitFor(() => expect(etat).toHaveTextContent('+1 film vu'))
+    expect(pointees()).toEqual(['Ours'])
+    expect(plus()).toEqual(['+1'])
+    // La molette tourne de l'ancien nombre au nouveau : l'ancien est tu aux lecteurs d'écran.
+    const molette = compteur().querySelector('[data-tourne]')!
+    expect(molette).toHaveAttribute('data-tourne', 'oui')
+    expect([...molette.querySelectorAll('span span')].map((e) => `${e.textContent}${e.getAttribute('aria-hidden') ? ' (tu)' : ''}`)).toEqual(['0 (tu)', '1'])
+    expect(molette.closest('[data-vivante]')).toHaveAttribute('data-vivante', 'oui')
+  })
+
+  // Un film de plus au-delà du palier : la ligne se pointe, rien n'arrive. Mutation : la molette qui
+  // tourne à tout gain (`venuesDArriver` remplacé par les lignes pointées).
+  it('un gain qui ne fait arriver aucune ligne pointe la sienne sans tourner la molette', async () => {
+    confierLeRetour(1903, SESSION.user.id, { avant: { profondeur: 3, progression: P(2, 5, 1) }, guet: null })
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, profondeur: 4, progression: P(2, 5, 1), recompense: 'ours' })) })
+    await waitFor(() => expect(pointees()).toEqual(['Ours']))
+    expect(plus()).toEqual(['+1'])
+    expect(compteur().querySelector('[data-tourne]')).toHaveAttribute('data-tourne', 'non')
+    expect(compteur()).toHaveTextContent('1arrivée sur 4.')
+  })
+
+  // Au calme, l'état final se pose d'un coup : la ligne est pointée, le nombre est le nouveau, rien ne
+  // monte ni ne tourne. Mutations : `calme` ignoré dans `Compteur` (le « +1 », le rouleau) ou dans
+  // `Indicateur` (`data-vivante`).
+  it('au calme, la ligne est pointée et le compteur à sa valeur, sans « +1 » ni molette qui tourne', async () => {
+    calme()
+    confierLeRetour(1903, SESSION.user.id, { avant: AVANT, guet: null })
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: apres }, enCache)
+    await waitFor(() => expect(pointees()).toEqual(['Ours']))
+    expect(plus()).toEqual([])
+    expect(compteur().querySelector('[data-tourne]')).toHaveAttribute('data-tourne', 'non')
+    expect(compteur()).toHaveTextContent('1arrivée sur 4.')
+    expect(compteur()).toHaveAttribute('data-vivante', 'non')
+    expect(screen.getByRole('region', { name: 'L’indicateur' })).toHaveAttribute('data-vivante', 'non')
+  })
+
+  // Ni au rechargement (plus de retour confié), ni sur une relecture en panne (la fiche du cache est
+  // encore à l'écran : la comparer consommerait le retour). Mutation, dans la page : le gain lu sans
+  // attendre la relecture réussie (`!requete.isError` retiré de `relue`).
+  it('le « +1 » ne se rejoue ni au rechargement ni sur une relecture en panne, et se joue à la relecture réussie', async () => {
+    let lectures = 0
+    confierLeRetour(1903, SESSION.user.id, { avant: AVANT, guet: null })
+    const routes = { ...ROUTES, [FICHE(1903)]: () => ((lectures += 1) === 1 ? json({ code: 'INTERNAL', message: 'Le service a un souci.', retryable: false }, 500) : apres()) }
+    const premiere = monterVoyage('/voyage/1903', routes, enCache)
+    await waitFor(() => expect(premiere.client.getQueryState(cles.annee(1903))?.status).toBe('error'))
+    await act(async () => undefined)
+    expect([pointees(), plus()]).toEqual([[], []])
+    await act(() => premiere.client.refetchQueries({ queryKey: cles.annee(1903), exact: true }))
+    await waitFor(() => expect(pointees()).toEqual(['Ours']))
+    expect(plus()).toEqual(['+1'])
+    // La page rechargée : la même fiche, plus aucun retour à jouer.
+    premiere.unmount()
+    monterVoyage('/voyage/1903', routes)
+    await screen.findByRole('region', { name: 'L’indicateur' })
+    await waitFor(() => expect(compteur()).toHaveTextContent('1arrivée sur 4.'))
+    await act(async () => undefined)
+    expect([pointees(), plus()]).toEqual([[], []])
+  })
+})
+
+describe('la courroie', () => {
+  // Le dessin et les mots changent, pas le geste : `Manivelle` garde ses écouteurs et ses seuils
+  // (`Manivelle.test.tsx`, vert sans être retouché). Mutations : `Courroie` retirée des gabarits ;
+  // dans `Courroie`, la sangle qui ne suit plus la course, ou qui la suit au calme.
+  it('remplace la manivelle dessinée, s’allonge avec le geste, et ne relit que la fiche et la carte', async () => {
+    const { requetes } = monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903 })) })
+    await screen.findByRole('region', { name: 'L’indicateur' })
+    const courroie = screen.getByTestId('courroie')
+    expect(screen.queryByTestId('manivelle')).toBeNull()
+    expect(courroie).toHaveTextContent('Tire la courroie')
+    const sangle = courroie.firstElementChild as HTMLElement
+    const auRepos = parseFloat(sangle.style.height)
+    const contenu = screen.getByTestId('contenu-manivelle')
+    fireEvent.touchStart(contenu, { touches: [{ clientY: 10 }] })
+    fireEvent.touchMove(contenu, { touches: [{ clientY: 210 }] })
+    expect(courroie).toHaveTextContent('Relâche la courroie')
+    expect(parseFloat(sangle.style.height)).toBeGreaterThan(auRepos)
+    const avant = requetes.length
+    fireEvent.touchEnd(contenu, { touches: [] })
+    await waitFor(() => expect(requetes.slice(avant).sort()).toEqual(['GET /api/me/voyage', FICHE(1903)]))
+    expect(await screen.findByText('L’indicateur est à jour.')).toBeInTheDocument()
+    // Le bouton du bas reste, pour qui ne tire pas.
+    expect(screen.getByRole('button', { name: 'Tirer la courroie pour mettre l’indicateur à jour' })).toBeInTheDocument()
+  })
+
+  it('au calme, la sangle ne s’allonge pas et rien ne tourne', async () => {
+    calme()
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903 })) })
+    await screen.findByRole('region', { name: 'L’indicateur' })
+    const courroie = screen.getByTestId('courroie')
+    const sangle = courroie.firstElementChild as HTMLElement
+    const auRepos = sangle.style.height
+    const contenu = screen.getByTestId('contenu-manivelle')
+    fireEvent.touchStart(contenu, { touches: [{ clientY: 10 }] })
+    fireEvent.touchMove(contenu, { touches: [{ clientY: 210 }] })
+    expect(sangle.style.height).toBe(auRepos)
+    expect(courroie).toHaveAttribute('data-vivante', 'non')
+  })
+
+  // Les jumeaux de la feuille de la tête : aucune animation hors d'une racine vivante. Mutation : une
+  // règle `.anneau { animation: … }` ou `.plus { animation: … }` sans son sélecteur vivant.
+  it.each([
+    ['Indicateur.module.css', /^\.(compteur|indicateur)\[data-vivante='oui'\] /, 2],
+    ['Courroie.module.css', /^\.courroie\[data-vivante='oui'\] /, 0],
+  ] as const)('la feuille %s n’anime rien hors d’une racine vivante', (nom, vivante, plancher) => {
+    const feuilles = import.meta.glob<string>('./*.module.css', { query: '?raw', import: 'default', eager: true })
+    const feuille = feuilles[`./${nom}`]!.replace(/\/\*[\s\S]*?\*\//g, '')
+    const regles = [...feuille.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^{}]*)\}/g)].map(([, selecteur]) => selecteur!.trim())
+    expect(regles.length).toBeGreaterThan(plancher)
+    expect(regles.filter((s) => !vivante.test(s))).toEqual([])
   })
 })

@@ -1,0 +1,86 @@
+/* Le guide du voyageur (maquette « Voyage immobile 1900 » : `.sec`, `.guide`). Rien n'y bouge. */
+.sec {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 24px 16px 10px;
+  font: 600 15px var(--m-f-capitales);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-or);
+}
+
+.sec small {
+  font: 700 10.5px var(--m-f-corps);
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: var(--m-pale);
+}
+
+.sec::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--m-filet);
+  transform: translateY(-4px);
+}
+
+.guide {
+  margin: 0 14px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--m-or);
+  background: color-mix(in srgb, var(--m-fond) 35%, transparent);
+  font: 15px/1.55 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.guide p {
+  margin: 0;
+}
+
+.liens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-top: 6px;
+}
+
+.liens button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--m-or2);
+  font: 600 13px var(--m-f-capitales);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-color: var(--m-filet);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.liens button:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.guide h3 {
+  margin: 8px 0 4px;
+  font: 600 13px var(--m-f-capitales);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-or);
+}
+
+.guide ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide li {
+  padding: 5px 0;
+  border-top: 1px dotted var(--m-filet);
+  color: var(--m-papier);
+}

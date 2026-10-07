@@ -1,0 +1,62 @@
+/* La courroie de la vitre (maquette « Voyage immobile 1900 » : `.tirette`, `.recharge`). Sous le
+   contenu, en haut : on ne la voit que quand le doigt le fait descendre, comme la manivelle par
+   défaut, et sans `z-index` pour la même raison (`voyage/annee/Manivelle.module.css`). */
+.courroie {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  height: 110px;
+  color: var(--m-doux);
+  font: italic 13px var(--m-f-texte);
+  pointer-events: none;
+}
+
+/* La sangle de cuir, et son rivet de laiton. */
+.sangle {
+  position: relative;
+  width: 22px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(90deg, var(--m-velours), color-mix(in srgb, var(--m-velours) 70%, var(--m-or)), var(--m-velours));
+  box-shadow: inset 0 -6px 0 color-mix(in srgb, var(--m-velours) 60%, var(--m-fond)), 0 3px 6px var(--m-ombre);
+}
+
+.sangle::after {
+  content: '';
+  position: absolute;
+  bottom: 9px;
+  left: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--m-or);
+  box-shadow: 0 1px 0 var(--m-fond);
+}
+
+.mot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.anneau {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--m-or);
+  border-top-color: transparent;
+  border-radius: 50%;
+}
+
+.courroie[data-vivante='oui'] .anneau {
+  animation: tour 1s linear infinite;
+}
+
+@keyframes tour {
+  to {
+    transform: rotate(360deg);
+  }
+}

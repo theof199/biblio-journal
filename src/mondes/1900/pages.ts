@@ -1,4 +1,8 @@
 import type { HabillagePages, JetonDePage } from '../types'
+import Compteur from './pages/Compteur'
+import Courroie from './pages/Courroie'
+import Guide from './pages/Guide'
+import Indicateur from './pages/Indicateur'
 import SousLaTete from './pages/SousLaTete'
 import Tete from './pages/Tete'
 import VoieFermee from './pages/VoieFermee'
@@ -72,7 +76,9 @@ export const PAGES_1900: HabillagePages = {
     manivelle: { tirer: 'Tire la courroie', relacher: 'Relâche la courroie', charge: 'L’indicateur se met à jour…', fait: 'L’indicateur est à jour.', bouton: 'Tirer la courroie pour mettre l’indicateur à jour' },
   },
   // La tête de la gare porte l'année, titre de la page : le fronton et le corps fermé ne la répètent pas.
-  gabarits: { teteDAnnee: Tete, fronton: SousLaTete, anneeFermee: VoieFermee },
+  // Le compteur des arrivées tient la place de la corde, le guide celle du boniment, l'indicateur
+  // celle du programme, la courroie celle de la manivelle dessinée.
+  gabarits: { teteDAnnee: Tete, fronton: SousLaTete, anneeFermee: VoieFermee, corde: Compteur, boniment: Guide, programme: Indicateur, tirette: Courroie },
   hauteurs: { bandeau: 230, scene: 240, estrade: 150, monument: 240, guichet: 140 },
   // La tête de la fiche d'année est un gabarit : cette toile ne se peint plus sur sa page.
   dessinerBandeau: unie,
