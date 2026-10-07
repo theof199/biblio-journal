@@ -5,14 +5,14 @@ import styles from './Tete.module.css'
 /**
  * Ce qui tient lieu de fronton sous la tête de la gare (maquette, écran 2 : `.g-sous`). La plaque de
  * la tête porte déjà l'année, qui est le titre de la page, et son tampon dit la ligne bouclée : ni
- * l'une ni l'annonce ne se répètent ici. Reste l'heure de la gare, et ce que la fiche accroche (le
- * ruban de la récompense d'une année bouclée).
+ * l'une ni l'annonce ne se répètent ici. Le ruban « Bouclée » que la fiche accroche au fronton par
+ * défaut non plus : la tête et l'indicateur le disent déjà, et ce dernier nomme la récompense. Reste
+ * l'heure de la gare.
  */
-export default function SousLaTete({ annee, children }: PropsFronton) {
+export default function SousLaTete({ annee }: PropsFronton) {
   return (
     <div className={styles.sous}>
       <p className={styles.heure}>{`L’horloge marque ${heureDeLaGare(annee).libelle} : l’année est l’heure de la gare.`}</p>
-      {children}
     </div>
   )
 }

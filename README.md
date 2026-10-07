@@ -399,7 +399,9 @@ Où vit quoi :
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   neuf sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
   le titre de la page et le rang de la gare, et selon le mode l'horloge (l'année est l'heure :
-  19 h 03 en 1903, `heureDeLaGare`) avec le tampon d'une ligne bouclée, le négatif sous la lanterne
+  19 h 03 en 1903, `heureDeLaGare`) avec le tampon d'une ligne bouclée (la page lui passe
+  `anneeBouclee`, la règle d'`estBouclee` : la tête tamponne dès le ticket émis, comme l'indicateur, et
+  le ruban « Bouclée » du fronton par défaut ne s'y montre pas), le négatif sous la lanterne
   rouge d'une année fermée, ou la gare assombrie et le sémaphore à l'arrêt d'une voie qui attend le
   Voyage suivi. Au calme, rien n'y bouge. Le corps d'une année ouverte : le **compteur** des arrivées
   à la place de la corde (`Compteur`), le **guide du voyageur** à la place du boniment (`Guide`, avec

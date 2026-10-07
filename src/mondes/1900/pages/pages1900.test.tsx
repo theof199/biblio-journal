@@ -121,11 +121,16 @@ const MARQUES = {
 const montrees = () => (Object.keys(MARQUES) as (keyof typeof MARQUES)[]).filter((cle) => MARQUES[cle]() !== null)
 
 describe('la tête de la gare', () => {
-  // Mutations : dans `Tete`, l'horloge montée dans tous les modes ; le tampon posé dès `encours` ; la
-  // lanterne posée en attente, ou le sémaphore sur une année fermée ; les deux variantes échangées
-  // dans `mentionDeLaPlaque`. Le titre : `SousLaTete` ou `VoieFermee` qui remonterait un `Fronton`.
+  // Mutations : dans `Tete`, l'horloge montée dans tous les modes ; le tampon posé dès `encours`, ou
+  // d'après le seul mode `bouclee` (l'année en cours au ticket émis ne le porterait plus, alors que
+  // son indicateur le porte) ; la lanterne posée en attente, ou le sémaphore sur une année fermée ; les
+  // deux variantes échangées dans `mentionDeLaPlaque`. Dans la page : `anneeBouclee` sans la garde du
+  // mode (une voie qui attend derrière soi serait tamponnée). Le titre : `SousLaTete` ou `VoieFermee`
+  // qui remonterait un `Fronton`.
   it.each([
     { mode: 'encours', annee: 1903, voyage: VOYAGE, fiche: () => json(nue({ annee: 1903 })), marques: ['horloge'], mention: 'Quatrième gare', photo: 'Longueville, la gare vers 1900' },
+    { mode: 'encours, son ticket émis', annee: 1903, voyage: VOYAGE, fiche: () => json(nue({ annee: 1903, recompense: 'lion', ticket: TICKET(1904) })), marques: ['horloge', 'tampon'], mention: 'Quatrième gare', photo: 'Longueville, la gare vers 1900' },
+    { mode: 'attente, derrière soi', annee: 1902, voyage: SUIVI, fiche: () => json(ficheEnAttente(1902)), marques: ['semaphore'], mention: 'Voie fermée', photo: 'Couville, la gare vers 1900, assombrie : la voie n’est pas ouverte' },
     { mode: 'bouclee', annee: 1902, voyage: VOYAGE, fiche: () => json(nue({ annee: 1902, recompense: 'palme' })), marques: ['horloge', 'tampon'], mention: 'Troisième gare', photo: 'Couville, la gare vers 1900' },
     { mode: 'fermee', annee: 1904, voyage: VOYAGE, fiche: () => json(ficheVerrouillee(1904)), marques: ['lanterne'], mention: 'Plaque à développer', photo: 'Allaman, la gare vers 1900, sur une plaque de verre encore négative' },
     { mode: 'attente', annee: 1904, voyage: SUIVI, fiche: () => json(ficheEnAttente(1904)), marques: ['semaphore'], mention: 'Voie fermée', photo: 'Allaman, la gare vers 1900, assombrie : la voie n’est pas ouverte' },
@@ -153,8 +158,16 @@ describe('la tête de la gare', () => {
     monterVoyage('/voyage/1902', { ...ROUTES, [FICHE(1902)]: () => json(nue({ annee: 1902, recompense: 'palme' })) })
     expect(await screen.findByRole('img', { name: 'L’horloge de la gare marque 19 h 02' })).toBeInTheDocument()
     expect(await screen.findByText('L’horloge marque 19 h 02 : l’année est l’heure de la gare.')).toBeInTheDocument()
-    // Ce que la fiche accroche au fronton par défaut reste accroché. Mutation : `children` oublié.
-    expect(screen.getByText('Bouclée · Palme')).toBeInTheDocument()
+  })
+
+  // Une année bouclée ne porte que deux marques, la même partout : le tampon de la tête et celui de
+  // l'indicateur, qui nomme la récompense. Le ruban que la page accroche au fronton par défaut ne se
+  // montre pas ici. Mutation : `children` rendu de nouveau par `SousLaTete`.
+  it('une année bouclée ne porte pas le ruban du fronton par défaut : la tête et l’indicateur le disent', async () => {
+    monterVoyage('/voyage/1902', { ...ROUTES, [FICHE(1902)]: () => json(nue({ annee: 1902, recompense: 'palme' })) })
+    expect(await screen.findByText('Ligne bouclée · Palme')).toBeInTheDocument()
+    expect(MARQUES.tampon()).not.toBeNull()
+    expect(screen.queryByText(/^Bouclée/)).toBeNull()
   })
 
   // La tête est là avant la fiche, et sur une année qui s'écrit : même titre, même horloge.

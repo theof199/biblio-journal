@@ -1078,12 +1078,13 @@ describe('la fiche d’une année', () => {
       expect(screen.queryByRole('img', { name: 'Le décor de 1895.' })).toBeNull()
       expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['La tête de 1895'])
       const derniere = tetes[tetes.length - 1]!
-      expect({ decennie: derniere.monde.decennie, mode: derniere.mode, annee: derniere.annee, recompense: derniere.recompense, bouclee: derniere.bouclee, roulotte: derniere.roulotte, calme: derniere.calme }).toEqual({
+      expect({ decennie: derniere.monde.decennie, mode: derniere.mode, annee: derniere.annee, recompense: derniere.recompense, bouclee: derniere.bouclee, anneeBouclee: derniere.anneeBouclee, roulotte: derniere.roulotte, calme: derniere.calme }).toEqual({
         decennie: 1890,
         mode: 'bouclee',
         annee: 1895,
         recompense: 'palme',
         bouclee: false,
+        anneeBouclee: true,
         roulotte: null,
         calme: false,
       })

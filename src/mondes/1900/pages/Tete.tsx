@@ -9,12 +9,13 @@ const CHIFFRES = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 /**
  * La tête de la gare (maquette « Voyage immobile 1900 », écrans 2, 12 et 16) : la photographie de la
  * gare de l'année, sa plaque émaillée, qui porte le titre de la page, et selon le mode l'horloge
- * (l'année est l'heure de la gare), le tampon d'une ligne bouclée, la lanterne rouge sur le négatif
- * d'une année fermée, ou le sémaphore à l'arrêt d'une voie qui attend.
+ * (l'année est l'heure de la gare), le tampon d'une ligne bouclée (`anneeBouclee` : la règle de la
+ * fiche, dès le ticket émis), la lanterne rouge sur le négatif d'une année fermée, ou le sémaphore à
+ * l'arrêt d'une voie qui attend.
  *
  * Au calme, rien ne bouge : `data-vivante` porte seul les animations de la feuille.
  */
-export default function Tete({ monde, annee, mode, calme }: PropsTeteDAnnee) {
+export default function Tete({ monde, annee, mode, calme, anneeBouclee }: PropsTeteDAnnee) {
   const m = monde.pages.mots
   const photo = imageDu1900(`g${annee}`)
   const heure = heureDeLaGare(annee)
@@ -29,7 +30,7 @@ export default function Tete({ monde, annee, mode, calme }: PropsTeteDAnnee) {
         <small>{mentionDeLaPlaque(mode, annee, m)}</small>
         <h1>{annee}</h1>
       </div>
-      {mode === 'bouclee' ? <p className={styles.tampon}>{m.annonce.bouclee}</p> : null}
+      {anneeBouclee ? <p className={styles.tampon}>{m.annonce.bouclee}</p> : null}
       {ouverte ? (
         <svg className={styles.horloge} viewBox="-50 -50 100 100" role="img" aria-label={`L’horloge de la gare marque ${heure.libelle}`}>
           <circle r="48" className={styles.boitier} />

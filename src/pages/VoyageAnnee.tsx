@@ -181,6 +181,10 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   const Tete = gabaritDe(monde, 'teteDAnnee', Bandeau)
   const Titre = gabaritDe(monde, 'fronton', Fronton)
   const mode = modeDuBandeau(annee, fiche, v)
+  // « Bouclée » ne se dit que d'une façon (`estBouclee`) : la tête d'un monde qui la tamponne suit la
+  // même règle que le corps de la fiche. Jamais sur une année fermée ou en attente ; le ticket ne se
+  // connaît qu'à la fiche prête.
+  const anneeBouclee = !!v && (mode === 'encours' || mode === 'bouclee') && estBouclee(statutDeLAnnee(annee, v.annee_en_cours), prete?.ticket ?? null)
   const recompense = prete?.recompense ?? v?.annees.find((a) => a.annee === annee)?.recompense ?? null
   const cases = v ? v.annees.filter((a) => decennieDe(a.annee) === monde.decennie).map((a) => ({ annee: a.annee, etat: etatDeCase(a, v.ia).etat, profondeur: a.profondeur })) : []
   const bouclee = !!v?.tampons.some((t) => t.decennie === monde.decennie)
@@ -279,7 +283,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
       {/* Autour de toute fiche : prête, fermée, en attente, en préparation, en panne. */}
       <Manivelle monde={monde} onRecharger={recharger}>
         <div className={styles.bandeau}>
-          <Tete monde={monde} calme={calme} mode={mode} annee={annee} recompense={recompense} cases={cases} bouclee={bouclee} roulotte={roulotte} />
+          <Tete monde={monde} calme={calme} mode={mode} annee={annee} recompense={recompense} cases={cases} bouclee={bouclee} roulotte={roulotte} anneeBouclee={anneeBouclee} />
           {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
               quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
           <Link

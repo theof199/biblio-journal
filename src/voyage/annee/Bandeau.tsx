@@ -11,6 +11,12 @@ export interface PropsTeteDAnnee extends Pick<VueBandeau, 'mode' | 'annee' | 're
   monde: Monde
   /** « Moins d'animations » : rien ne bouge, et un toucher n'anime rien. */
   calme: boolean
+  /**
+   * L'année est bouclée au sens de la fiche (`estBouclee`, `voyage/annee.ts`) : derrière soi, ou son
+   * ticket émis, utilisé ou non. Le bandeau par défaut ne le lit pas, son mode lui suffit ; un monde
+   * qui tamponne sa tête le lit, pour dire « bouclée » comme le reste de sa page.
+   */
+  anneeBouclee: boolean
 }
 
 /**
