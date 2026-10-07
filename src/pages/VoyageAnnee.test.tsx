@@ -14,6 +14,7 @@ import type { PropsBoniment } from '../voyage/annee/Boniment'
 import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
+import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import { confierLeRetour, oublierLeRetour } from '../voyage/annee/retour'
 import type { PropsRayons } from '../voyage/salles/Rayons'
@@ -1359,6 +1360,68 @@ describe('la fiche d’une année', () => {
         expect(requetes.filter((r) => r.includes('/contexte'))).toEqual([])
         fireEvent.click(screen.getByRole('button', { name: 'En voir plus 2' }))
         await waitFor(() => expect(requetes).toContain('POST /api/me/voyage/salles/s-deux/plus'))
+      })
+    })
+
+    // Plan des pages 1900, retouche du brief 2 : l'ordre des sections d'une fiche prête est une clé de
+    // plus (`ordreDAnnee`). Le monde reçoit les sections montées et ne fait que les ranger.
+    describe('l’ordre des sections', () => {
+      const SALLES = [salle({ id: 's-une', rang: 1, nom: 'La première', films: [filmDeSalle({ id: 'f1', tmdb_id: 1, etat: 'vu' })] })]
+      const routes = { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(nue({ salles: SALLES, ticket: ticket(1898) })) }
+      /** Les sept sections d'une année en cours au compte IA, dans l'ordre par défaut, chacune par son repère. */
+      const reperes = () => [
+        screen.getByRole('list', { name: 'La progression de l’année' }),
+        screen.getAllByRole('status').find((e) => e.classList.contains('sr-only'))!,
+        screen.getByRole('region', { name: PAGES_1890.mots.boniment }),
+        screen.getByRole('region', { name: PAGES_1890.mots.programme.titre }),
+        screen.getByRole('region', { name: 'La parade, le podium' }),
+        screen.getByRole('region', { name: `${PAGES_1890.mots.seance.titre} ${PAGES_1890.mots.seance.sous}` }),
+        screen.getByRole('region', { name: 'Salle La première' }),
+        screen.getByRole('region', { name: 'Ton ticket' }),
+      ]
+      const rangs = () => {
+        const tous = [...document.querySelectorAll('*')]
+        return reperes().map((e) => tous.indexOf(e))
+      }
+      const croissants = (r: number[]) => r.every((x, i) => i === 0 || x > r[i - 1]!)
+
+      // Le défaut reste sans gabarit, et le gabarit d'un autre monde n'y change rien. Mutations : deux
+      // sections échangées dans `Ordre` ; le gabarit lu dans un autre monde que celui de l'année.
+      it('sans gabarit, range la corde, le boniment, le programme, la parade, la séance, les salles et la ligne du bas', async () => {
+        const avant = PAGES_A_VENIR.gabarits
+        PAGES_A_VENIR.gabarits = { ordreDAnnee: () => <p>L’ordre d’un autre monde</p> }
+        remettre = () => void (PAGES_A_VENIR.gabarits = avant)
+        monterVoyage('/voyage/1897', routes)
+        await screen.findByRole('region', { name: 'Ton ticket' })
+        expect(croissants(rangs())).toBe(true)
+        expect(screen.queryByText('L’ordre d’un autre monde')).toBeNull()
+      })
+
+      // Mutations, dans la page : `Ordre` monté sans passer par `gabaritDe` ; une section que la page
+      // ne passerait plus (elle manquerait à l'écran) ; la région d'état sortie de ce qu'elle passe.
+      it('monte l’ordre du monde, qui reçoit les sept sections montées et les range à sa façon', async () => {
+        const avant = PAGES_1890.gabarits
+        PAGES_1890.gabarits = {
+          ordreDAnnee: (p: PropsOrdreDAnnee) => (
+            <div data-testid="ordre-du-monde">
+              {p.ligneDuBas}
+              {p.salles}
+              {p.seance}
+              {p.parade}
+              {p.programme}
+              {p.boniment}
+              {p.corde}
+            </div>
+          ),
+        }
+        remettre = () => void (PAGES_1890.gabarits = avant)
+        monterVoyage('/voyage/1897', routes)
+        await screen.findByRole('region', { name: 'Ton ticket' })
+        const cadre = screen.getByTestId('ordre-du-monde')
+        expect(reperes().every((e) => cadre.contains(e))).toBe(true)
+        // À l'envers, section par section ; la région d'état suit la corde, dans la même section.
+        const [corde, etat, ...suite] = rangs()
+        expect(croissants([...suite.reverse(), corde!, etat!])).toBe(true)
       })
     })
   })

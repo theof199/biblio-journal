@@ -32,6 +32,7 @@ import { NOM_DE_RECOMPENSE } from '../voyage/annee/Embleme'
 import Fronton from '../voyage/annee/Fronton'
 import LigneDuBas from '../voyage/annee/LigneDuBas'
 import Manivelle from '../voyage/annee/Manivelle'
+import Ordre from '../voyage/annee/Ordre'
 import Programme from '../voyage/annee/Programme'
 import { useFiche } from '../voyage/annee/useFiche'
 import Parade from '../voyage/parade/Parade'
@@ -345,6 +346,8 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
   const LaCorde = gabaritDe(monde, 'corde', Corde)
   const LeBoniment = gabaritDe(monde, 'boniment', Boniment)
   const LeProgramme = gabaritDe(monde, 'programme', Programme)
+  // L'ordre des sections est lui aussi au monde (`gabarits.ordreDAnnee`) : il les reçoit montées.
+  const LOrdre = gabaritDe(monde, 'ordreDAnnee', Ordre)
   const arrivees = arriveesDeLAnnee(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket)
   const bouclee = estBouclee(statut, fiche.ticket)
 
@@ -353,39 +356,49 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
       <Titre annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde}>
         {enCours ? null : <span className={styles.ruban}>{fiche.recompense ? `Bouclée · ${NOM_DE_RECOMPENSE[fiche.recompense]}` : 'Bouclée'}</span>}
       </Titre>
-      <LaCorde billets={billets} gains={gains} arrivees={arrivees} bouclee={bouclee} />
-      {/* Présente dès la fiche montée, vide : une région d'état ne se lit qu'à son changement. */}
-      <p role="status" className="sr-only">
-        {annonceDesAvancees(gains)}
-      </p>
-      <LeBoniment
-        monde={monde}
-        annee={annee}
-        recompense={fiche.recompense}
-        ouverture={fiche.ouverture}
-        faits={fiche.faits}
-        generique={afficherGenerique(fiche.ticket)}
-        onLire={() => feuille.ouvrir('ouverture')}
-        onGenerique={() => feuille.ouvrir('generique')}
+      <LOrdre
+        corde={
+          <>
+            <LaCorde billets={billets} gains={gains} arrivees={arrivees} bouclee={bouclee} />
+            {/* Présente dès la fiche montée, vide : une région d'état ne se lit qu'à son changement. */}
+            <p role="status" className="sr-only">
+              {annonceDesAvancees(gains)}
+            </p>
+          </>
+        }
+        boniment={
+          <LeBoniment
+            monde={monde}
+            annee={annee}
+            recompense={fiche.recompense}
+            ouverture={fiche.ouverture}
+            faits={fiche.faits}
+            generique={afficherGenerique(fiche.ticket)}
+            onLire={() => feuille.ouvrir('ouverture')}
+            onGenerique={() => feuille.ouvrir('generique')}
+          />
+        }
+        // Les pas ne se disent que pour l'année en cours : sans pas, le programme par défaut ne rend rien.
+        programme={
+          <LeProgramme
+            monde={monde}
+            annee={annee}
+            etapes={enCours ? prochainPas(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket !== null, v.ia) : []}
+            progression={fiche.progression}
+            arrivees={arrivees}
+            gains={gains}
+            bouclee={bouclee}
+            recompense={fiche.recompense}
+            ia={v.ia}
+          />
+        }
+        parade={<Parade monde={monde} annee={annee} podium={fiche.podium} salles={fiche.salles} />}
+        // La séance n'appartient qu'au compte IA (l'API la refuse aux autres), et à l'année en cours.
+        seance={enCours && v.ia ? <Seance monde={monde} annee={annee} fiche={fiche} /> : null}
+        salles={<Salles monde={monde} annee={annee} fiche={fiche} ia={v.ia} />}
+        // Le jury n'appartient qu'au compte IA : jamais promis à un autre membre, quoi que porte la fiche.
+        ligneDuBas={<LigneDuBas monde={monde} annee={annee} ligne={ligneDuBas(fiche.ticket, v.ia ? fiche.maturite : null, v.annee_en_cours)} onUtiliser={onUtiliser} occupe={occupe} erreur={erreur} />}
       />
-      {/* Les pas ne se disent que pour l'année en cours : sans pas, le programme par défaut ne rend rien. */}
-      <LeProgramme
-        monde={monde}
-        annee={annee}
-        etapes={enCours ? prochainPas(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket !== null, v.ia) : []}
-        progression={fiche.progression}
-        arrivees={arrivees}
-        gains={gains}
-        bouclee={bouclee}
-        recompense={fiche.recompense}
-        ia={v.ia}
-      />
-      <Parade monde={monde} annee={annee} podium={fiche.podium} salles={fiche.salles} />
-      {/* La séance n'appartient qu'au compte IA (l'API la refuse aux autres), et à l'année en cours. */}
-      {enCours && v.ia ? <Seance monde={monde} annee={annee} fiche={fiche} /> : null}
-      <Salles monde={monde} annee={annee} fiche={fiche} ia={v.ia} />
-      {/* Le jury n'appartient qu'au compte IA : jamais promis à un autre membre, quoi que porte la fiche. */}
-      <LigneDuBas monde={monde} annee={annee} ligne={ligneDuBas(fiche.ticket, v.ia ? fiche.maturite : null, v.annee_en_cours)} onUtiliser={onUtiliser} occupe={occupe} erreur={erreur} />
 
       {feuille.valeur === 'ouverture' ? (
         <Feuille monde={monde} quoi="ouverture" esp="Ouverture" titre={String(annee)} sous={sous} etat={{ type: 'texte', texte: fiche.ouverture }} onReessayer={() => undefined} onFermer={feuille.fermer} />

@@ -379,7 +379,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Neuf clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Dix clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -394,7 +394,10 @@ Où vit quoi :
   « En voir plus » et son guet (`useFournee`, une fois par salle), la requête du contexte, la nouvelle
   salle et le calque `voiture`, et passe à chaque salle son numéro (`numeroDeLaSalle`,
   `voyage/salles.ts` : son rang, jamais sa place dans la réponse), si elle est dépliée, et les deux
-  gestes qui la déplient et la replient. 1890 et le monde « à venir » n'en fournissent aucune.
+  gestes qui la déplient et la replient. La dixième, `ordreDAnnee` (`voyage/annee/Ordre.tsx`), range
+  les sections d'une fiche prête : elle les reçoit montées (la corde avec sa région d'état, le
+  boniment, le programme, la parade, la séance, les salles, la ligne du bas) et n'en compose ni n'en
+  omet aucune ; aucun monde ne la remplit encore. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   neuf sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte

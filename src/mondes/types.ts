@@ -12,6 +12,7 @@ import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
+import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
 import type { PropsRayons } from '../voyage/salles/Rayons'
 import type { PropsSalle } from '../voyage/salles/Salle'
 
@@ -686,6 +687,12 @@ export interface GabaritsDesPages {
    * du contexte et le calque `voiture` de l'adresse.
    */
   salle: ComponentType<PropsSalle>
+  /**
+   * L'ordre des sections d'une fiche prête (`voyage/annee/Ordre.tsx`) : la corde, le boniment, le
+   * programme, la parade, la séance, les salles et la ligne du bas, que la page monte et lui passe. Un
+   * monde qui le remplit les range autrement, sans en composer ni en omettre aucune.
+   */
+  ordreDAnnee: ComponentType<PropsOrdreDAnnee>
 }
 
 export interface HabillagePages {
