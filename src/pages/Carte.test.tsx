@@ -1173,7 +1173,11 @@ describe('le ticket', () => {
     // Avant le déblocage, rien ne nomme 1900 : ni le bouton, ni les années données au moteur.
     expect(bouton).toHaveTextContent('1899 → nouveau monde')
     expect(bouton).not.toHaveTextContent('1900')
-    expect(etats[etats.length - 1]!.cases.map((c) => c.annee)).toEqual([1895, 1896, 1897, 1898, 1899])
+    // Le bouton ne dit rien du moteur : il paraît dès que le Voyage et les tickets sont lus, alors que
+    // le moteur ne reçoit son premier état que deux rendus plus tard (l'avatar posé par un effet, puis
+    // la toile montée). Ce qu'on lit du moteur s'attend sur le moteur, et se juge sur chaque état reçu.
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(etats.map((e) => e.cases.map((c) => c.annee))).toEqual(etats.map(() => [1895, 1896, 1897, 1898, 1899]))
     fireEvent.click(bouton)
     await waitFor(() => expect(passage).toHaveLength(1))
     expect(moteur.direBonjour).toHaveBeenCalledWith(1900, 'endroit')
