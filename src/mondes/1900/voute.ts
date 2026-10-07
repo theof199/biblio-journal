@@ -1,4 +1,5 @@
 import type { VueMonde } from '../types'
+import { dessinerFicelle } from './accroches'
 import { c } from './couleur'
 import { cuire } from './cuisson'
 import { imageDu1900, TAILLES } from './images'
@@ -15,7 +16,8 @@ import { L_BOUCHE, L_PAROI, type TunnelALEcran } from './tunnel'
  * y laisse voir le mur sous un dégradé qui s'efface, alors que son noir commence au pied-droit ; ici
  * la paroi s'y voit. Ni la paroi ni ses lampes ne sont floutées (`feGaussianBlur`) : les lampes sont
  * peintes en dégradés, les moellons nets sur une tuile cuite petite. Le reflet du compartiment n'est
- * pas viré (`sepia`, `brightness`).
+ * pas viré (`sepia`, `brightness`), ni celui des affiches, dont l'écart (12 px dans la maquette)
+ * grossit avec elles au lieu d'être posé.
  */
 
 /** Le hasard rejouable de la maquette, à la graine de chaque dessin (57,3 pour la bouche, 33,7 pour la paroi). */
@@ -184,8 +186,7 @@ function peindreParoi(g: CanvasRenderingContext2D, w: number, h: number): void {
 
 /**
  * Le reflet léger du compartiment sur la vitre (maquette : `.miroir`, l. 1105) : sa photographie,
- * déjà chargée par le passage, retournée et couvrant l'écran. Les affiches de la ficelle (idée 72)
- * s'y refléteront : elles se posent ici, dans le noir déjà découpé.
+ * déjà chargée par le passage, retournée et couvrant l'écran.
  */
 function miroir(v: VueMonde): void {
   const url = imageDu1900('interieur')
@@ -199,6 +200,20 @@ function miroir(v: VueMonde): void {
   g.translate(v.W, 0)
   g.scale(-1, 1)
   g.drawImage(photo, (v.W - lp * e) * 0.5, (v.H - hp * e) * 0.4, lp * e, hp * e)
+  g.restore()
+}
+
+/**
+ * Le reflet des affiches de la ficelle (idée 72 ; maquette : `.tunnel .accroches`, l. 1115-1116) :
+ * plus haut et plus grandes que dans le compartiment (46 px pour 40), à peine visibles. Elles sont
+ * sœurs du miroir dans la maquette, pas ses enfants : elles ne sont pas retournées, et se voient
+ * sans la photographie du compartiment.
+ */
+function reflets(v: VueMonde): void {
+  const g = v.ctx
+  g.save()
+  g.globalAlpha *= 0.24
+  dessinerFicelle(v, v.W * 0.5, v.H * 0.47, 46 / 40)
   g.restore()
 }
 
@@ -218,6 +233,7 @@ function dedans(v: VueMonde, t: TunnelALEcran, noir: { x: number; w: number }): 
     }
   }
   miroir(v)
+  reflets(v)
   // La lueur des lampes au plafond, et l'ombre qui gagne les bords de la vitre.
   ovale(g, v.W * 0.5, -v.H * 0.07, v.W * 0.96, v.H * 0.22, [[0, c('#ffc46e', 0.13)], [0.72, c('#ffc46e', 0)], [1, c('#ffc46e', 0)]])
   ovale(g, v.W * 0.5, v.H * 0.46, v.W * 0.5 * Math.SQRT2, v.H * 0.54 * Math.SQRT2, [[0, c('#040302', 0)], [0.42, c('#040302', 0)], [1, c('#040302', 0.62)]])

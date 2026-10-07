@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { fireEvent, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import CarteCanvas, { BORNE_DES_AFFICHES, FabriqueMoteurContexte, affichesDecodees, fabriqueReelle, imagesDesMondes } from './CarteCanvas'
+import CarteCanvas, { AFFICHES_DES_COLONNES, AFFICHES_D_UN_MONDE, BORNE_DES_AFFICHES, FabriqueMoteurContexte, affichesDecodees, fabriqueReelle, imagesDesMondes } from './CarteCanvas'
 import type { Dependances, EtatCarte } from './moteur'
 import { moteurFactice } from '../test/moteurFactice'
 
@@ -133,6 +133,27 @@ describe('la mémoire des images (plan 3b, tâche 14)', () => {
     for (const url of aLEcran) expect(creees.filter((c) => c === url)).toHaveLength(1)
     // Les affiches qu'on n'a pas redemandées, elles, sont sorties.
     expect(affichesDecodees.get('/covers/thumb/qui-defile-0.webp')).toBeUndefined()
+  })
+
+  // Idée 72 : une seule image du moteur demande ses colonnes et, par `VueMonde.image`, les affiches
+  // d'un monde. Toutes doivent tenir ensemble, sinon aucune n'est jamais rendue : à la passe
+  // suivante, chacune a été évincée par une autre de la même image, et se recharge. Mutations : la
+  // borne laissée aux seules colonnes (`BORNE_DES_AFFICHES = AFFICHES_DES_COLONNES`) ; la part du
+  // monde ramenée à zéro ; la borne d'une de moins que la somme ; la borne de quarante de plus.
+  it('garde d’une passe à l’autre tout ce qu’une seule image demande, les colonnes pleines et les affiches d’un monde', () => {
+    const image = demander()
+    const uneImage = [
+      ...Array.from({ length: AFFICHES_DES_COLONNES }, (_, j) => `/covers/thumb/colonne-${j}.webp`),
+      ...Array.from({ length: AFFICHES_D_UN_MONDE }, (_, j) => `/covers/thumb/ficelle-${j}.webp`),
+    ]
+    expect(AFFICHES_D_UN_MONDE).toBeGreaterThan(0)
+    const premieres = uneImage.map((url) => image(url))
+    for (let passe = 0; passe < 3; passe++) uneImage.forEach((url, i) => expect(image(url)).toBe(premieres[i]))
+    expect(creees).toHaveLength(uneImage.length)
+    expect(affichesDecodees.taille).toBe(uneImage.length)
+    // Et pas une de plus : la borne est ce compte, pas une réserve au-dessus.
+    image('/covers/thumb/de-trop.webp')
+    expect(affichesDecodees.taille).toBe(uneImage.length)
   })
 })
 

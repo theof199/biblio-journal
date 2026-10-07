@@ -1,5 +1,6 @@
 import type { VueMonde } from '../types'
 import { lerp } from '../../carte/outils'
+import { dessinerFicelle } from './accroches'
 import { c, F_CORPS, F_RAIL } from './couleur'
 import { cuire, fondre } from './cuisson'
 import { emaillee } from './gares'
@@ -15,7 +16,8 @@ import { JONCTION } from './trace'
  * vues par la vitre, le quai qui s'éloigne et la borne sont aux plans du train (`toiles.ts`,
  * `gares.ts`). Chaque « quoi » et chaque « combien » vient de `passage.ts`, donc d'`avance` seule :
  * ici, rien que le trait, et ni `v.t` ni `v.entree`. Aucune zone n'est inscrite, aucun son joué.
- * Les affiches du compartiment (idée 72) et les panaches animés à l'horloge ne sont pas dessinés.
+ * Les affiches du compartiment (idée 72) sont à `accroches.ts` ; les panaches animés à l'horloge ne
+ * sont pas dessinés.
  */
 
 /** De combien la pellicule de la jonction est décalée, en px du repère de 390 : la route de 1890 arrive au milieu de la section, pas à gauche comme sur l'image de la maquette. */
@@ -202,8 +204,8 @@ function banquette(g: CanvasRenderingContext2D): void {
 
 /**
  * Le compartiment (maquette : `.interieur`, l. 77-79 et 1510-1528) : la boiserie photographiée,
- * assombrie vers ses bords, la tablette sous la vitre, deux banquettes et une valise. Sans les
- * affiches de la ficelle (idée 72, hors du lot).
+ * assombrie vers ses bords, la tablette sous la vitre, deux banquettes et une valise ; puis, devant
+ * eux, la ficelle des affiches (idée 72 ; maquette : `.interieur .accroches`, à 68,6 % de l'écran).
  */
 function interieur(v: VueMonde, i: { alpha: number; echelle: number }): void {
   const g = v.ctx
@@ -231,6 +233,7 @@ function interieur(v: VueMonde, i: { alpha: number; echelle: number }): void {
   g.fillStyle = ombre
   g.fillRect(-2, -2, 4, 4)
   g.restore()
+  g.save()
   g.scale(v.W / 390, v.H / 760)
   g.fillStyle = c('#5e351b')
   g.fillRect(16, 472, 358, 10)
@@ -270,6 +273,8 @@ function interieur(v: VueMonde, i: { alpha: number; echelle: number }): void {
   g.stroke()
   g.fillStyle = c('#c9a257')
   g.fillRect(33, 19, 8, 7)
+  g.restore()
+  dessinerFicelle(v, v.W * 0.5, v.H * 0.686, 1)
   g.restore()
 }
 

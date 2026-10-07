@@ -23,13 +23,29 @@ const ADRESSES_DES_MONDES: ReadonlySet<string> = new Set(
 )
 
 /**
- * La borne des affiches décodées (plan 3b, décision 7, et son tour de correction). Elle ne vaut que
- * pour ce qui n'est pas une image de monde : les affiches des colonnes. Le calcul : autant que le
- * moteur garde d'affiches traitées (`MoteurCarte`, `affiches`, 48 toiles), une affiche brute ne
- * servant qu'à cuire sa toile ; une colonne n'en demande que quatre (`dessin/cases.ts`), si bien
- * qu'une seule image du moteur, douze colonnes à l'écran, tient encore dessous.
+ * Ce que les colonnes d'une seule image du moteur demandent au plus : autant que le moteur garde
+ * d'affiches traitées (`MoteurCarte`, `affiches`, 48 toiles), une affiche brute ne servant qu'à cuire
+ * sa toile. Une colonne en demande quatre (`dessin/cases.ts`) et le moteur dessine les cases de
+ * `-110` à `H + 70`, une tous les 170 px (`traceAVenir`) : `(H + 180) / 170` colonnes, sept sur un
+ * téléphone de 932 px, douze jusqu'à 1 860 px de haut, soit 48 affiches. Seul un monde à `colonne`
+ * en demande (le monde « à venir » ; ni 1890 ni 1900).
  */
-export const BORNE_DES_AFFICHES = 48
+export const AFFICHES_DES_COLONNES = 48
+
+/**
+ * Ce qu'un monde demande au plus pour lui-même dans une image, par `VueMonde.image` : une affiche
+ * par année de sa décennie (`CaseVue.affiches`). La ficelle du compartiment de 1900 en pince cinq
+ * (`mondes/1900/ficelle.ts`, dont le test garde qu'elle tient sous ce nombre).
+ */
+export const AFFICHES_D_UN_MONDE = 10
+
+/**
+ * La borne des affiches décodées (plan 3b, décision 7 ; relevée avec la ficelle, idée 72). Elle ne
+ * vaut que pour ce qui n'est pas une image de monde. Elle tient au-dessus de ce qu'une seule image
+ * du moteur demande, colonnes et monde ensemble : dessous, chaque adresse évincerait une autre de
+ * la même image avant qu'elle ne soit chargée, et aucune ne serait jamais `complete`.
+ */
+export const BORNE_DES_AFFICHES = AFFICHES_DES_COLONNES + AFFICHES_D_UN_MONDE
 
 /**
  * Les images des mondes du registre et les images communes : **jamais évincées**, quel que soit le
