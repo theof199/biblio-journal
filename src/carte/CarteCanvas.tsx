@@ -12,39 +12,50 @@ export type Moteur = Pick<
 export type FabriqueMoteur = (canvas: HTMLCanvasElement, rappels: Rappels) => Moteur
 
 /**
- * Ce que la table garde d'affiches TMDB en plus des images des mondes : autant que le moteur garde
- * d'affiches traitées (`MoteurCarte`, `affiches`), une colonne n'en demandant que quatre.
+ * Les adresses des images des mondes et des images communes, telles que Vite les rend : le même
+ * motif que `mondes/<décennie>/images.ts` et `carte/images.ts`, donc les mêmes chaînes, en dev
+ * (`/src/…`), dans le build (`/journal/assets/…` hachées) comme inlinées en `data:`. C'est
+ * l'appartenance à cet ensemble qui dit « image de monde », jamais un préfixe : une affiche vient de
+ * l'API (`STORAGE_PUBLIC_URL`, qui peut être de la même origine) ou de TMDB.
  */
-export const MARGE_DES_AFFICHES = 48
+const ADRESSES_DES_MONDES: ReadonlySet<string> = new Set(
+  Object.values(import.meta.glob<string>(['../mondes/*/assets/*.{webp,png,webm}', './assets/*.{webp,png,webm}'], { query: '?url', import: 'default', eager: true })),
+)
 
 /**
- * La borne des images décodées (plan 3b, décision 7). Elle laisse en mémoire **toutes** les images
- * des mondes du registre et les images communes, et tient donc au-dessus de ce qu'une seule image
- * du moteur demande, vue d'ensemble comprise (ses dix photographies de gare à la fois) : sous ce
- * seuil, chaque adresse évincerait la précédente avant qu'elle soit chargée, et rien ne serait
- * jamais `complete`. Elle ne protège que des affiches des colonnes. Le calcul, au 7 octobre 2026 :
- * 24 images de mondes (22 en 1900, 2 en 1890, aucune commune), arrondies à 48 places pour que les
- * mondes à venir entrent sans y toucher, plus la marge des affiches. `CarteCanvas.test.ts` compte
- * les dossiers réels et refuse une borne qu'ils dépassent.
+ * La borne des affiches décodées (plan 3b, décision 7, et son tour de correction). Elle ne vaut que
+ * pour ce qui n'est pas une image de monde : les affiches des colonnes. Le calcul : autant que le
+ * moteur garde d'affiches traitées (`MoteurCarte`, `affiches`, 48 toiles), une affiche brute ne
+ * servant qu'à cuire sa toile ; une colonne n'en demande que quatre (`dessin/cases.ts`), si bien
+ * qu'une seule image du moteur, douze colonnes à l'écran, tient encore dessous.
  */
-export const BORNE_DES_IMAGES = 48 + MARGE_DES_AFFICHES
+export const BORNE_DES_AFFICHES = 48
 
-/** Les images décodées, la plus anciennement demandée sortant la première. */
-export const imagesDecodees = new Lru<string, HTMLImageElement>(BORNE_DES_IMAGES)
+/**
+ * Les images des mondes du registre et les images communes : **jamais évincées**, quel que soit le
+ * nombre d'affiches passées. Une photographie sortie rendrait `null` jusqu'à son `onload`, et la
+ * gare, le quai ou une bande de la vue d'ensemble sauterait un ou plusieurs rendus. La table est
+ * bornée par les dossiers eux-mêmes (`ADRESSES_DES_MONDES`).
+ */
+export const imagesDesMondes = new Map<string, HTMLImageElement>()
+
+/** Les affiches décodées, la plus anciennement demandée sortant la première. */
+export const affichesDecodees = new Lru<string, HTMLImageElement>(BORNE_DES_AFFICHES)
 
 /** Le vrai moteur, sur le vrai `<canvas>` : l'affiche se charge sans CORS, et ne se lit jamais. */
 export const fabriqueReelle: FabriqueMoteur = (canvas, rappels) =>
   new MoteurCarte(canvas, rappels, {
     creerToile: (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h }),
     image: (url, pret) => {
-      // `get` rafraîchit l'ancienneté : ce qui se redemande à chaque image ne sort jamais.
-      let img = imagesDecodees.get(url)
+      // `Lru.get` rafraîchit l'ancienneté : une affiche redemandée à chaque image ne sort pas.
+      const table = ADRESSES_DES_MONDES.has(url) ? imagesDesMondes : affichesDecodees
+      let img = table.get(url)
       if (!img) {
         img = new Image()
         img.decoding = 'async'
         img.onload = pret
         img.src = url
-        imagesDecodees.set(url, img)
+        table.set(url, img)
       }
       return img.complete && img.naturalWidth > 0 ? img : null
     },
