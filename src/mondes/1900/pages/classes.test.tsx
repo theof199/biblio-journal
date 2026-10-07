@@ -266,6 +266,23 @@ describe('le train du soir', () => {
     expect(envois).toBe(1)
   })
 
+  // Le jumeau : pendant l'envoi, le bouton d'action (commun, `Action`) se désactive. Mutations :
+  // `disabled` que `Action` ne poserait plus sur son bouton, ou que le train du soir ne lui passerait plus.
+  it('« Composer une séance » se désactive tant que l’envoi est en vol', async () => {
+    let repondre: () => void = () => undefined
+    monterVoyage('/voyage/1903', {
+      ...routes(VOYAGE, () => fiche({ seances: [], seance_en_cours: false })),
+      'POST /api/me/voyage/annees/1903/seances': () => new Promise<Response>((r) => (repondre = () => r(json({ code: 'VALIDATION', message: 'Pas ce soir.', retryable: false }, 400)))),
+    })
+    const soir = await leSoir()
+    const composer = within(soir).getByRole('button', { name: 'Composer une séance' })
+    expect(composer).toBeEnabled()
+    fireEvent.click(composer)
+    await waitFor(() => expect(composer).toBeDisabled())
+    await act(async () => repondre())
+    await waitFor(() => expect(within(soir).getByRole('button', { name: 'Composer une séance' })).toBeEnabled())
+  })
+
   // Le guet d'une composition s'arrête au plafond : l'affichette le dit à la place de « compose… », et
   // « Réessayer » le reprend sans recomposer (aucun appel au chroniqueur que le membre n'a pas
   // demandé). Sur le modèle du défaut (`Seance.test.tsx`). Mutations, dans `TrainDuSoir` : l'abandon

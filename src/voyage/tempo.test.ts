@@ -66,6 +66,8 @@ const AMBIANCE: Record<string, (selecteur: string) => boolean> = {
   '/src/mondes/1900/pages/Tete.module.css': (s) => /^\.tete\[data-vivante='oui'\] \.(trotteuse|lanterne|feu)$/.test(s),
   // La courroie 1900 : l'anneau qui tourne tant que l'indicateur se relit, en boucle.
   '/src/mondes/1900/pages/Courroie.module.css': (s) => s === ".courroie[data-vivante='oui'] .anneau",
+  // La fausse voiture d'un Hale's Tours : l'écran et les banquettes qui tanguent, le faisceau et l'écran qui scintillent, en boucle.
+  '/src/mondes/1900/pages/Hale.module.css': (s) => /^\.hale\[data-vivante='oui'\] \.(ecran|ecran::after|faisceau|banquettes)$/.test(s),
 }
 
 /** Le sélecteur de la règle où tombe la position `i`. */

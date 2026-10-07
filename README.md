@@ -445,10 +445,19 @@ Où vit quoi :
   attente a les mêmes portières, sans film à ouvrir. La séance est un **train du soir** (`TrainDuSoir`) :
   l'affichette « Train de plaisir », le long en voiture et le court en tête, l'anecdote du trajet, les
   quatre talons, le tampon « Prise » (le seul à bouger, jamais au calme), « Composer une séance » et les
-  séances passées ; la porte du wagon-restaurant de la maquette attend le lot À deux. **La nouvelle
-  salle, la ligne du bas, les feuillets et la feuille du chroniqueur gardent encore les composants par
-  défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, la scène d'un film, le
-  monument et le guichet sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.
+  séances passées ; la porte du wagon-restaurant de la maquette attend le lot À deux. **La fiche d'un
+  film** se regarde du fond d'un Hale's Tours (écran 5) : la fausse voiture (`Hale`, pour `projection`),
+  ses banquettes, et l'écran au bout de l'allée, qui porte la seule image que la page a chargée et
+  tangue, sauf au calme ; la notice (`NoticeDuFilm`) garde le titre, les réalisateurs et leurs liens
+  vers les Suivis, la raison, montre l'entrée d'un Hale's Tours (`hale`) et sa légende, et dit « Tes
+  séances » en une phrase (la date, la note, les réactions du dernier visionnage, jamais la remarque) ;
+  le guichet (`GuichetDuFilm`) rend les gestes que `Guichet` lui passe, « Composter une séance »
+  (`mots.billet.ouvrir`) et « Corriger » sur le bouton corail commun (`Action`). « Trois
+  photogrammes », le studio, le mois de sortie et le nombre de séances de la maquette n'y sont pas :
+  aucune donnée ne les porte sans une lecture de plus. **La nouvelle salle, la ligne du bas, les
+  feuillets, la feuille du chroniqueur, le programme d'un film et ses bobines gardent encore les
+  composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, le monument et
+  le guichet de la décennie sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
 `generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`,

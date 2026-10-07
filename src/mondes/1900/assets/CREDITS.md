@@ -172,3 +172,10 @@ Aucun fondu n’y est cuit : le dessin le pose (`docs/maquettes/voyage-immobile-
 - Source : https://commons.wikimedia.org/wiki/File:Foix_,_dans_le_train_%C3%A0_Montgaillard_-_Fonds_Trutat_-_MHNT.PHa.912.A084.jpg
 - Licence : domaine public, selon la page du fichier : PD-old-100-expired (Trutat mort en 1910) ; Public Domain Mark 1.0. Page relue le 7 octobre 2026, par l’API de Wikimedia Commons.
 - Traitement : préparée pour la maquette (recadrée, réduite, virée et coloriée), 700 × 536, extraite à l’octet près de sa variable `--i-fenetre-train` (l. 1435). Elle sert de tête à la voiture d'une salle (pages 1900, brief 3).
+
+## `hale.webp`
+
+- Œuvre : l’entrée d’un Hale’s Tours of the World, sous l’enseigne « Trains every 10 minutes » ; auteur inconnu. Illustration d’un article de *The Moving Picture World*, juillet 1916 ; la prise de vue peut être antérieure, rien ne le dit.
+- Source : https://commons.wikimedia.org/wiki/File:Hale%27s_Tours_of_the_World.jpg
+- Licence : domaine public, selon la page du fichier : « Public domain » (publié aux États-Unis en 1916 ; la page donne l’Internet Archive pour origine). Page relue le 7 octobre 2026, par l’API de Wikimedia Commons.
+- Traitement : préparée pour la maquette (réduite de 1 075 × 1 429, virée en sépia), 520 × 691, extraite à l’octet près de sa variable `--i-hale` (l. 1436). Elle sert de vignette à la fiche d’un film (pages 1900, brief 5).

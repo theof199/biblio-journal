@@ -645,10 +645,10 @@ describe('rien ne bouge au calme dans les feuilles des pages 1900', () => {
   // aucune règle, passerait sans rien garder. Mutations : le glob ramené à `./Tete.module.css` ;
   // l'expression ramenée à `transition` seule.
   it('trouve les feuilles, celles qui animent comme celles qui n’animent rien, et lit leurs règles', () => {
-    expect(Object.keys(FEUILLES)).toEqual(expect.arrayContaining(['./Tete.module.css', './Indicateur.module.css', './Courroie.module.css', './Soir.module.css', './Guide.module.css', './VoieFermee.module.css', './Voies.module.css', './Classes.module.css', './Rubrique.module.css']))
+    expect(Object.keys(FEUILLES)).toEqual(expect.arrayContaining(['./Tete.module.css', './Indicateur.module.css', './Courroie.module.css', './Soir.module.css', './Guide.module.css', './VoieFermee.module.css', './Voies.module.css', './Classes.module.css', './Rubrique.module.css', './Hale.module.css', './Action.module.css']))
     for (const css of Object.values(FEUILLES)) expect(css.length).toBeGreaterThan(200)
     const compte = (nom: string) => quiBougent(FEUILLES[`./${nom}`]!).length
-    expect([compte('Tete.module.css') > 4, compte('Indicateur.module.css') > 2, compte('Courroie.module.css') > 0, compte('Soir.module.css') > 0]).toEqual([true, true, true, true])
+    expect([compte('Tete.module.css') > 4, compte('Indicateur.module.css') > 2, compte('Courroie.module.css') > 0, compte('Soir.module.css') > 0, compte('Hale.module.css') > 3]).toEqual([true, true, true, true, true])
   })
 
   // Mutations : `.plaque { animation: eclat 1s }` hors racine vivante dans `Guide.module.css` ;

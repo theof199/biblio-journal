@@ -1,5 +1,5 @@
 /* Le train du soir : la séance d'une gare (maquette « Voyage immobile 1900 » : `.plaisir`, `.partie`,
-   `.entracte`, `.talons`, `.pris`, `.passes`, `.bout-action`). Les couleurs et les polices viennent
+   `.entracte`, `.talons`, `.pris`, `.passes` ; le bouton d'action est commun, `Action`). Les couleurs et les polices viennent
    des jetons du monde ; seul le tampon bouge, sous `data-vivante='oui'`, au tempo (`--tempo`, posé
    par la racine). */
 .plaisir {
@@ -141,7 +141,6 @@
 }
 
 .talon:focus-visible,
-.action:focus-visible,
 .vu:focus-visible,
 .passees summary:focus-visible {
   outline: 2px solid var(--m-or2);
@@ -202,26 +201,6 @@
 .plaisir .message {
   margin-inline: 0;
   color: var(--m-rouge);
-}
-
-/* « Composer une séance » : le bouton d'action de la maquette. */
-.action {
-  display: grid;
-  place-items: center;
-  width: calc(100% - 32px);
-  min-height: 52px;
-  margin: 0 16px;
-  border: 0;
-  border-radius: 3px;
-  background: var(--corail);
-  color: var(--m-encre);
-  font: 700 16px var(--m-f-capitales);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.action:disabled {
-  opacity: 0.6;
 }
 
 .passees {

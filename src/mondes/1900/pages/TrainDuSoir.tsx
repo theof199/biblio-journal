@@ -6,6 +6,7 @@ import { etiquetteEtat } from '../../../voyage/salles'
 import { billetDuMorceau, ligneDeSeancePassee } from '../../../voyage/seance'
 import type { PropsProspectus } from '../../../voyage/seance/Prospectus'
 import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
+import Action from './Action'
 import { MOTS_DU_SOIR } from './classes'
 import Rubrique from './Rubrique'
 import { MOTS_DES_VOIES } from './voies'
@@ -32,9 +33,9 @@ export default function TrainDuSoir({ monde, annee, zone, carte, passees, compos
 
       {zone === 'bouton' ? (
         <>
-          <button type="button" className={styles.action} onClick={composer.lancer} disabled={composer.occupe}>
+          <Action onClick={composer.lancer} disabled={composer.occupe}>
             {MOTS_DU_SOIR.composer}
-          </button>
+          </Action>
           {composer.erreur ? (
             <p role="alert" className={styles.message}>
               {composer.erreur}

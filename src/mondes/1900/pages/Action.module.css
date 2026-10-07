@@ -1,0 +1,39 @@
+/* Le bouton d'action des pages 1900 (maquette « Voyage immobile 1900 » : `.bout-action`) : le corail,
+   commun à tous les mondes et jamais teinté ; le mot en capitales, sa précision en italique. Rien n'y
+   bouge. */
+.action {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: calc(100% - 32px);
+  min-height: 52px;
+  margin: 0 16px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--corail);
+  color: var(--m-encre);
+  font: 700 16px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.action small {
+  display: block;
+  font: italic 400 13px var(--m-f-texte);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}

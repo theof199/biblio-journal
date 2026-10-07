@@ -4,8 +4,11 @@ import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
 import Courroie from './pages/Courroie'
 import Gare from './pages/Gare'
+import GuichetDuFilm from './pages/GuichetDuFilm'
 import Guide from './pages/Guide'
+import Hale from './pages/Hale'
 import Indicateur from './pages/Indicateur'
+import NoticeDuFilm from './pages/NoticeDuFilm'
 import SousLaTete from './pages/SousLaTete'
 import Tete from './pages/Tete'
 import TrainDuSoir from './pages/TrainDuSoir'
@@ -85,10 +88,29 @@ export const PAGES_1900: HabillagePages = {
   // celle du programme, la courroie celle de la manivelle dessinée ; les salles sont des voies de
   // correspondance, et une salle ouverte, une voiture. La gare range ses sections : l'indicateur
   // passe au-dessus du guide. Le podium est une voiture à trois portières, la séance un train du soir.
-  gabarits: { teteDAnnee: Tete, fronton: SousLaTete, anneeFermee: VoieFermee, corde: Compteur, boniment: Guide, programme: Indicateur, tirette: Courroie, salles: Correspondances, salle: Voie, ordreDAnnee: Gare, parade: Classes, seance: TrainDuSoir },
+  // La fiche d'un film se regarde du fond d'un Hale's Tours : la fausse voiture tient la place de la
+  // projection, la notice et le guichet sont ceux de l'écran 5.
+  gabarits: {
+    teteDAnnee: Tete,
+    fronton: SousLaTete,
+    anneeFermee: VoieFermee,
+    corde: Compteur,
+    boniment: Guide,
+    programme: Indicateur,
+    tirette: Courroie,
+    salles: Correspondances,
+    salle: Voie,
+    ordreDAnnee: Gare,
+    parade: Classes,
+    seance: TrainDuSoir,
+    projection: Hale,
+    noticeDuFilm: NoticeDuFilm,
+    guichetDuFilm: GuichetDuFilm,
+  },
   hauteurs: { bandeau: 230, scene: 240, estrade: 150, monument: 240, guichet: 140 },
   // La tête de la fiche d'année est un gabarit : cette toile ne se peint plus sur sa page.
   dessinerBandeau: unie,
+  // La projection de la fiche d'un film aussi (`Hale`).
   dessinerScene: unie,
   // L'estrade du chroniqueur, que la maquette ne dessine pas : un fond uni (plan des pages 1900, décision 9).
   dessinerEstrade: unie,

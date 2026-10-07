@@ -1,0 +1,334 @@
+/* La séance Hale's Tours, la fiche d'un film des années 1900 (maquette « Voyage immobile 1900 »,
+   écran 5 : `.hale`, `.ecran`, `.caisse`, `.banquettes`, `.faisceau`, `.fiche-t`, `.fiche-meta`,
+   `.entree-hale`, `.txt`). Les couleurs et les polices viennent des jetons du monde. Ne bougent que
+   l'écran, les banquettes et le faisceau, sous `data-vivante='oui'` : des boucles d'ambiance, et
+   l'écran qui s'allume à l'arrivée, au tempo (`--tempo`, posé par la racine). */
+.hale {
+  position: relative;
+  height: 330px;
+  overflow: hidden;
+  background: var(--m-fond);
+}
+
+/* L'écran au bout de l'allée : blanc de lumière tant que l'image manque. */
+.ecran {
+  position: absolute;
+  top: 16%;
+  right: 17%;
+  left: 17%;
+  height: 46%;
+  background-color: color-mix(in srgb, var(--m-papier) 82%, var(--m-fond));
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 0 40px color-mix(in srgb, var(--m-papier) 25%, transparent);
+}
+
+.ecran::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(color-mix(in srgb, var(--m-papier) 5%, transparent), color-mix(in srgb, var(--m-fond) 30%, transparent));
+}
+
+/* La caisse : les deux parois, le plafond et le plancher, puis le cadre de l'écran. */
+.caisse {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--m-velours) 50%, var(--m-fond)) 0 12%,
+      transparent 12% 88%,
+      color-mix(in srgb, var(--m-velours) 50%, var(--m-fond)) 88%
+    ),
+    linear-gradient(
+      color-mix(in srgb, var(--m-velours) 30%, var(--m-fond)) 0 12%,
+      transparent 12% 66%,
+      color-mix(in srgb, var(--m-velours) 15%, var(--m-fond)) 66%
+    );
+}
+
+.caisse::before {
+  content: '';
+  position: absolute;
+  top: 12%;
+  right: 12%;
+  bottom: 34%;
+  left: 12%;
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--m-velours) 75%, var(--m-fond)),
+    inset 0 0 50px var(--m-ombre);
+}
+
+/* Les banquettes : trois dossiers, trois têtes de dos, le cuir du premier rang. */
+.banquettes {
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  left: -6px;
+  height: 36%;
+  transform-origin: 50% 100%;
+  background:
+    radial-gradient(ellipse 90px 26px at 20% 30%, var(--m-fond) 60%, transparent 62%),
+    radial-gradient(ellipse 90px 26px at 50% 34%, var(--m-fond) 60%, transparent 62%),
+    radial-gradient(ellipse 90px 26px at 80% 30%, var(--m-fond) 60%, transparent 62%),
+    radial-gradient(ellipse 22px 26px at 20% 8%, var(--m-fond) 60%, transparent 62%),
+    radial-gradient(ellipse 20px 24px at 50% 12%, var(--m-fond) 60%, transparent 62%),
+    radial-gradient(ellipse 22px 26px at 80% 8%, var(--m-fond) 60%, transparent 62%),
+    linear-gradient(transparent 40%, var(--m-velours) 40%, color-mix(in srgb, var(--m-velours) 55%, var(--m-fond)));
+}
+
+.faisceau {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-top: 240px solid color-mix(in srgb, var(--m-papier) 6%, transparent);
+  border-right: 150px solid transparent;
+  border-left: 150px solid transparent;
+  transform: translateX(-50%);
+  filter: blur(6px);
+}
+
+/* Ce qui bouge, jamais au calme : l'écran tangue et s'allume, les voyageurs penchent à contretemps,
+   le faisceau et l'écran scintillent. */
+.hale[data-vivante='oui'] .ecran {
+  animation:
+    tangue 1.9s ease-in-out infinite alternate,
+    allume calc(1800ms * var(--tempo)) ease-out backwards;
+}
+
+.hale[data-vivante='oui'] .ecran::after {
+  animation: scintille 1.1s steps(5) infinite reverse;
+}
+
+.hale[data-vivante='oui'] .faisceau {
+  animation: scintille 1.7s steps(6) infinite;
+}
+
+.hale[data-vivante='oui'] .banquettes {
+  animation: tangueBanquettes 1.9s ease-in-out infinite alternate;
+}
+
+@keyframes tangue {
+  from {
+    transform: translateY(-1.5px) rotate(-0.35deg);
+  }
+
+  to {
+    transform: translateY(1.5px) rotate(0.35deg);
+  }
+}
+
+@keyframes tangueBanquettes {
+  from {
+    transform: translateX(2px) rotate(0.3deg);
+  }
+
+  to {
+    transform: translateX(-2px) rotate(-0.3deg);
+  }
+}
+
+@keyframes scintille {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  20% {
+    opacity: 0.8;
+  }
+
+  45% {
+    opacity: 0.95;
+  }
+
+  70% {
+    opacity: 0.72;
+  }
+}
+
+@keyframes allume {
+  from {
+    opacity: 0;
+  }
+}
+
+/* La notice : la voiture, le titre en capitales, les réalisateurs en laiton. */
+.notice {
+  padding-bottom: 30px;
+}
+
+.voiture {
+  margin: 14px 16px 0;
+  font: 600 12px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-pale);
+}
+
+.titre {
+  margin: 6px 16px 0;
+  font: 700 34px/1 var(--m-f-capitales);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--m-papier);
+}
+
+.original {
+  margin: 6px 16px 0;
+  font: italic 17px/1.3 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  align-items: baseline;
+  margin: 6px 16px 0;
+  font: 15px/1.45 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.meta b {
+  font-weight: 600;
+  color: var(--m-or);
+}
+
+/* Le réalisateur, un lien : porté à la cible tactile par sa hauteur. */
+.real {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--m-or);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.raison {
+  margin: 10px 16px 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--m-or);
+  font: italic 16px/1.45 var(--m-f-texte);
+  color: var(--m-papier);
+}
+
+/* La vignette de l'entrée d'un Hale's Tours, et sa légende. */
+.entree {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin: 0 14px;
+}
+
+.entree img {
+  display: block;
+  width: 100%;
+  height: auto;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-papier) 20%, transparent);
+}
+
+.entree figcaption {
+  font: 14px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.entree b,
+.txt b {
+  font-weight: 600;
+  color: var(--m-papier);
+}
+
+.txt {
+  margin: 0 16px;
+  font: 15.5px/1.55 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.bobines {
+  margin: 0 16px;
+}
+
+/* Le guichet : le bouton corail est commun (`Action`) ; la plaque, le filet, le texte discret. */
+.guichet {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.plaque,
+.filet {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  margin: 0 16px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  font: 600 14px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.plaque {
+  border: 0;
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--m-papier) 40%, transparent);
+}
+
+.filet {
+  border: 1px solid var(--m-filet);
+  background: color-mix(in srgb, var(--m-fond) 55%, transparent);
+  color: var(--m-or2);
+}
+
+.discret {
+  min-height: 44px;
+  margin: 0 16px;
+  border: 0;
+  background: none;
+  font: italic 15px var(--m-f-texte);
+  color: var(--m-pale);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.filet:disabled,
+.discret:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.real:focus-visible,
+.plaque:focus-visible,
+.filet:focus-visible,
+.discret:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.demande {
+  margin: 0;
+  text-align: center;
+  font: 600 12px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-pale);
+}
+
+.refus {
+  margin: 0 16px;
+  font: italic 15px/1.4 var(--m-f-texte);
+  color: var(--m-or2);
+}
