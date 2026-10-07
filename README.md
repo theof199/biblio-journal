@@ -379,7 +379,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Dix clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Douze clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -397,7 +397,11 @@ Où vit quoi :
   gestes qui la déplient et la replient. La dixième, `ordreDAnnee` (`voyage/annee/Ordre.tsx`), range
   les sections d'une fiche prête : elle les reçoit montées (la corde avec sa région d'état, le
   boniment, le programme, la parade, la séance, les salles, la ligne du bas) et n'en compose ni n'en
-  omet aucune. 1890 et le monde « à venir » n'en fournissent aucune.
+  omet aucune. Enfin `parade` (le podium, `voyage/parade/Marches.tsx`, que `voyage/parade/Parade.tsx`
+  lit : il garde le feuillet d'une marche, les écritures et leur garde, et passe les deux gestes,
+  ouvrir le feuillet et vider) et `seance` (la séance du soir, `voyage/seance/Prospectus.tsx`, que
+  `voyage/seance/Seance.tsx` lit : il garde composer, prendre, ignorer, leur verrou, le guet et le
+  feuillet des remplacements) ; aucun monde ne remplit encore ces deux-là. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du

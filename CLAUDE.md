@@ -51,7 +51,7 @@ la page monte à sa place par `gabaritDe` (`src/voyage/gabarit.ts`). Sans gabari
 1890 et le monde « à venir » n'en ont aucun. La page garde les lectures, les mutations, les calques,
 le retour d'un billet, les fêtes et la navigation : un gabarit ne lit jamais l'API. **Une clé s'ajoute
 dans la tâche qui la remplit**, jamais d'avance, avec le test de page qui prouve que le défaut reste.
-Dix clés à ce jour (`anneeFermee`, `teteDAnnee`, `fronton`, `corde`, `boniment`, `programme`, `tirette`, `salles`, `salle`, `ordreDAnnee`), que seul 1900 remplit (`docs/cerveau/pages-1900.md`).
+Douze clés à ce jour (`anneeFermee`, `teteDAnnee`, `fronton`, `corde`, `boniment`, `programme`, `tirette`, `salles`, `salle`, `ordreDAnnee`, `parade`, `seance`), que seul 1900 remplit, sauf les deux dernières, que personne ne remplit encore (`docs/cerveau/pages-1900.md`).
 Les composants et les feuilles d'un monde vivent dans son dossier, où `habillage.test.ts` et
 `src/voyage/tempo.test.ts` les balaient tous : aucune durée en dur dans une feuille de monde, sauf
 déclarée dans `AMBIANCE` du second.

@@ -13,8 +13,10 @@ import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
+import type { PropsMarches } from '../voyage/parade/Marches'
 import type { PropsRayons } from '../voyage/salles/Rayons'
 import type { PropsSalle } from '../voyage/salles/Salle'
+import type { PropsProspectus } from '../voyage/seance/Prospectus'
 
 /**
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
@@ -693,6 +695,19 @@ export interface GabaritsDesPages {
    * monde qui le remplit les range autrement, sans en composer ni en omettre aucune.
    */
   ordreDAnnee: ComponentType<PropsOrdreDAnnee>
+  /**
+   * Le podium d'une année (`voyage/parade/Marches.tsx`), sur une fiche prête comme sur une année en
+   * attente. Lu par `voyage/parade/Parade.tsx`, qui garde le feuillet d'une marche (le calque
+   * `marche` de l'adresse) et les écritures, et lui passe les deux gestes : ouvrir le feuillet, vider.
+   */
+  parade: ComponentType<PropsMarches>
+  /**
+   * La séance du soir (`voyage/seance/Prospectus.tsx`) : composer, la composition en cours, la séance
+   * et ses quatre talons, les séances passées. Lue par `voyage/seance/Seance.tsx`, qui garde les
+   * écritures et leur verrou, le guet et le feuillet des remplacements. La page ne la monte qu'au
+   * compte IA, sur l'année en cours.
+   */
+  seance: ComponentType<PropsProspectus>
 }
 
 export interface HabillagePages {

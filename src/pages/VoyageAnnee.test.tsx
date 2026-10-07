@@ -17,14 +17,16 @@ import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import { confierLeRetour, oublierLeRetour } from '../voyage/annee/retour'
+import type { PropsMarches } from '../voyage/parade/Marches'
 import type { PropsRayons } from '../voyage/salles/Rayons'
 import type { PropsSalle } from '../voyage/salles/Salle'
+import type { PropsProspectus } from '../voyage/seance/Prospectus'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
 import { visionnage } from '../test/journal'
 import { SESSION, monterVoyage } from '../test/pageVoyage'
 import { json } from '../test/serveur'
-import { ficheEnAttente, fichePrete, ficheVerrouillee, filmDeSalle, salle, voyage1890 } from '../test/voyage'
+import { ficheEnAttente, fichePrete, ficheVerrouillee, filmDeSalle, morceau, salle, seance, voyage1890 } from '../test/voyage'
 
 const SOURCE_ID = '22222222-2222-4222-8222-222222222222'
 const VOYAGE = voyage1890(
@@ -1422,6 +1424,154 @@ describe('la fiche d’une année', () => {
         // À l'envers, section par section ; la région d'état suit la corde, dans la même section.
         const [corde, etat, ...suite] = rangs()
         expect(croissants([...suite.reverse(), corde!, etat!])).toBe(true)
+      })
+    })
+
+    // Plan des pages 1900, brief 4 : le podium et la séance du soir sont deux sections de plus. Le
+    // défaut reste sans gabarit : tout `Parade.test.tsx` et tout `Seance.test.tsx` le tiennent pour
+    // 1890 sans avoir été retouchés.
+    describe('le podium et la séance du soir', () => {
+      const FILM = filmDeSalle({ id: 'f-long', tmdb_id: 963, title: 'Un long de la salle', etat: 'a_demander' })
+      const SALLES = [salle({ id: 's-une', rang: 1, nom: 'La première', films: [FILM] })]
+      const PROPOSEE = seance({ id: 'se-2', rang: 2, long: morceau(FILM) })
+      const PASSEE = seance({ id: 'se-1', rang: 1, long: morceau(FILM), statut: 'ignoree' })
+      const KANE = { place: 1, tmdb_id: 15, programme_id: null, title: 'Citizen Kane', cover_url: null, backdrop_url: null }
+      const fiche = (s: Partial<FichePrete> = {}) => () => json(nue({ salles: SALLES, podium: [KANE, null, null], seances: [PROPOSEE, PASSEE], seance_en_cours: false, ...s }))
+      function preterLesDeux() {
+        const recues: { parade: PropsMarches[]; seance: PropsProspectus[] } = { parade: [], seance: [] }
+        const geste = (nom: string, f: () => void) => (
+          <button type="button" onClick={f}>
+            {nom}
+          </button>
+        )
+        const avant = PAGES_1890.gabarits
+        PAGES_1890.gabarits = {
+          parade: (p: PropsMarches) => (
+            recues.parade.push(p),
+            (
+              <section aria-label="Le podium du monde">
+                {geste('Ouvrir la 2, au monde', () => p.onOuvrir(2))}
+                {geste('Vider la 1, au monde', () => p.onVider(1))}
+                {p.erreur}
+              </section>
+            )
+          ),
+          seance: (p: PropsProspectus) => (
+            recues.seance.push(p),
+            (
+              <section aria-label="La séance du monde">
+                {geste('Composer, au monde', p.composer.lancer)}
+                {geste('Prendre, au monde', p.talons.prendre)}
+                {geste('Ignorer, au monde', p.talons.ignorer)}
+                {geste('Autre long, au monde', p.talons.autreLong)}
+                {geste('Autre court, au monde', p.talons.autreCourt)}
+                {p.composer.erreur}
+              </section>
+            )
+          ),
+        }
+        remettre = () => void (PAGES_1890.gabarits = avant)
+        return { derniere: <C extends 'parade' | 'seance'>(cle: C) => recues[cle][recues[cle].length - 1]! as (typeof recues)[C][number] }
+      }
+
+      // Mutations, dans `Parade` : `Marches` monté sans passer par `gabaritDe` ; la place ignorée par
+      // `onOuvrir` ou par `onVider` ; la garde de l'envoi retirée d'`useEcriture` ; `erreur` non passée.
+      it('monte le podium du monde, qui reçoit le podium, les salles et les deux gestes ; le feuillet et l’écriture restent à la page', async () => {
+        const { derniere } = preterLesDeux()
+        let videe = 0
+        let repondre: () => void = () => undefined
+        monterVoyage('/voyage/1897', {
+          ...ROUTES,
+          'GET /api/me/voyage/annees/1897': fiche(),
+          [JOURNAL(1897)]: journal([]),
+          'DELETE /api/me/voyage/annees/1897/podium/1': () => {
+            videe += 1
+            return new Promise<Response>((r) => (repondre = () => r(json({ code: 'VALIDATION', message: 'Cette marche ne se vide pas.', retryable: false }, 400))))
+          },
+        })
+        const podium = await screen.findByRole('region', { name: 'Le podium du monde' })
+        expect(screen.queryByRole('region', { name: 'La parade, le podium' })).toBeNull()
+        const p = derniere('parade')
+        expect({ decennie: p.monde.decennie, annee: p.annee, podium: p.podium.map((x) => x?.title ?? null), salles: p.salles.map((s) => s.id), erreur: p.erreur }).toEqual({ decennie: 1890, annee: 1897, podium: ['Citizen Kane', null, null], salles: ['s-une'], erreur: null })
+        // Vider, deux fois pendant l'envoi : une seule écriture, et son refus revient au podium du monde.
+        fireEvent.click(within(podium).getByRole('button', { name: 'Vider la 1, au monde' }))
+        fireEvent.click(within(podium).getByRole('button', { name: 'Vider la 1, au monde' }))
+        await waitFor(() => expect(videe).toBe(1))
+        await act(async () => repondre())
+        expect(await within(podium).findByText('Cette marche ne se vide pas.')).toBeInTheDocument()
+        expect(videe).toBe(1)
+        // Ouvrir : le feuillet de la marche, que la page tient dans l'adresse.
+        fireEvent.click(within(podium).getByRole('button', { name: 'Ouvrir la 2, au monde' }))
+        expect(await screen.findByRole('dialog', { name: 'Marche 2' })).toBeInTheDocument()
+      })
+
+      // Mutations, dans `Seance` : `Prospectus` monté sans passer par `gabaritDe` ; le verrou retiré
+      // d'`agir` ; « Autre long » qui ouvrirait le court ; `passees` ou `carte` non passés.
+      it('monte la séance du monde, qui reçoit la séance et ses talons ; deux « Prendre » n’en envoient qu’un, et le feuillet reste à la page', async () => {
+        const { derniere } = preterLesDeux()
+        let envois = 0
+        const PRISE = { ...PROPOSEE, statut: 'prise' as const }
+        monterVoyage('/voyage/1897', {
+          ...ROUTES,
+          'GET /api/me/voyage/annees/1897': () => fiche({ seances: [envois > 0 ? PRISE : PROPOSEE, PASSEE] })(),
+          'POST /api/me/voyage/seances/se-2/prendre': () => ((envois += 1), json({ seance: PRISE })),
+        })
+        const zone = await screen.findByRole('region', { name: 'La séance du monde' })
+        expect(screen.queryByRole('region', { name: `${PAGES_1890.mots.seance.titre} ${PAGES_1890.mots.seance.sous}` })).toBeNull()
+        const s = derniere('seance')
+        expect({ decennie: s.monde.decennie, annee: s.annee, zone: s.zone, carte: s.carte?.id, passees: s.passees.map((x) => x.id), frappe: s.talons.frappe, erreur: s.talons.erreur, occupe: s.composer.occupe }).toEqual({
+          decennie: 1890,
+          annee: 1897,
+          zone: 'proposee',
+          carte: 'se-2',
+          passees: ['se-1'],
+          frappe: false,
+          erreur: null,
+          occupe: false,
+        })
+        fireEvent.click(within(zone).getByRole('button', { name: 'Autre long, au monde' }))
+        fireEvent.click(within(await screen.findByRole('dialog', { name: 'Un autre long' })).getByRole('button', { name: 'Fermer' }))
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+        fireEvent.click(within(zone).getByRole('button', { name: 'Prendre, au monde' }))
+        fireEvent.click(within(zone).getByRole('button', { name: 'Prendre, au monde' }))
+        await waitFor(() => expect([derniere('seance').zone, derniere('seance').talons.frappe]).toEqual(['prise', true]))
+        expect(envois).toBe(1)
+      })
+
+      // Le jumeau : « Composer », gardé lui aussi, et son échec rendu à la section du monde.
+      // Mutations, dans `Seance` : le verrou retiré de `lancer` ; `composer.erreur` non passée.
+      it('deux « Composer » du monde n’en envoient qu’un, et le refus lui revient', async () => {
+        preterLesDeux()
+        let envois = 0
+        let repondre: () => void = () => undefined
+        monterVoyage('/voyage/1897', {
+          ...ROUTES,
+          'GET /api/me/voyage/annees/1897': fiche({ seances: [] }),
+          'POST /api/me/voyage/annees/1897/seances': () => {
+            envois += 1
+            return new Promise<Response>((r) => (repondre = () => r(json({ code: 'VALIDATION', message: 'Pas ce soir.', retryable: false }, 400))))
+          },
+        })
+        const zone = await screen.findByRole('region', { name: 'La séance du monde' })
+        fireEvent.click(within(zone).getByRole('button', { name: 'Composer, au monde' }))
+        fireEvent.click(within(zone).getByRole('button', { name: 'Composer, au monde' }))
+        await waitFor(() => expect(envois).toBe(1))
+        await act(async () => repondre())
+        expect(await within(zone).findByText('Pas ce soir.')).toBeInTheDocument()
+        expect(envois).toBe(1)
+      })
+
+      // La page décide seule qui a une séance : le gabarit ne la reçoit ni hors IA, ni sur une année
+      // bouclée. Mutations, dans la page : `v.ia` ou `enCours` retiré de la garde.
+      it('ne monte la séance du monde ni hors IA, ni sur une année derrière soi', async () => {
+        preterLesDeux()
+        const horsIa = monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage': () => json({ ...VOYAGE, ia: false, source: { id: SOURCE_ID, pseudo: 'theo', annee_en_cours: 1897 } }), 'GET /api/me/voyage/annees/1897': fiche() })
+        await screen.findByRole('region', { name: 'Le podium du monde' })
+        expect(screen.queryByRole('region', { name: 'La séance du monde' })).toBeNull()
+        horsIa.unmount()
+        monterVoyage('/voyage/1895', { ...ROUTES, 'GET /api/me/voyage/annees/1895': fiche({ annee: 1895 }) })
+        await screen.findByRole('region', { name: 'Le podium du monde' })
+        expect(screen.queryByRole('region', { name: 'La séance du monde' })).toBeNull()
       })
     })
   })

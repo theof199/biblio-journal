@@ -1,4 +1,4 @@
-import type { CorpsRemplacement, EtatFilm, Salle, Seance } from '../api/voyage'
+import type { CorpsRemplacement, EtatFilm, FilmSeance, Salle, Seance } from '../api/voyage'
 
 /**
  * La séance d'une année (plan 2b), sans rendu. Portée de `SeanceEtats.kt` (`biblio-android`,
@@ -91,3 +91,12 @@ export function zoneSeance(enCours: boolean, seances: readonly Seance[]): ZoneSe
   if (!r || r.statut === 'ignoree' || terminee(r)) return 'bouton'
   return r.statut === 'proposee' ? 'proposee' : 'prise'
 }
+
+/** Le billet d'un morceau : celui de sa bobine quand le court est une bobine précise du programme. */
+export const billetDuMorceau = (annee: number, f: FilmSeance): string => `/voyage/${annee}/films/${f.film_id}/billet${f.bobine ? `?bobine=${f.bobine.tmdb_id}` : ''}`
+
+const JOUR = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+
+/** Une séance passée, en une ligne : le long et la date ; une séance prise dont le long est vu dit « vue ». */
+export const ligneDeSeancePassee = (s: Seance): string => `${s.long.title} · ${JOUR.format(new Date(s.composee_le))}${s.statut === 'prise' && s.long.etat === 'vu' ? ' · vue' : ''}`
+

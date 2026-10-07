@@ -1,21 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
 import { journalDesAnnees } from '../../api/journal'
 import { poserSurLePodium, viderLaMarche, type Marche, type Podium, type Salle } from '../../api/voyage'
-import { APPUI_LONG_MS } from '../../carte/geste'
 import type { Monde } from '../../mondes/types'
 import Panne from '../../ui/Panne'
 import { useCalque } from '../calque'
 import Feuillet from '../Feuillet'
+import { gabaritDe } from '../gabarit'
 import { candidats, corpsPodium, lignesDeLaMarche, type Candidat } from '../podium'
+import Marches from './Marches'
 import styles from './Parade.module.css'
 
 const PLACES = [1, 2, 3] as const
-
-/** Le traitement des affiches du monde, par `filter` CSS : jamais une lecture de pixels. */
-const TRAITEMENT = { sepia: styles.sepia, gris: styles.gris, couleur: '' } as const
 
 const messageDe = (e: unknown) => (e instanceof ApiError ? e.message : 'Le podium n’a pas pu s’écrire. Réessaie.')
 
@@ -34,42 +32,28 @@ interface Props {
 }
 
 /**
- * La parade (maquette 1890 : `parade`, styles 150 à 165) : le podium de l'année, trois marches sous
- * deux projecteurs (2, 1, 3 à l'écran). Toucher une marche ouvre son feuillet dans l'adresse
- * (`?marche=<place>`) ; un appui long sur une marche occupée la vide. Chaque écriture relit la fiche
- * et la carte (l'affiche du n°1), et deux touchers rapprochés n'écrivent qu'une fois.
+ * La parade : le podium de l'année. Le dessin des trois marches est une section que le monde peut
+ * composer (`gabarits.parade` ; le défaut : `Marches`). Ce qui écrit reste ici : le feuillet d'une
+ * marche dans l'adresse (`?marche=<place>`), et l'écriture sans feuillet, qui vide. Chaque écriture
+ * relit la fiche et la carte (l'affiche du n°1), et deux touchers rapprochés n'écrivent qu'une fois.
  */
 export default function Parade({ monde, annee, podium, salles }: Props) {
   const feuillet = useCalque('marche')
   const ouverte = PLACES.find((p) => String(p) === feuillet.valeur) ?? null
-  const m = monde.pages.mots
+  const LePodium = gabaritDe(monde, 'parade', Marches)
 
-  // L'appui long : vider sans feuillet. `isPending` ne se voit qu'au rendu suivant : la garde.
+  // Vider sans feuillet. `isPending` ne se voit qu'au rendu suivant : la garde.
   const vider = useEcriture(annee)
 
   return (
-    <section aria-label={`${m.parade.titre}, ${m.parade.sous}`}>
-      <p className={styles.titreSec}>
-        {m.parade.titre} <small>{m.parade.sous}</small>
-      </p>
-      <div className={`${styles.parade} ${TRAITEMENT[monde.traitement.affiches]}`}>
-        {PLACES.map((place) => (
-          <MarcheDuPodium key={place} place={place} marche={podium[place - 1] ?? null} onOuvrir={() => feuillet.ouvrir(String(place))} onVider={() => vider.envoyer({ place, candidat: null })} />
-        ))}
-      </div>
-      <p className={styles.aide}>Toucher une marche pour y poser un film · appui long pour la vider</p>
-      {vider.erreur ? (
-        <p role="alert" className={styles.message}>
-          {vider.erreur}
-        </p>
-      ) : null}
-
+    <>
+      <LePodium monde={monde} annee={annee} podium={podium} salles={salles} onOuvrir={(place) => feuillet.ouvrir(String(place))} onVider={(place) => vider.envoyer({ place, candidat: null })} erreur={vider.erreur} />
       {ouverte !== null ? (
         <Feuillet monde={monde} titre={`Marche ${ouverte}`} onFermer={feuillet.fermer}>
           <ChoixDeLaMarche annee={annee} place={ouverte} marche={podium[ouverte - 1] ?? null} salles={salles} onFermer={feuillet.fermer} />
         </Feuillet>
       ) : null}
-    </section>
+    </>
   )
 }
 
@@ -98,73 +82,6 @@ function useEcriture(annee: number) {
     ecrire.mutate(e, { onSuccess: apres, onSettled: () => void (envoi.current = false) })
   }
   return { envoyer, occupe: ecrire.isPending, erreur: ecrire.error ? messageDe(ecrire.error) : null }
-}
-
-interface PropsMarche {
-  place: number
-  marche: Marche | null
-  onOuvrir: () => void
-  onVider: () => void
-}
-
-/** Une marche : l'affiche et le titre de son occupant, ou « à venir » ; son socle porte sa place. */
-function MarcheDuPodium({ place, marche, onOuvrir, onVider }: PropsMarche) {
-  const minuteur = useRef<number | undefined>(undefined)
-  const long = useRef(false)
-  const lacher = () => {
-    window.clearTimeout(minuteur.current)
-    minuteur.current = undefined
-  }
-  useEffect(() => lacher, [])
-
-  return (
-    <button
-      type="button"
-      className={`${styles.marche} ${styles[`m${place}`]}`}
-      aria-label={marche ? `Marche ${place} : ${marche.title}` : `Marche ${place} : à venir, poser un film`}
-      onPointerDown={() => {
-        long.current = false
-        lacher()
-        if (!marche) return
-        minuteur.current = window.setTimeout(() => {
-          minuteur.current = undefined
-          long.current = true
-          onVider()
-        }, APPUI_LONG_MS)
-      }}
-      onPointerUp={lacher}
-      onPointerLeave={lacher}
-      onPointerCancel={lacher}
-      // Une touche n'est jamais le relâcher d'un appui long : le clavier (le chemin qui remplace
-      // l'appui long, par le feuillet et « Retirer ») ne se fait pas avaler son premier geste.
-      onKeyDown={() => void (long.current = false)}
-      // L'appui long ne doit ouvrir ni le menu du navigateur, ni le feuillet au relâcher.
-      onContextMenu={(e) => e.preventDefault()}
-      onClick={() => {
-        if (long.current) {
-          long.current = false
-          return
-        }
-        onOuvrir()
-      }}
-    >
-      {marche ? (
-        <span className={styles.cab}>
-          {marche.cover_url ? <img src={marche.cover_url} alt="" decoding="async" /> : <span className={styles.sansImage} />}
-          <span className={styles.t}>{marche.title}</span>
-        </span>
-      ) : (
-        <span className={styles.vide}>
-          à venir
-          <br />
-          poser un film
-        </span>
-      )}
-      <span className={styles.socle} aria-hidden="true">
-        {place}
-      </span>
-    </button>
-  )
 }
 
 interface PropsChoix {
