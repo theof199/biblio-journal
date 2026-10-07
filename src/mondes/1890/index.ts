@@ -13,7 +13,7 @@ import { c, RAMPE } from './couleur'
 import { PAGES_1890 } from './pages'
 import { BOBINES, dessinerLointain } from './bobines'
 import { ORGUE } from './orgue'
-import { ZONE_DU_TRAIN } from './train'
+import { ZONE_DE_LA_HALTE } from './halte'
 
 /** Les origines : la baraque foraine en sépia, avec la roulotte (choix du propriétaire, 29 septembre 2026). */
 export function creerMonde1890(): Monde {
@@ -58,8 +58,8 @@ export function creerMonde1890(): Monde {
     musique: ORGUE,
     bobines: BOBINES,
     objets: [],
-    // Le train au bout de la foire se prend aussi quand le visiteur demande moins d'animations.
-    touchesAuCalme: [ZONE_DU_TRAIN],
+    // À la halte du bout de la foire, le train se prend aussi quand le visiteur demande moins d'animations.
+    touchesAuCalme: [ZONE_DE_LA_HALTE],
     glisser: null,
     // Plan 3a : la foire glisse sous la caméra, le moteur y dessine la route, les cases et l'avatar.
     scene: null,

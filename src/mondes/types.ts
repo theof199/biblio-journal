@@ -179,7 +179,7 @@ export interface VueMonde {
    * (`SceneCollante.entree`) : l'appeler le joue à l'endroit, par `MoteurCarte.direBonjour`, ce que
    * fait le bouton de la page, au calme compris. Nul sinon : aucune section ne suit (la carte cache
    * une décennie que le membre n'a pas atteinte), ou elle n'a pas de passage. Un décor s'en sert
-   * depuis `reagir` (le train au bout de la foire de 1890), jamais en dessinant.
+   * depuis `reagir` (la halte au bout de la foire de 1890), jamais en dessinant.
    */
   passer: (() => void) | null
   /**
