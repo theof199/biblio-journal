@@ -300,6 +300,11 @@ se joue : la carte s'ouvre à l'arrêt de l'année en cours.
 Hors d'une avancée, le bouton « Prendre le train pour 1900 » s'offre quand le moteur dit l'entrée
 proche (`entreeProche`), à qui a atteint la décennie, jamais sous la vue d'ensemble : il ne joue que
 le passage, sans porte ni adieu.
+Le train au bout de la foire (`mondes/1890/train.ts`) : une locomotive du P.L.M., photographie d'époque
+détourée, attend à gauche du bout du chemin, sous la baraque « Prochainement », dès 1895 et par-dessus
+la brume de l'avenir. Tant que 1900 est fermé, c'est un décor qui ne répond pas ; 1900 atteint, le
+toucher lance le même passage que le bouton (`VueMonde.passer`, qui appelle `direBonjour`), au calme
+aussi, où il pose en gare de 1900. Il ne bouge pas, ne fume pas et ne lit pas l'horloge.
 
 **La vue d'ensemble d'un monde à `scene`.** Il dessine sa bande lui-même (`dessinerBande`), dans le
 cadre que tiendrait la bande commune : le moteur n'y pose ni fond ni marquise, seul le voile plein

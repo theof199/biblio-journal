@@ -2250,6 +2250,24 @@ describe('le moteur de la carte', () => {
           expect(entreeDe(1900)).toBe(-1)
         })
 
+        // Mutation : le `return` retiré après `finirLePassage` dans `pointeur` (le décor recevrait le
+        // toucher, et le train de la foire relancerait le passage qu'on vient de poser).
+        it('un toucher sur le décor pendant le passage le pose à sa fin : le décor ne reçoit rien, et rien ne relance le passage', async () => {
+          const banc = auPassage({ garni: true })
+          const bonjour = vi.spyOn(banc.moteur, 'direBonjour')
+          const joue = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+          banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+          toucher(banc.moteur, OU_SEMAPHORE.x, OU_SEMAPHORE.y)
+          await Promise.resolve()
+          expect(joue.fini).toBe(true)
+          expect(reagis).toEqual([])
+          expect(bonjour).toHaveBeenCalledTimes(1)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+          // Le témoin : le passage fini, le même toucher atteint le décor.
+          toucher(banc.moteur, OU_SEMAPHORE.x, OU_SEMAPHORE.y)
+          expect(reagis).toEqual([{ decennie: 1900, id: 'semaphore' }])
+        })
+
         // Mutations : le `return` retiré après `finirLePassage` dans `pointeur` (le toucher relayé
         // ouvrirait l'année sous le doigt) ; `finirLePassage` retiré (le passage continuerait).
         it('un toucher pendant le passage le pose à sa fin, sans ouvrir l’année qui se trouve sous le doigt', async () => {

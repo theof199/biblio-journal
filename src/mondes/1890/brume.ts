@@ -6,6 +6,7 @@ import { guichetEtat, LARGEUR, plaque } from './moyen'
 import { guirlandesLampions } from './proches'
 import { clamp, lisse } from '../../carte/outils'
 import { lueurDeLaBrume } from './bobines'
+import { dessinerTrain } from './train'
 
 const COULEURS_CONFETTIS: readonly string[] = [c('#A8452F'), c('#E6B94A'), c('#F2E8D5'), c('#3E5360'), c('#DE7A45')]
 
@@ -14,13 +15,15 @@ const COULEURS_CONFETTIS: readonly string[] = [c('#A8452F'), c('#E6B94A'), c('#F
  * « Le guichet ouvert en 1897 perce la brume », `ecriteau`, et les confettis de fin de chantier de
  * `dessinCarte`) : le guichet de 1897 quand la brume le couvre encore, l'écriteau du chantier en
  * cours, et les confettis de sa fin — une année posée bâtie (`t0 < 0`) n'en fête aucune. Et
- * l'éclat de la bobine perdue que la brume cache (plan 2d).
+ * l'éclat de la bobine perdue que la brume cache (plan 2d). Le train du bout de la foire est ici
+ * aussi : il perce la brume dès la première année, pour qu'on voie que le chemin ne finit pas en 1899.
  */
 export function dessinerSurLaBrume(v: VueMonde): void {
   if (v.presence <= 0.01) return
   const g = v.ctx
   const etat1897 = chantier(1897, v.ouverte, v.t, v.vivant)
   g.save(); g.translate(0, v.ecranY(0, 1)); g.scale(v.k, 1)
+  dessinerTrain(g, v)
   if (etat1897.etat !== 'absent' && v.brume < 640) {
     const r = remplissage(v.cases, v.bouclee)
     g.save(); g.globalAlpha = 0.72
