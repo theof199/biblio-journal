@@ -243,6 +243,18 @@ export interface EtatDeBande {
 export type LectureDeBande = (x: number, y: number) => number | null
 
 /**
+ * Un ralenti du roulement (lot « moteur ») : de `de` à `a` (`de < a`), en `y` de la section comme
+ * `SceneCollante.arrets`, la caméra qui roule ne garde que la part `allure` de sa vitesse, dans
+ * `]0, 1]` (1 : aucun ralenti ; 0,36 : près de trois fois moins vite). Un rapport, pas une durée :
+ * rien ici ne passe par le tempo.
+ */
+export interface Ralenti {
+  de: number
+  a: number
+  allure: number
+}
+
+/**
  * La scène collante d'un monde (plan 3a ; spec du monde 1900, « `Monde.scene` ») : sa section ne
  * glisse plus sous la caméra, le monde dessine lui-même ses années d'après `VueMonde.avance`, et
  * prend à sa charge ce que le moteur dessinait (la route, les cases, l'avatar, la roulotte garée,
@@ -281,6 +293,17 @@ export interface SceneCollante {
    * calme, lit la liste dans son ordre pour trouver l'arrêt suivant dans le sens du geste.
    */
   arrets: readonly number[]
+  /**
+   * Où la caméra qui roule ralentit (lot « moteur »), croissants et disjoints, **tous à partir du
+   * premier arrêt** (`de >= arrets[0]`) : rien ne ralentit la zone du passage d'entrée. Vide : aucun
+   * ralenti. Le moteur les relit à chaque roulement (une avancée, « Tu es ici », le rappel à
+   * l'arrêt), et là seulement : le doigt n'est jamais freiné, le passage d'entrée garde ses durées,
+   * et au calme la caméra se pose d'un coup. Un roulement qui traverse un ralenti dure plus
+   * longtemps d'autant ; celui dont le trajet n'en croise aucun, ou ne fait qu'en toucher le bord,
+   * est inchangé. Le moteur ignore une allure hors de `]0, 1[` ; ce qu'un intervalle a au-delà de
+   * ce que le défilement atteint n'est sur le trajet d'aucun roulement.
+   */
+  ralentis: readonly Ralenti[]
 }
 
 /**

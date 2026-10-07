@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { construireRoute, pointA } from './route'
 import { MARGE_HAUT, placerCarte } from './placement'
-import { cibleCamera, poidsSections, presencesSections } from './camera'
+import { cibleCamera, coutDe, poidsSections, presencesSections, trajetRalenti, yDuCout } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { genreDeBande, geoEnsemble, POIDS_REPLIEE } from './ensemble'
 import { ambianceDeLHeure } from './heure'
@@ -175,6 +175,121 @@ describe('la caméra', () => {
       }
     })
   })
+
+  describe('le ralenti du roulement (lot « moteur »)', () => {
+    /** Deux ralentis : de 100 à 200, un pixel en coûte deux ; de 300 à 340, quatre. */
+    const DEUX = [{ haut: 100, bas: 200, allure: 0.5 }, { haut: 300, bas: 340, allure: 0.25 }]
+    /** La pente du trajet autour de `p` : ce que la caméra parcourt par unité de courbe. */
+    const pente = (t: NonNullable<ReturnType<typeof trajetRalenti>>, p: number) => (t.y(p + 1e-4) - t.y(p - 1e-4)) / 2e-4
+
+    // Mutations : l'allure lue à l'envers dans `coutDe` (`r.allure - 1`) ; le coût compté sur tout
+    // l'intervalle dès son bord (`clamp` retiré) ; un second ralenti non ajouté au premier.
+    it('le coût d’un y compte un pixel pour 1 / allure dans un ralenti, et pour un ailleurs', () => {
+      expect([50, 100, 150, 200, 250, 300, 320, 340, 400].map((y) => coutDe(y, DEUX))).toEqual([50, 100, 200, 300, 350, 400, 480, 560, 620])
+      expect(coutDe(123, [])).toBe(123)
+    })
+
+    // Mutations : l'inverse décalé d'un intervalle (`bornes[i]` pris pour `bornes[i - 1]`) ; la
+    // pente de 1 gardée sous le premier ralenti seulement (le retour de la fin retiré).
+    it('yDuCout est l’inverse de coutDe, partout', () => {
+      for (let y = -40; y <= 460; y += 7) expect(yDuCout(coutDe(y, DEUX), DEUX)).toBeCloseTo(y, 9)
+      expect([50, 200, 300, 350, 480, 560, 620].map((c) => yDuCout(c, DEUX))).toEqual([50, 150, 200, 250, 320, 340, 400])
+      expect(yDuCout(77, [])).toBe(77)
+    })
+
+    // L'invariant premier : sans ralenti sur le trajet, rien n'est rendu, et le meneur garde le
+    // calcul d'avant. Un bord touché n'est pas une traversée, dans un sens comme dans l'autre.
+    // Mutations : `>` remplacé par `>=` dans le filtre (le bord touché compterait) ; `r.allure < 1`
+    // retiré (une allure de 1 passerait par le coût) ; `r.allure > 0` retiré (une allure nulle
+    // diviserait par zéro) ; le filtre retiré (un ralenti hors du trajet passerait par le coût).
+    it('ne rend rien sans ralenti sur le trajet : aucun, un autre plus haut ou plus bas, un bord seulement touché, une allure de 1 ou hors de ]0, 1[', () => {
+      const un = [{ haut: 100, bas: 200, allure: 0.5 }]
+      expect(trajetRalenti(0, 400, [])).toBeNull()
+      // Plus haut, plus bas.
+      expect(trajetRalenti(210, 400, un)).toBeNull()
+      expect(trajetRalenti(90, 0, un)).toBeNull()
+      // Le trajet finit au bord du haut, ou part du bord du bas ; et à l'envers.
+      expect(trajetRalenti(0, 100, un)).toBeNull()
+      expect(trajetRalenti(100, 0, un)).toBeNull()
+      expect(trajetRalenti(200, 400, un)).toBeNull()
+      expect(trajetRalenti(400, 200, un)).toBeNull()
+      // Entre deux ralentis, sans toucher à aucun.
+      expect(trajetRalenti(200, 300, DEUX)).toBeNull()
+      // Le témoin : un pixel de plus, et le ralenti est sur le trajet.
+      expect(trajetRalenti(0, 101, un)).not.toBeNull()
+      expect(trajetRalenti(400, 199, un)).not.toBeNull()
+      for (const allure of [1, 1.5, 0, -0.5, Number.NaN]) expect(trajetRalenti(0, 400, [{ haut: 100, bas: 200, allure }])).toBeNull()
+      // Un intervalle sans longueur, ou à l'envers, n'est sur aucun trajet.
+      expect(trajetRalenti(0, 400, [{ haut: 150, bas: 150, allure: 0.5 }])).toBeNull()
+      expect(trajetRalenti(0, 400, [{ haut: 200, bas: 100, allure: 0.5 }])).toBeNull()
+    })
+
+    // Mutations : `allonge` rendu sans le coût (1) ; rapporté au coût entier de l'intervalle et non
+    // à ce que le trajet en traverse (un ralenti non borné au `y` dans `coutDe`).
+    it('allonge le roulement du coût de son trajet rapporté à sa longueur : il traverse, il commence dedans, il finit dedans', () => {
+      const un = [{ haut: 100, bas: 200, allure: 0.5 }]
+      // 400 px, dont 100 comptés double.
+      expect(trajetRalenti(0, 400, un)!.allonge).toBeCloseTo(500 / 400, 12)
+      // Il commence dedans : de 150 à 250, 50 px comptés double.
+      expect(trajetRalenti(150, 250, un)!.allonge).toBeCloseTo(150 / 100, 12)
+      // Il finit dedans.
+      expect(trajetRalenti(50, 150, un)!.allonge).toBeCloseTo(150 / 100, 12)
+      // Tout entier dedans : il dure 1 / allure fois plus, et va droit.
+      const dedans = trajetRalenti(120, 180, un)!
+      expect(dedans.allonge).toBeCloseTo(2, 12)
+      expect(dedans.y(0.25)).toBeCloseTo(135, 9)
+      // Deux ralentis : 620 de coût pour 400 px.
+      expect(trajetRalenti(0, 400, DEUX)!.allonge).toBeCloseTo(620 / 400, 12)
+    })
+
+    // Ce que le ralenti promet : dehors, la caméra va comme elle irait sans lui au même instant de
+    // sa courbe (la durée allongée rend à la pente ce que le coût lui prend) ; dedans, à cette
+    // vitesse multipliée par l'allure. Mutations : l'allure lue à l'envers ; la position prise à la
+    // droite de `y0` à `y1` (`yDuCout` retiré).
+    it('dedans, la caméra ne garde que la part de sa vitesse que dit l’allure ; dehors, toute', () => {
+      const t = trajetRalenti(0, 400, DEUX)!
+      // La vitesse sans ralenti, par unité de courbe, rapportée à la même durée : 400 × allonge.
+      const libre = 400 * t.allonge
+      // Les coûts 50, 200, 350, 440, 600 : avant, dans le premier, entre les deux, dans le second, après.
+      expect(pente(t, 50 / 620)).toBeCloseTo(libre, 6)
+      expect(pente(t, 200 / 620)).toBeCloseTo(libre * 0.5, 6)
+      expect(pente(t, 350 / 620)).toBeCloseTo(libre, 6)
+      expect(pente(t, 440 / 620)).toBeCloseTo(libre * 0.25, 6)
+      expect(pente(t, 600 / 620)).toBeCloseTo(libre, 6)
+    })
+
+    // Le dernier trajet laisse un ralenti au-dessus de lui : il n'entre pas dans son coût.
+    // Mutations : `y(1)` laissé à un intervalle de l'arrivée (l'inverse décalé) ; les deux coûts
+    // échangés ; le coût pris sur tous les ralentis et inversé sur ceux du trajet seulement.
+    it('part de y0, arrive à y1, ne recule jamais et ne sort pas du trajet', () => {
+      for (const [y0, y1] of [[0, 400], [400, 0], [150, 320], [320, 150], [50, 150], [250, 400], [400, 250]] as const) {
+        const t = trajetRalenti(y0, y1, DEUX)!
+        expect(t.y(0)).toBeCloseTo(y0, 9)
+        expect(t.y(1)).toBeCloseTo(y1, 9)
+        let avant: number = y0
+        for (let p = 0; p <= 1.0001; p += 0.01) {
+          const y = t.y(Math.min(1, p))
+          expect((y - avant) * Math.sign(y1 - y0)).toBeGreaterThanOrEqual(0)
+          expect(y).toBeGreaterThanOrEqual(Math.min(y0, y1) - 1e-9)
+          expect(y).toBeLessThanOrEqual(Math.max(y0, y1) + 1e-9)
+          avant = y
+        }
+      }
+    })
+
+    // Mutation : le coût pris sans valeur absolue (`allonge` négatif vers le haut) ; les deux
+    // coûts échangés pour un trajet qui monte.
+    it('vers le haut, le trajet est celui du bas retourné : même allonge, mêmes points à rebours', () => {
+      // Un trajet que les deux ralentis coupent sans symétrie.
+      const bas = trajetRalenti(40, 330, DEUX)!
+      const haut = trajetRalenti(330, 40, DEUX)!
+      expect(haut.allonge).toBeCloseTo(bas.allonge, 12)
+      expect(bas.allonge).toBeGreaterThan(1)
+      for (let p = 0; p <= 1; p += 0.05) expect(haut.y(p)).toBeCloseTo(bas.y(1 - p), 9)
+      // Le témoin : il n'est pas son propre miroir.
+      expect(Math.abs(bas.y(0.5) - (40 + 330) / 2)).toBeGreaterThan(1)
+    })
+  })
 })
 
 describe('les zones', () => {
@@ -224,7 +339,7 @@ describe('la vue d’ensemble', () => {
 })
 
 describe('la bande d’un monde à scène dans la vue d’ensemble (plan 3a)', () => {
-  const scene: SceneCollante = { ecranDeLaCase: () => null, dessinerSuivi: () => undefined, dessinerBande: () => () => null, entree: [], arrets: [] }
+  const scene: SceneCollante = { ecranDeLaCase: () => null, dessinerSuivi: () => undefined, dessinerBande: () => () => null, entree: [], arrets: [], ralentis: [] }
   /** 1890 et 1900 ont leur chantier ; 1900 est collant, sa section fait 7000 px ; le reste est à venir. */
   const mondeDe = (decennie: number) => ({ aVenir: decennie > 1900, scene: decennie === 1900 ? scene : null })
   const plan = placerCarte(annees(1895, 2026), (d, a) => (d === 1900 ? { ...traceAVenir(a), hauteur: 7000 } : traceDe(d, a)))

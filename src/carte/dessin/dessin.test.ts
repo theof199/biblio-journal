@@ -143,7 +143,7 @@ describe('le dessin commun', () => {
   // une section collante oubliée : le sol ne reprendrait pas) ; des bandes rendues sans section
   // collante (le sol de 1890 serait coupé pour rien, et sa référence tomberait).
   it('ne coupe le sol que dans les sections collantes, et pas du tout sans elles', () => {
-    const scene: Monde['scene'] = { ecranDeLaCase: () => null, dessinerSuivi: () => undefined, dessinerBande: () => () => null, entree: [], arrets: [] }
+    const scene: Monde['scene'] = { ecranDeLaCase: () => null, dessinerSuivi: () => undefined, dessinerBande: () => () => null, entree: [], arrets: [], ralentis: [] }
     const annees = Array.from({ length: 1939 - 1895 + 1 }, (_, i) => 1895 + i)
     const plan = placerCarte(annees, (d, a) => mondeAVenir(d).trace(a))
     const mondeDe = (collantes: readonly number[]) => (d: number): Monde => ({ ...mondeAVenir(d), scene: collantes.includes(d) ? scene : null })
@@ -189,6 +189,7 @@ describe('le dessin commun', () => {
           },
           entree: [],
           arrets: [],
+          ralentis: [],
         },
       }
     }

@@ -41,7 +41,7 @@ vi.mock('../mondes', async (original) => {
       const jamaisJouee = () => {
         throw new Error('la scène d’essai ne se joue pas')
       }
-      const de1900AScene = { ...de1900, scene: { ecranDeLaCase: jamaisJouee, dessinerSuivi: jamaisJouee, dessinerBande: jamaisJouee, entree: [], arrets: [] } }
+      const de1900AScene = { ...de1900, scene: { ecranDeLaCase: jamaisJouee, dessinerSuivi: jamaisJouee, dessinerBande: jamaisJouee, entree: [], arrets: [], ralentis: [] } }
       return (decennie: number) => (decennie === 1900 ? (essai.scene1900 ? de1900AScene : de1900) : registre(decennie))
     },
   }

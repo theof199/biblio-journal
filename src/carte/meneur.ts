@@ -1,12 +1,15 @@
 import { clamp, ease, lerp } from './outils'
-import { cibleCamera } from './camera'
+import { cibleCamera, trajetRalenti } from './camera'
+import type { RalentiDeCarte } from './camera'
 import type { SectionPlacee } from './placement'
 import { auTempo } from '../voyage/tempo'
 
 /**
  * Le roulement de la caméra vers un arrêt d'une section collante (plan 3a), en millisecondes **de
  * base** : `rouler` le joue au tempo (`voyage/tempo.ts`), là et nulle part ailleurs. La même durée
- * quelle que soit la distance.
+ * quelle que soit la distance, tant que le trajet ne croise aucun ralenti (`Terrain.ralentis`) :
+ * celui qui en traverse un dure plus longtemps, du coût de son trajet rapporté à sa longueur
+ * (`trajetRalenti`, `camera.ts`).
  */
 export const DUREE_DU_ROULEMENT = 600
 /**
@@ -46,6 +49,8 @@ export interface Terrain {
   arretsDe: (section: number) => number[]
   /** Les temps du passage d'entrée de la section de rang `section`, en `y` de carte. */
   tempsDe: (section: number) => TempsDeCarte[]
+  /** Les ralentis du roulement de toutes les sections collantes, en `y` de carte. Lus par `rouler` seul. */
+  ralentis: () => RalentiDeCarte[]
   /** La zone des temps de chaque section qui a un passage : du premier temps au dernier, en `y` de carte. */
   zonesDesTemps: () => Array<{ decennie: number; haut: number; bas: number }>
   /** Où en est l'avatar sur la route, en `y` de carte, et s'il marche encore : de quoi le suivre. */
@@ -71,6 +76,8 @@ interface Roulement {
   y: number
   t0: number
   dur: number
+  /** Où il en est quand sa courbe d'aisance vaut `p`, s'il croise un ralenti (`trajetRalenti`) ; nul sinon : la droite de `y0` à `y1`. */
+  lent: ((p: number) => number) | null
   fin: (() => void) | null
 }
 
@@ -247,7 +254,8 @@ export class Meneur {
 
   /**
    * La caméra roule jusqu'à l'arrêt `y`, en `DUREE_DU_ROULEMENT` au tempo, et `fin` est rappelé à
-   * l'arrivée. D'un coup quand le visiteur demande moins d'animations (l'horloge figée, le
+   * l'arrivée. Un ralenti sur le trajet l'allonge et le freine sur son intervalle ; sans lui, rien
+   * ne change. D'un coup quand le visiteur demande moins d'animations (l'horloge figée, le
    * roulement n'arriverait jamais), et quand elle y est déjà. Un seul glissement à la fois : celui
    * qui commence arrête les autres.
    */
@@ -257,7 +265,9 @@ export class Meneur {
       this.poser(y)
       fin?.()
     } else {
-      this.roulement = { y0: this.y, y1: y, y: this.y, t0: this.terrain.t(), dur: auTempo(DUREE_DU_ROULEMENT) / 1000, fin }
+      const dur = auTempo(DUREE_DU_ROULEMENT) / 1000
+      const lent = trajetRalenti(this.y, y, this.terrain.ralentis())
+      this.roulement = { y0: this.y, y1: y, y: this.y, t0: this.terrain.t(), dur: lent ? dur * lent.allonge : dur, lent: lent?.y ?? null, fin }
     }
     this.terrain.demander()
   }
@@ -405,7 +415,7 @@ export class Meneur {
     const r = this.roulement
     if (r) {
       const pr = clamp((t - r.t0) / r.dur, 0, 1)
-      r.y = pr >= 1 ? r.y1 : lerp(r.y0, r.y1, ease(pr))
+      r.y = pr >= 1 ? r.y1 : r.lent ? r.lent(ease(pr)) : lerp(r.y0, r.y1, ease(pr))
       this.poser(r.y)
       if (pr >= 1) {
         this.roulement = null

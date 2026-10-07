@@ -2,6 +2,7 @@ import { clamp, ease, lerp, mixc, rgba, type Rgb } from './outils'
 import { construireRoute, pointA, type Route } from './route'
 import { placerCarte, type PlanCarte } from './placement'
 import { cibleCamera, poidsSections, presencesSections, sectionALEcran } from './camera'
+import type { RalentiDeCarte } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { genreDeBande, geoEnsemble } from './ensemble'
 import { ambianceDeLHeure } from './heure'
@@ -213,6 +214,7 @@ export class MoteurCarte {
         collante: () => this.bandes !== null,
         arretsDe: (section) => this.arretsDe(section),
         tempsDe: (section) => this.tempsDe(section),
+        ralentis: () => this.ralentis(),
         zonesDesTemps: () => this.zonesDesTemps(),
         avatar: () => ({ y: pointA(this.route, this.avatar.d).y, marche: !!this.avatar.marche }),
         ensemble: () => this.ens.cible === 1,
@@ -563,6 +565,15 @@ export class MoteurCarte {
     if (!s || !scene) return []
     const fond = Math.max(0, this.plan.hauteur - this.H)
     return scene.entree.map((x) => ({ y: clamp(s.y0 + x.y, 0, fond), duree: x.duree, arret: x.arret }))
+  }
+
+  /**
+   * Les ralentis du roulement de toutes les sections collantes, en `y` de carte. Ils ne sont pas
+   * bornés à ce que le défilement atteint, comme le sont les arrêts : un roulement va d'un point
+   * atteint à un arrêt borné, et ce qu'un intervalle a au-delà n'est sur le trajet d'aucun.
+   */
+  private ralentis(): RalentiDeCarte[] {
+    return this.plan.sections.flatMap((s, section) => (this.sceneDe(section)?.ralentis ?? []).map((r) => ({ haut: s.y0 + r.de, bas: s.y0 + r.a, allure: r.allure })))
   }
 
   /** La zone des temps de chaque section qui a un passage : du premier temps au dernier, en `y` de carte. */

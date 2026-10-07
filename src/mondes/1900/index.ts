@@ -77,6 +77,8 @@ export function creerMonde1900(): Monde {
       // Le passage de la foire au train : quatre positions, le moteur les joue au tempo (`entree.ts`).
       entree: ENTREE,
       arrets: ARRETS,
+      // Aucun ralenti encore : le tunnel y déclarera le sien.
+      ralentis: [],
     },
   }
 }

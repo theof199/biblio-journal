@@ -198,7 +198,8 @@ une** ; 1890 et le monde « à venir » ont `scene: null`. Dans une telle sectio
 **La caméra roule d'arrêt en arrêt.** `scene.arrets` donne un `y` par année, que le moteur borne à
 ce que le défilement atteint. Dans une section collante, `marcher` ne fait marcher personne : la
 caméra roule jusqu'à l'arrêt de l'année (`DUREE_DU_ROULEMENT`, des millisecondes de base jouées au
-tempo, la même durée quelle que soit la distance) et la promesse se résout à l'arrivée ; d'un coup
+tempo, la même durée quelle que soit la distance, allongée du seul ralenti que le monde déclare sur le
+trajet : `SceneCollante.ralentis`, aucun encore) et la promesse se résout à l'arrivée ; d'un coup
 au calme, ou quand elle y est déjà (`A_L_ARRET`). `allerIci` y mène à l'arrêt de l'année du membre,
 `passerLaPorte` n'y fait rien, et `avatarVisible` dit vrai quand la caméra est posée à cet arrêt.
 Un seul glissement tient la caméra à la fois (`prendreLaCamera`) : celui qui commence arrête les

@@ -14,7 +14,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 - **La caméra** : `camY` ne s'écrit que dans `src/carte/meneur.ts` › `Meneur`, `Terrain` (ce que le moteur
   lui donne à lire). Cinq meneurs, le défilement natif, l'avatar, un chantier, le roulement, le passage :
   `src/carte/meneur.ts` › `constaterLeDefilement`, `suivreLAvatar`, `viser`, `rouler`, `direBonjour`, `arretsAutour`.
-  Les calculs purs : `src/carte/camera.ts` › `cibleCamera`, `poidsSections`, `presencesSections`.
+  Les calculs purs : `src/carte/camera.ts` › `cibleCamera`, `poidsSections`, `presencesSections`, `trajetRalenti` (le coût d'un roulement que le monde ralentit : `src/mondes/types.ts` › `Ralenti`).
 - **Le toucher** : `src/carte/geste.ts` › `APPUI_LONG_MS` (la classe `Geste`), `src/carte/zones.ts` › `trouverZone`,
   puis la méthode `toucher` du moteur ; une bobine ramassée, `src/carte/moteur.ts` › `ouVole`, `atterrir`. Le glissement horizontal : `src/carte/geste.ts` › `PhaseDeGlisse`, la méthode `glisser` du moteur, `src/mondes/types.ts` › `Glissement` (le contrat de `Monde.glisser` y est écrit), `src/carte/camera.ts` › `sectionALEcran`.
 - **La vue d'ensemble** : `src/carte/moteur.ts` › `quitterEnsemble`, `sortieDeLEnsemble` ; ouverte, ni rappel
@@ -48,7 +48,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 - **Le tracé de 1890 et du monde « à venir » vit hors de leur dossier** (`src/mondes/trace.ts` › `trace1890`, `traceAVenir`, `HAUTEUR_MIN_SECTION`), celui de 1900 dans le sien ; `src/mondes/1890/ciel.ts` › `VIDE_DU_HAUT` voisine une copie de sa hauteur.
 - **Une image de monde se reconnaît à son adresse exacte** (`src/carte/CarteCanvas.tsx` › `ADRESSES_DES_MONDES`), jamais à un préfixe : elle n'est alors jamais évincée. Hors de l'ensemble, elle passe par le `Lru` des affiches et peut sortir ; sa borne (`BORNE_DES_AFFICHES`) tient au-dessus de ce qu'une seule image demande, colonnes (`AFFICHES_DES_COLONNES`) et monde (`AFFICHES_D_UN_MONDE`).
 - **`src/voyage/tempo.test.ts` ne lit ni `src/carte/` ni un sous-dossier de `src/voyage/celebrations/`.**
-  Seuls l'envol (moteur), le roulement et le passage (meneur) sont au tempo ; ni la marche, ni l'adieu. Côté page, l'annonce hors de vue seule (`src/pages/Carte.tsx` › `DUREE_DE_L_ANNONCE`). Les temps d'un passage s'écrivent en base (`src/mondes/1900/entree.ts` › `ENTREE`).
+  Seuls l'envol (moteur), le roulement et le passage (meneur) sont au tempo ; ni la marche, ni l'adieu. Un ralenti est une allure, pas une durée : `rouler` seul le lit, jamais le doigt, le calme ni un passage ; sans ralenti sur le trajet, `trajetRalenti` rend nul et le roulement garde son calcul d'avant, au bit près (ne pas l'y faire passer par le coût). Côté page, l'annonce hors de vue seule (`src/pages/Carte.tsx` › `DUREE_DE_L_ANNONCE`). Les temps d'un passage s'écrivent en base (`src/mondes/1900/entree.ts` › `ENTREE`).
 
 ## Les commandes
 

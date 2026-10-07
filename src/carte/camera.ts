@@ -1,4 +1,4 @@
-import { clamp, lisse } from './outils'
+import { clamp, lerp, lisse } from './outils'
 import type { SectionPlacee } from './placement'
 
 /** Où poser le défilement pour que `yMonde` tombe un peu au-dessus du milieu de l'écran (maquette : `H * .52`). */
@@ -61,4 +61,55 @@ export function presencesSections(camC: number, sections: readonly SectionPlacee
     const sortie = !suivante ? 1 : entrees.collante[i + 1] ? (haut < suivante.y0 ? 1 : 0) : 1 - fondu(i + 1)
     return entree * sortie
   })
+}
+
+/** Un ralenti du roulement en `y` de carte (`Ralenti`, `mondes/types.ts`) : de `haut` à `bas`, la caméra ne garde que la part `allure` de sa vitesse. */
+export interface RalentiDeCarte {
+  haut: number
+  bas: number
+  allure: number
+}
+
+/**
+ * Le **coût** d'un `y` de carte : l'intégrale de `1 / allure` depuis le haut de la carte, l'allure
+ * valant 1 hors de tout ralenti. Un pixel d'un ralenti d'allure 0,5 en coûte deux. Croissante,
+ * affine par morceaux, de pente 1 au moins : elle s'inverse (`yDuCout`).
+ */
+export function coutDe(y: number, ralentis: readonly RalentiDeCarte[]): number {
+  return ralentis.reduce((cout, r) => cout + (1 / r.allure - 1) * clamp(y - r.haut, 0, r.bas - r.haut), y)
+}
+
+/** L'inverse de `coutDe` : le `y` de carte dont le coût est `cout`. */
+export function yDuCout(cout: number, ralentis: readonly RalentiDeCarte[]): number {
+  const bornes = [...new Set(ralentis.flatMap((r) => [r.haut, r.bas]))].sort((a, b) => a - b)
+  // Au-dessus du premier ralenti, rien n'est compté : le coût est le `y` lui-même.
+  if (bornes.length === 0 || cout <= bornes[0]!) return cout
+  for (let i = 1; i < bornes.length; i++) {
+    const c1 = coutDe(bornes[i]!, ralentis)
+    if (cout > c1) continue
+    const c0 = coutDe(bornes[i - 1]!, ralentis)
+    return bornes[i - 1]! + ((cout - c0) * (bornes[i]! - bornes[i - 1]!)) / (c1 - c0)
+  }
+  // Sous le dernier ralenti, la pente est de 1 à nouveau.
+  const dernier = bornes[bornes.length - 1]!
+  return dernier + (cout - coutDe(dernier, ralentis))
+}
+
+/**
+ * Ce que les ralentis font d'un roulement de `y0` à `y1` ; **nul quand aucun n'est sur le trajet**
+ * (aucun en commun avec lui sur plus qu'un bord, ou d'une allure hors de `]0, 1[`) : le roulement
+ * reste alors ce qu'il est sans eux, par le calcul d'avant et non par un coût qui retomberait juste.
+ * Sinon le roulement progresse **dans le coût** : `y(p)` est où il en est quand sa courbe d'aisance
+ * vaut `p` (0 au départ, 1 à l'arrivée), et `allonge` ce par quoi sa durée se multiplie, le coût du
+ * trajet rapporté à sa longueur. Hors d'un ralenti, il va donc à la vitesse qu'il aurait eue sans
+ * lui au même instant de sa courbe ; dedans, à cette vitesse multipliée par l'allure.
+ */
+export function trajetRalenti(y0: number, y1: number, ralentis: readonly RalentiDeCarte[]): { allonge: number; y: (p: number) => number } | null {
+  const haut = Math.min(y0, y1)
+  const bas = Math.max(y0, y1)
+  const sur = ralentis.filter((r) => r.allure > 0 && r.allure < 1 && Math.min(r.bas, bas) > Math.max(r.haut, haut))
+  if (sur.length === 0) return null
+  const c0 = coutDe(y0, sur)
+  const c1 = coutDe(y1, sur)
+  return { allonge: Math.abs(c1 - c0) / (bas - haut), y: (p) => yDuCout(lerp(c0, c1, p), sur) }
 }

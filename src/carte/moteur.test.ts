@@ -6,7 +6,7 @@ import { APPUI_LONG_MS } from './geste'
 import { TUILE } from './dessin/sol'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Glissement, Monde, MusiqueDuMonde, ObjetCache, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
+import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Glissement, Monde, MusiqueDuMonde, ObjetCache, Ralenti, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
 import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -86,7 +86,7 @@ const OU_BOBINE_1900 = { x: 330, y: 50 }
 const reagis: Array<{ decennie: number; id: string }> = []
 /** Les glissements livrés aux mondes d'essai, avec le monde qui les a reçus et la vue qu'il a reçue. */
 const glisses: Array<{ decennie: number; g: Glissement; v: VueMonde }> = []
-function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = [], entree: readonly TempsDEntree[] = [], garni = false): Monde {
+function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = [], entree: readonly TempsDEntree[] = [], garni = false, ralentis: readonly Ralenti[] = []): Monde {
   const base = mondeAVenir(decennie)
   const scene: Monde['scene'] =
     collant && decennie === 1900
@@ -103,6 +103,7 @@ function mondeDEssai(decennie: number, collant = false, arrets: readonly number[
           },
           entree,
           arrets,
+          ralentis,
         }
       : null
   return {
@@ -166,6 +167,8 @@ function monter(
     entree?: readonly TempsDEntree[]
     /** Plan 3b : le monde collant porte une date, une bobine et un sémaphore (`DEPECHE`, `BOBINE_1900`). */
     garni?: boolean
+    /** Lot « moteur » : les ralentis du roulement de la section collante, en `y` de la section. */
+    ralentis?: readonly Ralenti[]
     /** Lot « moteur » : chaque monde d'essai cache un objet (`OBJET`, `OBJET_1900`), qu'il pose sans que rien ne le dessine. */
     objets?: boolean
     /** Lot « moteur » : les identifiants de zone dont le toucher vaut au calme, par décennie (`Monde.touchesAuCalme`). */
@@ -201,7 +204,7 @@ function monter(
     annulerImage: vi.fn(),
     heure: () => options.heure ?? 12,
     mondeDe: (d) => {
-      const m = mondeDEssai(d, options.collant, options.arrets, options.entree, options.garni)
+      const m = mondeDEssai(d, options.collant, options.arrets, options.entree, options.garni, options.ralentis)
       const { chantier1898, particules } = options
       return {
         ...m,
@@ -3383,6 +3386,197 @@ describe('le moteur de la carte', () => {
             banc.moteur.pointeur('haut', p.x + 14, p.y, false)
             expect(banc.rappels.toucherAnnee).toHaveBeenCalledTimes(1)
           })
+        })
+      })
+      describe('le ralenti du roulement (lot « moteur »)', () => {
+        /** Entre l'arrêt de 1901 (200) et celui de 1902 (400) : 100 px au quart de la vitesse. Le trajet de l'un à l'autre coûte 500 pour 200 px. */
+        const LENT: Ralenti = { de: 250, a: 350, allure: 0.25 }
+        const ALLONGE = (200 + 100 * 3) / 200
+        /** Les positions que le moteur a dites à la page, image par image, jusqu'à ce qu'il se taise `duree` millisecondes durant. */
+        const rouler = (banc: ReturnType<typeof enGare>, duree: number) => {
+          banc.filer(duree)
+          return banc.vers()
+        }
+
+        // L'invariant premier : un roulement dont le trajet ne croise aucun ralenti est, au bit
+        // près, celui d'un monde qui n'en déclare aucun, à la même image. Le monde en déclare ici
+        // plus haut (leur coût, qui ne tombe pas juste et passe 4096, change l'arrondi de tout ce
+        // qui se calculerait par lui : à coût voisin du `y`, les deux calculs rendent les mêmes
+        // bits et le test ne garderait rien), aux deux bords du premier trajet, qu'ils ne font que
+        // toucher, et un d'allure 1 en plein milieu.
+        // Mutations : le filtre de `trajetRalenti` retiré (tout ralenti déclaré passerait par le
+        // coût) ; `defiler` qui passerait `scrollTop` par le coût. Le bord touché compté (`>=`) et
+        // l'allure de 1 passée par le coût rendent ici les mêmes bits : c'est `geometrie.test.ts`
+        // qui les refuse, sur `trajetRalenti` rendu nul.
+        it('sans ralenti sur son trajet, un roulement dit les mêmes positions aux mêmes images qu’un monde sans ralenti', async () => {
+          const AILLEURS: Ralenti[] = [{ de: 250, a: 350, allure: 0.02 }, { de: 633.3, a: 777.7, allure: 0.3 }, { de: 790, a: 800, allure: 0.5 }, { de: 850, a: 950, allure: 1 }, { de: 1000, a: 1100, allure: 0.5 }]
+          for (const [de, vers] of [[1904, 1905], [1905, 1904], [1906, 1907], [1908, 1907], [1908, 1909], [1909, 1906]] as const) {
+            const trajets = [[], AILLEURS].map((ralentis) => {
+              const banc = enGare({ ralentis, enCours: 1909 })
+              banc.poserA(arret(de))
+              const marche = banc.temoin(banc.moteur.marcher(vers))
+              return { banc, marche }
+            })
+            for (const t of trajets) t.banc.filer(ROULEMENT - 40)
+            await Promise.resolve()
+            expect(trajets.map((t) => t.marche.fini)).toEqual([false, false])
+            for (const t of trajets) t.banc.filer(80)
+            await Promise.resolve()
+            expect(trajets.map((t) => t.marche.fini)).toEqual([true, true])
+            const [sans, avec] = trajets.map((t) => t.banc.vers())
+            expect(sans!.length).toBeGreaterThan(20)
+            expect(sans![sans!.length - 1]).toBe(arret(vers))
+            expect(avec).toEqual(sans)
+          }
+        })
+
+        // Mutations : la durée non multipliée dans `rouler` (`dur` seul) ; `r.lent` oublié dans
+        // `avancer` (la droite : l'arrivée tiendrait, pas le chemin) ; `s.y0` oublié dans
+        // `MoteurCarte.ralentis` (le ralenti tomberait dans 1890, hors du trajet) ; l'inverse du
+        // coût décalé d'un intervalle (la caméra reculerait, ou sortirait du trajet).
+        it('un roulement qui traverse un ralenti dure plus longtemps du coût de son trajet, arrive à son arrêt et rappelle fin', async () => {
+          const banc = enGare({ ralentis: [LENT], enCours: 1905 })
+          banc.poserA(arret(1901))
+          const marche = banc.temoin(banc.moteur.marcher(1902))
+          // La durée de base passée, il roule encore.
+          banc.filer(ROULEMENT + 80)
+          await Promise.resolve()
+          expect(marche.fini).toBe(false)
+          expect(banc.vers()[banc.vers().length - 1]).toBeLessThan(arret(1902) - 20)
+          banc.filer(ROULEMENT * ALLONGE - (ROULEMENT + 80) - 40)
+          await Promise.resolve()
+          expect(marche.fini).toBe(false)
+          banc.filer(80)
+          await Promise.resolve()
+          expect(marche.fini).toBe(true)
+          const dites = banc.vers()
+          expect(dites[dites.length - 1]).toBe(arret(1902))
+          dites.forEach((y, i) => {
+            expect(y).toBeGreaterThanOrEqual(i ? dites[i - 1]! : arret(1901))
+            expect(y).toBeLessThanOrEqual(arret(1902) + 1e-9)
+          })
+          // Arrivée, elle ne bouge plus.
+          const n = dites.length
+          banc.filer(600)
+          expect(banc.vers().length).toBe(n)
+        })
+
+        // Au même instant de la courbe (la même part de la durée de chacun), le roulement ralenti
+        // va, hors de l'intervalle, à la vitesse du roulement libre, et dedans à cette vitesse
+        // multipliée par l'allure. Les deux durées (1200 et 3000 ms) tombent sur les images : deux
+        // images du libre valent cinq du ralenti.
+        // Mutations : l'allure lue à l'envers (`r.allure - 1` dans `coutDe`) ; la durée non
+        // multipliée (dehors, la caméra irait `ALLONGE` fois trop vite) ; `r.lent` oublié.
+        it('dans l’intervalle, la caméra roule à la vitesse d’un roulement libre multipliée par l’allure ; hors de lui, à la même', () => {
+          const [libre, lent] = [[], [LENT]].map((ralentis) => {
+            const banc = enGare({ ralentis, enCours: 1905 })
+            banc.poserA(arret(1901))
+            void banc.moteur.marcher(1902)
+            return [arret(1901), ...rouler(banc, ROULEMENT * ALLONGE)]
+          })
+          expect(libre).toHaveLength(1 + ROULEMENT / 40)
+          expect(lent).toHaveLength(1 + (ROULEMENT * ALLONGE) / 40)
+          const haut = HAUT_1900 + LENT.de
+          const bas = HAUT_1900 + LENT.a
+          const vus = { avant: 0, dedans: 0, apres: 0 }
+          for (let m = 0; m < ROULEMENT / 80; m++) {
+            const [a, b] = [lent![5 * m]!, lent![5 * m + 5]!]
+            const rapport = (b - a) / 200 / ((libre![2 * m + 2]! - libre![2 * m]!) / 80)
+            if (b <= haut || a >= bas) {
+              expect(rapport).toBeCloseTo(1, 9)
+              vus[b <= haut ? 'avant' : 'apres']++
+            } else if (a >= haut && b <= bas) {
+              expect(rapport).toBeCloseTo(LENT.allure, 9)
+              vus.dedans++
+            }
+          }
+          expect(vus.avant).toBeGreaterThan(0)
+          expect(vus.dedans).toBeGreaterThan(0)
+          expect(vus.apres).toBeGreaterThan(0)
+        })
+
+        // Le rappel à l'arrêt est un roulement comme un autre : la caméra lâchée dans un ralenti
+        // en sort au pas, et le doigt qui se repose la reprend, comme toujours.
+        // Mutations : `constaterLeRepos` qui roulerait sans lire les ralentis (un `rouler` jumeau
+        // sans `trajetRalenti`) ; le ralenti compté sur tout son intervalle pour un trajet qui n'en
+        // couvre qu'une part (`clamp` retiré de `coutDe`).
+        it('le rappel d’une caméra lâchée dans un ralenti y roule au pas, de ce que son trajet en traverse', () => {
+          // De 220 à 300 : la caméra lâchée à 260 revient à l'arrêt de 1901 (200), 40 px au quart de la vitesse sur 60.
+          const banc = enGare({ ralentis: [{ de: 220, a: 300, allure: 0.25 }], enCours: 1905 })
+          banc.poserA(arret(1901))
+          banc.moteur.defiler(arret(1901) + 60)
+          banc.filer(REPOS_DU_DEFILEMENT + 40)
+          const allonge = (20 + 40 * 4) / 60
+          banc.filer(ROULEMENT * allonge - 120)
+          expect(banc.vers()[banc.vers().length - 1]).toBeGreaterThan(arret(1901))
+          banc.filer(160)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1901))
+        })
+
+        // Le ralenti ne freine jamais le doigt : sous lui, la caméra est où la page défile, et le
+        // moteur ne lui redit rien. Mutation : `defiler` qui passerait `scrollTop` par le coût.
+        it('sous le doigt, la caméra traverse le ralenti où la page la met, sans que le moteur la reprenne', () => {
+          const banc = enGare({ ralentis: [LENT], enCours: 1905 })
+          banc.poserA(arret(1901))
+          banc.moteur.doigtsPoses(1)
+          for (let y = arret(1901) + 20; y < arret(1902); y += 20) {
+            banc.moteur.defiler(y)
+            banc.filer(40)
+            expect(vus.filter((v) => v.cases.some((c) => c.annee === 1901)).pop()!.avance).toBe(y - HAUT_1900)
+          }
+          expect(banc.vers()).toEqual([])
+        })
+
+        // Mutation : la garde du calme retirée de `rouler` (l'horloge figée, le roulement ralenti
+        // n'arriverait jamais) ; le jumeau, avec un ralenti, du test du calme plus haut.
+        it('au calme, la caméra se pose d’un coup à l’arrêt, ralenti ou non', async () => {
+          const banc = auTrain({ calme: true, arrets: ARRETS, ralentis: [LENT], enCours: 1905 })
+          banc.moteur.defiler(arret(1901))
+          let fini = false
+          void banc.moteur.marcher(1902).then(() => void (fini = true))
+          await Promise.resolve()
+          expect(fini).toBe(true)
+          expect(vi.mocked(banc.rappels.defilerVers).mock.calls).toEqual([[arret(1902)]])
+        })
+
+        // Un roulement ralenti qu'on interrompt en demandant moins d'animations arrive d'un coup.
+        // Mutation : dans `achever`, la pose à `r.y` (où il en est) plutôt qu'à `r.y1`.
+        it('moins d’animations demandées en plein ralenti : la caméra est posée à l’arrêt et marcher se résout', async () => {
+          const banc = enGare({ ralentis: [LENT], enCours: 1905 })
+          banc.poserA(arret(1901))
+          const marche = banc.temoin(banc.moteur.marcher(1902))
+          banc.filer(ROULEMENT)
+          await Promise.resolve()
+          expect(marche.fini).toBe(false)
+          banc.moteur.reglerCalme(true)
+          await Promise.resolve()
+          expect(marche.fini).toBe(true)
+          expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1902))
+        })
+
+        // Le passage d'entrée n'est pas un roulement : un ralenti posé sur sa zone, contre le
+        // contrat de `SceneCollante.ralentis`, n'en change ni les durées ni les positions.
+        // Mutation : dans `avancer`, le glissement entre deux clés du passage mené par
+        // `trajetRalenti` ; les durées de `direBonjour` multipliées par un `allonge`.
+        it('le passage d’entrée garde ses positions et ses durées sous un ralenti', async () => {
+          const TEMPS: TempsDEntree[] = [{ y: -900, duree: 0, arret: 200 }, { y: 300, duree: 500, arret: 100 }, { y: 700, duree: 800, arret: 300 }]
+          const GARES = Array.from({ length: 10 }, (_, i) => 700 + i * 130)
+          const duree = auTempo(200 + 500 + 100 + 800 + 300)
+          const passages = [[], [{ de: -600, a: 100, allure: 0.2 }, { de: 400, a: 650, allure: 0.3 }]].map((ralentis) => {
+            const banc = enGare({ arrets: GARES, entree: TEMPS, ralentis, enCours: 1905 })
+            banc.poserA(HAUT_1900 + GARES[4]!)
+            const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+            return { banc, bonjour }
+          })
+          for (const p of passages) p.banc.filer(duree - 80)
+          await Promise.resolve()
+          expect(passages.map((p) => p.bonjour.fini)).toEqual([false, false])
+          for (const p of passages) p.banc.filer(160)
+          await Promise.resolve()
+          expect(passages.map((p) => p.bonjour.fini)).toEqual([true, true])
+          const [sans, avec] = passages.map((p) => p.banc.vers())
+          expect(sans!.length).toBeGreaterThan(20)
+          expect(avec).toEqual(sans)
         })
       })
     })
