@@ -261,6 +261,21 @@ nombre choisi en 11b.
 L'heure et les fenêtres sont un décor, pas un fait : rien ne dit que la nuit tombait à Iguerande le
 jour de la photographie (maquette, l. 2638).
 
+### La météo (lot 2 bis)
+
+Idée 70, sans la buée de Creil (maquette : `METEO`, l. 3506, par rang ; `donnees.ts` l'écrit par
+année) :
+
+```js
+const METEO = { 2: 'pluie', 4: 'neige', 5: 'neige', 6: 'pluie' }; // 1 : 'buee', non reprise
+```
+
+La force se lit l. 3721-3729, les tuiles l. 3560-3564, les gouttes l. 3566-3570, les boucles
+l. 1080-1098. **Écarts :** sous la lanterne, le voile de neige et le sol blanchi s'effacent tout à
+fait (la maquette en laisse 20 %) ; le vent ne couche pas la pluie selon la vitesse du train
+(`m-vent`) ; le plan de neige proche n'est pas flouté ; une goutte va en droite ligne d'un moment
+à l'autre ; au calme, elle se tient à sa place (dans la maquette, elle reste hors de l'écran).
+
 ## Ce que 12 joue
 
 **`TEMPS`** (l. 2747), les cinq durées de l'endroit, **telles qu'on les voit à l'écran** : la

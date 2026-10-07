@@ -13,6 +13,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
 - **Les gares et leurs plaques** : `src/mondes/1900/gares.ts` › `ecranDeLaCase`, `gareALEcran`, `estFermee`, `aDevelopper`, `developpement`, `dessinerMoyen` ; les dépêches et les bobines s'y posent et s'y inscrivent.
 - **Le passage** : ses temps, `src/mondes/1900/entree.ts` › `ENTREE` ; ses règles, `src/mondes/1900/passage.ts` › `montee`, `trajet`, `vitreALEcran`, `vitreOuverte` ; son trait, `src/mondes/1900/montee.ts` › `dessinerSousLaVitre`, `dessinerDevantLaVitre`.
 - **L'habillage** (l'heure, les chefs de gare, la lanterne) : les tables, `src/mondes/1900/donnees.ts` › `HEURES`, `LABO`, `AMBIANCE` ; les règles, `src/mondes/1900/habillage.ts` › `heureSurLaLigne`, `voileDuLaboratoire`, `partDeLHeure` ; le trait, `src/mondes/1900/dessus.ts` › `dessinerSurLaBrume`.
+- **La météo** (pluie, neige, pas de buée) : la table, `src/mondes/1900/donnees.ts` › `METEO` ; les règles, `src/mondes/1900/meteo.ts` › `forceDuTemps`, `partsDuTemps`, `glissement`, `goutteALEcran` ; le trait, `src/mondes/1900/intemperies.ts` › `dessinerMeteo`.
 - **Le fond, le lointain, le sol** : `src/mondes/1900/fonds.ts` › `dessinerFond`, `src/mondes/1900/lointain.ts` › `vuesALEcran`, `src/mondes/1900/ciel.ts` › `dessinerCiel`, `src/mondes/1900/sol.ts` › `dessinerSol`, `dessinerProche`.
 - **Les images** : `src/mondes/1900/images.ts` › `imageDu1900`, `TAILLES` ; ce qui se peint une fois pour être reposé, `src/mondes/1900/cuisson.ts` › `cuire`, `fondre`.
 - **Le reste** : `src/mondes/1900/suivi.ts` › `voitureALEcran`, `src/mondes/1900/bande.ts` › `lectureDeLaBande`, `src/mondes/1900/bobines.ts` › `CACHETTES`, `src/mondes/1900/depeches.ts` › `PLACES_DES_DEPECHES`, `src/mondes/1900/roulement.ts` › `ROULEMENT`, `src/mondes/1900/durees.ts` › `DEVELOPPEMENT`.
@@ -23,6 +24,9 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
 - **Tout se tire d'`avance`.** Le passage ne lit ni `v.t` ni `v.entree` : la même avance donne la même
   image, qu'il se joue, se rejoue à l'envers ou soit posé d'un coup (`passage.test.ts`). Un effet daté de
   l'horloge y casserait l'envers et le calme.
+- **Seul ce qui tombe lit l'horloge** (`glissement`, `goutteALEcran`), jamais au calme ; la force de la
+  météo se tire d'`avance` et vaut zéro avant la gare de 1900, quelle que soit la table. Une tuile se
+  cuit une fois et se pose d'un remplissage par plan : pas de particules ; sous la lanterne, le voile de neige s'efface.
 - **Deux fichiers de durées, deux règles contraires.** `durees.ts` ne porte que des `auTempo(…)` ;
   `entree.ts` s'écrit en base, sans tempo, que le meneur seul applique. `src/voyage/tempo.test.ts` refuse l'inverse.
 - **Une plaque a deux gardes** (`aDevelopper`) : l'année fermée, et l'année où le membre n'est pas encore
@@ -41,7 +45,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
   dans `TAILLES`.** Aucun fondu n'est dans les fichiers : `cuire` le peint une fois, dans une mémoire bornée.
 - **Le rendu du décor n'a pas de test** : les tests gardent les règles (`habillage.ts`, `passage.ts`,
   `toiles.ts`). Ce qui doit être gardé s'écrit en règle pure, pas dans le trait.
-- **La maquette montre plus que le monde ne dessine** (pluie, tunnel, aiguillage, contrôleur, horaire,
+- **La maquette montre plus que le monde ne dessine** (buée, vent, tunnel, aiguillage, contrôleur, horaire,
   objets trouvés, affiches du compartiment) : rien de cela n'est livré, et ne se dessine pas d'après elle.
 
 ## Les commandes

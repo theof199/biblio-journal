@@ -252,7 +252,10 @@ lanterne rouge de 1901 à 1909 ; la plaque se développe sous les yeux à l'arri
 (`durees.ts`, `DEVELOPPEMENT`). L'heure est celle de la gare, de l'aube de 1900 à la nuit de 1909
 (`donnees.ts`, `HEURES` ; les règles, pures, dans `habillage.ts`), jamais celle du visiteur : le
 monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum`. Le voile de nuit que le moteur pose sur tout
-l'écran d'après l'heure du visiteur, lui, reste. Le Voyage suivi y est une voiture garée à quai dans
+l'écran d'après l'heure du visiteur, lui, reste. Il pleut à Couville et à Brest, il neige à Allaman
+et à Bassersdorf (`donnees.ts`, `METEO` ; les règles dans `meteo.ts`, le trait dans
+`intemperies.ts`) : des motifs répétés qui glissent et onze gouttes, posés immobiles quand le
+visiteur demande moins d'animations, absents du passage. Le Voyage suivi y est une voiture garée à quai dans
 sa gare (`suivi.ts`). Trois dépêches épinglées aux quais tiennent lieu de dates vraies
 (`depeches.ts`). Rien ne s'y bâtit (`siteDuChantier` rend nul), aucun toucher du décor ne sonne ni
 ne s'anime, et le monde s'en va sans adieu. Ses pages (les fiches d'année, la décennie) sont encore

@@ -98,3 +98,13 @@ export const FENETRES: Readonly<Record<number, readonly (readonly number[])[]>> 
   8: [...RAME_1908, [0.632, 0.21, 0.026, 0.1], [0.6, 0.44, 0.012, 0.03], [0.3, 0.62, 0.5, 0.3, 1]],
   9: [[0.477, 0.305, 0.023, 0.107], [0.512, 0.29, 0.019, 0.107], [0.544, 0.26, 0.031, 0.137], [0.644, 0.503, 0.036, 0.13], [0.46, 0.5, 0.11, 0.17, 1], [0.36, 0.5, 0.4, 0.4, 1]],
 }
+
+/** Le temps qu'il fait par la vitre (idée 70, sans la buée). */
+export type Temps = 'pluie' | 'neige'
+
+/**
+ * Le temps qu'il fait, gare par gare (maquette : `METEO`, l. 3506, par rang ; ici par année, comme
+ * `LABO`) : il pleut à Couville et à Brest, il neige sur les deux gares suisses. Une année absente
+ * n'a pas de météo. La buée de Creil (1901) n'est pas reprise : décision du lot 2 bis.
+ */
+export const METEO: Readonly<Record<number, Temps>> = { 1902: 'pluie', 1904: 'neige', 1905: 'neige', 1906: 'pluie' }

@@ -3,7 +3,8 @@ import { dessinerDevantLaVitre } from './montee'
 import { c, F_CORPS } from './couleur'
 import { cuire, fondre } from './cuisson'
 import { FENETRES } from './donnees'
-import { aUnChef, chefALEcran, fenetresALEcran, forceDeLaLanterne, heureSurLaLigne, lanterneALEcran, leveeDuGuidon, luneALEcran, motsDeLEtiquette, partsDeLHeure, souffleDeLaLampe } from './habillage'
+import { alea, aUnChef, chefALEcran, fenetresALEcran, forceDeLaLanterne, heureSurLaLigne, lanterneALEcran, leveeDuGuidon, luneALEcran, motsDeLEtiquette, partsDeLHeure, souffleDeLaLampe } from './habillage'
+import { dessinerMeteo } from './intemperies'
 import { ouvrir } from './toiles'
 import { ANNEES } from './trace'
 
@@ -93,10 +94,6 @@ function dessinerChefs(v: VueMonde): void {
 }
 
 /** Les soixante-quatre étoiles de la maquette (l. 3557-3559), dans son repère de 390 × 236. */
-const alea = (k: number): number => {
-  const x = Math.sin(k * 91.7) * 43758.5453
-  return x - Math.floor(x)
-}
 const ETOILES = Array.from({ length: 64 }, (_, k) => ({ x: alea(k), y: alea(k + 70), r: 0.5 + alea(k + 140) * 0.9, a: 0.45 + alea(k + 210) * 0.55 }))
 
 /**
@@ -265,12 +262,14 @@ function dessinerLanternes(v: VueMonde): void {
   })
 }
 
-/** Par-dessus tout : les chefs de gare, l'heure, puis la lanterne. Le moteur l'appelle après la voiture du Voyage suivi. */
+/** Par-dessus tout : les chefs de gare, l'heure, la lanterne, puis la météo sur la vitre. Le moteur l'appelle après la voiture du Voyage suivi. */
 export function dessinerSurLaBrume(v: VueMonde): void {
   if (ouvrir(v)) {
     dessinerChefs(v)
     dessinerHeure(v)
     dessinerLanternes(v)
+    // La météo est sur la vitre : par-dessus l'heure et la lanterne (maquette : `.meteo`, l. 1545).
+    dessinerMeteo(v)
     v.ctx.restore()
   }
   // Le passage, par-dessus les toiles : le cadre de la vitre, la bouffée, et tant qu'il n'y a pas de

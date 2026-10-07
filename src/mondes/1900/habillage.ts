@@ -19,6 +19,12 @@ export const lisse = (a: number, b: number, x: number): number => {
   return t * t * (3 - 2 * t)
 }
 
+/** Le hasard rejouable de la maquette (`alea`, l. 3557) : le même nombre pour le même rang, de 0 à 1. */
+export const alea = (k: number): number => {
+  const x = Math.sin(k * 91.7) * 43758.5453
+  return x - Math.floor(x)
+}
+
 /** Où le train en est sur la ligne, en gares : 0 en gare de 1900, 9 en gare de 1909 (maquette : `pg`). */
 export const rangSurLaLigne = (avance: number): number => clamp(decalages(avance).gares / E, 0, 9)
 
