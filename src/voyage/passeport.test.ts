@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { anneauDuPasseport, anneesDuTampon, ceQuiManque, enumerer, phraseDuPasseport, tamponDe } from './passeport'
+import { anneauDuPasseport, anneesDuTampon, ceQuiManque, entreeFaite, enumerer, phraseDuPasseport, sortieDe, tamponDe } from './passeport'
 import { annee } from '../test/voyage'
 import type { Ticket } from '../api/voyage'
 
@@ -78,5 +78,22 @@ describe('la phrase du livret', () => {
     expect(phraseDuPasseport({ annees: [], ticket: 1900 }, null)).toBe('Il manque le ticket de 1900.')
     expect(phraseDuPasseport({ annees: [1897], ticket: null }, null)).toBe('Il manque une récompense en 1897.')
     expect(phraseDuPasseport({ annees: [1897], ticket: 1900 }, TAMPON)).toBeNull()
+  })
+})
+
+describe('la frontière d’une décennie', () => {
+  // Mutations : le tampon de la décennie elle-même (`tamponDe(tampons, decennie)`) ; le premier tampon
+  // du passeport ; une date par défaut sans tampon (`?? { decennie, boucle_le: new Date().toISOString() }`).
+  it('la sortie est le tampon de la décennie d’avant, à sa date, et rien sans lui', () => {
+    expect(sortieDe([TAMPON], 1900)).toEqual(TAMPON)
+    expect(sortieDe([{ decennie: 1900, boucle_le: '2027-03-02T10:00:00.000Z' }, TAMPON], 1900)).toEqual(TAMPON)
+    expect(sortieDe([{ decennie: 1900, boucle_le: '2027-03-02T10:00:00.000Z' }], 1900)).toBeNull()
+    expect(sortieDe([], 1900)).toBeNull()
+    expect(sortieDe([TAMPON], 1890)).toBeNull()
+  })
+
+  // Mutation : `>` au lieu de `>=` (la première année de la décennie ne serait pas entrée).
+  it('l’entrée est faite quand mon année en cours atteint la décennie', () => {
+    expect([1899, 1900, 1904, 1910].map((a) => entreeFaite(a, 1900))).toEqual([false, true, true, true])
   })
 })

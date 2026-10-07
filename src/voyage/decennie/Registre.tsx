@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom'
 import type { Monde } from '../../mondes/types'
 import Embleme from '../annee/Embleme'
-import type { LigneDuRegistre } from '../decennie'
+import type { ArretDeLaLigne, LigneDuRegistre } from '../decennie'
 import { RATTRAPE } from '../regles'
 import styles from './Registre.module.css'
 
-interface Props {
+/** Ce que reçoit le registre d'une décennie, par défaut ou du monde (`GabaritsDesPages.registre`). */
+export interface PropsRegistre {
   monde: Monde
-  lignes: readonly LigneDuRegistre[]
+  /** Une ligne par année (`arrets`) ; le registre par défaut n'en lit que la part `LigneDuRegistre`. */
+  lignes: readonly ArretDeLaLigne[]
   /** Le départ du Voyage : une année sans page d'après lui est à venir (« Prochainement »). */
   depart: number
   /** Les notes se lisent dans mon journal : absentes tant qu'il n'est pas lu, ou en panne. */
@@ -23,7 +25,7 @@ interface Props {
  * année de la décennie, ses films vus, sa récompense, ma meilleure note. Une année qui a sa page est
  * un lien vers elle : le chemin du clavier et du lecteur d'écran, que le manège n'offre pas.
  */
-export default function Registre({ monde, lignes, depart, notes, tropLent, rattrape }: Props) {
+export default function Registre({ monde, lignes, depart, notes, tropLent, rattrape }: PropsRegistre) {
   const m = monde.pages.mots
   const texte = (l: LigneDuRegistre) => {
     if (!l.ouvrable && l.annee >= depart) return m.decennie.prochainement

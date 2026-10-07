@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Dix-huit clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance et deux sur la boîte à billets. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Vingt-quatre clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets et six sur la page d'une décennie. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -415,8 +415,18 @@ Où vit quoi :
   (`voyage/boite/Casier.tsx`, que `pages/VoyageBoite.tsx` lit : la page garde ses deux lectures,
   l'intercalaire et le billet ouvert dans l'adresse, le billet rangé montré une fois, et passe les
   billets déjà numérotés) et `billetEnGrand` (le dessin du billet ouvert, `voyage/boite/BilletEnGrand.tsx`,
-  que `voyage/boite/Visionneuse.tsx` lit en gardant la lecture du catalogue des réactions). 1890 et le
-  monde « à venir » n'en fournissent aucune.
+  que `voyage/boite/Visionneuse.tsx` lit en gardant la lecture du catalogue des réactions). Sur la page
+  d'une décennie, que `pages/VoyageDecennie.tsx` lit : `monument` (`voyage/decennie/Monument.tsx` : la
+  toile et son toucher ; la page garde la navigation, le lien de retour et la plaque du chapitre),
+  `frontonDeDecennie` (le titre de la page ; il reçoit les arrêts de la ligne), `livret` (le passeport :
+  il reçoit en plus la frontière passée, le tampon de la décennie d'avant et le nom de son monde,
+  `sortieDe`, et si mon année en cours a atteint la décennie, `entreeFaite`), `registre` (une ligne par
+  année, `arrets`, `voyage/decennie.ts` : la ligne du registre, et si l'année est fermée, bouclée, où en
+  est l'année en cours, `jauge`, et le voyageur suivi quand il y est, `voyageurSuivi`),
+  `liensDeDecennie` (la boîte et le guichet, avec le compte de mes billets une fois le journal lu) et
+  `ordreDeDecennie` (le passeport, la palissade, le registre et les liens, montés par la page : un
+  monde les range autrement, et la palissade est la seule section qu'il peut ne pas montrer). Les
+  défauts ne lisent rien de ce qui s'ajoute. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du

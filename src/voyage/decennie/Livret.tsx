@@ -1,11 +1,12 @@
 import type { Monde } from '../../mondes/types'
 import Panne from '../../ui/Panne'
-import type { Tampon as TamponDuPasseport } from '../passeport'
+import type { Sortie, Tampon as TamponDuPasseport } from '../passeport'
 import Anneau, { anneesSur } from '../passeport/Anneau'
 import Tampon from '../passeport/Tampon'
 import styles from './Livret.module.css'
 
-interface Props {
+/** Ce que reçoit le passeport d'une décennie, par défaut ou du monde (`GabaritsDesPages.livret`). */
+export interface PropsLivret {
   monde: Monde
   decennie: number
   /** Le tampon de la décennie (`tamponDe`), nul tant qu'elle n'est pas bouclée. */
@@ -18,6 +19,13 @@ interface Props {
    * réclamerait un ticket déjà utilisé) ; `panne` quand leur lecture a échoué.
    */
   manque: { type: 'phrase'; phrase: string | null } | { type: 'attente' } | { type: 'panne'; erreur: unknown; onReessayer: () => void }
+  /**
+   * Le tampon de la décennie d'avant (`sortieDe`) et le nom de son monde : la frontière passée, datée
+   * de son `boucle_le`. Nul sans ce tampon : jamais une date inventée. Le livret par défaut ne le montre pas.
+   */
+  sortie: (Sortie & { nom: string }) | null
+  /** Mon année en cours a atteint la décennie (`entreeFaite`). Le livret par défaut ne le montre pas. */
+  entree: boolean
 }
 
 /**
@@ -25,7 +33,7 @@ interface Props {
  * récompensées, ce qui manque encore en clair, et le tampon posé ou sa place. Le tampon ne frappe
  * pas ici : il est posé depuis la décennie bouclée, la page ne fait que le montrer.
  */
-export default function Livret({ monde, decennie, tampon, anneau, manque }: Props) {
+export default function Livret({ monde, decennie, tampon, anneau, manque }: PropsLivret) {
   const annees = anneesSur(anneau)
 
   return (

@@ -13,6 +13,18 @@ export type Tampon = Voyage['tampons'][number]
 export const tamponDe = (tampons: readonly Tampon[], decennie: number): Tampon | null =>
   tampons.find((t) => t.decennie === decennie) ?? null
 
+/** La frontière passée en entrant dans une décennie : le tampon de la décennie d'avant. */
+export type Sortie = Tampon
+
+/**
+ * Le tampon de sortie d'une décennie : celui de la décennie d'avant, à sa date (`boucle_le`). Nul
+ * tant qu'elle n'est pas bouclée, et pour la première décennie : rien ne se date sans tampon.
+ */
+export const sortieDe = (tampons: readonly Tampon[], decennie: number): Sortie | null => tamponDe(tampons, decennie - 10)
+
+/** Je suis entré dans la décennie : mon année en cours l'a atteinte. Un ticket gagné ou gardé n'y suffit pas. */
+export const entreeFaite = (anneeEnCours: number, decennie: number): boolean => anneeEnCours >= decennie
+
 /**
  * Les années qui comptent pour le tampon d'une décennie : de son début, ou du départ du Voyage s'il
  * est plus tard (les années 1890 commencent en 1895), à sa fin — jumeau de

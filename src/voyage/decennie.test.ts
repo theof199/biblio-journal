@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { anneeCivile, chevaux, decennieDeLAdresse, figureTouchee, palissade, registre } from './decennie'
+import { anneeCivile, arrets, chevaux, decennieDeLAdresse, figureTouchee, palissade, registre, voyageurSuivi } from './decennie'
 import { voyage1890 } from '../test/voyage'
 import { visionnage } from '../test/journal'
 
@@ -192,5 +192,57 @@ describe('la palissade', () => {
   it('dit une année verrouillée vue en avance, jamais une verrouillée sans film', () => {
     expect(palissade(V, [], 1890)[3]).toMatchObject({ annee: 1898, enAvance: true })
     expect(palissade(V, [], 1900)).toEqual([{ annee: 1900, affiches: [], plus: 0, enAvance: false }])
+  })
+})
+
+describe('les arrêts de la ligne', () => {
+  const LEA = { id: '11111111-1111-4111-8111-111111111111', pseudo: 'Léa', annee_en_cours: 1896 }
+  const progression = { essentiels_vus: 3, essentiels_total: 5, salles_completes: 1, salles_autres: 3 }
+  const enCours = { ...V, annees: V.annees.map((a) => (a.annee === 1897 ? { ...a, progression } : a)) }
+  const de = (lignes: ReturnType<typeof arrets>, annee: number) => lignes.find((l) => l.annee === annee)!
+
+  // Mutations : `voyageurSuivi` sans la garde `!v.ia` (le compte IA dirait « Léa y est ») ; `suivi`
+  // posé sur mon année en cours au lieu de la sienne ; posé sur tous les arrêts.
+  it('ne gare le voyageur suivi que pour un membre hors IA qui suit un Voyage, et dans son année à lui', () => {
+    const lectrice = { ...V, ia: false, source: LEA }
+    expect(voyageurSuivi(lectrice)).toEqual({ pseudo: 'Léa', annee: 1896 })
+    expect(arrets(lectrice, [], [], 1890).filter((l) => l.suivi !== null).map((l) => [l.annee, l.suivi])).toEqual([[1896, 'Léa']])
+    expect(voyageurSuivi({ ia: true, source: LEA })).toBeNull()
+    expect(arrets({ ...V, ia: true, source: LEA }, [], [], 1890).some((l) => l.suivi !== null)).toBe(false)
+    expect(voyageurSuivi({ ia: false, source: null })).toBeNull()
+    expect(arrets({ ...V, ia: false, source: null }, [], [], 1890).some((l) => l.suivi !== null)).toBe(false)
+  })
+
+  // Une année est bouclée derrière soi, ou en cours dès le ticket de l'année suivante émis, lu sur la
+  // carte ou parmi mes tickets. Mutations : le ticket de la même année (`l.annee`) ; `bouclee` vraie
+  // pour toute année ouvrable ; les tickets ignorés ; `ticket_a_montrer` ignoré ; la garde de l'attente
+  // retirée ; celle de l'année verrouillée retirée (un ticket qui la suit la bouclerait).
+  it('dit bouclée une année derrière soi, ou en cours au ticket de la suivante émis, jamais une année en attente', () => {
+    const bouclees = (lignes: ReturnType<typeof arrets>) => lignes.filter((l) => l.bouclee).map((l) => l.annee)
+    expect(bouclees(arrets(V, [], [], 1890))).toEqual([1895, 1896])
+    expect(bouclees(arrets(V, [], [{ annee: 1897 }], 1890))).toEqual([1895, 1896])
+    expect(bouclees(arrets(V, [], [{ annee: 1898 }], 1890))).toEqual([1895, 1896, 1897])
+    expect(bouclees(arrets(V, [], [{ annee: 1900 }], 1890))).toEqual([1895, 1896])
+    expect(bouclees(arrets({ ...V, ticket_a_montrer: { annee: 1898, motif: 'Un ticket.', emis_le: '2026-09-21T21:00:00.000Z' } }, [], [], 1890))).toEqual([1895, 1896, 1897])
+    const lectrice = { ...V, ia: false, annees: V.annees.map((a) => (a.annee === 1896 ? { ...a, visitee: false } : a)) }
+    expect(bouclees(arrets(lectrice, [], [], 1890))).toEqual([1895])
+  })
+
+  // Mutations : le compte dit sur toute année ouverte ; `fermee` d'après `ouvrable` ; le compte gardé
+  // sur une année en attente (elle se dirait en cours).
+  it('ne compte que l’année en cours, jamais en attente, et dit fermée une année verrouillée', () => {
+    const lignes = arrets(enCours, [], [], 1890)
+    expect(lignes.filter((l) => l.compte !== null).map((l) => [l.annee, l.compte])).toEqual([[1897, { vus: 3, total: 5 }]])
+    expect(lignes.filter((l) => l.fermee).map((l) => l.annee)).toEqual([1898, 1899])
+    expect(de(lignes, 1893)).toMatchObject({ ouvrable: false, fermee: false, bouclee: false, compte: null })
+    const lectrice = { ...enCours, ia: false, annees: enCours.annees.map((a) => (a.annee === 1897 ? { ...a, visitee: false } : a)) }
+    expect(de(arrets(lectrice, [], [], 1890), 1897)).toMatchObject({ attente: true, enCours: false, compte: null, bouclee: false })
+  })
+
+  // Le registre par défaut lit les mêmes lignes : rien ne s'y perd. Mutation : `arrets` qui recompterait
+  // `vus` ou `meilleureNote` autrement que `registre`.
+  it('porte la ligne du registre telle quelle', () => {
+    const items = [vu('e4', 'm2', 1897, 9)]
+    expect(arrets(V, items, [], 1890).map((l) => ({ annee: l.annee, vus: l.vus, recompense: l.recompense, meilleureNote: l.meilleureNote, enCours: l.enCours, attente: l.attente, enAvance: l.enAvance, ouvrable: l.ouvrable }))).toEqual(registre(V, items, 1890))
   })
 })

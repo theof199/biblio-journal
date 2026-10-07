@@ -1,6 +1,7 @@
 import type { JournalItem } from '../api/journal'
-import type { AnneeCarte, Recompense, Voyage } from '../api/voyage'
-import { decennieDe, etatDeCase, type EtatCase } from './regles'
+import type { AnneeCarte, Recompense, Ticket, Voyage } from '../api/voyage'
+import { estBouclee } from './annee'
+import { decennieDe, etatDeCase, jauge, type EtatCase } from './regles'
 
 /**
  * La page d'une décennie (plan 2c ; maquette 1890, écran IV : le manège, le passeport, la
@@ -134,6 +135,68 @@ export function registre(v: Pick<Voyage, 'annees' | 'annee_en_cours' | 'ia'>, it
       ouvrable: !!a,
     }
   })
+}
+
+/**
+ * Le voyageur suivi, tel qu'une page le montre garé dans son année (« Léa y est ») : jamais au compte
+ * IA, dont le Voyage est celui qu'on suit, ni sans Voyage suivi. `annee_en_cours` peut retarder de
+ * soixante secondes (le cache de la carte).
+ */
+export const voyageurSuivi = (v: Pick<Voyage, 'ia' | 'source'>): { pseudo: string; annee: number } | null =>
+  !v.ia && v.source ? { pseudo: v.source.pseudo, annee: v.source.annee_en_cours } : null
+
+/**
+ * Un arrêt de l'indicateur de la ligne : la ligne du registre, et ce que la carte et mes tickets en
+ * disent de plus. Rien n'y vient d'une fiche d'année.
+ */
+export interface ArretDeLaLigne extends LigneDuRegistre {
+  /** Verrouillée sur la carte : après mon année en cours. */
+  fermee: boolean
+  /**
+   * Bouclée, comme la fiche de l'année le dit (`estBouclee`, `annee.ts`) : derrière soi, ou en cours
+   * avec le ticket de l'année suivante émis. Jamais une année verrouillée, ni en attente du Voyage suivi.
+   */
+  bouclee: boolean
+  /** Où en est l'année en cours, vers le Lion puis vers la Palme (`jauge`) ; nul ailleurs, et en attente. */
+  compte: { vus: number; total: number } | null
+  /** Le pseudo du voyageur suivi quand son Voyage en est à cette année (`voyageurSuivi`) ; nul sinon. */
+  suivi: string | null
+}
+
+/**
+ * Les dix arrêts d'une décennie. Le ticket de l'année suivante se lit sur la carte (`ticket_a_montrer`)
+ * ou parmi mes tickets : tant qu'ils ne sont pas lus, une année en cours peut ne pas encore se dire
+ * bouclée, jamais l'inverse.
+ */
+export function arrets(
+  v: Pick<Voyage, 'annees' | 'annee_en_cours' | 'ia' | 'source' | 'ticket_a_montrer'>,
+  items: readonly JournalItem[],
+  tickets: readonly Pick<Ticket, 'annee'>[],
+  decennie: number,
+): ArretDeLaLigne[] {
+  const suivi = voyageurSuivi(v)
+  return registre(v, items, decennie).map((l) => {
+    const a = v.annees.find((x) => x.annee === l.annee)
+    const ticket = v.ticket_a_montrer?.annee === l.annee + 1 ? v.ticket_a_montrer : (tickets.find((t) => t.annee === l.annee + 1) ?? null)
+    return {
+      ...l,
+      fermee: a?.statut === 'verrouillee',
+      // Verrouillée, elle n'est pas bouclée, même si un ticket la suit déjà.
+      bouclee: !!a && a.statut !== 'verrouillee' && !l.attente && estBouclee(a.statut, ticket),
+      compte: a && l.enCours ? jauge(a.progression, a.recompense) : null,
+      suivi: suivi?.annee === l.annee ? suivi.pseudo : null,
+    }
+  })
+}
+
+/** Un lien de la page d'une décennie vers une de ses pages (`PAGES_DE_LA_DECENNIE`). */
+export interface LienDeDecennie {
+  page: (typeof PAGES_DE_LA_DECENNIE)[number]
+  vers: string
+  /** Le nom que le monde donne à la page. */
+  titre: string
+  /** Le compte que la page sait dire sans rien lire de plus (mes billets de la décennie) ; nul sinon, ou pas encore lu. */
+  compte: number | null
 }
 
 /** Un panneau de la palissade (maquette : `.panneau`) : les affiches d'une année, collées de travers. */

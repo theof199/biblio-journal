@@ -6,6 +6,12 @@ import { PAGES_1890 } from '../mondes/1890/pages'
 import { PAGES_1900 } from '../mondes/1900/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import type { VueMonument } from '../mondes/types'
+import type { PropsFrontonDeDecennie } from '../voyage/decennie/FrontonDeDecennie'
+import type { PropsLiens } from '../voyage/decennie/Liens'
+import type { PropsLivret } from '../voyage/decennie/Livret'
+import type { PropsMonument } from '../voyage/decennie/Monument'
+import type { PropsOrdreDeDecennie } from '../voyage/decennie/Ordre'
+import type { PropsRegistre } from '../voyage/decennie/Registre'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
 import { visionnage } from '../test/journal'
@@ -558,5 +564,113 @@ describe('la page d’une décennie', () => {
     expect(retour).toHaveAttribute('href', '/voyage')
     fireEvent.click(retour)
     expect(await screen.findByRole('heading', { name: `Le Voyage de ${SESSION.user.pseudo}` })).toBeInTheDocument()
+  })
+
+  // Six sections de la page sont des dessins qu'un monde peut composer (`GabaritsDesPages.monument`,
+  // `frontonDeDecennie`, `livret`, `registre`, `liensDeDecennie`, `ordreDeDecennie`). Sans gabarit, le
+  // défaut reste : tous les tests plus haut, montés sur 1890, qui n'en a aucun. Le monde de test est
+  // 1890, auquel on prête des dessins qui disent ce qu'ils reçoivent.
+  describe('le dessin du monde', () => {
+    let remettre = () => undefined as void
+    afterEach(() => remettre())
+    const preter = (gabarits: typeof PAGES_1890.gabarits) => {
+      const avant = PAGES_1890.gabarits
+      PAGES_1890.gabarits = gabarits
+      remettre = () => void (PAGES_1890.gabarits = avant)
+    }
+    const dit = (quoi: string) => screen.getByTestId(quoi).textContent
+
+    const MonumentDuMonde = (p: PropsMonument) => (
+      <div>
+        <p data-testid="monument">{`${p.decennie} | ${p.annees.map((a) => `${a.annee}:${a.etat}`).join(' ')} | ${p.cases.map((c) => c.annee).join(' ')} | ${p.bouclee ? 'bouclée' : 'ouverte'} | ${[1893, 1896, 1899].map((a) => (p.ouvrable(a) ? 'oui' : 'non')).join(' ')}`}</p>
+        <button type="button" onClick={() => p.onOuvrir(1896)}>
+          Ouvrir 1896
+        </button>
+      </div>
+    )
+    const FrontonDuMonde = (p: PropsFrontonDeDecennie) => <h1 data-testid="fronton">{`La ligne ${p.decennie} : ${p.arrets.filter((a) => a.bouclee).map((a) => a.annee).join(' ')} | en cours ${p.arrets.find((a) => a.enCours)?.annee}`}</h1>
+    const LivretDuMonde = (p: PropsLivret) => (
+      <p data-testid="livret">{`${p.decennie} | ${p.tampon?.boucle_le ?? 'sans tampon'} | ${p.anneau.faites}/${p.anneau.total} | ${p.manque.type === 'phrase' ? p.manque.phrase : p.manque.type} | ${p.sortie ? `${p.sortie.decennie} ${p.sortie.nom} ${p.sortie.boucle_le}` : 'sans sortie'} | ${p.entree ? 'entrée' : 'dehors'}`}</p>
+    )
+    const RegistreDuMonde = (p: PropsRegistre) => (
+      <p data-testid="registre">{`${p.depart} | ${p.notes ? 'notes' : 'sans notes'} | ${p.tropLent} | ${p.rattrape} | ${p.lignes.map((l) => `${l.annee}:${l.ouvrable ? 'o' : '-'}${l.fermee ? 'f' : ''}${l.bouclee ? 'b' : ''}${l.compte ? `${l.compte.vus}/${l.compte.total}` : ''}${l.suivi ?? ''}`).join(' ')}`}</p>
+    )
+    const LiensDuMonde = (p: PropsLiens) => <p data-testid="liens">{p.liens.map((l) => `${l.page}>${l.vers}>${l.titre}>${l.compte}`).join(' | ')}</p>
+    const OrdreDuMonde = (p: PropsOrdreDeDecennie) => (
+      <div data-testid="ordre">
+        {p.liens}
+        {p.registre}
+        {p.livret}
+      </div>
+    )
+
+    // Mutations : la page qui monte `Monument` sans passer par `gabaritDe` ; `ouvrable` toujours vrai ;
+    // `onOuvrir` sans effet, ou la navigation laissée au monument.
+    it('le monument du monde reçoit la décennie, ses figures et ce qui s’ouvre, et la page navigue', async () => {
+      preter({ monument: MonumentDuMonde })
+      monterVoyage('/voyage/decennies/1890', ROUTES)
+      await decennie()
+      expect(dit('monument')).toBe('1890 | 1890:avant 1891:avant 1892:avant 1893:avant 1894:avant 1895:palme 1896:lion 1897:encours 1898:avance 1899:verrou | 1895 1896 1897 1898 1899 | ouverte | non oui oui')
+      expect(screen.queryByRole('img', { name: MANEGE })).toBeNull()
+      // Le retour et la plaque du chapitre restent à la page.
+      expect(screen.getByRole('link', { name: 'Retour à la carte' })).toBeInTheDocument()
+      expect(screen.getByText('Chapitre I')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Ouvrir 1896' }))
+      expect(await screen.findByRole('region', { name: 'L’année 1896' })).toBeInTheDocument()
+    })
+
+    // Mutations : `Fronton`, `Livret`, `Registre` ou `Liens` montés sans passer par `gabaritDe` ; la
+    // sortie lue sur la décennie de la page (1890 n'en aurait pas, 1900 se daterait de son propre
+    // tampon) ; le nom du monde quitté pris au monde de la page ; `entree` toujours vraie ; le compte
+    // des billets pris sur une autre décennie, ou dit avant que le journal soit lu.
+    it('le fronton, le passeport, le registre et les liens du monde reçoivent ce que la page a lu', async () => {
+      preter({ frontonDeDecennie: FrontonDuMonde, livret: LivretDuMonde, registre: RegistreDuMonde, liensDeDecennie: LiensDuMonde })
+      const lea = { ...VOYAGE.source, id: '11111111-1111-4111-8111-111111111111', pseudo: 'Léa', annee_en_cours: 1896 } as NonNullable<Voyage['source']>
+      const lectrice: Voyage = { ...VOYAGE, ia: false, source: lea, annees: VOYAGE.annees.map((a) => (a.annee === 1897 ? { ...a, progression: { essentiels_vus: 1, essentiels_total: 4, salles_completes: 0, salles_autres: 2 } } : a)) }
+      let lire: (r: Response) => void = () => undefined
+      const routes = { ...ROUTES, 'GET /api/me/voyage': () => json(lectrice), [JOURNAL]: () => new Promise<Response>((resolve) => (lire = resolve)) }
+      monterVoyage('/voyage/decennies/1890', routes)
+      expect(await screen.findByRole('heading', { level: 1, name: 'La ligne 1890 : 1895 1896 | en cours 1897' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 1, name: 'Années 1890' })).toBeNull()
+      await waitFor(() => expect(dit('livret')).toBe(`1890 | sans tampon | 3/5 | ${PHRASE} | sans sortie | entrée`))
+      expect(dit('registre')).toBe('1895 | sans notes | Léa est trop lent | false | 1890:- 1891:- 1892:- 1893:- 1894:- 1895:ob 1896:obLéa 1897:o1/4 1898:of 1899:of')
+      expect(screen.queryByRole('region', { name: 'Registre des recettes' })).toBeNull()
+      expect(dit('liens')).toBe(`billets>/voyage/decennies/1890/billets>${PAGES_1890.mots.boite.titre}>null | recherche>/voyage/decennies/1890/recherche>${PAGES_1890.mots.recherche.catalogue}>null`)
+      // Un film d'avant le départ n'a pas de billet : il ne se compte pas.
+      lire(json({ ...PAGE, items: [vu('a', 1896, 7), vu('b', 1897), vu('c', 1892)], next_cursor: null }))
+      await waitFor(() => expect(dit('liens')).toMatch(/billets>[^|]*>2 \| recherche>[^|]*>null$/))
+      expect(dit('registre')).toMatch(/^1895 \| notes /)
+    })
+
+    // La frontière : la page d'une décennie montre le tampon de la décennie d'avant. Mutations : voir
+    // plus haut ; `entreeFaite` nourrie de la décennie de l'année en cours.
+    it('le passeport du monde reçoit la sortie de la décennie d’avant, datée de son tampon, et l’entrée', async () => {
+      const prete = PAGES_1900.gabarits
+      PAGES_1900.gabarits = { livret: LivretDuMonde }
+      try {
+        const tampons = [{ decennie: 1890, boucle_le: '2026-01-14T10:00:00.000Z' }]
+        const journal1900 = 'GET /api/me/journal?limit=100&sortie_min=1900&sortie_max=1909'
+        const routes = (v: Voyage) => ({ ...ROUTES, 'GET /api/me/voyage': () => json(v), [journal1900]: journal([]) })
+        const dedans = monterVoyage('/voyage/decennies/1900', routes({ ...VOYAGE, annee_en_cours: 1900, tampons }))
+        await waitFor(() => expect(dit('livret')).toMatch(/\| 1890 Les origines 2026-01-14T10:00:00\.000Z \| entrée$/))
+        dedans.unmount()
+        // Sans tampon de 1890, aucune sortie, et l'entrée n'est pas faite avant 1900.
+        monterVoyage('/voyage/decennies/1900', routes(VOYAGE))
+        await waitFor(() => expect(dit('livret')).toMatch(/\| sans sortie \| dehors$/))
+      } finally {
+        PAGES_1900.gabarits = prete
+      }
+    })
+
+    // Mutations : `Ordre` monté sans passer par `gabaritDe` ; une section que la page ne passerait plus.
+    it('l’ordre du monde range les sections que la page a montées, et peut taire la palissade', async () => {
+      preter({ ordreDeDecennie: OrdreDuMonde })
+      monterVoyage('/voyage/decennies/1890', ROUTES)
+      await decennie()
+      const ordre = screen.getByTestId('ordre')
+      const noms = [...ordre.children].map((e) => e.getAttribute('aria-label') ?? e.getAttribute('aria-labelledby'))
+      expect(noms).toEqual(['Les billets et le catalogue des années 1890', 'registre-titre', 'livret-titre'])
+      expect(screen.queryByRole('heading', { name: new RegExp(PAGES_1890.mots.decennie.palissade.titre) })).toBeNull()
+    })
   })
 })

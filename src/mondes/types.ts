@@ -16,6 +16,12 @@ import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
 import type { PropsBilletDeSeance } from '../voyage/billet/BilletDeSeance'
 import type { PropsBilletEnGrand } from '../voyage/boite/BilletEnGrand'
 import type { PropsCasier } from '../voyage/boite/Casier'
+import type { PropsFrontonDeDecennie } from '../voyage/decennie/FrontonDeDecennie'
+import type { PropsLiens } from '../voyage/decennie/Liens'
+import type { PropsLivret } from '../voyage/decennie/Livret'
+import type { PropsMonument } from '../voyage/decennie/Monument'
+import type { PropsOrdreDeDecennie } from '../voyage/decennie/Ordre'
+import type { PropsRegistre } from '../voyage/decennie/Registre'
 import type { PropsComptoir } from '../voyage/film/Comptoir'
 import type { PropsNotice } from '../voyage/film/Notice'
 import type { PropsProjection } from '../voyage/film/Projection'
@@ -755,6 +761,36 @@ export interface GabaritsDesPages {
    * dialogue (`useDialogue`) : le focus pris et rendu, Échap.
    */
   billetEnGrand: ComponentType<PropsBilletEnGrand>
+  /**
+   * Le monument en tête de la page d'une décennie (`voyage/decennie/Monument.tsx`) : par défaut la
+   * toile du monde, dont une figure touchée ouvre son année. La page garde la navigation, le lien de
+   * retour et la plaque du chapitre, posés par-dessus.
+   */
+  monument: ComponentType<PropsMonument>
+  /**
+   * Le fronton de la page d'une décennie (`voyage/decennie/FrontonDeDecennie.tsx`), qui porte le titre
+   * de niveau 1. Il reçoit les arrêts de la ligne : de quoi dire où j'en suis, sans rien recompter.
+   */
+  frontonDeDecennie: ComponentType<PropsFrontonDeDecennie>
+  /**
+   * Le passeport de la page d'une décennie (`voyage/decennie/Livret.tsx`) : le tampon ou sa place, ce
+   * qui manque (la phrase, son attente, sa panne, que la page décide), et la frontière passée : le
+   * tampon de la décennie d'avant, l'entrée faite ou non. La page garde la lecture des tickets.
+   */
+  livret: ComponentType<PropsLivret>
+  /**
+   * Le registre de la page d'une décennie (`voyage/decennie/Registre.tsx`) : une ligne par année, lien
+   * vers sa page quand elle en a une (`ouvrable`). C'est le chemin du clavier et du lecteur d'écran.
+   */
+  registre: ComponentType<PropsRegistre>
+  /** Les liens de la page d'une décennie vers sa boîte et son guichet (`voyage/decennie/Liens.tsx`). */
+  liensDeDecennie: ComponentType<PropsLiens>
+  /**
+   * L'ordre des sections de la page d'une décennie, sous le monument et le fronton
+   * (`voyage/decennie/Ordre.tsx`) : le passeport, la palissade, le registre et les liens, que la page
+   * monte et lui passe. Un monde les range autrement ; la palissade est la seule qu'il peut ne pas montrer.
+   */
+  ordreDeDecennie: ComponentType<PropsOrdreDeDecennie>
 }
 
 export interface HabillagePages {

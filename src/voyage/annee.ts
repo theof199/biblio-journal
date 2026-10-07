@@ -88,7 +88,7 @@ export function arriveesDeLAnnee(profondeur: number, progression: Progression | 
  * octobre 2026), utilisé ou non ; une année déjà derrière soi l'est aussi, même ouverte sans ticket
  * par le rattrapage du Voyage suivi.
  */
-export const estBouclee = (statut: StatutAnnee, ticket: TicketDeLAnnee | null): boolean => statut === 'ouverte' || ticket !== null
+export const estBouclee = (statut: StatutAnnee, ticket: TicketDeLAnnee | { annee: number } | null): boolean => statut === 'ouverte' || ticket !== null
 
 export interface Avancee {
   cle: CleBillet
