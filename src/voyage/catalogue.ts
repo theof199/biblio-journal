@@ -1,5 +1,6 @@
 import type { AnneeCarte, EtatFilm, FichePrete } from '../api/voyage'
 import { apercuLitLaFiche, decennieDe } from './regles'
+import { numeroDeLaSalle } from './salles'
 
 /**
  * La recherche du Voyage (plan 2c ; maquette 1890, écran X : « au guichet, le catalogue des vues »),
@@ -20,6 +21,11 @@ export interface Vue {
   note: number | null
   /** De la salle « Les essentiels ». */
   essentiel: boolean
+  /**
+   * Le numéro de la salle où la vue se trouve (`numeroDeLaSalle`, `salles.ts`) : celui que la fiche
+   * de son année donne à cette salle, lu, jamais recalculé ici. C'est la salle de `filmId`.
+   */
+  voie: number
 }
 
 /**
@@ -45,10 +51,11 @@ export function catalogue(fiches: readonly FichePrete[]): Vue[] {
   for (const fiche of fiches) {
     for (const salle of fiche.salles) {
       const essentiel = salle.cle === 'essentiels'
+      const voie = numeroDeLaSalle(salle)
       for (const f of salle.films) {
-        ajouter({ annee: fiche.annee, filmId: f.id, tmdbId: f.tmdb_id, titre: f.title, realisateur: f.realisateur, etat: f.etat, note: f.note, essentiel })
+        ajouter({ annee: fiche.annee, filmId: f.id, tmdbId: f.tmdb_id, titre: f.title, realisateur: f.realisateur, etat: f.etat, note: f.note, essentiel, voie })
         for (const b of f.programme?.bobines ?? []) {
-          ajouter({ annee: fiche.annee, filmId: f.id, tmdbId: b.tmdb_id, titre: b.title, realisateur: '', etat: b.etat, note: null, essentiel })
+          ajouter({ annee: fiche.annee, filmId: f.id, tmdbId: b.tmdb_id, titre: b.title, realisateur: '', etat: b.etat, note: null, essentiel, voie })
         }
       }
     }

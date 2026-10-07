@@ -14,6 +14,8 @@ import { SESSION } from '../test/pageVoyage'
 import { json, servir } from '../test/serveur'
 import { ficheEnAttente, fichePrete, ficheVerrouillee, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import { anneeCivile } from '../voyage/decennie'
+import type { PropsCatalogueDuGuichet } from '../voyage/recherche/Catalogue'
+import type { PropsTeteDuGuichet } from '../voyage/recherche/Tete'
 import { noterLeGuichet } from '../voyage/recherche/memoire'
 import { decennieDe } from '../voyage/regles'
 import styles from './VoyageRecherche.module.css'
@@ -618,5 +620,108 @@ describe('le guichetier', () => {
     expect(await titres()).toEqual(['Cendrillon'])
     expect(guichet.dernier().vivant).toBe(false)
     expect(guichet.dernier().frappe).toBe(-9)
+  })
+})
+
+// Deux sections du guichet sont des dessins qu'un monde peut composer (`GabaritsDesPages.teteDuGuichet`,
+// `catalogueDuGuichet`). Sans gabarit, le défaut reste : tous les tests plus haut, montés sur 1890, qui
+// n'en a aucun. Le monde de test est 1890, auquel on prête des dessins qui disent ce qu'ils reçoivent.
+describe('le dessin du monde au guichet', () => {
+  let remettre = () => undefined as void
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+  afterEach(() => {
+    remettre()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+  const preter = (gabarits: typeof PAGES_1890.gabarits) => {
+    const avant = PAGES_1890.gabarits
+    PAGES_1890.gabarits = gabarits
+    remettre = () => void (PAGES_1890.gabarits = avant)
+  }
+  const dit = (quoi: string) => screen.getByTestId(quoi).textContent
+
+  const TeteDuMonde = (p: PropsTeteDuGuichet) => (
+    <div>
+      <p data-testid="tete">{`${p.decennie} | ${p.monde.pages.mots.recherche.catalogue} | ${p.calme ? 'calme' : 'vivante'}`}</p>
+      {p.retour}
+      <form {...p.guichet} aria-label="La grille du monde">
+        <input {...p.champ} />
+      </form>
+    </div>
+  )
+  const CatalogueDuMonde = (p: PropsCatalogueDuGuichet) => (
+    <div>
+      <p data-testid="catalogue">{`${p.decennie} | ${p.annees.join(' ')} | cochées ${[...p.cochees].join(' ')} | ${p.aLAffiche ? 'affiche' : `cherché « ${p.saisie} »`} | ${p.enCours ? 'en cours' : 'lu'} | ${p.enPanne} | ${p.vide} | ${p.vues.map((v) => `${v.annee}:${v.titre}:voie ${v.voie}`).join(' ; ')}`}</p>
+      <button type="button" onClick={() => p.onBasculer(1896)}>
+        Cocher 1896
+      </button>
+    </div>
+  )
+
+  // Mutations : la page qui monte `Tete` sans passer par `gabaritDe` ; `onChange`, `onFocus` ou `onBlur`
+  // sans effet (la saisie figée, la fenêtre qui ne monte plus au-dessus du clavier, la place jamais
+  // rendue) ; l'envoi qui ne replie plus le clavier.
+  it('la tête du monde reçoit le retour monté, le formulaire et le champ tout réglés, et la page garde le doigt', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(pointer: coarse)', media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    const amener = vi.fn()
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { value: amener, configurable: true, writable: true })
+    try {
+      preter({ teteDuGuichet: TeteDuMonde })
+      monter(['/voyage/decennies/1890', PAGE])
+      await lu()
+      expect(dit('tete')).toBe(`1890 | ${PAGES_1890.mots.recherche.catalogue} | vivante`)
+      // Ni la toile ni l'enseigne du défaut.
+      expect(screen.queryByRole('img', { name: 'Le guichet des années 1890.' })).toBeNull()
+      expect(screen.queryByText('Guichet')).toBeNull()
+      const grille = screen.getByRole('search', { name: 'La grille du monde' })
+      expect(champ()).toHaveAttribute('placeholder', PAGES_1890.mots.recherche.champ)
+      expect(champ()).toHaveAttribute('type', 'search')
+      expect(champ()).toHaveAttribute('enterkeyhint', 'search')
+      expect(champ()).toHaveAttribute('autocomplete', 'off')
+      fireEvent.focus(champ())
+      taper('cendr')
+      expect(champ()).toHaveValue('cendr')
+      expect(await titres()).toEqual(['Cendrillon'])
+      expect(amener).toHaveBeenCalledTimes(1)
+      expect(amener.mock.contexts[0]).toBe(grille)
+      expect(screen.getByTestId('place-du-clavier')).toBeInTheDocument()
+      // « Rechercher » du clavier ne fait que le replier : rien ne part, la page reste.
+      champ().focus()
+      fireEvent.submit(grille)
+      expect(champ()).not.toHaveFocus()
+      fireEvent.blur(champ())
+      expect(screen.queryByTestId('place-du-clavier')).not.toBeInTheDocument()
+      expect(adresse()).toBe(PAGE)
+      fireEvent.click(screen.getByRole('link', { name: 'Retour aux années 1890' }))
+      await waitFor(() => expect(adresse()).toBe('/voyage/decennies/1890'))
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
+
+  // Mutations : `Catalogue` monté sans passer par `gabaritDe` ; les années tirées de la carte et non
+  // des fiches prêtes ; `aLAffiche` toujours vrai ; `onBasculer` sans effet ; la voie perdue en route
+  // (`catalogue.test.ts` tient sa règle).
+  it('le catalogue du monde reçoit les années prêtes, les vues cherchées avec leur voie, et la phrase du vide', async () => {
+    preter({ catalogueDuGuichet: CatalogueDuMonde })
+    const rangees = { ...ROUTES, [FICHE(1896)]: () => json({ ...FICHES[1896]!, salles: FICHES[1896]!.salles.map((s, i) => ({ ...s, rang: [5, 3][i]! })) }) }
+    monter(PAGE, rangees)
+    await waitFor(() => expect(dit('catalogue')).toMatch(/\| lu \|/))
+    expect(screen.queryByRole('heading', { level: 1, name: PAGES_1890.mots.recherche.catalogue })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Années' })).toBeNull()
+    expect(dit('catalogue')).toBe(
+      '1890 | 1895 1896 1897 | cochées  | affiche | lu | 0 | Les essentiels de la décennie sont tous vus. | 1897:Cendrillon:voie 1 ; 1896:L’Arrivée d’un train en gare de La Ciotat:voie 5 ; 1895:Programme Lumière:voie 1 ; 1895:Le Repas de bébé:voie 1',
+    )
+    taper('manoir')
+    await waitFor(() => expect(dit('catalogue')).toMatch(/cherché « manoir » \| lu \| 0 \| [^|]* \| 1896:Le Manoir du diable:voie 3$/))
+    expect(dit('catalogue')).toContain(`| ${PAGES_1890.mots.recherche.vide} |`)
+    fireEvent.click(screen.getByRole('button', { name: 'Cocher 1896' }))
+    taper('')
+    await waitFor(() => expect(dit('catalogue')).toMatch(/cochées 1896 \| cherché « {2}» \|.*Ciotat:voie 5 ; 1896:La Fée aux choux:voie 5 ; 1896:Le Manoir du diable:voie 3$/))
+    // Le lien hors du Voyage reste à la page.
+    expect(screen.getByRole('link', { name: PAGES_1890.mots.recherche.partout })).toBeInTheDocument()
   })
 })

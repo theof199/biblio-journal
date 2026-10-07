@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { aLAffiche, anneesDuCatalogue, catalogue, chercher, passage, plier } from './catalogue'
+import { numeroDeLaSalle } from './salles'
 import { annee, fichePrete, filmDeSalle, salle } from '../test/voyage'
 
 const train = filmDeSalle({ id: 'f-train', tmdb_id: 1, title: 'L’Arrivée d’un train en gare de La Ciotat', realisateur: 'Louis Lumière', etat: 'sur_le_plex' })
@@ -56,6 +57,25 @@ describe('le catalogue des vues', () => {
     ])
     // Une bobine n'a ni réalisateur ni note au contrat ; son état est le sien.
     expect(vues[1]).toMatchObject({ titre: 'L’Arroseur arrosé', realisateur: '', etat: 'vu', note: null })
+  })
+
+  // La voie d'une vue est le numéro que la fiche d'année donne à sa salle (`numeroDeLaSalle`, la règle
+  // du brief 3), celle de la ligne qui ouvre la fiche du film. Les rangs ne suivent pas l'ordre de la
+  // réponse, et la première salle n'a pas le rang 1. Mutations : un numéro recalculé ici (`i + 1`, la
+  // place de la salle dans la réponse) ; la voie de la dernière salle où le film paraît ; une bobine
+  // sans la voie de son programme.
+  it('donne à chaque vue la voie de sa salle, celle de la fiche d’année', () => {
+    const haut = salle({ id: 's-haut', rang: 7, cle: null, films: [manoir, programme] })
+    const bas = salle({ id: 's-bas', rang: 2, cle: 'essentiels', films: [train, { ...manoir, id: 'f-manoir-bis' }] })
+    const vues = catalogue([fichePrete({ annee: 1896, salles: [haut, bas] })])
+    expect(vues.map((v) => [v.filmId, v.tmdbId, v.voie])).toEqual([
+      ['f-manoir', 3, 7],
+      ['f-prog', 4, 7],
+      ['f-prog', 5, 7],
+      ['f-prog', 6, 7],
+      ['f-train', 1, 2],
+    ])
+    expect(vues.map((v) => v.voie)).toEqual([haut, haut, haut, haut, bas].map(numeroDeLaSalle))
   })
 })
 

@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Vingt-quatre clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets et six sur la page d'une décennie. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Vingt-six clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie et deux sur le guichet. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -426,7 +426,13 @@ Où vit quoi :
   `liensDeDecennie` (la boîte et le guichet, avec le compte de mes billets une fois le journal lu) et
   `ordreDeDecennie` (le passeport, la palissade, le registre et les liens, montés par la page : un
   monde les range autrement, et la palissade est la seule section qu'il peut ne pas montrer). Les
-  défauts ne lisent rien de ce qui s'ajoute. 1890 et le monde « à venir » n'en fournissent aucune.
+  défauts ne lisent rien de ce qui s'ajoute. Sur le guichet (`pages/VoyageRecherche.tsx`) :
+  `teteDuGuichet` (`voyage/recherche/Tete.tsx` : le bandeau sur sa toile et la fenêtre ; elle reçoit
+  le lien de retour monté, le formulaire et le champ tout réglés, que la page écoute : la saisie, sa
+  mémoire et la montée au-dessus du clavier restent à la page) et `catalogueDuGuichet`
+  (`voyage/recherche/Catalogue.tsx` : les années prêtes à cocher, le titre de la page, les vues déjà
+  cherchées, l'attente, la panne, la phrase du vide). Chaque vue porte la voie de sa salle
+  (`Vue.voie`, `voyage/catalogue.ts`, lue par `numeroDeLaSalle`), que le défaut ne montre pas. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du

@@ -26,6 +26,8 @@ import type { PropsComptoir } from '../voyage/film/Comptoir'
 import type { PropsNotice } from '../voyage/film/Notice'
 import type { PropsProjection } from '../voyage/film/Projection'
 import type { PropsMarches } from '../voyage/parade/Marches'
+import type { PropsCatalogueDuGuichet } from '../voyage/recherche/Catalogue'
+import type { PropsTeteDuGuichet } from '../voyage/recherche/Tete'
 import type { PropsRayons } from '../voyage/salles/Rayons'
 import type { PropsSalle } from '../voyage/salles/Salle'
 import type { PropsProspectus } from '../voyage/seance/Prospectus'
@@ -791,6 +793,19 @@ export interface GabaritsDesPages {
    * monte et lui passe. Un monde les range autrement ; la palissade est la seule qu'il peut ne pas montrer.
    */
   ordreDeDecennie: ComponentType<PropsOrdreDeDecennie>
+  /**
+   * La tête du guichet, la recherche du Voyage (`voyage/recherche/Tete.tsx`) : par défaut le bandeau
+   * du monde sur une toile et la fenêtre du guichet. Lue par `pages/VoyageRecherche.tsx`, qui garde la
+   * saisie et sa mémoire, le comportement du champ au doigt (il monte au-dessus du clavier) et le
+   * retour : elle passe le formulaire et le champ tout réglés, et le lien de retour monté.
+   */
+  teteDuGuichet: ComponentType<PropsTeteDuGuichet>
+  /**
+   * Le catalogue du guichet (`voyage/recherche/Catalogue.tsx`) : les années qui se cochent, le titre
+   * de la page, les vues trouvées ou « les plus demandées », l'attente, la panne, le vide. La page
+   * garde les lectures et la recherche : les vues arrivent cherchées, rien ne part à la frappe.
+   */
+  catalogueDuGuichet: ComponentType<PropsCatalogueDuGuichet>
 }
 
 export interface HabillagePages {
