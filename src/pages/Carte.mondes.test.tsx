@@ -14,8 +14,9 @@ import { fichePrete, voyage1890 } from '../test/voyage'
 
 /**
  * Le registre de la page est une constante de module : ce fichier le double pour avoir deux mondes à
- * bobines. 1890 reste le vrai (trois bobines) ; 1900 est le monde « à venir » avec deux bobines
- * d'essai ; 1910 reste « à venir », sans bobine. `Carte.test.tsx` garde le vrai registre.
+ * bobines. 1890 reste le vrai (trois bobines) ; 1900 est le vrai monde privé de sa scène, avec deux
+ * bobines d'essai à la place des siennes ; 1910 reste « à venir », sans bobine. `Carte.test.tsx`
+ * garde le vrai registre, scène et passage de 1900 compris.
  *
  * `scene1900`, éteint par défaut : allumé, le monde de 1900 porte une scène collante d'essai, et les
  * tests du déblocage l'allument et l'éteignent eux-mêmes. Le registre le relit à chaque appel, la
@@ -36,7 +37,7 @@ vi.mock('../mondes', async (original) => {
     ...vrai,
     creerRegistre: () => {
       const registre = vrai.creerRegistre()
-      const de1900 = { ...registre(1900), bobines: essai.bobines1900 }
+      const de1900 = { ...registre(1900), bobines: essai.bobines1900, scene: null }
       const jamaisJouee = () => {
         throw new Error('la scène d’essai ne se joue pas')
       }
@@ -368,7 +369,7 @@ describe('sans monde à scène au registre', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  // Le drapeau éteint, c'est le registre d'aujourd'hui : rien n'est caché, la roulotte se gare où en
+  // Le drapeau éteint, c'est un registre sans monde à scène (1900 y est privé de la sienne) : rien n'est caché, la roulotte se gare où en
   // est le Voyage suivi. Mutation : la scène lue ailleurs qu'au registre (`d === 1900` en dur).
   it('donne toutes les années, les nomme toutes, et gare la roulotte en 1903 pour un membre en 1899', async () => {
     expect(essai.scene1900).toBe(false)

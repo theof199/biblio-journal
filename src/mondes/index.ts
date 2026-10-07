@@ -1,6 +1,7 @@
 import type { Monde } from './types'
 import { mondeAVenir } from './avenir'
 import { creerMonde1890 } from './1890'
+import { creerMonde1900 } from './1900'
 
 /**
  * Le registre des mondes : une ligne par monde qui a son chantier. Toute autre décennie prend le
@@ -9,6 +10,7 @@ import { creerMonde1890 } from './1890'
  */
 const FABRIQUES: Record<number, () => Monde> = {
   1890: creerMonde1890,
+  1900: creerMonde1900,
 }
 
 export function creerRegistre(): (decennie: number) => Monde {

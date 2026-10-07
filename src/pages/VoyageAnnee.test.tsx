@@ -808,7 +808,8 @@ describe('la fiche d’une année', () => {
   })
 
   it('l’intertitre d’un monde à venir n’annonce aucun tampon', async () => {
-    monterVoyage('/voyage/1902', { ...ROUTES, 'GET /api/me/voyage/annees/1902': () => json(ficheVerrouillee(1902)), [JOURNAL(1902)]: journal([]) })
+    // 1912 : les années 1900 ont leur monde au registre (plan 3b), les années 1910 pas encore.
+    monterVoyage('/voyage/1912', { ...ROUTES, 'GET /api/me/voyage/annees/1912': () => json(ficheVerrouillee(1912)), [JOURNAL(1912)]: journal([]) })
     await screen.findByText('Un monde à venir.')
     expect(screen.queryByText(/le tampon/)).toBeNull()
   })

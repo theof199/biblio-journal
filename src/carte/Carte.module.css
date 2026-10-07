@@ -42,6 +42,13 @@
 }
 .ticket:disabled { filter: saturate(0.2) brightness(0.7); }
 .ticket span + span { font-size: 11.5px; font-weight: 600; opacity: 0.72; letter-spacing: 0.04em; }
+/* Le passage au geste (maquette « Voyage immobile 1900 », `.action`) : à la place du ticket, au-dessus de lui s'il est là. */
+.trainOmbre { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 4; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55)); }
+.trainOmbre.auDessusDuTicket { bottom: 80px; }
+.train {
+  display: grid; place-items: center; min-height: 48px; padding: 8px 14px; border: 0; border-radius: 3px; white-space: nowrap;
+  background: var(--corail); color: #1b0e09; font-weight: 700; font-size: 13.5px; letter-spacing: 0.06em; text-transform: uppercase;
+}
 .erreur { position: absolute; left: 16px; right: 16px; bottom: 84px; z-index: 5; margin: 0; padding: 9px 14px; border-radius: 12px; background: rgba(10, 7, 5, 0.93); border: 1px solid rgba(230, 185, 74, 0.28); font-size: 12.5px; text-align: center; }
 
 .apercu {

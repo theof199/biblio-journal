@@ -50,8 +50,9 @@ venir »** (que la signature oblige à suivre) : jamais un contournement dans le
 
 **`Monde.scene` : la scène collante** (plan 3a ; `SceneCollante`, `src/mondes/types.ts`, dont les
 commentaires font foi). Nulle, la section glisse sous la caméra et le moteur y dessine la route, les
-cases et l'avatar : c'est 1890 et le monde « à venir », et **aucun monde n'en porte encore** (1900
-viendra). Posée, la section ne glisse plus et le monde prend à sa charge ce que le moteur dessinait
+cases et l'avatar : c'est 1890 et le monde « à venir ». **1900 est le seul monde qui en porte une**
+(au registre depuis le plan 3b : la carte le cache à qui n'a pas atteint sa décennie, et l'avancée y
+joue son passage). Posée, la section ne glisse plus et le monde prend à sa charge ce que le moteur dessinait
 (la route, les cases, l'avatar, la roulotte garée, la brume, sa bande de la vue d'ensemble) ; tout
 ce qui bouge se tire de `VueMonde.avance`. Ses cinq membres, et ce que chacun doit au moteur :
 

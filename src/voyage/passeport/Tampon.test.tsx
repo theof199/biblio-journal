@@ -91,9 +91,11 @@ describe('le tampon du passeport', () => {
   // Le jumeau du titre : un monde sans titre de voyageur (« à venir ») n'en invente pas.
   // Mutation : le titre du monde 1890 écrit en dur.
   it('dit le titre du monde de sa décennie, et rien quand il n’en a pas', () => {
-    render(<Tampon monde={mondes(1900)} decennie={1900} tampon={{ decennie: 1900, boucle_le: '2026-09-28T12:00:00.000Z' }} />)
-    expect(screen.getByText('Années 1900')).toBeInTheDocument()
+    // 1910 : les années 1900 ont leur monde au registre (plan 3b), et lui a un titre.
+    render(<Tampon monde={mondes(1910)} decennie={1910} tampon={{ decennie: 1910, boucle_le: '2026-09-28T12:00:00.000Z' }} />)
+    expect(screen.getByText('Années 1910')).toBeInTheDocument()
     expect(screen.queryByText('Spectateur des origines')).toBeNull()
+    expect(screen.queryByText(/Spectateur/)).toBeNull()
     expect(screen.getByText('28 septembre 2026')).toBeInTheDocument()
   })
 

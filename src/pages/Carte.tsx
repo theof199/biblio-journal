@@ -44,6 +44,8 @@ import styles from '../carte/Carte.module.css'
 const mondes = creerRegistre()
 /** Le déblocage (plan 3b) : seul un monde à scène collante se ferme à qui ne l'a pas atteint. */
 const aUneScene = (decennie: number) => mondes(decennie).scene !== null
+/** Le passage d'entrée (plan 3b) : un monde à scène dont `entree` porte au moins un temps. */
+const aUnPassage = (decennie: number) => (mondes(decennie).scene?.entree.length ?? 0) > 0
 /**
  * Hors du composant, donc stable : `useQueries` ne rend alors un nouveau tableau que si une
  * fiche change (constaté, TanStack Query 5.104). Sans lui, un tableau neuf à chaque rendu
@@ -96,6 +98,13 @@ export default function Carte() {
   const [date, setDate] = useState<DateVraie | null>(null)
   const [roulotteDite, setRoulotteDite] = useState(false)
   const [calque, setCalque] = useState<{ type: 'tampon'; decennie: number } | { type: 'carton'; annee: number } | null>(null)
+  // Le passage d'entrée d'un monde (plan 3b). `bonjour` : l'avancée en est à ce temps-là, le seul où
+  // la toile répond (un toucher pose le passage à sa fin). `annonce` : la décennie dont les lignes du
+  // carton sont dites hors de vue, le passage tenant lieu de carton. `proche` : celle dont le moteur
+  // dit le passage à portée de geste.
+  const [bonjour, setBonjour] = useState(false)
+  const [annonce, setAnnonce] = useState<number | null>(null)
+  const [proche, setProche] = useState<number | null>(null)
 
   // Le son (plan 2d) : une ambiance par page, qui ne crée rien avant le bouton « Son ». Le réglage
   // retenu ne rallume rien de lui-même : il dit seulement au bouton de proposer de le reprendre.
@@ -187,6 +196,13 @@ export default function Carte() {
     return () => clearTimeout(j)
   }, [roulotteDite])
 
+  // L'annonce hors de vue s'efface d'elle-même, au rythme du carton qu'elle remplace.
+  useEffect(() => {
+    if (annonce === null) return
+    const j = setTimeout(() => setAnnonce(null), 3100)
+    return () => clearTimeout(j)
+  }, [annonce])
+
   useEffect(() => {
     if (!avancee || !moteur || !v) return
     let vivant = true
@@ -225,6 +241,19 @@ export default function Carte() {
         moteur.claquer()
         vibrer(20)
       },
+      aUnPassage,
+      // Le monde d'arrivée dit bonjour : une avancée ne va que vers l'avant, le passage se joue à
+      // l'endroit. Le temps de ce passage, et lui seul, la toile sort de l'inertie.
+      direBonjour: async (decennie) => {
+        if (!vivant) return
+        setAnnonce(decennie)
+        setBonjour(true)
+        try {
+          await moteur.direBonjour(decennie, 'endroit')
+        } finally {
+          if (vivant) setBonjour(false)
+        }
+      },
     }).then(finir, finir)
     // L'avancée abandonnée (rejouée parce que le Voyage est relu, ou page quittée) s'arrête là : chacun
     // de ses temps relit `vivant` avant de commander le moteur ou de poser un calque, et le calque
@@ -232,6 +261,7 @@ export default function Carte() {
     return () => {
       vivant = false
       setCalque(null)
+      setBonjour(false)
     }
   }, [avancee, moteur, v, attendre, user.id])
 
@@ -376,8 +406,10 @@ export default function Carte() {
     <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }}>
       <h1 className="sr-only">Le Voyage de {user.pseudo}</h1>
       {/* Ce qui est derrière l'avancée (la porte, l'adieu, le tampon, la marche, le carton) : rien n'y
-          répond tant qu'elle joue, ni au doigt ni au clavier. Le moteur, lui, mène toujours la caméra. */}
-      <div className={styles.fond} {...(avancee ? INERTE : null)}>
+          répond tant qu'elle joue, ni au doigt ni au clavier. Le moteur, lui, mène toujours la caméra.
+          Deux enveloppes : la toile seule répond pendant le passage d'entrée (`bonjour`), où le moteur
+          ne fait d'un toucher que poser le passage à sa fin ; le reste attend la fin de l'avancée. */}
+      <div className={styles.fond} {...(avancee && !bonjour ? INERTE : null)}>
         {etat ? (
           <CarteCanvas
             etat={etat}
@@ -400,9 +432,12 @@ export default function Carte() {
                 ambiance.presences(liste)
                 montrerDecennie(decennie)
               },
+              entreeProche: setProche,
             }}
           />
         ) : null}
+      </div>
+      <div className={styles.fond} {...(avancee ? INERTE : null)}>
 
         <header className={styles.hud}>
           <div>
@@ -488,6 +523,16 @@ export default function Carte() {
             </button>
           </div>
         ) : null}
+        {/* Le passage au geste (maquette « Voyage immobile 1900 », `#b-action`) : offert quand le moteur
+            dit l'entrée d'un monde à portée, à qui a atteint sa décennie, jamais pendant une avancée. Il
+            ne joue que le passage : ni porte ni adieu, qui n'appartiennent qu'à l'avancée. */}
+        {proche !== null && !avancee && v.annee_en_cours >= proche ? (
+          <div className={`${styles.trainOmbre}${ticket ? ` ${styles.auDessusDuTicket}` : ''}`}>
+            <button type="button" className={styles.train} onClick={() => void moteur?.direBonjour(proche, 'endroit')}>
+              {`Prendre le train pour ${proche}`}
+            </button>
+          </div>
+        ) : null}
         {utiliser.error ? (
           <p role="alert" className={styles.erreur}>
             {utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.'}
@@ -547,6 +592,12 @@ export default function Carte() {
           onUtiliser={fete.ticket === v.annee_en_cours + 1 ? encaisser : undefined}
           onFin={() => setFete(null)}
         />
+      ) : null}
+      {/* Un monde à passage n'a pas de carton : ses lignes sont dites, hors de vue. */}
+      {annonce !== null ? (
+        <p role="status" className="sr-only">
+          {[mondes(annonce).chapitre, mondes(annonce).nom, mondes(annonce).sous].filter(Boolean).join(' · ')}
+        </p>
       ) : null}
       {calque?.type === 'carton' ? (
         <div className={styles.carton} role="status">

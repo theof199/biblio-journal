@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { creerRegistre } from '.'
 import { mondeAVenir } from './avenir'
+import { PAGES_A_VENIR } from './avenir/pages'
 import type { Monde, VueMonde, VueMonument } from './types'
 import { contexteFactice } from '../test/contexteFactice'
 import { vueFactice } from '../test/vueFactice'
@@ -14,6 +15,22 @@ describe('le registre des mondes', () => {
     const autre = creerRegistre()
     expect(une(1950)).toBe(une(1950))
     expect(autre(1950)).not.toBe(une(1950))
+  })
+
+  // Plan 3b, tâche 13 : la ligne `1900`. C'est elle qui rend le déblocage effectif (la carte ne
+  // ferme qu'un monde à scène) et qui fait jouer le passage. Les pages de ses années restent celles
+  // du monde « à venir » : leur habillage est un autre lot. Mutations : la ligne `1900` retirée de
+  // `FABRIQUES` ; un `pages` propre à 1900 (`{ ...PAGES_A_VENIR }` suffit à tomber) ; une ligne `1910`.
+  it('donne aux années 1900 leur monde, à scène et à passage, habillé des pages du monde « à venir »', () => {
+    const registre = creerRegistre()
+    const de1900 = registre(1900)
+    expect(de1900.aVenir).toBe(false)
+    expect(de1900.decennie).toBe(1900)
+    expect(de1900.scene?.entree.length).toBeGreaterThan(0)
+    expect(de1900.pages).toBe(PAGES_A_VENIR)
+    expect(registre(1890).scene).toBeNull()
+    expect(registre(1910).aVenir).toBe(true)
+    expect(registre(1910).scene).toBeNull()
   })
 
   // Relecture de la tâche 5. Mutations : `siteDuChantier` du monde « à venir » qui rend un nombre
@@ -73,8 +90,8 @@ describe('le registre des mondes', () => {
   const mondeDEssai = (cle: string): Monde => ({ ...mondeAVenir(1900), bobines: [{ cle, titre: 'Bobine d’essai', qui: 'Personne, 1900' }] })
 
   // Plan 3a, tâche 7 : le compteur va par décennie, et l'appareil ne retient que la clé ; une clé
-  // portée par deux mondes compterait une trouvaille dans les deux. Le registre n'a aujourd'hui qu'un
-  // monde à bobines : un monde d'essai se joint à lui, comme le fera la ligne de 1900.
+  // portée par deux mondes compterait une trouvaille dans les deux. Le registre a deux mondes à
+  // bobines depuis la ligne de 1900 (plan 3b) ; un monde d'essai se joint à eux, comme le fera le suivant.
   // Mutations : une clé de 1890 recopiée dans le monde d'essai (la deuxième assertion) ; une clé
   // répétée dans `BOBINES` de 1890, ou une bobine de même clé donnée au monde « à venir » (la
   // première) ; `clesEnDouble` qui ne rendrait jamais rien (la troisième).
