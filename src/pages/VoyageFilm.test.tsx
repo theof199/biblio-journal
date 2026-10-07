@@ -9,6 +9,7 @@ import type { ReactionsCatalogue } from '../api/reactions'
 import type { Bobine, FilmDeSalle } from '../api/voyage'
 import type { VueScene } from '../mondes/types'
 import { PAGES_1890 } from '../mondes/1890/pages'
+import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { RELECTURES } from '../voyage/relecture'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
@@ -739,6 +740,30 @@ describe('la fiche d’un film du Voyage', () => {
       monterVoyage(page(FAUCON), ROUTES)
       await screen.findByRole('heading', { level: 1, name: FAUCON.title })
       expect(FausseImage.creees.map((i) => i.src)).toContain(FAUCON.cover_url)
+    })
+  })
+
+  // Le geste qui mène au billet porte le nom que le monde lui donne (`mots.billet.ouvrir` et
+  // `ouvrirSous`) : 1890 et le monde « à venir » gardent « Je l’ai vu », que tous les tests de ce
+  // fichier lisent encore. Mutation : le mot remis en dur dans `Guichet.tsx`.
+  describe('les mots du monde au guichet', () => {
+    let remettre = () => undefined as void
+    afterEach(() => remettre())
+
+    it('« Je l’ai vu » est le mot du monde : un autre mot mène au même billet', async () => {
+      const avant = PAGES_1890.mots.billet
+      PAGES_1890.mots.billet = { ...avant, ouvrir: 'Prendre place', ouvrirSous: 'le rideau se lève' }
+      remettre = () => void (PAGES_1890.mots.billet = avant)
+      monterAvecSonde(page(FAUCON), ROUTES)
+      const lien = await screen.findByRole('link', { name: /Prendre place/ })
+      expect(lien).toHaveTextContent('le rideau se lève')
+      expect(screen.queryByRole('link', { name: /Je l’ai vu/ })).toBeNull()
+      fireEvent.click(lien)
+      expect(await screen.findByTestId('sonde')).toHaveTextContent('/voyage/1897/films/f-faucon/billet null')
+    })
+
+    it('1890 et le monde « à venir » disent « Je l’ai vu », « poinçonner mon billet »', () => {
+      for (const pages of [PAGES_1890, PAGES_A_VENIR]) expect([pages.mots.billet.ouvrir, pages.mots.billet.ouvrirSous]).toEqual(['Je l’ai vu', 'poinçonner mon billet'])
     })
   })
 })

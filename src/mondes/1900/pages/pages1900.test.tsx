@@ -94,6 +94,8 @@ describe('le costume de 1900', () => {
     expect([m.billet.valider, m.billet.validerSous, m.boite.titre, m.boite.ranger, m.recherche.champ, m.decennie.registre, m.decennie.passeport, m.manivelle.bouton]).toEqual([
       'Composter le billet', 'il part au casier', 'Le casier du contrôleur', 'Ranger au casier', 'Quel film ?', 'L’indicateur de la ligne', 'Passeport du Voyage', 'Tirer la courroie pour mettre l’indicateur à jour',
     ])
+    // Le geste qui mène au billet, au guichet de la fiche d'un film (écran 5) : le mot que le composteur du brief 6 reprend.
+    expect([m.billet.ouvrir, m.billet.ouvrirSous]).toEqual(['Composter une séance', 'ouvre le composteur'])
     // Aucune rubrique de la fiche d'année ne garde le nom du monde « à venir ».
     const a = PAGES_A_VENIR.mots
     expect([m.boniment, m.programme.sur, m.parade.titre, m.boite.titre, m.recherche.catalogue, m.manivelle.bouton, m.fermee.pancarte, m.intertitre].filter((mot, i) => mot === [a.boniment, a.programme.sur, a.parade.titre, a.boite.titre, a.recherche.catalogue, a.manivelle.bouton, a.fermee.pancarte, a.intertitre][i])).toEqual([])

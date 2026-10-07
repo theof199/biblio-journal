@@ -531,9 +531,10 @@ export interface MotsDesPages {
   feuille: { tete: string; titre: string; sous: string; pied: string; imprimeur: string }
   /**
    * Le billet de séance ; `tampon` est le mot que le tampon frappe (« VU »), `tamponAutour` ce qui
-   * court autour de lui avant la date (maquette 1890 : `encreVu`).
+   * court autour de lui avant la date (maquette 1890 : `encreVu`). `ouvrir` et `ouvrirSous` nomment,
+   * au guichet de la fiche d'un film, le geste qui mène à ce billet (« Je l’ai vu »).
    */
-  billet: { tete: string; titre: string; valider: string; validerSous: string; tampon: string; tamponAutour: string }
+  billet: { tete: string; titre: string; valider: string; validerSous: string; tampon: string; tamponAutour: string; ouvrir: string; ouvrirSous: string }
   /**
    * La page d'une décennie (plan 2c ; maquette 1890, écran IV). `toucher` finit la phrase qui nomme
    * le monument, après « annonce décennie : » et sans point (« touchez un cheval pour ouvrir son

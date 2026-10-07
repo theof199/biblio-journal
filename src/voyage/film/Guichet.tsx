@@ -51,6 +51,8 @@ interface Props {
 export default function Guichet({ monde, annee, film, podium, entree, onFilm }: Props) {
   const client = useQueryClient()
   const feuillet = useCalque('podium')
+  // Le geste qui mène au billet porte le nom que le monde lui donne.
+  const mots = monde.pages.mots.billet
   // Un programme vu en partie : les gestes visent la bobine qui reste à voir (`tmdbVise`).
   const tmdb = tmdbVise(film)
 
@@ -109,8 +111,8 @@ export default function Guichet({ monde, annee, film, podium, entree, onFilm }: 
             return (
               <Link key={b} to={billetVu} className={styles.ticket}>
                 <span>
-                  <b>Je l’ai vu</b>
-                  <small>poinçonner mon billet</small>
+                  <b>{mots.ouvrir}</b>
+                  <small>{mots.ouvrirSous}</small>
                 </span>
                 <span className={styles.talon} aria-hidden="true">
                   VU ?
