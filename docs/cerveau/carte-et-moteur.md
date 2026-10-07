@@ -38,7 +38,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
   `boucle`. Sinon sa promesse ne se résout jamais, et la page, qui attend `jouerAvancee`, reste inerte.
 - **Tout glissement passe par `src/carte/meneur.ts` › `prendreLaCamera`.** `suivre` et `visee`
   arrêtent le roulement et le passage à chaque image. La caméra s'écrit avec `defilerVers`, jamais du
-  moteur (`meneur.test.ts`) : la page rend un `defiler`, un écho que le meneur attend (`attendu`), pas un geste.
+  moteur (`meneur.test.ts`) : la page rend un `defiler`, un écho que le meneur attend (`attendu`) et oublie sitôt rendu, pas un geste.
 - **Chaque `majEtat` vide les tuiles du sol** : son état reste mémoïsé (`src/pages/Carte.tsx` › `donneesDesFiches`).
 - **Cinq identifiants de zone sont au moteur** : `case`, `clap`, `roulotte`, `bobine`, `date`. Les deux
   derniers lisent `data` comme un rang dans `bobines` et `dates` du monde qui a inscrit la zone (sa `section`,

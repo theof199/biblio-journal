@@ -212,7 +212,8 @@ dans le sens du geste, choisi une fois par geste. Le rappel vaut du premier arr�
 section, pas avant le premier arrêt (la zone du passage d'entrée). Ce que la page rend d'un
 `defilerVers` est un écho, pas un geste : pendant un roulement, un défilement tombé entre son
 départ et là où il en est ne compte pas, et un roulement qu'on attend (`marcher`) n'est détourné par
-aucun geste. **`doigtsPoses`** : `CarteCanvas` relaie `targetTouches.length` à `touchstart`,
+aucun geste. Hors du roulement, l'écho attendu s'oublie dès que la page l'a rendu, la caméra ne
+glissant plus : le défilement suivant est un geste. **`doigtsPoses`** : `CarteCanvas` relaie `targetTouches.length` à `touchstart`,
 `touchend` et `touchcancel`, parce que le navigateur relève le pointeur (`pointercancel`) dès qu'il
 prend le geste pour défiler. Tant qu'un doigt reste posé, le moteur ne rappelle ni ne pose la
 caméra : il combattrait le défilement que le doigt mène.

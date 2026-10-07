@@ -126,6 +126,7 @@ export class Meneur {
    * passage et de la sortie de la vue d'ensemble, qui ont leur garde : tout `defiler` tombé entre
    * `de` et `a` est un écho, pas un geste. Un intervalle tant que la caméra glisse (elle suit
    * l'avatar, va chercher un chantier), ramené à son dernier point dès qu'elle ne glisse plus ; nul
+   * dès que la page a rendu ce point (le défilement suivant, fût-il d'un pixel, est un geste), et
    * dès qu'un défilement mène ailleurs.
    */
   private attendu: { de: number; a: number } | null = null
@@ -327,15 +328,19 @@ export class Meneur {
     // La caméra qui glissait vers un chantier s'y pose d'un coup. L'année ouverte, elle, n'est pas
     // achevée : son chantier reprend là où il en était quand les animations reviennent.
     if (this.visee !== null) {
-      this.y = this.visee
-      this.rappels.defilerVers(this.visee)
+      const visee = this.visee
       this.visee = null
+      this.poser(visee)
+      // Plus rien ne glisse : de l'intervalle du chemin fait, il ne reste que l'écho de cette pose.
+      this.attendu = { de: visee, a: visee }
     }
     // La caméra qui roulait vers un arrêt s'y pose d'un coup, et qui l'attendait est libéré.
     const r = this.roulement
     if (r) {
       this.roulement = null
       this.poser(r.y1)
+      // Le roulement fini, sa garde tombe : l'écho de sa dernière pose reste à rendre, comme à `finirLePassage`.
+      this.attendu = { de: r.y1, a: r.y1 }
       r.fin?.()
     }
     // Le passage d'entrée est posé à sa fin, et qui l'attendait est libéré.
@@ -479,8 +484,12 @@ export class Meneur {
     return this.pointeurBas || this.touchers > 0
   }
 
-  /** Le doigt qui se pose reprend la caméra au rappel et à « Tu es ici » ; l'arrêt du défilement se constatera au lever. */
+  /**
+   * Le doigt qui se pose reprend la caméra au rappel et à « Tu es ici » ; l'arrêt du défilement se
+   * constatera au lever. Rien sous la vue d'ensemble : le doigt y touche une bande, pas la carte.
+   */
   private reprendreLaCamera(): void {
+    if (this.terrain.ensemble()) return
     if (!this.roulement || this.roulement.fin) return
     this.arreterLeRoulement()
     this.defilement.aDater = true
@@ -537,8 +546,11 @@ export class Meneur {
     // départ d'aucun geste non plus.
     const e = this.attendu
     if (e) {
-      if (this.y >= Math.min(e.de, e.a) - A_L_ARRET && this.y <= Math.max(e.de, e.a) + A_L_ARRET) return
-      this.attendu = null
+      const rendu = this.y >= Math.min(e.de, e.a) - A_L_ARRET && this.y <= Math.max(e.de, e.a) + A_L_ARRET
+      // La caméra ne glisse plus et la page a rendu son dernier point : il n'y a plus rien à
+      // attendre. Laissé là, l'intervalle avalerait le geste qui s'y arrêterait ensuite.
+      if (!rendu || (!this.suivre && this.visee === null)) this.attendu = null
+      if (rendu) return
     }
     const r = this.roulement
     if (r) {

@@ -442,11 +442,17 @@ export class MoteurCarte {
    * La promesse se résout à la fin : après la pause du dernier temps joué ; aussitôt pour un monde
    * sans `scene` ou sans temps ; aussitôt quand le visiteur demande moins d'animations, la caméra
    * posée au dernier temps du sens joué. Un seul passage à la fois : demandé pendant qu'un autre
-   * joue, il ne relance rien et se résout avec lui. Un seul glissement à la fois : il arrête ceux
-   * d'avant.
+     * joue, il ne relance rien et se résout avec lui. Un seul glissement à la fois : il arrête ceux
+   * d'avant. Un doigt posé avant lui n'ouvre plus rien : son appui est annulé.
    */
   direBonjour(decennie: number, sens: SensDuPassage): Promise<void> {
-    return this.meneur.direBonjour(decennie, sens)
+    const avant = this.camY
+    const fin = this.meneur.direBonjour(decennie, sens)
+    // Le passage a pris la caméra sous un doigt peut-être posé : l'appui que le geste tenait est
+    // annulé. Sa minuterie ouvrirait l'aperçu d'une année pendant le passage, et un `bouge`, que
+    // `pointeur` relaie encore, y trouverait un appui à faire glisser.
+    if (this.meneur.ageDuPassage(decennie) >= 0 || this.camY !== avant) this.geste.annulerAppui()
+    return fin
   }
 
   /** Où se tient la roulotte garée, à l'écran ; nulle quand elle traverse, ou sans roulotte. */

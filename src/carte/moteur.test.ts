@@ -2817,6 +2817,193 @@ describe('le moteur de la carte', () => {
           expect(banc.demandees).toEqual([])
           expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
         })
+
+        describe('les mineurs de la caméra laissés par le lot 2 (lot « moteur »)', () => {
+          const PASSAGE = auTempo(ENTREE[0]!.arret + ENTREE[1]!.duree + ENTREE[1]!.arret + ENTREE[2]!.duree + ENTREE[2]!.arret)
+          /** La boucle du moteur, pour qui veut savoir si elle tient : les images demandées, jouées une à une. */
+          const boucle = (banc: Banc) => {
+            let ms = 1000
+            return (images: number) => {
+              for (let i = 0; i < images && banc.demandees.length; i++) for (const f of banc.demandees.splice(0)) f((ms += 40))
+            }
+          }
+
+          // L'intervalle `attendu` ne retombait à nul que par un défilement tombé hors de lui : son
+          // écho rendu, il restait, et le geste qui s'y arrêtait ensuite passait pour un second écho.
+          // Mutation : dans `constaterLeDefilement`, l'intervalle laissé en place après son écho
+          // (`this.attendu = null` gardé pour le seul défilement tombé dehors).
+          it('l’écho de la fin du passage une fois rendu, un geste d’un pixel au même endroit reste un geste', async () => {
+            const banc = enGare({ entree: ENTREE })
+            banc.poserA(arret(1905))
+            const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+            enEcho(banc, PASSAGE + 80)
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(true)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(ZONE.bas)
+            // Le témoin : l'écho est rendu, et rien ne bouge.
+            const n = banc.vers().length
+            enEcho(banc, REPOS_DU_DEFILEMENT + ROULEMENT + 400)
+            expect(banc.vers().length).toBe(n)
+            // Le geste : un pixel vers le bas, entre deux arrêts. La caméra est rappelée au plus proche.
+            expect(arret(1904) - (ZONE.bas + 1)).toBeLessThan(ZONE.bas + 1 - arret(1903))
+            banc.moteur.defiler(ZONE.bas + 1)
+            banc.filer(REPOS_DU_DEFILEMENT + ROULEMENT + 200)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1904))
+          })
+
+          // Ce que l'écho rendu lève, c'est le dernier point d'une caméra qui ne glisse plus. Tant
+          // qu'elle suit l'avatar, l'intervalle tient : une page en retard rend deux valeurs à la
+          // file, et la seconde, privée de son intervalle par la première, passait pour un geste parti
+          // d'au-dessus de la zone des temps. Mutation : l'intervalle levé à tout écho, que la caméra
+          // glisse ou non.
+          it('la caméra qui suit l’avatar garde son intervalle tant qu’elle glisse, même son écho rendu', async () => {
+            const banc = enGare({ ailleurs: true, entree: ENTREE })
+            const cible = cibleCamera(yDeLaCase(banc, 1899), H, banc.moteur.hauteur)
+            expect(dansLaZone(cible)).toBe(true)
+            vi.mocked(banc.rappels.defilerVers).mockClear()
+            vus.length = 0
+            const marche = banc.temoin(banc.moteur.marcher(1899))
+            banc.filer(80)
+            // La page, en retard de deux images, les rend à la file : la première d'au-dessus de la zone.
+            const [premier, second] = banc.vers()
+            expect(banc.vers().length).toBe(2)
+            expect(premier!).toBeLessThan(ZONE.haut)
+            expect(second! - premier!).toBeGreaterThan(A_L_ARRET)
+            // Un doigt reste posé sans rien mener : le repos ne se constatera qu'à son lever, la caméra arrivée.
+            banc.moteur.doigtsPoses(1)
+            banc.moteur.defiler(premier!)
+            banc.moteur.defiler(second!)
+            enEcho(banc, 4000)
+            await Promise.resolve()
+            expect(marche.fini).toBe(true)
+            banc.moteur.doigtsPoses(0)
+            enEcho(banc, REPOS_DU_DEFILEMENT + 1500)
+            expect(passageJoue()).toBe(false)
+            expect(Math.abs(banc.vers()[banc.vers().length - 1]! - cible)).toBeLessThan(1.5)
+          })
+
+          // `achever` pose la visée d'un coup, sans dire qu'il en attend l'écho : hors de l'intervalle
+          // du chemin déjà fait, cet écho passait pour un geste, et, au calme, posait l'arrêt du dessus.
+          // Le chantier d'essai est placé de sorte que la visée tombe entre deux arrêts de 1900 : c'est
+          // le meneur qu'on éprouve, pas la géographie d'un monde. Mutation : `this.attendu = …` retiré
+          // de la pose de la visée, dans `achever`.
+          it('l’écho de la visée achevée par le calme ne pose pas d’arrêt', () => {
+            const cible = arret(1902) + 90
+            const banc = enGare({ ailleurs: true, chantier1898: cible + H / 2 - MARGE_HAUT })
+            vi.mocked(banc.rappels.defilerVers).mockClear()
+            banc.moteur.ouvrirSousLesYeux(1898)
+            enEcho(banc, 200)
+            // Le témoin : la caméra glisse, elle est en chemin.
+            expect(banc.vers().length).toBeGreaterThan(2)
+            expect(banc.vers()[banc.vers().length - 1]!).toBeLessThan(cible - 100)
+            banc.moteur.reglerCalme(true)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(cible)
+            const n = banc.vers().length
+            banc.moteur.defiler(Math.round(cible))
+            banc.filer(REPOS_DU_DEFILEMENT + 600)
+            expect(banc.vers().length).toBe(n)
+            // Un vrai geste, ensuite, n'est pas avalé : au calme, il pose l'arrêt suivant dans son sens.
+            banc.moteur.defiler(cible + 30)
+            expect(banc.vers().slice(n)).toEqual([arret(1903)])
+          })
+
+          // La jumelle : `achever` pose le roulement à son arrêt, et la garde du roulement tombe avec
+          // lui. À un arrêt, l'écho pris pour un geste ne rappelle rien, mais il date un défilement :
+          // la boucle tient pour lui, le temps de constater son repos. Mutation : `this.attendu = …`
+          // retiré de la pose du roulement, dans `achever`.
+          it('l’écho du roulement achevé par le calme ne date aucun défilement : la boucle ne tient pas pour lui', async () => {
+            const banc = enGare()
+            const tourner = boucle(banc)
+            banc.poserA(arret(1900))
+            const marche = banc.temoin(banc.moteur.marcher(1901))
+            tourner(3)
+            // Le témoin : la caméra roule, elle est en chemin, et la boucle tient.
+            expect(banc.vers().length).toBeGreaterThan(0)
+            expect(banc.vers()[banc.vers().length - 1]!).toBeLessThan(arret(1901) - A_L_ARRET)
+            expect(banc.demandees.length).toBe(1)
+            banc.moteur.reglerCalme(true)
+            await Promise.resolve()
+            expect(marche.fini).toBe(true)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1901))
+            tourner(50)
+            expect(banc.demandees).toEqual([])
+            // L'écho : il demande son image, et rien après elle.
+            banc.moteur.defiler(Math.round(arret(1901)))
+            expect(banc.demandees.length).toBe(1)
+            tourner(1)
+            expect(banc.demandees).toEqual([])
+            // Le second témoin : un geste, lui, date son défilement, et la boucle tient.
+            banc.moteur.doigtsPoses(1)
+            banc.moteur.defiler(arret(1901) + 30)
+            tourner(1)
+            expect(banc.demandees.length).toBe(1)
+          })
+
+          // Le doigt qui se pose reprend la caméra au rappel ; sous la vue d'ensemble, il touche une
+          // bande, pas la carte, et il arrêtait quand même le rappel, laissant la caméra entre deux
+          // arrêts tant qu'il restait posé. Mutation : `if (this.terrain.ensemble()) return` retiré de
+          // `reprendreLaCamera`.
+          it.each([
+            { par: 'le pointeur', poser: (b: Banc): void => b.moteur.pointeur('bas', 200, 300, false) },
+            { par: 'les touchers', poser: (b: Banc): void => b.moteur.doigtsPoses(1) },
+          ])('sous la vue d’ensemble, un doigt posé n’arrête pas le rappel en cours ($par)', ({ poser }) => {
+            const banc = enGare()
+            banc.poserA(arret(1901))
+            banc.moteur.defiler(arret(1902) + 90)
+            banc.filer(REPOS_DU_DEFILEMENT + 120)
+            // Le témoin : le rappel roule, il n'est pas arrivé.
+            expect(banc.vers().length).toBeGreaterThan(0)
+            expect(banc.vers()[banc.vers().length - 1]!).toBeGreaterThan(arret(1902) + A_L_ARRET)
+            banc.moteur.basculerEnsemble(true)
+            poser(banc)
+            banc.filer(ROULEMENT + 200)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(arret(1902))
+          })
+
+          // Le jumeau du défaut 2 : le doigt posé sur une case avant le passage, et qui y reste. Aucun
+          // lever n'annulait son appui : la minuterie de `Geste` ouvrait l'aperçu pendant le passage.
+          // Mutation : `this.geste.annulerAppui()` retiré de `MoteurCarte.direBonjour`.
+          it('le doigt resté posé quand le passage commence n’ouvre pas d’aperçu', () => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+            try {
+              const GARES = Array.from({ length: 10 }, (_, i) => 700 + i * 130)
+              const TEMPS: TempsDEntree[] = [{ y: -100, duree: 7000, arret: 200 }, { y: 300, duree: 500, arret: 100 }, { y: 700, duree: 800, arret: 300 }]
+              const banc = enGare({ arrets: GARES, entree: TEMPS })
+              banc.poserA(HAUT_1900 + GARES[0]!)
+              const p = quai(1900)!
+              // Le témoin : sans passage, le même doigt tenu ouvre l'aperçu.
+              banc.moteur.pointeur('bas', p.x, p.y, false)
+              vi.advanceTimersByTime(APPUI_LONG_MS)
+              expect(banc.rappels.apercu).toHaveBeenCalledTimes(1)
+              banc.moteur.pointeur('haut', p.x, p.y, false)
+              vi.mocked(banc.rappels.apercu).mockClear()
+              // Le doigt posé avant le passage, et qui ne se lève pas.
+              banc.moteur.pointeur('bas', p.x, p.y, false)
+              void banc.moteur.direBonjour(1900, 'endroit')
+              banc.filer(80)
+              vi.advanceTimersByTime(APPUI_LONG_MS + 100)
+              expect(banc.rappels.apercu).not.toHaveBeenCalled()
+              // Le second témoin : un passage qui ne joue rien (un monde sans temps) laisse l'appui courir.
+              const sans = enGare({ arrets: GARES })
+              sans.poserA(HAUT_1900 + GARES[0]!)
+              sans.moteur.pointeur('bas', p.x, p.y, false)
+              void sans.moteur.direBonjour(1900, 'endroit')
+              vi.advanceTimersByTime(APPUI_LONG_MS)
+              expect(sans.rappels.apercu).toHaveBeenCalledTimes(1)
+              // Au calme, le passage ne joue pas mais pose la caméra ailleurs, sous le doigt : son appui tombe aussi.
+              // Mutation : la clause `this.camY !== avant` retirée.
+              const calme = enGare({ arrets: GARES, entree: TEMPS, calme: true })
+              calme.poserA(HAUT_1900 + GARES[0]!)
+              calme.moteur.pointeur('bas', p.x, p.y, false)
+              void calme.moteur.direBonjour(1900, 'envers')
+              expect(calme.vers()).toEqual([HAUT_1900 + TEMPS[0]!.y])
+              vi.advanceTimersByTime(APPUI_LONG_MS + 100)
+              expect(calme.rappels.apercu).not.toHaveBeenCalled()
+            } finally {
+              vi.useRealTimers()
+            }
+          })
+        })
       })
     })
   })
