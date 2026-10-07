@@ -234,6 +234,22 @@ describe('la vitre du monde, et son oubli', () => {
     expect(vitre.essuyage(CREIL)).toBe(VITRE_EMBUEE)
   })
 
+  // Entre les deux : le train a glissé là où la buée ne se prend plus (sous `FORCE_DE_PRISE`) mais
+  // a encore de la force. Le geste pris en gare y essuie encore, et sa fin y coule : la prise se
+  // décide au début, seul l'oubli ferme un passage. Mutation : `bueePrise` relu à chaque phase.
+  it('un glissement pris en gare essuie encore et coule là où la buée ne se prend plus mais n’est pas nulle', () => {
+    const ENTRE = CREIL + 0.5 * PAS
+    expect(bueePrise(ENTRE)).toBe(false)
+    expect(forceDeLaBuee(ENTRE)).toBeGreaterThan(0)
+    const vitre = creerVitre()
+    expect(vitre.glisser(glisse('debut', 140, 400), vue(CREIL))).toBe(true)
+    expect(vitre.glisser(glisse('suite', 300, 400), vue(ENTRE))).toBe(true)
+    expect(vitre.essuyage(ENTRE).traits.map((t) => t.genre)).toEqual(['doigt', 'doigt'])
+    expect(vitre.glisser(glisse('fin', 300, 400), vue(ENTRE))).toBe(true)
+    expect(vitre.essuyage(ENTRE).traits.map((t) => t.genre)).toEqual(['doigt', 'doigt', 'goutte', 'goutte'])
+    expect(vitre.essuyage(ENTRE).doigt).toBeNull()
+  })
+
   // Mutation : le refus du début qui ouvre quand même un passage.
   it('un début refusé n’ouvre rien', () => {
     const vitre = creerVitre()

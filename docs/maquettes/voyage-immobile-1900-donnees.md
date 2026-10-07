@@ -298,6 +298,11 @@ gouttes coulent à toute fin du glissement, lever ou non (un geste repris par le
 second doigt), et seulement si le passage a ôté quelque chose ; la vitre se réembue dès que la force
 retombe à zéro, comme dans la maquette, mais le monde ne le constate que lorsqu'il dessine ou
 reçoit un glissement : une caméra posée d'un coup hors de la décennie puis à Creil la retrouve essuyée ;
+l'essuyage se perd aussi en quittant la carte (la vitre vit dans le monde du moteur, créé à chaque
+montage, et la carte est une route : essuyer à Creil, ouvrir l'année 1901, revenir, la vitre est
+réembuée), alors que la maquette, d'une seule page, le garde tant que le train reste près de Creil ;
+un geste pris en gare essuie encore, et coule, là où la buée ne se prend plus mais garde de la force
+(la prise se décide au début du geste) ; à la souris, sortir de la toile finit le glissement ;
 la toile n'est pas floutée (`.embuee`, `blur(.9px)`, l. 1099) et ses perles suivent le hasard du
 monde (`alea` à 91,7), pas celui de la maquette (127,1) ; elle est à la densité 1 sur tout écran ;
 aucun mot d'invite (l. 3114), et la buée s'essuie aussi au calme, comme dans la maquette.
@@ -325,7 +330,10 @@ la gare de 1904 ; le code (`tunnel.ts`, `ralentisDuTunnel`) ne ralentit que d'un
 roulement adoucit déjà le départ et l'arrivée, et un arrêt pris dans un ralenti ferait rouler son
 rappel au pas. La maquette ralentit le pas de temps de son ressort ; le moteur multiplie la vitesse
 du roulement par l'allure et allonge sa durée d'autant (1,604 fois de 1903 à 1904). Comme dans la
-maquette, ni le doigt ni le calme ne sont freinés. **Autres écarts :** l'ouverture de la bouche est percée dans le mur de tête, pour que la
+maquette, ni le doigt ni le calme ne sont freinés. **L'élan du défilement natif ne l'est pas non
+plus**, et c'est un écart : dans la maquette tout ce qui suit le lever passe par le ressort ralenti ;
+ici le doigt levé, la page défile sur son élan et traverse le tunnel sans ralentir, et seuls
+l'avancée, « Tu es ici » et le rappel (les roulements du moteur) lèvent le pied. **Autres écarts :** l'ouverture de la bouche est percée dans le mur de tête, pour que la
 paroi s'y voie dès le pied-droit (dans la maquette, le rectangle du mur reste sous le dégradé de
 l'ouverture) ; ni la paroi ni ses lampes ne sont floutées ; le reflet du compartiment n'est pas viré
 (ses affiches : la ficelle, plus bas) ; sur un écran plus large qu'un téléphone, où la bouche

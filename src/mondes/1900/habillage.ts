@@ -29,6 +29,13 @@ export const alea = (k: number): number => {
 export const rangSurLaLigne = (avance: number): number => clamp(decalages(avance).gares / E, 0, 9)
 
 /**
+ * La force de ce qu'une gare porte au carreau (la pluie, la neige, la buée), de 0 à 1 : pleine en
+ * gare, elle s'efface de 30 % à 56 % du chemin vers la gare voisine (maquette, l. 3722-3723).
+ * `ecart` : la distance du train à la gare, en gares. La règle n'est écrite qu'ici.
+ */
+export const forceEnGare = (ecart: number): number => 1 - lisse(0.3, 0.56, ecart)
+
+/**
  * La part de chaque ambiance du fond (maquette, l. 3069-3072) : une seule à l'arrêt, celle de la
  * gare ; deux qui se fondent en route, de 30 % à 70 % du chemin.
  */

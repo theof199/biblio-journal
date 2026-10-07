@@ -260,14 +260,16 @@ et à Bassersdorf (`donnees.ts`, `METEO` ; les règles dans `meteo.ts`, le trait
 visiteur demande moins d'animations, absents du passage. À Creil, la vitre est embuée (`donnees.ts`,
 `BUEE` ; les règles dans `buee.ts`) : un glissement horizontal du doigt l'essuie sans faire rouler le
 train (`Monde.glisser`), au calme aussi ; le doigt levé, deux gouttes coulent ; la vitre se réembue
-dès que le train s'est éloigné à plus de mi-chemin de la gare voisine. Entre Longueville et Allaman, le seul tunnel
+dès que le train s'est éloigné à plus de mi-chemin de la gare voisine, et aussi dès qu'on quitte la carte (ouvrir une année et revenir). Entre Longueville et Allaman, le seul tunnel
 de la ligne (`donnees.ts`, `TUNNEL` ; les règles dans `tunnel.ts`, le trait dans `voute.ts`) : sa
 bouche de pierre arrive, le noir balaie la vitre, la paroi défile, l'autre bouche passe et le jour
 revient sur la neige ; il ne suit que le doigt, à l'aller comme au retour, et
 n'existe pas quand le visiteur demande moins d'animations. D'une bouche à l'autre, le train qui roule
 lève le pied (`TUNNEL.allure`, la part de vitesse gardée ; `ralentisDuTunnel` le déclare dans
 `scene.ralentis`) : l'avancée de 1903 à 1904 dure une fois et six dixièmes celle des autres ; sous le
-doigt, le tunnel passe à la vitesse du doigt. Le compartiment se remplit : la première
+doigt, le tunnel passe à la vitesse du doigt, et l'élan du défilement natif, le doigt levé, le traverse
+sans ralentir non plus : seuls l'avancée, « Tu es ici » et le rappel sont freinés (un écart à la
+maquette, où tout ce qui suit le lever ralentit). Le compartiment se remplit : la première
 affiche de chaque année ouverte de la décennie, les cinq plus récentes au plus, se pince sur une
 ficelle sous la vitre à la montée en voiture et revient en reflet léger dans le tunnel (la règle
 dans `ficelle.ts`, le trait dans `accroches.ts`) ; aucune année ouverte avec une affiche, aucune ficelle.

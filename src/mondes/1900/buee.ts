@@ -1,6 +1,6 @@
 import type { Glissement, VueMonde } from '../types'
 import { BUEE } from './donnees'
-import { lisse, rangSurLaLigne } from './habillage'
+import { forceEnGare, rangSurLaLigne } from './habillage'
 import { vitreOuverte } from './passage'
 import { ANNEES, ARRETS, B1 } from './trace'
 
@@ -18,8 +18,8 @@ type Table = readonly number[]
 type Ecran = Pick<VueMonde, 'W' | 'H' | 'avance'>
 
 /**
- * La force de la buée, de 0 à 1 : pleine en gare, elle s'efface de 30 % à 56 % du chemin vers la
- * gare voisine, comme la pluie et la neige (maquette, l. 3722-3723). Nulle pendant tout le passage de
+ * La force de la buée, de 0 à 1 : celle de sa gare, la même règle que la pluie et la neige
+ * (`forceEnGare`, `habillage.ts`). Nulle pendant tout le passage de
  * la foire au train (avant la gare de 1900), quelle que soit la table.
  */
 export function forceDeLaBuee(avance: number, table: Table = BUEE): number {
@@ -29,7 +29,7 @@ export function forceDeLaBuee(avance: number, table: Table = BUEE): number {
   for (const annee of table) {
     // Une année hors de la ligne a le rang -1, à une gare au moins du train : elle ne donne rien.
     const i = ANNEES.indexOf(annee)
-    force = Math.max(force, 1 - lisse(0.3, 0.56, Math.abs(pg - i)))
+    force = Math.max(force, forceEnGare(Math.abs(pg - i)))
   }
   return force
 }
@@ -128,7 +128,9 @@ export function essuyer(e: Essuyage, g: Glissement, ecran: Pick<Ecran, 'W' | 'H'
 /**
  * La vitre d'un monde : la seule mémoire du monde 1900 qui ne se tire pas d'`avance`. Elle vit dans
  * la fermeture de `creerMonde1900`, donc avec le `Monde` que le moteur dessine, pas celui qu'une
- * page tient ; elle ne survit pas au rechargement.
+ * page tient. **Elle ne survit pas à la carte** : le moteur et son registre naissent à chaque montage
+ * (`fabriqueReelle`, `carte/CarteCanvas.tsx`), et la carte est une route. Essuyer à Creil, ouvrir
+ * l'année 1901, revenir : la vitre est réembuée, comme après un rechargement.
  *
  * **L'oubli** : dès que la buée n'a plus de force (le train est à plus de 56 % du chemin d'une gare
  * embuée), la vitre se réembue, comme dans la maquette (l. 3728) : revenir à Creil la retrouve
@@ -137,7 +139,12 @@ export function essuyer(e: Essuyage, g: Glissement, ecran: Pick<Ecran, 'W' | 'H'
  * deux, retrouve la vitre comme elle l'a laissée.
  */
 export interface Vitre {
-  /** `Monde.glisser` : faux au `debut` hors de `bueePrise`, et le doigt défile comme toujours. Au calme aussi : `v.vivant` n'est pas lu. */
+  /**
+   * `Monde.glisser` : faux au `debut` hors de `bueePrise`, et le doigt défile comme toujours. Au calme
+   * aussi : `v.vivant` n'est pas lu. **La prise ne se relit pas en route** : une `suite` ou une `fin`
+   * reçue là où la buée ne se prend plus mais a encore de la force essuie et coule ; seul l'oubli (la
+   * force à zéro) ferme le passage.
+   */
   glisser: (g: Glissement, v: Ecran) => boolean
   /** Ce qui est essuyé là où en est le train ; c'est ici que la vitre oublie. */
   essuyage: (avance: number) => Essuyage

@@ -307,4 +307,27 @@ describe('le glissement horizontal (lot « moteur »)', () => {
     geste.bouger(230, 300, true)
     expect(signaux).toContainEqual(glisse('debut', 230, 300))
   })
+
+  // La toile ne capture pas le pointeur : le bouton relâché dehors n'arrive jamais. Mutation : le
+  // glissement ouvert laissé tel quel par `quitter` (la souris revenue glisserait sans bouton).
+  it('à la souris, quitter la toile finit le glissement là où il était, et la souris revenue ne glisse plus', () => {
+    geste.baisser(200, 300, true)
+    geste.bouger(230, 300, true)
+    geste.bouger(260, 304, true)
+    signaux.length = 0
+    geste.quitter()
+    expect(signaux).toEqual([glisse('fin', 260, 304)])
+    geste.bouger(300, 310, true)
+    geste.bouger(340, 310, true)
+    expect(signaux).toEqual([glisse('fin', 260, 304)])
+  })
+
+  // Le jumeau : `quitter` ne finit que le glissement. Mutation : tout appui annulé par `quitter`
+  // (`if (this.appui)` au lieu de `if (this.appui?.glisse)`).
+  it('quitter la toile ne lâche pas un appui qui n’est pas un glissement', () => {
+    geste.baisser(200, 300, true)
+    geste.quitter()
+    geste.lever(202, 301)
+    expect(signaux).toEqual([{ type: 'toucher', x: 202, y: 301 }])
+  })
 })

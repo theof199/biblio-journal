@@ -3356,6 +3356,20 @@ describe('le moteur de la carte', () => {
             expect(phases()).toEqual(['1900:debut', '1900:fin'])
           })
 
+          // La souris sort de la toile, bouton tenu : son lever n'arrivera pas (aucune capture du
+          // pointeur). Mutation : le glissement ouvert laissé tel quel par `Geste.quitter`.
+          it('la souris qui quitte la toile finit le glissement en cours, et revenue sans bouton ne glisse plus', () => {
+            const banc = aLEcran(SUR_1900)
+            banc.moteur.pointeur('bas', OU.x, OU.y, true)
+            banc.moteur.pointeur('bouge', OU.x + 30, OU.y, true)
+            expect(banc.moteur.glissePris).toBe(true)
+            banc.moteur.pointeur('quitte', OU.x + 30, OU.y, true)
+            expect(banc.moteur.glissePris).toBe(false)
+            expect(phases()).toEqual(['1900:debut', '1900:fin'])
+            banc.moteur.pointeur('bouge', OU.x + 90, OU.y, true)
+            expect(phases()).toEqual(['1900:debut', '1900:fin'])
+          })
+
           // Deux doigts qui se resserrent bougent à l'horizontale : ce n'est pas un essuyage.
           // Mutation : la garde `this.pincement !== null` retirée du début.
           it('aucun glissement ne commence pendant un pincement', () => {

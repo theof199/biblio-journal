@@ -2,7 +2,7 @@ import type { VueMonde } from '../types'
 import { lerp } from '../../carte/outils'
 import { METEO, type Temps } from './donnees'
 import { AVERSE, DECALAGE_DES_GOUTTES, FLOCONS_LOIN, FLOCONS_MOYENS, FLOCONS_PROCHES, RUISSELLEMENT_LENT, RUISSELLEMENT_VIF } from './durees'
-import { alea, lisse, rangSurLaLigne, voileDuLaboratoire } from './habillage'
+import { alea, forceEnGare, rangSurLaLigne, voileDuLaboratoire } from './habillage'
 import { ANNEES, B1 } from './trace'
 
 /**
@@ -18,8 +18,7 @@ type Table = Readonly<Record<number, Temps>>
 export const tempsDeLaGare = (annee: number, table: Table = METEO): Temps | null => table[annee] ?? null
 
 /**
- * La force de chaque temps, de 0 à 1 : pleine en gare, elle s'efface de 30 % à 56 % du chemin vers
- * la gare voisine (maquette, l. 3722-3723). Nulle pendant tout le passage de la foire au train
+ * La force de chaque temps, de 0 à 1 : celle de sa gare (`forceEnGare`, `habillage.ts`). Nulle pendant tout le passage de la foire au train
  * (avant la gare de 1900), quelle que soit la table : rien de ce qui suit l'horloge ne s'y montre.
  */
 export function forceDuTemps(avance: number, table: Table = METEO): Record<Temps, number> {
@@ -29,7 +28,7 @@ export function forceDuTemps(avance: number, table: Table = METEO): Record<Temps
   for (const [annee, temps] of Object.entries(table)) {
     // Une année hors de la ligne a le rang -1, à une gare au moins du train : elle ne donne rien.
     const i = ANNEES.indexOf(Number(annee))
-    force[temps] = Math.max(force[temps], 1 - lisse(0.3, 0.56, Math.abs(pg - i)))
+    force[temps] = Math.max(force[temps], forceEnGare(Math.abs(pg - i)))
   }
   return force
 }

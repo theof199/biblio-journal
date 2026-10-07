@@ -322,7 +322,10 @@ export class MoteurCarte {
     this.demander()
   }
 
-  /** Les objets cachés déjà ramassés, d'après la page : le jumeau de `reglerBobines`. Leur zone ne s'inscrit plus. */
+  /**
+   * Les objets cachés déjà ramassés, d'après la page : le jumeau de `reglerBobines`. Leur zone ne s'inscrit plus.
+   * Pour le lot « Objets » : la table est écrasée en entier, ce que `toucher` vient d'y ajouter compris si la page ne le rend pas (constat de relecture, laissé tel quel) : à retailler là.
+   */
   reglerObjets(cles: readonly string[]): void {
     this.ramasses = new Set(cles)
     this.demander()
@@ -468,7 +471,7 @@ export class MoteurCarte {
    * La promesse se résout à la fin : après la pause du dernier temps joué ; aussitôt pour un monde
    * sans `scene` ou sans temps ; aussitôt quand le visiteur demande moins d'animations, la caméra
    * posée au dernier temps du sens joué. Un seul passage à la fois : demandé pendant qu'un autre
-     * joue, il ne relance rien et se résout avec lui. Un seul glissement à la fois : il arrête ceux
+   * joue, il ne relance rien et se résout avec lui. Un seul glissement à la fois : il arrête ceux
    * d'avant. Un doigt posé avant lui n'ouvre plus rien : son appui est annulé.
    */
   direBonjour(decennie: number, sens: SensDuPassage): Promise<void> {

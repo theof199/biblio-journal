@@ -98,8 +98,14 @@ export class Geste {
     this.emettre({ type: 'glisse', phase, x, y, x0, y0 })
   }
 
-  /** `pointerleave` ou défilement : l'aperçu tenu par le survol se referme. */
+  /**
+   * `pointerleave` ou défilement : l'aperçu tenu par le survol se referme. Un glissement ouvert y
+   * finit aussi : la toile ne capture pas le pointeur, et le bouton de la souris relâché dehors n'y
+   * arrive jamais ; sans cela la souris revenue glisserait sans bouton. Un appui qui n'est pas un
+   * glissement reste tenu.
+   */
   quitter(): void {
+    if (this.appui?.glisse) this.annulerAppui()
     this.horloge.annuler(this.survol.jeton)
     if (this.survol.annee !== null) this.emettre({ type: 'finSurvol' })
     this.survol = { annee: null, jeton: null }
