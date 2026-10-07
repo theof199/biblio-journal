@@ -1,0 +1,292 @@
+/* Le composteur, le billet de séance des années 1900 (maquette « Voyage immobile 1900 », écrans 6 et
+   7 : `.billet-zone`, `.formulaire`, `.rub`, `.roues`, `.poincons`, `.coupons`, `.carnet`). Le carton
+   a sa feuille (`Carton.module.css`), le bouton corail la sienne (`Action.module.css`). Les couleurs
+   et les polices viennent des jetons du monde. Ne bougent, sous la racine vivante, qu'une molette dont
+   la valeur change, un poinçon ou un coupon qu'on touche. */
+.composteur {
+  padding: 62px 0 34px;
+}
+
+/* Le carton, posé de travers ; la frappe l'amène à l'écran, sous le bouton de retour. */
+.zone {
+  margin: 0 20px;
+  scroll-margin-top: 62px;
+  transform: rotate(-2deg);
+}
+
+.formulaire {
+  margin: 18px 14px 16px;
+  padding: 14px;
+  border-radius: 2px;
+  background: var(--m-papier);
+  box-shadow: 0 4px 12px var(--m-ombre);
+  color: var(--m-encre);
+}
+
+.rub + .rub {
+  margin-top: 16px;
+}
+
+.rubTete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 7px;
+  font: 600 11px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-rouge);
+}
+
+.rubTete em {
+  font: italic 13.5px var(--m-f-texte);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--m-encre);
+}
+
+/* La date : deux raccourcis, et la presse à dater entre ses deux flèches. */
+.roues {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.jour {
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 1px solid var(--m-encre);
+  border-radius: 2px;
+  background: none;
+  color: var(--m-encre);
+  font: 700 12.5px var(--m-f-corps);
+  cursor: pointer;
+}
+
+.jour[aria-pressed='true'] {
+  background: var(--m-encre);
+  color: var(--m-papier);
+}
+
+.presse {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.fleche {
+  width: 32px;
+  height: 44px;
+  padding: 0 0 3px;
+  border: 0;
+  background: none;
+  color: var(--m-encre);
+  font: 400 24px/1 var(--m-f-capitales);
+  cursor: pointer;
+}
+
+.fleche:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.molettes {
+  display: flex;
+  gap: 3px;
+}
+
+.molettes i {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 32px;
+  border-radius: 2px;
+  background: var(--m-encre);
+  box-shadow:
+    inset 0 8px 8px -6px color-mix(in srgb, var(--m-papier) 25%, transparent),
+    inset 0 -8px 8px -6px var(--m-ombre);
+  color: var(--m-papier);
+  font: 700 16px var(--m-f-presse);
+  font-style: normal;
+}
+
+/* La note : dix poinçons, percés du premier à la note. */
+.poincons {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.poincons button {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 1.5px solid var(--m-encre);
+  border-radius: 50%;
+  background: none;
+  color: var(--m-encre);
+  font: 700 12px var(--m-f-capitales);
+  cursor: pointer;
+}
+
+/* La cible du doigt dépasse le rond, en hauteur. */
+.poincons button::after {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+
+.poincons button[data-perce='true'] {
+  background: var(--m-encre);
+  color: var(--m-papier);
+}
+
+.sansNote {
+  display: block;
+  min-height: 44px;
+  margin: 2px 0 -10px auto;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--m-encre2);
+  font: italic 14px var(--m-f-texte);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sansNote[aria-pressed='true'] {
+  color: var(--m-rouge);
+  text-decoration: none;
+}
+
+/* Les réactions : des coupons à détacher. */
+.coupons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.coupons button {
+  min-height: 36px;
+  padding: 4px 10px 4px 14px;
+  border: 1px dashed var(--m-encre);
+  background: var(--m-papier2);
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%);
+  color: var(--m-encre);
+  font: 14px/1.2 var(--m-f-texte);
+  text-align: left;
+  cursor: pointer;
+}
+
+.coupons button[aria-pressed='true'] {
+  border-style: solid;
+  background: var(--m-encre);
+  color: var(--m-papier);
+  transform: rotate(-2deg) translateY(-1px);
+}
+
+.compte,
+.attente,
+.panne {
+  margin: 6px 0 0;
+  font: italic 13.5px var(--m-f-texte);
+  color: var(--m-encre2);
+}
+
+.panne p {
+  margin: 0;
+}
+
+.panne button {
+  min-height: 44px;
+}
+
+/* La remarque : le carnet du contrôleur, réglé de bleu. */
+.carnet {
+  display: block;
+  width: 100%;
+  min-height: 78px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--m-email) 20%, transparent);
+  background:
+    repeating-linear-gradient(transparent 0 25px, color-mix(in srgb, var(--m-email) 20%, transparent) 25px 26px),
+    var(--m-papier);
+  background-attachment: local;
+  color: var(--m-email);
+  font: italic 16px/26px var(--m-f-texte);
+  resize: vertical;
+}
+
+.carnet::placeholder {
+  color: color-mix(in srgb, var(--m-email) 55%, transparent);
+}
+
+.refus {
+  margin: 0 16px 12px;
+  text-align: center;
+  font: italic 15px var(--m-f-texte);
+  color: var(--m-or2);
+}
+
+/* « Le modèle » : les billets du Métropolitain, sur leur papier. */
+.modele {
+  display: block;
+  width: calc(100% - 28px);
+  height: auto;
+  margin: 0 14px;
+  background: var(--m-papier);
+}
+
+.legende,
+.format {
+  margin: 8px 16px 0;
+  font: 14.5px/1.45 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.legende {
+  font-style: italic;
+  font-size: 13.5px;
+}
+
+.jour:focus-visible,
+.fleche:focus-visible,
+.poincons button:focus-visible,
+.sansNote:focus-visible,
+.coupons button:focus-visible,
+.carnet:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: 2px;
+}
+
+.composteur[data-vivante='oui'] .molettes i[data-tourne='oui'] {
+  animation: molette calc(275ms * var(--tempo)) ease-out;
+}
+
+.composteur[data-vivante='oui'] .poincons button {
+  transition:
+    transform calc(125ms * var(--tempo)) ease,
+    background-color calc(150ms * var(--tempo)),
+    color calc(150ms * var(--tempo));
+}
+
+.composteur[data-vivante='oui'] .poincons button:active {
+  transform: scale(0.86);
+}
+
+.composteur[data-vivante='oui'] .coupons button {
+  transition: transform calc(150ms * var(--tempo)) ease;
+}
+
+@keyframes molette {
+  from {
+    transform: rotateX(-88deg);
+  }
+}

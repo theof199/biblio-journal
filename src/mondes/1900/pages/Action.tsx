@@ -20,7 +20,8 @@ export default function Action(props: Props) {
   const contenu = (
     <>
       {props.children}
-      {props.sous ? <small>{props.sous}</small> : null}
+      {/* L'espace ne se voit pas (la précision passe à la ligne) : il sépare les deux au lecteur d'écran. */}
+      {props.sous ? <> <small>{props.sous}</small></> : null}
     </>
   )
   if ('vers' in props) {

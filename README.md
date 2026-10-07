@@ -458,7 +458,21 @@ Où vit quoi :
   le guichet (`GuichetDuFilm`) rend les gestes que `Guichet` lui passe, « Composter une séance »
   (`mots.billet.ouvrir`) et « Corriger » sur le bouton corail commun (`Action`). « Trois
   photogrammes », le studio, le mois de sortie et le nombre de séances de la maquette n'y sont pas :
-  aucune donnée ne les porte sans une lecture de plus. **La nouvelle salle, la ligne du bas, les
+  aucune donnée ne les porte sans une lecture de plus. **Le billet de séance** est un carton Edmondson
+  sous son composteur (écrans 6 et 7 ; `Composteur`, pour `billetDeSeance`) : le carton (`Carton`, que
+  la liasse du casier et le « Bon pour » d'une année bouclée reprendront) porte le titre de la page, la
+  ligne du film et de sa gare, le numéro, et montre ce qu'on écrit dessous : la date se presse sur sa
+  tranche (« 30 SE 26 », `datePressee`), la note s'y perce, un trou par point (`trousDuCarton`), ou
+  « sans note ». Le formulaire garde tous les gestes du billet par défaut : « Aujourd’hui », « Hier »,
+  « ‹ » et « › » autour de la presse à dater, dix poinçons et « sans note », les réactions en coupons
+  (douze au plus), la remarque en carnet, privée. La page joue seule le compostage et n'en passe que
+  l'étape : le composteur avale le carton, le frappe (« VU », à l'encre violette), le rend, le numéro
+  roule (« N° ···· » si le casier n'a pas répondu), puis le carton part, aux durées de `FRAPPE`, au
+  tempo ; au calme, rien ne se joue. En correction, le carton est déjà tamponné, son numéro se lit en
+  tête, « Corriger le billet » ne composte rien et « Supprimer » reste celui de la page. Dessous, « Le
+  modèle » : les billets du Métropolitain de 1900 (`billets-metro`). La mention de classe de la
+  maquette n'y est pas (décision 6), ni le poinçon doré du contrôleur, qui attend son lot ; leurs mots
+  et leurs règles : `mondes/1900/pages/carton.ts`. **La nouvelle salle, la ligne du bas, les
   feuillets, la feuille du chroniqueur, le programme d'un film et ses bobines gardent encore les
   composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, le monument et
   le guichet de la décennie sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.

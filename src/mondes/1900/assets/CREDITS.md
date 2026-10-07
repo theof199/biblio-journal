@@ -179,3 +179,10 @@ Aucun fondu n’y est cuit : le dessin le pose (`docs/maquettes/voyage-immobile-
 - Source : https://commons.wikimedia.org/wiki/File:Hale%27s_Tours_of_the_World.jpg
 - Licence : domaine public, selon la page du fichier : « Public domain » (publié aux États-Unis en 1916 ; la page donne l’Internet Archive pour origine). Page relue le 7 octobre 2026, par l’API de Wikimedia Commons.
 - Traitement : préparée pour la maquette (réduite de 1 075 × 1 429, virée en sépia), 520 × 691, extraite à l’octet près de sa variable `--i-hale` (l. 1436). Elle sert de vignette à la fiche d’un film (pages 1900, brief 5).
+
+## `billets-metro.webp`
+
+- Œuvre : les fac-similés des trois billets du Métropolitain de Paris à son ouverture, en 1900 (première classe, deuxième classe, aller et retour), planche d’Albin Dumas, *Le chemin de fer métropolitain de Paris*, Paris, Ch. Béranger, 1901 ; la page du fichier nomme aussi la *Revue générale des chemins de fer*.
+- Source : https://commons.wikimedia.org/wiki/File:1900_Appareil_contr%C3%B4leur_CMP_mod%C3%A8le_billets.jpg
+- Licence : domaine public, selon la page du fichier : « Public domain » (publié en France en 1901). Page relue le 7 octobre 2026, par l’API de Wikimedia Commons.
+- Traitement : préparée pour la maquette (réduite et recadrée, de 1 114 × 722), 640 × 385, extraite à l’octet près de sa variable `--i-billets-metro` (l. 1441). Elle montre « Le modèle » sous le billet de séance (pages 1900, brief 6).

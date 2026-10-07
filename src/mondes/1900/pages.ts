@@ -1,5 +1,6 @@
 import type { HabillagePages, JetonDePage } from '../types'
 import Classes from './pages/Classes'
+import Composteur from './pages/Composteur'
 import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
 import Courroie from './pages/Courroie'
@@ -89,7 +90,8 @@ export const PAGES_1900: HabillagePages = {
   // correspondance, et une salle ouverte, une voiture. La gare range ses sections : l'indicateur
   // passe au-dessus du guide. Le podium est une voiture à trois portières, la séance un train du soir.
   // La fiche d'un film se regarde du fond d'un Hale's Tours : la fausse voiture tient la place de la
-  // projection, la notice et le guichet sont ceux de l'écran 5.
+  // projection, la notice et le guichet sont ceux de l'écran 5. Le billet de séance est un carton
+  // Edmondson sous son composteur (écrans 6 et 7).
   gabarits: {
     teteDAnnee: Tete,
     fronton: SousLaTete,
@@ -106,6 +108,7 @@ export const PAGES_1900: HabillagePages = {
     projection: Hale,
     noticeDuFilm: NoticeDuFilm,
     guichetDuFilm: GuichetDuFilm,
+    billetDeSeance: Composteur,
   },
   hauteurs: { bandeau: 230, scene: 240, estrade: 150, monument: 240, guichet: 140 },
   // La tête de la fiche d'année est un gabarit : cette toile ne se peint plus sur sa page.
