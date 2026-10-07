@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { MoteurCarte, type EtatCarte, type Rappels } from './moteur'
+import { Lru } from './lru'
 import { creerRegistre } from '../mondes'
 import styles from './CarteCanvas.module.css'
 
@@ -10,20 +11,40 @@ export type Moteur = Pick<
 >
 export type FabriqueMoteur = (canvas: HTMLCanvasElement, rappels: Rappels) => Moteur
 
-const images = new Map<string, HTMLImageElement>()
+/**
+ * Ce que la table garde d'affiches TMDB en plus des images des mondes : autant que le moteur garde
+ * d'affiches traitées (`MoteurCarte`, `affiches`), une colonne n'en demandant que quatre.
+ */
+export const MARGE_DES_AFFICHES = 48
+
+/**
+ * La borne des images décodées (plan 3b, décision 7). Elle laisse en mémoire **toutes** les images
+ * des mondes du registre et les images communes, et tient donc au-dessus de ce qu'une seule image
+ * du moteur demande, vue d'ensemble comprise (ses dix photographies de gare à la fois) : sous ce
+ * seuil, chaque adresse évincerait la précédente avant qu'elle soit chargée, et rien ne serait
+ * jamais `complete`. Elle ne protège que des affiches des colonnes. Le calcul, au 7 octobre 2026 :
+ * 24 images de mondes (22 en 1900, 2 en 1890, aucune commune), arrondies à 48 places pour que les
+ * mondes à venir entrent sans y toucher, plus la marge des affiches. `CarteCanvas.test.ts` compte
+ * les dossiers réels et refuse une borne qu'ils dépassent.
+ */
+export const BORNE_DES_IMAGES = 48 + MARGE_DES_AFFICHES
+
+/** Les images décodées, la plus anciennement demandée sortant la première. */
+export const imagesDecodees = new Lru<string, HTMLImageElement>(BORNE_DES_IMAGES)
 
 /** Le vrai moteur, sur le vrai `<canvas>` : l'affiche se charge sans CORS, et ne se lit jamais. */
 export const fabriqueReelle: FabriqueMoteur = (canvas, rappels) =>
   new MoteurCarte(canvas, rappels, {
     creerToile: (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h }),
     image: (url, pret) => {
-      let img = images.get(url)
+      // `get` rafraîchit l'ancienneté : ce qui se redemande à chaque image ne sort jamais.
+      let img = imagesDecodees.get(url)
       if (!img) {
         img = new Image()
         img.decoding = 'async'
         img.onload = pret
         img.src = url
-        images.set(url, img)
+        imagesDecodees.set(url, img)
       }
       return img.complete && img.naturalWidth > 0 ? img : null
     },

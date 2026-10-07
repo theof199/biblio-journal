@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { fireEvent, render } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import CarteCanvas, { FabriqueMoteurContexte, fabriqueReelle } from './CarteCanvas'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import CarteCanvas, { BORNE_DES_IMAGES, FabriqueMoteurContexte, MARGE_DES_AFFICHES, fabriqueReelle, imagesDecodees } from './CarteCanvas'
 import type { Dependances, EtatCarte } from './moteur'
 import { moteurFactice } from '../test/moteurFactice'
 
@@ -29,6 +29,109 @@ describe('le vrai moteur', () => {
     expect(deps.heure()).toBe(21.5)
     vi.setSystemTime(new Date(2026, 8, 30, 6, 45))
     expect(deps.heure()).toBe(6.75)
+  })
+})
+
+/**
+ * Tout ce qu'un monde ou le moteur peut demander de ses propres dossiers : le motif est celui de
+ * `mondes/<décennie>/images.ts` et de `carte/images.ts`, compté sur les fichiers réels.
+ */
+const DES_MONDES = import.meta.glob<string>(['/src/mondes/*/assets/*.{webp,png,webm}', '/src/carte/assets/*.{webp,png,webm}'], { query: '?url', import: 'default', eager: true })
+const adressesDes = (dossier: string): string[] =>
+  Object.entries(DES_MONDES)
+    .filter(([chemin]) => chemin.startsWith(dossier))
+    .map(([, url]) => url)
+
+describe('la mémoire des images (plan 3b, tâche 14)', () => {
+  /** Une image déjà chargée : `fabriqueReelle` la rend telle quelle, et l'on compare les objets. */
+  const creees: string[] = []
+  class ImageChargee {
+    decoding = ''
+    onload: (() => void) | null = null
+    complete = true
+    naturalWidth = 1
+    private adresse = ''
+    get src(): string {
+      return this.adresse
+    }
+    set src(url: string) {
+      this.adresse = url
+      creees.push(url)
+    }
+  }
+  const demander = (): ((url: string) => unknown) => {
+    fabriqueReelle(document.createElement('canvas'), {} as never)
+    const deps = vu.deps as Dependances
+    return (url) => deps.image(url, () => undefined)
+  }
+  const affiche = (n: number): string => `https://image.tmdb.org/t/p/w185/affiche-${n}.jpg`
+
+  beforeEach(() => {
+    imagesDecodees.clear()
+    creees.length = 0
+    vi.stubGlobal('Image', ImageChargee)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('se compte sur de vrais dossiers : le monde 1900, le monde 1890, et rien d’autre que leurs fichiers', () => {
+    expect(adressesDes('/src/mondes/1900/assets/').length).toBeGreaterThanOrEqual(10)
+    expect(adressesDes('/src/mondes/1890/assets/').length).toBeGreaterThan(0)
+    expect(new Set(Object.values(DES_MONDES)).size).toBe(Object.keys(DES_MONDES).length)
+  })
+
+  // Mutations : `BORNE_DES_IMAGES` abaissée sous le nombre d'images des mondes ; la marge des
+  // affiches rognée (`BORNE_DES_IMAGES = 48`).
+  it('laisse leur place à toutes les images des mondes, la marge des affiches en plus', () => {
+    expect(BORNE_DES_IMAGES - MARGE_DES_AFFICHES).toBeGreaterThanOrEqual(Object.keys(DES_MONDES).length)
+  })
+
+  // Mutation : la borne retirée (`new Lru(Infinity)`, ou la table rendue à une `Map`).
+  it('ne garde jamais plus d’images que la borne, de 1900 à 1909 et sous des affiches en nombre', () => {
+    const image = demander()
+    const monde = adressesDes('/src/mondes/1900/assets/')
+    let n = 0
+    for (let annee = 1900; annee <= 1909; annee++) {
+      for (const url of monde) image(url)
+      for (let j = 0; j < MARGE_DES_AFFICHES; j++) image(affiche(n++))
+      expect(imagesDecodees.taille).toBeLessThanOrEqual(BORNE_DES_IMAGES)
+    }
+    // Le trajet a bien demandé plus d'adresses que la borne n'en garde : elle a servi.
+    expect(new Set(creees).size).toBeGreaterThan(BORNE_DES_IMAGES)
+    expect(imagesDecodees.taille).toBe(BORNE_DES_IMAGES)
+  })
+
+  // Aucun monde du registre n'y perd une image : ni 1900, ni 1890, ni les images communes.
+  // Mutation : la borne abaissée sous le nombre d'images du monde (`new Lru(10)`), ou sous ce
+  // nombre augmenté de la marge.
+  it('rend les mêmes objets pour toutes les images des mondes après autant d’affiches que la marge en promet', () => {
+    const image = demander()
+    const mondes = Object.values(DES_MONDES)
+    const avant = mondes.map((url) => image(url))
+    expect(avant.every((img) => img instanceof ImageChargee)).toBe(true)
+    for (let j = 0; j < MARGE_DES_AFFICHES; j++) image(affiche(j))
+    const apres = mondes.map((url) => image(url))
+    apres.forEach((img, i) => expect(img).toBe(avant[i]))
+    expect(creees).toHaveLength(mondes.length + MARGE_DES_AFFICHES)
+  })
+
+  // Ce que le moteur redemande à chaque image (les photographies du monde à l'écran) ne sort pas,
+  // quel que soit le nombre d'affiches passées depuis. Mutation : la lecture faite sans passer par
+  // `Lru.get` (une table de lecture à côté, le `Lru` n'étant plus qu'écrit) : l'ancienneté n'est
+  // plus rafraîchie, et la table évince ce qu'on lui redemande.
+  it('n’évince pas une image redemandée à chaque passe, sous des adresses plus récentes qu’on ne redemande pas', () => {
+    const image = demander()
+    const monde = adressesDes('/src/mondes/1900/assets/')
+    const premieres = monde.map((url) => image(url))
+    let n = 0
+    for (let passe = 0; passe < 8; passe++) {
+      for (let j = 0; j < MARGE_DES_AFFICHES; j++) image(affiche(n++))
+      monde.forEach((url, i) => expect(image(url)).toBe(premieres[i]))
+    }
+    expect(n).toBeGreaterThan(2 * BORNE_DES_IMAGES)
+    monde.forEach((url, i) => expect(imagesDecodees.get(url)).toBe(premieres[i]))
+    for (const url of monde) expect(creees.filter((c) => c === url)).toHaveLength(1)
+    // Les affiches qu'on n'a pas redemandées, elles, sont sorties.
+    expect(imagesDecodees.get(affiche(0))).toBeUndefined()
   })
 })
 
