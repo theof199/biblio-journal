@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
 import { journalDesAnnees } from '../api/journal'
 import { estPrete, lireGenerique, lireVoyage, utiliserTicket, type FicheAnnee, type FichePrete, type Voyage } from '../api/voyage'
-import { ambianceDeLHeure } from '../carte/heure'
 import { creerRegistre } from '../mondes'
 import type { Monde, VueBandeau } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
@@ -26,6 +25,7 @@ import { gabaritDe } from '../voyage/gabarit'
 import { decennieDe, etatDeCase, prochainPas } from '../voyage/regles'
 import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
 import AnneeFermee from '../voyage/annee/AnneeFermee'
+import Bandeau from '../voyage/annee/Bandeau'
 import Boniment from '../voyage/annee/Boniment'
 import Corde from '../voyage/annee/Corde'
 import { NOM_DE_RECOMPENSE } from '../voyage/annee/Embleme'
@@ -177,13 +177,9 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     utiliser.mutate(a, { onSuccess: () => navigate('/voyage'), onSettled: () => void (envoi.current = false) })
   }
 
-  // Le bandeau : le dernier toucher, en secondes de la toile, rouvre le rideau et emballe le manège.
-  const dernierT = useRef(0)
-  const touche = useRef(-9)
-  const nuit = useMemo(() => {
-    const d = new Date()
-    return ambianceDeLHeure(d.getHours() + d.getMinutes() / 60).nuit
-  }, [])
+  // La tête et le fronton sont des sections que le monde peut composer (`gabarits.teteDAnnee`, `gabarits.fronton`).
+  const Tete = gabaritDe(monde, 'teteDAnnee', Bandeau)
+  const Titre = gabaritDe(monde, 'fronton', Fronton)
   const mode = modeDuBandeau(annee, fiche, v)
   const recompense = prete?.recompense ?? v?.annees.find((a) => a.annee === annee)?.recompense ?? null
   const cases = v ? v.annees.filter((a) => decennieDe(a.annee) === monde.decennie).map((a) => ({ annee: a.annee, etat: etatDeCase(a, v.ia).etat, profondeur: a.profondeur })) : []
@@ -216,7 +212,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     const enCours = statutDeLAnnee(annee, v.annee_en_cours) !== 'ouverte'
     corps = (
       <>
-        <Fronton annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde} />
+        <Titre annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde} />
         <Toile
           hauteur={hauteurs.estrade}
           libelle="Le chroniqueur sur son estrade."
@@ -283,17 +279,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
       {/* Autour de toute fiche : prête, fermée, en attente, en préparation, en panne. */}
       <Manivelle monde={monde} onRecharger={recharger}>
         <div className={styles.bandeau}>
-          <Toile
-            hauteur={hauteurs.bandeau}
-            libelle={`Le décor de ${annee}.`}
-            onToucher={() => {
-              if (!calme) touche.current = dernierT.current
-            }}
-            dessiner={(ctx, t, vivant) => {
-              dernierT.current = t
-              monde.pages.dessinerBandeau({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.bandeau, t, vivant, nuit, mode, annee, recompense, cases, bouclee, roulotte, touche: touche.current })
-            }}
-          />
+          <Tete monde={monde} calme={calme} mode={mode} annee={annee} recompense={recompense} cases={cases} bouclee={bouclee} roulotte={roulotte} />
           {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
               quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
           <Link
@@ -347,12 +333,13 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
     tete: b.cle === 'essentiels' ? 'Essentiels' : b.cle === 'salles' ? 'Salles' : undefined,
   }))
   const sous = `${monde.nom} · ${monde.sous}`
+  const Titre = gabaritDe(monde, 'fronton', Fronton)
 
   return (
     <>
-      <Fronton annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde}>
+      <Titre annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde}>
         {enCours ? null : <span className={styles.ruban}>{fiche.recompense ? `Bouclée · ${NOM_DE_RECOMPENSE[fiche.recompense]}` : 'Bouclée'}</span>}
-      </Fronton>
+      </Titre>
       <Corde billets={billets} gains={gains} />
       {/* Présente dès la fiche montée, vide : une région d'état ne se lit qu'à son changement. */}
       <p role="status" className="sr-only">

@@ -9,6 +9,8 @@ import { PAGES_1890 } from '../mondes/1890/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { RELECTURES } from '../voyage/relecture'
 import { INSECABLE, type PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
+import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
+import type { PropsFronton } from '../voyage/annee/Fronton'
 import { confierLeRetour, oublierLeRetour } from '../voyage/annee/retour'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
@@ -1039,6 +1041,60 @@ describe('la fiche d’une année', () => {
       })
       expect(await screen.findByText('Cette année s’ouvre avec le ticket de 1897.')).toBeInTheDocument()
       expect(screen.queryByRole('region', { name: 'Le gabarit du monde' })).toBeNull()
+    })
+
+    // Plan des pages 1900, brief 1 : la tête et le fronton sont deux sections de plus. Le défaut
+    // reste sans gabarit : tout le describe « le bandeau » et les titres de niveau 1 de ce fichier
+    // le tiennent pour 1890. Mutations : la page qui monte `Bandeau` ou `Fronton` sans passer par
+    // `gabaritDe` ; une propriété que la page ne passerait plus à la tête.
+    it('monte la tête et le fronton du monde à la place du bandeau et du fronton, sans toucher au retour ni à la plaque', async () => {
+      const tetes: PropsTeteDAnnee[] = []
+      const avant = PAGES_1890.gabarits
+      PAGES_1890.gabarits = {
+        teteDAnnee: (p: PropsTeteDAnnee) => {
+          tetes.push(p)
+          return <h1>{`La tête de ${p.annee}`}</h1>
+        },
+        fronton: (p: PropsFronton) => (
+          <p>
+            {`Le fronton du monde, ${p.annonce}, ${p.millesime}`}
+            {p.children}
+          </p>
+        ),
+      }
+      remettre = () => void (PAGES_1890.gabarits = avant)
+      monterVoyage('/voyage/1895', { ...ROUTES, 'GET /api/me/voyage/annees/1895': () => json(nue({ annee: 1895, recompense: 'palme' })) })
+      expect(await screen.findByText(/^Le fronton du monde, Soirée de gala, bouclee/)).toHaveTextContent('Bouclée · Palme')
+      // Ni la toile du bandeau ni le millésime du fronton par défaut : un seul titre, celui de la tête.
+      expect(screen.queryByRole('img', { name: 'Le décor de 1895.' })).toBeNull()
+      expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['La tête de 1895'])
+      const derniere = tetes[tetes.length - 1]!
+      expect({ decennie: derniere.monde.decennie, mode: derniere.mode, annee: derniere.annee, recompense: derniere.recompense, bouclee: derniere.bouclee, roulotte: derniere.roulotte, calme: derniere.calme }).toEqual({
+        decennie: 1890,
+        mode: 'bouclee',
+        annee: 1895,
+        recompense: 'palme',
+        bouclee: false,
+        roulotte: null,
+        calme: false,
+      })
+      expect(derniere.cases.map((c) => c.annee)).toEqual([1895, 1896, 1897, 1898, 1899])
+      // Ce qui reste à la page.
+      expect(screen.getByRole('link', { name: 'Retour à la carte' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Chapitre I' })).toHaveAttribute('href', '/voyage/decennies/1890')
+    })
+
+    // Le jumeau : la forme « en préparation » monte le même fronton. Mutation : `Fronton` remis en dur
+    // dans cette seule forme.
+    it('monte le fronton du monde sur une année en préparation', async () => {
+      const avant = PAGES_1890.gabarits
+      PAGES_1890.gabarits = { fronton: (p: PropsFronton) => <p>{`Le fronton du monde, ${p.annonce}, ${p.millesime}`}</p> }
+      remettre = () => void (PAGES_1890.gabarits = avant)
+      monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(EN_PREPARATION, 202) })
+      expect(await screen.findByText('Le fronton du monde, Grande attraction, encours')).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+      // La tête, elle, garde son défaut : une clé ne décide pas de l'autre.
+      expect(screen.getByRole('img', { name: 'Le décor de 1897.' })).toBeInTheDocument()
     })
   })
 })

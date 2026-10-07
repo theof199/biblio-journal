@@ -5,12 +5,22 @@ import styles from './Fronton.module.css'
 /** L'écriture du millésime (maquette 1890) : en cours, bouclée (`clos`), fermée (tracé, `vide`), en montage (`peint`). */
 export type Millesime = 'encours' | 'bouclee' | 'fermee' | 'attente'
 
+/** Ce que la page passe au fronton d'une fiche prête ou en préparation ; un gabarit de monde reçoit les mêmes (`GabaritsDesPages.fronton`). */
+export interface PropsFronton {
+  annee: number
+  annonce: string
+  millesime: Millesime
+  monde: Monde
+  /** Ce que la forme y accroche : le ruban d'une année bouclée. */
+  children?: ReactNode
+}
+
 /**
  * Le fronton d'une fiche d'année (maquette 1890 : `.fronton`, `htmlAnnee` et `initVerrou`) :
  * l'annonce, le millésime, qui est le titre de la page (son nom est l'année seule), le monde, puis ce
  * que la forme y accroche (le ruban d'une année bouclée, la banderole d'une année en attente).
  */
-export default function Fronton({ annee, annonce, millesime, monde, children }: { annee: number; annonce: string; millesime: Millesime; monde: Monde; children?: ReactNode }) {
+export default function Fronton({ annee, annonce, millesime, monde, children }: PropsFronton) {
   return (
     <div className={styles.fronton}>
       <p className={styles.annonce}>{annonce}</p>

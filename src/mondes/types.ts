@@ -6,6 +6,8 @@ import type { EtatCheval } from '../voyage/decennie'
 import type { Recompense } from '../api/voyage'
 import type { ComponentType } from 'react'
 import type { PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
+import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
+import type { PropsFronton } from '../voyage/annee/Fronton'
 
 /**
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
@@ -638,6 +640,17 @@ export interface VueGuichet {
 export interface GabaritsDesPages {
   /** Le corps d'une année fermée ou en attente, son fronton compris (`voyage/annee/AnneeFermee.tsx`). */
   anneeFermee: ComponentType<PropsAnneeFermee>
+  /**
+   * La tête d'une fiche d'année, dans ses quatre modes et dès le chargement (`voyage/annee/Bandeau.tsx`).
+   * Le lien de retour et la plaque du chapitre restent à la page, posés par-dessus.
+   */
+  teteDAnnee: ComponentType<PropsTeteDAnnee>
+  /**
+   * Le fronton d'une fiche prête ou en préparation (`voyage/annee/Fronton.tsx`), qui porte par défaut
+   * le titre de la page. Un monde dont la tête porte déjà l'année le remplace pour ne pas la répéter ;
+   * le titre de niveau 1 doit alors venir de sa tête. Le corps d'une année fermée monte le sien.
+   */
+  fronton: ComponentType<PropsFronton>
 }
 
 export interface HabillagePages {
