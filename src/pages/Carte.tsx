@@ -11,7 +11,7 @@ import type { EtatCarte } from '../carte/moteur'
 import { jouerAvancee } from '../carte/avancee'
 import { ecrireAnneeVue, ecrireBobines, ecrireSon, lireAnneeVue, lireBobines, lireSon } from '../carte/memoire'
 import { ambianceDeLaPage } from '../carte/son'
-import { STYLE_DU_TEMPO } from '../voyage/tempo'
+import { auTempo, STYLE_DU_TEMPO } from '../voyage/tempo'
 import { creerRegistre } from '../mondes'
 import type { BobinePerdue, DateVraie } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
@@ -59,6 +59,11 @@ const donneesDesFiches = (r: Array<{ data: FicheAnnee | undefined }>) => r.map((
  */
 const LECTURE_MS = 3000
 const APRES_LA_DERNIERE_MS = 3300
+/**
+ * Le temps que tient l'annonce hors de vue d'un monde à passage (plan 3b, tâche 13), au tempo, ici
+ * seulement : aujourd'hui aussi longtemps que le carton qu'elle remplace. `voyage/tempo.test.ts` la garde.
+ */
+const DUREE_DE_L_ANNONCE = auTempo(1550)
 const LIBELLE = { palme: 'Palme', lion: 'Lion', ours: 'Ours', encours: 'en cours', passee: 'passée', verrou: 'à tourner' } as const
 
 /**
@@ -196,10 +201,10 @@ export default function Carte() {
     return () => clearTimeout(j)
   }, [roulotteDite])
 
-  // L'annonce hors de vue s'efface d'elle-même, au rythme du carton qu'elle remplace.
+  // L'annonce hors de vue s'efface d'elle-même (`DUREE_DE_L_ANNONCE`).
   useEffect(() => {
     if (annonce === null) return
-    const j = setTimeout(() => setAnnonce(null), 3100)
+    const j = setTimeout(() => setAnnonce(null), DUREE_DE_L_ANNONCE)
     return () => clearTimeout(j)
   }, [annonce])
 

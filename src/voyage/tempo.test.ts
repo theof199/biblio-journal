@@ -24,6 +24,8 @@ const SOURCES: Record<string, string> = {
   // Le monde 1900 (plan 3b) : tout son dossier pour les motifs généraux, et `durees.ts` pour son assertion.
   ...import.meta.glob<string>(['/src/mondes/1900/**/*.ts', '!**/*.test.*'], { query: '?raw', import: 'default', eager: true }),
 }
+/** La page de la carte : lue pour sa seule annonce hors de vue. Ses autres attentes (le carton, le tampon) sont hors tempo. */
+const PAGE_DE_LA_CARTE = import.meta.glob<string>('/src/pages/Carte.tsx', { query: '?raw', import: 'default', eager: true })['/src/pages/Carte.tsx'] ?? ''
 const DEROULE = '/src/voyage/celebrations/deroule.ts'
 const DUREES_1900 = '/src/mondes/1900/durees.ts'
 const ENTREE_1900 = '/src/mondes/1900/entree.ts'
@@ -151,6 +153,17 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     // Hors de l'import du tempo et de ces lignes, rien : ni objet, ni calcul, ni durée tenue ailleurs.
     const reste = code.replace(/^import \{ auTempo \} from '\.\.\/\.\.\/voyage\/tempo'$/m, '').replace(/^export const \w+ = auTempo\(\d+\)$/gm, '')
     expect(reste.trim()).toBe('')
+  })
+
+  // L'annonce hors de vue de la carte (revue du lot 2) : sa durée est une constante au tempo, écrite une
+  // fois, et c'est elle que l'effacement attend. Mutations : `3100` remis dans le `setTimeout` ;
+  // `DUREE_DE_L_ANNONCE = 3100`, sans `auTempo`.
+  it('l’annonce hors de vue de la carte s’efface au tempo', () => {
+    const code = sansCommentaires(PAGE_DE_LA_CARTE)
+    expect(code.match(/^const DUREE_DE_L_ANNONCE = auTempo\(\d+\)$/gm) ?? []).toHaveLength(1)
+    // Chaque effacement de l'annonce par une horloge attend cette constante, et rien d'autre.
+    const effacements = [...code.matchAll(/setTimeout\(\(\) => setAnnonce\(null\),\s*([^)]+)\)/g)].map(([, duree]) => duree!.trim())
+    expect(effacements).toEqual(['DUREE_DE_L_ANNONCE'])
   })
 
   // Les temps du passage d'entrée du monde 1900 s'écrivent en base : le moteur seul les joue au tempo
