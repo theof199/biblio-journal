@@ -4,7 +4,8 @@ import { paragraphes } from '../feuille'
 import Embleme from './Embleme'
 import styles from './Boniment.module.css'
 
-interface Props {
+/** Ce que la fiche prête passe au boniment ; un gabarit de monde reçoit les mêmes (`GabaritsDesPages.boniment`). */
+export interface PropsBoniment {
   monde: Monde
   annee: number
   recompense: Recompense | null
@@ -21,7 +22,7 @@ interface Props {
  * l'emblème de la récompense, le premier paragraphe de l'ouverture, « Lire l’ouverture » (la feuille
  * du chroniqueur), le générique quand il existe, puis les échos de l'année.
  */
-export default function Boniment({ monde, annee, recompense, ouverture, faits, generique, onLire, onGenerique }: Props) {
+export default function Boniment({ monde, annee, recompense, ouverture, faits, generique, onLire, onGenerique }: PropsBoniment) {
   const m = monde.pages.mots
   const premier = paragraphes(ouverture)[0] ?? ''
   return (

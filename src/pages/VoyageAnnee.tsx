@@ -13,7 +13,7 @@ import { vibrer } from '../ui/haptique'
 import { VIBRATION } from '../voyage/billet'
 import { useMouvementReduit } from '../ui/mouvement'
 import { useRevenir } from '../ui/revenir'
-import { afficherGenerique, avancees, billetsDeProgression, ligneDuBas, statutDeLAnnee, verdictAChange, type Avancee } from '../voyage/annee'
+import { afficherGenerique, arriveesDeLAnnee, avancees, billetsDeProgression, estBouclee, ligneDuBas, statutDeLAnnee, verdictAChange, type Avancee } from '../voyage/annee'
 import { annonceDesAvancees, franchitUnPalier, oublierLeRetour, retourConfie } from '../voyage/annee/retour'
 import { RELECTURES } from '../voyage/relecture'
 import { useGuet } from '../voyage/salles/useFournee'
@@ -327,25 +327,34 @@ interface PropsPrete {
 /** La fiche prête (maquette 1890 : `htmlAnnee`, écrans I et II) : l'année en cours, ou bouclée. */
 function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique, onUtiliser, occupe, erreur, gains }: PropsPrete) {
   const m = monde.pages.mots
-  const enCours = statutDeLAnnee(annee, v.annee_en_cours) !== 'ouverte'
+  const statut = statutDeLAnnee(annee, v.annee_en_cours)
+  const enCours = statut !== 'ouverte'
   const billets = billetsDeProgression(fiche.profondeur, fiche.progression).map((b) => ({
     ...b,
     tete: b.cle === 'essentiels' ? 'Essentiels' : b.cle === 'salles' ? 'Salles' : undefined,
   }))
   const sous = `${monde.nom} · ${monde.sous}`
   const Titre = gabaritDe(monde, 'fronton', Fronton)
+  // La corde, le boniment et le programme sont des sections que le monde peut composer
+  // (`gabarits.corde`, `gabarits.boniment`, `gabarits.programme`). Une seule règle compte les
+  // objectifs de l'année pour qui les montre.
+  const LaCorde = gabaritDe(monde, 'corde', Corde)
+  const LeBoniment = gabaritDe(monde, 'boniment', Boniment)
+  const LeProgramme = gabaritDe(monde, 'programme', Programme)
+  const arrivees = arriveesDeLAnnee(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket)
+  const bouclee = estBouclee(statut, fiche.ticket)
 
   return (
     <>
       <Titre annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde}>
         {enCours ? null : <span className={styles.ruban}>{fiche.recompense ? `Bouclée · ${NOM_DE_RECOMPENSE[fiche.recompense]}` : 'Bouclée'}</span>}
       </Titre>
-      <Corde billets={billets} gains={gains} />
+      <LaCorde billets={billets} gains={gains} arrivees={arrivees} bouclee={bouclee} />
       {/* Présente dès la fiche montée, vide : une région d'état ne se lit qu'à son changement. */}
       <p role="status" className="sr-only">
         {annonceDesAvancees(gains)}
       </p>
-      <Boniment
+      <LeBoniment
         monde={monde}
         annee={annee}
         recompense={fiche.recompense}
@@ -355,7 +364,18 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
         onLire={() => feuille.ouvrir('ouverture')}
         onGenerique={() => feuille.ouvrir('generique')}
       />
-      {enCours ? <Programme monde={monde} etapes={prochainPas(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket !== null, v.ia)} progression={fiche.progression} /> : null}
+      {/* Les pas ne se disent que pour l'année en cours : sans pas, le programme par défaut ne rend rien. */}
+      <LeProgramme
+        monde={monde}
+        annee={annee}
+        etapes={enCours ? prochainPas(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket !== null, v.ia) : []}
+        progression={fiche.progression}
+        arrivees={arrivees}
+        gains={gains}
+        bouclee={bouclee}
+        recompense={fiche.recompense}
+        ia={v.ia}
+      />
       <Parade monde={monde} annee={annee} podium={fiche.podium} salles={fiche.salles} />
       {/* La séance n'appartient qu'au compte IA (l'API la refuse aux autres), et à l'année en cours. */}
       {enCours && v.ia ? <Seance monde={monde} annee={annee} fiche={fiche} /> : null}

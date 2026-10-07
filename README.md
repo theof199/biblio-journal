@@ -379,10 +379,17 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trois clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Sept clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
-  restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation) et `anneeFermee`
-  (le corps d'une année fermée ou en attente). 1890 et le monde « à venir » n'en fournissent aucune.
+  restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
+  (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
+  `programme`, et `tirette` (le dessin de ce qu'on tire pour recharger, que `Manivelle` lit
+  elle-même : le geste, les seuils, les écouteurs et le bouton du bas ne passent pas au monde). La
+  corde et le programme reçoivent les arrivées de l'année (`arriveesDeLAnnee`, `voyage/annee.ts` : les
+  films et l'Ours, les essentiels et le Lion, les salles et la Palme, le ticket, chacun atteint ou
+  non), si l'année est bouclée (`estBouclee` : son ticket est émis, ou elle est derrière soi) et ce
+  que le retour d'un billet a gagné ; le programme se monte sur toute fiche prête, et ne reçoit de pas
+  que pour l'année en cours. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   trois sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte

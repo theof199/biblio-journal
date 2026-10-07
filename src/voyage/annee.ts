@@ -1,5 +1,5 @@
 import type { JournalItem } from '../api/journal'
-import type { Maturite, Progression, TicketDeLAnnee } from '../api/voyage'
+import type { Maturite, Progression, Recompense, TicketDeLAnnee } from '../api/voyage'
 import { OURS_FILMS_MIN } from './regles'
 
 /**
@@ -46,6 +46,47 @@ export function billetsDeProgression(profondeur: number, progression: Progressio
     { cle: 'salles', valeur: s, total: progression.salles_autres, libelle: s > 1 ? 'salles complètes' : 'salle complète' },
   ]
 }
+
+/** Deux salles complètes donnent la Palme (le palier des salles, `estUnPalier`). */
+export const PALME_SALLES_MIN = 2
+
+/**
+ * Une arrivée : un objectif de l'année que la fiche sait compter, et s'il est atteint. `valeur` et
+ * `total` sont nuls quand il n'y a rien à compter : le ticket, et les essentiels d'une année qui n'en
+ * a pas (jamais « 0 sur 0 »).
+ */
+export interface Arrivee {
+  cle: CleBillet | 'ticket'
+  arrivee: boolean
+  valeur: number | null
+  total: number | null
+}
+
+/**
+ * Les arrivées d'une année (plan des pages 1900, décision 2) : les films vus et l'Ours, les essentiels
+ * et le Lion, les salles complètes et la Palme, le ticket. Rien d'autre : ce que `prochainPas` promet,
+ * dit en lignes qui restent une fois atteintes. Une ligne est arrivée là où `prochainPas` se tait :
+ * par la récompense que l'API a donnée (le Lion compte des introuvables que `essentiels_vus` ignore),
+ * sinon par le compte. Sans progression, seuls les films et le ticket se disent.
+ */
+export function arriveesDeLAnnee(profondeur: number, progression: Progression | null, recompense: Recompense | null, ticket: TicketDeLAnnee | null): Arrivee[] {
+  const lion = recompense === 'lion' || recompense === 'palme'
+  const liste: Arrivee[] = [{ cle: 'films', arrivee: recompense !== null || profondeur >= OURS_FILMS_MIN, valeur: profondeur, total: OURS_FILMS_MIN }]
+  if (progression) {
+    const { essentiels_vus: e, essentiels_total: t, salles_completes: s } = progression
+    liste.push(t === 0 ? { cle: 'essentiels', arrivee: lion, valeur: null, total: null } : { cle: 'essentiels', arrivee: lion || e >= t, valeur: e, total: t })
+    liste.push({ cle: 'salles', arrivee: recompense === 'palme' || s >= PALME_SALLES_MIN, valeur: s, total: PALME_SALLES_MIN })
+  }
+  liste.push({ cle: 'ticket', arrivee: ticket !== null, valeur: null, total: null })
+  return liste
+}
+
+/**
+ * Une année est bouclée quand le ticket de l'année suivante est émis (réponse du propriétaire, 7
+ * octobre 2026), utilisé ou non ; une année déjà derrière soi l'est aussi, même ouverte sans ticket
+ * par le rattrapage du Voyage suivi.
+ */
+export const estBouclee = (statut: StatutAnnee, ticket: TicketDeLAnnee | null): boolean => statut === 'ouverte' || ticket !== null
 
 export interface Avancee {
   cle: CleBillet

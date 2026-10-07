@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useMouvementReduit } from '../../ui/mouvement'
-import type { Avancee, Billet } from '../annee'
+import type { Arrivee, Avancee, Billet } from '../annee'
 import { STYLE_DU_TEMPO, auTempo } from '../tempo'
 import styles from './Corde.module.css'
 
@@ -49,6 +49,18 @@ interface Props {
   nom?: string
   /** Au retour d'un billet, ce qui a été gagné : le compteur roule, un « +1 » vole (jamais au calme). */
   gains?: readonly Avancee[]
+}
+
+/**
+ * Ce que la fiche prête passe à sa corde ; un gabarit de monde reçoit les mêmes
+ * (`GabaritsDesPages.corde`). La corde par défaut ne lit que ses billets et ses gains.
+ */
+export interface PropsCordeDAnnee extends Props {
+  gains: readonly Avancee[]
+  /** Les objectifs de l'année et ce qui est atteint (`arriveesDeLAnnee`). */
+  arrivees: readonly Arrivee[]
+  /** L'année est bouclée (`estBouclee`). */
+  bouclee: boolean
 }
 
 /**

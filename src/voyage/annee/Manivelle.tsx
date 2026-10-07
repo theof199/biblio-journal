@@ -3,6 +3,7 @@ import { ApiError } from '../../api/client'
 import { BOUGE_PX } from '../../carte/geste'
 import type { Monde } from '../../mondes/types'
 import { useMouvementReduit } from '../../ui/mouvement'
+import { gabaritDe } from '../gabarit'
 import { aLaLachee, angleDuBras, peutTirer, tirage } from '../manivelle'
 import styles from './Manivelle.module.css'
 
@@ -29,8 +30,42 @@ const PANNE = 'La bobine n’a pas pu se recharger. Réessaie.'
 
 type Etat = { type: 'repos' } | { type: 'charge'; tiree: boolean } | { type: 'fait' } | { type: 'erreur'; message: string }
 
+/**
+ * Ce que la manivelle passe au dessin de ce qu'on tire ; un gabarit de monde reçoit les mêmes
+ * (`GabaritsDesPages.tirette`). Le geste, les seuils, les écouteurs et le bouton du bas restent à
+ * `Manivelle` : un monde ne change que le dessin.
+ */
+export interface PropsTirette {
+  /** La course du contenu sous le doigt, en px (`tirage`). */
+  course: number
+  /** Le rechargement est parti. */
+  charge: boolean
+  /** « Moins d'animations » : rien ne tourne ni ne suit le doigt. */
+  calme: boolean
+  /** Ce que la tirette dit : tirer, relâcher, ou que ça charge (`pages.mots.manivelle`). */
+  texte: string
+}
+
+/** La tirette par défaut : la manivelle du projecteur, dont le bras tourne avec le geste. */
+export function Poignee({ course, charge, calme, texte }: PropsTirette) {
+  return (
+    <div className={`${styles.tirer} ${charge && !calme ? styles.tourne : ''}`} aria-hidden="true" data-testid="manivelle">
+      <svg viewBox="0 0 54 54">
+        <circle cx="27" cy="27" r="21" fill="none" stroke="currentColor" strokeWidth="3" />
+        <circle cx="27" cy="27" r="13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 4" />
+        <g className={styles.bras} style={charge || calme ? undefined : { transform: `rotate(${angleDuBras(course)}deg)` }}>
+          <path d="M27 27V8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="27" cy="7" r="4.5" fill="currentColor" />
+        </g>
+        <circle cx="27" cy="27" r="4" fill="currentColor" />
+      </svg>
+      <span>{texte}</span>
+    </div>
+  )
+}
+
 interface Props {
-  /** Le monde de l'année : ses mots (`pages.mots.manivelle`). */
+  /** Le monde de l'année : ses mots (`pages.mots.manivelle`), et le dessin de sa tirette s'il en a un. */
   monde: Monde
   /** Relit ce que la page montre ; rejeter dit le refus. */
   onRecharger: () => Promise<unknown>
@@ -50,6 +85,8 @@ interface Props {
  */
 export default function Manivelle({ monde, onRecharger, children }: Props) {
   const m = monde.pages.mots.manivelle
+  // Le dessin de ce qu'on tire est une section que le monde peut composer (`gabarits.tirette`).
+  const Tirette = gabaritDe(monde, 'tirette', Poignee)
   const calme = useMouvementReduit()
   const racine = useRef<HTMLDivElement>(null)
   const [course, setCourse] = useState(0)
@@ -178,18 +215,7 @@ export default function Manivelle({ monde, onRecharger, children }: Props) {
 
   return (
     <div ref={racine} className={styles.manivelle}>
-      <div className={`${styles.tirer} ${charge && !calme ? styles.tourne : ''}`} aria-hidden="true" data-testid="manivelle">
-        <svg viewBox="0 0 54 54">
-          <circle cx="27" cy="27" r="21" fill="none" stroke="currentColor" strokeWidth="3" />
-          <circle cx="27" cy="27" r="13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 4" />
-          <g className={styles.bras} style={charge || calme ? undefined : { transform: `rotate(${angleDuBras(course)}deg)` }}>
-            <path d="M27 27V8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-            <circle cx="27" cy="7" r="4.5" fill="currentColor" />
-          </g>
-          <circle cx="27" cy="27" r="4" fill="currentColor" />
-        </svg>
-        <span>{texte}</span>
-      </div>
+      <Tirette course={course} charge={charge} calme={calme} texte={texte} />
       {/* Sans transformation au repos : elle ferait du contenu le repère des calques fixes qu'il porte. */}
       <div
         className={`${styles.contenu} ${doigt || calme ? '' : styles.revient}`}

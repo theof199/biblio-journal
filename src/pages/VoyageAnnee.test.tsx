@@ -10,7 +10,11 @@ import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { RELECTURES } from '../voyage/relecture'
 import { INSECABLE, type PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
 import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
+import type { PropsBoniment } from '../voyage/annee/Boniment'
+import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
+import type { PropsTirette } from '../voyage/annee/Manivelle'
+import type { PropsProgramme } from '../voyage/annee/Programme'
 import { confierLeRetour, oublierLeRetour } from '../voyage/annee/retour'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
@@ -1098,6 +1102,145 @@ describe('la fiche d’une année', () => {
       expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
       // La tête, elle, garde son défaut : une clé ne décide pas de l'autre.
       expect(screen.getByRole('img', { name: 'Le décor de 1897.' })).toBeInTheDocument()
+    })
+
+    // Plan des pages 1900, brief 2 : la corde, le boniment, le programme et la tirette de la manivelle
+    // sont quatre sections de plus. Le défaut reste sans gabarit : « la corde nomme chaque billet »,
+    // les tests du boniment, du programme et du retour d'un billet de ce fichier, et tout
+    // `Manivelle.test.tsx`, le tiennent pour 1890 sans avoir été retouchés.
+    describe('la corde, le boniment, le programme et la tirette', () => {
+      const PROGRESSION = { essentiels_vus: 1, essentiels_total: 5, salles_completes: 0, salles_autres: 3 }
+      interface Recues {
+        corde: PropsCordeDAnnee[]
+        boniment: PropsBoniment[]
+        programme: PropsProgramme[]
+        tirette: PropsTirette[]
+      }
+      function preterLesQuatre(lesquels: (keyof Recues)[] = ['corde', 'boniment', 'programme', 'tirette']) {
+        const recues: Recues = { corde: [], boniment: [], programme: [], tirette: [] }
+        const tous = {
+          corde: (p: PropsCordeDAnnee) => (recues.corde.push(p), (<p>La corde du monde</p>)),
+          boniment: (p: PropsBoniment) => (
+            recues.boniment.push(p),
+            (
+              <p>
+                Le boniment du monde
+                <button type="button" onClick={p.onLire}>
+                  Lire, au monde
+                </button>
+                {p.generique ? (
+                  <button type="button" onClick={p.onGenerique}>
+                    Le générique, au monde
+                  </button>
+                ) : null}
+              </p>
+            )
+          ),
+          programme: (p: PropsProgramme) => (recues.programme.push(p), (<p>{`Le programme du monde, ${p.etapes.length} pas`}</p>)),
+          tirette: (p: PropsTirette) => (recues.tirette.push(p), (<p>{`La tirette du monde : ${p.texte}`}</p>)),
+        }
+        const avant = PAGES_1890.gabarits
+        PAGES_1890.gabarits = Object.fromEntries(lesquels.map((cle) => [cle, tous[cle]]))
+        remettre = () => void (PAGES_1890.gabarits = avant)
+        return { recues, derniere: <C extends keyof Recues>(cle: C) => recues[cle][recues[cle].length - 1]! as Recues[C][number] }
+      }
+
+      // Mutations, dans la page : `Corde`, `Boniment` ou `Programme` monté sans passer par `gabaritDe` ;
+      // `arrivees`, `bouclee`, `gains` ou `ia` que la page ne passerait plus ; `v.ia` passé vrai.
+      it('monte les sections du monde à la place de la corde, du boniment et du programme, avec ce que la fiche sait', async () => {
+        const { derniere } = preterLesQuatre()
+        monterVoyage('/voyage/1897', {
+          ...ROUTES,
+          'GET /api/me/voyage': () => json({ ...VOYAGE, ia: false, source: { id: SOURCE_ID, pseudo: 'theo', annee_en_cours: 1897 } }),
+          'GET /api/me/voyage/annees/1897': () => json(nue({ profondeur: 3, progression: PROGRESSION, recompense: 'ours', ouverture: 'Un paragraphe.' })),
+        })
+        expect(await screen.findByText('La corde du monde')).toBeInTheDocument()
+        expect(screen.getByText(/^Le boniment du monde/)).toBeInTheDocument()
+        // Les défauts ne sont plus là.
+        expect(screen.queryByRole('list', { name: 'La progression de l’année' })).toBeNull()
+        expect(screen.queryByRole('region', { name: PAGES_1890.mots.boniment })).toBeNull()
+        expect(screen.queryByRole('region', { name: 'Prochain pas' })).toBeNull()
+        // Ce que la page compte, une fois, pour qui le montre.
+        const arrivees = [
+          { cle: 'films', arrivee: true, valeur: 3, total: 3 },
+          { cle: 'essentiels', arrivee: false, valeur: 1, total: 5 },
+          { cle: 'salles', arrivee: false, valeur: 0, total: 2 },
+          { cle: 'ticket', arrivee: false, valeur: null, total: null },
+        ]
+        const corde = derniere('corde')
+        expect({ billets: corde.billets.map((b) => b.cle), gains: corde.gains, arrivees: corde.arrivees, bouclee: corde.bouclee }).toEqual({ billets: ['films', 'essentiels', 'salles'], gains: [], arrivees, bouclee: false })
+        const { monde, annee, etapes, progression, gains, bouclee, recompense, ia, arrivees: duProgramme } = derniere('programme')
+        expect({ decennie: monde.decennie, annee, etapes, progression, gains, bouclee, recompense, ia, arrivees: duProgramme }).toEqual({
+          decennie: 1890,
+          annee: 1897,
+          etapes: ['Lion : encore 4 essentiels', 'Palme : 2 salles de plus', 'Ticket : au Lion'],
+          progression: PROGRESSION,
+          gains: [],
+          bouclee: false,
+          recompense: 'ours',
+          ia: false,
+          arrivees,
+        })
+        const boniment = derniere('boniment')
+        expect({ annee: boniment.annee, recompense: boniment.recompense, ouverture: boniment.ouverture, generique: boniment.generique }).toEqual({ annee: 1897, recompense: 'ours', ouverture: 'Un paragraphe.', generique: false })
+        // Le geste du boniment reste à la page : le calque de la feuille s'ouvre.
+        fireEvent.click(screen.getByRole('button', { name: 'Lire, au monde' }))
+        expect(await screen.findByRole('dialog')).toHaveTextContent('Un paragraphe.')
+      })
+
+      // Le jumeau : une année bouclée monte encore le programme du monde, sans pas, et la dit bouclée ;
+      // le ticket émis boucle l'année en cours. Mutations : le programme monté pour la seule année en
+      // cours ; les pas donnés à une année bouclée ; `estBouclee` remplacé par `!enCours`.
+      it('donne au programme du monde une année bouclée sans pas, et boucle l’année en cours dès son ticket', async () => {
+        const { derniere } = preterLesQuatre(['corde', 'programme'])
+        const premiere = monterVoyage('/voyage/1895', { ...ROUTES, 'GET /api/me/voyage/annees/1895': () => json(nue({ annee: 1895, recompense: 'palme' })) })
+        expect(await screen.findByText('Le programme du monde, 0 pas')).toBeInTheDocument()
+        expect([derniere('programme').bouclee, derniere('corde').bouclee]).toEqual([true, true])
+        // Une clé ne décide pas de l'autre : le boniment garde son défaut.
+        expect(screen.getByRole('region', { name: PAGES_1890.mots.boniment })).toBeInTheDocument()
+        premiere.unmount()
+        monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(nue({ ticket: ticket(1898) })) })
+        await waitFor(() => expect(derniere('programme').annee).toBe(1897))
+        expect([derniere('programme').bouclee, derniere('corde').bouclee]).toEqual([true, true])
+        expect(derniere('programme').arrivees[derniere('programme').arrivees.length - 1]).toEqual({ cle: 'ticket', arrivee: true, valeur: null, total: null })
+      })
+
+      // Les gains du retour d'un billet arrivent aux deux sections, après la relecture réussie
+      // seulement. Mutation : `gains` que la page ne passerait qu'à la corde.
+      it('passe à la corde et au programme du monde ce que le retour d’un billet a gagné', async () => {
+        const { derniere } = preterLesQuatre(['corde', 'programme'])
+        confierLeRetour(1897, SESSION.user.id, { avant: { profondeur: 2, progression: PROGRESSION }, guet: null })
+        monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(nue({ profondeur: 3, progression: PROGRESSION })) }, (c) =>
+          c.setQueryData(cles.annee(1897), nue({ profondeur: 2, progression: PROGRESSION })),
+        )
+        expect(await screen.findByText('+1 film vu')).toHaveAttribute('role', 'status')
+        const gain = [{ cle: 'films', avant: 2, apres: 3 }]
+        expect([derniere('corde').gains, derniere('programme').gains]).toEqual([gain, gain])
+      })
+
+      // La tirette : le dessin est au monde, le geste et le bouton restent à la manivelle. Mutations,
+      // dans `Manivelle` : `Poignee` montée sans passer par `gabaritDe` ; `texte` ou `course` que la
+      // manivelle ne passerait plus.
+      it('monte la tirette du monde à la place de la manivelle dessinée, qui garde le geste et le bouton', async () => {
+        const { recues, derniere } = preterLesQuatre(['tirette'])
+        const mots = PAGES_1890.mots.manivelle
+        const { requetes } = monterVoyage('/voyage/1897', ROUTES)
+        await screen.findByRole('heading', { level: 1, name: '1897' })
+        expect(screen.getByText(`La tirette du monde : ${mots.tirer}`)).toBeInTheDocument()
+        expect(screen.queryByTestId('manivelle')).toBeNull()
+        expect(derniere('tirette')).toEqual({ course: 0, charge: false, calme: false, texte: mots.tirer })
+        // Le doigt descend de 200 px : la course est à mi-chemin, et le mot change au-delà du seuil.
+        const contenu = screen.getByTestId('contenu-manivelle')
+        fireEvent.touchStart(contenu, { touches: [{ clientY: 10 }] })
+        fireEvent.touchMove(contenu, { touches: [{ clientY: 210 }] })
+        expect(derniere('tirette')).toEqual({ course: 100, charge: false, calme: false, texte: mots.relacher })
+        const avant = requetes.length
+        fireEvent.touchEnd(contenu, { touches: [] })
+        await waitFor(() => expect(requetes.slice(avant).sort()).toEqual(['GET /api/me/voyage', 'GET /api/me/voyage/annees/1897']))
+        // Le rechargement a pu finir entre deux rendus : la tirette l'a su à un moment.
+        await waitFor(() => expect(recues.tirette.some((p) => p.charge)).toBe(true))
+        expect(screen.getByRole('button', { name: mots.bouton })).toBeInTheDocument()
+      })
     })
   })
 })

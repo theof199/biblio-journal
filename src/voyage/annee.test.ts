@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   afficherGenerique,
+  arriveesDeLAnnee,
   avancees,
   billetsDeProgression,
   chemin,
   doitGuetterVerdict,
+  estBouclee,
   estUnPalier,
   ligneDuBas,
   phraseDuChemin,
@@ -50,6 +52,62 @@ describe('les billets de la corde', () => {
   // Mutation : ignorer `progression` nulle fait lire ses champs (et lever).
   it('ne montrent que les films tant que la progression est inconnue', () => {
     expect(billetsDeProgression(0, null)).toEqual([{ cle: 'films', valeur: 0, total: null, libelle: 'film vu' }])
+  })
+})
+
+describe('les arrivées de l’année', () => {
+  const etats = (...a: Parameters<typeof arriveesDeLAnnee>) => arriveesDeLAnnee(...a).map((l) => `${l.cle} ${l.arrivee ? 'oui' : 'non'}`)
+
+  // Décision 2 du plan des pages 1900 : quatre lignes, celles que le code compte, dans cet ordre.
+  // Mutations : une ligne en dur ajoutée (un titre de film) ; le total des films ou des salles pris
+  // ailleurs qu'à son palier.
+  it('sont les films et l’Ours, les essentiels et le Lion, les salles et la Palme, le ticket, et rien d’autre', () => {
+    expect(arriveesDeLAnnee(2, P(1, 5, 1), null, null)).toEqual([
+      { cle: 'films', arrivee: false, valeur: 2, total: 3 },
+      { cle: 'essentiels', arrivee: false, valeur: 1, total: 5 },
+      { cle: 'salles', arrivee: false, valeur: 1, total: 2 },
+      { cle: 'ticket', arrivee: false, valeur: null, total: null },
+    ])
+  })
+
+  // Une ligne est arrivée là où `prochainPas` se tait : au compte, chacune à son palier.
+  // Mutations : `>` au lieu de `>=` sur un palier ; le ticket arrivé d'après le Lion.
+  it('arrivent au compte : trois films, tous les essentiels, deux salles, le ticket émis', () => {
+    expect(etats(3, P(1, 5, 1), null, null)).toEqual(['films oui', 'essentiels non', 'salles non', 'ticket non'])
+    expect(etats(2, P(5, 5, 1), null, null)).toEqual(['films non', 'essentiels oui', 'salles non', 'ticket non'])
+    expect(etats(2, P(1, 5, 2), null, null)).toEqual(['films non', 'essentiels non', 'salles oui', 'ticket non'])
+    expect(etats(2, P(1, 5, 1), null, TICKET)).toEqual(['films non', 'essentiels non', 'salles non', 'ticket oui'])
+  })
+
+  // Le Lion compte des introuvables que `essentiels_vus` ignore : la récompense que l'API a donnée
+  // l'emporte sur le compte, et chaque récompense tient celles d'en dessous. Mutations : `lion` lu
+  // d'après le seul compte ; la Palme qui ne tiendrait pas le Lion ; l'Ours oublié sous le Lion.
+  it('arrivent par la récompense, qui tient celles d’en dessous', () => {
+    expect(etats(1, P(3, 5, 0), 'ours', null)).toEqual(['films oui', 'essentiels non', 'salles non', 'ticket non'])
+    expect(etats(1, P(3, 5, 0), 'lion', null)).toEqual(['films oui', 'essentiels oui', 'salles non', 'ticket non'])
+    expect(etats(1, P(3, 5, 0), 'palme', null)).toEqual(['films oui', 'essentiels oui', 'salles oui', 'ticket non'])
+  })
+
+  // Mutation : la branche `essentiels_total === 0` retirée (« 0 sur 0 », et une ligne arrivée à zéro).
+  it('une année sans essentiel ne compte rien et n’est pas arrivée : jamais « 0 sur 0 »', () => {
+    expect(arriveesDeLAnnee(2, P(0, 0, 0), null, null)[1]).toEqual({ cle: 'essentiels', arrivee: false, valeur: null, total: null })
+    expect(arriveesDeLAnnee(2, P(0, 0, 0), 'lion', null)[1]).toEqual({ cle: 'essentiels', arrivee: true, valeur: null, total: null })
+  })
+
+  // Mutation : `progression` nulle lue quand même (lève).
+  it('sans progression, seuls les films et le ticket se disent', () => {
+    expect(etats(4, null, null, null)).toEqual(['films oui', 'ticket non'])
+  })
+})
+
+describe('une année bouclée', () => {
+  // Réponse du propriétaire du 7 octobre 2026. Mutations : le ticket ignoré (seul le statut) ; le
+  // statut ignoré (une année rattrapée sans ticket ne serait jamais bouclée) ; `utilise_le` exigé.
+  it('l’est dès que son ticket est émis, utilisé ou non, et toujours une fois derrière soi', () => {
+    expect(estBouclee('en_cours', null)).toBe(false)
+    expect(estBouclee('en_cours', TICKET)).toBe(true)
+    expect(estBouclee('en_cours', { ...TICKET, utilise_le: '2026-09-22T08:00:00.000Z' })).toBe(true)
+    expect(estBouclee('ouverte', null)).toBe(true)
   })
 })
 

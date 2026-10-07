@@ -7,7 +7,11 @@ import type { Recompense } from '../api/voyage'
 import type { ComponentType } from 'react'
 import type { PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
 import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
+import type { PropsBoniment } from '../voyage/annee/Boniment'
+import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
+import type { PropsTirette } from '../voyage/annee/Manivelle'
+import type { PropsProgramme } from '../voyage/annee/Programme'
 
 /**
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
@@ -651,6 +655,23 @@ export interface GabaritsDesPages {
    * le titre de niveau 1 doit alors venir de sa tête. Le corps d'une année fermée monte le sien.
    */
   fronton: ComponentType<PropsFronton>
+  /**
+   * La corde des billets d'une fiche prête (`voyage/annee/Corde.tsx`) : où en est l'année, et ce que
+   * le retour d'un billet vient d'y gagner. La région d'état qui dit le gain reste à la page.
+   */
+  corde: ComponentType<PropsCordeDAnnee>
+  /** Le boniment d'une fiche prête (`voyage/annee/Boniment.tsx`), avec ses deux gestes : lire l'ouverture, et le générique. */
+  boniment: ComponentType<PropsBoniment>
+  /**
+   * Le programme d'une fiche prête (`voyage/annee/Programme.tsx`) : ce qu'il reste à faire. La page le
+   * monte sur toute fiche prête ; le défaut ne rend rien hors de l'année en cours.
+   */
+  programme: ComponentType<PropsProgramme>
+  /**
+   * Le dessin de ce qu'on tire pour recharger (`voyage/annee/Manivelle.tsx`, `Poignee`). Lue par
+   * `Manivelle`, qui garde le geste, les seuils, les écouteurs, la région d'état et le bouton du bas.
+   */
+  tirette: ComponentType<PropsTirette>
 }
 
 export interface HabillagePages {
