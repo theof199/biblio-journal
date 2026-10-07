@@ -276,6 +276,23 @@ fait (la maquette en laisse 20 %) ; le vent ne couche pas la pluie selon la vite
 (`m-vent`) ; le plan de neige proche n'est pas flouté ; une goutte va en droite ligne d'un moment
 à l'autre ; au calme, elle se tient à sa place (dans la maquette, elle reste hors de l'écran).
 
+### Le tunnel (lot 2 bis)
+
+Idée 71, sans le ralenti (maquette : `TUNNEL`, l. 3507, par rang ; `donnees.ts` l'écrit par années) :
+
+```js
+const TUNNEL = { c: 3.5, demi: 0.17 }; // lent: 0.36, le pas du train dedans, non repris
+const K_T = 2.4, K_PAROI = 4.8, L_BOUCHE = 360;
+```
+
+La position des bouches, le noir et la paroi se lisent l. 3733-3741, la bouche l. 3573-3611, la
+paroi l. 3612-3628, leurs calques l. 1101-1108. **Écarts :** le train ne lève pas le pied (`ralenti`,
+l. 3524-3528 : lot « moteur ») ; l'ouverture de la bouche est percée dans le mur de tête, pour que la
+paroi s'y voie dès le pied-droit (dans la maquette, le rectangle du mur reste sous le dégradé de
+l'ouverture) ; ni la paroi ni ses lampes ne sont floutées ; le reflet du compartiment n'est pas viré
+et ne porte pas encore les affiches (idée 72) ; sur un écran plus large qu'un téléphone, où la bouche
+se verrait depuis la gare, le tunnel paraît sur les six premiers centièmes du chemin (`ABORD`).
+
 ## Ce que 12 joue
 
 **`TEMPS`** (l. 2747), les cinq durées de l'endroit, **telles qu'on les voit à l'écran** : la

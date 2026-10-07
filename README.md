@@ -255,7 +255,11 @@ monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum`. Le voile de nuit que le moteu
 l'écran d'après l'heure du visiteur, lui, reste. Il pleut à Couville et à Brest, il neige à Allaman
 et à Bassersdorf (`donnees.ts`, `METEO` ; les règles dans `meteo.ts`, le trait dans
 `intemperies.ts`) : des motifs répétés qui glissent et onze gouttes, posés immobiles quand le
-visiteur demande moins d'animations, absents du passage. Le Voyage suivi y est une voiture garée à quai dans
+visiteur demande moins d'animations, absents du passage. Entre Longueville et Allaman, le seul tunnel
+de la ligne (`donnees.ts`, `TUNNEL` ; les règles dans `tunnel.ts`, le trait dans `voute.ts`) : sa
+bouche de pierre arrive, le noir balaie la vitre, la paroi défile, l'autre bouche passe et le jour
+revient sur la neige ; il ne suit que le doigt, à l'aller comme au retour, sans ralentir le train, et
+n'existe pas quand le visiteur demande moins d'animations. Le Voyage suivi y est une voiture garée à quai dans
 sa gare (`suivi.ts`). Trois dépêches épinglées aux quais tiennent lieu de dates vraies
 (`depeches.ts`). Rien ne s'y bâtit (`siteDuChantier` rend nul), aucun toucher du décor ne sonne ni
 ne s'anime, et le monde s'en va sans adieu. Ses pages (les fiches d'année, la décennie) sont encore

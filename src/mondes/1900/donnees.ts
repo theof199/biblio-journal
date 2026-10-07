@@ -108,3 +108,11 @@ export type Temps = 'pluie' | 'neige'
  * n'a pas de météo. La buée de Creil (1901) n'est pas reprise : décision du lot 2 bis.
  */
 export const METEO: Readonly<Record<number, Temps>> = { 1902: 'pluie', 1904: 'neige', 1905: 'neige', 1906: 'pluie' }
+
+/**
+ * Le seul tunnel de la ligne (idée 71 ; maquette : `TUNNEL`, l. 3507, par rang) : entre quelles
+ * gares, où son milieu se tient sur le chemin de l'une à l'autre, et sa demi-longueur, en parts de
+ * ce chemin. Entre Longueville et Allaman, juste avant les Alpes. Le pas ralenti du train dedans
+ * (`lent`) n'est pas repris : il attend le lot « moteur ».
+ */
+export const TUNNEL = { de: 1903, vers: 1904, milieu: 0.5, demi: 0.17 } as const

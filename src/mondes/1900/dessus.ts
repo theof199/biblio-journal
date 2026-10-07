@@ -7,6 +7,8 @@ import { alea, aUnChef, chefALEcran, fenetresALEcran, forceDeLaLanterne, heureSu
 import { dessinerMeteo } from './intemperies'
 import { ouvrir } from './toiles'
 import { ANNEES } from './trace'
+import { sousLaVoute, tunnelALEcran } from './tunnel'
+import { dessinerTunnel } from './voute'
 
 /**
  * Ce qui se pose par-dessus tout le paysage du monde 1900, après les poteaux et la voiture du Voyage
@@ -262,14 +264,20 @@ function dessinerLanternes(v: VueMonde): void {
   })
 }
 
-/** Par-dessus tout : les chefs de gare, l'heure, la lanterne, puis la météo sur la vitre. Le moteur l'appelle après la voiture du Voyage suivi. */
+/** Par-dessus tout : les chefs de gare, l'heure, la lanterne, la météo sur la vitre, puis le tunnel, qui les couvre. Le moteur l'appelle après la voiture du Voyage suivi. */
 export function dessinerSurLaBrume(v: VueMonde): void {
   if (ouvrir(v)) {
-    dessinerChefs(v)
-    dessinerHeure(v)
-    dessinerLanternes(v)
-    // La météo est sur la vitre : par-dessus l'heure et la lanterne (maquette : `.meteo`, l. 1545).
-    dessinerMeteo(v)
+    const tunnel = tunnelALEcran(v)
+    // Sous le noir plein du tunnel, rien de ce qui suit ne se verrait : ni passe plein écran, ni neige.
+    if (!sousLaVoute(tunnel)) {
+      dessinerChefs(v)
+      dessinerHeure(v)
+      dessinerLanternes(v)
+      // La météo est sur la vitre : par-dessus l'heure et la lanterne (maquette : `.meteo`, l. 1545).
+      dessinerMeteo(v)
+    }
+    // Le tunnel passe devant la vitre : par-dessus la météo (maquette : `.tunnel`, l. 1546).
+    if (tunnel) dessinerTunnel(v, tunnel)
     v.ctx.restore()
   }
   // Le passage, par-dessus les toiles : le cadre de la vitre, la bouffée, et tant qu'il n'y a pas de
