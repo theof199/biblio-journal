@@ -126,7 +126,7 @@ describe('les trois classes', () => {
   // Tenir une portière la vide, une fois, et le relâcher n'ouvre pas le film qu'on vient de retirer ;
   // le refus se lit sous les portières. Mutations, dans `Portiere` : les écouteurs de l'appui long non
   // posés sur le lien ; `preventDefault` retiré du `click` (la page du film s'ouvrirait) ; `erreur`
-  // non rendue dans `Classes`.
+  // non rendue dans `Classes` ; `draggable={false}` retiré du lien, ou de son affiche.
   it('tenir la portière occupée la vide sans ouvrir son film, et un refus se lit', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     let videe = 0
@@ -136,6 +136,8 @@ describe('les trois classes', () => {
     })
     const classes = await lesClasses()
     const porte = within(classes).getByRole('link')
+    // Tenir ne lance pas le glisser natif du lien ni de son affiche, qui couperait l'appui.
+    expect([porte.getAttribute('draggable'), porte.querySelector('img')!.getAttribute('draggable')]).toEqual(['false', 'false'])
     fireEvent.pointerDown(porte)
     await vi.advanceTimersByTimeAsync(600)
     fireEvent.pointerUp(porte)

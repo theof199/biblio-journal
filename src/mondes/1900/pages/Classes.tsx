@@ -64,7 +64,7 @@ function Portiere({ place, marche, versLeFilm, onOuvrir, onVider }: PropsPortier
         {classe.chiffre}
       </span>
       {marche?.cover_url ? (
-        <img className={styles.fenetre} src={marche.cover_url} alt="" decoding="async" />
+        <img className={styles.fenetre} src={marche.cover_url} alt="" decoding="async" draggable={false} />
       ) : (
         <span className={`${styles.fenetre} ${styles.vide}`}>{marche ? MOTS_DES_CLASSES.sansAffiche : MOTS_DES_CLASSES.libre}</span>
       )}
@@ -78,6 +78,8 @@ function Portiere({ place, marche, versLeFilm, onOuvrir, onVider }: PropsPortier
           to={versLeFilm}
           className={styles.porte}
           aria-label={`${classe.nom} : ${marche.title}, ouvrir le film`}
+          // Tenir la portière ne doit pas lancer le glisser natif du lien ni de son affiche.
+          draggable={false}
           {...appui.ecouteurs}
           // Le relâcher d'un appui long n'ouvre pas le film qu'on vient de retirer.
           onClick={(e) => {

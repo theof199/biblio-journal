@@ -50,6 +50,7 @@
     inset 0 0 0 4px color-mix(in srgb, var(--m-or) 25%, transparent);
   -webkit-touch-callout: none;
   user-select: none;
+  touch-action: manipulation;
 }
 
 /* La première classe est plus haute que les deux autres. */
