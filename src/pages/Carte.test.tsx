@@ -1243,14 +1243,33 @@ describe('le ticket', () => {
     expect(leTrain()).not.toBeNull()
   })
 
-  // Mutation : la garde du déblocage retirée (`v.annee_en_cours >= proche`).
-  it('« Prendre le train » ne s’offre pas avant le déblocage, quoi que dise le moteur', async () => {
-    const { rappels, etats } = monter(EN_1899)
+  /** Tout ce que la page donne à lire, à l'œil comme au lecteur d'écran : son texte, et ses attributs lisibles. */
+  const ATTRIBUTS_LUS = ['aria-label', 'aria-description', 'aria-valuetext', 'aria-roledescription', 'title', 'alt', 'placeholder', 'value']
+  const toutCeQuiSeLit = () => [document.body.textContent ?? '', ...Array.from(document.body.querySelectorAll('*')).flatMap((e) => ATTRIBUTS_LUS.map((n) => e.getAttribute(n) ?? ''))].join('\n')
+  /** La même membre, derrière un Voyage suivi déjà rendu en 1900 : son année visitée, elle « le rattrape bientôt ». */
+  const DERRIERE_1900 = voyage1890(1899, [...ouvertes(1895, 1898), { ...enCours(1899), visitee: true }, ...verrouillees(1900, 1902)], {
+    ia: false,
+    source: { id: '22222222-2222-4222-8222-222222222222', pseudo: 'Théo', annee_en_cours: 1900 },
+  })
+
+  // Le seul garde du HUD pour « rien de 1900 avant le déblocage » (revue du lot 2, M8 de la tâche 13).
+  // Mutations : la garde du déblocage retirée (`v.annee_en_cours >= proche`) ; l'année du Voyage suivi
+  // ajoutée à la ligne « Tu suis le Voyage de… » ; ajoutée à un `aria-label` du HUD ; `anneesMontrees`
+  // retiré des cases, donc de la liste des années.
+  it.each([
+    ['sans Voyage suivi', EN_1899, null],
+    ['derrière un Voyage suivi déjà en 1900', DERRIERE_1900, 'tu le rattrapes bientôt'],
+  ])('avant le déblocage, %s : « Prendre le train » ne s’offre pas, quoi que dise le moteur, et rien de ce qui se lit ne nomme 1900', async (_nom, voyage, suivi) => {
+    const { rappels, etats } = monter(voyage)
     await waitFor(() => expect(etats.length).toBeGreaterThan(0))
     act(() => rappels().entreeProche?.(1900))
     await new Promise((r) => setTimeout(r, 30))
     expect(leTrain()).toBeNull()
-    expect(screen.queryByText(/1900/)).toBeNull()
+    // Le témoin : la page est bien là, avec ce qu'elle dit du Voyage suivi, et ses attributs sont lus.
+    if (suivi) expect(toutCeQuiSeLit()).toContain(suivi)
+    expect(toutCeQuiSeLit()).toContain('1899')
+    expect(toutCeQuiSeLit()).toContain('Les années du Voyage')
+    expect(toutCeQuiSeLit()).not.toContain('1900')
   })
 
   // Mutation : la garde de l'avancée retirée (`!avancee`).
