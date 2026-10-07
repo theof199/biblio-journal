@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
-import { montrerLeTicket, type Voyage } from '../../api/voyage'
+import { montrerLeTicket, type FichePrete, type Voyage } from '../../api/voyage'
 import type { Ambiance } from '../../carte/son'
 import type { Monde } from '../../mondes/types'
 import { useMouvementReduit } from '../../ui/mouvement'
@@ -9,6 +9,7 @@ import { STYLE_DU_TEMPO } from '../tempo'
 import AnneeBouclee from './AnneeBouclee'
 import PresseAMedailles from './PresseAMedailles'
 import SalleBouclee from './SalleBouclee'
+import { arriveesFetees, recompensesDAvant, salleFetee } from './lues'
 import { sonDeLaFete } from './son'
 import type { Scene } from './scenes'
 import styles from './Celebrations.module.css'
@@ -57,6 +58,11 @@ interface Props {
    * fête la réveille le temps de ses scènes, puis la rend au silence. Sur la carte, elle joue déjà.
    */
   horsCarte?: boolean
+  /**
+   * La fiche de l'année fêtée, quand la page la tient déjà (la fiche d'année) : de quoi montrer la
+   * salle bouclée et les arrivées de l'année. Absente (la carte) : la fête ne lit aucune fiche.
+   */
+  fiche?: FichePrete | null
 }
 
 /**
@@ -64,8 +70,9 @@ interface Props {
  * toucher passe à la suivante, la dernière rend la page. Rien ne se mémorise : démonté, il ne
  * rejoue rien.
  */
-export default function Celebrations({ monde, membre, scenes, onUtiliser, onFin, horsCarte = false }: Props) {
+export default function Celebrations({ monde, membre, scenes, onUtiliser, onFin, horsCarte = false, fiche = null }: Props) {
   const calme = useMouvementReduit()
+  const client = useQueryClient()
   const [rang, setRang] = useState(0)
   const [son] = useState(() => sonDeLaFete(membre))
   const montrer = useMontrerLeTicket()
@@ -95,11 +102,12 @@ export default function Celebrations({ monde, membre, scenes, onUtiliser, onFin,
   return (
     <div className={`${styles.calque} ${calme ? styles.calme : ''}`} style={style} data-celebration={scene.type} data-calme={calme}>
       {scene.type === 'salle' ? (
-        <SalleBouclee key={rang} scene={scene} {...commun} />
+        <SalleBouclee key={rang} scene={scene} {...commun} salle={salleFetee(fiche, scene)} />
       ) : scene.type === 'recompense' ? (
-        <PresseAMedailles key={rang} scene={scene} {...commun} />
+        // La carte se lit dans le cache, sans requête : la page qui fête l'a déjà.
+        <PresseAMedailles key={rang} scene={scene} {...commun} passees={recompensesDAvant(client.getQueryData<Voyage>(cles.voyage), scene.annee)} />
       ) : (
-        <AnneeBouclee key={rang} scene={scene} {...commun} onMontre={montrer} onUtiliser={onUtiliser} />
+        <AnneeBouclee key={rang} scene={scene} {...commun} onMontre={montrer} onUtiliser={onUtiliser} arrivees={arriveesFetees(fiche, scene.annee)} />
       )}
     </div>
   )

@@ -1,19 +1,29 @@
 import { vibrer } from '../../ui/haptique'
-import Embleme, { NOM_DE_RECOMPENSE } from '../annee/Embleme'
+import { NOM_DE_RECOMPENSE } from '../annee/Embleme'
+import { gabaritDe } from '../gabarit'
 import Cadre from './Cadre'
+import DessinDeLaRecompense from './DessinDeLaRecompense'
 import { RECOMPENSE, VIBRATION_DE_FETE, useDeroule } from './deroule'
+import type { RecompensePassee } from './lues'
 import { motifDeRecompense, type Scene } from './scenes'
 import type { PropsDeScene } from './Celebrations'
-import styles from './Celebrations.module.css'
 
 const ARTICLE = { ours: 'L’', lion: 'Le ', palme: 'La ' } as const
+
+interface Props extends PropsDeScene<Extract<Scene, { type: 'recompense' }>> {
+  /** Les récompenses des années d'avant de la décennie, lues de la carte par le séquenceur. */
+  passees: readonly RecompensePassee[]
+}
 
 /**
  * La récompense (maquette 1890 : `sceneBadge`) : le balancier d'une presse à médailles lance la
  * vis, qui frappe (l'éclair, le clap) ; la presse s'efface et l'emblème sort en tournant sur
  * lui-même (le carillon), puis son nom. Au calme : l'emblème et son nom, posés.
+ *
+ * La scène garde son cadre, son déroulé, le clap, le carillon et la vibration ; le dessin seul se
+ * lit au monde (`feteDeLaRecompense`).
  */
-export default function PresseAMedailles({ scene, monde, calme, son, onSuite }: PropsDeScene<Extract<Scene, { type: 'recompense' }>>) {
+export default function PresseAMedailles({ scene, monde, calme, son, onSuite, passees }: Props) {
   const { pas, fini } = useDeroule(RECOMPENSE, calme, (p) => {
     if (p === 1) {
       son?.clap()
@@ -23,27 +33,10 @@ export default function PresseAMedailles({ scene, monde, calme, son, onSuite }: 
   })
   const nom = `${ARTICLE[scene.recompense]}${NOM_DE_RECOMPENSE[scene.recompense]}`
   const motif = motifDeRecompense(scene.recompense, scene.annee)
+  const Dessin = gabaritDe(monde, 'feteDeLaRecompense', DessinDeLaRecompense)
   return (
     <Cadre nom={`${nom} : ${motif}`} onToucher={onSuite} onEchap={onSuite}>
-      <div className={styles.presse}>
-        <div className={`${styles.machine} ${pas >= 2 ? styles.efface : ''}`} aria-hidden="true">
-          <i className={styles.balancier} />
-          <i className={styles.vis} />
-          <i className={styles.traverse} />
-          <i className={`${styles.montant} ${styles.montantGauche}`} />
-          <i className={`${styles.montant} ${styles.montantDroit}`} />
-          <i className={styles.enclume} />
-          <i className={styles.socle} />
-        </div>
-        {pas >= 1 ? <i className={styles.eclair} aria-hidden="true" /> : null}
-        {pas >= 2 ? <Embleme type={scene.recompense} couleur={monde.couleur} className={styles.sortie} /> : null}
-      </div>
-      {fini ? (
-        <>
-          <p className={`celebration ${styles.titre}`}>{nom}</p>
-          <p className={styles.sous}>{motif}</p>
-        </>
-      ) : null}
+      <Dessin scene={scene} monde={monde} pas={pas} fini={fini} nom={nom} motif={motif} passees={passees} />
     </Cadre>
   )
 }

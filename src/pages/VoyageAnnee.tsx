@@ -310,7 +310,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
         {corps}
       </Manivelle>
       {/* Hors de la manivelle : la fête couvre la page, et ne se tire pas. */}
-      {fete.length > 0 ? <Celebrations monde={monde} membre={user.id} scenes={fete} onUtiliser={encaisser} onFin={() => setFete([])} horsCarte /> : null}
+      {fete.length > 0 ? <Celebrations monde={monde} membre={user.id} scenes={fete} onUtiliser={encaisser} onFin={() => setFete([])} horsCarte fiche={prete ?? null} /> : null}
     </section>
   )
 }

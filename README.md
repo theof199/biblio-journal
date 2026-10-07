@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trente et une clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet et cinq sur la sacoche. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Trente-quatre clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, cinq sur la sacoche et trois sur les célébrations (plus bas, « Les célébrations »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -550,6 +550,18 @@ accorde la joue à son arrivée ; sinon, à l'ouverture de la carte, `ticket_a_m
 `GET /me/voyage` la joue une fois (`sceneDuRattrapage`), après la marche s'il y en a une,
 « L’utiliser » ne s'y offrant que pour le ticket de l'année qui suit mon année en cours. Une
 relecture en panne ne consomme rien : la fête et les gains attendent la relecture réussie.
+
+**Le dessin d'une fête se lit au monde** de l'année fêtée (`feteDeLaSalle`, `feteDeLaRecompense`,
+`feteDeLAnnee`, par `gabaritDe`) ; sans gabarit, le rideau, la presse et le fronton restent
+(`DessinDeLaSalle.tsx`, `DessinDeLaRecompense.tsx`, `DessinDeLAnnee.tsx`). Chaque scène garde son
+cadre, son déroulé, ce qui s'entend et se sent, et l'année bouclée son choix et sa garde : un dessin
+ne séquence, ne lit ni n'offre rien. Le séquenceur lui passe ce que la page a déjà lu (`lues.ts`,
+sans requête) : la salle bouclée telle que la fiche la montre (`salleFetee` : son numéro, ses films ;
+nulle à plusieurs), les récompenses des années d'avant de la décennie, lues de la carte en cache
+(`recompensesDAvant`), et les arrivées de l'année par la règle de la fiche (`arriveesFetees`, jamais
+recomptées). La fiche est celle que la page de l'année tient (`fiche`) ; la carte, qui rattrape, n'en
+passe pas, et le dessin reçoit alors des manques. `salve` dit au dessin de l'année que le pas de la
+médaille s'est joué : rien n'éclate au calme ni d'un toucher impatient.
 
 Le séquenceur (`Celebrations.tsx`) pose les jetons du monde et le tempo sur son calque. Chaque pas
 attend au tempo (`deroule.ts`, `useDeroule`), et **une scène démontée n'écrit plus rien** : ni état,

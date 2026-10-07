@@ -1,25 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Particules } from '../../carte/dessin/particules'
+import { useEffect, useState } from 'react'
 import { vibrer } from '../../ui/haptique'
-import Toile, { LARGEUR_LOGIQUE } from '../Toile'
-import Embleme, { NOM_DE_RECOMPENSE } from '../annee/Embleme'
-import Fronton from '../annee/Fronton'
+import type { Arrivee } from '../annee'
+import { gabaritDe } from '../gabarit'
 import Cadre from './Cadre'
+import DessinDeLAnnee from './DessinDeLAnnee'
 import { ANNEE, GARDE_DU_CHOIX, PAS_DE_L_ANNEE, VIBRATION_DE_FETE, useDeroule } from './deroule'
-import { motifDeRecompense, type Scene } from './scenes'
+import type { Scene } from './scenes'
 import type { PropsDeScene } from './Celebrations'
 import styles from './Celebrations.module.css'
-
-/** La toile des confettis, en unités logiques : du fronton au guichet. */
-const HAUTEUR = 520
-/** Les cinq couleurs des confettis de la maquette, passées par la rampe du monde. */
-const CONFETTIS = ['#A8452F', '#E6B94A', '#F2E8D5', '#3E5360', '#DE7A45'] as const
 
 interface Props extends PropsDeScene<Extract<Scene, { type: 'annee' }>> {
   /** Le ticket s'est montré : `POST …/montre`, une seule fois, quel que soit le choix. Faux : il l'était déjà, le geste ne compte pas. */
   onMontre: (annee: number) => boolean
   /** Encaisser le ticket ; absent quand il n'ouvre pas l'année qui suit mon année en cours. */
   onUtiliser?: (annee: number) => void
+  /** Les arrivées de l'année, par la règle de la fiche ; nulles quand la page ne tient pas sa fiche. */
+  arrivees: readonly Arrivee[] | null
 }
 
 /**
@@ -28,16 +24,15 @@ interface Props extends PropsDeScene<Extract<Scene, { type: 'annee' }>> {
  * le guichet tend le billet de l'année suivante : le garder, ou l'utiliser. Un toucher pendant la
  * scène pose son état final ; elle ne se quitte que par un choix. Au calme : tout est posé, sans
  * confettis.
+ *
+ * La scène garde son cadre, son déroulé, le carillon, la vibration, le choix et sa garde ; le dessin
+ * seul se lit au monde (`feteDeLAnnee`). Les deux boutons du choix restent les siens.
  */
-export default function AnneeBouclee({ scene, monde, calme, son, onSuite, onMontre, onUtiliser }: Props) {
-  const particules = useRef<Particules | null>(null)
-  particules.current ??= new Particules()
-  const aLancer = useRef(false)
-  const dernierT = useRef(0)
-  const couleurs = useMemo(() => CONFETTIS.map((c) => monde.couleur(c)), [monde])
+export default function AnneeBouclee({ scene, monde, calme, son, onSuite, onMontre, onUtiliser, arrivees }: Props) {
+  const [salve, setSalve] = useState(0)
   const { pas, fini, finir } = useDeroule(ANNEE, calme, (p) => {
     if (p !== PAS_DE_L_ANNEE.medaille) return
-    aLancer.current = true
+    setSalve(1)
     son?.carillon()
     vibrer(VIBRATION_DE_FETE)
   })
@@ -60,7 +55,7 @@ export default function AnneeBouclee({ scene, monde, calme, son, onSuite, onMont
     onSuite()
   }
 
-  const recompense = scene.recompense
+  const Dessin = gabaritDe(monde, 'feteDeLAnnee', DessinDeLAnnee)
   return (
     <Cadre
       nom={`${scene.annee} est bouclée`}
@@ -85,64 +80,7 @@ export default function AnneeBouclee({ scene, monde, calme, son, onSuite, onMont
         )
       }
     >
-      <div className={styles.confettis} aria-hidden="true">
-        <Toile
-          hauteur={HAUTEUR}
-          libelle="Des confettis."
-          dessiner={(ctx, t, vivant) => {
-            ctx.clearRect(0, 0, LARGEUR_LOGIQUE, HAUTEUR)
-            if (!vivant) return
-            const dt = Math.min(0.05, Math.max(0, t - dernierT.current))
-            dernierT.current = t
-            const p = particules.current!
-            if (aLancer.current) {
-              aLancer.current = false
-              p.confettis(120, 250, couleurs)
-              p.confettis(270, 250, couleurs)
-            }
-            p.maj(dt)
-            p.dessiner(ctx, false)
-          }}
-        />
-      </div>
-      <div className={styles.fronton}>
-        <Fronton annee={scene.annee} annonce={monde.pages.mots.annonce.bouclee} millesime="bouclee" monde={monde}>
-          <div className={styles.ampoules} aria-hidden="true">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <i key={i} className={`${styles.ampoule} ${pas > i ? styles.allumee : ''}`} data-allumee={pas > i} />
-            ))}
-          </div>
-        </Fronton>
-      </div>
-      {pas >= PAS_DE_L_ANNEE.medaille && recompense ? (
-        <div className={styles.pendue}>
-          <i className={styles.ruban} aria-hidden="true" />
-          <Embleme type={recompense} couleur={monde.couleur} className={styles.medaille} />
-        </div>
-      ) : null}
-      {pas >= PAS_DE_L_ANNEE.titre ? (
-        <>
-          <p className={`celebration ${styles.titre}`}>est bouclée</p>
-          {recompense ? <p className={styles.sous}>{`${NOM_DE_RECOMPENSE[recompense]} · ${motifDeRecompense(recompense, scene.annee)}`}</p> : null}
-        </>
-      ) : null}
-      {pas >= PAS_DE_L_ANNEE.guichet ? (
-        <div className={styles.guichet}>
-          <i className={styles.auvent} aria-hidden="true" />
-          <i className={styles.caisse} aria-hidden="true">
-            <i className={styles.fenetre} />
-          </i>
-          <p className={styles.billet} aria-label={`Bon pour ${scene.ticket}`}>
-            <span className={styles.bon}>
-              <small>Bon pour</small>
-              <b>{scene.ticket}</b>
-            </span>
-            <span className={styles.talon} aria-hidden="true">
-              ENTRÉE
-            </span>
-          </p>
-        </div>
-      ) : null}
+      <Dessin scene={scene} monde={monde} pas={pas} fini={fini} salve={salve} arrivees={arrivees} />
     </Cadre>
   )
 }

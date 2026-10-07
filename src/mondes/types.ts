@@ -16,6 +16,9 @@ import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
 import type { PropsBilletDeSeance } from '../voyage/billet/BilletDeSeance'
 import type { PropsBilletEnGrand } from '../voyage/boite/BilletEnGrand'
 import type { PropsCasier } from '../voyage/boite/Casier'
+import type { PropsFeteDeLAnnee } from '../voyage/celebrations/DessinDeLAnnee'
+import type { PropsFeteDeLaRecompense } from '../voyage/celebrations/DessinDeLaRecompense'
+import type { PropsFeteDeLaSalle } from '../voyage/celebrations/DessinDeLaSalle'
 import type { PropsFrontonDeDecennie } from '../voyage/decennie/FrontonDeDecennie'
 import type { PropsLiens } from '../voyage/decennie/Liens'
 import type { PropsLivret } from '../voyage/decennie/Livret'
@@ -841,6 +844,25 @@ export interface GabaritsDesPages {
    * partie au dépli seulement.
    */
   coulisses: ComponentType<PropsCoulisses>
+  /**
+   * Le dessin de la salle bouclée (`voyage/celebrations/DessinDeLaSalle.tsx`) : le rideau, le carton.
+   * Lu par `voyage/celebrations/SalleBouclee.tsx`, qui garde le cadre (le dialogue, le toucher,
+   * Échap), le déroulé, le clap et la vibration. Il reçoit la salle telle que la fiche la montre.
+   */
+  feteDeLaSalle: ComponentType<PropsFeteDeLaSalle>
+  /**
+   * Le dessin de la récompense (`voyage/celebrations/DessinDeLaRecompense.tsx`) : la presse, l'emblème,
+   * son nom. Lu par `voyage/celebrations/PresseAMedailles.tsx`, qui garde le cadre, le déroulé et ce
+   * qui s'entend. Il reçoit les récompenses des années d'avant de la décennie, lues de la carte.
+   */
+  feteDeLaRecompense: ComponentType<PropsFeteDeLaRecompense>
+  /**
+   * Le dessin de l'année bouclée (`voyage/celebrations/DessinDeLAnnee.tsx`) : le fronton, la médaille,
+   * les confettis, le billet tendu. Lu par `voyage/celebrations/AnneeBouclee.tsx`, qui garde le cadre,
+   * le déroulé, le choix (« Le garder », « L’utiliser »), sa garde et le ticket montré une fois. Il
+   * reçoit les arrivées de l'année, calculées par la règle de la fiche.
+   */
+  feteDeLAnnee: ComponentType<PropsFeteDeLAnnee>
 }
 
 export interface HabillagePages {
