@@ -2196,6 +2196,60 @@ describe('le moteur de la carte', () => {
           expect(entreeDe(1900)).toBe(-1)
         })
 
+        /** Le manège de 1890 touché, la caméra en haut de la carte : la vue que son monde a reçue avec la réaction. */
+        const vueDuManege = (banc: ReturnType<typeof enGare>) => {
+          banc.poserA(MARGE_HAUT)
+          toucher(banc.moteur, MANEGE.x, MANEGE.y)
+          expect(reactions).toEqual(['manege'])
+          return vuesDesReactions[vuesDesReactions.length - 1]!
+        }
+
+        // Mutations : `passer` toujours nul ; `'envers'` au lieu de `'endroit'` ; la décennie de la
+        // section elle-même (`s.decennie`) au lieu de celle d'après ; `this.meneur.direBonjour` appelé
+        // sans passer par la méthode publique que le bouton appelle.
+        it('donne au décor le passage du monde d’après, joué par `direBonjour` à l’endroit, comme le bouton de la page', () => {
+          const banc = auPassage()
+          const bonjour = vi.spyOn(banc.moteur, 'direBonjour')
+          const { passer } = vueDuManege(banc)
+          expect(bonjour).not.toHaveBeenCalled()
+          expect(banc.vers()).toEqual([])
+          passer!()
+          expect(bonjour.mock.calls).toEqual([[1900, 'endroit']])
+          // La caméra est posée au premier temps, et le passage se joue.
+          expect(banc.vers()).toEqual([T[0]])
+          banc.filer(40)
+          expect(entreeDe(1900)).toBeGreaterThanOrEqual(0)
+        })
+
+        // Mutations : la garde des temps retirée (`suivante` seule) ; `section` au lieu de
+        // `section + 1` dans `tempsDe` ; la section d'après lue deux rangs plus loin.
+        it('ne donne aucun passage au décor quand le monde d’après n’en a pas, ou quand aucune section ne suit', () => {
+          // Une scène collante sans temps d'entrée : rien à jouer.
+          expect(vueDuManege(enGare()).passer).toBeNull()
+          // Le monde collant lui-même : ce qui le suit est un monde « à venir ».
+          const garni = auPassage({ garni: true })
+          garni.poserA(T[2]!)
+          toucher(garni.moteur, OU_SEMAPHORE.x, OU_SEMAPHORE.y)
+          expect(reagis[reagis.length - 1]).toEqual({ decennie: 1900, id: 'semaphore' })
+          expect(vuesDesReactions[vuesDesReactions.length - 1]!.passer).toBeNull()
+          // La décennie d'après cachée par la page : la carte s'arrête à 1899.
+          const seul = auPassage()
+          seul.moteur.majEtat({ cases: seul.cases.filter((c) => c.annee < 1900), anneeAvatar: 1899, tampons: [], roulotte: seul.roulotte })
+          expect(vueDuManege(seul).passer).toBeNull()
+        })
+
+        // Mutation : la branche du calme retirée de `Meneur.direBonjour` (le passage se jouerait).
+        it('au calme, le passage que le décor appelle pose la caméra en gare, d’un coup, comme le fait le bouton', async () => {
+          const banc = auPassage({ calme: true, auCalme: { 1890: ['manege'] } })
+          const { passer, vivant } = vueDuManege(banc)
+          expect(vivant).toBe(false)
+          passer!()
+          expect(banc.vers()).toEqual([T[2]])
+          banc.filer(400)
+          expect(banc.vers()).toEqual([T[2]])
+          expect(entreeDe(1900)).toBe(-1)
+        })
+
         // Mutations : le `return` retiré après `finirLePassage` dans `pointeur` (le toucher relayé
         // ouvrirait l'année sous le doigt) ; `finirLePassage` retiré (le passage continuerait).
         it('un toucher pendant le passage le pose à sa fin, sans ouvrir l’année qui se trouve sous le doigt', async () => {

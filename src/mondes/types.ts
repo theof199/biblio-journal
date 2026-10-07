@@ -174,6 +174,14 @@ export interface VueMonde {
   avance: number
   /** Les secondes écoulées depuis le début du passage d'entrée joué (`SceneCollante.entree`) ; -1 hors passage. Le jumeau de `adieu`. */
   entree: number
+  /**
+   * Le passage d'entrée du monde d'après, quand la section qui suit celle-ci en a un
+   * (`SceneCollante.entree`) : l'appeler le joue à l'endroit, par `MoteurCarte.direBonjour`, ce que
+   * fait le bouton de la page, au calme compris. Nul sinon : aucune section ne suit (la carte cache
+   * une décennie que le membre n'a pas atteinte), ou elle n'a pas de passage. Un décor s'en sert
+   * depuis `reagir` (le train au bout de la foire de 1890), jamais en dessinant.
+   */
+  passer: (() => void) | null
 }
 
 /**

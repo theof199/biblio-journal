@@ -40,6 +40,8 @@ export function vueFactice(surcharge: Partial<VueMonde> = {}) {
     // Plan 3a : la caméra au haut de la section, hors de tout passage d'entrée.
     avance: 0,
     entree: -1,
+    // Aucun monde à passage ne suit : la décennie d'après est cachée.
+    passer: null,
     ...surcharge,
   }
   return { vue, appels, zones }

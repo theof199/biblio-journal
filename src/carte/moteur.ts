@@ -951,6 +951,8 @@ export class MoteurCarte {
       const o = monde.objets[i]
       return !o || this.ramasses.has(o.cle)
     }
+    // Le monde d'après, s'il a un passage d'entrée : ce que le bouton de la page appelle, donné au décor.
+    const suivante = this.plan.sections[section + 1]
     const derniere = quittees.reduce<{ rang: number; t0: number } | null>((acc, c) => {
       const t0 = this.pops.get(c.annee)
       return t0 !== undefined && (!acc || t0 > acc.t0) ? { rang: bati.indexOf(c), t0 } : acc
@@ -1012,6 +1014,7 @@ export class MoteurCarte {
       objetRamasse: ramasse,
       avance: this.camY - s.y0,
       entree: this.meneur.ageDuPassage(s.decennie),
+      passer: suivante && this.tempsDe(section + 1).length > 0 ? () => void this.direBonjour(suivante.decennie, 'endroit') : null,
     }
   }
 

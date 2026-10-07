@@ -53,5 +53,6 @@ export function vuePage(o: { ctx: CanvasRenderingContext2D; W: number; H: number
     // Sans carte derrière : ni défilement, ni passage d'entrée (plan 3a).
     avance: 0,
     entree: -1,
+    passer: null,
   }
 }
