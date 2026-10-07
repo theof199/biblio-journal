@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { creerMonde1900 } from '.'
 import type { CaseVue, VueMonde } from '../types'
 import { vueFactice } from '../../test/vueFactice'
@@ -9,7 +9,7 @@ import {
   ambiances, aUnChef, chefALEcran, fenetresALEcran, forceDeLaLanterne, GUIDON, heureSurLaLigne, lanterneALEcran, leveeDuGuidon, luneALEcran,
   motsDeLEtiquette, partDeLHeure, partsDeLHeure, souffleDeLaLampe, voileDuLaboratoire,
 } from './habillage'
-import { largeurDeLaVue } from './lointain'
+import { largeurDeLaVue, vueDeRang, vuesALEcran } from './lointain'
 import { ANNEES, ARRETS, PAS } from './trace'
 
 /**
@@ -61,7 +61,7 @@ describe('les tables de l’habillage', () => {
       1909: [-132, 28.5, -8, 40, -2],
     })
     expect(CADRE_LOIN).toEqual({ loin1: [0.01, 0.99, 0, 34], loin2: [0.19, 0.93, 14, 38], loin3: [0.01, 0.56, 6, 32] })
-    expect(SUITE_LOIN.join(', ')).toBe('loin1, loin2, loin3 m, loin3, loin2 m, loin2, loin3 m, loin3, loin2 m, loin1 m, loin1, loin2, loin3 m, loin3')
+    expect(SUITE_LOIN.map((s) => s.nom + (s.miroir ? ' m' : '')).join(', ')).toBe('loin1, loin2, loin3 m, loin3, loin2 m, loin2, loin3 m, loin3, loin2 m, loin1 m, loin1, loin2, loin3 m, loin3')
     expect(LUNE).toEqual([72, 19])
     expect(HEURES.map((h) => [h.nom, h.lx, h.ly, h.sol, h.nuit])).toEqual([
       ['aube', 80, 29, 1, 0.3], ['petit matin', 72, 23, 1, 0], ['matinée', 64, 14, 0.5, 0], ['fin de matinée', 56, 9, 0, 0], ['plein midi', 50, 6, 0, 0],
@@ -111,10 +111,50 @@ describe('les vues lointaines', () => {
     expect(largeurDeLaVue('loin1', 448)).toBeCloseTo((448 * 883 * 0.98) / 469, 6)
     expect(largeurDeLaVue('loin3', 448)).toBeCloseTo((448 * 893 * 0.55) / 493, 6)
   })
+
+  // Mutation : la suite finie (`SUITE_LOIN[k]` sans reprise : plus de vue au-delà de la quatorzième).
+  it('se suivent dans l’ordre de la maquette, et la suite reprend au bout : la toile ne s’arrête pas avant 1909', () => {
+    expect([0, 2, 9, 13].map(vueDeRang)).toEqual([{ nom: 'loin1', miroir: false }, { nom: 'loin3', miroir: true }, { nom: 'loin1', miroir: true }, { nom: 'loin3', miroir: false }])
+    expect([14, 16, 27, 28].map(vueDeRang)).toEqual([0, 2, 13, 0].map(vueDeRang))
+    // Un écran couché, en gare de 1909 : la suite seule (quatorze vues) finirait avant le bord droit.
+    const couche = { W: 2600, H: 400, avance: ARRETS[9]! }
+    const vues = vuesALEcran(couche)
+    expect(vues.length).toBeGreaterThan(0)
+    const derniere = vues[vues.length - 1]!
+    expect(derniere.x + derniere.w).toBeGreaterThanOrEqual(couche.W)
+    // Le témoin : il y faut plus que les quatorze vues de la suite.
+    expect(derniere.rang).toBeGreaterThanOrEqual(14)
+    // Chaque vue commence 130 px avant la fin de la précédente, sur laquelle elle se fond.
+    vues.slice(1).forEach((vue, n) => expect(vue.x).toBeCloseTo(vues[n]!.x + vues[n]!.w - 130, 6))
+    // Sur un téléphone debout, rien hors de l'écran n'est rendu.
+    for (const vue of vuesALEcran({ W: 390, H: 700, avance: ARRETS[4]! })) {
+      expect(vue.x + vue.w).toBeGreaterThan(0)
+      expect(vue.x).toBeLessThan(390)
+    }
+  })
+})
+
+describe('une toile hors écran refusée', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  // Mutation : le refus non retenu (`refusee = true` retiré : une toile recréée par élément, à chaque image).
+  it('n’est demandée qu’une fois : le refus est retenu', async () => {
+    vi.resetModules()
+    const { cuire } = await import('./cuisson')
+    const creer = vi.spyOn(document, 'createElement')
+    const peindre = vi.fn()
+    // jsdom refuse tout contexte de canvas (`src/test/setup.ts`).
+    expect(cuire('a', 10, 10, peindre)).toBeNull()
+    expect(cuire('b', 10, 10, peindre)).toBeNull()
+    expect(cuire('a', 10, 10, peindre)).toBeNull()
+    expect(creer.mock.calls.filter((a) => a[0] === 'canvas')).toHaveLength(1)
+    expect(peindre).not.toHaveBeenCalled()
+  })
 })
 
 describe('l’heure de la gare', () => {
-  // Mutation : deux heures échangées dans `HEURES` ; l'heure lue un rang plus loin.
+  // Mutations : deux heures échangées dans `HEURES` ; l'heure lue un rang plus loin ; une composante
+  // mêlée à sa voisine (le vert lu sur le rouge, l'opacité de la lueur sur son bleu).
   it('est celle de sa gare à l’arrêt, et se fond entre deux gares', () => {
     ANNEES.forEach((_, i) => {
       const h = HEURES[i]!
@@ -123,6 +163,11 @@ describe('l’heure de la gare', () => {
     const milieu = heureSurLaLigne(ARRETS[7]! + PAS / 2)
     expect(milieu.nuit).toBeCloseTo((0.45 + 0.75) / 2, 9)
     expect(milieu.haut[0]).toBeCloseTo((150 + 84) / 2, 9)
+    // Chaque composante se mêle à la sienne : le haut, le bas et la lueur, opacité comprise.
+    const proche = (v: readonly number[]) => v.map((x) => expect.closeTo(x, 9))
+    expect(milieu.haut).toEqual(proche([117, 113, 162]))
+    expect(milieu.bas).toEqual(proche([195, 145, 139]))
+    expect(milieu.lueur).toEqual(proche([232.5, 125, 95, 0.44]))
     expect(milieu.lx).toBeCloseTo(24, 9)
   })
 

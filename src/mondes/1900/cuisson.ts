@@ -11,11 +11,13 @@ import { c } from './couleur'
 
 const PLAFOND = 28
 const cuites = new Map<string, HTMLCanvasElement>()
+/** Vrai dès qu'une toile hors écran a été refusée : on ne la redemande plus, à chaque élément de chaque image. */
+let refusee = false
 
 /**
  * La toile cuite sous `cle`, peinte par `peindre` la première fois. Nulle là où aucune toile hors
  * écran ne s'obtient (jsdom, un navigateur à court de mémoire) : le dessin s'en passe alors, et pose
- * ce qu'il a sans fondu.
+ * ce qu'il a sans fondu. Un refus est retenu jusqu'au rechargement de la page.
  */
 export function cuire(cle: string, w: number, h: number, peindre: (g: CanvasRenderingContext2D, w: number, h: number) => void): CanvasImageSource | null {
   const deja = cuites.get(cle)
@@ -24,12 +26,15 @@ export function cuire(cle: string, w: number, h: number, peindre: (g: CanvasRend
     cuites.set(cle, deja)
     return deja
   }
-  if (typeof document === 'undefined') return null
+  if (refusee || typeof document === 'undefined') return null
   const toile = document.createElement('canvas')
   toile.width = Math.max(1, Math.ceil(w))
   toile.height = Math.max(1, Math.ceil(h))
   const g = toile.getContext('2d')
-  if (!g) return null
+  if (!g) {
+    refusee = true
+    return null
+  }
   peindre(g, toile.width, toile.height)
   cuites.set(cle, toile)
   if (cuites.size > PLAFOND) {

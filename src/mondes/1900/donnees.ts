@@ -39,8 +39,18 @@ export const CADRE_LOIN: Readonly<Record<string, readonly [number, number, numbe
   loin1: [0.01, 0.99, 0, 34], loin2: [0.19, 0.93, 14, 38], loin3: [0.01, 0.56, 6, 32],
 }
 
-/** La suite des vues lointaines (maquette, l. 2859), « m » pour retournée. */
-export const SUITE_LOIN: readonly string[] = ['loin1', 'loin2', 'loin3 m', 'loin3', 'loin2 m', 'loin2', 'loin3 m', 'loin3', 'loin2 m', 'loin1 m', 'loin1', 'loin2', 'loin3 m', 'loin3']
+/** Une vue lointaine de la suite : son image, et si elle est retournée. */
+export interface VueLointaine {
+  nom: 'loin1' | 'loin2' | 'loin3'
+  miroir: boolean
+}
+const vue = (nom: VueLointaine['nom'], miroir = false): VueLointaine => ({ nom, miroir })
+
+/** La suite des vues lointaines (maquette, l. 2859 : « m » pour retournée). */
+export const SUITE_LOIN: readonly VueLointaine[] = [
+  vue('loin1'), vue('loin2'), vue('loin3', true), vue('loin3'), vue('loin2', true), vue('loin2'), vue('loin3', true),
+  vue('loin3'), vue('loin2', true), vue('loin1', true), vue('loin1'), vue('loin2'), vue('loin3', true), vue('loin3'),
+]
 
 /** De combien de pixels chaque vue lointaine se fond sur la précédente (maquette, l. 98-100). */
 export const RACCORD_LOIN = 130

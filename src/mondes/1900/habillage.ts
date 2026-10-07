@@ -43,8 +43,9 @@ export function heureSurLaLigne(avance: number): Omit<Heure, 'nom'> {
   const f = lisse(0.12, 0.88, pg - g0)
   const h0 = HEURES[g0]!
   const h1 = HEURES[g0 + 1]!
-  const mel = <T extends readonly number[]>(a: T, b: T): T => a.map((x, k) => lerp(x, b[k]!, f)) as unknown as T
-  return { haut: mel(h0.haut, h1.haut), bas: mel(h0.bas, h1.bas), lueur: mel(h0.lueur, h1.lueur), lx: lerp(h0.lx, h1.lx, f), ly: lerp(h0.ly, h1.ly, f), sol: lerp(h0.sol, h1.sol, f), nuit: lerp(h0.nuit, h1.nuit, f) }
+  const teinte = (a: Heure['haut'], b: Heure['haut']): Heure['haut'] => [lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(a[2], b[2], f)]
+  const lueur: Heure['lueur'] = [lerp(h0.lueur[0], h1.lueur[0], f), lerp(h0.lueur[1], h1.lueur[1], f), lerp(h0.lueur[2], h1.lueur[2], f), lerp(h0.lueur[3], h1.lueur[3], f)]
+  return { haut: teinte(h0.haut, h1.haut), bas: teinte(h0.bas, h1.bas), lueur, lx: lerp(h0.lx, h1.lx, f), ly: lerp(h0.ly, h1.ly, f), sol: lerp(h0.sol, h1.sol, f), nuit: lerp(h0.nuit, h1.nuit, f) }
 }
 
 type Etat = Pick<VueMonde, 'cases' | 'ouverte' | 't' | 'vivant'>

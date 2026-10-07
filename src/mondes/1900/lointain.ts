@@ -1,7 +1,7 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
 import { cuire, fondre } from './cuisson'
-import { CADRE_LOIN, RACCORD_LOIN, SUITE_LOIN } from './donnees'
+import { CADRE_LOIN, RACCORD_LOIN, SUITE_LOIN, type VueLointaine } from './donnees'
 import { imageDu1900, TAILLES } from './images'
 import { decalages, ouvrir, RAPPORTS } from './toiles'
 import { E } from './trace'
@@ -11,6 +11,31 @@ export function largeurDeLaVue(nom: string, h: number): number {
   const [lp, hp] = TAILLES[nom]!
   const [x0, x1] = CADRE_LOIN[nom]!
   return (h * lp * (x1 - x0)) / hp
+}
+
+/**
+ * La vue lointaine de rang `k` sur la toile : la suite de la maquette, reprise autant qu'il faut.
+ * Elle couvre la ligne sur un téléphone debout ; sur un écran plus large que haut, la toile ne
+ * s'arrête pas avant la gare de 1909.
+ */
+export const vueDeRang = (k: number): VueLointaine => SUITE_LOIN[k % SUITE_LOIN.length]!
+
+/**
+ * Les vues lointaines à l'écran, de gauche à droite : leur rang sur la toile, leur bord gauche et
+ * leur largeur. Chacune commence `RACCORD_LOIN` pixels avant la fin de la précédente ; la toile est
+ * couverte jusqu'au bord droit de l'écran, quelle que soit sa largeur.
+ */
+export function vuesALEcran(v: Pick<VueMonde, 'W' | 'H' | 'avance'>): Array<VueLointaine & { rang: number; x: number; w: number }> {
+  const h = v.H * 0.64
+  const vues: Array<VueLointaine & { rang: number; x: number; w: number }> = []
+  let x = -60 - E * (RAPPORTS.loin / RAPPORTS.gares) - decalages(v.avance).loin
+  for (let rang = 0; x < v.W; rang++) {
+    const vue = vueDeRang(rang)
+    const w = largeurDeLaVue(vue.nom, h)
+    if (x + w > 0) vues.push({ ...vue, rang, x, w })
+    x += w - RACCORD_LOIN
+  }
+  return vues
 }
 
 /**
@@ -46,7 +71,7 @@ function vueFondue(nom: string, miroir: boolean, photo: CanvasImageSource, w: nu
 
 /**
  * La toile basse de la campagne (rapport 2/15 ; maquette : `.loin`, l. 95 et 3073), puis le talus
- * au pied des gares. Les vues se suivent dans l'ordre de `SUITE_LOIN`, chacune recadrée
+ * au pied des gares. Les vues se suivent dans l'ordre de `SUITE_LOIN`, en boucle (`vueDeRang`), chacune recadrée
  * (`CADRE_LOIN`) et fondue sur la précédente.
  */
 export function dessinerLointain(v: VueMonde): void {
@@ -54,21 +79,13 @@ export function dessinerLointain(v: VueMonde): void {
   const g = v.ctx
   const haut = v.H * 0.2
   const h = v.H * 0.64
-  let x = -60 - E * (RAPPORTS.loin / RAPPORTS.gares) - decalages(v.avance).loin
-  for (const vue of SUITE_LOIN) {
-    if (x >= v.W) break
-    const [nom, miroir] = vue.split(' ') as [string, string | undefined]
-    const w = largeurDeLaVue(nom, h)
-    if (x + w > 0) {
-      const url = imageDu1900(nom)
-      const photo = url ? v.image(url) : null
-      if (photo) {
-        const fondue = vueFondue(nom, miroir === 'm', photo, w, h)
-        if (fondue) g.drawImage(fondue, x, haut, w, h)
-        else g.drawImage(photo, x, haut, w, h)
-      }
-    }
-    x += w - RACCORD_LOIN
+  for (const { nom, miroir, x, w } of vuesALEcran(v)) {
+    const url = imageDu1900(nom)
+    const photo = url ? v.image(url) : null
+    if (!photo) continue
+    const fondue = vueFondue(nom, miroir, photo, w, h)
+    if (fondue) g.drawImage(fondue, x, haut, w, h)
+    else g.drawImage(photo, x, haut, w, h)
   }
   // Le talus (maquette : `.talus`) : une bande d'herbe sombre, sans rien qui dise sa vitesse.
   const y = v.H * 0.68
