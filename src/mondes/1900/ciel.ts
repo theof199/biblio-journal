@@ -4,6 +4,7 @@ import type { Ambiance } from './donnees'
 import { dessinerFond } from './fonds'
 import { ambiances } from './habillage'
 import { imageDu1900 } from './images'
+import { dessinerSousLaVitre } from './montee'
 import { decalages, ouvrir, RAPPORTS } from './toiles'
 import { E } from './trace'
 
@@ -21,6 +22,8 @@ const largeurDuFond = (W: number) => Math.max(800, W + 410)
  * (`dessus.ts`).
  */
 export function dessinerCiel(v: VueMonde): void {
+  // Sous la vitre, avant toute toile : le quai qu'on quitte et le compartiment (`montee.ts`).
+  dessinerSousLaVitre(v)
   if (!ouvrir(v)) return
   const g = v.ctx
   const ciel = g.createLinearGradient(0, 0, 0, v.H)

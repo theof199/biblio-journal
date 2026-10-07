@@ -11,6 +11,8 @@ export const imageDu1900 = (nom: string): string | null => fichiers[`./assets/${
  * données, « Les images » ; maquette : `window.TAILLES`, l. 2656).
  */
 export const TAILLES: Readonly<Record<string, readonly [number, number]>> = {
+  quai: [624, 459],
+  interieur: [720, 1037],
   fond: [941, 419],
   loin1: [883, 469],
   loin2: [845, 488],

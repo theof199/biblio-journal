@@ -12,6 +12,7 @@ import { BOBINES } from './bobines'
 import { ROULEMENT } from './roulement'
 import { c, RAMPE } from './couleur'
 import { ARRETS, trace1900 } from './trace'
+import { ENTREE } from './entree'
 
 /**
  * Le voyage immobile : le Panorama transsibérien de l'Exposition de 1900, quatre toiles qui défilent
@@ -70,8 +71,8 @@ export function creerMonde1900(): Monde {
       ecranDeLaCase,
       dessinerSuivi,
       dessinerBande,
-      // Le passage de la foire au train : tâche 12.
-      entree: [],
+      // Le passage de la foire au train : quatre positions, le moteur les joue au tempo (`entree.ts`).
+      entree: ENTREE,
       arrets: ARRETS,
     },
   }

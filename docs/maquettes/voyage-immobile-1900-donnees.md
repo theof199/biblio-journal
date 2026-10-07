@@ -293,6 +293,18 @@ Les `y` sont ceux du tracé de la tâche 11a ; cette fiche n'en fixe que l'ordre
 (l. 2742-2744 et 2951-2955) : `A1` est le bas de la carte de 1890 plus une jonction de 180 px,
 `S1 = A1 + 560 × 0,44`, `B1 = A1 + 560`.
 
+**Joué en 12, le 7 octobre 2026** (`src/mondes/1900/entree.ts`, `passage.ts`, `montee.ts`). En `y` de
+la section, dont le haut est le bas de 1890 : `U0` = −498, `A1` = 180, `S1` = 426, `B1` = 740.
+
+- **Écart : `U0` est fixe.** La maquette le tire de la hauteur de son écran (678 px au-dessus du
+  quai sur 760 px de haut) ; un temps du passage n'a qu'un `y`. À régler à l'essai.
+- **Écart : la pellicule de la jonction arrive au milieu** (56 px plus à droite que `jonctionSVG`,
+  l. 2885), là où la route de 1890 quitte sa section ; le poteau indicateur suit, de 14 px.
+- **Rien ne suit l'horloge** : les panaches de la locomotive et la fumée d'attente de la jonction
+  (l. 519-560), le reflet de la vitre, la vapeur du roulement et le roulis (l. 3055-3065) ne sont
+  pas dessinés. La bouffée de la montée, elle, suit l'avance, comme dans la maquette.
+- Les seuils du passage sont ceux de `rendre` (l. 3012-3051), recopiés dans `passage.ts`.
+
 ## Ce qui est sorti de la fiche
 
 Rien de ce que le lot 2 écrit n'est sorti faute de source : les trois bobines et les trois

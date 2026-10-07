@@ -9,7 +9,8 @@ import { vueFactice } from '../../test/vueFactice'
 import { contexteFactice } from '../../test/contexteFactice'
 import { aDevelopper, developpement, ecranDeLaCase, gareALEcran, milieuDeLaGare } from './gares'
 import { decalages, fenetre, RAPPORTS } from './toiles'
-import { ANNEES, ARRETS, B1, E, HAUTEUR, PAS, trace1900 } from './trace'
+import { ANNEES, ARRETS, B1, E, HAUTEUR, PAS, S1, trace1900 } from './trace'
+import { ENTREE } from './entree'
 import { DEVELOPPEMENT } from './durees'
 import { lectureDeLaBande, vignette } from './bande'
 import { voitureALEcran } from './suivi'
@@ -54,13 +55,14 @@ const PHOTO = {} as CanvasImageSource
 const lus = (appels: unknown): unknown => JSON.parse(JSON.stringify(appels))
 
 describe('le monde des années 1900', () => {
-  // Mutations : `pages` propre au monde ; `siteDuChantier` qui rend un `y` ; un temps dans `entree`.
-  it('porte les champs du voyage immobile, les pages du monde « à venir », ni chantier ni passage', () => {
+  // Mutations : `pages` propre au monde ; `siteDuChantier` qui rend un `y` ; `entree` vidée (le passage : `passage.test.ts`).
+  it('porte les champs du voyage immobile, les pages du monde « à venir », aucun chantier, et son passage', () => {
     const m = creerMonde1900()
     expect([m.cle, m.decennie, m.aVenir, m.chapitre, m.nom, m.sous, m.titreVoyageur, m.adieu]).toEqual(['1900', 1900, false, 'Chapitre II', 'Le voyage immobile', 'le train', 'Spectateur du voyage immobile', 0])
     expect(m.pages).toBe(mondeAVenir(1900).pages)
     expect(ANNEES.map((a) => m.siteDuChantier(a))).toEqual(ANNEES.map(() => null))
-    expect(m.scene!.entree).toEqual([])
+    expect(m.scene!.entree).toBe(ENTREE)
+    expect(ENTREE.length).toBeGreaterThan(0)
     expect(m.musique).not.toBeNull()
     expect(m.musique!.temps).toBeGreaterThan(0)
   })
@@ -127,9 +129,12 @@ describe('les quatre toiles', () => {
     expect(d.gares / d.ballast).toBeCloseTo(2 / 5, 6)
   })
 
-  // Mutation : la borne retirée de `decalages` (la toile défilerait pendant le passage, ou sous 1909).
-  it('ne bougent ni avant la gare de 1900, ni après celle de 1909', () => {
-    expect(decalages(-400)).toEqual(decalages(B1))
+  // Mutation : la borne retirée de `decalages` (la toile défilerait sous la foire, ou sous 1909).
+  // Depuis la tâche 12, le train vient du quai de 1899 : avant le départ, les toiles sont une gare
+  // plus tôt, immobiles (`passage.test.ts` garde le trajet).
+  it('ne bougent ni avant le départ du quai, ni après la gare de 1909', () => {
+    expect(decalages(-400)).toEqual(decalages(S1))
+    expect(decalages(S1).gares).toBe(-E)
     expect(decalages(B1).ballast).toBe(0)
     expect(decalages(HAUTEUR)).toEqual(decalages(ARRETS[9]!))
   })
@@ -272,13 +277,11 @@ describe('ce qui se touche hors de la fenêtre de la section', () => {
       m.scene!.dessinerSuivi(f.vue, { pseudo: 'lea', annee: suivi })
       return { zones: f.zones.map((z) => z.id).sort(), bobines: f.bobine.mock.calls.length }
     }
-    // Écran de 700 : le haut de 1900 à 500 px du haut, la foire de 1890 au-dessus. La dépêche (y 319)
-    // et la bobine (y 457) de 1900 seraient sur la foire ; la voiture (y 546) est dans la fenêtre.
-    expect(touche(-500, 1900)).toEqual({ zones: ['roulotte'], bobines: 0 })
-    // Le haut de 1900 à 600 px : la voiture aussi est hors de la fenêtre.
-    expect(touche(-600, 1900)).toEqual({ zones: [], bobines: 0 })
-    // Le témoin : la fenêtre ouverte à 100 px du haut, tout se touche.
-    expect(touche(-100, 1900)).toEqual({ zones: ['date', 'roulotte'], bobines: 1 })
+    // Le haut de la section est la zone du passage, où rien ne se touche (`passage.test.ts`) : le
+    // haut de 1900 à 500 px du haut de l'écran, la foire de 1890 au-dessus, rien ne s'inscrit.
+    expect(touche(-500, 1900)).toEqual({ zones: [], bobines: 0 })
+    // Le témoin : en gare de 1900, tout se touche.
+    expect(touche(ARRETS[0]!, 1900)).toEqual({ zones: ['date', 'roulotte'], bobines: 1 })
     // Le bas de la section à 300 px du haut : la voiture garée en 1909 est coupée, elle ne se touche plus.
     expect(touche(HAUTEUR - 300, 1909)).toEqual({ zones: [], bobines: 0 })
     expect(touche(ARRETS[9]!, 1909)).toEqual({ zones: ['roulotte'], bobines: 0 })

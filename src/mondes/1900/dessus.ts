@@ -1,4 +1,5 @@
 import type { VueMonde } from '../types'
+import { dessinerDevantLaVitre } from './montee'
 import { c, F_CORPS } from './couleur'
 import { cuire, fondre } from './cuisson'
 import { FENETRES } from './donnees'
@@ -266,9 +267,13 @@ function dessinerLanternes(v: VueMonde): void {
 
 /** Par-dessus tout : les chefs de gare, l'heure, puis la lanterne. Le moteur l'appelle après la voiture du Voyage suivi. */
 export function dessinerSurLaBrume(v: VueMonde): void {
-  if (!ouvrir(v)) return
-  dessinerChefs(v)
-  dessinerHeure(v)
-  dessinerLanternes(v)
-  v.ctx.restore()
+  if (ouvrir(v)) {
+    dessinerChefs(v)
+    dessinerHeure(v)
+    dessinerLanternes(v)
+    v.ctx.restore()
+  }
+  // Le passage, par-dessus les toiles : le cadre de la vitre, la bouffée, et tant qu'il n'y a pas de
+  // vitre, la jonction et le quai, qui couvrent ce que la foire laisse déborder (`montee.ts`).
+  dessinerDevantLaVitre(v)
 }

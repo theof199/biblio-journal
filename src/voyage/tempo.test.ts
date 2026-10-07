@@ -26,6 +26,7 @@ const SOURCES: Record<string, string> = {
 }
 const DEROULE = '/src/voyage/celebrations/deroule.ts'
 const DUREES_1900 = '/src/mondes/1900/durees.ts'
+const ENTREE_1900 = '/src/mondes/1900/entree.ts'
 const source = (chemin: string) => SOURCES[chemin] ?? ''
 
 const sansCommentaires = (code: string) => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -73,6 +74,7 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
         '/src/voyage/celebrations/PresseAMedailles.tsx',
         '/src/voyage/celebrations/AnneeBouclee.tsx',
         DUREES_1900,
+        ENTREE_1900,
         '/src/mondes/1900/index.ts',
         '/src/mondes/1900/gares.ts',
       ]),
@@ -149,5 +151,18 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     // Hors de l'import du tempo et de ces lignes, rien : ni objet, ni calcul, ni durée tenue ailleurs.
     const reste = code.replace(/^import \{ auTempo \} from '\.\.\/\.\.\/voyage\/tempo'$/m, '').replace(/^export const \w+ = auTempo\(\d+\)$/gm, '')
     expect(reste.trim()).toBe('')
+  })
+
+  // Les temps du passage d'entrée du monde 1900 s'écrivent en base : le moteur seul les joue au tempo
+  // (`carte/meneur.ts`), et un `auTempo` ici le compterait deux fois. Le fichier ne l'écrit ni ne
+  // l'importe. Mutation : un `auTempo(` ajouté, même sur une valeur divisée d'autant.
+  it('les temps du passage d’entrée du monde 1900 sont en base : leur fichier n’écrit pas le tempo', () => {
+    const code = sansCommentaires(source(ENTREE_1900))
+    // Le plancher : le fichier porte bien des durées et des pauses, en nombres nus.
+    expect(code.match(/\bduree: \d+, arret: \d+\b/g)?.length).toBeGreaterThan(1)
+    expect(code).not.toMatch(/auTempo|TEMPO|tempo/)
+    // Chaque durée et chaque pause est un nombre écrit : ni appel, ni calcul, ni constante venue d'ailleurs.
+    const valeurs = [...code.matchAll(/\b(?:duree|arret):\s*([^,}]+)/g)].map(([, valeur]) => valeur!.trim())
+    expect(valeurs.filter((valeur) => !/^\d+$/.test(valeur))).toEqual([])
   })
 })

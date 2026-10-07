@@ -48,7 +48,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 - **Le tracé d'un monde vit hors de son dossier** (`src/mondes/trace.ts` › `trace1890`, `traceAVenir`,
   `HAUTEUR_MIN_SECTION`) ; `src/mondes/1890/ciel.ts` › `VIDE_DU_HAUT` voisine une copie de sa hauteur.
 - **`src/voyage/tempo.test.ts` ne lit ni `src/carte/` ni un sous-dossier de `src/voyage/celebrations/`.**
-  Seuls l'envol (moteur), le roulement et le passage (meneur) sont au tempo ; ni la marche, ni l'adieu.
+  Seuls l'envol (moteur), le roulement et le passage (meneur) sont au tempo ; ni la marche, ni l'adieu. Les temps d'un passage s'écrivent en base (`src/mondes/1900/entree.ts` › `ENTREE`).
 
 ## Les commandes
 

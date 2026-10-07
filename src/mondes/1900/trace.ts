@@ -16,14 +16,24 @@ export const JONCTION = 180
 /** La part du passage qui va du quai à la gare de 1900 (maquette : `MONTEE`). */
 export const MONTEE = 560
 
+/** La part de la montée où l'on est assis, la vitre montrant encore le quai ; puis celle où le train s'ébranle (maquette : `T_ASSIS`, `T_DEPART`). */
+export const T_ASSIS = 0.44
+export const T_DEPART = 0.46
+
 /**
  * Les positions du passage (maquette : `A1`, `S1`, `B1`), en `y` de la section. Le haut de la
  * section est le bas de la carte de 1890 : le quai remplit l'écran une jonction plus bas ; on est
  * assis à 44 % de la montée (`T_ASSIS`), arrondi au pixel ; la gare de 1900 est au bout.
  */
 export const A1 = JONCTION
-export const S1 = Math.round(A1 + MONTEE * 0.44)
+export const S1 = Math.round(A1 + MONTEE * T_ASSIS)
 export const B1 = A1 + MONTEE
+/**
+ * Le bas de la foire, d'où part le passage : la caméra au-dessus de la section, la jonction au bas
+ * de l'écran. La maquette le tire de la hauteur de son écran (`U0`, l. 2955 : 678 px au-dessus du
+ * quai sur 760 px de haut) ; un temps du passage n'a qu'un `y`, le même sur tout écran.
+ */
+export const U0 = A1 - 678
 
 /** Où la caméra se pose, une gare par année, dans l'ordre des années. */
 export const ARRETS: readonly number[] = ANNEES.map((_, i) => B1 + i * PAS)
