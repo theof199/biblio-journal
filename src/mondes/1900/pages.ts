@@ -6,6 +6,7 @@ import Classes from './pages/Classes'
 import Composteur from './pages/Composteur'
 import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
+import CoulissesDeLaSacoche from './pages/CoulissesDeLaSacoche'
 import Courroie from './pages/Courroie'
 import Frontiere from './pages/Frontiere'
 import Gare from './pages/Gare'
@@ -18,6 +19,10 @@ import IndicateurDeLaLigne from './pages/IndicateurDeLaLigne'
 import LiensDeLaLigne from './pages/LiensDeLaLigne'
 import LigneDesAnnees from './pages/LigneDesAnnees'
 import NoticeDuFilm from './pages/NoticeDuFilm'
+import PageDeLaSacoche from './pages/PageDeLaSacoche'
+import PasseportDeLaSacoche from './pages/PasseportDeLaSacoche'
+import PortefeuilleDeLaSacoche from './pages/PortefeuilleDeLaSacoche'
+import Rabat from './pages/Rabat'
 import SousLaTete from './pages/SousLaTete'
 import TableauDesDeparts from './pages/TableauDesDeparts'
 import Tete from './pages/Tete'
@@ -105,7 +110,8 @@ export const PAGES_1900: HabillagePages = {
   // case par année, d'où sort une liasse de cartons (écran 8). La page d'une décennie est la ligne :
   // l'affiche à la place du monument, l'indicateur de la ligne à celle du registre, le passeport en
   // page à tampons de frontière, sans palissade (écrans 1 et 9). Le guichet est une grille de laiton,
-  // sa réponse un tableau des départs (écran 11).
+  // sa réponse un tableau des départs (écran 11). La sacoche est de cuir, à fermoir de laiton : ses
+  // pages de passeport en papier, ses tickets en carton, ses coulisses dans un casier (écran 15).
   gabarits: {
     teteDAnnee: Tete,
     fronton: SousLaTete,
@@ -133,6 +139,11 @@ export const PAGES_1900: HabillagePages = {
     ordreDeDecennie: LigneDesAnnees,
     teteDuGuichet: Grille,
     catalogueDuGuichet: TableauDesDeparts,
+    teteDeLaSacoche: Rabat,
+    passeportDeLaSacoche: PasseportDeLaSacoche,
+    pageDuPasseport: PageDeLaSacoche,
+    portefeuille: PortefeuilleDeLaSacoche,
+    coulisses: CoulissesDeLaSacoche,
   },
   // `guichet` : ce qui tient au-dessus de la tablette (le retour, le fronton, la grille), la place que la
   // page ajoute en bas pour que la tablette monte au-dessus du clavier.

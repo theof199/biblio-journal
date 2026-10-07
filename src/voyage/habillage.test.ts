@@ -103,6 +103,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/mondes/1900/pages/Casier.module.css',
         '/src/mondes/1900/pages/Ligne.module.css',
         '/src/mondes/1900/pages/Guichet.module.css',
+        '/src/mondes/1900/pages/Sacoche.module.css',
       ]),
     )
   })

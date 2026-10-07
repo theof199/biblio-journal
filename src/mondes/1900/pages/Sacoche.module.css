@@ -1,0 +1,365 @@
+/* La sacoche du voyageur des années 1900 (maquette « Voyage immobile 1900 », écran 15 :
+   `.sacoche-tete`, `.pages-p`, `.page-p`, `.portefeuille`, `.tk`, `.coulisses`) : le rabat de cuir et
+   son fermoir de laiton, les pages de papier du passeport, les tickets de carton, les coulisses dans
+   leur casier. Le cuir est celui de la courroie (`--m-velours`), éclairci au laiton ou assombri au
+   fond : la maquette n'a pas d'autre cuir. Les couleurs et les polices viennent des jetons du monde.
+   Rien n'y bouge. */
+/* La place du retour, que la page pose en haut à gauche : en marge intérieure, pour que la marge du
+   rabat ne traverse pas la page et ne la décale pas sous son retour. */
+.tete {
+  padding: 60px 16px 9px;
+}
+
+.rabat {
+  position: relative;
+  padding: 16px 14px 14px;
+  border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(color-mix(in srgb, var(--m-velours) 82%, var(--m-or)), var(--m-velours));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--m-velours) 45%, var(--m-fond)),
+    0 10px 18px var(--m-ombre);
+  text-align: center;
+}
+
+.rabat small {
+  font: 600 10.5px var(--m-f-capitales);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--m-or);
+}
+
+.rabat h1 {
+  margin: 0;
+  font: 700 24px/1.1 var(--m-f-titre);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--m-or2);
+}
+
+/* Le fermoir. */
+.rabat::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 30px;
+  height: 18px;
+  margin-left: -15px;
+  border-radius: 3px;
+  background: var(--m-or);
+  box-shadow: inset 0 0 0 2px var(--m-bois);
+}
+
+.vide {
+  margin: 4px 16px 10px;
+  font: italic 15px/1.45 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.panne {
+  margin: 8px 16px;
+  text-align: center;
+  font: italic 15px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.panne p {
+  margin: 0 0 10px;
+}
+
+.panne button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--m-or);
+  color: var(--m-encre);
+  font: 700 13px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.panne button:focus-visible,
+.page:focus-visible,
+.utiliser:focus-visible,
+.coulisses button:focus-visible,
+.coulisses a:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* Le passeport : les pages l'une sous l'autre, chacune au dessin de sa décennie. */
+.pages {
+  display: grid;
+  gap: 12px;
+  margin: 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+/* La page des années 1900 : une feuille de papier. */
+.page {
+  display: block;
+  padding: 10px 12px 12px;
+  border-radius: 3px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  text-decoration: none;
+  box-shadow: 0 4px 10px var(--m-ombre);
+}
+
+.enTete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.anneau {
+  flex: none;
+  width: 92px;
+  height: 92px;
+  overflow: visible;
+}
+
+.anneau circle {
+  fill: none;
+}
+
+.piste {
+  stroke: var(--m-encre);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0.5;
+}
+
+.plein {
+  stroke: var(--m-rouge);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.compte {
+  fill: var(--m-encre);
+  font: 700 22px var(--m-f-capitales);
+  text-anchor: middle;
+}
+
+.recompenses {
+  fill: var(--m-encre);
+  font: italic 9px var(--m-f-texte);
+  text-anchor: middle;
+}
+
+.texte {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.page b {
+  font: 700 16px var(--m-f-capitales);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.monde {
+  font: 600 10.5px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-encre2);
+}
+
+.annees {
+  margin-top: 4px;
+  font: 14px/1.3 var(--m-f-texte);
+}
+
+.page small {
+  font: italic 12.5px/1.3 var(--m-f-texte);
+  color: var(--m-encre2);
+}
+
+.fleche {
+  font: 700 22px/1 var(--m-f-capitales);
+  color: var(--m-encre2);
+}
+
+/* Le tampon de la décennie, celui de la carte et du livret, à sa taille plancher (16 em, 196 px). */
+.tampon {
+  display: grid;
+  justify-items: center;
+  margin-top: 10px;
+  font-size: 12.25px;
+}
+
+/* Le portefeuille : un carton par ticket, sa bande rouge. */
+.portefeuille {
+  display: grid;
+  gap: 8px;
+  margin: 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.tk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 56px;
+  padding: 8px 10px 8px 16px;
+  border-radius: 2px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--m-rouge) 85%, transparent) 0 6px, transparent 6px),
+    var(--m-carton);
+  color: var(--m-encre);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--m-carton) 70%, var(--m-bois));
+}
+
+.tk[data-utilise='oui'] {
+  opacity: 0.55;
+}
+
+.tk small {
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tk b {
+  font: 700 24px/1 var(--m-f-capitales);
+}
+
+.tk em {
+  margin-top: 2px;
+  font: italic 13px/1.3 var(--m-f-texte);
+}
+
+.utiliser {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--corail);
+  color: var(--m-encre);
+  font: 700 13px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.utiliser:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Les coulisses : un casier fermé, que son titre ouvre. */
+.coulisses {
+  margin: 24px 16px 0;
+  border: 1px solid var(--m-filet);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-tel) 70%, var(--m-fond));
+}
+
+.coulisses h2 {
+  margin: 0;
+}
+
+.coulisses h2 button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 14px 12px;
+  border: 0;
+  background: none;
+  color: var(--m-or);
+  font: 600 13px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pli {
+  letter-spacing: 0;
+}
+
+.contenu {
+  display: grid;
+  gap: 16px;
+  padding: 0 12px 12px;
+  font: 13.5px/1.5 var(--m-f-corps);
+  color: var(--m-doux);
+}
+
+.contenu h3 {
+  margin: 0 0 4px;
+  font: 600 12px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-or);
+}
+
+.contenu h4 {
+  margin: 0;
+  font: 700 10.5px var(--m-f-corps);
+  letter-spacing: 0.08em;
+  color: var(--m-pale);
+}
+
+.contenu p {
+  margin: 0;
+  padding: 3px 0;
+  border-top: 1px solid color-mix(in srgb, var(--m-papier) 12%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.contenu .courant {
+  color: var(--m-papier);
+}
+
+.contenu .note {
+  font: italic 13px/1.4 var(--m-f-texte);
+}
+
+.contenu .panne {
+  margin: 8px 0;
+}
+
+.contenu .panne p {
+  border: 0;
+}
+
+.groupe {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.groupe ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.groupe li {
+  display: grid;
+  gap: 1px;
+}
+
+.oeuvre {
+  color: var(--m-papier);
+}
+
+.groupe a {
+  color: var(--m-or2);
+  overflow-wrap: anywhere;
+}

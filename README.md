@@ -503,7 +503,8 @@ Où vit quoi :
   sa salle, celle de la fiche d'année (`Vue.voie`) ; le passage trouvé reste souligné, les réglettes
   glissent à leur place, rien au calme. « Aucun départ pour ce nom. Essayez un réalisateur. » et
   « Chercher hors du Voyage » sont les mots de la maquette ; ses mots et ses règles :
-  `mondes/1900/pages/guichet.ts`. `docs/cerveau/pages-1900.md` tient le compte.
+  `mondes/1900/pages/guichet.ts`. **La sacoche** (écran 15) : plus bas, « La sacoche du voyageur ».
+  `docs/cerveau/pages-1900.md` tient le compte.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
 `generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`,
@@ -741,9 +742,25 @@ page des années 1890 garde son dessin dans la sacoche d'un autre monde :
   UTC, où l'API les range), et les crédits des images, lus au build dans les
   `CREDITS.md`.
 
+**En 1900, la sacoche est de cuir** (maquette, écran 15 ; `mondes/1900/pages/`, une seule feuille,
+`Sacoche.module.css`, mots et règles dans `sacoche.ts`) : le rabat et son fermoir de laiton portent
+« Chemins de fer du Voyage » et le titre de la page (`Rabat`) ; le passeport range ses pages sur une
+colonne (`PasseportDeLaSacoche` : le tampon d'une décennie ne se lit pas sous 196 px, la maquette
+en montre deux) ; la page des années 1900 est une feuille de papier, l'anneau de ses récompenses et
+son compte au cœur, « En cours », ou le tampon de la décennie et « Tampon posé »
+(`PageDeLaSacoche`, qui pose ses jetons sur elle : la sacoche d'un autre monde la montre telle
+quelle, comme celle de 1900 montre la page de la foire sur son velours) ; les tickets sont des
+cartons à bande rouge, « Utiliser » au corail sur le seul ticket offert (`PortefeuilleDeLaSacoche`) ;
+les coulisses tiennent dans un casier que leur titre ouvre (`CoulissesDeLaSacoche`). Rien n'y bouge.
+**La malle, le courrier et les objets trouvés de l'écran 15 n'y sont pas**, ni le point rouge de la
+pastille : aucune rubrique vide ne les annonce, et la sacoche n'appelle pas encore l'état du
+voyageur (`GET /me/voyage/voyageur`, `POST …/rubriques/{rubrique}/vue`, `GET
+…/decennies/{decennie}/etiquettes`, au contrat depuis `v1.42.0`) : ils viennent avec leurs lots.
+
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
 carte, et au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`) : **jamais une fiche
-d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties). Pas de générique au toucher
+d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties, et
+`mondes/1900/pages/sacoche.test.tsx` pour la sacoche de 1900). Pas de générique au toucher
 d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
 
 ## Le thème
