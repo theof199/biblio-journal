@@ -397,10 +397,11 @@ Où vit quoi :
   gestes qui la déplient et la replient. La dixième, `ordreDAnnee` (`voyage/annee/Ordre.tsx`), range
   les sections d'une fiche prête : elle les reçoit montées (la corde avec sa région d'état, le
   boniment, le programme, la parade, la séance, les salles, la ligne du bas) et n'en compose ni n'en
-  omet aucune ; aucun monde ne la remplit encore. 1890 et le monde « à venir » n'en fournissent aucune.
+  omet aucune. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
-  neuf sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
+  sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du
+  guide, pour que la ligne pointée au retour d'un billet se voie sans défiler). La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
   le titre de la page et le rang de la gare, et selon le mode l'horloge (l'année est l'heure :
   19 h 03 en 1903, `heureDeLaGare`) avec le tampon d'une ligne bouclée (la page lui passe
   `anneeBouclee`, la règle d'`estBouclee` : la tête tamponne dès le ticket émis, comme l'indicateur, et

@@ -126,7 +126,8 @@
   }
 }
 
-/* Le « +1 » : sans animation il reste invisible, il ne se pose jamais à demeure. */
+/* Le « +1 » : sans animation il reste invisible, il ne se pose jamais à demeure. Il part du bas du
+   compteur, au-dessus du titre de l'indicateur qui le suit, et ne passe sur aucun mot. */
 .plus {
   position: absolute;
   top: 4px;
@@ -144,7 +145,7 @@
 
 @keyframes monter {
   0% {
-    transform: translateY(60px) scale(0.7);
+    transform: translateY(40px) scale(0.7);
     opacity: 0;
   }
 

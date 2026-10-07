@@ -378,6 +378,26 @@ describe('le corps d’une année 1900 ouverte', () => {
     expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([])
   })
 
+  // Au retour d'un billet, la ligne qui se pointe doit se voir sans défiler : l'indicateur est sous le
+  // compteur, avant le guide. Rien de ce que le défaut range n'est perdu. Mutations : `Gare` retiré des
+  // gabarits (l'ordre par défaut : le guide d'abord) ; une section que `Gare` ne rendrait plus.
+  it('range l’indicateur sous le compteur, avant le guide, sans perdre une section', async () => {
+    monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(nue({ annee: 1903, ticket: TICKET(1904) })) })
+    await screen.findByRole('region', { name: 'Ton ticket' })
+    const tous = [...document.querySelectorAll('*')]
+    const reperes = [
+      compteur(),
+      screen.getAllByRole('status').find((e) => e.classList.contains('sr-only'))!,
+      screen.getByRole('region', { name: 'L’indicateur' }),
+      screen.getByRole('region', { name: 'Guide du voyageur' }),
+      screen.getByRole('region', { name: /^Les trois classes/ }),
+      screen.getByRole('region', { name: /^Ce soir/ }),
+      screen.getByRole('region', { name: 'Les correspondances' }),
+      screen.getByRole('region', { name: 'Ton ticket' }),
+    ].map((e) => tous.indexOf(e))
+    expect(reperes.every((x, i) => i === 0 || x > reperes[i - 1]!)).toBe(true)
+  })
+
   // Mutation : la branche `essentiels_total === 0` retirée d'`arriveesDeLAnnee` (« attendu · 0 sur 0 »,
   // ou une ligne arrivée à zéro), ou `a.total === null` de `ligneDeLIndicateur`.
   it('« Aucun essentiel » ne se rend jamais en « 0 sur 0 »', async () => {
