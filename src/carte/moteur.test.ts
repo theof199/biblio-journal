@@ -250,7 +250,7 @@ function monter(
     }
   })
   const roulotte = options.roulotte ?? null
-  moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], roulotte })
+  moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], tickets: [], roulotte })
   return { moteur, appels: principal.appels, toiles, rappels, deps, cases, roulotte, demandees }
 }
 
@@ -276,7 +276,7 @@ describe('le moteur de la carte', () => {
   // quittée garderait la jauge et la nouvelle année n'aurait pas son millésime.
   it('marque en corail l’année en cours, même quand l’avatar n’y est pas encore', () => {
     const { moteur, appels, cases } = monter()
-    moteur.majEtat({ cases, anneeAvatar: 1897, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1897, tampons: [], tickets: [], roulotte: null })
     appels.length = 0
     moteur.image(1000)
     const premierCorail = appels.findIndex((a) => a.fillStyle === CORAIL || a.strokeStyle === CORAIL)
@@ -290,7 +290,7 @@ describe('le moteur de la carte', () => {
   // Mutation : la couche corail posée sur une année en attente.
   it('ne marque pas en corail une année en attente du Voyage suivi', () => {
     const { moteur, appels, cases } = monter()
-    moteur.majEtat({ cases: cases.map((c) => (c.annee === 1898 ? { ...c, attente: true, jauge: null } : c)), anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.majEtat({ cases: cases.map((c) => (c.annee === 1898 ? { ...c, attente: true, jauge: null } : c)), anneeAvatar: 1898, tampons: [], tickets: [], roulotte: null })
     moteur.image(1000)
     expect(appels.some((a) => a.fillStyle === CORAIL || a.strokeStyle === CORAIL)).toBe(false)
   })
@@ -302,7 +302,7 @@ describe('le moteur de la carte', () => {
     { attente: true, corail: false },
   ])('la vue d’ensemble ne marque en corail que l’année en cours ouverte (attente : $attente)', ({ attente, corail }) => {
     const { moteur, appels, cases } = monter({ calme: true })
-    moteur.majEtat({ cases: cases.map((c) => (c.annee === 1898 ? { ...c, attente, jauge: attente ? null : c.jauge } : c)), anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.majEtat({ cases: cases.map((c) => (c.annee === 1898 ? { ...c, attente, jauge: attente ? null : c.jauge } : c)), anneeAvatar: 1898, tampons: [], tickets: [], roulotte: null })
     moteur.image(1000)
     moteur.basculerEnsemble(true)
     appels.length = 0
@@ -392,7 +392,7 @@ describe('le moteur de la carte', () => {
     const cases = initiales.map((c) =>
       c.annee === 1898 ? { ...c, etat: 'passee' as const } : c.annee === 1899 ? { ...c, etat: 'encours' as const } : c,
     )
-    moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], tickets: [], roulotte: null })
     moteur.image(1100)
     const apres = vus[vus.length - 1]!.bati
     expect(apres.n).toBe(avant.n + 1)
@@ -407,7 +407,7 @@ describe('le moteur de la carte', () => {
     const cases = initiales.map((c) =>
       c.annee === 1898 ? { ...c, etat: 'passee' as const } : c.annee === 1899 ? { ...c, etat: 'encours' as const } : c,
     )
-    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     moteur.image(1100)
     const vue = vus[vus.length - 1]!
     expect(vue.bati.nouvelle).toBe(3)
@@ -484,7 +484,7 @@ describe('le moteur de la carte', () => {
     const { moteur, rappels, cases } = monter()
     moteur.image(1000)
     moteur.defiler(moteur.ecranDeLAnnee(1899).y - 350)
-    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     for (let i = 1; i <= 3; i++) moteur.image(1000 + i * 50)
     // Le témoin : la visée courait bien, la caméra glissait vers le chantier.
     expect(vi.mocked(rappels.defilerVers).mock.calls.length).toBeGreaterThan(1)
@@ -563,17 +563,17 @@ describe('le moteur de la carte', () => {
     const cases = initiales.map((c) =>
       c.annee === 1898 ? { ...c, etat: 'passee' as const } : c.annee === 1899 ? { ...c, etat: 'encours' as const } : c,
     )
-    moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], tickets: [], roulotte: null })
     moteur.image(1100)
     expect(vus[vus.length - 1]!.ouverte).toEqual({ annee: 1898, t0: -9 })
     // La marche finie, la page avance l'avatar.
-    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     moteur.image(1200)
     const { ouverte, t } = vus[vus.length - 1]!
     expect(ouverte.annee).toBe(1899)
     expect(ouverte.t0).toBeGreaterThan(0)
     expect(t - ouverte.t0).toBeLessThan(0.2)
-    moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], tickets: [], roulotte: null })
     moteur.image(1300)
     expect(vus[vus.length - 1]!.ouverte).toEqual({ annee: 1898, t0: -9 })
   })
@@ -584,7 +584,7 @@ describe('le moteur de la carte', () => {
   it('pose l’année ouverte déjà bâtie quand le visiteur demande moins d’animations', () => {
     const { moteur, cases } = monter({ calme: true })
     moteur.image(1000)
-    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     moteur.image(1100)
     expect(vus[vus.length - 1]!.ouverte).toEqual({ annee: 1899, t0: -9 })
   })
@@ -680,7 +680,7 @@ describe('le moteur de la carte', () => {
   it('reprend un chantier interrompu là où il en était quand les animations reviennent', () => {
     const { moteur, cases } = monter()
     moteur.image(1000)
-    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     moteur.image(1100)
     // Une copie : la vue porte l'objet du moteur, qu'un redatage en place changerait sous nos yeux.
     const avant = { ...vus[vus.length - 1]!.ouverte }
@@ -701,7 +701,7 @@ describe('le moteur de la carte', () => {
     // La caméra à 0, un `y` d'écran est un `y` de la carte ; puis posée sur 1899.
     const y1899 = moteur.ecranDeLAnnee(1899).y
     moteur.defiler(y1899 - 350)
-    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     for (let i = 1; i <= 3; i++) moteur.image(1000 + i * 50)
     const vers = () => vi.mocked(rappels.defilerVers).mock.calls.map(([y]) => y)
     expect(vers().length).toBeGreaterThan(0)
@@ -723,7 +723,7 @@ describe('le moteur de la carte', () => {
     moteur.defiler(moteur.ecranDeLAnnee(1899).y - 350)
     // « Tu es ici » sans `instant` : la caméra suit l'avatar, comme au bout d'une marche.
     moteur.allerIci()
-    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    moteur.majEtat({ cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     for (let i = 1; i <= 60; i++) moteur.image(1000 + i * 50)
     const vers = vi.mocked(rappels.defilerVers).mock.calls.map(([y]) => y)
     // Le site de 1899 (haut de sa section) au milieu de l'écran, et non la case de 1899, 850 px plus bas.
@@ -737,13 +737,13 @@ describe('le moteur de la carte', () => {
     const vu = monter()
     vu.moteur.defiler(0)
     vu.moteur.image(1000)
-    vu.moteur.majEtat({ cases: vu.cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    vu.moteur.majEtat({ cases: vu.cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     for (let i = 1; i <= 8; i++) vu.moteur.image(1000 + i * 50)
     expect(vu.rappels.defilerVers).not.toHaveBeenCalled()
     const calme = monter({ calme: true })
     calme.moteur.image(1000)
     calme.moteur.defiler(calme.moteur.ecranDeLAnnee(1899).y - 350)
-    calme.moteur.majEtat({ cases: calme.cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+    calme.moteur.majEtat({ cases: calme.cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
     for (let i = 1; i <= 8; i++) calme.moteur.image(1000 + i * 50)
     expect(calme.rappels.defilerVers).not.toHaveBeenCalled()
   })
@@ -881,7 +881,7 @@ describe('le moteur de la carte', () => {
     moteur.image(1000)
     const avant = toiles.length
     const relues = cases.map((c) => (c.annee === 1898 ? { ...c, profondeur: 5 } : c))
-    moteur.majEtat({ cases: relues, anneeAvatar: 1898, tampons: [], roulotte: null })
+    moteur.majEtat({ cases: relues, anneeAvatar: 1898, tampons: [], tickets: [], roulotte: null })
     moteur.image(1100)
     expect(toiles.length).toBeGreaterThan(avant)
   })
@@ -903,7 +903,7 @@ describe('le moteur de la carte', () => {
       const cases = banc.cases.map((c): CaseCarte =>
         c.annee < enCours ? { ...c, etat: 'lion', profondeur: 30, jauge: null } : c.annee === enCours ? { ...c, etat: 'encours', profondeur: 30, jauge: { vus: 3, total: 5 } } : c,
       )
-      banc.moteur.majEtat({ cases, anneeAvatar: enCours, tampons: [], roulotte: banc.roulotte })
+      banc.moteur.majEtat({ cases, anneeAvatar: enCours, tampons: [], tickets: [], roulotte: banc.roulotte })
       return { ...banc, cases }
     }
     /** Le haut de 1900 à cent pixels du haut de l'écran : le bas de 1890 et quatre années de 1900 y tiennent. */
@@ -955,7 +955,7 @@ describe('le moteur de la carte', () => {
     // saurait plus qu'une année attend le Voyage suivi, et montrerait sa gare ouverte.
     it('dit au monde quelles années attendent le Voyage suivi', () => {
       const banc = auTrain({ calme: true, enCours: 1902 })
-      banc.moteur.majEtat({ cases: banc.cases.map((c) => (c.annee === 1902 ? { ...c, attente: true } : c)), anneeAvatar: 1902, tampons: [], roulotte: null })
+      banc.moteur.majEtat({ cases: banc.cases.map((c) => (c.annee === 1902 ? { ...c, attente: true } : c)), anneeAvatar: 1902, tampons: [], tickets: [], roulotte: null })
       banc.moteur.defiler(CAMERA)
       vus.length = 0
       banc.moteur.image(1000)
@@ -973,7 +973,7 @@ describe('le moteur de la carte', () => {
     it('dit au monde les affiches de chaque année, dans l’ordre de la page, et une liste vide sans affiche', () => {
       const banc = auTrain({ calme: true, enCours: 1902 })
       const affiches = new Map([[1900, ['/covers/thumb/a.webp', '/covers/thumb/b.webp']], [1901, ['/covers/thumb/c.webp']]])
-      banc.moteur.majEtat({ cases: banc.cases.map((c) => ({ ...c, affiches: affiches.get(c.annee) ?? [] })), anneeAvatar: 1902, tampons: [], roulotte: null })
+      banc.moteur.majEtat({ cases: banc.cases.map((c) => ({ ...c, affiches: affiches.get(c.annee) ?? [] })), anneeAvatar: 1902, tampons: [], tickets: [], roulotte: null })
       banc.moteur.defiler(CAMERA)
       vus.length = 0
       banc.moteur.image(1000)
@@ -1794,7 +1794,7 @@ describe('le moteur de la carte', () => {
         // le rappel de `cadre.image` vidé (l'image arrivée, la bande ne serait pas redessinée).
         it('donne au monde le cadre d’une bande repliée, l’état de ses années et ses images, et n’y pose aucune marquise', () => {
           const banc = auTrain({ calme: true, arrets: ARRETS })
-          banc.moteur.majEtat({ cases: banc.cases.map((c) => (c.annee === 1900 ? { ...c, attente: true } : c)), anneeAvatar: 1900, tampons: [], roulotte: null })
+          banc.moteur.majEtat({ cases: banc.cases.map((c) => (c.annee === 1900 ? { ...c, attente: true } : c)), anneeAvatar: 1900, tampons: [], tickets: [], roulotte: null })
           const image = vi.spyOn(banc.deps, 'image')
           const tourner = () => {
             for (let ms = 1000; banc.demandees.length; ms += 40) for (const f of banc.demandees.splice(0)) f(ms)
@@ -1993,7 +1993,7 @@ describe('le moteur de la carte', () => {
         it('sur une carte sans section collante, la sortie par un toucher lâche la visée d’un chantier : la caméra reste où l’on a touché', () => {
           const banc = enGare({ ailleurs: true, collant: false })
           banc.moteur.defiler(banc.moteur.ecranDeLAnnee(1899).y - 350)
-          banc.moteur.majEtat({ cases: banc.cases, anneeAvatar: 1899, tampons: [], roulotte: null })
+          banc.moteur.majEtat({ cases: banc.cases, anneeAvatar: 1899, tampons: [], tickets: [], roulotte: null })
           banc.filer(120)
           // Le témoin : la visée courait, la caméra glissait vers le chantier.
           expect(banc.vers().length).toBeGreaterThan(1)
@@ -2234,8 +2234,27 @@ describe('le moteur de la carte', () => {
           expect(vuesDesReactions[vuesDesReactions.length - 1]!.passer).toBeNull()
           // La décennie d'après cachée par la page : la carte s'arrête à 1899.
           const seul = auPassage()
-          seul.moteur.majEtat({ cases: seul.cases.filter((c) => c.annee < 1900), anneeAvatar: 1899, tampons: [], roulotte: seul.roulotte })
+          seul.moteur.majEtat({ cases: seul.cases.filter((c) => c.annee < 1900), anneeAvatar: 1899, tampons: [], tickets: [], roulotte: seul.roulotte })
           expect(vueDuManege(seul).passer).toBeNull()
+        })
+
+        // Mutations : `ticketDApres` toujours faux, ou toujours vrai ; `s.decennie` au lieu de
+        // `s.decennie + 10` (un ticket de 1899 ferait venir le train) ; `passer !== null` à sa place
+        // (le ticket en main ne compterait pas, la décennie d'après étant encore cachée).
+        it('dit au décor si un ticket pour le monde d’après a été émis, que ce monde soit ouvert ou non, le ticket utilisé ou non', () => {
+          const avec = (tickets: readonly number[], cachee = false) => {
+            const banc = auPassage()
+            banc.moteur.majEtat({ cases: cachee ? banc.cases.filter((c) => c.annee < 1900) : banc.cases, anneeAvatar: 1899, tampons: [], tickets, roulotte: banc.roulotte })
+            reactions.length = 0
+            return vueDuManege(banc).ticketDApres
+          }
+          expect(avec([])).toBe(false)
+          expect(avec([1896, 1899])).toBe(false)
+          expect(avec([1899, 1900])).toBe(true)
+          // Le ticket en main, 1900 encore caché par la page : le moteur ne lit pas la carte pour le dire.
+          expect(avec([1900], true)).toBe(true)
+          // Un ticket qui saute plus loin que la première année vaut aussi.
+          expect(avec([1902])).toBe(true)
         })
 
         // Mutation : la branche du calme retirée de `Meneur.direBonjour` (le passage se jouerait).

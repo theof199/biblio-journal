@@ -76,6 +76,33 @@ describe('la carte', () => {
     expect(etat.cases.find((c) => c.annee === 1897)!.profondeur).toBe(4)
   })
 
+  // Mutations : `tickets: []` dans l'état de la carte ; les seuls tickets non utilisés gardés (le
+  // train du bout de la foire repartirait au compostage) ; `ticketsEmis` hors des dépendances de
+  // l'état (un ticket gagné carte ouverte n'arriverait pas) ; `tickets.data` à sa place (chaque
+  // relecture referait l'état, et viderait les tuiles du sol).
+  it('donne au moteur les années des tickets émis, utilisés ou non, dès qu’ils changent et seulement alors', async () => {
+    const ticket = (annee: number, utilise_le: string | null) => ({ annee, motif: 'Bien joué.', emis_le: '2026-09-28T10:00:00.000Z', montre_le: '2026-09-28T10:05:00.000Z', utilise_le })
+    let emis: ReturnType<typeof ticket>[] = []
+    const { etats, client } = monter(VOYAGE, { 'GET /api/me/voyage/tickets': () => json({ tickets: emis }) })
+    const relire = async () => {
+      await act(() => client.invalidateQueries({ queryKey: cles.tickets }))
+      await waitFor(() => expect(client.getQueryData<{ tickets: unknown[] }>(cles.tickets)?.tickets).toEqual(emis))
+    }
+    // Une absence ne s'attend pas : on attend que les tickets soient lus et la carte donnée au moteur.
+    await waitFor(() => expect(client.getQueryState(cles.tickets)?.status).toBe('success'))
+    await waitFor(() => expect(etats.length).toBeGreaterThan(0))
+    expect(etats.map((e) => e.tickets)).toEqual(etats.map(() => []))
+    emis = [ticket(1898, '2026-09-28T11:00:00.000Z'), ticket(1899, null)]
+    await relire()
+    await waitFor(() => expect(etats[etats.length - 1]!.tickets).toEqual([1898, 1899]))
+    // Le ticket de 1899 encaissé : les mêmes années, aucun état de plus.
+    const avant = etats.length
+    emis = [ticket(1898, '2026-09-28T11:00:00.000Z'), ticket(1899, '2026-09-29T09:00:00.000Z')]
+    await relire()
+    expect(etats).toHaveLength(avant)
+    expect(etats[etats.length - 1]!.tickets).toEqual([1898, 1899])
+  })
+
   // Mutation : compter les récompenses de toutes les années (1899 porte un Ours vu en avance).
   it('le HUD compte les récompenses jusqu’à l’année en cours seulement', async () => {
     monter()

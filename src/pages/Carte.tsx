@@ -270,6 +270,9 @@ export default function Carte() {
     }
   }, [avancee, moteur, v, attendre, user.id])
 
+  // Les années des tickets émis, en une chaîne : relus sans changement, ils ne refont pas l'état de
+  // la carte (chaque `majEtat` vide les tuiles du sol).
+  const ticketsEmis = (tickets.data?.tickets ?? []).map((t) => t.annee).join(',')
   const etat = useMemo<EtatCarte | null>(() => {
     if (!v || anneeAvatar === null) return null
     // Le rang d'une année dans `v.annees` est celui de sa fiche dans `fiches` : chaque case prend la
@@ -290,6 +293,7 @@ export default function Carte() {
     return {
       anneeAvatar,
       tampons: v.tampons.map((t) => t.decennie),
+      tickets: ticketsEmis === '' ? [] : ticketsEmis.split(',').map(Number),
       // La roulotte (idée 1) : garée là où en est le Voyage suivi ; la sienne, pour qui le mène. Le
       // Voyage suivi rendu dans une décennie cachée n'a pas de case où se garer : aucune roulotte
       // (`null`), et non `annee: null`, qui dirait « je mène » et ferait traverser son pseudo.
@@ -301,7 +305,7 @@ export default function Carte() {
       // La liste pour lecteur d'écran se lit sur ces cases : elle ne nomme pas plus une année cachée.
       cases: anneesMontrees(cases, v.annee_en_cours, aUneScene),
     }
-  }, [v, anneeAvatar, fiches, user.pseudo])
+  }, [v, anneeAvatar, fiches, user.pseudo, ticketsEmis])
 
   const ticket = v && tickets.data ? ticketOffert(v.annee_en_cours, tickets.data.tickets) : undefined
   const utiliser = useMutation({

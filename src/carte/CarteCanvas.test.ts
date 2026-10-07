@@ -161,7 +161,7 @@ describe('la mémoire des images (plan 3b, tâche 14)', () => {
 describe('le pont entre le DOM et le moteur', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  const ETAT: EtatCarte = { cases: [], anneeAvatar: 0, tampons: [], roulotte: null }
+  const ETAT: EtatCarte = { cases: [], anneeAvatar: 0, tampons: [], tickets: [], roulotte: null }
   const monter = () => {
     const banc = moteurFactice()
     const ecoutes = vi.spyOn(HTMLElement.prototype, 'addEventListener')

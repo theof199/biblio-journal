@@ -182,6 +182,12 @@ export interface VueMonde {
    * depuis `reagir` (le train au bout de la foire de 1890), jamais en dessinant.
    */
   passer: (() => void) | null
+  /**
+   * Un ticket qui mène dans la décennie d'après, ou plus loin, a-t-il été émis ? Vrai dès qu'il est
+   * gagné et pour toujours : l'utiliser ne l'efface pas. Il ne dit pas que cette décennie est
+   * ouverte (`passer` le dit) : entre les deux, le membre tient son ticket sans l'avoir utilisé.
+   */
+  ticketDApres: boolean
 }
 
 /**

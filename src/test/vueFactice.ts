@@ -42,6 +42,7 @@ export function vueFactice(surcharge: Partial<VueMonde> = {}) {
     entree: -1,
     // Aucun monde à passage ne suit : la décennie d'après est cachée.
     passer: null,
+    ticketDApres: false,
     ...surcharge,
   }
   return { vue, appels, zones }

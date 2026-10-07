@@ -21,7 +21,7 @@ function ouvrir(annee: number, H: number) {
   })
   moteur.mesurer(390, H, 2)
   const cases: CaseCarte[] = Array.from({ length: 2026 - 1895 + 1 }, (_, i) => ({ annee: 1895 + i, etat: 'lion', attente: false, profondeur: 4, jauge: null, affiches: [] }))
-  moteur.majEtat({ cases, anneeAvatar: annee, tampons: [], roulotte: null })
+  moteur.majEtat({ cases, anneeAvatar: annee, tampons: [], tickets: [], roulotte: null })
   // Comme `CarteCanvas` à l'ouverture : la caméra est posée sur l'avatar, sans glisser.
   moteur.allerIci(true)
   moteur.defiler(defile[defile.length - 1] ?? 0)

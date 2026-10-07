@@ -129,6 +129,7 @@ describe('le dessin commun', () => {
       cases: annees.map((annee) => ({ annee, etat: annee < 1898 ? 'lion' : 'encours', attente: false, profondeur: 30, jauge: null, affiches: [] })),
       anneeAvatar: 1898,
       tampons: [],
+      tickets: [],
       roulotte: null,
     }
     const { ctx, appels } = contexteFactice()
@@ -200,6 +201,7 @@ describe('le dessin commun', () => {
       cases: annees.filter((a) => a !== 1901).map((annee) => ({ annee, etat: annee < 1900 ? 'lion' : annee === 1900 ? 'encours' : 'verrou', attente: annee === 1900, profondeur: 0, jauge: null, affiches: [] })),
       anneeAvatar: 1900,
       tampons: [],
+      tickets: [],
       roulotte: null,
     }
     const geo = geoEnsemble(plan.sections.map((s, i) => ({ y0: s.y0, hauteur: s.hauteur, detaillee: genreDeBande(mondeDe(s.decennie), i === 1) === 'detaillee' })), 700, 132, 64)

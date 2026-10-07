@@ -220,11 +220,11 @@ function jouer(cas: Cas, graine = GRAINE): Jeu {
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(cas.calme)
   const etat = cas.etat ?? 'depart'
-  moteur.majEtat({ cases: casesDe(etat), anneeAvatar: etat === 'depart' ? 1898 : 1900, tampons: etat === '1890 bouclee' ? [1890] : [], roulotte: cas.roulotte ?? null })
+  moteur.majEtat({ cases: casesDe(etat), anneeAvatar: etat === 'depart' ? 1898 : 1900, tampons: etat === '1890 bouclee' ? [1890] : [], tickets: [], roulotte: cas.roulotte ?? null })
   if (cas.bobines) moteur.reglerBobines(cas.bobines)
   moteur.defiler(cas.camera)
   moteur.image(1000)
-  if (cas.quitte) moteur.majEtat({ cases: casesDe('1899 en cours'), anneeAvatar: 1899, tampons: [], roulotte: cas.roulotte ?? null })
+  if (cas.quitte) moteur.majEtat({ cases: casesDe('1899 en cours'), anneeAvatar: 1899, tampons: [], tickets: [], roulotte: cas.roulotte ?? null })
   if (cas.ensemble) moteur.basculerEnsemble(true)
   // L'horloge fixée : en mouvement, des images à 40 ms l'une de l'autre ; au calme, une seule de plus.
   const images = cas.calme ? 1 : (cas.images ?? 12)

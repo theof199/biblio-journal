@@ -49,6 +49,11 @@ export interface EtatCarte {
   anneeAvatar: number
   tampons: readonly number[]
   /**
+   * Les années dont le ticket a été émis, encaissé ou non (`GET /me/voyage/tickets`) : un ticket
+   * utilisé y reste. Un décor s'en sert (`VueMonde.ticketDApres`), le moteur n'en tire rien.
+   */
+  tickets: readonly number[]
+  /**
    * La roulotte de qui mène le Voyage (idée 1, 29 septembre 2026). `annee` : l'année où ce Voyage
    * est rendu, la roulotte descend s'y garer. Nulle : on mène soi-même, la roulotte traverse le
    * monde (`VueMonde.roulotte`). Absente (`null`) : pas de roulotte.
@@ -143,7 +148,7 @@ export class MoteurCarte {
   private raf = 0
   private visible = true
   private calme = false
-  private etat: EtatCarte = { cases: [], anneeAvatar: 0, tampons: [], roulotte: null }
+  private etat: EtatCarte = { cases: [], anneeAvatar: 0, tampons: [], tickets: [], roulotte: null }
   private plan: PlanCarte = { points: [], cases: [], sections: [], hauteur: 0 }
   private route: Route = { pts: [], dWay: [] }
   private chemin: Path2D | null = null
@@ -1014,6 +1019,7 @@ export class MoteurCarte {
       objetRamasse: ramasse,
       avance: this.camY - s.y0,
       entree: this.meneur.ageDuPassage(s.decennie),
+      ticketDApres: this.etat.tickets.some((annee) => annee >= s.decennie + 10),
       passer: suivante && this.tempsDe(section + 1).length > 0 ? () => void this.direBonjour(suivante.decennie, 'endroit') : null,
     }
   }
