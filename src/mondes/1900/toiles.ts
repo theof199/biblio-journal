@@ -28,6 +28,16 @@ export function fenetre(v: Pick<VueMonde, 'H' | 'avance'>): readonly [number, nu
 }
 
 /**
+ * Vrai quand le `y` d'écran tombe dans la part de l'écran où la section se voit. `ouvrir` ne coupe
+ * que le dessin : une zone touchable s'inscrit hors de toute coupe, et le moteur ne la filtre pas.
+ * Tout ce qui se touche (une année, une dépêche, une bobine, la voiture) passe donc par ici.
+ */
+export function dansLaFenetre(v: Pick<VueMonde, 'H' | 'avance'>, y: number): boolean {
+  const [haut, bas] = fenetre(v)
+  return y >= haut && y <= bas
+}
+
+/**
  * Ouvre le dessin d'un plan, coupé à la fenêtre de la section ; faux quand il n'y a rien à
  * dessiner. Qui reçoit vrai rend le contexte par `restore`.
  */

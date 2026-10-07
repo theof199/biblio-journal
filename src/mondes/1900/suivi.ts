@@ -2,7 +2,7 @@ import type { SuiviGare, VueMonde } from '../types'
 import { c, F_RAIL } from './couleur'
 import { imageDu1900, TAILLES } from './images'
 import { milieuDeLaGare } from './gares'
-import { ouvrir } from './toiles'
+import { dansLaFenetre, ouvrir } from './toiles'
 import { ANNEES } from './trace'
 
 /**
@@ -50,7 +50,8 @@ export function dessinerSuivi(v: VueMonde, suivi: SuiviGare): void {
   g.fillText(texte, 8, 10.5)
   g.textBaseline = 'alphabetic'
   g.restore()
-  // Devant la zone `case` de sa gare (priorité 1), comme la roulotte de 1890.
-  v.zone('roulotte', p.x + p.w / 2, p.y + p.h / 2, Math.min(p.w, p.h) / 2 + 6, undefined, 2)
+  // Devant la zone `case` de sa gare (priorité 1), comme la roulotte de 1890 ; jamais hors de la
+  // fenêtre de la section, où la voiture est coupée.
+  if (dansLaFenetre(v, p.y + p.h / 2)) v.zone('roulotte', p.x + p.w / 2, p.y + p.h / 2, Math.min(p.w, p.h) / 2 + 6, undefined, 2)
   g.restore()
 }

@@ -3,7 +3,7 @@ import { clamp } from '../../carte/outils'
 import { c, F_PRESSE, F_RAIL } from './couleur'
 import { DEVELOPPEMENT } from './durees'
 import { imageDu1900, TAILLES } from './images'
-import { decalages, fenetre, ouvrir } from './toiles'
+import { dansLaFenetre, decalages, ouvrir } from './toiles'
 import { ANNEES, E } from './trace'
 import { DATES, PLACES_DES_DEPECHES } from './depeches'
 import { CACHETTES } from './bobines'
@@ -46,8 +46,7 @@ export function ecranDeLaCase(v: VueMonde, annee: number): { x: number; y: numbe
   if (i < 0) return null
   const p = plaqueDeLaGare(v, i)
   const y = p.y + HAUTEUR_DE_PLAQUE + 30
-  const [haut, bas] = fenetre(v)
-  if (p.x < 0 || p.x > v.W || y < haut || y > bas) return null
+  if (p.x < 0 || p.x > v.W || !dansLaFenetre(v, y)) return null
   return { x: p.x, y }
 }
 
@@ -163,17 +162,20 @@ export function dessinerMoyen(v: VueMonde): void {
     const pl = plaqueDeLaGare(v, i)
     plaque(g, pl.x, pl.y, annee, sombre)
   })
-  // Une dépêche et une bobine ne se montrent que dans une gare développée.
+  // Une dépêche et une bobine ne se montrent que dans une gare développée, et ne se touchent que
+  // dans la fenêtre de la section : hors d'elle, leur zone resterait, invisible, sur le monde voisin.
   DATES.forEach((d, rang) => {
     if (aDevelopper(v, d.an)) return
     const place = PLACES_DES_DEPECHES[rang]!
     const x = milieuDeLaGare(v, d.an - 1900) + place.dx
-    if (aLEcran(x, 60)) depeche(v, rang, x, v.H * (1 - place.bas / 100) - 10)
+    const y = v.H * (1 - place.bas / 100) - 10
+    if (aLEcran(x, 60) && dansLaFenetre(v, y)) depeche(v, rang, x, y)
   })
   CACHETTES.forEach((b, rang) => {
     if (aDevelopper(v, b.an)) return
     const x = milieuDeLaGare(v, b.an - 1900) + b.dx
-    if (aLEcran(x, 30)) v.bobine(rang, x, v.H * (1 - b.bas / 100) - 12, 8)
+    const y = v.H * (1 - b.bas / 100) - 12
+    if (aLEcran(x, 30) && dansLaFenetre(v, y)) v.bobine(rang, x, y, 8)
   })
   g.restore()
 }

@@ -262,6 +262,29 @@ describe('où se tient une année à l’écran', () => {
   })
 })
 
+describe('ce qui se touche hors de la fenêtre de la section', () => {
+  // Mutations : la borne `dansLaFenetre` retirée devant la dépêche ; devant la bobine ; devant la zone `roulotte`.
+  it('n’inscrit ni dépêche, ni bobine, ni voiture là où la section ne se voit pas', () => {
+    const m = creerMonde1900()
+    const touche = (avance: number, suivi: number) => {
+      const f = enGare(1900, 10, { avance })
+      m.dessinerMoyen(f.vue)
+      m.scene!.dessinerSuivi(f.vue, { pseudo: 'lea', annee: suivi })
+      return { zones: f.zones.map((z) => z.id).sort(), bobines: f.bobine.mock.calls.length }
+    }
+    // Écran de 700 : le haut de 1900 à 500 px du haut, la foire de 1890 au-dessus. La dépêche (y 319)
+    // et la bobine (y 457) de 1900 seraient sur la foire ; la voiture (y 546) est dans la fenêtre.
+    expect(touche(-500, 1900)).toEqual({ zones: ['roulotte'], bobines: 0 })
+    // Le haut de 1900 à 600 px : la voiture aussi est hors de la fenêtre.
+    expect(touche(-600, 1900)).toEqual({ zones: [], bobines: 0 })
+    // Le témoin : la fenêtre ouverte à 100 px du haut, tout se touche.
+    expect(touche(-100, 1900)).toEqual({ zones: ['date', 'roulotte'], bobines: 1 })
+    // Le bas de la section à 300 px du haut : la voiture garée en 1909 est coupée, elle ne se touche plus.
+    expect(touche(HAUTEUR - 300, 1909)).toEqual({ zones: [], bobines: 0 })
+    expect(touche(ARRETS[9]!, 1909)).toEqual({ zones: ['roulotte'], bobines: 0 })
+  })
+})
+
 describe('l’heure du visiteur', () => {
   // Mutations : une teinte multipliée par `v.nuit` ; par `v.lum` ; un `v.feu` ajouté.
   it('ne change rien à l’image, et n’allume aucun feu', () => {
