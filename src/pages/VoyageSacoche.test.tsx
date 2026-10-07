@@ -12,6 +12,11 @@ import { exemple } from '../test/contrat'
 import { json, servir } from '../test/serveur'
 import { annee, voyage1890 } from '../test/voyage'
 
+// La page se charge à la demande dans l'app (`paresseux`) : sans ce chargement préalable, le premier
+// test qui la monte paierait sa compilation dans le délai d'un `findByRole` (le remède de
+// `test/pageVoyage.tsx`, que ce fichier n'emploie pas : il monte l'app avec sa propre sonde d'adresse).
+await import('./VoyageSacoche')
+
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 const VOYAGE = 'GET /api/me/voyage'
 const TICKETS = 'GET /api/me/voyage/tickets'
