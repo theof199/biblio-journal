@@ -2276,7 +2276,7 @@ export interface paths {
                   quest_id: string | null;
                   /**
                    * Format: date-time
-                   * @description Le jour de l’achèvement, pas celui de l’écriture — un badge rétroactif porte sa vraie date
+                   * @description Badge de quête : le jour de l’achèvement, pas celui de l’écriture — un badge rétroactif porte sa vraie date. Étiquette du Voyage (`milestone`) : le jour où elle a été collée, c’est-à-dire constatée
                    */
                   awarded_at: string;
                 })[];
@@ -10453,6 +10453,337 @@ export interface paths {
         };
         /** @description Default Response */
         503: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/decennies/{decennie}/etiquettes": {
+    /**
+     * Ma malle aux étiquettes d’une décennie
+     * @description Les étiquettes de la décennie, par numéro : celles que j’ai collées, avec leur date, et les autres en trace de colle, avec leur progression (« 3 sur 4 »).
+     *
+     * **La progression se calcule à chaque lecture ; seule l’étiquette collée est stockée**, comme un badge (`milestone`), et paraît donc aussi dans `badges` de `GET /users/:id`. `collee_le` est le jour où elle a été constatée, pas celui du mérite. Une étiquette collée ne se décolle jamais, même si le billet qui l’a donnée est supprimé.
+     *
+     * **Ce `GET` n’écrit rien.** Une étiquette se colle après un geste : un billet composté, corrigé ou importé, un ticket utilisé. Entre le mérite et le geste suivant, elle reste en trace de colle, sa progression au seuil.
+     *
+     * **Une étiquette cachée ne dit rien d’elle avant d’être gagnée** : `numero`, `cachee: true`, et tous les autres champs nuls.
+     *
+     * Une étiquette de la décennie ne compte que les billets des films sortis dans la décennie. Une décennie sans malle répond une liste vide. `400` si `decennie` n’est pas la première année d’une décennie.
+     */
+    get: {
+      parameters: {
+        path: {
+          /** @description La première année de la décennie : `1900` pour 1900-1909. */
+          decennie: number;
+        };
+      };
+      responses: {
+        /** @description La malle aux étiquettes d’une décennie, pour le membre connecté */
+        200: {
+          content: {
+            "application/json": {
+              /** @description La première année de la décennie, `1900` */
+              decennie: number;
+              /** @description Le nombre de places de la malle, cachées comprises */
+              total: number;
+              /** @description Le nombre d’étiquettes collées */
+              collees: number;
+              /** @description Par numéro croissant. Vide pour une décennie sans malle */
+              etiquettes: ({
+                  /** @description Sa place dans la malle, stable */
+                  numero: number;
+                  /** @description Vrai pour une étiquette dont la règle ne se dit pas. Tant qu’elle n’est pas collée, tous les champs qui suivent sont nuls */
+                  cachee: boolean;
+                  /** @description Identifiant stable et lisible, `train-de-nuit`. Nul pour une cachée non gagnée */
+                  cle: string | null;
+                  /** @description Nul pour une cachée non gagnée */
+                  nom: string | null;
+                  /** @description Les deux ou trois mots imprimés sur l’étiquette. Nul pour une cachée non gagnée */
+                  devise: string | null;
+                  /** @description Ce qu’il faut faire, en une phrase. Nul pour une cachée non gagnée */
+                  regle: string | null;
+                  /** @description Ce que compte la progression, à écrire après « n sur seuil · ». Nul pour une cachée non gagnée */
+                  quoi: string | null;
+                  /** @description Le jour où elle a été collée (constatée), pas celui du mérite. Nul tant qu’elle ne l’est pas. Une étiquette collée ne se décolle jamais */
+                  collee_le: string | null;
+                  /** @description Nul une fois l’étiquette collée, et pour une cachée non gagnée */
+                  progression: {
+                    /** @description Ce qui est déjà fait, plafonné au seuil */
+                    fait: number;
+                    /** @description Ce qu’il faut pour la coller */
+                    seuil: number;
+                  } | null;
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/voyageur": {
+    /**
+     * Mon état de voyageur : objets ramassés, rubriques vues, contrôleur et poinçons
+     * @description Ce qui me suit d’un appareil à l’autre : les objets d’époque que j’ai ramassés sur la carte, avec l’instant du ramassage, et pour chaque rubrique de la sacoche l’instant de ma dernière visite (`vue_le`, nul si je ne l’ai jamais ouverte).
+     *
+     * **Le point rouge se calcule dans l’appli** : une rubrique est allumée si l’un de ses éléments est daté après son `vue_le`, ou si `vue_le` est nul et qu’elle n’est pas vide. Pour `objet`, l’élément est `ramasse_le` ; pour `etiquette`, `collee_le` de la malle.
+     *
+     * `objets` ne porte que les objets ramassés : les places vides de la sacoche se déduisent du catalogue de l’appli. `rubriques` les porte toutes, toujours. La liste des rubriques et celle des objets peuvent s’allonger sans que le contrat change : lire `cle` et `rubrique` comme des chaînes, ignorer une valeur inconnue.
+     *
+     * `controleur.attend` dit si le contrôleur des billets est là : il passe deux semaines sur trois, à un instant de la semaine propre à mon compte (le même à chaque rechargement), et n’attend que si je ne lui ai pas encore répondu cette semaine et que mon dernier billet de film a moins de quatorze jours. `controleur.billet` est ce billet. `poincons` liste mes billets déjà poinçonnés, par entrée de journal : le poinçon ne figure dans aucune réponse du journal.
+     *
+     * **Ce `GET` n’écrit rien**, et n’est pas dans `GET /me/voyage` : la carte est en cache, pas cet état. Il n’existe aucune route pour lire l’état d’un autre membre, poinçons compris.
+     */
+    get: {
+      responses: {
+        /** @description L’état du voyageur : ce que j’ai ramassé, ce que j’ai déjà regardé et mes billets poinçonnés, le même sur tous mes appareils */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Les objets que j’ai ramassés, par année de gare. Ceux qui manquent n’y sont pas */
+              objets: {
+                  /** @description La clé d’un objet trouvé, `lanterne`. Minuscules, chiffres et tirets bas */
+                  cle: string;
+                  /** @description L’année de la gare où il a été oublié */
+                  annee: number;
+                  /**
+                   * Format: date-time
+                   * @description L’instant du premier ramassage. Ramasser de nouveau ne le change pas
+                   */
+                  ramasse_le: string;
+                }[];
+              /** @description Toutes les rubriques de la sacoche, visitées ou non, dans un ordre stable */
+              rubriques: ({
+                  /** @description Une rubrique de la sacoche : `etiquette`, `objet`, `bobine` ou `courrier` */
+                  rubrique: string;
+                  /** @description L’instant de ma dernière visite de cette rubrique. Nul tant que je ne l’ai jamais ouverte */
+                  vue_le: string | null;
+                })[];
+              /** @description Le contrôleur des billets : attend-il ma réponse */
+              controleur: {
+                /** @description Vrai si le contrôleur est entré cette semaine, que je ne lui ai pas encore répondu et que j’ai un billet récent */
+                attend: boolean;
+                /** @description Le billet qu’il demande, mon dernier billet de film : celui que `presente` poinçonnera. Nul s’il n’attend pas */
+                billet: {
+                  /**
+                   * Format: uuid
+                   * @description L’entrée de journal : le billet
+                   */
+                  log_entry_id: string;
+                  /**
+                   * Format: uuid
+                   * @description Le film du billet
+                   */
+                  media_id: string;
+                } | null;
+              };
+              /** @description Mes billets poinçonnés, du plus ancien poinçon au plus récent */
+              poincons: {
+                  /**
+                   * Format: uuid
+                   * @description L’entrée de journal poinçonnée
+                   */
+                  log_entry_id: string;
+                  /**
+                   * Format: uuid
+                   * @description Le film du billet
+                   */
+                  media_id: string;
+                  /**
+                   * Format: date-time
+                   * @description L’instant du coup de poinçon
+                   */
+                  poinconne_le: string;
+                }[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/controleur/reponse": {
+    /**
+     * Répondre au contrôleur des billets
+     * @description Ma réponse au contrôleur de la semaine. `presente` pose un poinçon doré sur mon dernier billet de film, **choisi par le serveur** (celui que `GET /me/voyage/voyageur` annonce dans `controleur.billet`) ; `refuse` n’écrit que le refus : ni poinçon, ni pénalité, rien d’autre ne change.
+     *
+     * **Une seule réponse par semaine**, du lundi au dimanche à Paris : après elle, le contrôleur ne repasse pas de la semaine, sauf si je supprime l’entrée de journal qu’il a poinçonnée, qui emporte ma réponse avec son poinçon. `409` s’il n’attend pas (il n’est pas passé, pas encore passé, j’ai déjà répondu, ou je n’ai pas de billet récent) : une réponse rejouée reçoit donc `409` et ne change rien. `400` pour une réponse hors de `presente` et `refuse`.
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": {
+            /**
+             * @description `presente` : je montre mon billet, il le poinçonne. `refuse` : pas ce soir, rien ne se perd
+             * @enum {string}
+             */
+            reponse: "presente" | "refuse";
+          };
+        };
+      };
+      responses: {
+        /** @description Ma réponse au contrôleur de la semaine, enregistrée */
+        200: {
+          content: {
+            "application/json": {
+              /**
+               * @description `presente` : je montre mon billet, il le poinçonne. `refuse` : pas ce soir, rien ne se perd
+               * @enum {string}
+               */
+              reponse: "presente" | "refuse";
+              /** @description Le poinçon posé, si j’ai présenté mon billet. Nul après un refus */
+              poincon: {
+                /**
+                 * Format: uuid
+                 * @description L’entrée de journal poinçonnée
+                 */
+                log_entry_id: string;
+                /**
+                 * Format: uuid
+                 * @description Le film du billet
+                 */
+                media_id: string;
+                /**
+                 * Format: date-time
+                 * @description L’instant du coup de poinçon
+                 */
+                poinconne_le: string;
+              } | null;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/objets/{cle}/ramasser": {
+    /**
+     * Ramasser un objet trouvé
+     * @description Range dans ma sacoche l’objet oublié en gare. **Rejouable** : ramasser de nouveau le même objet répond `200` avec la même ligne, et `ramasse_le` reste l’instant du premier ramassage.
+     *
+     * `404` si la clé ne désigne aucun objet du catalogue, et `404` aussi si sa gare est une année que je n’ai pas encore ouverte (au-delà de mon année en cours) : un objet ne se ramasse que là où l’on est passé. `400` si la clé n’a pas la forme d’une clé.
+     */
+    post: {
+      parameters: {
+        path: {
+          /** @description La clé d’un objet trouvé, `lanterne`. Minuscules, chiffres et tirets bas */
+          cle: string;
+        };
+      };
+      responses: {
+        /** @description Un objet d’époque que j’ai ramassé sur la carte */
+        200: {
+          content: {
+            "application/json": {
+              /** @description La clé d’un objet trouvé, `lanterne`. Minuscules, chiffres et tirets bas */
+              cle: string;
+              /** @description L’année de la gare où il a été oublié */
+              annee: number;
+              /**
+               * Format: date-time
+               * @description L’instant du premier ramassage. Ramasser de nouveau ne le change pas
+               */
+              ramasse_le: string;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/rubriques/{rubrique}/vue": {
+    /**
+     * Marquer une rubrique de la sacoche comme vue
+     * @description Date ma visite de la rubrique : `vue_le` devient l’instant de l’appel, et le réécrit à chaque visite. C’est ce qui éteint son point rouge, que l’appli calcule.
+     *
+     * `404` si la rubrique n’est pas l’une de celles de la sacoche (`etiquette`, `objet`, `bobine`, `courrier`). `400` si elle n’a pas la forme d’une clé.
+     */
+    post: {
+      parameters: {
+        path: {
+          /** @description Une rubrique de la sacoche : `etiquette`, `objet`, `bobine` ou `courrier` */
+          rubrique: string;
+        };
+      };
+      responses: {
+        /** @description Une rubrique de la sacoche et sa dernière visite */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Une rubrique de la sacoche : `etiquette`, `objet`, `bobine` ou `courrier` */
+              rubrique: string;
+              /** @description L’instant de ma dernière visite de cette rubrique. Nul tant que je ne l’ai jamais ouverte */
+              vue_le: string | null;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };

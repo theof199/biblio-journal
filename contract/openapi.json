@@ -23299,7 +23299,7 @@
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                            "description": "Le jour de l’achèvement, pas celui de l’écriture — un badge rétroactif porte sa vraie date"
+                            "description": "Badge de quête : le jour de l’achèvement, pas celui de l’écriture — un badge rétroactif porte sa vraie date. Étiquette du Voyage (`milestone`) : le jour où elle a été collée, c’est-à-dire constatée"
                           }
                         },
                         "required": [
@@ -48807,6 +48807,849 @@
             }
           },
           "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/decennies/{decennie}/etiquettes": {
+      "get": {
+        "summary": "Ma malle aux étiquettes d’une décennie",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Les étiquettes de la décennie, par numéro : celles que j’ai collées, avec leur date, et les autres en trace de colle, avec leur progression (« 3 sur 4 »).\n\n**La progression se calcule à chaque lecture ; seule l’étiquette collée est stockée**, comme un badge (`milestone`), et paraît donc aussi dans `badges` de `GET /users/:id`. `collee_le` est le jour où elle a été constatée, pas celui du mérite. Une étiquette collée ne se décolle jamais, même si le billet qui l’a donnée est supprimé.\n\n**Ce `GET` n’écrit rien.** Une étiquette se colle après un geste : un billet composté, corrigé ou importé, un ticket utilisé. Entre le mérite et le geste suivant, elle reste en trace de colle, sa progression au seuil.\n\n**Une étiquette cachée ne dit rien d’elle avant d’être gagnée** : `numero`, `cachee: true`, et tous les autres champs nuls.\n\nUne étiquette de la décennie ne compte que les billets des films sortis dans la décennie. Une décennie sans malle répond une liste vide. `400` si `decennie` n’est pas la première année d’une décennie.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1890,
+              "maximum": 2990
+            },
+            "in": "path",
+            "name": "decennie",
+            "required": true,
+            "description": "La première année de la décennie : `1900` pour 1900-1909."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La malle aux étiquettes d’une décennie, pour le membre connecté",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "decennie": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "La première année de la décennie, `1900`"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "Le nombre de places de la malle, cachées comprises"
+                    },
+                    "collees": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "Le nombre d’étiquettes collées"
+                    },
+                    "etiquettes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "numero": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "Sa place dans la malle, stable"
+                          },
+                          "cachee": {
+                            "type": "boolean",
+                            "description": "Vrai pour une étiquette dont la règle ne se dit pas. Tant qu’elle n’est pas collée, tous les champs qui suivent sont nuls"
+                          },
+                          "cle": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Identifiant stable et lisible, `train-de-nuit`. Nul pour une cachée non gagnée"
+                          },
+                          "nom": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Nul pour une cachée non gagnée"
+                          },
+                          "devise": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Les deux ou trois mots imprimés sur l’étiquette. Nul pour une cachée non gagnée"
+                          },
+                          "regle": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Ce qu’il faut faire, en une phrase. Nul pour une cachée non gagnée"
+                          },
+                          "quoi": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Ce que compte la progression, à écrire après « n sur seuil · ». Nul pour une cachée non gagnée"
+                          },
+                          "collee_le": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Le jour où elle a été collée (constatée), pas celui du mérite. Nul tant qu’elle ne l’est pas. Une étiquette collée ne se décolle jamais"
+                          },
+                          "progression": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fait": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991,
+                                    "description": "Ce qui est déjà fait, plafonné au seuil"
+                                  },
+                                  "seuil": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991,
+                                    "description": "Ce qu’il faut pour la coller"
+                                  }
+                                },
+                                "required": [
+                                  "fait",
+                                  "seuil"
+                                ],
+                                "additionalProperties": false,
+                                "description": "La progression d’une étiquette, recalculée à chaque lecture"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Nul une fois l’étiquette collée, et pour une cachée non gagnée"
+                          }
+                        },
+                        "required": [
+                          "numero",
+                          "cachee",
+                          "cle",
+                          "nom",
+                          "devise",
+                          "regle",
+                          "quoi",
+                          "collee_le",
+                          "progression"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une étiquette de la malle, collée ou en trace de colle"
+                      },
+                      "description": "Par numéro croissant. Vide pour une décennie sans malle"
+                    }
+                  },
+                  "required": [
+                    "decennie",
+                    "total",
+                    "collees",
+                    "etiquettes"
+                  ],
+                  "additionalProperties": false,
+                  "description": "La malle aux étiquettes d’une décennie, pour le membre connecté"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "decennie": 1900,
+                      "total": 15,
+                      "collees": 1,
+                      "etiquettes": [
+                        {
+                          "numero": 7,
+                          "cachee": false,
+                          "cle": "correspondance",
+                          "nom": "La Correspondance",
+                          "devise": "Deux gares · un soir",
+                          "regle": "Voir le même soir deux films de deux gares différentes.",
+                          "quoi": "soir à deux gares",
+                          "collee_le": "2026-09-29T20:41:07.000Z",
+                          "progression": null
+                        },
+                        {
+                          "numero": 8,
+                          "cachee": false,
+                          "cle": "train-de-nuit",
+                          "nom": "Le Train de nuit",
+                          "devise": "Après minuit",
+                          "regle": "Composter cinq séances après minuit.",
+                          "quoi": "séances après minuit",
+                          "collee_le": null,
+                          "progression": {
+                            "fait": 2,
+                            "seuil": 5
+                          }
+                        },
+                        {
+                          "numero": 12,
+                          "cachee": false,
+                          "cle": "pionniere",
+                          "nom": "La Pionnière",
+                          "devise": "Alice Guy",
+                          "regle": "Voir trois films d’Alice Guy.",
+                          "quoi": "films d’Alice Guy",
+                          "collee_le": null,
+                          "progression": {
+                            "fait": 0,
+                            "seuil": 3
+                          }
+                        },
+                        {
+                          "numero": 15,
+                          "cachee": true,
+                          "cle": null,
+                          "nom": null,
+                          "devise": null,
+                          "regle": null,
+                          "quoi": null,
+                          "collee_le": null,
+                          "progression": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/voyageur": {
+      "get": {
+        "summary": "Mon état de voyageur : objets ramassés, rubriques vues, contrôleur et poinçons",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Ce qui me suit d’un appareil à l’autre : les objets d’époque que j’ai ramassés sur la carte, avec l’instant du ramassage, et pour chaque rubrique de la sacoche l’instant de ma dernière visite (`vue_le`, nul si je ne l’ai jamais ouverte).\n\n**Le point rouge se calcule dans l’appli** : une rubrique est allumée si l’un de ses éléments est daté après son `vue_le`, ou si `vue_le` est nul et qu’elle n’est pas vide. Pour `objet`, l’élément est `ramasse_le` ; pour `etiquette`, `collee_le` de la malle.\n\n`objets` ne porte que les objets ramassés : les places vides de la sacoche se déduisent du catalogue de l’appli. `rubriques` les porte toutes, toujours. La liste des rubriques et celle des objets peuvent s’allonger sans que le contrat change : lire `cle` et `rubrique` comme des chaînes, ignorer une valeur inconnue.\n\n`controleur.attend` dit si le contrôleur des billets est là : il passe deux semaines sur trois, à un instant de la semaine propre à mon compte (le même à chaque rechargement), et n’attend que si je ne lui ai pas encore répondu cette semaine et que mon dernier billet de film a moins de quatorze jours. `controleur.billet` est ce billet. `poincons` liste mes billets déjà poinçonnés, par entrée de journal : le poinçon ne figure dans aucune réponse du journal.\n\n**Ce `GET` n’écrit rien**, et n’est pas dans `GET /me/voyage` : la carte est en cache, pas cet état. Il n’existe aucune route pour lire l’état d’un autre membre, poinçons compris.",
+        "responses": {
+          "200": {
+            "description": "L’état du voyageur : ce que j’ai ramassé, ce que j’ai déjà regardé et mes billets poinçonnés, le même sur tous mes appareils",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "objets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cle": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9_]{1,40}$",
+                            "description": "La clé d’un objet trouvé, `lanterne`. Minuscules, chiffres et tirets bas"
+                          },
+                          "annee": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "L’année de la gare où il a été oublié"
+                          },
+                          "ramasse_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "L’instant du premier ramassage. Ramasser de nouveau ne le change pas"
+                          }
+                        },
+                        "required": [
+                          "cle",
+                          "annee",
+                          "ramasse_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un objet d’époque que j’ai ramassé sur la carte"
+                      },
+                      "description": "Les objets que j’ai ramassés, par année de gare. Ceux qui manquent n’y sont pas"
+                    },
+                    "rubriques": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rubrique": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9_]{1,40}$",
+                            "description": "Une rubrique de la sacoche : `etiquette`, `objet`, `bobine` ou `courrier`"
+                          },
+                          "vue_le": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "L’instant de ma dernière visite de cette rubrique. Nul tant que je ne l’ai jamais ouverte"
+                          }
+                        },
+                        "required": [
+                          "rubrique",
+                          "vue_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une rubrique de la sacoche et sa dernière visite"
+                      },
+                      "description": "Toutes les rubriques de la sacoche, visitées ou non, dans un ordre stable"
+                    },
+                    "controleur": {
+                      "type": "object",
+                      "properties": {
+                        "attend": {
+                          "type": "boolean",
+                          "description": "Vrai si le contrôleur est entré cette semaine, que je ne lui ai pas encore répondu et que j’ai un billet récent"
+                        },
+                        "billet": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "log_entry_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "L’entrée de journal : le billet"
+                                },
+                                "media_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "Le film du billet"
+                                }
+                              },
+                              "required": [
+                                "log_entry_id",
+                                "media_id"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Un billet de film, désigné par son entrée de journal"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Le billet qu’il demande, mon dernier billet de film : celui que `presente` poinçonnera. Nul s’il n’attend pas"
+                        }
+                      },
+                      "required": [
+                        "attend",
+                        "billet"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le contrôleur des billets : attend-il ma réponse"
+                    },
+                    "poincons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "log_entry_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’entrée de journal poinçonnée"
+                          },
+                          "media_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "Le film du billet"
+                          },
+                          "poinconne_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "L’instant du coup de poinçon"
+                          }
+                        },
+                        "required": [
+                          "log_entry_id",
+                          "media_id",
+                          "poinconne_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Un poinçon doré, sur l’un de mes billets"
+                      },
+                      "description": "Mes billets poinçonnés, du plus ancien poinçon au plus récent"
+                    }
+                  },
+                  "required": [
+                    "objets",
+                    "rubriques",
+                    "controleur",
+                    "poincons"
+                  ],
+                  "additionalProperties": false,
+                  "description": "L’état du voyageur : ce que j’ai ramassé, ce que j’ai déjà regardé et mes billets poinçonnés, le même sur tous mes appareils"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "objets": [
+                        {
+                          "cle": "lanterne",
+                          "annee": 1900,
+                          "ramasse_le": "2026-10-03T19:12:44.000Z"
+                        },
+                        {
+                          "cle": "parapluie",
+                          "annee": 1902,
+                          "ramasse_le": "2026-10-06T18:03:27.000Z"
+                        }
+                      ],
+                      "rubriques": [
+                        {
+                          "rubrique": "etiquette",
+                          "vue_le": "2026-10-01T08:15:00.000Z"
+                        },
+                        {
+                          "rubrique": "objet",
+                          "vue_le": "2026-10-05T21:30:02.000Z"
+                        },
+                        {
+                          "rubrique": "bobine",
+                          "vue_le": null
+                        },
+                        {
+                          "rubrique": "courrier",
+                          "vue_le": null
+                        }
+                      ],
+                      "controleur": {
+                        "attend": false,
+                        "billet": null
+                      },
+                      "poincons": [
+                        {
+                          "log_entry_id": "5d0c3a52-8e0b-4d53-9c56-0f4a7f0b6a11",
+                          "media_id": "d0000000-0000-4000-8000-000000000013",
+                          "poinconne_le": "2026-10-01T17:42:10.000Z"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/controleur/reponse": {
+      "post": {
+        "summary": "Répondre au contrôleur des billets",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Ma réponse au contrôleur de la semaine. `presente` pose un poinçon doré sur mon dernier billet de film, **choisi par le serveur** (celui que `GET /me/voyage/voyageur` annonce dans `controleur.billet`) ; `refuse` n’écrit que le refus : ni poinçon, ni pénalité, rien d’autre ne change.\n\n**Une seule réponse par semaine**, du lundi au dimanche à Paris : après elle, le contrôleur ne repasse pas de la semaine, sauf si je supprime l’entrée de journal qu’il a poinçonnée, qui emporte ma réponse avec son poinçon. `409` s’il n’attend pas (il n’est pas passé, pas encore passé, j’ai déjà répondu, ou je n’ai pas de billet récent) : une réponse rejouée reçoit donc `409` et ne change rien. `400` pour une réponse hors de `presente` et `refuse`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reponse": {
+                    "type": "string",
+                    "enum": [
+                      "presente",
+                      "refuse"
+                    ],
+                    "description": "`presente` : je montre mon billet, il le poinçonne. `refuse` : pas ce soir, rien ne se perd"
+                  }
+                },
+                "required": [
+                  "reponse"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ma réponse au contrôleur de la semaine, enregistrée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reponse": {
+                      "type": "string",
+                      "enum": [
+                        "presente",
+                        "refuse"
+                      ],
+                      "description": "`presente` : je montre mon billet, il le poinçonne. `refuse` : pas ce soir, rien ne se perd"
+                    },
+                    "poincon": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "log_entry_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "description": "L’entrée de journal poinçonnée"
+                            },
+                            "media_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "description": "Le film du billet"
+                            },
+                            "poinconne_le": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                              "description": "L’instant du coup de poinçon"
+                            }
+                          },
+                          "required": [
+                            "log_entry_id",
+                            "media_id",
+                            "poinconne_le"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Un poinçon doré, sur l’un de mes billets"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Le poinçon posé, si j’ai présenté mon billet. Nul après un refus"
+                    }
+                  },
+                  "required": [
+                    "reponse",
+                    "poincon"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Ma réponse au contrôleur de la semaine, enregistrée"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "reponse": "presente",
+                      "poincon": {
+                        "log_entry_id": "5d0c3a52-8e0b-4d53-9c56-0f4a7f0b6a11",
+                        "media_id": "d0000000-0000-4000-8000-000000000013",
+                        "poinconne_le": "2026-10-01T17:42:10.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/objets/{cle}/ramasser": {
+      "post": {
+        "summary": "Ramasser un objet trouvé",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Range dans ma sacoche l’objet oublié en gare. **Rejouable** : ramasser de nouveau le même objet répond `200` avec la même ligne, et `ramasse_le` reste l’instant du premier ramassage.\n\n`404` si la clé ne désigne aucun objet du catalogue, et `404` aussi si sa gare est une année que je n’ai pas encore ouverte (au-delà de mon année en cours) : un objet ne se ramasse que là où l’on est passé. `400` si la clé n’a pas la forme d’une clé.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]{1,40}$"
+            },
+            "in": "path",
+            "name": "cle",
+            "required": true,
+            "description": "La clé d’un objet trouvé, `lanterne`. Minuscules, chiffres et tirets bas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Un objet d’époque que j’ai ramassé sur la carte",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cle": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9_]{1,40}$",
+                      "description": "La clé d’un objet trouvé, `lanterne`. Minuscules, chiffres et tirets bas"
+                    },
+                    "annee": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "L’année de la gare où il a été oublié"
+                    },
+                    "ramasse_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant du premier ramassage. Ramasser de nouveau ne le change pas"
+                    }
+                  },
+                  "required": [
+                    "cle",
+                    "annee",
+                    "ramasse_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Un objet d’époque que j’ai ramassé sur la carte"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "cle": "lanterne",
+                      "annee": 1900,
+                      "ramasse_le": "2026-10-03T19:12:44.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/rubriques/{rubrique}/vue": {
+      "post": {
+        "summary": "Marquer une rubrique de la sacoche comme vue",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Date ma visite de la rubrique : `vue_le` devient l’instant de l’appel, et le réécrit à chaque visite. C’est ce qui éteint son point rouge, que l’appli calcule.\n\n`404` si la rubrique n’est pas l’une de celles de la sacoche (`etiquette`, `objet`, `bobine`, `courrier`). `400` si elle n’a pas la forme d’une clé.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]{1,40}$"
+            },
+            "in": "path",
+            "name": "rubrique",
+            "required": true,
+            "description": "Une rubrique de la sacoche : `etiquette`, `objet`, `bobine` ou `courrier`"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Une rubrique de la sacoche et sa dernière visite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rubrique": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9_]{1,40}$",
+                      "description": "Une rubrique de la sacoche : `etiquette`, `objet`, `bobine` ou `courrier`"
+                    },
+                    "vue_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "L’instant de ma dernière visite de cette rubrique. Nul tant que je ne l’ai jamais ouverte"
+                    }
+                  },
+                  "required": [
+                    "rubrique",
+                    "vue_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une rubrique de la sacoche et sa dernière visite"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "rubrique": "objet",
+                      "vue_le": "2026-10-05T21:30:02.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
