@@ -1,11 +1,12 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
-import { cuire } from './cuisson'
+import { forceDeLaBuee, type Trait, type Vitre } from './buee'
+import { cuire, toileHorsEcran } from './cuisson'
 import { alea } from './habillage'
 import { GOUTTES, glissement, goutteALEcran, NEIGE, partsDuTemps, PLUIE, type Plan } from './meteo'
 
 /**
- * Le trait de la météo par la vitre (idée 70, sans la buée ; maquette : `.meteo`, l. 1071-1099 et
+ * Le trait de la météo par la vitre (idée 70, et sa buée plus bas ; maquette : `.meteo`, l. 1071-1099 et
  * 3560-3570) : un voile, des motifs répétés qui glissent (un plan de pluie, trois de neige), onze
  * gouttes. Pas de particules : une tuile se peint une fois (`cuire`), puis se pose d'un seul
  * remplissage par plan. Chaque « quoi » et chaque « combien » vient de `meteo.ts` ; ici, rien que le
@@ -13,7 +14,8 @@ import { GOUTTES, glissement, goutteALEcran, NEIGE, partsDuTemps, PLUIE, type Pl
  *
  * Deux écarts à la maquette, faute de mémoire d'une image à l'autre : le vent ne couche pas la
  * pluie selon la vitesse du train (`m-vent`, `skewX`), et le plan de neige le plus proche n'est pas
- * flouté (`blur`), ses flocons sont peints doux.
+ * flouté (`blur`), ses flocons sont peints doux. La buée non plus n'est pas floutée (`.embuee`,
+ * l. 1099), et ses perles tombent où le hasard du monde les met, pas où la maquette les a.
  */
 
 /** En dessous, une part ne se dessine pas (maquette : `poser1`, l. 3724). */
@@ -168,15 +170,109 @@ function gouttes(v: VueMonde, force: number): void {
   g.restore()
 }
 
+/** Le voile de buée, peint une fois : dense aux bords, déjà clair au milieu, perlé de gouttes dont quelques-unes ont coulé (maquette : `embuer`, l. 3651-3672). */
+function peindreBuee(g: CanvasRenderingContext2D, w: number, h: number): void {
+  g.fillStyle = c('#e0e6e2', 0.8)
+  g.fillRect(0, 0, w, h)
+  g.globalCompositeOperation = 'destination-out'
+  const d = g.createRadialGradient(w / 2, h * 0.5, 36, w / 2, h * 0.5, h * 0.52)
+  d.addColorStop(0, c('#000000', 0.7))
+  d.addColorStop(0.5, c('#000000', 0.44))
+  d.addColorStop(1, c('#000000', 0))
+  g.fillStyle = d
+  g.fillRect(0, 0, w, h)
+  const perle = (k: number) => ({ x: alea(k + 700) * w, y: h * (0.15 + alea(k + 900) * 0.68), r: 1.3 + alea(k + 1100) * 2.9 })
+  for (let k = 0; k < 120; k++) {
+    const p = perle(k)
+    g.fillStyle = c('#000000', 0.4 + alea(k + 1300) * 0.45)
+    g.beginPath()
+    g.ellipse(p.x, p.y, p.r * 0.85, p.r, 0, 0, Math.PI * 2)
+    g.fill()
+    if (k % 8 === 0) {
+      const l = 26 + alea(k + 1500) * 96
+      g.fillRect(p.x - p.r * 0.42, p.y - l, p.r * 0.84, l)
+    }
+  }
+  g.globalCompositeOperation = 'source-over'
+  g.strokeStyle = c('#ffffff', 0.7)
+  g.lineWidth = 0.9
+  for (let k = 0; k < 120; k++) {
+    const p = perle(k)
+    if (p.r <= 2.2) continue
+    g.beginPath()
+    g.arc(p.x, p.y, p.r, 0.3, 1.9)
+    g.stroke()
+  }
+}
+
+/** Ôte un trait à la buée : le passage du doigt, large et doux, ou une coulure (maquette : `essuyer`, `finirEssuyage`, l. 3675-3691). */
+function oter(g: CanvasRenderingContext2D, t: Trait, w: number, h: number): void {
+  const doigt = t.genre === 'doigt'
+  g.globalCompositeOperation = 'destination-out'
+  g.lineCap = 'round'
+  g.lineJoin = 'round'
+  g.lineWidth = doigt ? 54 : 3.5
+  g.strokeStyle = c('#000000', doigt ? 0.94 : 0.8)
+  g.shadowColor = c('#000000')
+  g.shadowBlur = doigt ? 10 : 0
+  g.beginPath()
+  g.moveTo(t.x0 * w, t.y0 * h)
+  g.lineTo(t.x1 * w, t.y1 * h)
+  g.stroke()
+}
+
+/**
+ * La seule toile de la buée, à la densité 1 (la note de la maquette, l. 2587 : 1,2 Mo pour un
+ * téléphone), hors de la mémoire de `cuire` : elle se retouche, et se rend dès que la buée n'a plus
+ * de force. `faits` : combien de traits de la vitre y sont déjà ôtés ; `tete` : le premier, qui
+ * change quand la vitre s'est réembuée entre deux images.
+ */
+let embuee: { toile: HTMLCanvasElement; g: CanvasRenderingContext2D; de: Vitre; w: number; h: number; faits: number; tete: Trait | undefined } | null = null
+
+/**
+ * La buée sur la vitre. La liste des traits fait foi, la toile n'en est que le cache : un trait neuf
+ * s'y ôte seul, sans rien recuire ; une toile neuve (rendue, d'un autre écran, d'une vitre réembuée)
+ * se repeint d'après la liste. Hors d'une gare embuée, aucune passe, et la toile est rendue.
+ */
+function buee(v: VueMonde, vitre: Vitre): void {
+  const force = forceDeLaBuee(v.avance)
+  const traits = vitre.essuyage(v.avance).traits
+  if (force <= SEUIL) {
+    if (force <= 0 && embuee) {
+      embuee.toile.width = 0
+      embuee = null
+    }
+    return
+  }
+  const w = Math.ceil(v.W)
+  const h = Math.ceil(v.H)
+  if (!embuee || embuee.de !== vitre || embuee.w !== w || embuee.h !== h || embuee.faits > traits.length || (embuee.faits > 0 && embuee.tete !== traits[0])) {
+    if (embuee) embuee.toile.width = 0
+    const neuve = toileHorsEcran(w, h)
+    embuee = neuve && { ...neuve, de: vitre, w, h, faits: 0, tete: undefined }
+    if (!embuee) return
+    peindreBuee(embuee.g, w, h)
+  }
+  for (; embuee.faits < traits.length; embuee.faits++) oter(embuee.g, traits[embuee.faits]!, v.W, v.H)
+  embuee.tete = traits[0]
+  const g = v.ctx
+  g.save()
+  g.globalAlpha *= force
+  g.drawImage(embuee.toile, 0, 0, v.W, v.H)
+  g.restore()
+}
+
 /**
  * La météo sur la vitre, dans le contexte déjà ouvert et coupé par `ouvrir` (`dessus.ts`), après la
  * lanterne. Hors d'une gare à météo, `partsDuTemps` ne rend que des zéros et rien ne se pose.
  */
-export function dessinerMeteo(v: VueMonde): void {
+export function dessinerMeteo(v: VueMonde, vitre: Vitre | null = null): void {
   const parts = partsDuTemps(v)
   voileDeNeige(v, parts.voileDeNeige)
   voileDePluie(v, parts.voileDePluie)
   semer(v, 'meteo:pluie', PLUIE, parts.pluie, peindrePluie)
   NEIGE.forEach((plan, n) => semer(v, `meteo:neige:${n}`, plan, parts.neige, peindreNeige(n)))
   gouttes(v, parts.pluie)
+  // La buée est le dernier calque de la vitre (maquette : `.embuee`, l. 1545).
+  if (vitre) buee(v, vitre)
 }

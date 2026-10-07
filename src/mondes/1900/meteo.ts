@@ -6,7 +6,7 @@ import { alea, lisse, rangSurLaLigne, voileDuLaboratoire } from './habillage'
 import { ANNEES, B1 } from './trace'
 
 /**
- * Les règles de la météo par la vitre (idée 70, sans la buée ; maquette : `rendreDecor`,
+ * Les règles de la météo par la vitre (idée 70 ; la buée a les siennes, `buee.ts` ; maquette : `rendreDecor`,
  * l. 3721-3729) : des fonctions pures, que le trait (`intemperies.ts`) lit et que les tests gardent.
  * Combien il pleut ou neige se tire d'`avance` seule ; seul ce qui tombe lit l'horloge du décor, et
  * jamais quand le visiteur demande moins d'animations.

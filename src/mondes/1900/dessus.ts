@@ -1,4 +1,5 @@
 import type { VueMonde } from '../types'
+import type { Vitre } from './buee'
 import { dessinerDevantLaVitre } from './montee'
 import { c, F_CORPS } from './couleur'
 import { cuire, fondre } from './cuisson'
@@ -264,8 +265,8 @@ function dessinerLanternes(v: VueMonde): void {
   })
 }
 
-/** Par-dessus tout : les chefs de gare, l'heure, la lanterne, la météo sur la vitre, puis le tunnel, qui les couvre. Le moteur l'appelle après la voiture du Voyage suivi. */
-export function dessinerSurLaBrume(v: VueMonde): void {
+/** Par-dessus tout : les chefs de gare, l'heure, la lanterne, la météo sur la vitre (et sa buée, si le monde donne sa `vitre`), puis le tunnel, qui les couvre. Le moteur l'appelle après la voiture du Voyage suivi. */
+export function dessinerSurLaBrume(v: VueMonde, vitre: Vitre | null = null): void {
   if (ouvrir(v)) {
     const tunnel = tunnelALEcran(v)
     // Sous le noir plein du tunnel, rien de ce qui suit ne se verrait : ni passe plein écran, ni neige.
@@ -274,7 +275,7 @@ export function dessinerSurLaBrume(v: VueMonde): void {
       dessinerHeure(v)
       dessinerLanternes(v)
       // La météo est sur la vitre : par-dessus l'heure et la lanterne (maquette : `.meteo`, l. 1545).
-      dessinerMeteo(v)
+      dessinerMeteo(v, vitre)
     }
     // Le tunnel passe devant la vitre : par-dessus la météo (maquette : `.tunnel`, l. 1546).
     if (tunnel) dessinerTunnel(v, tunnel)

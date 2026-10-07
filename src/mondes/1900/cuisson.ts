@@ -15,6 +15,23 @@ const cuites = new Map<string, HTMLCanvasElement>()
 let refusee = false
 
 /**
+ * Une toile hors écran et son contexte, hors de la mémoire des toiles cuites : à qui la demande de
+ * la tenir et de la rendre (`width = 0`). Nulle là où il n'y en a pas ; le refus est retenu.
+ */
+export function toileHorsEcran(w: number, h: number): { toile: HTMLCanvasElement; g: CanvasRenderingContext2D } | null {
+  if (refusee || typeof document === 'undefined') return null
+  const toile = document.createElement('canvas')
+  toile.width = Math.max(1, Math.ceil(w))
+  toile.height = Math.max(1, Math.ceil(h))
+  const g = toile.getContext('2d')
+  if (!g) {
+    refusee = true
+    return null
+  }
+  return { toile, g }
+}
+
+/**
  * La toile cuite sous `cle`, peinte par `peindre` la première fois. Nulle là où aucune toile hors
  * écran ne s'obtient (jsdom, un navigateur à court de mémoire) : le dessin s'en passe alors, et pose
  * ce qu'il a sans fondu. Un refus est retenu jusqu'au rechargement de la page.
@@ -26,15 +43,9 @@ export function cuire(cle: string, w: number, h: number, peindre: (g: CanvasRend
     cuites.set(cle, deja)
     return deja
   }
-  if (refusee || typeof document === 'undefined') return null
-  const toile = document.createElement('canvas')
-  toile.width = Math.max(1, Math.ceil(w))
-  toile.height = Math.max(1, Math.ceil(h))
-  const g = toile.getContext('2d')
-  if (!g) {
-    refusee = true
-    return null
-  }
+  const neuve = toileHorsEcran(w, h)
+  if (!neuve) return null
+  const { toile, g } = neuve
   peindre(g, toile.width, toile.height)
   cuites.set(cle, toile)
   if (cuites.size > PLAFOND) {

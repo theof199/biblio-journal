@@ -263,11 +263,11 @@ jour de la photographie (maquette, l. 2638).
 
 ### La météo (lot 2 bis)
 
-Idée 70, sans la buée de Creil (maquette : `METEO`, l. 3506, par rang ; `donnees.ts` l'écrit par
-année) :
+Idée 70 ; la buée de Creil est plus bas (maquette : `METEO`, l. 3506, par rang ; `donnees.ts`
+l'écrit par année) :
 
 ```js
-const METEO = { 2: 'pluie', 4: 'neige', 5: 'neige', 6: 'pluie' }; // 1 : 'buee', non reprise
+const METEO = { 2: 'pluie', 4: 'neige', 5: 'neige', 6: 'pluie' }; // 1 : 'buee', dans `BUEE`
 ```
 
 La force se lit l. 3721-3729, les tuiles l. 3560-3564, les gouttes l. 3566-3570, les boucles
@@ -279,6 +279,28 @@ ensemble, et là où ils se recouvrent, au bas de l'écran, le mélange n'est pa
 `screen` l'un après l'autre ; le vent ne couche pas la pluie selon la vitesse du train
 (`m-vent`) ; le plan de neige proche n'est pas flouté ; une goutte va en droite ligne d'un moment
 à l'autre ; au calme, elle se tient à sa place (dans la maquette, elle reste hors de l'écran).
+
+### La buée de Creil (lot « moteur »)
+
+Idée 70, la ligne laissée par le lot 2 bis (maquette : `METEO`, l. 3506, `1: 'buee'` ; `donnees.ts`
+l'écrit à part, par année) :
+
+```js
+const BUEE = [1901];
+```
+
+La force se lit l. 3722-3730 (la même que la pluie), le voile l. 3650-3672, le doigt l. 3675-3684, les
+gouttes du lever l. 3686-3691, la prise du geste l. 3369 et 3674 (`bueeIci`). **Écarts :** le geste
+n'est reconnu qu'à dix pixels du poser (huit dans la maquette), par la même règle (plus large que haut) ;
+le premier trait part du poser, pas du premier mouvement ; le doigt n'ôte un trait que tous les dix
+pixels, et plus rien au-delà de huit cents traits, jusqu'à ce que la vitre se réembue ; les deux
+gouttes coulent à toute fin du glissement, lever ou non (un geste repris par le navigateur, un
+second doigt), et seulement si le passage a ôté quelque chose ; la vitre se réembue dès que la force
+retombe à zéro, comme dans la maquette, mais le monde ne le constate que lorsqu'il dessine ou
+reçoit un glissement : une caméra posée d'un coup hors de la décennie puis à Creil la retrouve essuyée ;
+la toile n'est pas floutée (`.embuee`, `blur(.9px)`, l. 1099) et ses perles suivent le hasard du
+monde (`alea` à 91,7), pas celui de la maquette (127,1) ; elle est à la densité 1 sur tout écran ;
+aucun mot d'invite (l. 3114), et la buée s'essuie aussi au calme, comme dans la maquette.
 
 ### Le tunnel (lot 2 bis)
 

@@ -257,7 +257,10 @@ monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum`. Le voile de nuit que le moteu
 l'écran d'après l'heure du visiteur, lui, reste. Il pleut à Couville et à Brest, il neige à Allaman
 et à Bassersdorf (`donnees.ts`, `METEO` ; les règles dans `meteo.ts`, le trait dans
 `intemperies.ts`) : des motifs répétés qui glissent et onze gouttes, posés immobiles quand le
-visiteur demande moins d'animations, absents du passage. Entre Longueville et Allaman, le seul tunnel
+visiteur demande moins d'animations, absents du passage. À Creil, la vitre est embuée (`donnees.ts`,
+`BUEE` ; les règles dans `buee.ts`) : un glissement horizontal du doigt l'essuie sans faire rouler le
+train (`Monde.glisser`), au calme aussi ; le doigt levé, deux gouttes coulent ; la vitre se réembue
+dès que le train s'est éloigné à plus de mi-chemin de la gare voisine. Entre Longueville et Allaman, le seul tunnel
 de la ligne (`donnees.ts`, `TUNNEL` ; les règles dans `tunnel.ts`, le trait dans `voute.ts`) : sa
 bouche de pierre arrive, le noir balaie la vitre, la paroi défile, l'autre bouche passe et le jour
 revient sur la neige ; il ne suit que le doigt, à l'aller comme au retour, sans ralentir le train, et

@@ -13,7 +13,8 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
 - **Les gares et leurs plaques** : `src/mondes/1900/gares.ts` › `ecranDeLaCase`, `gareALEcran`, `estFermee`, `aDevelopper`, `developpement`, `dessinerMoyen` ; les dépêches et les bobines s'y posent et s'y inscrivent.
 - **Le passage** : ses temps, `src/mondes/1900/entree.ts` › `ENTREE` ; ses règles, `src/mondes/1900/passage.ts` › `montee`, `trajet`, `vitreALEcran`, `vitreOuverte` ; son trait, `src/mondes/1900/montee.ts` › `dessinerSousLaVitre`, `dessinerDevantLaVitre`.
 - **L'habillage** (l'heure, les chefs de gare, la lanterne) : les tables, `src/mondes/1900/donnees.ts` › `HEURES`, `LABO`, `AMBIANCE` ; les règles, `src/mondes/1900/habillage.ts` › `heureSurLaLigne`, `voileDuLaboratoire`, `partDeLHeure` ; le trait, `src/mondes/1900/dessus.ts` › `dessinerSurLaBrume`.
-- **La météo** (pluie, neige, pas de buée) : la table, `src/mondes/1900/donnees.ts` › `METEO` ; les règles, `src/mondes/1900/meteo.ts` › `forceDuTemps`, `partsDuTemps`, `glissement`, `goutteALEcran` ; le trait, `src/mondes/1900/intemperies.ts` › `dessinerMeteo`.
+- **La météo** (pluie, neige) : la table, `src/mondes/1900/donnees.ts` › `METEO` ; les règles, `src/mondes/1900/meteo.ts` › `forceDuTemps`, `partsDuTemps`, `glissement`, `goutteALEcran` ; le trait, `src/mondes/1900/intemperies.ts` › `dessinerMeteo`.
+- **La buée de Creil** (un glissement horizontal l'essuie) : la table, `src/mondes/1900/donnees.ts` › `BUEE` ; les règles, `src/mondes/1900/buee.ts` › `forceDeLaBuee`, `bueePrise`, `essuyer`, `creerVitre` (la mémoire, dans la fermeture du monde, branchée sur `glisser`) ; le trait, à la fin de `dessinerMeteo`, sur une toile à elle (`src/mondes/1900/cuisson.ts` › `toileHorsEcran`).
 - **Le tunnel** (un seul, sans ralenti) : la table, `src/mondes/1900/donnees.ts` › `TUNNEL` ; les règles, `src/mondes/1900/tunnel.ts` › `bornesDuTunnel`, `tunnelALEcran`, `sousLaVoute` ; le trait, `src/mondes/1900/voute.ts` › `dessinerTunnel`.
 - **La ficelle** (les affiches des années ouvertes, cinq au plus, dans le compartiment et en reflet dans le tunnel) : la règle, `src/mondes/1900/ficelle.ts` › `affichesDeLaFicelle`, `PLAFOND_DE_LA_FICELLE`, `cleDeLaFicelle` (une affiche qui arrive fait recuire) ; le trait, `src/mondes/1900/accroches.ts` › `dessinerFicelle`, une seule toile cuite. Son plafond tient sous `src/carte/CarteCanvas.tsx` › `AFFICHES_D_UN_MONDE`.
 - **Le fond, le lointain, le sol** : `src/mondes/1900/fonds.ts` › `dessinerFond`, `src/mondes/1900/lointain.ts` › `vuesALEcran`, `src/mondes/1900/ciel.ts` › `dessinerCiel`, `src/mondes/1900/sol.ts` › `dessinerSol`, `dessinerProche`.
@@ -29,6 +30,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
 - **Seul ce qui tombe lit l'horloge** (`glissement`, `goutteALEcran`), jamais au calme ; la force de la
   météo se tire d'`avance` et vaut zéro avant la gare de 1900, quelle que soit la table. Une tuile se
   cuit une fois et se pose d'un remplissage par plan : pas de particules ; sous la lanterne, le voile de neige s'efface.
+- **L'essuyage est la seule mémoire du monde hors d'`avance`** : une liste bornée de traits (`PLAFOND_DES_TRAITS`), dont la toile n'est que le cache, jamais recuite pour un trait de plus. Elle s'oublie dès que la buée n'a plus de force, ne lit pas l'horloge, vaut au calme. La `fin` d'un glissement n'est pas un lever : les deux gouttes coulent quand même. Le repli si un navigateur défile avant que le geste soit reconnu : `src/mondes/1900/buee.ts` › `PORTEE_DE_L_ESSUYAGE`, une ligne.
 - **Deux fichiers de durées, deux règles contraires.** `durees.ts` ne porte que des `auTempo(…)` ;
   `entree.ts` s'écrit en base, sans tempo, que le meneur seul applique. `src/voyage/tempo.test.ts` refuse l'inverse.
 - **Une plaque a deux gardes** (`aDevelopper`) : l'année fermée, et l'année où le membre n'est pas encore
@@ -40,14 +42,12 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
   `src/carte/reference1890.test.ts`. Le tracé prend tout début de la suite
   1900 à 1909 (1900 à 1902 suffisent) et lève dès qu'une année n'est pas à son rang, depuis 1900 et dans l'ordre.
 - **`siteDuChantier` rend nul**, exprès : une visée arrêterait le roulement vers la gare.
-- **Ce qui se touche** : les années, les dépêches, les bobines et la voiture du Voyage suivi, rien tant que
-  la vitre n'a pas rempli l'écran. L'habillage et le trait du passage n'inscrivent aucune zone.
-- **La clé d'une bobine est ce que l'appareil retient** ; son rang est celui de `CACHETTES`.
+- **Ce qui se touche** : les années, les dépêches, les bobines et la voiture du Voyage suivi, rien tant que la vitre n'a pas rempli l'écran (la buée ne les couvre pas : un glissement n'est pas un toucher). L'habillage et le trait du passage n'inscrivent aucune zone. **La clé d'une bobine est ce que l'appareil retient** ; son rang est celui de `CACHETTES`.
 - **Une image entre avec son entrée au `CREDITS.md` du dossier et, posée à ses proportions, sa ligne
   dans `TAILLES`.** Aucun fondu n'est dans les fichiers : `cuire` le peint une fois, dans une mémoire bornée.
 - **Le rendu du décor n'a pas de test** : les tests gardent les règles (`habillage.ts`, `passage.ts`,
   `toiles.ts`). Ce qui doit être gardé s'écrit en règle pure, pas dans le trait.
-- **La maquette montre plus que le monde ne dessine** (buée, vent, ralenti du tunnel, aiguillage, contrôleur, horaire, objets trouvés) : rien de cela n'est livré, et ne se dessine pas d'après elle.
+- **La maquette montre plus que le monde ne dessine** (vent, ralenti du tunnel, aiguillage, contrôleur, horaire, objets trouvés) : rien de cela n'est livré, et ne se dessine pas d'après elle.
 
 ## Les commandes
 

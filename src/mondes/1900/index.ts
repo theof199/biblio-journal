@@ -9,6 +9,7 @@ import { dessinerBande } from './bande'
 import { dessinerSurLaBrume } from './dessus'
 import { DATES } from './depeches'
 import { BOBINES } from './bobines'
+import { creerVitre } from './buee'
 import { ROULEMENT } from './roulement'
 import { c, RAMPE } from './couleur'
 import { ARRETS, trace1900 } from './trace'
@@ -23,6 +24,8 @@ import { ENTREE } from './entree'
  * celle de la gare (`habillage.ts`, `dessus.ts`), jamais celle du visiteur.
  */
 export function creerMonde1900(): Monde {
+  // La vitre embuée de Creil : ce que le doigt y a essuyé, la seule mémoire du monde hors d'`avance` (`buee.ts`).
+  const vitre = creerVitre()
   return {
     cle: '1900',
     decennie: 1900,
@@ -57,7 +60,7 @@ export function creerMonde1900(): Monde {
     dessinerMoyen,
     dessinerSol,
     dessinerProche,
-    dessinerSurLaBrume,
+    dessinerSurLaBrume: (v) => dessinerSurLaBrume(v, vitre),
     // Rien ne se bâtit en 1900 : une visée arrêterait le roulement vers la gare.
     siteDuChantier: () => null,
     dessinerAdieu: () => undefined,
@@ -69,7 +72,8 @@ export function creerMonde1900(): Monde {
     bobines: BOBINES,
     objets: [],
     touchesAuCalme: [],
-    glisser: null,
+    // Un glissement horizontal essuie la buée, là où elle se voit ; ailleurs il est refusé, et le doigt défile.
+    glisser: vitre.glisser,
     scene: {
       ecranDeLaCase,
       dessinerSuivi,
