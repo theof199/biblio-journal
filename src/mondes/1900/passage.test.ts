@@ -6,7 +6,7 @@ import { auTempo } from '../../voyage/tempo'
 import { ENTREE } from './entree'
 import { borneALEcran, departALEcran, ecranDeLaCase, milieuDeLaGare } from './gares'
 import { assise, bouffee, cadrageDuQuai, dessousDevant, interieurALEcran, jonctionALEcran, montee, ouverture, quaiALEcran, trajet, VITRE, vitreALEcran, vitreOuverte } from './passage'
-import { dansLaFenetre, decalages } from './toiles'
+import { couvertureDuPassage, dansLaFenetre, decalages } from './toiles'
 import { A1, ANNEES, ARRETS, B1, E, JONCTION, S1, U0 } from './trace'
 
 /**
@@ -248,6 +248,33 @@ describe('les cinq moments', () => {
       expect(vitreOuverte(arret)).toBe(true)
       expect(interieurALEcran(arret)).toBeNull()
       expect(bouffee(arret)).toBe(0)
+    }
+  })
+})
+
+describe('ce que le passage couvre', () => {
+  // Mutations : la couverture rendue plein écran (`y: 0`, `h: v.H`) ; la coupe retirée
+  // d'`ouvrirLePassage` ; le fond opaque de `dessous` rendu à l'écran entier.
+  it('jamais la foire : son haut est le haut de la section, tout le long de la descente', () => {
+    expect(couvertureDuPassage({ H: 700, avance: U0 })).toEqual({ y: 498, h: 202 })
+    expect(couvertureDuPassage({ H: 700, avance: -300 })).toEqual({ y: 300, h: 400 })
+    expect(couvertureDuPassage({ H: 700, avance: -40 })).toEqual({ y: 40, h: 660 })
+    expect(couvertureDuPassage({ H: 700, avance: 0 })).toEqual({ y: 0, h: 700 })
+    expect(couvertureDuPassage({ H: 700, avance: A1 })).toEqual({ y: 0, h: 700 })
+    // La section encore sous l'écran : rien à couvrir, et rien n'est dessiné.
+    expect(couvertureDuPassage({ H: 700, avance: -700 })).toBeNull()
+    for (const avance of [U0, -300, -40]) {
+      const couverture = couvertureDuPassage({ H: 700, avance })!
+      const f = vueA(avance)
+      image(f.vue)
+      // Tout ce que le passage peint l'est sous une coupe, et chaque coupe est celle de la couverture.
+      const coupes = f.appels.flatMap((a, i) => (a.nom === 'clip' ? [f.appels[i - 1]!] : []))
+      expect(coupes.length).toBeGreaterThan(0)
+      for (const coupe of coupes) expect([coupe.nom, coupe.args]).toEqual(['rect', [0, couverture.y, 390, couverture.h]])
+      expect(f.appels.findIndex((a) => a.nom === 'clip')).toBeLessThan(f.appels.findIndex((a) => a.nom.startsWith('fill') || a.nom.startsWith('stroke') || a.nom === 'drawImage'))
+      // Son fond opaque, peint hors de tout repère déplacé, ne commence pas au-dessus d'elle.
+      const fond = f.appels.find((a) => a.nom === 'fillRect')!
+      expect(fond.args).toEqual([0, couverture.y, 390, couverture.h])
     }
   })
 })

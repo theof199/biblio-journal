@@ -5,7 +5,7 @@ import { cuire, fondre } from './cuisson'
 import { emaillee } from './gares'
 import { imageDu1900, TAILLES } from './images'
 import { bouffee, cadrageDuQuai, dessousDevant, interieurALEcran, jonctionALEcran, montee, ouverture, quaiALEcran, VITRE, vitreALEcran } from './passage'
-import { arrondi, fenetre } from './toiles'
+import { arrondi, couvertureDuPassage } from './toiles'
 import { JONCTION } from './trace'
 
 /**
@@ -325,16 +325,16 @@ function buee(v: VueMonde, force: number): void {
   }
 }
 
-/** Ouvre le dessin du passage, coupé à la fenêtre de la section ; faux hors d'elle. */
+/** Ouvre le dessin du passage, coupé à ce qu'il couvre (`couvertureDuPassage`) ; faux hors de la section. */
 function ouvrirLePassage(v: VueMonde): boolean {
   if (v.presence <= 0.01) return false
-  const [haut, bas] = fenetre(v)
-  if (bas <= haut) return false
+  const couverture = couvertureDuPassage(v)
+  if (!couverture) return false
   const g = v.ctx
   g.save()
   g.globalAlpha = v.presence
   g.beginPath()
-  g.rect(0, haut, v.W, bas - haut)
+  g.rect(0, couverture.y, v.W, couverture.h)
   g.clip()
   return true
 }
@@ -344,11 +344,12 @@ function dessous(v: VueMonde): void {
   const j = jonctionALEcran(v)
   const q = quaiALEcran(v)
   const i = interieurALEcran(v.avance)
-  if ((!j && !q && !i) || !ouvrirLePassage(v)) return
+  const couverture = couvertureDuPassage(v)
+  if ((!j && !q && !i) || !couverture || !ouvrirLePassage(v)) return
   const g = v.ctx
   if (j || q) {
     g.fillStyle = c('#140e09')
-    g.fillRect(0, 0, v.W, v.H)
+    g.fillRect(0, couverture.y, v.W, couverture.h)
   }
   if (j) jonction(g, v.W, j.y)
   if (q) quai(v, q)

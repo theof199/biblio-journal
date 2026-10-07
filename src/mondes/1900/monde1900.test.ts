@@ -152,7 +152,9 @@ describe('les quatre toiles', () => {
     expect(fenetre({ H: 700, avance: -300 })).toEqual([300, 700])
     expect(fenetre({ H: 700, avance: 2000 })).toEqual([0, 700])
     expect(fenetre({ H: 700, avance: HAUTEUR - 200 })).toEqual([0, 200])
-    const { vue, appels } = vueFactice({ avance: -700 })
+    // La section sortie par le haut de l'écran, le train à sa place : rien ne se dessine (la foire
+    // à l'écran, c'est le passage qui couvre : `passage.test.ts`).
+    const { vue, appels } = vueFactice({ avance: HAUTEUR + 5 })
     image(vue)
     expect(appels).toEqual([])
   })

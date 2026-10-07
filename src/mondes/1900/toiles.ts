@@ -31,6 +31,16 @@ export function fenetre(v: Pick<VueMonde, 'H' | 'avance'>): readonly [number, nu
 }
 
 /**
+ * Ce que le passage couvre de l'écran : la part où la section se voit, et rien au-dessus. Son haut
+ * est le haut de la section tant que la foire est à l'écran : le fond opaque du passage, sa
+ * jonction et son quai ne montent jamais sur le bas de 1890. Nulle quand la section n'est pas à l'écran.
+ */
+export function couvertureDuPassage(v: Pick<VueMonde, 'H' | 'avance'>): { y: number; h: number } | null {
+  const [haut, bas] = fenetre(v)
+  return bas <= haut ? null : { y: haut, h: bas - haut }
+}
+
+/**
  * Vrai quand le `y` d'écran tombe dans la part de l'écran où la section se voit. `ouvrir` ne coupe
  * que le dessin : une zone touchable s'inscrit hors de toute coupe, et le moteur ne la filtre pas.
  * Tout ce qui se touche (une année, une dépêche, une bobine, la voiture) passe donc par ici. Rien
