@@ -101,11 +101,11 @@ suivi et l'adieu d'un monde. Où vit quoi :
 
 - `src/voyage/regles.ts` : les règles côté client (l'état d'une case, la jauge, le prochain pas,
   la frontière d'une avancée), sans dessin.
-- `src/carte/` : le moteur (`moteur.ts`, sur un `<canvas>`, monté par `CarteCanvas.tsx`), la
-  géométrie, le toucher, la mise en scène d'une avancée (`avancee.ts`) et le dessin commun à tous
-  les mondes (`dessin/`).
+- `src/carte/` : le moteur (`moteur.ts`, sur un `<canvas>`, monté par `CarteCanvas.tsx`), le meneur
+  de la caméra (`meneur.ts`), la géométrie, le toucher, la mise en scène d'une avancée
+  (`avancee.ts`) et le dessin commun à tous les mondes (`dessin/`).
 - `src/mondes/` : l'interface d'un monde (`types.ts`), le registre (`index.ts`), un dossier par
-  décennie (`1890/`) et le monde « à venir » (`avenir/`) des décennies sans chantier.
+  décennie (`1890/`, `1900/`) et le monde « à venir » (`avenir/`) des décennies sans chantier.
 - `src/carte/son.ts` : l'ambiance sonore ; `src/carte/dessin/bobines.ts` : le dessin des bobines
   perdues et de leur envol.
 
@@ -135,8 +135,8 @@ rechargement ni au retour sur la carte : l'appareil garde la dernière année mo
 
 **Le son** (plan 2d ; `carte/son.ts`, `Ambiance`). Le ronron du projecteur, le clap, le carillon
 d'une bobine retrouvée, et la musique de chaque monde à l'écran, au volume de son poids de mélange
-(`Monde.musique` : l'orgue de barbarie de 1890, `mondes/1890/orgue.ts` ; rien pour le monde « à
-venir »). Tout est synthétisé par WebAudio, sans fichier. Coupé par défaut : **seul le bouton
+(`Monde.musique` : l'orgue de barbarie de 1890, `mondes/1890/orgue.ts` ; le roulement du train de
+1900, `mondes/1900/roulement.ts`, son seul son ; rien pour le monde « à venir »). Tout est synthétisé par WebAudio, sans fichier. Coupé par défaut : **seul le bouton
 « Son »** (la pastille du haut, en bas à droite) crée le contexte audio, dans son geste, et le reprend
 s'il naît suspendu (Safari d'iOS). Une fois né, il vit autant que la page (`ambianceDeLaPage`) : une
 fiche ouverte puis refermée retrouve le son. Il appartient au membre qui l'a allumé : la déconnexion
@@ -147,7 +147,8 @@ carte est quittée. Le choix se garde sur l'appareil, par membre (`journal.carte
 
 **Les bobines perdues** (plan 2d). Trois films réellement perdus cachés dans le décor de 1890
 (`Monde.bobines`, `mondes/1890/bobines.ts`) : derrière le pied d'un bec de gaz, dans la brume au bas
-de la section (un éclat la trahit de temps en temps), au pied de la tour Eiffel au loin. Le monde les
+de la section (un éclat la trahit de temps en temps), au pied de la tour Eiffel au loin. Trois
+autres en 1900 (`mondes/1900/bobines.ts`), en gare de 1900, de 1901 et de 1904. Le monde les
 pose par `VueMonde.bobine`, le moteur les dessine et inscrit leur zone, qui passe devant le reste du
 décor. Un toucher la ramasse : elle vole vers le compteur du HUD (`DUREE_DE_L_ENVOL`, au tempo), qui
 n'apparaît qu'à la première trouvaille ; un message dit le film, puis, à la troisième, que les trois
@@ -177,9 +178,8 @@ chaque cas y écrit sa suite, un appel par ligne, à comparer d'un commit à l'a
 
 **La section collante** (plan 3a ; `Monde.scene`, `mondes/types.ts`). Un monde qui porte une `scene`
 ne laisse plus sa section glisser sous la caméra : il dessine lui-même ses années d'après
-`VueMonde.avance` (`camY − y0`, donné à tous les mondes). **Aucun monde n'en a encore** : 1890 et le
-monde « à venir » ont `scene: null`, le monde 1900 viendra au lot suivant, et rien de ce qui suit ne
-se voit aujourd'hui. Dans une telle section, le moteur s'efface :
+`VueMonde.avance` (`camY − y0`, donné à tous les mondes). **Le monde 1900 est le seul à en porter
+une** ; 1890 et le monde « à venir » ont `scene: null`. Dans une telle section, le moteur s'efface :
 
 - Le sol, le chemin parcouru et la brume de l'avenir sont coupés net à ses bords (`bandesDuSol`,
   `couperAuxBandes`, `dessin/sol.ts`). Sans section collante sur la carte, les bandes sont nulles et
@@ -231,8 +231,54 @@ défilement laissé entre le premier et le dernier temps, parti d'au-dessus, jou
 l'endroit ; parti d'au-dessous, à l'envers ; parti dans la zone, rien. Sous la même garde que le
 rappel (jamais sous un doigt posé), et avant lui. Le rappel optionnel `entreeProche` dit la décennie
 dont le premier temps est à un écran au plus sous la caméra, nulle sinon et tant qu'un passage se
-joue. **La page n'appelle pas encore `direBonjour` et n'écoute pas `entreeProche`** : `CarteCanvas`
-les expose, `pages/Carte.tsx` ne s'en sert pas.
+joue. La page s'en sert de deux façons (plus bas, « Le passage, côté page »).
+
+**Le meneur** (`carte/meneur.ts`, `Meneur`). Tout ce qui précède sur la caméra vit là, hors du
+moteur : la position de la caméra ne s'écrit que dans le meneur, et la page n'apprend que par lui
+où le moteur la veut (`defilerVers`). Cinq meneurs se la partagent, un seul glissement à la fois :
+le défilement natif, l'avatar qu'on suit, un chantier qu'on vise, le roulement vers un arrêt, le
+passage d'entrée. Le moteur commande et lui prête de quoi lire la carte (`Terrain` : les sections,
+leurs arrêts, les temps de leur passage, la hauteur de l'écran, où en est l'avatar), relu à chaque
+appel ; le meneur arbitre. La vue d'ensemble ouverte, il ne lance ni rappel ni passage.
+
+**Le monde 1900** (`mondes/1900/`, « Le voyage immobile »). Le Panorama transsibérien de
+l'Exposition : quatre toiles défilent à des vitesses différentes derrière la vitre d'un train qui
+ne bouge pas (`toiles.ts`, `RAPPORTS`), et tout se tire de l'avance de la caméra. La section porte
+en haut la zone du passage, puis dix gares, une par année, à 700 px de geste l'une de l'autre
+(`trace.ts`, `ARRETS`, `PAS`) ; chaque gare est une photographie d'époque. Une année fermée, ou où
+le membre n'est pas encore arrivé, se montre en plaque négative (`gares.ts`, `aDevelopper`), sous une
+lanterne rouge de 1901 à 1909 ; la plaque se développe sous les yeux à l'arrivée du membre
+(`durees.ts`, `DEVELOPPEMENT`). L'heure est celle de la gare, de l'aube de 1900 à la nuit de 1909
+(`donnees.ts`, `HEURES` ; les règles, pures, dans `habillage.ts`), jamais celle du visiteur : le
+monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum`. Le voile de nuit que le moteur pose sur tout
+l'écran d'après l'heure du visiteur, lui, reste. Le Voyage suivi y est une voiture garée à quai dans
+sa gare (`suivi.ts`). Trois dépêches épinglées aux quais tiennent lieu de dates vraies
+(`depeches.ts`). Rien ne s'y bâtit (`siteDuChantier` rend nul), aucun toucher du décor ne sonne ni
+ne s'anime, et le monde s'en va sans adieu. Ses pages (les fiches d'année, la décennie) sont encore
+celles du monde « à venir ». Les tables recopiées de la maquette et leurs sources :
+`docs/maquettes/voyage-immobile-1900-donnees.md`.
+
+**Le déblocage** (`voyage/regles.ts`, `premiereDecennieCachee`, `anneesMontrees`). Une décennie dont
+le monde porte une `scene` reste cachée tant que l'année en cours du membre ne l'a pas atteinte :
+ni un ticket gagné ou gardé, ni le tampon de la décennie d'avant ne l'ouvrent. Tout ce qui suit une
+décennie cachée l'est aussi, monde « à venir » compris. La carte ôte ces années de ce qu'elle donne
+au moteur et de sa liste pour lecteur d'écran ; le bouton d'un ticket qui ouvre une décennie dit
+« 1899 → nouveau monde », sans nommer l'année ; le Voyage suivi rendu dans une décennie cachée n'a pas de roulotte. La règle
+ne connaît aucun monde : la page lui dit, par le registre, quelles décennies ont une scène.
+
+**Le passage, côté page** (`carte/avancee.ts`, `jouerAvancee` ; `pages/Carte.tsx`). Une avancée qui
+change de décennie vers un monde dont `scene.entree` n'est pas vide ne joue ni la marche ni le
+carton : la porte du monde quitté, son adieu, le tampon si le passeport porte la décennie, le
+passage (`direBonjour`, à l'endroit), le clap ; puis le roulement jusqu'à l'année d'arrivée si elle
+n'est pas la première de sa décennie (un rattrapage de 1898 à 1903). Les lignes du carton sont
+dites hors de vue, pour un lecteur d'écran. Pendant toute l'avancée, rien derrière ne répond ; le
+temps du passage seulement, la toile sort de l'inertie, pour que le toucher qui pose le passage à sa
+fin atteigne le moteur. L'année vue ne s'écrit sur l'appareil qu'à la fin de l'avancée : rechargée
+en plein passage, la carte rejoue tout. Sans mémoire d'appareil, ou quand le stockage lève, rien ne
+se joue : la carte s'ouvre à l'arrêt de l'année en cours.
+Hors d'une avancée, le bouton « Prendre le train pour 1900 » s'offre quand le moteur dit l'entrée
+proche (`entreeProche`), à qui a atteint la décennie, jamais sous la vue d'ensemble : il ne joue que
+le passage, sans porte ni adieu.
 
 **La vue d'ensemble d'un monde à `scene`.** Il dessine sa bande lui-même (`dessinerBande`), dans le
 cadre que tiendrait la bande commune : le moteur n'y pose ni fond ni marquise, seul le voile plein
@@ -255,6 +301,15 @@ sa licence et son traitement (`src/test/credits.test.ts` l'exige). `mondes/1890/
 cuit la rampe sépia dans une image ou une extraction vidéo. `npm run verifier:dist` constate sur
 `dist/` que chaque `.webp` ou `.png` est précaché et sous son plafond (384 Kio), qu'aucune
 `.webm` ne l'est (plafond 600 Kio), et que les images tiennent ensemble dans 1,5 Mio.
+
+**La mémoire des images** (`carte/CarteCanvas.tsx`). Deux tables d'images décodées, qui vivent autant
+que l'onglet. `imagesDesMondes` : les images des dossiers `assets/` des mondes et de `carte/assets/`,
+**jamais évincées** (une photographie sortie manquerait à un ou plusieurs rendus, le temps de se
+recharger) ; la table est bornée par les dossiers eux-mêmes. `affichesDecodees` : les affiches des
+colonnes, venues de l'API ou de TMDB, dans un `Lru` (`carte/lru.ts`) borné à `BORNE_DES_AFFICHES`
+(48), la plus anciennement demandée sortant la première. Une adresse est celle d'une image de monde
+par son appartenance exacte à l'ensemble que Vite rend pour ces dossiers (`ADRESSES_DES_MONDES`),
+jamais par un préfixe : une affiche peut venir de la même origine.
 
 ## Les pages du Voyage
 
@@ -393,7 +448,9 @@ le titre du HUD de la carte (la décennie de l'année en cours) et la plaque du 
   manège hors d'un cheval qui s'ouvre. Les chevaux de derrière se touchent aussi, mais un doigt qui
   tombe à la fois sur un cheval de devant et sur un de derrière ouvre toujours celui de devant
   (`figureTouchee`, le plan que chaque figure inscrit). Le monde « à
-  venir » ne dessine qu'un fond, sans rien à toucher.
+  venir » ne dessine qu'un fond, sans rien à toucher. Le libellé de la toile finit par un mot du
+  monde (`mots.decennie.toucher`, « touchez un cheval pour ouvrir son année » en 1890) ; nul, il
+  s'arrête à la décennie : c'est le cas du monde « à venir », dont 1900 porte encore les pages.
 - **Le passeport** (`voyage/decennie/Livret.tsx`) : l'anneau des années de la décennie qui portent
   leur récompense, puis ce qui manque en clair (« Il manque une récompense en 1897 et 1899, et le
   ticket de 1900. », `ceQuiManque`, le jumeau de `calculerTampons` de l'API). Le ticket se juge sur

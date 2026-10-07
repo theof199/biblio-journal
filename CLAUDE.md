@@ -37,7 +37,7 @@ cinématique d'adieu — et que le registre (`src/mondes/index.ts`, `creerRegist
 monde précis (seuls `mondes/types`, `mondes/trace` et le registre s'importent).
 
 **Un monde habille aussi les pages** de ses années (`pages` : les jetons CSS, les mots, les hauteurs
-et trois dessins : le bandeau, la scène, l'estrade). Une page ou un composant de `src/voyage/`
+et cinq dessins : le bandeau, la scène, l'estrade, le monument, le guichet). Une page ou un composant de `src/voyage/`
 n'importe jamais un monde précis : il passe par le registre. **Une couleur ou une police de page
 passe par un jeton** : aucune feuille de `src/voyage/` ni `src/pages/Voyage*.module.css` ne porte de
 couleur ni de police en dur, ni ne lit une variable hors des jetons du monde, de `--corail`, de `--coque-bas` et des
@@ -68,8 +68,8 @@ ce qui bouge se tire de `VueMonde.avance`. Ses cinq membres, et ce que chacun do
 - `entree` : les temps du passage d'entrée, dans l'ordre de l'endroit ; vide, aucun passage. Durées
   et pauses en millisecondes **de base, sans tempo** : le moteur seul les joue au tempo.
 
-Le moteur côté carte (les arrêts, le rappel, `direBonjour`) est décrit dans le `README.md`, « La
-carte du Voyage ». Étendre le moteur laisse `src/carte/reference1890.test.ts` verte **sans y
+Le moteur côté carte (le meneur de la caméra, les arrêts, le rappel, `direBonjour`), le monde 1900,
+son déblocage et son passage côté page sont décrits dans le `README.md`, « La carte du Voyage ». Étendre le moteur laisse `src/carte/reference1890.test.ts` verte **sans y
 toucher** : une empreinte ne se recopie pas pour faire passer un test.
 
 **Les images.** Un fichier d'un dossier `assets/` n'entre qu'avec son entrée dans le `CREDITS.md` du
@@ -115,7 +115,8 @@ absente de cette table.
 
 | Fiche | Quand la lire |
 |---|---|
-| `docs/cerveau/carte-et-moteur.md` | Avant d'ouvrir `src/carte/moteur.ts` ou son test, d'ajouter un monde, de toucher à la caméra, aux zones, à l'enveloppe de `pages/Carte.tsx` ou à une célébration. |
+| `docs/cerveau/carte-et-moteur.md` | Avant d'ouvrir `src/carte/moteur.ts`, `src/carte/meneur.ts` ou leurs tests, d'ajouter un monde, de toucher à la caméra, aux zones, à la mémoire des images, à l'enveloppe de `pages/Carte.tsx` ou à une célébration. |
+| `docs/cerveau/monde-1900.md` | Avant d'ouvrir `src/mondes/1900/` : le tracé et les gares, les quatre toiles, le passage de la foire au train, l'habillage (l'heure, la lanterne), ses images, ou la règle du déblocage. |
 
 **La consigne de lecture** vaut pour toute session et tout sous-agent, sans que le brief la répète :
 chercher par `grep` avant de lire ; lire par plage (`offset`, `limit`) tout fichier de plus de 500
