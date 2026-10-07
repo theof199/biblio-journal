@@ -15,6 +15,7 @@ import Casier from '../voyage/boite/Casier'
 import { filmDuVisionnage } from '../voyage/boite/correction'
 import Visionneuse from '../voyage/boite/Visionneuse'
 import { useCalque } from '../voyage/calque'
+import { gabaritDe } from '../voyage/gabarit'
 import { anneeCivile, decennieDeLAdresse } from '../voyage/decennie'
 import styles from './VoyageBoite.module.css'
 
@@ -42,6 +43,8 @@ export default function VoyageBoite() {
  */
 function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   const monde = mondes(d)
+  // Le casier est une section que le monde peut composer ; sans gabarit, celui de la foire.
+  const Tiroirs = gabaritDe(monde, 'casier', Casier)
   const { jetons, mots: m } = monde.pages
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof jetons = { ...jetons }
@@ -144,7 +147,7 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
     const dernier = billets[billets.length - 1]
     corps = (
       <>
-        <Casier
+        <Tiroirs
           monde={monde}
           intercalaires={liste}
           choisi={choisi}

@@ -14,6 +14,8 @@ import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
 import type { PropsBilletDeSeance } from '../voyage/billet/BilletDeSeance'
+import type { PropsBilletEnGrand } from '../voyage/boite/BilletEnGrand'
+import type { PropsCasier } from '../voyage/boite/Casier'
 import type { PropsComptoir } from '../voyage/film/Comptoir'
 import type { PropsNotice } from '../voyage/film/Notice'
 import type { PropsProjection } from '../voyage/film/Projection'
@@ -739,6 +741,20 @@ export interface GabaritsDesPages {
    * à l'année. Le dessin reçoit l'étape et le tirage en cours : il ne les décide pas.
    */
   billetDeSeance: ComponentType<PropsBilletDeSeance>
+  /**
+   * Le casier de la boîte à billets (`voyage/boite/Casier.tsx`) : les intercalaires, « Tous », et les
+   * billets du casier ouvert. Lu par `pages/VoyageBoite.tsx`, qui garde les deux lectures (la carte, mes
+   * films de la décennie), l'intercalaire et le billet ouvert dans l'adresse, et le billet rangé, montré
+   * une fois. Les billets lui arrivent numérotés, le dernier devant (`casier`) : il ne numérote rien.
+   */
+  casier: ComponentType<PropsCasier>
+  /**
+   * Le dessin d'un billet de la boîte ouvert en grand (`voyage/boite/BilletEnGrand.tsx`) : la date, la
+   * note, les réactions, ma remarque, « Corriger » quand la page l'offre. Lu par
+   * `voyage/boite/Visionneuse.tsx`, qui garde la lecture du catalogue des réactions. Il se tient en
+   * dialogue (`useDialogue`) : le focus pris et rendu, Échap.
+   */
+  billetEnGrand: ComponentType<PropsBilletEnGrand>
 }
 
 export interface HabillagePages {

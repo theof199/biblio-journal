@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Seize clés, douze sur la fiche d'année, trois sur la fiche d'un film et une sur le billet de séance. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Dix-huit clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance et deux sur la boîte à billets. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -411,7 +411,11 @@ Où vit quoi :
   passe les gestes offerts, `boutonsDuFilm`). Sur le billet de séance : `billetDeSeance` (son dessin,
   `voyage/billet/BilletDeSeance.tsx`, que `pages/VoyageBillet.tsx` lit : la page garde le brouillon et
   sa garde, l'écriture, la suppression, qu'elle passe toute montée, la boîte où se lit le numéro et la
-  séquence du compostage, dont le dessin ne reçoit que l'étape, le tirage et le numéro). 1890 et le
+  séquence du compostage, dont le dessin ne reçoit que l'étape, le tirage et le numéro). Sur la boîte à billets : `casier`
+  (`voyage/boite/Casier.tsx`, que `pages/VoyageBoite.tsx` lit : la page garde ses deux lectures,
+  l'intercalaire et le billet ouvert dans l'adresse, le billet rangé montré une fois, et passe les
+  billets déjà numérotés) et `billetEnGrand` (le dessin du billet ouvert, `voyage/boite/BilletEnGrand.tsx`,
+  que `voyage/boite/Visionneuse.tsx` lit en gardant la lecture du catalogue des réactions). 1890 et le
   monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces

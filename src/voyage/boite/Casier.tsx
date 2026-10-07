@@ -3,7 +3,7 @@ import { formatDateVisionnage } from '../../ui/format'
 import { numeroLisible, type Billet, type Intercalaire } from '../billets'
 import styles from './Casier.module.css'
 
-interface Props {
+export interface PropsCasier {
   monde: Monde
   /** Les intercalaires de la boîte, « Tous » en tête (`intercalaires`). */
   intercalaires: readonly Intercalaire[]
@@ -21,8 +21,12 @@ interface Props {
  * La boîte et son casier (maquette 1890 : `.boite`, `.intercalaires`, `.casier`, `.b-ligne`, écran
  * VII) : un intercalaire par année, et les billets du casier ouvert, chacun son numéro, son titre, la
  * date du visionnage et la note. Toucher un billet l'ouvre en grand.
+ *
+ * Le composant par défaut de la clé de gabarit `casier` : un monde peut le composer autrement, avec
+ * ces propriétés. Il ne lit rien : l'intercalaire choisi et le billet ouvert vivent dans l'adresse,
+ * que la page tient.
  */
-export default function Casier({ monde, intercalaires, choisi, onChoisir, billets, nouveau, onOuvrir }: Props) {
+export default function Casier({ monde, intercalaires, choisi, onChoisir, billets, nouveau, onOuvrir }: PropsCasier) {
   const m = monde.pages.mots
   return (
     <div className={styles.boite}>

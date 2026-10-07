@@ -15,6 +15,8 @@ import { SESSION } from '../test/pageVoyage'
 import { json, servir } from '../test/serveur'
 import { fichePrete, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 import { oublierLeBillet, rangerLeBillet } from '../voyage/billet/range'
+import type { PropsBilletEnGrand } from '../voyage/boite/BilletEnGrand'
+import type { PropsCasier } from '../voyage/boite/Casier'
 import { anneeCivile } from '../voyage/decennie'
 import { decennieDe } from '../voyage/regles'
 import stylesDuCasier from '../voyage/boite/Casier.module.css'
@@ -429,5 +431,97 @@ describe('la boîte à billets', () => {
     expect(retour).toHaveAttribute('href', '/voyage/decennies/1890')
     fireEvent.click(retour)
     expect(await screen.findByRole('heading', { level: 1, name: 'Années 1890' })).toBeInTheDocument()
+  })
+
+  // Le casier et le billet ouvert en grand sont deux sections qu'un monde peut composer
+  // (`GabaritsDesPages.casier`, `billetEnGrand`). Sans gabarit, le défaut reste : tous les tests plus
+  // haut, montés sur 1890, qui n'en a aucun. Le monde de test est 1890, auquel on prête deux dessins
+  // qui disent ce qu'ils reçoivent.
+  describe('le dessin du monde', () => {
+    let remettre = () => undefined as void
+    afterEach(() => remettre())
+    const preter = (gabarits: typeof PAGES_1890.gabarits) => {
+      const avant = PAGES_1890.gabarits
+      PAGES_1890.gabarits = gabarits
+      remettre = () => void (PAGES_1890.gabarits = avant)
+    }
+
+    const CasierDuMonde = (p: PropsCasier) => (
+      <section aria-label="Le casier du monde">
+        <p data-testid="cases">{p.intercalaires.map((i) => `${i.annee}:${i.compte}`).join(' ')}</p>
+        <p data-testid="choisi">{p.choisi ?? 'tous'}</p>
+        <p data-testid="billets">{p.billets.map((b) => `${b.numero}:${b.item.entry.id}`).join(' ')}</p>
+        <p data-testid="nouveau">{p.nouveau ?? 'aucun'}</p>
+        <button type="button" onClick={() => p.onChoisir(1895)}>
+          Case 1895
+        </button>
+        <button type="button" onClick={() => p.onOuvrir('e2')}>
+          Sortir e2
+        </button>
+      </section>
+    )
+    const BilletDuMonde = (p: PropsBilletEnGrand) => (
+      <section aria-label="Le billet du monde">
+        <p data-testid="grand">{`${p.billet.numero} | ${p.billet.item.media.title} | ${p.billet.item.carnet.comment ?? 'sans remarque'} | ${p.corriger ?? 'sans correction'}`}</p>
+        <p data-testid="reactions">{p.reactions.map((r) => `${r.cle}=${r.phrase ?? '?'}`).join(' ')}</p>
+        <button type="button" onClick={p.onFermer}>
+          Refermer
+        </button>
+      </section>
+    )
+    const dit = (quoi: string) => screen.getByTestId(quoi).textContent
+
+    // Mutations : la page qui monte `Casier` sans passer par `gabaritDe` ; les intercalaires, le choix,
+    // les billets ou le billet rangé que la page ne passerait plus ; `onChoisir` ou `onOuvrir` sans effet.
+    it('monte le casier du monde à la place de la boîte, lui passe ce que la page a lu, et garde l’adresse', async () => {
+      preter({ casier: CasierDuMonde })
+      rangerLeBillet(SESSION.user.id, 'e3')
+      monter('/voyage/decennies/1890/billets')
+      await screen.findByRole('region', { name: 'Le casier du monde' })
+      expect(dit('cases')).toBe('1895:2 1896:0 1897:1 1898:0 1899:0')
+      expect(dit('choisi')).toBe('tous')
+      expect(dit('billets')).toBe('3:e3 2:e2 1:e1')
+      expect(dit('nouveau')).toBe('e3')
+      // Rien de la boîte par défaut ; la tête et le pied restent à la page.
+      expect(screen.queryByRole('group', { name: 'Les intercalaires' })).toBeNull()
+      expect(screen.queryByRole('list', { name: 'Les billets' })).toBeNull()
+      expect(screen.getByRole('heading', { level: 1, name: 'La boîte à billets' })).toBeInTheDocument()
+      expect(screen.getByText(/^Premier billet/)).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Case 1895' }))
+      expect(adresse()).toBe('/voyage/decennies/1890/billets?annee=1895')
+      expect(dit('choisi')).toBe('1895')
+      expect(dit('billets')).toBe('2:e2 1:e1')
+
+      // Le billet ouvert reste celui de la page tant que le monde ne compose pas le sien.
+      fireEvent.click(screen.getByRole('button', { name: 'Sortir e2' }))
+      expect(await screen.findByRole('dialog', { name: 'L’Arroseur arrosé' })).toBeInTheDocument()
+      expect(adresse()).toBe('/voyage/decennies/1890/billets?annee=1895&billet=e2')
+    })
+
+    // Mutations : `Visionneuse` qui monte `BilletEnGrand` sans passer par `gabaritDe` ; le catalogue lu
+    // par le dessin et plus par elle (les réactions arriveraient sans phrase) ; `corriger` ou `onFermer`
+    // que la page ne passerait plus.
+    it('monte le billet en grand du monde, lui passe le billet, ses réactions lues et la correction, et garde le calque', async () => {
+      preter({ billetEnGrand: BilletDuMonde })
+      const fiche = fichePrete({ annee: 1896, salles: [salle({ id: 's1', films: [filmDeSalle({ id: 'f-bebe', tmdb_id: 777, title: 'Le Déjeuner de bébé' })] })] })
+      const avecReactions = vu('e4', 1896, '2026-09-02', { titre: 'Le Déjeuner de bébé', reactions: ['adore', 'en_salle'], remarque: 'Rien qu’à moi.', tmdb: 777 })
+      const { requetes } = monter(
+        '/voyage/decennies/1890/billets?billet=e4',
+        { ...ROUTES, [JOURNAL]: journal([...TROIS, avecReactions]), 'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)) },
+        (client) => client.setQueryData(cles.annee(1896), fiche),
+      )
+      await screen.findByRole('region', { name: 'Le billet du monde' })
+      expect(dit('grand')).toBe('3 | Le Déjeuner de bébé | Rien qu’à moi. | /voyage/1896/films/f-bebe/billet/corriger')
+      await waitFor(() => expect(dit('reactions')).toBe('adore=J’ai adoré en_salle=En salle'))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      // La boîte par défaut reste dessous, et aucune fiche d'année n'est lue.
+      expect(screen.getByRole('group', { name: 'Les intercalaires' })).toBeInTheDocument()
+      expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual(['GET /api/me/voyage', JOURNAL, 'GET /api/reference/reactions'].sort())
+
+      fireEvent.click(screen.getByRole('button', { name: 'Refermer' }))
+      await waitFor(() => expect(screen.queryByRole('region', { name: 'Le billet du monde' })).toBeNull())
+      expect(adresse()).toBe('/voyage/decennies/1890/billets')
+    })
   })
 })
