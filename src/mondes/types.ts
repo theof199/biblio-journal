@@ -28,6 +28,11 @@ import type { PropsProjection } from '../voyage/film/Projection'
 import type { PropsMarches } from '../voyage/parade/Marches'
 import type { PropsCatalogueDuGuichet } from '../voyage/recherche/Catalogue'
 import type { PropsTeteDuGuichet } from '../voyage/recherche/Tete'
+import type { PropsPageDuPasseport } from '../voyage/sacoche/Page'
+import type { PropsPasseportDeLaSacoche } from '../voyage/sacoche/Pages'
+import type { PropsCoulisses } from '../voyage/sacoche/Repli'
+import type { PropsTeteDeLaSacoche } from '../voyage/sacoche/Tete'
+import type { PropsPortefeuille } from '../voyage/sacoche/Tickets'
 import type { PropsRayons } from '../voyage/salles/Rayons'
 import type { PropsSalle } from '../voyage/salles/Salle'
 import type { PropsProspectus } from '../voyage/seance/Prospectus'
@@ -806,6 +811,36 @@ export interface GabaritsDesPages {
    * garde les lectures et la recherche : les vues arrivent cherchées, rien ne part à la frappe.
    */
   catalogueDuGuichet: ComponentType<PropsCatalogueDuGuichet>
+  /**
+   * La tête de la sacoche du voyageur (`voyage/sacoche/Tete.tsx`), qui porte le titre de niveau 1.
+   * Lue par `pages/VoyageSacoche.tsx` au monde de mon année en cours ; le lien de retour reste à la page.
+   */
+  teteDeLaSacoche: ComponentType<PropsTeteDeLaSacoche>
+  /**
+   * Le cadre du passeport de la sacoche (`voyage/sacoche/Pages.tsx`) : son titre, l'attente, la
+   * panne, « aucun tampon ». Lu par `voyage/sacoche/Passeport.tsx` au monde de mon année en cours, qui
+   * garde la région du bloc (elle ne se remonte pas quand le monde change) ; les pages lui arrivent
+   * montées, une par décennie, et il n'en habille aucune.
+   */
+  passeportDeLaSacoche: ComponentType<PropsPasseportDeLaSacoche>
+  /**
+   * Une page du passeport de la sacoche (`voyage/sacoche/Page.tsx`) : le tampon de la décennie, ou
+   * son anneau, et le lien vers sa page. **Lue au monde de la décennie de la page**, jamais à celui
+   * de l'année en cours : chaque décennie garde son dessin dans la sacoche d'une autre.
+   */
+  pageDuPasseport: ComponentType<PropsPageDuPasseport>
+  /**
+   * Le dessin du portefeuille de la sacoche (`voyage/sacoche/Tickets.tsx`) : les tickets rangés,
+   * l'attente, la panne, le refus. Lu par `voyage/sacoche/Portefeuille.tsx`, qui garde les lectures,
+   * l'encaissement et son verrou, et la navigation ; « Utiliser » n'arrive que sur le ticket offert.
+   */
+  portefeuille: ComponentType<PropsPortefeuille>
+  /**
+   * Le dessin des Coulisses de la sacoche (`voyage/sacoche/Repli.tsx`) : le pli, les dépenses, les
+   * crédits. Lu par `voyage/sacoche/Coulisses.tsx`, qui garde le pli et la lecture des dépenses,
+   * partie au dépli seulement.
+   */
+  coulisses: ComponentType<PropsCoulisses>
 }
 
 export interface HabillagePages {

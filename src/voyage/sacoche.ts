@@ -7,6 +7,12 @@ import { decennieDe } from './regles'
  * `CREDITS.md` des dossiers `assets/`).
  */
 
+/** La panne d'un bloc de la sacoche, telle que son dessin la reçoit : l'erreur lue, et de quoi relire. */
+export interface PanneDeBloc {
+  erreur: unknown
+  reessayer: () => void
+}
+
 /** Les décennies du passeport : de celle du départ du Voyage à celle de mon année en cours. */
 export function decenniesDuPasseport(v: Pick<Voyage, 'depart' | 'annee_en_cours'>): number[] {
   const liste: number[] = []
@@ -46,6 +52,12 @@ function cout(centimes: number): string {
   return `environ ${chiffre} ${centimes < 2 ? 'centime' : 'centimes'} de dollar`
 }
 
+/** Les dépenses, dites : le mois courant, puis les mois précédents. */
+export interface LignesDesDepenses {
+  courant: string
+  precedents: string[]
+}
+
 const ligne = (libelle: string, m: DepenseDuMois) => `${libelle} : ${appels(m.appels)}, ${cout(m.cout_centimes)}`
 
 /**
@@ -54,7 +66,7 @@ const ligne = (libelle: string, m: DepenseDuMois) => `${libelle} : ${appels(m.ap
  * du texte suffit). Nul pour une liste vide : la ligne Dépenses se masque alors (décision du
  * propriétaire du 1er octobre 2026 : seul le compte IA appelle le chroniqueur).
  */
-export function lignesDesDepenses(mois: readonly DepenseDuMois[], moisCourant: string): { courant: string; precedents: string[] } | null {
+export function lignesDesDepenses(mois: readonly DepenseDuMois[], moisCourant: string): LignesDesDepenses | null {
   if (mois.length === 0) return null
   const courant = mois.find((m) => m.mois === moisCourant)
   return {

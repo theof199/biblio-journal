@@ -3,22 +3,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
-import { lireTickets, lireVoyage, utiliserTicket, type Ticket } from '../../api/voyage'
-import Panne from '../../ui/Panne'
+import { lireTickets, lireVoyage, utiliserTicket } from '../../api/voyage'
+import type { Monde } from '../../mondes/types'
 import { historiqueDerriere } from '../../ui/revenir'
-import { jourDeParis } from '../passeport'
+import { gabaritDe } from '../gabarit'
 import { ticketOffert } from '../regles'
 import commun from './Sacoche.module.css'
-import styles from './Portefeuille.module.css'
+import TicketsParDefaut from './Tickets'
 
 /**
- * Le portefeuille (reprise de `PortefeuilleCard`, Android) : les tickets à utiliser d'abord, puis
- * les utilisés, pâlis, avec le jour (à Paris) où ils l'ont été. Un ticket a le papier
- * d'un billet de la boîte (le carton du monde, ses deux encoches). « Utiliser » ne s'offre que sur le
- * ticket que la carte offre (`ticketOffert`) ; le geste suit la carte : encaisser, puis la carte,
- * qui joue l'avancée. Lit les tickets et la carte sous leurs clés de la carte, jamais une fiche.
+ * Le portefeuille de la sacoche : les tickets à utiliser d'abord, puis les utilisés. « Utiliser » ne
+ * s'offre que sur le ticket que la carte offre (`ticketOffert`) ; le geste suit la carte : encaisser,
+ * puis la carte, qui joue l'avancée. Lit les tickets et la carte sous leurs clés de la carte, jamais
+ * une fiche. Le dessin est celui du monde de mon année en cours (`portefeuille`), que la page lui
+ * passe : il ne lit ni n'écrit rien.
  */
-export default function Portefeuille() {
+export default function Portefeuille({ monde }: { monde: Monde }) {
   const client = useQueryClient()
   const naviguer = useNavigate()
   const { key } = useLocation()
@@ -44,61 +44,19 @@ export default function Portefeuille() {
   }
 
   const offert = voyage.data && tickets.data ? ticketOffert(voyage.data.annee_en_cours, tickets.data.tickets) : undefined
-  const liste = tickets.data?.tickets ?? []
-  const aUtiliser = liste.filter((t) => t.utilise_le === null)
-  const utilises = liste.filter((t) => t.utilise_le !== null)
+  const liste = tickets.data?.tickets
+  // Les tickets à utiliser d'abord, les utilisés dessous : le dessin les reçoit rangés.
+  const ranges = liste ? [...liste.filter((t) => t.utilise_le === null), ...liste.filter((t) => t.utilise_le !== null)] : null
 
-  const ligne = (t: Ticket) => (
-    <li key={t.annee} className={t.utilise_le ? `${styles.ticket} ${styles.utilise}` : styles.ticket}>
-      <span className={styles.texte}>
-        <span className={styles.sur}>Ticket pour</span>
-        <span className={styles.annee}>{t.annee}</span>
-        {t.utilise_le ? (
-          <span className={styles.detail}>
-            utilisé le <time dateTime={t.utilise_le}>{jourDeParis(t.utilise_le)}</time>
-          </span>
-        ) : t.motif ? (
-          <span className={styles.detail}>{t.motif}</span>
-        ) : null}
-      </span>
-      {offert && t.annee === offert.annee ? (
-        <button
-          type="button"
-          className={commun.bouton}
-          disabled={utiliser.isPending}
-          onClick={() => encaisser(t.annee)}
-          aria-label={`Utiliser le ticket pour ${t.annee}`}
-        >
-          Utiliser
-        </button>
-      ) : null}
-    </li>
-  )
-
+  const Tickets = gabaritDe(monde, 'portefeuille', TicketsParDefaut)
   return (
     <section className={commun.bloc} aria-label="Portefeuille">
-      <h2 className={commun.titreSec}>
-        Portefeuille <small>les tickets</small>
-      </h2>
-      {tickets.error ? (
-        <div className={commun.panne}>
-          <Panne erreur={tickets.error} onReessayer={() => void tickets.refetch()} />
-        </div>
-      ) : !tickets.data ? (
-        <p className={commun.vide}>…</p>
-      ) : liste.length === 0 ? (
-        <p className={commun.vide}>Aucun ticket</p>
-      ) : (
-        <ul className={styles.liste}>
-          {aUtiliser.map(ligne)}
-          {utilises.map(ligne)}
-        </ul>
-      )}
-      {utiliser.error ? (
-        <p role="alert" className={commun.panne}>
-          {utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.'}
-        </p>
-      ) : null}
+      <Tickets
+        panne={tickets.error ? { erreur: tickets.error, reessayer: () => void tickets.refetch() } : null}
+        tickets={ranges ? ranges.map((t) => ({ ticket: t, utiliser: offert && t.annee === offert.annee ? () => encaisser(t.annee) : null })) : null}
+        enCours={utiliser.isPending}
+        refus={utiliser.error ? (utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.') : null}
+      />
     </section>
   )
 }

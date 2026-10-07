@@ -6,10 +6,12 @@ import { lireVoyage, type Voyage } from '../api/voyage'
 import { creerRegistre } from '../mondes'
 import { useSession } from '../session/SessionContext'
 import { useRevenir } from '../ui/revenir'
+import { gabaritDe } from '../voyage/gabarit'
 import { decennieDe } from '../voyage/regles'
 import Coulisses from '../voyage/sacoche/Coulisses'
 import Passeport from '../voyage/sacoche/Passeport'
 import Portefeuille from '../voyage/sacoche/Portefeuille'
+import TeteParDefaut from '../voyage/sacoche/Tete'
 import styles from './VoyageSacoche.module.css'
 
 /** Un registre pour la page, comme la carte et la page d'une décennie ont le leur. */
@@ -23,7 +25,9 @@ const DEPART: Voyage['depart'] = 1895
  * accompli dans le Voyage, repris du profil de l'appli Android — le passeport, le portefeuille, et
  * les Coulisses repliées (dépenses au chroniqueur, crédits des images). Habillée par le monde de mon
  * année en cours ; chaque page du passeport, par celui de sa décennie. Chaque bloc lit ses données
- * et tombe seul en panne. **Aucune fiche d'année n'est lue** : `GET /me/voyage/annees/*` enfilerait
+ * et tombe seul en panne ; son dessin, et celui de la tête, sont des gabarits que le monde peut
+ * composer (`teteDeLaSacoche`, `passeportDeLaSacoche`, `pageDuPasseport`, `portefeuille`,
+ * `coulisses`). **Aucune fiche d'année n'est lue** : `GET /me/voyage/annees/*` enfilerait
  * une ouverture chez le chroniqueur ; la carte, les tickets et, au dépli, les dépenses suffisent.
  */
 export default function VoyageSacoche() {
@@ -34,6 +38,7 @@ export default function VoyageSacoche() {
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof jetons = { ...jetons }
   const revenir = useRevenir('/voyage')
+  const Tete = gabaritDe(monde, 'teteDeLaSacoche', TeteParDefaut)
 
   return (
     <section className={styles.page} style={style} aria-label="La sacoche du voyageur">
@@ -51,13 +56,10 @@ export default function VoyageSacoche() {
       >
         <span aria-hidden="true">‹</span>
       </Link>
-      <div className={styles.tete}>
-        <span className={styles.sur}>{`Le Voyage de ${user.pseudo}`}</span>
-        <h1 className={styles.titre}>La sacoche du voyageur</h1>
-      </div>
-      <Passeport />
-      <Portefeuille />
-      <Coulisses />
+      <Tete pseudo={user.pseudo} />
+      <Passeport monde={monde} />
+      <Portefeuille monde={monde} />
+      <Coulisses monde={monde} />
     </section>
   )
 }

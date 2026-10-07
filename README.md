@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Vingt-six clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie et deux sur le guichet. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Trente et une clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet et cinq sur la sacoche. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -721,7 +721,12 @@ Voyage, repris du profil de l'appli Android, au costume du Voyage : habillée pa
 année en cours, sous l'onglet Voyage. On l'ouvre par la pastille « Sacoche du voyageur » de la
 carte (l'icône de la mallette, à côté du son) ; le retour ramène à la carte. Trois blocs, chacun
 lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans rendu dans
-`voyage/sacoche.ts`) :
+`voyage/sacoche.ts`). Chaque bloc garde sa région (elle ne se remonte pas quand la carte répond et
+que le monde change), ses lectures, ses écritures et sa navigation, et passe ce qu'il a lu à un dessin qu'un monde peut composer (`GabaritsDesPages`) : `teteDeLaSacoche`
+(`Tete.tsx`, le titre de la page), `passeportDeLaSacoche` (`Pages.tsx`, le cadre du passeport),
+`portefeuille` (`Tickets.tsx`) et `coulisses` (`Repli.tsx`) se lisent au monde de mon année en
+cours ; `pageDuPasseport` (`Page.tsx`) se lit **au monde de la décennie de la page**, si bien que la
+page des années 1890 garde son dessin dans la sacoche d'un autre monde :
 
 - **Le passeport** (`Passeport.tsx`) : une page par décennie, du départ à celle de mon année en
   cours, chacune habillée par son monde et menant à la page de la décennie. Bouclée, son tampon
@@ -732,7 +737,7 @@ lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans re
   (`ticketOffert`) ; encaissé, il ramène à la carte, qui joue l'avancée, sans laisser la sacoche
   derrière elle dans l'historique.
 - **Les Coulisses** (`Coulisses.tsx`), repliées : les dépenses au chroniqueur, lues au dépli
-  seulement, montrées une fois la liste connue et non vide (le mois courant est celui du serveur, en
+  seulement (`enabled`), montrées une fois la liste connue et non vide (le mois courant est celui du serveur, en
   UTC, où l'API les range), et les crédits des images, lus au build dans les
   `CREDITS.md`.
 
