@@ -1,14 +1,15 @@
-import type { VueMonde } from '../types'
+import type { Ralenti, VueMonde } from '../types'
 import { lerp } from '../../carte/outils'
 import { TUNNEL } from './donnees'
 import { lisse, rangSurLaLigne } from './habillage'
-import { ANNEES, E } from './trace'
+import { ANNEES, B1, E, PAS } from './trace'
 
 /**
- * Les règles du tunnel (idée 71, sans le ralenti ; maquette : `rendreDecor`, l. 3733-3741) : des
+ * Les règles du tunnel (idée 71 ; maquette : `rendreDecor`, l. 3733-3741, `ralenti`, l. 3524-3528) : des
  * fonctions pures, que le trait (`voute.ts`) lit et que les tests gardent. Tout s'y tire d'`avance`
  * seule : ni horloge, ni mémoire. Le tunnel suit le doigt, et se joue à l'envers au retour, la même
- * avance donnant la même image. Quand le visiteur demande moins d'animations, pas de tunnel.
+ * avance donnant la même image. Quand le visiteur demande moins d'animations, pas de tunnel. Le
+ * ralenti n'est pas dessiné d'ici : la règle le déclare, le moteur seul le joue, dans un roulement.
  */
 
 type Table = Readonly<{ de: number; vers: number; milieu: number; demi: number }>
@@ -28,6 +29,17 @@ const ABORD = 0.06
 export function bornesDuTunnel(table: Table = TUNNEL): { entree: number; sortie: number } {
   const milieu = lerp(ANNEES.indexOf(table.de), ANNEES.indexOf(table.vers), table.milieu)
   return { entree: milieu - table.demi, sortie: milieu + table.demi }
+}
+
+/**
+ * Où le train qui roule lève le pied (idée 71 ; maquette : `ralenti`, l. 3524-3528), pour
+ * `SceneCollante.ralentis` : un seul palier, d'une bouche à l'autre, les bornes mêmes que le dessin
+ * lit, rendues en `y` de la section (passé la gare de 1900, un rang de gare vaut `PAS` pixels
+ * d'avance depuis `B1` : l'inverse de `rangSurLaLigne`). Le doigt n'est jamais freiné, ni le calme.
+ */
+export function ralentisDuTunnel(table: Table & { allure: number } = TUNNEL): Ralenti[] {
+  const { entree, sortie } = bornesDuTunnel(table)
+  return [{ de: B1 + entree * PAS, a: B1 + sortie * PAS, allure: table.allure }]
 }
 
 /**

@@ -118,7 +118,8 @@ export const BUEE: readonly number[] = [1901]
 /**
  * Le seul tunnel de la ligne (idée 71 ; maquette : `TUNNEL`, l. 3507, par rang) : entre quelles
  * gares, où son milieu se tient sur le chemin de l'une à l'autre, et sa demi-longueur, en parts de
- * ce chemin. Entre Longueville et Allaman, juste avant les Alpes. Le pas ralenti du train dedans
- * (`lent`) n'est pas repris : il attend le lot « moteur ».
+ * ce chemin. Entre Longueville et Allaman, juste avant les Alpes. `allure` est la part de sa vitesse
+ * que le train qui roule garde d'une bouche à l'autre (maquette : `lent`) : 0,36, près de trois fois
+ * moins vite, à régler à l'essai. Un rapport, pas une durée : rien ici ne passe par le tempo.
  */
-export const TUNNEL = { de: 1903, vers: 1904, milieu: 0.5, demi: 0.17 } as const
+export const TUNNEL = { de: 1903, vers: 1904, milieu: 0.5, demi: 0.17, allure: 0.36 } as const

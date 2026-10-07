@@ -2,15 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { creerMonde1900 } from '.'
 import type { CaseVue, VueMonde } from '../types'
 import { vueFactice } from '../../test/vueFactice'
+import { trajetRalenti } from '../../carte/camera'
 import { TUNNEL } from './donnees'
 import { LIEU } from './gares'
+import { rangSurLaLigne } from './habillage'
 import { forceDuTemps } from './meteo'
 import { ANNEES, ARRETS, B1, E, PAS, S1, U0 } from './trace'
-import { bornesDuTunnel, K_BOUCHE, K_PAROI, L_BOUCHE, L_PAROI, sousLaVoute, tunnelALEcran, type TunnelALEcran } from './tunnel'
+import { bornesDuTunnel, K_BOUCHE, K_PAROI, L_BOUCHE, L_PAROI, ralentisDuTunnel, sousLaVoute, tunnelALEcran, type TunnelALEcran } from './tunnel'
 
 /**
- * Le tunnel (lot 2 bis, idée 71 sans le ralenti). Ces tests ne portent que sur les règles
- * (`tunnel.ts`) : aucun ne fige les appels de canvas du trait (`voute.ts`).
+ * Le tunnel (lot 2 bis, idée 71 ; son ralenti, lot « moteur »). Ces tests ne portent que sur les
+ * règles (`tunnel.ts`) : aucun ne fige les appels de canvas du trait (`voute.ts`).
  */
 
 /** L'avance de la caméra pour un rang sur la ligne, en gares depuis 1900. */
@@ -250,5 +252,116 @@ describe('le tunnel dans l’image du monde', () => {
     expect(avec).not.toEqual(sans)
     // Le témoin : au calme, sans tunnel, personne ne demande cette photographie à cet endroit.
     expect(dessus(3.5, { t: 1.4, vivant: false, image: () => photo })).toEqual(dessus(3.5, { t: 1.4, vivant: false }))
+  })
+})
+
+describe('le ralenti du tunnel (lot « moteur »)', () => {
+  const scene = creerMonde1900().scene!
+  /** Ce que le meneur lit pour rouler (`MoteurCarte.ralentis`), le haut de la section pris pour zéro : un coût ne dépend pas de l'origine. */
+  const surLaCarte = (ralentis = scene.ralentis) => ralentis.map((r) => ({ haut: r.de, bas: r.a, allure: r.allure }))
+  const arret = (annee: number): number => scene.arrets[annee - 1900]!
+  const LONGUEUR = 2 * TUNNEL.demi * PAS
+  /** Ce par quoi la durée d'un roulement de `longueur` pixels se multiplie quand il traverse tout le tunnel. */
+  const allonge = (longueur: number): number => (longueur - LONGUEUR + LONGUEUR / TUNNEL.allure) / longueur
+
+  // Le ralenti se tire de la table du dessin, pas d'un second jeu de nombres : là où il commence, le
+  // bout de la bouche d'entrée est au milieu de l'écran ; là où il finit, celui de la bouche de sortie.
+  // Mutations : une gare de décalage (`entree + 1`) ; `E` pour `PAS` (l'unité de la toile, pas celle
+  // du geste) ; `B1` oublié (un rang compté depuis le haut de la section) ; `demi` doublée ; les
+  // bornes en dur (3071 et 3309) ; `table.allure` remplacée par 0,36 en dur.
+  it('un seul palier, d’une bouche à l’autre, en `y` de la section, à l’allure de la table', () => {
+    const [r, ...autres] = ralentisDuTunnel()
+    expect(autres).toEqual([])
+    const bornes = bornesDuTunnel()
+    expect(rangSurLaLigne(r!.de)).toBeCloseTo(bornes.entree, 9)
+    expect(rangSurLaLigne(r!.a)).toBeCloseTo(bornes.sortie, 9)
+    for (const W of [320, 390, 1280]) {
+      expect(tunnelALEcran({ W, avance: r!.de, vivant: true })!.entree).toBeCloseTo(W / 2, 6)
+      expect(tunnelALEcran({ W, avance: r!.a, vivant: true })!.sortie).toBeCloseTo(W / 2, 6)
+    }
+    expect(r!.allure).toBe(TUNNEL.allure)
+    // Une autre table déplace le ralenti avec le tunnel, et change son allure.
+    const ailleurs = { de: 1905, vers: 1906, milieu: 0.25, demi: 0.1, allure: 0.5 }
+    const [d] = ralentisDuTunnel(ailleurs)
+    expect(rangSurLaLigne(d!.de)).toBeCloseTo(5.15, 9)
+    expect(rangSurLaLigne(d!.a)).toBeCloseTo(5.35, 9)
+    expect(d!.allure).toBe(0.5)
+  })
+
+  // Le contrat de `SceneCollante.ralentis`, que le moteur ne garde pas : il ignore en silence une
+  // allure hors de `]0, 1[`, additionne les coûts de deux intervalles qui se chevauchent, et ferait
+  // rouler au pas le rappel à un arrêt pris dans un intervalle.
+  // Mutations : `ralentis: []` remis dans `creerMonde1900` ; `TUNNEL.allure` à 1, à 0, à 1,2 ;
+  // `TUNNEL.demi` à 0,5 (le palier touche les deux arrêts) ; `TUNNEL.milieu` à 0,17 (il touche celui
+  // de 1903) ; `de` et `a` échangés ; un second palier qui chevauche le premier ; `TUNNEL.de` à 1902.
+  it('le monde le déclare : une allure qui ralentit, des intervalles croissants et disjoints, strictement entre l’arrêt de 1903 et celui de 1904', () => {
+    expect(scene.ralentis).toEqual(ralentisDuTunnel())
+    expect(scene.ralentis.length).toBeGreaterThan(0)
+    scene.ralentis.forEach((r, i) => {
+      expect(r.allure).toBeGreaterThan(0)
+      expect(r.allure).toBeLessThan(1)
+      expect(r.de).toBeLessThan(r.a)
+      expect(r.de).toBeGreaterThan(i ? scene.ralentis[i - 1]!.a : arret(1903))
+      expect(r.a).toBeLessThan(arret(1904))
+      // Aucun arrêt dans un intervalle, bords compris ; rien avant le premier arrêt.
+      for (const y of scene.arrets) expect(y < r.de || y > r.a, String(y)).toBe(true)
+      expect(r.de).toBeGreaterThanOrEqual(scene.arrets[0]!)
+    })
+  })
+
+  // Ce que le roulement en fait, par le calcul même du meneur (`trajetRalenti`, `src/carte/camera.ts`),
+  // sur les arrêts et les ralentis du monde réel : nul, le roulement garde sa durée de base.
+  // Mutations : `TUNNEL.de` à 1902 (l'avancée de 1902 à 1903 ralentirait) ; `E` pour `PAS` (le palier
+  // tomberait entre 1904 et 1905) ; `TUNNEL.allure` à 0,2 (plus du double de la durée) ; `ralentis: []`.
+  // `TUNNEL.allure` à 0,5 ou à 0,3 survit, exprès : c'est un réglage, la table seule le dit.
+  it('seule l’avancée de 1903 à 1904 dure plus longtemps, à l’aller comme au retour ; ni les autres, ni le passage', () => {
+    for (const annee of ANNEES.slice(0, -1)) {
+      const lent = trajetRalenti(arret(annee), arret(annee + 1), surLaCarte())
+      const retour = trajetRalenti(arret(annee + 1), arret(annee), surLaCarte())
+      if (annee !== 1903) {
+        expect([lent, retour], String(annee)).toEqual([null, null])
+        continue
+      }
+      expect(lent!.allonge).toBeCloseTo(allonge(PAS), 9)
+      expect(retour!.allonge).toBeCloseTo(allonge(PAS), 9)
+      // Une fois et six dixièmes à l'allure de 0,36. L'allure se règle à l'essai, dans la table seule ;
+      // mais la carte est inerte tout ce temps : jamais le double de la durée de base.
+      expect(lent!.allonge).toBeGreaterThan(1)
+      expect(lent!.allonge).toBeLessThan(2)
+    }
+    // Le passage de la foire au train et son rappel au premier arrêt ne croisent aucun ralenti.
+    expect(trajetRalenti(U0, arret(1900), surLaCarte())).toBeNull()
+    expect(trajetRalenti(S1, arret(1900), surLaCarte())).toBeNull()
+    // Un rattrapage qui traverse le tunnel n'en paie que la longueur.
+    expect(trajetRalenti(arret(1902), arret(1905), surLaCarte())!.allonge).toBeCloseTo(allonge(3 * PAS), 9)
+  })
+
+  // À même part de sa courbe, le train va dans le tunnel à l'allure de la table de ce qu'il va
+  // dehors, et il y est bien de la bouche d'entrée à celle de sortie.
+  // Mutations : `TUNNEL.allure` à 0,5 dans la seule règle (`allure: 0.5` en dur) ; une gare de
+  // décalage ; `demi` doublée dans la seule règle (le pas resterait lent hors des bouches).
+  it('de 1903 à 1904, le train roule entre les bouches à l’allure de la table, et hors d’elles comme partout', () => {
+    const lent = trajetRalenti(arret(1903), arret(1904), surLaCarte())!
+    const N = 2000
+    const libre = (allonge(PAS) * PAS) / N
+    const vus = { avant: 0, dedans: 0, apres: 0 }
+    for (let k = 0; k < N; k++) {
+      const [y0, y1] = [lent.y(k / N), lent.y((k + 1) / N)]
+      const [r0, r1] = [rangSurLaLigne(y0), rangSurLaLigne(y1)]
+      const { entree, sortie } = bornesDuTunnel()
+      if (r1 <= entree || r0 >= sortie) {
+        expect(y1 - y0).toBeCloseTo(libre, 6)
+        vus[r1 <= entree ? 'avant' : 'apres']++
+      } else if (r0 >= entree && r1 <= sortie) {
+        expect(y1 - y0).toBeCloseTo(libre * TUNNEL.allure, 6)
+        vus.dedans++
+      }
+    }
+    expect(lent.y(0)).toBe(arret(1903))
+    expect(lent.y(1)).toBeCloseTo(arret(1904), 9)
+    // Les trois parts du trajet, à leur longueur : le pas du tunnel n'est pas celui de tout le chemin.
+    expect(vus.avant / N).toBeCloseTo((0.5 - TUNNEL.demi) / allonge(PAS), 2)
+    expect(vus.dedans / N).toBeCloseTo(LONGUEUR / TUNNEL.allure / (allonge(PAS) * PAS), 2)
+    expect(vus.apres / N).toBeCloseTo((0.5 - TUNNEL.demi) / allonge(PAS), 2)
   })
 })

@@ -199,7 +199,7 @@ une** ; 1890 et le monde « à venir » ont `scene: null`. Dans une telle sectio
 ce que le défilement atteint. Dans une section collante, `marcher` ne fait marcher personne : la
 caméra roule jusqu'à l'arrêt de l'année (`DUREE_DU_ROULEMENT`, des millisecondes de base jouées au
 tempo, la même durée quelle que soit la distance, allongée du seul ralenti que le monde déclare sur le
-trajet : `SceneCollante.ralentis`, aucun encore) et la promesse se résout à l'arrivée ; d'un coup
+trajet : `SceneCollante.ralentis`, en 1900 celui du tunnel) et la promesse se résout à l'arrivée ; d'un coup
 au calme, ou quand elle y est déjà (`A_L_ARRET`). `allerIci` y mène à l'arrêt de l'année du membre,
 `passerLaPorte` n'y fait rien, et `avatarVisible` dit vrai quand la caméra est posée à cet arrêt.
 Un seul glissement tient la caméra à la fois (`prendreLaCamera`) : celui qui commence arrête les
@@ -263,8 +263,11 @@ train (`Monde.glisser`), au calme aussi ; le doigt levé, deux gouttes coulent ;
 dès que le train s'est éloigné à plus de mi-chemin de la gare voisine. Entre Longueville et Allaman, le seul tunnel
 de la ligne (`donnees.ts`, `TUNNEL` ; les règles dans `tunnel.ts`, le trait dans `voute.ts`) : sa
 bouche de pierre arrive, le noir balaie la vitre, la paroi défile, l'autre bouche passe et le jour
-revient sur la neige ; il ne suit que le doigt, à l'aller comme au retour, sans ralentir le train, et
-n'existe pas quand le visiteur demande moins d'animations. Le compartiment se remplit : la première
+revient sur la neige ; il ne suit que le doigt, à l'aller comme au retour, et
+n'existe pas quand le visiteur demande moins d'animations. D'une bouche à l'autre, le train qui roule
+lève le pied (`TUNNEL.allure`, la part de vitesse gardée ; `ralentisDuTunnel` le déclare dans
+`scene.ralentis`) : l'avancée de 1903 à 1904 dure une fois et six dixièmes celle des autres ; sous le
+doigt, le tunnel passe à la vitesse du doigt. Le compartiment se remplit : la première
 affiche de chaque année ouverte de la décennie, les cinq plus récentes au plus, se pince sur une
 ficelle sous la vitre à la montée en voiture et revient en reflet léger dans le tunnel (la règle
 dans `ficelle.ts`, le trait dans `accroches.ts`) ; aucune année ouverte avec une affiche, aucune ficelle.

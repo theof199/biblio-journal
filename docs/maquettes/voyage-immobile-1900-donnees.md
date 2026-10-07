@@ -304,16 +304,28 @@ aucun mot d'invite (l. 3114), et la buée s'essuie aussi au calme, comme dans la
 
 ### Le tunnel (lot 2 bis)
 
-Idée 71, sans le ralenti (maquette : `TUNNEL`, l. 3507, par rang ; `donnees.ts` l'écrit par années) :
+Idée 71 (maquette : `TUNNEL`, l. 3507, par rang ; `donnees.ts` l'écrit par années, et `lent` s'y nomme `allure`) :
 
 ```js
-const TUNNEL = { c: 3.5, demi: 0.17 }; // lent: 0.36, le pas du train dedans, non repris
+const TUNNEL = { c: 3.5, demi: 0.17, lent: 0.36 }; // lent : la part de son pas que le train garde dedans
 const K_T = 2.4, K_PAROI = 4.8, L_BOUCHE = 360;
 ```
 
 La position des bouches, le noir et la paroi se lisent l. 3733-3741, la bouche l. 3573-3611, la
-paroi l. 3612-3628, leurs calques l. 1101-1108. **Écarts :** le train ne lève pas le pied (`ralenti`,
-l. 3524-3528 : lot « moteur ») ; l'ouverture de la bouche est percée dans le mur de tête, pour que la
+paroi l. 3612-3628, leurs calques l. 1101-1108, le ralenti l. 3524-3528 (lu l. 3326) :
+
+```js
+const ralenti = () => calme ? 1 : lerp(1, TUNNEL.lent, lisse(TUNNEL.c - 0.5, TUNNEL.c - 0.18, p) * (1 - lisse(TUNNEL.c + 0.18, TUNNEL.c + 0.5, p)));
+```
+
+**Écarts du ralenti (lot « moteur ») :** un palier, pas une courbe. La maquette freine dès la gare de
+1903, en fondu jusqu'au plein ralenti (de 3,32 à 3,68, un `0.18` écrit en dur), puis relâche jusqu'à
+la gare de 1904 ; le code (`tunnel.ts`, `ralentisDuTunnel`) ne ralentit que d'une bouche à l'autre, de
+3,33 à 3,67, les bornes mêmes du dessin (`bornesDuTunnel`), sans fondu : la courbe d'aisance du
+roulement adoucit déjà le départ et l'arrivée, et un arrêt pris dans un ralenti ferait rouler son
+rappel au pas. La maquette ralentit le pas de temps de son ressort ; le moteur multiplie la vitesse
+du roulement par l'allure et allonge sa durée d'autant (1,604 fois de 1903 à 1904). Comme dans la
+maquette, ni le doigt ni le calme ne sont freinés. **Autres écarts :** l'ouverture de la bouche est percée dans le mur de tête, pour que la
 paroi s'y voie dès le pied-droit (dans la maquette, le rectangle du mur reste sous le dégradé de
 l'ouverture) ; ni la paroi ni ses lampes ne sont floutées ; le reflet du compartiment n'est pas viré
 (ses affiches : la ficelle, plus bas) ; sur un écran plus large qu'un téléphone, où la bouche

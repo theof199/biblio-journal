@@ -54,7 +54,7 @@ cases et l'avatar : c'est 1890 et le monde « à venir ». **1900 est le seul mo
 (au registre depuis le plan 3b : la carte le cache à qui n'a pas atteint sa décennie, et l'avancée y
 joue son passage). Posée, la section ne glisse plus et le monde prend à sa charge ce que le moteur dessinait
 (la route, les cases, l'avatar, la roulotte garée, la brume, sa bande de la vue d'ensemble) ; tout
-ce qui bouge se tire de `VueMonde.avance`. Ses cinq membres, et ce que chacun doit au moteur :
+ce qui bouge se tire de `VueMonde.avance`. Ses six membres, et ce que chacun doit au moteur :
 
 - `ecranDeLaCase` : où se tient une année à l'écran, nul hors de vue. Le moteur y inscrit la zone
   `case` et y pose le corail ; nul, l'année n'est ni touchable ni marquée.
@@ -67,6 +67,8 @@ ce qui bouge se tire de `VueMonde.avance`. Ses cinq membres, et ce que chacun do
   atteinte ni par `marcher`, ni par « Tu es ici », ni par la sortie de la vue d'ensemble.
 - `entree` : les temps du passage d'entrée, dans l'ordre de l'endroit ; vide, aucun passage. Durées
   et pauses en millisecondes **de base, sans tempo** : le moteur seul les joue au tempo.
+- `ralentis` : où la caméra qui roule ralentit, en `y` de la section, croissants, disjoints, sans
+  arrêt dedans ni rien avant le premier arrêt ; le moteur ne le vérifie pas, un test du monde si.
 
 Le moteur côté carte (le meneur de la caméra, les arrêts, le rappel, `direBonjour`), le monde 1900,
 son déblocage et son passage côté page sont décrits dans le `README.md`, « La carte du Voyage ». Étendre le moteur laisse `src/carte/reference1890.test.ts` verte **sans y

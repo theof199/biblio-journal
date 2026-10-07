@@ -11,6 +11,7 @@ import { DATES } from './depeches'
 import { BOBINES } from './bobines'
 import { creerVitre } from './buee'
 import { ROULEMENT } from './roulement'
+import { ralentisDuTunnel } from './tunnel'
 import { c, RAMPE } from './couleur'
 import { ARRETS, trace1900 } from './trace'
 import { ENTREE } from './entree'
@@ -81,8 +82,8 @@ export function creerMonde1900(): Monde {
       // Le passage de la foire au train : quatre positions, le moteur les joue au tempo (`entree.ts`).
       entree: ENTREE,
       arrets: ARRETS,
-      // Aucun ralenti encore : le tunnel y déclarera le sien.
-      ralentis: [],
+      // Le train lève le pied dans le tunnel, d'une bouche à l'autre, quand il roule (`tunnel.ts`).
+      ralentis: ralentisDuTunnel(),
     },
   }
 }

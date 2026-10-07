@@ -15,7 +15,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
 - **L'habillage** (l'heure, les chefs de gare, la lanterne) : les tables, `src/mondes/1900/donnees.ts` › `HEURES`, `LABO`, `AMBIANCE` ; les règles, `src/mondes/1900/habillage.ts` › `heureSurLaLigne`, `voileDuLaboratoire`, `partDeLHeure` ; le trait, `src/mondes/1900/dessus.ts` › `dessinerSurLaBrume`.
 - **La météo** (pluie, neige) : la table, `src/mondes/1900/donnees.ts` › `METEO` ; les règles, `src/mondes/1900/meteo.ts` › `forceDuTemps`, `partsDuTemps`, `glissement`, `goutteALEcran` ; le trait, `src/mondes/1900/intemperies.ts` › `dessinerMeteo`.
 - **La buée de Creil** (un glissement horizontal l'essuie) : la table, `src/mondes/1900/donnees.ts` › `BUEE` ; les règles, `src/mondes/1900/buee.ts` › `forceDeLaBuee`, `bueePrise`, `essuyer`, `creerVitre` (la mémoire, dans la fermeture du monde, branchée sur `glisser`) ; le trait, à la fin de `dessinerMeteo`, sur une toile à elle (`src/mondes/1900/cuisson.ts` › `toileHorsEcran`).
-- **Le tunnel** (un seul, sans ralenti) : la table, `src/mondes/1900/donnees.ts` › `TUNNEL` ; les règles, `src/mondes/1900/tunnel.ts` › `bornesDuTunnel`, `tunnelALEcran`, `sousLaVoute` ; le trait, `src/mondes/1900/voute.ts` › `dessinerTunnel`.
+- **Le tunnel** (un seul ; le train qui roule y lève le pied) : la table, allure comprise, `src/mondes/1900/donnees.ts` › `TUNNEL` ; les règles, `src/mondes/1900/tunnel.ts` › `bornesDuTunnel`, `tunnelALEcran`, `sousLaVoute`, `ralentisDuTunnel` (pour `scene.ralentis`) ; le trait, `src/mondes/1900/voute.ts` › `dessinerTunnel`.
 - **La ficelle** (les affiches des années ouvertes, cinq au plus, dans le compartiment et en reflet dans le tunnel) : la règle, `src/mondes/1900/ficelle.ts` › `affichesDeLaFicelle`, `PLAFOND_DE_LA_FICELLE`, `cleDeLaFicelle` (une affiche qui arrive fait recuire) ; le trait, `src/mondes/1900/accroches.ts` › `dessinerFicelle`, une seule toile cuite. Son plafond tient sous `src/carte/CarteCanvas.tsx` › `AFFICHES_D_UN_MONDE`.
 - **Le fond, le lointain, le sol** : `src/mondes/1900/fonds.ts` › `dessinerFond`, `src/mondes/1900/lointain.ts` › `vuesALEcran`, `src/mondes/1900/ciel.ts` › `dessinerCiel`, `src/mondes/1900/sol.ts` › `dessinerSol`, `dessinerProche`.
 - **Les images** : `src/mondes/1900/images.ts` › `imageDu1900`, `TAILLES` ; ce qui se peint une fois pour être reposé, `src/mondes/1900/cuisson.ts` › `cuire`, `fondre`.
@@ -47,7 +47,8 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
   dans `TAILLES`.** Aucun fondu n'est dans les fichiers : `cuire` le peint une fois, dans une mémoire bornée.
 - **Le rendu du décor n'a pas de test** : les tests gardent les règles (`habillage.ts`, `passage.ts`,
   `toiles.ts`). Ce qui doit être gardé s'écrit en règle pure, pas dans le trait.
-- **La maquette montre plus que le monde ne dessine** (vent, ralenti du tunnel, aiguillage, contrôleur, horaire, objets trouvés) : rien de cela n'est livré, et ne se dessine pas d'après elle.
+- **Le ralenti du tunnel se tire des bornes du dessin** (un palier, d'une bouche à l'autre), jamais d'un second jeu de nombres. Le moteur ne garde pas son contrat, `tunnel.test.ts` si : une allure dans `]0, 1[`, strictement entre deux arrêts (un arrêt dedans, et son rappel roule au pas). Le dessin n'en sait rien ; le doigt n'est pas freiné.
+- **La maquette montre plus que le monde ne dessine** (vent, aiguillage, contrôleur, horaire, objets trouvés) : rien de cela n'est livré, et ne se dessine pas d'après elle.
 
 ## Les commandes
 
