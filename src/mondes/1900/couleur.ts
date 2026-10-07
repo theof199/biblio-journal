@@ -11,3 +11,5 @@ export const c = RAMPE.couleur
 /** Les polices du rail et de la presse (maquette : `--f-rail`, `--f-presse`). */
 export const F_RAIL = "'League Gothic', 'Oswald', 'Arial Narrow', sans-serif"
 export const F_PRESSE = "'Courier Prime', 'Courier New', monospace"
+/** La police du corps, à la main sur l'étiquette d'une plaque (maquette : `--f-corps`). */
+export const F_CORPS = "'Spectral', 'Iowan Old Style', Georgia, serif"

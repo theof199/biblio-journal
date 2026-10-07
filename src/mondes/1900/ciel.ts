@@ -1,17 +1,24 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
-import { imageDu1900, TAILLES } from './images'
+import type { Ambiance } from './donnees'
+import { dessinerFond } from './fonds'
+import { ambiances } from './habillage'
+import { imageDu1900 } from './images'
 import { decalages, ouvrir, RAPPORTS } from './toiles'
 import { E } from './trace'
 
 /** La largeur de la toile du fond (maquette : `.fond`, 800 px), élargie sur un écran qui la dépasserait. */
+/** L'ordre où les ambiances se posent : celle qui s'efface dessous, celle qui monte dessus, selon la ligne. */
+const ORDRE: readonly Ambiance[] = ['ville', 'campagne', 'montagne', 'mer']
+
 const largeurDuFond = (W: number) => Math.max(800, W + 410)
 
 /**
  * Le ciel de la vitre et la toile du fond, la plus lente (rapport 1/60 ; maquette : `.ciel`,
- * `.fond`, l. 86-94 et 3072). Le ciel est celui de la photographie, pas celui de l'heure du
- * visiteur : le monde ne lit ni `nuit` ni `lum`. En 11a, la toile du fond est la seule photographie
- * `fond`, sur toute la ligne.
+ * `.fond`, l. 86-94 et 3069-3072). Le fond suit la ligne : ville, campagne, montagne, mer, une
+ * ambiance par gare, deux qui se fondent en route (`ambiances`). Le ciel n'est pas celui de l'heure
+ * du visiteur : le monde ne lit ni `nuit` ni `lum` ; l'heure de la gare se pose par-dessus tout
+ * (`dessus.ts`).
  */
 export function dessinerCiel(v: VueMonde): void {
   if (!ouvrir(v)) return
@@ -29,10 +36,13 @@ export function dessinerCiel(v: VueMonde): void {
   const h = v.H * 0.46
   const url = imageDu1900('fond')
   const photo = url ? v.image(url) : null
-  if (photo) {
-    const [lp, hp] = TAILLES.fond!
-    const haut = (w * hp) / lp
-    g.drawImage(photo, x, h - haut, w, haut)
+  const parts = ambiances(v.avance)
+  for (const nom of ORDRE) {
+    if (parts[nom] <= 0) continue
+    g.save()
+    g.globalAlpha *= parts[nom]
+    dessinerFond(g, nom, x, w, h, photo)
+    g.restore()
   }
   // Le bas de la toile se fond dans le ciel (maquette : le masque de `.fond`).
   const fondu = g.createLinearGradient(0, h * 0.74, 0, h)

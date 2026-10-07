@@ -8,3 +8,5 @@ import { auTempo } from '../../voyage/tempo'
 
 /** Le développement d'une plaque à l'ouverture de son année (maquette : `.positif`, 2,6 s à l'écran, l. 785). */
 export const DEVELOPPEMENT = auTempo(1300)
+/** Un souffle de la lampe du laboratoire, de sombre à vive (maquette : `lampe-labo`, 5 s à l'écran, l. 563). */
+export const SOUFFLE_DE_LA_LAMPE = auTempo(2500)

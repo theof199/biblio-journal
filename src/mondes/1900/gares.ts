@@ -1,6 +1,8 @@
 import type { VueMonde } from '../types'
 import { clamp } from '../../carte/outils'
 import { c, F_PRESSE, F_RAIL } from './couleur'
+import { cuire, fondre } from './cuisson'
+import { POSE } from './donnees'
 import { DEVELOPPEMENT } from './durees'
 import { imageDu1900, TAILLES } from './images'
 import { dansLaFenetre, decalages, ouvrir } from './toiles'
@@ -81,6 +83,90 @@ export function negatif(g: CanvasRenderingContext2D, x: number, y: number, w: nu
   g.globalCompositeOperation = 'source-over'
 }
 
+/**
+ * La photographie d'une gare, posée (maquette : `.gare .photo`, l. 107-109) : son ciel se fond dans
+ * le paysage par le haut (`POSE`, premier nombre) et par les côtés (second), sous un voile qui
+ * s'éteint à la même hauteur. `negative`, c'est la plaque à développer : retournée sur sa propre
+ * toile, elle n'inverse plus le paysage derrière ses bords fondus. Nulle sans toile hors écran.
+ */
+function gareCuite(annee: number, photo: CanvasImageSource, genre: 'positive' | 'negative' | 'bas' | 'haut'): CanvasImageSource | null {
+  const [lp, hp] = TAILLES[`g${annee}`]!
+  const [ciel, cote] = POSE[annee]!
+  // La gare de 1900 emplit la vitre (l. 2774-2783) : son bas se fond de 53 % à 60 % ; son haut est un calque à part.
+  const [de, a] = genre === 'bas' ? [53, 60] : [0, ciel]
+  return cuire(`gare:${annee}:${genre}`, lp, hp, (g, w, h) => {
+    g.drawImage(photo, 0, 0, w, h)
+    if (genre !== 'haut') {
+      g.globalCompositeOperation = 'multiply'
+      const voile = g.createLinearGradient(0, 0, 0, h)
+      voile.addColorStop(0, c('#c6b99c'))
+      voile.addColorStop(a / 100, c('#ffffff'))
+      voile.addColorStop(1, c('#ffffff'))
+      g.fillStyle = voile
+      g.fillRect(0, 0, w, h)
+      g.globalCompositeOperation = 'source-over'
+    }
+    if (genre === 'negative') negatif(g, 0, 0, w, h)
+    fondre(g, 0, 0, w, 0, [[0, 0], [cote / 100, 1], [1 - cote / 100, 1], [1, 0]], w, h)
+    if (genre === 'haut') fondre(g, 0, 0, 0, h, [[0, 0], [0.025, 1], [0.55, 1], [0.62, 0], [1, 0]], w, h)
+    else fondre(g, 0, 0, 0, h, [[0, 0], [de / 100, 0], [a / 100, 1], [1, 1]], w, h)
+  })
+}
+
+/**
+ * Pose la gare développée. Celle de 1900 en deux calques : la brume du matin, le bas de la photo,
+ * puis son haut en `multiply`, qui laisse disparaître le ciel blanc de la plaque de lanterne et
+ * garde la tour sur le ciel de l'heure. La maquette ôte ce ciel par un filtre SVG (`#sans-ciel`,
+ * l. 110-113) : `ctx.filter` n'est pas vérifié sur Safari, et le dessin ne lit aucun pixel.
+ */
+function poserLaPositive(g: CanvasRenderingContext2D, annee: number, photo: CanvasImageSource, p: { x: number; y: number; w: number; h: number }): boolean {
+  if (annee !== 1900) {
+    const cuite = gareCuite(annee, photo, 'positive')
+    if (cuite) g.drawImage(cuite, p.x, p.y, p.w, p.h)
+    return cuite !== null
+  }
+  const bas = gareCuite(annee, photo, 'bas')
+  const haut = gareCuite(annee, photo, 'haut')
+  if (!bas || !haut) return false
+  // La brume (maquette : `.gare .brume`, l. 115) porte la silhouette et cache la plaine de la toile lointaine.
+  g.save()
+  g.translate(p.x + p.w / 2, p.y + p.h * 0.375)
+  g.scale(p.w * 0.47, p.h * 0.325)
+  const brume = g.createRadialGradient(0, 0, 0, 0, 0, 1)
+  brume.addColorStop(0, c('#e3d6bb'))
+  brume.addColorStop(0.42, c('#e3d6bb'))
+  brume.addColorStop(1, c('#e3d6bb', 0))
+  g.fillStyle = brume
+  g.fillRect(-1, -1, 2, 2)
+  g.restore()
+  g.drawImage(bas, p.x, p.y, p.w, p.h)
+  g.globalCompositeOperation = 'multiply'
+  g.drawImage(haut, p.x, p.y, p.w, p.h)
+  g.globalCompositeOperation = 'source-over'
+  return true
+}
+
+/**
+ * Pose la photographie d'une gare : développée, ou en plaque négative sous laquelle le positif
+ * monte (`revele`, de 0 à 1 ; maquette : `.fermee .photo`, `.positif`). Sans toile hors écran, la
+ * photo est posée entière et retournée sur place, comme avant l'habillage.
+ */
+function poserLaGare(g: CanvasRenderingContext2D, annee: number, photo: CanvasImageSource, p: { x: number; y: number; w: number; h: number }, revele: number): void {
+  if (revele < 1) {
+    const plaque = gareCuite(annee, photo, 'negative')
+    if (plaque) g.drawImage(plaque, p.x, p.y, p.w, p.h)
+    else {
+      g.drawImage(photo, p.x, p.y, p.w, p.h)
+      negatif(g, p.x, p.y, p.w, p.h)
+    }
+  }
+  if (revele <= 0) return
+  g.save()
+  g.globalAlpha *= revele
+  if (!poserLaPositive(g, annee, photo, p)) g.drawImage(photo, p.x, p.y, p.w, p.h)
+  g.restore()
+}
+
 /** La plaque émaillée : le millésime et le nom du lieu ; grise tant que la plaque est à développer. */
 function plaque(g: CanvasRenderingContext2D, x: number, y: number, annee: number, sombre: boolean): void {
   const sous = (sombre ? 'plaque à développer' : LIEU[annee]!).toUpperCase()
@@ -132,7 +218,7 @@ function depeche(v: VueMonde, rang: number, x: number, y: number): void {
 
 /**
  * La toile des gares (rapport 2/5 ; maquette : `.gares`, l. 105-122 et 3074) : une photographie
- * par année, sa plaque émaillée et le nom du lieu ; une année fermée en plaque négative, qui se
+ * par année, posée dans le paysage (`POSE`), sa plaque émaillée et le nom du lieu ; une année fermée en plaque négative, qui se
  * développe à l'ouverture ; puis ce qu'une gare ouverte porte, ses dépêches et sa bobine perdue.
  */
 export function dessinerMoyen(v: VueMonde): void {
@@ -146,19 +232,7 @@ export function dessinerMoyen(v: VueMonde): void {
     const revele = sombre ? 0 : developpement(v, annee)
     const url = imageDu1900(`g${annee}`)
     const photo = url ? v.image(url) : null
-    if (photo) {
-      g.drawImage(photo, p.x, p.y, p.w, p.h)
-      if (revele < 1) {
-        // La plaque négative, puis le positif qui monte par-dessus (maquette : `.fermee .photo`, `.positif`).
-        negatif(g, p.x, p.y, p.w, p.h)
-        if (revele > 0) {
-          g.save()
-          g.globalAlpha *= revele
-          g.drawImage(photo, p.x, p.y, p.w, p.h)
-          g.restore()
-        }
-      }
-    }
+    if (photo) poserLaGare(g, annee, photo, p, revele)
     const pl = plaqueDeLaGare(v, i)
     plaque(g, pl.x, pl.y, annee, sombre)
   })

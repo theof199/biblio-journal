@@ -6,6 +6,7 @@ import { dessinerMoyen, ecranDeLaCase } from './gares'
 import { dessinerProche, dessinerSol } from './sol'
 import { dessinerSuivi } from './suivi'
 import { dessinerBande } from './bande'
+import { dessinerSurLaBrume } from './dessus'
 import { DATES } from './depeches'
 import { BOBINES } from './bobines'
 import { ROULEMENT } from './roulement'
@@ -17,8 +18,8 @@ import { ARRETS, trace1900 } from './trace'
  * derrière la vitre d'un train qui ne bouge pas (maquette « Voyage immobile 1900 », idées 50 à 54 et
  * 62). La section est collante : rien n'y glisse, tout se tire de `VueMonde.avance`.
  *
- * Le monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum` et n'appelle pas `v.feu` : son heure sera
- * celle de la gare (tâche 11b), jamais celle du visiteur.
+ * Le monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum` et n'appelle pas `v.feu` : son heure est
+ * celle de la gare (`habillage.ts`, `dessus.ts`), jamais celle du visiteur.
  */
 export function creerMonde1900(): Monde {
   return {
@@ -55,7 +56,7 @@ export function creerMonde1900(): Monde {
     dessinerMoyen,
     dessinerSol,
     dessinerProche,
-    dessinerSurLaBrume: () => undefined,
+    dessinerSurLaBrume,
     // Rien ne se bâtit en 1900 : une visée arrêterait le roulement vers la gare.
     siteDuChantier: () => null,
     dessinerAdieu: () => undefined,

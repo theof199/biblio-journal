@@ -67,6 +67,11 @@ ici. Cuit dans un second fichier (alpha par la même formule, qualité 70), ce c
 121 958 octets, sous le plafond et dans le budget. Rien n'est cuit : c'est à trancher en 11b, qui
 peut aussi s'en passer (un `multiply` sur le ciel de l'heure laisse le blanc disparaître).
 
+**Tranché en 11b, le 7 octobre 2026 : le `multiply`.** Le haut de `g1900` est posé une seconde
+fois en `multiply`, fondu aux mêmes bornes (`gares.ts`, `poserLaPositive`) : le blanc du ciel
+disparaît, la tour reste. Ni `ctx.filter`, ni pixel lu, ni second fichier. Les autres fondus sont
+cuits au premier dessin sur des toiles hors écran, en `destination-in` (`cuisson.ts`).
+
 ## Les gares : le lieu et la date de chaque photographie
 
 `LIEU` (l. 2733) dit le lieu ; la date est celle de la page Commons de l'image, relue le 6 octobre
@@ -247,6 +252,11 @@ const FENETRES = {
   9: [[0.477, 0.305, 0.023, 0.107], [0.512, 0.29, 0.019, 0.107], [0.544, 0.26, 0.031, 0.137], [0.644, 0.503, 0.036, 0.13], [0.46, 0.5, 0.11, 0.17, 1], [0.36, 0.5, 0.4, 0.4, 1]],
 };
 ```
+
+**Écart, 11b :** la maquette laisse 14 % de l'heure sous la lanterne (`1 - 0.86 * voile`,
+l. 3700) ; le monde n'en laisse rien à l'arrêt d'une année fermée (`habillage.ts`, `partDeLHeure`).
+Le guidon du chef suit la seule distance (décision 5), et son bras monte sur 40 px de geste, un
+nombre choisi en 11b.
 
 L'heure et les fenêtres sont un décor, pas un fait : rien ne dit que la nuit tombait à Iguerande le
 jour de la photographie (maquette, l. 2638).
