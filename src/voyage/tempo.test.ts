@@ -21,8 +21,11 @@ const SOURCES: Record<string, string> = {
   ...import.meta.glob<string>('/src/voyage/billet.ts', { query: '?raw', import: 'default', eager: true }),
   // Les célébrations, qui suivent le même geste : leur déroulé, leur séquenceur, leurs scènes.
   ...import.meta.glob<string>(['/src/voyage/celebrations/*.{ts,tsx}', '!**/*.test.*'], { query: '?raw', import: 'default', eager: true }),
+  // Le monde 1900 (plan 3b) : tout son dossier pour les motifs généraux, et `durees.ts` pour son assertion.
+  ...import.meta.glob<string>(['/src/mondes/1900/**/*.ts', '!**/*.test.*'], { query: '?raw', import: 'default', eager: true }),
 }
 const DEROULE = '/src/voyage/celebrations/deroule.ts'
+const DUREES_1900 = '/src/mondes/1900/durees.ts'
 const source = (chemin: string) => SOURCES[chemin] ?? ''
 
 const sansCommentaires = (code: string) => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -69,6 +72,9 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
         '/src/voyage/celebrations/SalleBouclee.tsx',
         '/src/voyage/celebrations/PresseAMedailles.tsx',
         '/src/voyage/celebrations/AnneeBouclee.tsx',
+        DUREES_1900,
+        '/src/mondes/1900/index.ts',
+        '/src/mondes/1900/gares.ts',
       ]),
     )
     expect(Object.keys(SOURCES).filter((chemin) => chemin.includes('.test.'))).toEqual([])
@@ -131,5 +137,17 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     expect(champs.filter(([cle, valeur]) => cle !== 'tirages' && !/^auTempo\(\d+\)$/.test(valeur))).toEqual([])
     expect(FRAPPE.tirages).toBe(10)
     expect(VIBRATION).toEqual([18, 40, 70].map(auTempo))
+  })
+
+  // Les durées du monde 1900 : le fichier ne porte que des `auTempo(…)`. Aucun motif général ne
+  // refuserait `export const X = 2600`. Mutation : une durée écrite sans `auTempo`.
+  it('chaque durée du monde 1900 est au tempo, et son fichier ne porte rien d’autre', () => {
+    const code = sansCommentaires(source(DUREES_1900))
+    const valeurs = [...code.matchAll(/^export const \w+ = (.+)$/gm)].map(([, valeur]) => valeur!.trim())
+    expect(valeurs.length).toBeGreaterThan(0)
+    expect(valeurs.filter((v) => !/^auTempo\(\d+\)$/.test(v))).toEqual([])
+    // Hors de l'import du tempo et de ces lignes, rien : ni objet, ni calcul, ni durée tenue ailleurs.
+    const reste = code.replace(/^import \{ auTempo \} from '\.\.\/\.\.\/voyage\/tempo'$/m, '').replace(/^export const \w+ = auTempo\(\d+\)$/gm, '')
+    expect(reste.trim()).toBe('')
   })
 })

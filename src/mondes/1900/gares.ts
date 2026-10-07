@@ -1,0 +1,179 @@
+import type { VueMonde } from '../types'
+import { clamp } from '../../carte/outils'
+import { c, F_PRESSE, F_RAIL } from './couleur'
+import { DEVELOPPEMENT } from './durees'
+import { imageDu1900, TAILLES } from './images'
+import { decalages, fenetre, ouvrir } from './toiles'
+import { ANNEES, E } from './trace'
+import { DATES, PLACES_DES_DEPECHES } from './depeches'
+import { CACHETTES } from './bobines'
+
+/** Le lieu de chaque photographie (maquette : `LIEU`, l. 2733) : celui de l'image, pas celui des événements de l'année. */
+export const LIEU: Readonly<Record<number, string>> = {
+  1900: 'Paris, l’Exposition', 1901: 'Creil', 1902: 'Couville', 1903: 'Longueville', 1904: 'Allaman',
+  1905: 'Bassersdorf', 1906: 'Brest', 1907: 'Monte-Carlo', 1908: 'Ponteland', 1909: 'Iguerande',
+}
+
+const HAUTEUR_DE_PLAQUE = 52
+
+/** Le milieu de la gare de rang `i` à l'écran : `E` pixels de toile par gare, moins ce que la toile a défilé. */
+export const milieuDeLaGare = (v: Pick<VueMonde, 'W' | 'avance'>, i: number): number => i * E + v.W / 2 - decalages(v.avance).gares
+
+/**
+ * La photographie de la gare de rang `i` à l'écran (maquette : `mesurer`, l. 2963-2971) : posée à
+ * 19 % du bas, haute de 40 % de l'écran ; celle de 1900, la première qu'on voit, emplit la vitre.
+ */
+export function gareALEcran(v: Pick<VueMonde, 'W' | 'H' | 'avance'>, i: number): { x: number; y: number; w: number; h: number } {
+  const [lp, hp] = TAILLES[`g${ANNEES[i]}`]!
+  const h = i === 0 ? Math.min(v.H * 0.5, (v.W * 0.9 * hp) / lp) : v.H * 0.4
+  const w = (h * lp) / hp
+  return { x: milieuDeLaGare(v, i) - w / 2, y: v.H * 0.81 - h, w, h }
+}
+
+/** Le milieu du haut de la plaque émaillée (maquette : `.emaillee`, et `.gare.expo .emaillee` pour 1900). */
+function plaqueDeLaGare(v: Pick<VueMonde, 'W' | 'H' | 'avance'>, i: number): { x: number; y: number } {
+  const p = gareALEcran(v, i)
+  return i === 0 ? { x: p.x + p.w * 0.79, y: p.y + p.h * 0.21 } : { x: p.x + p.w / 2, y: p.y + p.h * 0.06 }
+}
+
+/**
+ * Où se tient une année à l'écran : sous sa plaque émaillée, là où le moteur inscrit la zone `case`
+ * et pose le corail. Nulle quand la gare est hors de l'écran, ou hors de la part de l'écran que la
+ * section occupe. Pure : ni dessin, ni zone, ni mémoire.
+ */
+export function ecranDeLaCase(v: VueMonde, annee: number): { x: number; y: number } | null {
+  const i = ANNEES.indexOf(annee)
+  if (i < 0) return null
+  const p = plaqueDeLaGare(v, i)
+  const y = p.y + HAUTEUR_DE_PLAQUE + 30
+  const [haut, bas] = fenetre(v)
+  if (p.x < 0 || p.x > v.W || y < haut || y > bas) return null
+  return { x: p.x, y }
+}
+
+/**
+ * Vrai tant que la gare d'une année est une plaque à développer : l'année est fermée, ou le membre
+ * n'y est pas encore arrivé. La page ouvre l'année avant la marche et n'avance `ouverte.annee`
+ * qu'après : sans la seconde garde, la plaque paraîtrait développée le temps du trajet, puis
+ * redeviendrait négative à l'arrivée pour se développer.
+ */
+export const aDevelopper = (v: Pick<VueMonde, 'cases' | 'ouverte'>, annee: number): boolean =>
+  (v.cases.find((k) => k.annee === annee)?.etat ?? 'verrou') === 'verrou' || annee > v.ouverte.annee
+
+/**
+ * Le développement de la plaque d'une année ouverte, de 0 (négative) à 1 (développée). Il ne se
+ * joue que pour l'année où le membre vient d'arriver sous les yeux : `VueMonde.ouverte.t0` vaut -9
+ * sans cela, neuf secondes avant toute horloge, et la plaque est alors posée développée (la durée
+ * tient donc sous neuf secondes, `monde1900.test.ts` le garde). Au calme, elle l'est toujours.
+ */
+export function developpement(v: Pick<VueMonde, 'ouverte' | 't' | 'vivant'>, annee: number): number {
+  if (!v.vivant || v.ouverte.annee !== annee) return 1
+  return clamp(((v.t - v.ouverte.t0) * 1000) / DEVELOPPEMENT, 0, 1)
+}
+
+/** Retourne en négatif ce qui vient d'être peint dans le rectangle, sans lire un pixel. */
+export function negatif(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  g.globalCompositeOperation = 'difference'
+  g.fillStyle = c('#ffffff')
+  g.fillRect(x, y, w, h)
+  g.globalCompositeOperation = 'saturation'
+  g.fillStyle = c('#000000')
+  g.fillRect(x, y, w, h)
+  g.globalCompositeOperation = 'source-over'
+}
+
+/** La plaque émaillée : le millésime et le nom du lieu ; grise tant que la plaque est à développer. */
+function plaque(g: CanvasRenderingContext2D, x: number, y: number, annee: number, sombre: boolean): void {
+  const sous = (sombre ? 'plaque à développer' : LIEU[annee]!).toUpperCase()
+  g.font = `10.5px ${F_RAIL}`
+  const w = Math.max(84, g.measureText(sous).width + 28)
+  const h = HAUTEUR_DE_PLAQUE
+  g.fillStyle = c('#000000', 0.5)
+  g.fillRect(x - w / 2 + 2, y + 5, w, h)
+  g.fillStyle = sombre ? c('#3e3a35') : c('#1d3767')
+  g.fillRect(x - w / 2, y, w, h)
+  g.strokeStyle = sombre ? c('#bdb3a0') : c('#f4efe2')
+  g.lineWidth = 1.5
+  g.strokeRect(x - w / 2 + 2.75, y + 2.75, w - 5.5, h - 5.5)
+  g.fillStyle = sombre ? c('#d6ccb8') : c('#f4efe2')
+  g.textAlign = 'center'
+  g.textBaseline = 'alphabetic'
+  g.font = `30px ${F_RAIL}`
+  g.fillText(String(annee), x, y + 32)
+  g.font = `10.5px ${F_RAIL}`
+  g.fillText(sous, x, y + 45)
+}
+
+/** Une dépêche épinglée (maquette : `.date-vraie`, l. 980-981) : un papier bleuté, penché, sous une punaise rouge. */
+function depeche(v: VueMonde, rang: number, x: number, y: number): void {
+  const g = v.ctx
+  const d = DATES[rang]!
+  g.save()
+  g.translate(x, y)
+  g.rotate(-0.07)
+  g.font = `700 10.5px ${F_PRESSE}`
+  const w = g.measureText(d.court).width + 16
+  g.fillStyle = c('#000000', 0.45)
+  g.fillRect(-w / 2 + 1, -8, w, 20)
+  g.fillStyle = c('#d9e0ea')
+  g.fillRect(-w / 2, -10, w, 20)
+  g.fillStyle = c('#1d3767')
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  g.fillText(d.court, 0, 0.5)
+  g.textBaseline = 'alphabetic'
+  g.fillStyle = c('#a8352a')
+  g.beginPath()
+  g.arc(0, -10, 3, 0, Math.PI * 2)
+  g.fill()
+  // Une dépêche passe devant la zone `case` de sa gare (priorité 2), derrière une bobine (3).
+  v.zone('date', 0, 0, 26, rang, 2)
+  g.restore()
+}
+
+/**
+ * La toile des gares (rapport 2/5 ; maquette : `.gares`, l. 105-122 et 3074) : une photographie
+ * par année, sa plaque émaillée et le nom du lieu ; une année fermée en plaque négative, qui se
+ * développe à l'ouverture ; puis ce qu'une gare ouverte porte, ses dépêches et sa bobine perdue.
+ */
+export function dessinerMoyen(v: VueMonde): void {
+  if (!ouvrir(v)) return
+  const g = v.ctx
+  const aLEcran = (x: number, marge: number) => x > -marge && x < v.W + marge
+  ANNEES.forEach((annee, i) => {
+    const p = gareALEcran(v, i)
+    if (p.x + p.w < 0 || p.x > v.W) return
+    const sombre = aDevelopper(v, annee)
+    const revele = sombre ? 0 : developpement(v, annee)
+    const url = imageDu1900(`g${annee}`)
+    const photo = url ? v.image(url) : null
+    if (photo) {
+      g.drawImage(photo, p.x, p.y, p.w, p.h)
+      if (revele < 1) {
+        // La plaque négative, puis le positif qui monte par-dessus (maquette : `.fermee .photo`, `.positif`).
+        negatif(g, p.x, p.y, p.w, p.h)
+        if (revele > 0) {
+          g.save()
+          g.globalAlpha *= revele
+          g.drawImage(photo, p.x, p.y, p.w, p.h)
+          g.restore()
+        }
+      }
+    }
+    const pl = plaqueDeLaGare(v, i)
+    plaque(g, pl.x, pl.y, annee, sombre)
+  })
+  // Une dépêche et une bobine ne se montrent que dans une gare développée.
+  DATES.forEach((d, rang) => {
+    if (aDevelopper(v, d.an)) return
+    const place = PLACES_DES_DEPECHES[rang]!
+    const x = milieuDeLaGare(v, d.an - 1900) + place.dx
+    if (aLEcran(x, 60)) depeche(v, rang, x, v.H * (1 - place.bas / 100) - 10)
+  })
+  CACHETTES.forEach((b, rang) => {
+    if (aDevelopper(v, b.an)) return
+    const x = milieuDeLaGare(v, b.an - 1900) + b.dx
+    if (aLEcran(x, 30)) v.bobine(rang, x, v.H * (1 - b.bas / 100) - 12, 8)
+  })
+  g.restore()
+}
