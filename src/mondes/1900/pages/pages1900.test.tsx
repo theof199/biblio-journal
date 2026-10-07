@@ -195,15 +195,6 @@ describe('la tête de la gare', () => {
     monterVoyage(`/voyage/${annee}`, routes)
     expect((await screen.findByRole('img', { name: nom })).closest('[data-vivante]')).toHaveAttribute('data-vivante', 'non')
   })
-
-  // Le jumeau de la feuille : aucune animation hors de `data-vivante='oui'`. Mutation : une règle
-  // `.trotteuse { animation: … }` sans le sélecteur de la tête vivante.
-  it('la feuille de la tête n’anime rien hors de la tête vivante', () => {
-    const feuille = Object.values(import.meta.glob<string>('./Tete.module.css', { query: '?raw', import: 'default', eager: true }))[0]!.replace(/\/\*[\s\S]*?\*\//g, '')
-    const regles = [...feuille.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^{}]*)\}/g)].map(([, selecteur]) => selecteur!.trim())
-    expect(regles.length).toBeGreaterThan(4)
-    expect(regles.filter((s) => !s.startsWith(".tete[data-vivante='oui'] "))).toEqual([])
-  })
 })
 
 describe('une année 1900 fermée', () => {
@@ -622,17 +613,36 @@ describe('la courroie', () => {
     expect(sangle.style.height).toBe(auRepos)
     expect(courroie).toHaveAttribute('data-vivante', 'non')
   })
+})
 
-  // Les jumeaux de la feuille de la tête : aucune animation hors d'une racine vivante. Mutation : une
-  // règle `.anneau { animation: … }` ou `.plus { animation: … }` sans son sélecteur vivant.
-  it.each([
-    ['Indicateur.module.css', /^\.(compteur|indicateur)\[data-vivante='oui'\] /, 2],
-    ['Courroie.module.css', /^\.courroie\[data-vivante='oui'\] /, 0],
-  ] as const)('la feuille %s n’anime rien hors d’une racine vivante', (nom, vivante, plancher) => {
-    const feuilles = import.meta.glob<string>('./*.module.css', { query: '?raw', import: 'default', eager: true })
-    const feuille = feuilles[`./${nom}`]!.replace(/\/\*[\s\S]*?\*\//g, '')
-    const regles = [...feuille.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^{}]*)\}/g)].map(([, selecteur]) => selecteur!.trim())
-    expect(regles.length).toBeGreaterThan(plancher)
-    expect(regles.filter((s) => !vivante.test(s))).toEqual([])
+/**
+ * La garde de « rien ne bouge au calme », pour toute feuille des pages 1900, découvertes sur disque :
+ * une feuille neuve y entre sans y être nommée. Une `animation` ou une `transition` (leurs propriétés
+ * longues comprises) ne s'écrit que sous une racine `[data-vivante='oui']`, que son composant ne pose
+ * pas au calme (les tests « au calme » de chaque racine le tiennent).
+ */
+describe('rien ne bouge au calme dans les feuilles des pages 1900', () => {
+  const FEUILLES = import.meta.glob<string>('./*.module.css', { query: '?raw', import: 'default', eager: true })
+  /** Les sélecteurs des règles qui animent, un par sélecteur d'une liste. */
+  const quiBougent = (css: string) =>
+    [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{[^{}]*\b(?:animation|transition)(?:-[\w-]+)?\s*:[^{}]*\}/g)].flatMap(([, selecteurs]) => selecteurs!.split(',').map((s) => s.trim()))
+  const VIVANTE = /^\.[\w-]+\[data-vivante='oui'\]/
+
+  // Le plancher : sans lui, un glob qui ne trouverait rien, ou une expression qui ne lirait plus
+  // aucune règle, passerait sans rien garder. Mutations : le glob ramené à `./Tete.module.css` ;
+  // l'expression ramenée à `transition` seule.
+  it('trouve les feuilles, celles qui animent comme celles qui n’animent rien, et lit leurs règles', () => {
+    expect(Object.keys(FEUILLES)).toEqual(expect.arrayContaining(['./Tete.module.css', './Indicateur.module.css', './Courroie.module.css', './Soir.module.css', './Guide.module.css', './VoieFermee.module.css', './Voies.module.css', './Classes.module.css', './Rubrique.module.css']))
+    for (const css of Object.values(FEUILLES)) expect(css.length).toBeGreaterThan(200)
+    const compte = (nom: string) => quiBougent(FEUILLES[`./${nom}`]!).length
+    expect([compte('Tete.module.css') > 4, compte('Indicateur.module.css') > 2, compte('Courroie.module.css') > 0, compte('Soir.module.css') > 0]).toEqual([true, true, true, true])
+  })
+
+  // Mutations : `.plaque { animation: eclat 1s }` hors racine vivante dans `Guide.module.css` ;
+  // `transition: opacity 0.2s` sur `.pancarte` dans `VoieFermee.module.css` ; et celles des gardes par
+  // feuille que celle-ci remplace : `transition: transform 0.28s` sur `.voie`, une `animation` sur
+  // `.porte` des classes, `.trotteuse`, `.anneau`, `.plus` ou `.pris` animés sans leur racine vivante.
+  it.each(Object.keys(FEUILLES))('%s n’anime rien hors d’une racine vivante', (chemin) => {
+    expect(quiBougent(FEUILLES[chemin]!).filter((s) => !VIVANTE.test(s))).toEqual([])
   })
 })

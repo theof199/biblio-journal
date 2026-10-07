@@ -289,13 +289,4 @@ describe('la voiture d’une salle', () => {
       vi.useRealTimers()
     }
   })
-
-  // Rien ne bouge dans les voies ni dans la voiture, au calme comme ailleurs : ni animation, ni
-  // transition. Mutation : `transition: transform 0.28s` sur `.voie` (la maquette en porte une).
-  it.each(['Voies.module.css', 'Rubrique.module.css'])('la feuille %s ne fait rien bouger', (nom) => {
-    const feuilles = import.meta.glob<string>('./*.module.css', { query: '?raw', import: 'default', eager: true })
-    const feuille = feuilles[`./${nom}`]!.replace(/\/\*[\s\S]*?\*\//g, '')
-    expect(feuille.length).toBeGreaterThan(200)
-    expect(feuille.match(/\b(animation|transition)[\w-]*\s*:|@keyframes/g) ?? []).toEqual([])
-  })
 })

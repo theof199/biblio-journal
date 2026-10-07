@@ -170,13 +170,6 @@ describe('les trois classes', () => {
     expect(within(classes).getByText(MOTS_DES_CLASSES.aideSansFilm)).toBeInTheDocument()
     expect(within(classes).queryByText(MOTS_DES_CLASSES.aide)).toBeNull()
   })
-
-  // Rien n'y bouge. Mutation : une règle `animation` ou `transition` dans la feuille.
-  it('la feuille des classes n’anime rien', () => {
-    const feuille = Object.values(import.meta.glob<string>('./Classes.module.css', { query: '?raw', import: 'default', eager: true }))[0]!.replace(/\/\*[\s\S]*?\*\//g, '')
-    expect(feuille.length).toBeGreaterThan(500)
-    expect(feuille).not.toMatch(/\b(animation|transition)\s*:/)
-  })
 })
 
 describe('le train du soir', () => {
@@ -283,18 +276,14 @@ describe('le train du soir', () => {
     expect(screen.queryByRole('region', { name: 'Ce soir en gare' })).toBeNull()
   })
 
-  // Au calme, rien ne bouge : la feuille n'anime que sous `data-vivante='oui'`. Mutations : `calme`
-  // ignoré dans `TrainDuSoir` ; une règle `animation` hors de la racine vivante.
-  it('au calme, le tampon ne se frappe pas ; la feuille n’anime rien hors du train vivant', async () => {
+  // Au calme, rien ne bouge : la feuille n'anime que sous `data-vivante='oui'` (le balayage de
+  // `pages1900.test.tsx` la tient). Mutation : `calme` ignoré dans `TrainDuSoir`.
+  it('au calme, le train du soir n’est pas vivant : le tampon ne se frappe pas', async () => {
     const vivant = monterVoyage('/voyage/1903', routes())
     expect(await leSoir()).toHaveAttribute('data-vivante', 'oui')
     vivant.unmount()
     calme()
     monterVoyage('/voyage/1903', routes())
     expect(await leSoir()).toHaveAttribute('data-vivante', 'non')
-    const feuille = Object.values(import.meta.glob<string>('./Soir.module.css', { query: '?raw', import: 'default', eager: true }))[0]!.replace(/\/\*[\s\S]*?\*\//g, '')
-    const regles = [...feuille.matchAll(/([^{}]+)\{([^{}]*\b(?:animation|transition)\s*:[^{}]*)\}/g)].map(([, selecteur]) => selecteur!.trim())
-    expect(regles.length).toBeGreaterThan(0)
-    expect(regles.filter((s) => !s.startsWith(".soir[data-vivante='oui'] "))).toEqual([])
   })
 })
