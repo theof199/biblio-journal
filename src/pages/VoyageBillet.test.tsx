@@ -4,9 +4,12 @@ import { cles } from '../api/cles'
 import type { JournalItem, JournalPage } from '../api/journal'
 import type { ReactionsCatalogue } from '../api/reactions'
 import type { Bobine, FichePrete, Progression, Voyage } from '../api/voyage'
+import { PAGES_1890 } from '../mondes/1890/pages'
+import { PAGES_A_VENIR } from '../mondes/avenir/pages'
 import { formatDateVisionnage, jourLocal } from '../ui/format'
 import { oublierLeRetour } from '../voyage/annee/retour'
 import { DUREE_DU_COMPOSTAGE, FRAPPE, VIBRATION, decalerJour } from '../voyage/billet'
+import type { PropsBilletDeSeance } from '../voyage/billet/BilletDeSeance'
 import { TEMPO } from '../voyage/tempo'
 import { billetRange, oublierLeBillet } from '../voyage/billet/range'
 import { RELECTURES } from '../voyage/relecture'
@@ -1197,5 +1200,160 @@ describe('le billet de séance', () => {
     const rubrique = remarque.parentElement!
     expect(within(rubrique).getByText(SESSION.user.pseudo.charAt(0).toUpperCase())).toBeInTheDocument()
     expect(within(rubrique).getByText('privée : toi seul la lis')).toBeInTheDocument()
+  })
+
+  // Le dessin du billet est une section qu'un monde peut composer (`GabaritsDesPages.billetDeSeance`).
+  // Sans gabarit, le défaut reste : tous les tests plus haut, montés sur 1890, qui n'en a aucun. Le
+  // monde de test est 1890, auquel on prête un dessin qui dit ce qu'il reçoit.
+  describe('le dessin du monde', () => {
+    let remettre = () => undefined as void
+    afterEach(() => remettre())
+    const preter = (pages: typeof PAGES_1890, gabarits: typeof PAGES_1890.gabarits) => {
+      const avant = pages.gabarits
+      pages.gabarits = gabarits
+      remettre = () => void (pages.gabarits = avant)
+    }
+
+    /** Un dessin de monde : il dit ce qu'il a reçu, tend deux gestes, et rend la suppression de la page. */
+    const DessinDuMonde = (p: PropsBilletDeSeance) => (
+      <section aria-label="Le billet du monde">
+        <div ref={p.support}>
+          <p data-testid="film">{`${p.film.titre} | ${p.film.realisateur ?? 'sans réalisateur'} | ${p.film.sortie} | ${p.film.couverture ?? 'sans affiche'} | gare de ${p.annee} | ${p.pseudo}`}</p>
+          <p data-testid="etat">{`${p.correction ? 'correction' : 'création'} | ${p.etape} | ${p.tirage === null ? 'immobile' : 'roule'} | numéro ${p.numero ?? 'aucun'} | ${p.occupe ? 'occupé' : 'libre'} | ${p.refus ?? 'sans refus'}`}</p>
+          <p data-testid="brouillon">{`${p.brouillon.date} | ${p.brouillon.note ?? 'sans note'} | ${p.brouillon.reactions.join(',')} | ${p.brouillon.remarque}`}</p>
+          <p data-testid="reactions">{p.reactions.catalogue ? `${p.reactions.catalogue.length} réactions` : p.reactions.panne ? 'en panne' : 'pas encore lues'}</p>
+        </div>
+        <button type="button" onClick={() => p.onRetoucher((b) => ({ ...b, note: 6, remarque: 'Écrit du monde.' }))}>
+          Noter six
+        </button>
+        <button type="button" onClick={p.reactions.onReessayer}>
+          Relire les réactions
+        </button>
+        <button type="button" onClick={p.onComposter}>
+          Composter du monde
+        </button>
+        <div data-testid="suppression">{p.suppression}</div>
+      </section>
+    )
+    const dit = (quoi: string) => screen.getByTestId(quoi).textContent
+
+    // Mutations : la page qui monte `BilletDeSeance` sans passer par `gabaritDe` ; le film, le pseudo
+    // ou le catalogue que la page ne passerait plus ; `onRetoucher` qui n'écrirait pas le brouillon ; la
+    // garde du double toucher retirée (deux écritures partiraient du dessin du monde).
+    it('monte le dessin du monde à la place du billet, lui passe ce que la page a lu, et garde l’écriture', async () => {
+      calme()
+      preter(PAGES_1890, { billetDeSeance: DessinDuMonde })
+      const { etat, routes } = serveur()
+      let envoye: Record<string, unknown> | null = null
+      monterVoyage(billet(FAUCON), {
+        ...routes,
+        [JOURNAL]: (init) => {
+          envoye = corps(init)
+          return routes[JOURNAL]()
+        },
+      })
+      await screen.findByRole('region', { name: 'Le billet du monde' })
+      expect(dit('film')).toBe(`Le Faucon maltais | John Huston | 1897 | ${FAUCON.cover_url ?? 'sans affiche'} | gare de 1897 | ${SESSION.user.pseudo}`)
+      expect(dit('etat')).toBe('création | repos | immobile | numéro aucun | libre | sans refus')
+      await waitFor(() => expect(dit('reactions')).toBe(`${CATALOGUE.reactions.length} réactions`))
+      // Rien du billet par défaut : ni sa tête, ni son dateur, ni son bouton.
+      expect(screen.queryByText('Enregistrer un visionnage')).toBeNull()
+      expect(screen.queryByRole('group', { name: 'Date du visionnage' })).toBeNull()
+      expect(screen.queryByRole('button', { name: /Tamponner/ })).toBeNull()
+      expect(screen.getByTestId('suppression')).toBeEmptyDOMElement()
+      fireEvent.click(screen.getByRole('button', { name: 'Noter six' }))
+      expect(dit('brouillon')).toBe(`${jourLocal()} | 6 |  | Écrit du monde.`)
+      const bouton = screen.getByRole('button', { name: 'Composter du monde' })
+      act(() => {
+        bouton.click()
+        bouton.click()
+      })
+      expect(await lAnnee()).toBeInTheDocument()
+      expect(etat.creations).toBe(1)
+      expect(envoye).toMatchObject({ finished_at: jourLocal(), rating: 6, comment: 'Écrit du monde.' })
+    })
+
+    // La séquence reste à la page : le dessin n'en voit que l'étape, le tirage et le numéro. Mutations :
+    // l'étape, le tirage ou le numéro que la page ne passerait plus ; `support` non passé (rien n'est
+    // amené à l'écran) ; la séquence jouée par le dessin par défaut seulement.
+    it('la page joue le compostage sous le dessin du monde : l’étape, le numéroteur, le numéro, puis l’année', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const amener = vi.fn()
+      Object.defineProperty(Element.prototype, 'scrollIntoView', { value: amener, configurable: true, writable: true })
+      preter(PAGES_1890, { billetDeSeance: DessinDuMonde })
+      const { routes } = serveur({ entree: NEUVE, boite: BOITE_DE_TROIS })
+      monterVoyage(billet(FAUCON), routes)
+      fireEvent.click(await screen.findByRole('button', { name: 'Composter du monde' }))
+      await waitFor(() => expect(dit('etat')).toBe('création | descend | immobile | numéro aucun | occupé | sans refus'))
+      expect(amener).toHaveBeenCalled()
+      // Sous le tampon, le brouillon parti ne se retouche plus, d'où que vienne le geste.
+      fireEvent.click(screen.getByRole('button', { name: 'Noter six' }))
+      expect(dit('brouillon')).toBe(`${jourLocal()} | sans note |  | `)
+      await vi.advanceTimersByTimeAsync(FRAPPE.descend + 10)
+      expect(dit('etat')).toContain('| pose |')
+      await vi.advanceTimersByTimeAsync(FRAPPE.pause + FRAPPE.remonte + FRAPPE.tirage * 3)
+      expect(dit('etat')).toContain('création | numerote | roule |')
+      await vi.advanceTimersByTimeAsync(FRAPPE.tirage * FRAPPE.tirages)
+      expect(dit('etat')).toBe('création | numerote | immobile | numéro 3 | occupé | sans refus')
+      await vi.advanceTimersByTimeAsync(FRAPPE.avantTalon)
+      expect(dit('etat')).toBe('création | talon | immobile | numéro 3 | occupé | sans refus')
+      expect(screen.queryByRole('region', { name: 'L’année 1897' })).toBeNull()
+      await vi.advanceTimersByTimeAsync(FRAPPE.talon)
+      expect(await lAnnee()).toBeInTheDocument()
+    })
+
+    // Mutations : `correction` ou le numéro de la boîte que la page ne passerait plus ; la suppression
+    // montée hors du dessin, ou jamais ; le refus de l'écriture non passé ; le billet resté occupé
+    // après un refus.
+    it('en correction, le dessin du monde reçoit le numéro lu dans la boîte, le refus de l’API et « Supprimer » tout monté', async () => {
+      const kane = kaneVu()
+      preter(PAGES_1890, { billetDeSeance: DessinDuMonde })
+      const { routes } = serveur({ boite: [vu('e-c', 1899, '2026-09-15'), kane, vu('e-a', 1896, '2026-08-01')] })
+      let effacements = 0
+      monterVoyage([`/voyage/1897/films/${KANE.id}`, { pathname: billet(KANE, '/corriger'), state: { item: kane } }], {
+        ...routes,
+        'GET /api/reference/films/15/realisateurs': () => json({ realisateurs: [] }),
+        'PATCH /api/me/journal/e-kane': () => json({ code: 'CONFLICT', message: 'Ce visionnage a changé ailleurs.', retryable: false }, 409),
+        'DELETE /api/me/journal/e-kane': () => ((effacements += 1), new Response(null, { status: 204 })),
+      })
+      await screen.findByRole('region', { name: 'Le billet du monde' })
+      await waitFor(() => expect(dit('etat')).toBe('correction | repos | immobile | numéro 2 | libre | sans refus'))
+      expect(dit('brouillon')).toBe('2026-09-01 | 9 | adore | Une remarque privée, rien qu’à moi.')
+      fireEvent.click(screen.getByRole('button', { name: 'Noter six' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Composter du monde' }))
+      await waitFor(() => expect(dit('etat')).toBe('correction | repos | immobile | numéro 2 | libre | Ce visionnage a changé ailleurs.'))
+      // « Supprimer » est celui de la page, rendu par le dessin, là où il le pose.
+      const suppression = within(screen.getByTestId('suppression'))
+      fireEvent.click(suppression.getByRole('button', { name: 'Supprimer' }))
+      expect(suppression.getByText(/Supprimer ce visionnage \?/)).toBeInTheDocument()
+      fireEvent.click(suppression.getByRole('button', { name: 'Supprimer' }))
+      await waitFor(() => expect(effacements).toBe(1))
+    })
+
+    // Mutation : la panne du catalogue ou son « Réessayer » que la page ne passerait plus.
+    it('dit au dessin du monde la panne des réactions, et son rappel les relit', async () => {
+      preter(PAGES_1890, { billetDeSeance: DessinDuMonde })
+      const { routes } = serveur()
+      let essais = 0
+      monterVoyage(billet(FAUCON), {
+        ...routes,
+        [REACTIONS]: () => ((essais += 1) === 1 ? json({ code: 'INTERNAL', message: 'Les réactions ne répondent pas.', retryable: false }, 500) : json(CATALOGUE)),
+      })
+      await screen.findByRole('region', { name: 'Le billet du monde' })
+      await waitFor(() => expect(dit('reactions')).toBe('en panne'))
+      fireEvent.click(screen.getByRole('button', { name: 'Relire les réactions' }))
+      await waitFor(() => expect(dit('reactions')).toBe(`${CATALOGUE.reactions.length} réactions`))
+    })
+
+    // Le gabarit est celui du monde de l'année : prêté au monde « à venir », il ne change rien à 1890.
+    // Mutation : le gabarit lu dans un autre monde que celui de l'année.
+    it('ne prend que le dessin du monde de l’année : un autre monde garde le billet par défaut', async () => {
+      preter(PAGES_A_VENIR, { billetDeSeance: DessinDuMonde })
+      const { routes } = serveur()
+      monterVoyage(billet(FAUCON), routes)
+      expect(await composter()).toBeInTheDocument()
+      expect(screen.getByText('Enregistrer un visionnage')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Le billet du monde' })).toBeNull()
+    })
   })
 })

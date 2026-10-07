@@ -11,7 +11,6 @@ import { brouillonInitial, construirePatch, type FormulaireBrouillon } from '../
 import { creerRegistre } from '../mondes'
 import type { Monde } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
-import { formatDateVisionnage, sousTitre } from '../ui/format'
 import { vibrer } from '../ui/haptique'
 import { useMouvementReduit } from '../ui/mouvement'
 import Panne from '../ui/Panne'
@@ -20,24 +19,18 @@ import { doitGuetterVerdict } from '../voyage/annee'
 import { confierLeRetour, type EtatBillet, type Retour } from '../voyage/annee/retour'
 import { etatDeFete } from '../voyage/celebrations/scenes'
 import { useFiche } from '../voyage/annee/useFiche'
-import { FRAPPE, VIBRATION, initiale } from '../voyage/billet'
+import { FRAPPE, VIBRATION } from '../voyage/billet'
 import { STYLE_DU_TEMPO } from '../voyage/tempo'
-import Cartons from '../voyage/billet/Cartons'
-import Dateur from '../voyage/billet/Dateur'
-import Numeroteur from '../voyage/billet/Numeroteur'
-import Poincon from '../voyage/billet/Poincon'
+import BilletDeSeance, { type Etape } from '../voyage/billet/BilletDeSeance'
 import { rangerLeBillet } from '../voyage/billet/range'
-import Tampon, { type Frappe } from '../voyage/billet/Tampon'
-import { NUMERO_EN_ATTENTE, billetsDeLaDecennie, numeroDe, numeroLisible } from '../voyage/billets'
+import { billetsDeLaDecennie, numeroDe } from '../voyage/billets'
 import { bobineDuFilm, candidatDuBillet, filmDeLaFiche } from '../voyage/film'
+import { gabaritDe } from '../voyage/gabarit'
 import { decennieDe } from '../voyage/regles'
 import styles from './VoyageBillet.module.css'
 
 /** Un registre pour la page, comme la carte et les fiches ont le leur. */
 const mondes = creerRegistre()
-
-/** Le traitement des affiches du monde, par `filter` CSS : jamais une lecture de pixels. */
-const TRAITEMENT = { sepia: styles.sepia, gris: styles.gris, couleur: '' } as const
 
 /**
  * Ce qu'un visionnage écrit ou effacé périme, comme le formulaire du journal (`pages/Formulaire.tsx`),
@@ -57,15 +50,6 @@ const laBoite = (d: number) =>
   queryOptions({ queryKey: cles.journalDesAnnees(d, d + 9), queryFn: ({ signal }) => journalDesAnnees(d, d + 9, signal) })
 
 const attendre = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
-
-/**
- * `inert` : ni toucher, ni focus, ni clavier, ni lecteur d'écran, sans rien changer à l'œil. React 18
- * ne le connaît pas et le pose tel quel, d'où la chaîne vide ; à React 19, il devient un booléen.
- */
-const INERTE = { inert: '' }
-
-/** Où en est le compostage (décision D4) : au repos, la frappe du tampon, le numéroteur, le talon qui part. */
-type Etape = 'repos' | Exclude<Frappe, 'fini'> | 'numerote' | 'talon'
 
 /**
  * Le billet de séance (plan 2b, tâche 11 ; maquette 1890 : `initNotation`, écran VI ; plan 2c,
@@ -184,9 +168,11 @@ interface PropsBillet {
   depuisLAnnee: boolean
 }
 
-/** Le billet proprement dit : la tête, le dateur, le poinçon, les cartons, la remarque, et le compostage. */
+/**
+ * Le billet proprement dit : le brouillon et sa garde, l'écriture, la suppression, le numéro et la
+ * séquence du compostage. Son dessin (`BilletDeSeance`, ou celui du monde) ne fait que rendre.
+ */
 function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsBillet) {
-  const m = monde.pages.mots
   const client = useQueryClient()
   const navigate = useNavigate()
   const { key } = useLocation()
@@ -290,7 +276,7 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     setGarde(false)
   }
   // Le brouillon parti ne se retouche plus : ce qu'on y changerait pendant l'envoi ou sous le tampon
-  // se verrait à l'écran sans être écrit. La même garde, lue au geste ; `INERTE` la dit au navigateur.
+  // se verrait à l'écran sans être écrit. La même garde, lue au geste ; le dessin la dit au navigateur (`INERTE`).
   const retoucher = (f: (b: FormulaireBrouillon) => FormulaireBrouillon) => {
     if (envoi.current) return
     setBrouillon(f)
@@ -364,140 +350,71 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     })
   }
 
-  const titre = item ? item.media.title : candidat!.title
-  const couverture = item ? item.media.cover_url : candidat!.cover_url
-  const sous = item ? sousTitre(item.media.director, item.media.year) : sousTitre(candidat!.director, candidat!.year)
   const occupe = ecrire.isPending || suppression.isPending || garde
-  const numero = item ? numeroCorrige : roue.numero
-  const date = formatDateVisionnage(brouillon.date)
+  // Le dessin du billet est celui du monde, s'il en a un : la page lui passe ce qu'elle a lu et ses gestes.
+  const Dessin = gabaritDe(monde, 'billetDeSeance', BilletDeSeance)
 
   return (
-    <div className={styles.notation}>
-      <div className={styles.tete}>
-        <span className={`${styles.cab} ${TRAITEMENT[monde.traitement.affiches]}`}>
-          {couverture ? <img src={couverture} alt="" decoding="async" /> : <span className={styles.sansImage} />}
-        </span>
-        <div>
-          <span className={styles.sc}>Enregistrer un visionnage</span>
-          <h1 className={styles.titre}>{titre}</h1>
-          {sous ? <small>{sous}</small> : null}
-        </div>
-      </div>
-
-      {/* Le support porte le billet et ce qui le frappe : le masque du billet rognerait le marteau. */}
-      <div ref={support} className={styles.support} data-etape={etape}>
-        {/* Sous le tampon, rien du billet ne répond, au doigt comme au clavier, focus compris. */}
-        <div className={styles.billet} {...(occupe ? INERTE : null)}>
-          <div className={styles.entete}>
-            <small>{m.billet.tete}</small>
-            <strong>{m.billet.titre}</strong>
-            <Numeroteur numero={numero} tirage={roue.tirage} />
-          </div>
-          <div className={`${styles.rubrique} ${styles.dateur}`}>
-            <Dateur date={brouillon.date} onChange={(date) => retoucher((b) => ({ ...b, date }))} />
-          </div>
-          <div className={styles.rubrique}>
-            <div className={styles.rubriqueTete}>
-              Ta note <em>poinçonnez</em>
-            </div>
-            <Poincon note={brouillon.note} onNote={(note) => retoucher((b) => ({ ...b, note }))} />
-          </div>
-          <div className={styles.rubrique}>
-            <div className={styles.rubriqueTete}>
-              Tes réactions <em>douze cartons au plus</em>
-            </div>
-            {reactions.data ? (
-              <Cartons catalogue={reactions.data.reactions} choisis={brouillon.reactions} onChange={(r) => retoucher((b) => ({ ...b, reactions: r }))} />
-            ) : reactions.error && !reactions.isFetching ? (
-              <div className={styles.erreurCartons}>
-                <Panne erreur={reactions.error} onReessayer={() => void reactions.refetch()} />
+    <Dessin
+      monde={monde}
+      annee={annee}
+      film={
+        item
+          ? { titre: item.media.title, realisateur: item.media.director, sortie: item.media.year, couverture: item.media.cover_url }
+          : { titre: candidat!.title, realisateur: candidat!.director, sortie: candidat!.year, couverture: candidat!.cover_url }
+      }
+      correction={item !== undefined}
+      brouillon={brouillon}
+      onRetoucher={retoucher}
+      reactions={{
+        catalogue: reactions.data?.reactions ?? null,
+        panne: reactions.error && !reactions.isFetching ? reactions.error : null,
+        onReessayer: () => void reactions.refetch(),
+      }}
+      pseudo={user.pseudo}
+      // Le numéro du billet corrigé se lit dans la boîte ; un billet neuf l'apprend du numéroteur.
+      numero={item ? numeroCorrige : roue.numero}
+      tirage={roue.tirage}
+      etape={etape}
+      support={support}
+      occupe={occupe}
+      refus={ecrire.error ? messageDe(ecrire.error, 'Le billet n’a pas pu s’enregistrer. Réessaie.') : null}
+      onComposter={composter}
+      suppression={
+        // « Supprimer » (décision D6) : discret, sous le billet, avec la confirmation du formulaire.
+        item ? (
+          confirmer ? (
+            <div className={styles.confirmation}>
+              <p>Supprimer ce visionnage ? Le commentaire et les réactions partent avec.</p>
+              {suppression.error ? (
+                <p role="alert" className={styles.erreur}>
+                  {messageDe(suppression.error, 'Le visionnage n’a pas pu être supprimé. Réessaie.')}
+                </p>
+              ) : null}
+              <div className={styles.choix}>
+                <button
+                  ref={annuler}
+                  type="button"
+                  className={styles.discret}
+                  onClick={() => {
+                    suppression.reset()
+                    setConfirmer(false)
+                  }}
+                >
+                  Annuler
+                </button>
+                <button type="button" className={styles.supprimer} disabled={occupe} onClick={supprimer}>
+                  Supprimer
+                </button>
               </div>
-            ) : (
-              <p role="status" className={styles.attente}>
-                Chargement…
-              </p>
-            )}
-          </div>
-          <div className={`${styles.rubrique} ${styles.remarque}`}>
-            <div className={styles.rubriqueTete}>
-              <span>
-                <span className={styles.cire} aria-hidden="true">
-                  {initiale(user.pseudo)}
-                </span>
-                Ta remarque
-              </span>
-              <em>privée : toi seul la lis</em>
             </div>
-            <textarea
-              aria-label="Remarque privée"
-              placeholder="Ce que tu en retiens, pour toi…"
-              value={brouillon.remarque}
-              onChange={(e) => retoucher((b) => ({ ...b, remarque: e.target.value }))}
-            />
-          </div>
-        </div>
-        {etape !== 'repos' ? (
-          <Tampon mot={m.billet.tampon} autour={m.billet.tamponAutour} date={date} frappe={etape === 'descend' || etape === 'pose' || etape === 'remonte' ? etape : 'fini'} />
-        ) : null}
-        {/* Le talon du billet tamponné, qui part dans la boîte (maquette 1890 : `.billet-sort`). */}
-        {etape === 'talon' ? (
-          <div className={styles.talonQuiPart} aria-hidden="true">
-            <span>
-              <b>{numero !== null ? numeroLisible(numero) : NUMERO_EN_ATTENTE}</b>
-              {`${titre} · ${date}`}
-            </span>
-            <span className={styles.vuDuTalon}>{m.billet.tampon}</span>
-          </div>
-        ) : null}
-      </div>
-
-      {ecrire.error ? (
-        <p role="alert" className={styles.erreur}>
-          {messageDe(ecrire.error, 'Le billet n’a pas pu s’enregistrer. Réessaie.')}
-        </p>
-      ) : null}
-      <button type="button" className={styles.valider} disabled={occupe} onClick={composter}>
-        <span>
-          <b>{item ? 'Corriger le billet' : m.billet.valider}</b> <small>{m.billet.validerSous}</small>
-        </span>
-        <span className={styles.talon} aria-hidden="true">
-          {m.billet.tampon}
-        </span>
-      </button>
-
-      {/* « Supprimer » (décision D6) : discret, sous le billet, avec la confirmation du formulaire. */}
-      {item ? (
-        confirmer ? (
-          <div className={styles.confirmation}>
-            <p>Supprimer ce visionnage ? Le commentaire et les réactions partent avec.</p>
-            {suppression.error ? (
-              <p role="alert" className={styles.erreur}>
-                {messageDe(suppression.error, 'Le visionnage n’a pas pu être supprimé. Réessaie.')}
-              </p>
-            ) : null}
-            <div className={styles.choix}>
-              <button
-                ref={annuler}
-                type="button"
-                className={styles.discret}
-                onClick={() => {
-                  suppression.reset()
-                  setConfirmer(false)
-                }}
-              >
-                Annuler
-              </button>
-              <button type="button" className={styles.supprimer} disabled={occupe} onClick={supprimer}>
-                Supprimer
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button ref={demander} type="button" className={styles.discret} onClick={() => setConfirmer(true)}>
-            Supprimer
-          </button>
-        )
-      ) : null}
-    </div>
+          ) : (
+            <button ref={demander} type="button" className={styles.discret} onClick={() => setConfirmer(true)}>
+              Supprimer
+            </button>
+          )
+        ) : null
+      }
+    />
   )
 }

@@ -13,6 +13,7 @@ import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
+import type { PropsBilletDeSeance } from '../voyage/billet/BilletDeSeance'
 import type { PropsComptoir } from '../voyage/film/Comptoir'
 import type { PropsNotice } from '../voyage/film/Notice'
 import type { PropsProjection } from '../voyage/film/Projection'
@@ -730,6 +731,14 @@ export interface GabaritsDesPages {
    * feuillet du podium, et lui passe les gestes offerts (`boutonsDuFilm`) : le dessin n'en ajoute aucun.
    */
   guichetDuFilm: ComponentType<PropsComptoir>
+  /**
+   * Le dessin du billet de séance (`voyage/billet/BilletDeSeance.tsx`) : la tête, la date, la note, les
+   * réactions, la remarque, le tampon, le numéro, le bouton. Lu par `pages/VoyageBillet.tsx`, qui garde
+   * le brouillon et sa garde, l'écriture et la suppression, la lecture de la boîte où se lit le numéro,
+   * la séquence du compostage (ses attentes, sa vibration, « la page est-elle montée ? ») et le retour
+   * à l'année. Le dessin reçoit l'étape et le tirage en cours : il ne les décide pas.
+   */
+  billetDeSeance: ComponentType<PropsBilletDeSeance>
 }
 
 export interface HabillagePages {

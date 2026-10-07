@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Quinze clés, douze sur la fiche d'année et trois sur la fiche d'un film. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Seize clés, douze sur la fiche d'année, trois sur la fiche d'un film et une sur le billet de séance. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -408,7 +408,11 @@ Où vit quoi :
   réalisateurs, la raison, ta note ; elle reçoit le programme et le guichet déjà montés) et
   `guichetDuFilm` (le dessin du guichet, `voyage/film/Comptoir.tsx`, que `voyage/film/Guichet.tsx`
   lit : il garde les écritures et leur verrou, les adresses du billet et le feuillet du podium, et
-  passe les gestes offerts, `boutonsDuFilm`). 1890 et le monde « à venir » n'en fournissent aucune.
+  passe les gestes offerts, `boutonsDuFilm`). Sur le billet de séance : `billetDeSeance` (son dessin,
+  `voyage/billet/BilletDeSeance.tsx`, que `pages/VoyageBillet.tsx` lit : la page garde le brouillon et
+  sa garde, l'écriture, la suppression, qu'elle passe toute montée, la boîte où se lit le numéro et la
+  séquence du compostage, dont le dessin ne reçoit que l'étape, le tirage et le numéro). 1890 et le
+  monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du
