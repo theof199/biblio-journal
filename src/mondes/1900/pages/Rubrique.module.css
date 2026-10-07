@@ -1,0 +1,27 @@
+/* Le titre d'une rubrique des pages 1900 (maquette « Voyage immobile 1900 » : `.sec`) : les
+   capitales de laiton, la précision en petit, et le filet qui court jusqu'au bord. */
+.sec {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 24px 16px 10px;
+  font: 600 15px var(--m-f-capitales);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-or);
+}
+
+.sec small {
+  font: 700 10.5px var(--m-f-corps);
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: var(--m-pale);
+}
+
+.sec::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--m-filet);
+  transform: translateY(-4px);
+}

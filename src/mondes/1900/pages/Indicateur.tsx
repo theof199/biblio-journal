@@ -3,6 +3,7 @@ import { NOM_DE_RECOMPENSE } from '../../../voyage/annee/Embleme'
 import type { PropsProgramme } from '../../../voyage/annee/Programme'
 import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
 import { gainDe, ligneDeLIndicateur } from './lignes'
+import Rubrique from './Rubrique'
 import styles from './Indicateur.module.css'
 
 /**
@@ -17,10 +18,10 @@ export default function Indicateur({ monde, annee, arrivees, gains, bouclee, rec
   const n = arrivees.filter((a) => a.arrivee).length
   return (
     <section className={styles.indicateur} aria-label={m.programme.sur} style={STYLE_DU_TEMPO} data-vivante={calme ? 'non' : 'oui'}>
-      <h2 className={styles.sec}>
+      <Rubrique>
         {m.programme.sur}
         <small>{`${n} sur ${arrivees.length}`}</small>
-      </h2>
+      </Rubrique>
       <div className={styles.chaix}>
         <p className={styles.ent}>
           <span>{`Ligne ${annee}`}</span>

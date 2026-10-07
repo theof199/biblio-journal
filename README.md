@@ -397,7 +397,7 @@ Où vit quoi :
   gestes qui la déplient et la replient. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
-  sept sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
+  neuf sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
   le titre de la page et le rang de la gare, et selon le mode l'horloge (l'année est l'heure :
   19 h 03 en 1903, `heureDeLaGare`) avec le tampon d'une ligne bouclée, le négatif sous la lanterne
   rouge d'une année fermée, ou la gare assombrie et le sémaphore à l'arrêt d'une voie qui attend le
@@ -410,8 +410,16 @@ Où vit quoi :
   billet, la ligne gagnée se pointe en rouge, un « +1 » monte au compteur et sa molette tourne quand
   une ligne vient d'arriver (`venuesDArriver`), au tempo ; au calme, la ligne est pointée et le nombre
   posé d'un coup. La manivelle se dessine en **courroie** (`Courroie`) : une sangle qui s'allonge avec
-  le geste, les seuils et les écouteurs restant ceux de `Manivelle`. **La parade, la séance, les
-  salles et la ligne du bas gardent encore les composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, la scène d'un film, le
+  le geste, les seuils et les écouteurs restant ceux de `Manivelle`. Les salles sont des **voies de
+  correspondance** (`Correspondances`, `Voie`) : la plaque émaillée du numéro (le rang de la salle), son
+  nom, son compte, et si la voiture est complète ou se remplit. Toucher une voie ouvre sa **voiture**
+  (`Voiture`), un dialogue par-dessus la gare, dans l'adresse (`?voiture=<id>`) : la vue prise d'un
+  train en marche, le panneau, la raison d'être (qui ouvre le contexte quand il se lit), un
+  compartiment par film (l'affiche à sa fenêtre ou « sans affiche », sa lettre, son état, sa plaque
+  « occupé », « libre » ou le mot d'un introuvable ; il ouvre la fiche du film), les bobines d'un
+  programme, et la porte au bout (« En voir plus » au compte IA). Leurs mots et leurs règles :
+  `mondes/1900/pages/voies.ts`. Rien n'y bouge. **La parade, la séance, la nouvelle salle et la ligne
+  du bas gardent encore les composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, la scène d'un film, le
   monument et le guichet sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,

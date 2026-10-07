@@ -3,7 +3,7 @@
 Une entrée par fichier du dossier, titrée par son nom exact entre accents graves, avec ses quatre
 lignes : `- Œuvre :`, `- Source :`, `- Licence :`, `- Traitement :`.
 
-Les vingt-deux pages ont été relues le 6 octobre 2026, par l’API de Wikimedia Commons (les
+Les vingt-deux premières pages ont été relues le 6 octobre 2026, par l’API de Wikimedia Commons (les
 métadonnées de la page et ses gabarits de licence) : la ligne « Licence » dit ce que la page porte,
 gabarit compris, et rien de plus. Les fichiers sont ceux de la maquette « Voyage immobile 1900 »,
 version 11 (`docs/maquettes/voyage-immobile-1900.html`, variables `--i-…`, l. 1413-1434), qui les dit
@@ -165,3 +165,10 @@ Aucun fondu n’y est cuit : le dessin le pose (`docs/maquettes/voyage-immobile-
 - Source : https://commons.wikimedia.org/wiki/File:M%C3%A9li%C3%A8s,_Le_voyage_a_travers_l%27impossible1904_coloriz%C3%A9e_20.jpg
 - Licence : domaine public, selon la page du fichier : PD-Art, PD-old-auto-expired (Méliès mort en 1938 ; publié avant le 1er janvier 1931 aux États-Unis) ; Public Domain Mark 1.0. L’image vient d’une restauration récente : la page cite pour source l’édition *Méliès: Fairy Tales in Color*. Elle est gardée (décision du propriétaire du 2 octobre 2026).
 - Traitement : préparée pour la maquette (réduite, dans ses couleurs), 560 × 419, extraite à l’octet près.
+
+## `fenetre-train.webp`
+
+- Œuvre : *Foix : dans le train à Montgaillard*, Eugène Trutat, 10 août 1906 : la vue prise de la portière d'un train en marche, les voitures du convoi fuyant à gauche. Fonds Trutat du muséum de Toulouse (MHNT.PHa.912.A084).
+- Source : https://commons.wikimedia.org/wiki/File:Foix_,_dans_le_train_%C3%A0_Montgaillard_-_Fonds_Trutat_-_MHNT.PHa.912.A084.jpg
+- Licence : domaine public, selon la page du fichier : PD-old-100-expired (Trutat mort en 1910) ; Public Domain Mark 1.0. Page relue le 7 octobre 2026, par l’API de Wikimedia Commons.
+- Traitement : préparée pour la maquette (recadrée, réduite, virée et coloriée), 700 × 536, extraite à l’octet près de sa variable `--i-fenetre-train` (l. 1435). Elle sert de tête à la voiture d'une salle (pages 1900, brief 3).

@@ -1,5 +1,6 @@
 import type { PropsBoniment } from '../../../voyage/annee/Boniment'
 import { paragraphes } from '../../../voyage/feuille'
+import Rubrique from './Rubrique'
 import styles from './Guide.module.css'
 
 /**
@@ -12,10 +13,10 @@ export default function Guide({ monde, annee, ouverture, faits, generique, onLir
   const premier = paragraphes(ouverture)[0] ?? ''
   return (
     <section aria-label={m.boniment}>
-      <h2 className={styles.sec}>
+      <Rubrique>
         {m.boniment}
         <small>{annee}</small>
-      </h2>
+      </Rubrique>
       <div className={styles.guide}>
         {premier ? <p>{premier}</p> : null}
         <div className={styles.liens}>

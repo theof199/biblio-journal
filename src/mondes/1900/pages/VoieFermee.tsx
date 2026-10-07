@@ -3,6 +3,7 @@ import Panne from '../../../ui/Panne'
 import { chemin, phraseDuChemin, vusEnAvance } from '../../../voyage/annee'
 import { INSECABLE, type PropsAnneeFermee } from '../../../voyage/annee/AnneeFermee'
 import { tropLent } from '../../../voyage/regles'
+import Rubrique from './Rubrique'
 import styles from './VoieFermee.module.css'
 
 /**
@@ -71,9 +72,9 @@ export default function VoieFermee({ variante, monde, annee, voyage: v, profonde
         </div>
       ) : vus.length > 0 ? (
         <section aria-label={`${m.fermee.dejaVus} ${m.fermee.enAvance}`}>
-          <p className={styles.sec}>
+          <Rubrique balise="p">
             {m.fermee.dejaVus} <small>{m.fermee.enAvance}</small>
-          </p>
+          </Rubrique>
           <ul className={styles.vus}>
             {vus.map((item) => (
               <li key={item.entry.id}>
