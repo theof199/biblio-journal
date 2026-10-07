@@ -4,6 +4,7 @@ import type { CaseVue } from '../types'
 import { vueFactice } from '../../test/vueFactice'
 import { METEO } from './donnees'
 import { LIEU } from './gares'
+import { voileDuLaboratoire } from './habillage'
 import { forceDuTemps, glissement, GOUTTES, goutteALEcran, NEIGE, partsDuTemps, PLUIE, tempsDeLaGare } from './meteo'
 import { ANNEES, ARRETS, B1, PAS, S1 } from './trace'
 
@@ -95,6 +96,25 @@ describe('la météo sous la lanterne', () => {
     // Les dix années ouvertes : plus de lanterne, les voiles sont pleins.
     expect(partsDuTemps(vue(1902, 10))).toEqual({ pluie: 1, voileDePluie: 1, neige: 0, voileDeNeige: 0 })
     expect(partsDuTemps(vue(1904, 10))).toEqual({ pluie: 0, voileDePluie: 0, neige: 1, voileDeNeige: 1 })
+  })
+
+  // Couville fermée, à quatre dixièmes du chemin : sa lanterne n'est plus pleine, sa pluie non plus.
+  // Mutations : `1 - 0.5 * voile * voile` (juste à 0 et à 1, faux entre les deux) ;
+  // `1 - 0.5 * Math.round(voile)` ; la force de la pluie oubliée du voile (`1 - 0.5 * voile` seul).
+  it('sous une lanterne à demi allumée, le voile de pluie perd la moitié de ce que la lanterne a pris', () => {
+    for (const sens of [-1, 1]) {
+      const v = { ...vue(1902, 1), avance: arret(1902) + sens * PAS * 0.4 }
+      const voile = voileDuLaboratoire(v)
+      expect(voile).toBeGreaterThan(0.3)
+      expect(voile).toBeLessThan(0.7)
+      const parts = partsDuTemps(v)
+      expect(parts.pluie).toBeGreaterThan(0.3)
+      expect(parts.pluie).toBeLessThan(0.9)
+      expect(parts.voileDePluie).toBeCloseTo(parts.pluie * (1 - voile / 2), 9)
+      // Ni lanterne ignorée, ni lanterne prise pour pleine.
+      expect(parts.voileDePluie).toBeLessThan(parts.pluie * 0.9)
+      expect(parts.voileDePluie).toBeGreaterThan(parts.pluie * 0.6)
+    }
   })
 
   // Mutation : `partsDuTemps` qui ne lit pas la table (ou la force) et pose un voile partout.

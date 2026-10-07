@@ -151,7 +151,8 @@ describe('la mémoire des images (plan 3b, tâche 14)', () => {
     for (let passe = 0; passe < 3; passe++) uneImage.forEach((url, i) => expect(image(url)).toBe(premieres[i]))
     expect(creees).toHaveLength(uneImage.length)
     expect(affichesDecodees.taille).toBe(uneImage.length)
-    // Et pas une de plus : la borne est ce compte, pas une réserve au-dessus.
+    // Et pas une de plus : la borne est la somme des deux parts, sans marge par-dessus. La part d'un
+    // monde, elle, est plus large que ce que 1900 demande (dix, pour une ficelle de cinq).
     image('/covers/thumb/de-trop.webp')
     expect(affichesDecodees.taille).toBe(uneImage.length)
   })

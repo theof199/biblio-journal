@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CaseVue } from '../types'
 import { AFFICHES_D_UN_MONDE } from '../../carte/CarteCanvas'
-import { affichesDeLaFicelle, PENCHES, PLAFOND_DE_LA_FICELLE } from './ficelle'
+import { affichesDeLaFicelle, cleDeLaFicelle, PENCHES, PLAFOND_DE_LA_FICELLE } from './ficelle'
 
 type Case = Pick<CaseVue, 'annee' | 'etat' | 'attente' | 'affiches'>
 const a = (annee: number, etat: CaseVue['etat'], affiches: string[] = [`/covers/thumb/${annee}.webp`], attente = false): Case => ({ annee, etat, attente, affiches })
@@ -48,5 +48,24 @@ describe('la ficelle du compartiment (idée 72)', () => {
     expect(PLAFOND_DE_LA_FICELLE).toBeGreaterThan(0)
     expect(PLAFOND_DE_LA_FICELLE).toBeLessThanOrEqual(AFFICHES_D_UN_MONDE)
     expect(PENCHES.length).toBeGreaterThanOrEqual(PLAFOND_DE_LA_FICELLE)
+  })
+
+  // La toile de la ficelle est cuite sous cette clé (`accroches.ts`) : une clé qui ne change pas
+  // quand une affiche arrive laisserait pour toujours le papier nu de la première image.
+  // Mutations : l'état de chargement sorti de la clé (les adresses seules) ; un seul état pour toute
+  // la ficelle (`chargees.some(Boolean)`) ; les adresses triées dans la clé ; le séparateur retiré.
+  it('se recuit quand une affiche arrive : la clé change avec le chargement, et avec l’ordre des adresses', () => {
+    const adresses = [de(1900), de(1901), de(1902)]
+    const rien = cleDeLaFicelle(adresses, [false, false, false])
+    const une = cleDeLaFicelle(adresses, [false, true, false])
+    const deux = cleDeLaFicelle(adresses, [true, true, false])
+    const autre = cleDeLaFicelle(adresses, [true, false, false])
+    expect(new Set([rien, une, deux, autre]).size).toBe(4)
+    // Le même état donne la même clé : rien ne se recuit d'une image à l'autre.
+    expect(cleDeLaFicelle([...adresses], [false, true, false])).toBe(une)
+    // L'ordre des adresses est celui des places : deux ficelles des mêmes affiches rangées autrement ne sont pas la même toile.
+    expect(cleDeLaFicelle([de(1901), de(1900), de(1902)], [true, true, true])).not.toBe(cleDeLaFicelle(adresses, [true, true, true]))
+    // Deux ficelles ne se confondent pas quand une adresse est le début d'une autre.
+    expect(cleDeLaFicelle(['/a', '/b'], [true, true])).not.toBe(cleDeLaFicelle(['/a+/b'], [true]))
   })
 })

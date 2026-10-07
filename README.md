@@ -259,8 +259,11 @@ visiteur demande moins d'animations, absents du passage. Entre Longueville et Al
 de la ligne (`donnees.ts`, `TUNNEL` ; les règles dans `tunnel.ts`, le trait dans `voute.ts`) : sa
 bouche de pierre arrive, le noir balaie la vitre, la paroi défile, l'autre bouche passe et le jour
 revient sur la neige ; il ne suit que le doigt, à l'aller comme au retour, sans ralentir le train, et
-n'existe pas quand le visiteur demande moins d'animations. Le Voyage suivi y est une voiture garée à quai dans
-sa gare (`suivi.ts`). Trois dépêches épinglées aux quais tiennent lieu de dates vraies
+n'existe pas quand le visiteur demande moins d'animations. Le compartiment se remplit : la première
+affiche de chaque année ouverte de la décennie, les cinq plus récentes au plus, se pince sur une
+ficelle sous la vitre à la montée en voiture et revient en reflet léger dans le tunnel (la règle
+dans `ficelle.ts`, le trait dans `accroches.ts`) ; aucune année ouverte avec une affiche, aucune ficelle.
+Le Voyage suivi y est une voiture garée à quai dans sa gare (`suivi.ts`). Trois dépêches épinglées aux quais tiennent lieu de dates vraies
 (`depeches.ts`). Rien ne s'y bâtit (`siteDuChantier` rend nul), aucun toucher du décor ne sonne ni
 ne s'anime, et le monde s'en va sans adieu. Ses pages (les fiches d'année, la décennie) sont encore
 celles du monde « à venir ». Les tables recopiées de la maquette et leurs sources :
@@ -313,9 +316,11 @@ cuit la rampe sépia dans une image ou une extraction vidéo. `npm run verifier:
 **La mémoire des images** (`carte/CarteCanvas.tsx`). Deux tables d'images décodées, qui vivent autant
 que l'onglet. `imagesDesMondes` : les images des dossiers `assets/` des mondes et de `carte/assets/`,
 **jamais évincées** (une photographie sortie manquerait à un ou plusieurs rendus, le temps de se
-recharger) ; la table est bornée par les dossiers eux-mêmes. `affichesDecodees` : les affiches des
-colonnes, venues de l'API ou de TMDB, dans un `Lru` (`carte/lru.ts`) borné à `BORNE_DES_AFFICHES`
-(48), la plus anciennement demandée sortant la première. Une adresse est celle d'une image de monde
+recharger) ; la table est bornée par les dossiers eux-mêmes. `affichesDecodees` : toute autre image,
+venue de l'API ou de TMDB (les affiches des colonnes, et celles qu'un monde demande pour lui-même,
+comme la ficelle de 1900), dans un `Lru` (`carte/lru.ts`) borné à `BORNE_DES_AFFICHES` : ce qu'une
+seule image du moteur peut demander, `AFFICHES_DES_COLONNES` et `AFFICHES_D_UN_MONDE` ensemble, la
+plus anciennement demandée sortant la première. Une adresse est celle d'une image de monde
 par son appartenance exacte à l'ensemble que Vite rend pour ces dossiers (`ADRESSES_DES_MONDES`),
 jamais par un préfixe : une affiche peut venir de la même origine.
 

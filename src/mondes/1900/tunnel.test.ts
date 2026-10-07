@@ -237,4 +237,18 @@ describe('le tunnel dans l’image du monde', () => {
     // Le témoin : avant le noir plein, la lampe respire.
     expect(dessus(3.34, { t: 1.4, vivant: true, ...fermees })).not.toEqual(dessus(3.34, { t: 3.4, vivant: true, ...fermees }))
   })
+
+  // Le test d'avant ne dit pas que le tunnel, lui, se dessine sous son noir plein : sans lui, il
+  // comparerait deux images vides. Au milieu du tunnel (rang 3,5), la photographie du compartiment
+  // n'a qu'un lecteur, le reflet sur la vitre : la même image avec et sans elle n'est pas la même.
+  // L'image au calme ne ferait pas ce témoin : sans tunnel, elle porte l'heure, et diffère de toute façon.
+  // Mutation : `if (tunnel && !sousLaVoute(tunnel)) dessinerTunnel(…)` dans `dessinerSurLaBrume`.
+  it('sous son noir plein, le tunnel se dessine : le reflet du compartiment y paraît dès que sa photographie est là', () => {
+    const photo = { width: 1200, height: 800 } as unknown as CanvasImageSource
+    const sans = dessus(3.5, { t: 1.4, vivant: true })
+    const avec = dessus(3.5, { t: 1.4, vivant: true, image: () => photo })
+    expect(avec).not.toEqual(sans)
+    // Le témoin : au calme, sans tunnel, personne ne demande cette photographie à cet endroit.
+    expect(dessus(3.5, { t: 1.4, vivant: false, image: () => photo })).toEqual(dessus(3.5, { t: 1.4, vivant: false }))
+  })
 })

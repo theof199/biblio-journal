@@ -1,14 +1,14 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
 import { cuire } from './cuisson'
-import { affichesDeLaFicelle, PENCHES } from './ficelle'
+import { affichesDeLaFicelle, cleDeLaFicelle, PENCHES } from './ficelle'
 
 /**
  * Le trait de la ficelle (idée 72 ; maquette : `.accroches`, l. 1109-1116) : un fil qui pend, et
  * sous lui les affiches des films vus, chacune à sa pince dorée, un peu de travers. Lesquelles et
  * dans quel ordre vient de `ficelle.ts` ; ici, rien que le trait, sans avance ni horloge. Toute la
- * ficelle se cuit sur une seule toile (`cuire`), dont la clé porte les adresses et lesquelles sont
- * chargées : une affiche qui arrive la fait recuire, une affiche qui manque laisse son papier nu.
+ * ficelle se cuit sur une seule toile (`cuire`), dont la clé (`cleDeLaFicelle`) porte les adresses et
+ * lesquelles sont chargées : une affiche qui arrive la fait recuire, une qui manque laisse son papier nu.
  * Sans toile hors écran (jsdom), rien n'est dessiné.
  */
 
@@ -90,7 +90,6 @@ export function dessinerFicelle(v: Pick<VueMonde, 'ctx' | 'cases' | 'image'>, x:
   if (adresses.length === 0) return
   const images = adresses.map((url) => v.image(url))
   const w = adresses.length * LARGE + (adresses.length - 1) * ECART + 2 * MARGE
-  const cle = `ficelle:${adresses.map((url, k) => `${images[k] ? '+' : '-'}${url}`).join('|')}`
-  const toile = cuire(cle, w * FINESSE, HAUT * FINESSE, (g) => peindre(g, images))
+  const toile = cuire(cleDeLaFicelle(adresses, images.map((image) => image !== null)), w * FINESSE, HAUT * FINESSE, (g) => peindre(g, images))
   if (toile) v.ctx.drawImage(toile, x - (w * echelle) / 2, y - TETE * echelle, w * echelle, HAUT * echelle)
 }

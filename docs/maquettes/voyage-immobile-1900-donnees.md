@@ -272,7 +272,11 @@ const METEO = { 2: 'pluie', 4: 'neige', 5: 'neige', 6: 'pluie' }; // 1 : 'buee',
 
 La force se lit l. 3721-3729, les tuiles l. 3560-3564, les gouttes l. 3566-3570, les boucles
 l. 1080-1098. **Écarts :** sous la lanterne, le voile de neige et le sol blanchi s'effacent tout à
-fait (la maquette en laisse 20 %) ; le vent ne couche pas la pluie selon la vitesse du train
+fait (la maquette en laisse 20 %) ; ils sont cuits ensemble et posés en une seule passe `screen`
+(`intemperies.ts`), là où la maquette en fait deux calques, `.m-voile.n` et `.m-sol`, chacun en
+`screen` avec sa propre opacité (l. 1074-1076 et 3727) : la force de la neige les mène donc
+ensemble, et là où ils se recouvrent, au bas de l'écran, le mélange n'est pas celui de deux
+`screen` l'un après l'autre ; le vent ne couche pas la pluie selon la vitesse du train
 (`m-vent`) ; le plan de neige proche n'est pas flouté ; une goutte va en droite ligne d'un moment
 à l'autre ; au calme, elle se tient à sa place (dans la maquette, elle reste hors de l'écran).
 
@@ -290,8 +294,26 @@ paroi l. 3612-3628, leurs calques l. 1101-1108. **Écarts :** le train ne lève 
 l. 3524-3528 : lot « moteur ») ; l'ouverture de la bouche est percée dans le mur de tête, pour que la
 paroi s'y voie dès le pied-droit (dans la maquette, le rectangle du mur reste sous le dégradé de
 l'ouverture) ; ni la paroi ni ses lampes ne sont floutées ; le reflet du compartiment n'est pas viré
-et ne porte pas encore les affiches (idée 72) ; sur un écran plus large qu'un téléphone, où la bouche
+(ses affiches : la ficelle, plus bas) ; sur un écran plus large qu'un téléphone, où la bouche
 se verrait depuis la gare, le tunnel paraît sur les six premiers centièmes du chemin (`ABORD`).
+
+### La ficelle (lot 2 bis)
+
+Idée 72, « le compartiment se remplit » (maquette : `AFFICHES_VUES`, l. 3517 ; `accrocher`,
+l. 3630-3640 ; `.accroches`, l. 1109-1116) :
+
+```js
+const AFFICHES_VUES = [1900, 1901, 1902, 1903, 1904]; // cinq années fixes, des images de la maquette
+// les penches, par rang : [-4, 3, -2, 5, -3] degrés
+```
+
+**Écarts :** la maquette pince toujours ces cinq années-là, quoi que le membre ait vu. Le code
+(`ficelle.ts`, `affichesDeLaFicelle`) pince la première affiche (`CaseVue.affiches[0]`) de chaque
+année ouverte de la décennie qui en a une, dans l'ordre des années, les cinq plus récentes au plus :
+à la première montée, où aucune année n'a encore d'affiche, **la ficelle est vide et rien ne se
+dessine**, ni fil ni pince ; une année fermée ou en attente du Voyage suivi n'y entre pas ; passé
+cinq, les plus anciennes sortent. Toute la ficelle est cuite sur une seule toile, recuite quand une
+affiche arrive (`cleDeLaFicelle`) ; une affiche pas encore chargée laisse son papier nu.
 
 ## Ce que 12 joue
 

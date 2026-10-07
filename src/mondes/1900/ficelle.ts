@@ -27,3 +27,12 @@ export function affichesDeLaFicelle(cases: readonly Pick<CaseVue, 'annee' | 'eta
     .flatMap((k) => (estFermee(k) || !k.affiches[0] ? [] : [k.affiches[0]]))
     .slice(-PLAFOND_DE_LA_FICELLE)
 }
+
+/**
+ * La clé sous laquelle la ficelle se cuit (`accroches.ts`) : ses adresses dans l'ordre, chacune
+ * marquée chargée (`+`) ou non (`-`). Une affiche qui arrive change donc la clé, et la ficelle se
+ * recuit avec elle ; tant que rien ne change, la même toile est reposée.
+ */
+export function cleDeLaFicelle(adresses: readonly string[], chargees: readonly boolean[]): string {
+  return `ficelle:${adresses.map((url, k) => `${chargees[k] ? '+' : '-'}${url}`).join('|')}`
+}

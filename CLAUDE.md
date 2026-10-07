@@ -116,7 +116,7 @@ absente de cette table.
 | Fiche | Quand la lire |
 |---|---|
 | `docs/cerveau/carte-et-moteur.md` | Avant d'ouvrir `src/carte/moteur.ts`, `src/carte/meneur.ts` ou leurs tests, d'ajouter un monde, de toucher à la caméra, aux zones, à la mémoire des images, à l'enveloppe de `pages/Carte.tsx` ou à une célébration. |
-| `docs/cerveau/monde-1900.md` | Avant d'ouvrir `src/mondes/1900/` : le tracé et les gares, les quatre toiles, le passage de la foire au train, l'habillage (l'heure, la lanterne), ses images, ou la règle du déblocage. |
+| `docs/cerveau/monde-1900.md` | Avant d'ouvrir `src/mondes/1900/` : le tracé et les gares, les quatre toiles, le passage de la foire au train, l'habillage (l'heure, la lanterne), la météo, le tunnel, la ficelle d'affiches, ses images, ou la règle du déblocage. |
 
 **La consigne de lecture** vaut pour toute session et tout sous-agent, sans que le brief la répète :
 chercher par `grep` avant de lire ; lire par plage (`offset`, `limit`) tout fichier de plus de 500
