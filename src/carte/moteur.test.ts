@@ -6,7 +6,7 @@ import { APPUI_LONG_MS } from './geste'
 import { TUILE } from './dessin/sol'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Monde, MusiqueDuMonde, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
+import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Monde, MusiqueDuMonde, ObjetCache, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
 import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -36,6 +36,17 @@ const ENTRE_LES_DEUX = { x: DATE.x + 12, y: DATE.y }
 /** Une seconde bobine, loin de la première, pour le monde qui en cache deux (option `deuxBobines`). */
 const AUTRE_BOBINE: BobinePerdue = { cle: 'la-tete-de-janus', titre: 'La Tête de Janus', qui: 'F. W. Murnau, 1920' }
 const OU_AUTRE_BOBINE = { x: 190, y: DATE.y }
+/**
+ * Lot « moteur » : l'objet caché de chaque monde d'essai (option `objets`), au même rang 0 chez l'un
+ * et chez l'autre. Celui de 1890 mord sur le manège : un toucher qui ne le trouve plus tombe sur le
+ * manège. Celui du monde collant se pose à l'écran, en haut, comme sa dépêche.
+ */
+const OBJET: ObjetCache = { cle: 'la-lorgnette' }
+const OBJET_1900: ObjetCache = { cle: 'le-sifflet' }
+const OU_OBJET = { x: MANEGE.x + 12, y: MANEGE.y }
+const OU_OBJET_1900 = { x: 130, y: 60 }
+/** Les vues que les mondes d'essai ont reçues avec une réaction. */
+const vuesDesReactions: VueMonde[] = []
 const MUSIQUE: MusiqueDuMonde = { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }
 /** La couleur de la joue d'une bobine terne (`dessinerBobine`), passée par la rampe du monde d'essai. */
 const JOUE = mondeAVenir(1890).couleur('#6b6258')
@@ -118,7 +129,8 @@ function mondeDEssai(decennie: number, collant = false, arrets: readonly number[
         v.bobine(0, OU_BOBINE_1900.x, OU_BOBINE_1900.y, 8)
       }
     },
-    reagir: (id) => {
+    reagir: (id, _data, v) => {
+      vuesDesReactions.push(v)
       reactions.push(id)
       reagis.push({ decennie, id })
     },
@@ -152,11 +164,18 @@ function monter(
     entree?: readonly TempsDEntree[]
     /** Plan 3b : le monde collant porte une date, une bobine et un sémaphore (`DEPECHE`, `BOBINE_1900`). */
     garni?: boolean
+    /** Lot « moteur » : chaque monde d'essai cache un objet (`OBJET`, `OBJET_1900`), qu'il pose sans que rien ne le dessine. */
+    objets?: boolean
+    /** Lot « moteur » : les identifiants de zone dont le toucher vaut au calme, par décennie (`Monde.touchesAuCalme`). */
+    auCalme?: Record<number, readonly string[]>
+    /** Lot « moteur » : 1890 pose, sur le manège, un objet d'un rang qu'il ne déclare pas. */
+    objetInconnu?: boolean
   } = {},
 ) {
   vus.length = 0
   reactions.length = 0
   reagis.length = 0
+  vuesDesReactions.length = 0
   suivis.length = 0
   bandes.length = 0
   const principal = contexteFactice()
@@ -185,7 +204,12 @@ function monter(
         dessinerCiel: options.cielSage ? (v) => (v.vivant ? m.dessinerCiel(v) : void vus.push(v)) : m.dessinerCiel,
         siteDuChantier: (annee) => (chantier1898 !== undefined && annee === 1898 ? chantier1898 : m.siteDuChantier(annee)),
         bobines: options.deuxBobines && d === 1890 ? [BOBINE, AUTRE_BOBINE] : m.bobines,
+        objets: !options.objets ? m.objets : d === 1890 ? [OBJET] : m.scene ? [OBJET_1900] : [],
+        touchesAuCalme: options.auCalme?.[d] ?? m.touchesAuCalme,
         dessinerProche: (v) => {
+          if (options.objets && d === 1890) v.objet(0, OU_OBJET.x * v.k, v.ecranY(OU_OBJET.y, 1), 8)
+          if (options.objetInconnu && d === 1890) v.objet(7, MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 8)
+          if (options.objets && m.scene) v.objet(0, OU_OBJET_1900.x, OU_OBJET_1900.y, 8)
           if (options.deuxBobines && d === 1890) v.bobine(1, OU_AUTRE_BOBINE.x * v.k, v.ecranY(OU_AUTRE_BOBINE.y, 1), 8)
           if (!particules) return
           v.etincelles(10, 10, 1, '#abcdef')
@@ -195,7 +219,7 @@ function monter(
       }
     },
   }
-  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn() }
+  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn(), objet: vi.fn() }
   const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(options.calme ?? false)
@@ -2816,6 +2840,168 @@ describe('le moteur de la carte', () => {
           tourner(50)
           expect(banc.demandees).toEqual([])
           expect(banc.rappels.defilerVers).not.toHaveBeenCalled()
+        })
+
+        // Lot « moteur », tâche 2 : le second ramassable (la zone `objet`, que le monde dessine lui-même)
+        // et le toucher du décor qui vaut au calme (`Monde.touchesAuCalme`).
+        describe('l’objet caché et le toucher au calme (lot « moteur »)', () => {
+          const devantLeManege = (options: Options = {}) => {
+            const banc = monter({ objets: true, ...options })
+            banc.moteur.defiler(MARGE_HAUT)
+            banc.moteur.image(1000)
+            return banc
+          }
+          const aLaFrontiere = (options: Options = {}) => {
+            const banc = auTrain({ garni: true, objets: true, ...options })
+            banc.moteur.defiler(CAMERA)
+            banc.moteur.image(1000)
+            return banc
+          }
+          /** Les clés dites à la page. L'endroit se lit au calme seulement : vivante, l'image tremble. */
+          const cles = (banc: ReturnType<typeof monter>) => vi.mocked(banc.rappels.objet!).mock.calls.map((a) => a[0])
+          const derniereVueDe = (annee: number) => vus.filter((v) => v.cases.some((c) => c.annee === annee)).pop()!
+
+          // Mutation : la branche `objet` de `toucher` placée après la garde du calme.
+          it('un objet se ramasse, au calme aussi : sa clé part, avec l’endroit, et rien d’autre', () => {
+            for (const calme of [false, true]) {
+              const banc = devantLeManege({ calme })
+              toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+              expect(cles(banc)).toEqual([OBJET.cle])
+              if (calme) expect(banc.rappels.objet).toHaveBeenCalledWith(OBJET.cle, { x: OU_OBJET.x, y: OU_OBJET.y })
+              expect(banc.rappels.bobine).not.toHaveBeenCalled()
+              expect(reactions).toEqual([])
+            }
+          })
+
+          // Mutations : `ramasses.add` retiré de `toucher` ; la garde `ramasse(i)` retirée de
+          // `VueMonde.objet` (la zone resterait devant le manège) ; la garde `ramasses.has` retirée de
+          // `toucher` (la zone de l'image d'avant ramasserait encore).
+          it('un objet ramassé ne se ramasse pas deux fois, et sa zone ne se touche plus', () => {
+            const banc = devantLeManege()
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(false)
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            // Avant toute image neuve : la zone est encore là, la clé est déjà retenue.
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(banc.rappels.objet).toHaveBeenCalledTimes(1)
+            expect(reactions).toEqual([])
+            banc.moteur.image(1040)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(true)
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(banc.rappels.objet).toHaveBeenCalledTimes(1)
+            expect(reactions).toEqual(['manege'])
+          })
+
+          // Mutations : `objetRamasse` qui rend faux pour un rang que le monde ne déclare pas ; une
+          // zone inscrite pour ce rang (muette, de priorité 3, elle avalerait le toucher du manège).
+          it('un rang inconnu passe pour ramassé, et n’inscrit aucune zone', () => {
+            const banc = devantLeManege({ objets: false, objetInconnu: true })
+            expect(derniereVueDe(1898).objetRamasse(7)).toBe(true)
+            toucher(banc.moteur, MANEGE.x, MANEGE.y)
+            expect(banc.rappels.objet).not.toHaveBeenCalled()
+            expect(reactions).toEqual(['manege'])
+          })
+
+          // Le doigt est au centre du manège, à douze pixels de celui de l'objet. Mutation : la zone
+          // `objet` inscrite sans sa priorité (0 au lieu de 3).
+          it('la zone d’un objet passe devant le décor', () => {
+            const banc = devantLeManege()
+            toucher(banc.moteur, MANEGE.x, MANEGE.y)
+            expect(cles(banc)).toEqual([OBJET.cle])
+            expect(reactions).toEqual([])
+          })
+
+          // Mutations : `reglerObjets` qui n'alimente pas `ramasses` ; `ramasse` qui ne lit pas la table
+          // (toujours faux pour un rang connu) ; la table complétée au lieu d'être remplacée.
+          it('`reglerObjets` retire la zone d’un objet connu de la page, et la rend si la page l’oublie', () => {
+            const banc = monter({ objets: true })
+            banc.moteur.reglerObjets([OBJET.cle])
+            banc.moteur.defiler(MARGE_HAUT)
+            banc.moteur.image(1000)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(true)
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(banc.rappels.objet).not.toHaveBeenCalled()
+            expect(reactions).toEqual(['manege'])
+            banc.moteur.reglerObjets([])
+            banc.moteur.image(1040)
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(cles(banc)).toEqual([OBJET.cle])
+          })
+
+          // Au calme la boucle s'arrête : sans image demandée, l'objet ramassé (ou que la page vient de
+          // dire ramassé) resterait dessiné par son monde. Mutations : `this.demander()` retiré de
+          // `reglerObjets` ; retiré de la branche `objet` de `toucher`.
+          it('un objet ramassé et `reglerObjets` demandent une image, au calme aussi', () => {
+            const banc = devantLeManege({ calme: true })
+            let ms = 1000
+            const tourner = () => {
+              for (let i = 0; i < 50 && banc.demandees.length; i++) for (const f of banc.demandees.splice(0)) f((ms += 40))
+            }
+            tourner()
+            expect(banc.demandees).toEqual([])
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(cles(banc)).toEqual([OBJET.cle])
+            expect(banc.demandees.length).toBe(1)
+            tourner()
+            expect(banc.demandees).toEqual([])
+            banc.moteur.reglerObjets([])
+            expect(banc.demandees.length).toBe(1)
+          })
+
+          // Le doigt est sur le bas de 1890, en `y` de carte, et 1890 porte un objet au même rang.
+          // Mutation : le monde lu d'après le `y` du doigt au lieu de `z.section`.
+          it('la clé dite à la page est celle du monde qui a posé l’objet', () => {
+            expect(CAMERA + OU_OBJET_1900.y).toBeLessThan(HAUT_1900)
+            for (const calme of [false, true]) {
+              const banc = aLaFrontiere({ calme })
+              toucher(banc.moteur, OU_OBJET_1900.x, OU_OBJET_1900.y)
+              expect(cles(banc)).toEqual([OBJET_1900.cle])
+            }
+          })
+
+          // Le moteur n'inscrit que la zone : à part la lecture du repère, l'image est la même, au bit
+          // près, que le monde pose un objet ou non. Mutation : un appel au contexte dans `VueMonde.objet`.
+          it('le moteur ne dessine rien pour un objet', () => {
+            const trait = (objets: boolean) => {
+              const banc = devantLeManege({ objets, cielSage: true })
+              return { banc, appels: JSON.stringify(banc.appels.filter((a) => a.nom !== 'getTransform')), toiles: JSON.stringify(banc.toiles) }
+            }
+            const avec = trait(true)
+            const sans = trait(false)
+            expect(avec.appels.length).toBeGreaterThan(1000)
+            expect(avec.appels).toBe(sans.appels)
+            expect(avec.toiles).toBe(sans.toiles)
+            // Le témoin : l'objet était bien posé dans l'image comparée.
+            toucher(avec.banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(avec.banc.rappels.objet).toHaveBeenCalledTimes(1)
+          })
+
+          // Mutations : `touchesAuCalme` ignoré (la garde du calme nue) ; la garde retirée.
+          it('au calme, le décor ne réagit que pour un identifiant que son monde déclare, et sous une vue immobile', () => {
+            const declare = devantLeManege({ objets: false, calme: true, auCalme: { 1890: ['manege'] } })
+            toucher(declare.moteur, MANEGE.x, MANEGE.y)
+            expect(reactions).toEqual(['manege'])
+            expect(vuesDesReactions.map((v) => v.vivant)).toEqual([false])
+            const autre = devantLeManege({ objets: false, calme: true, auCalme: { 1890: ['rideau'] } })
+            toucher(autre.moteur, MANEGE.x, MANEGE.y)
+            expect(reactions).toEqual([])
+            // Hors calme, la déclaration ne change rien : tout décor réagit.
+            const vivant = devantLeManege({ objets: false, auCalme: { 1890: ['rideau'] } })
+            toucher(vivant.moteur, MANEGE.x, MANEGE.y)
+            expect(reactions).toEqual(['manege'])
+            expect(vuesDesReactions.map((v) => v.vivant)).toEqual([true])
+          })
+
+          // Mutation : la déclaration lue chez un autre monde que celui qui a inscrit la zone (le
+          // monde sous le `y` du doigt, ou n'importe quel monde du plan).
+          it('au calme, la déclaration d’un autre monde ne vaut pas pour la zone', () => {
+            expect(CAMERA + OU_SEMAPHORE.y).toBeLessThan(HAUT_1900)
+            const chezLAutre = aLaFrontiere({ calme: true, auCalme: { 1890: ['semaphore'] } })
+            toucher(chezLAutre.moteur, OU_SEMAPHORE.x, OU_SEMAPHORE.y)
+            expect(reagis).toEqual([])
+            const chezLui = aLaFrontiere({ calme: true, auCalme: { 1900: ['semaphore'] } })
+            toucher(chezLui.moteur, OU_SEMAPHORE.x, OU_SEMAPHORE.y)
+            expect(reagis).toEqual([{ decennie: 1900, id: 'semaphore' }])
+          })
         })
 
         describe('les mineurs de la caméra laissés par le lot 2 (lot « moteur »)', () => {

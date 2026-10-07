@@ -56,6 +56,8 @@ export function mondeAVenir(decennie: number): Monde {
     // Un monde sans chantier ne joue rien et ne cache rien (plan 2d).
     musique: null,
     bobines: [],
+    objets: [],
+    touchesAuCalme: [],
     // Ni scène collante (plan 3a) : sa section glisse sous la caméra, comme 1890.
     scene: null,
   }

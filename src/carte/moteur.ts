@@ -92,6 +92,11 @@ export interface Rappels {
    * où rien n'est proche. Optionnel : une page qui n'offre pas le passage ne l'écoute pas.
    */
   entreeProche?: (decennie: number | null) => void
+  /**
+   * Un objet caché vient d'être ramassé (`Monde.objets`) : sa clé, et où il était à l'écran. Le
+   * moteur n'en joue rien, ni envol ni son. Optionnel : une page qui ne garde pas d'objets ne l'écoute pas.
+   */
+  objet?: (cle: string, ou: { x: number; y: number }) => void
 }
 /** Sous cette hauteur d'écran, l'avatar est sous le bandeau du haut (le HUD de la page) : il n'est pas vu. */
 export const HAUT_MASQUE = 110
@@ -170,6 +175,8 @@ export class MoteurCarte {
   private ouverte = { annee: 0, t0: -9 }
   /** Les bobines perdues trouvées sur cet appareil (plan 2d), par clé : ni dessinées, ni touchables. */
   private trouvees = new Set<string>()
+  /** Les objets cachés déjà ramassés, par clé, une seule table pour toute la carte : leur zone ne s'inscrit plus. */
+  private ramasses = new Set<string>()
   /** La bobine qui vole vers le compteur, d'où elle part et depuis quand ; nulle sinon. */
   private envol: { cle: string; x0: number; y0: number; t0: number } | null = null
   /**
@@ -307,6 +314,12 @@ export class MoteurCarte {
   reglerBobines(cles: readonly string[]): void {
     this.trouvees = new Set(cles)
     if (this.envol) this.trouvees.add(this.envol.cle)
+    this.demander()
+  }
+
+  /** Les objets cachés déjà ramassés, d'après la page : le jumeau de `reglerBobines`. Leur zone ne s'inscrit plus. */
+  reglerObjets(cles: readonly string[]): void {
+    this.ramasses = new Set(cles)
     this.demander()
   }
 
@@ -679,25 +692,37 @@ export class MoteurCarte {
       return
     }
     // Le monde de la zone est celui qui l'a inscrite, pas celui que le `y` de carte du doigt désigne.
-    const section = z.section ?? -1
-    const s = this.plan.sections[section]
+    const s = this.plan.sections[z.section]
+    const monde = s ? this.deps.mondeDe(s.decennie) : undefined
     // Une bobine se ramasse aussi quand le visiteur demande moins d'animations : elle arrive d'un coup.
     if (z.id === 'bobine' && z.data !== null) {
-      const b = s ? this.deps.mondeDe(s.decennie).bobines[z.data] : undefined
+      const b = monde?.bobines[z.data]
       if (b) this.ramasser(b.cle, z.x, z.y)
+      return
+    }
+    // Un objet se ramasse aussi au calme : rien ne vole, la page seule en fait quelque chose.
+    if (z.id === 'objet' && z.data !== null) {
+      const o = monde?.objets[z.data]
+      if (o && !this.ramasses.has(o.cle)) {
+        this.ramasses.add(o.cle)
+        this.rappels.objet?.(o.cle, { x: z.x, y: z.y })
+        this.demander()
+      }
       return
     }
     // Une date s'ouvre aussi quand le visiteur demande moins d'animations : c'est une lecture, pas un décor.
     if (z.id === 'date' && z.data !== null) {
-      const d = s ? this.deps.mondeDe(s.decennie).dates[z.data] : undefined
+      const d = monde?.dates[z.data]
       if (s && d) {
         this.reactions.set(cleDeReaction(s.decennie, `date:${z.data}`), this.t)
         this.rappels.date(d)
       }
       return
     }
-    if (this.calme) return
-    if (s) this.deps.mondeDe(s.decennie).reagir(z.id, z.data, this.vueMonde(section, 1), { x: z.x, y: z.y })
+    if (!monde) return
+    // Au calme, le décor ne réagit pas : seul passe ce que le monde déclare comme un acte.
+    if (this.calme && !monde.touchesAuCalme.includes(z.id)) return
+    monde.reagir(z.id, z.data, this.vueMonde(z.section, 1), { x: z.x, y: z.y })
     this.demander()
   }
 
@@ -871,6 +896,10 @@ export class MoteurCarte {
       const b = monde.bobines[i]
       return !b || this.trouvees.has(b.cle)
     }
+    const ramasse = (i: number) => {
+      const o = monde.objets[i]
+      return !o || this.ramasses.has(o.cle)
+    }
     const derniere = quittees.reduce<{ rang: number; t0: number } | null>((acc, c) => {
       const t0 = this.pops.get(c.annee)
       return t0 !== undefined && (!acc || t0 > acc.t0) ? { rang: bati.indexOf(c), t0 } : acc
@@ -925,6 +954,11 @@ export class MoteurCarte {
         zone('bobine', lx, ly, r * 1.6, i, 3)
       },
       bobineTrouvee: trouvee,
+      // Le moteur n'inscrit que la zone : le monde dessine son objet.
+      objet: (i, lx, ly, r) => {
+        if (!ramasse(i)) zone('objet', lx, ly, r * 1.6, i, 3)
+      },
+      objetRamasse: ramasse,
       avance: this.camY - s.y0,
       entree: this.meneur.ageDuPassage(s.decennie),
     }
@@ -1030,7 +1064,8 @@ export class MoteurCarte {
     const pa = pointA(this.route, this.avatar.d)
     if (!this.collanteEn(pa.y)) {
       dessinerAvatar(g, pa.x, pa.y - this.camY, this.t - this.avatar.claque, !!this.avatar.marche, !this.calme)
-      this.zones.push({ id: 'clap', x: pa.x, y: pa.y - this.camY - 16, r: 22, data: null, prio: 2 })
+      // Le clap est au moteur, traité avant tout monde : sa section, celle où se tient l'avatar, ne sert qu'à tenir le type.
+      this.zones.push({ id: 'clap', x: pa.x, y: pa.y - this.camY - 16, r: 22, data: null, prio: 2, section: this.plan.sections.findIndex((x) => pa.y >= x.y0 && pa.y < x.y0 + x.hauteur) })
       this.effets.lumiere(g, pa.x, pa.y - this.camY - 4, this.t, !this.calme)
     }
     // 5. Les plans proches, les particules du monde, la brume de l'avenir.

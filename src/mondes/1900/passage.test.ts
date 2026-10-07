@@ -23,7 +23,7 @@ const A_L_ECRAN: Record<string, number> = Object.fromEntries([...FICHE.matchAll(
 const PHOTO = {} as CanvasImageSource
 const lus = (appels: unknown): unknown => JSON.parse(JSON.stringify(appels))
 /** Les dix années ouvertes, le membre en 1909 : aucune plaque à développer, aucune lampe qui respire. */
-const TOUTES: CaseVue[] = ANNEES.map((annee) => ({ annee, etat: annee === 1909 ? 'encours' : 'passee', profondeur: 0, affiches: [], x: 195, y: 0, pop: -9 }))
+const TOUTES: CaseVue[] = ANNEES.map((annee) => ({ annee, etat: annee === 1909 ? 'encours' : 'passee', attente: false, profondeur: 0, affiches: [], x: 195, y: 0, pop: -9 }))
 const vueA = (avance: number, surcharge: Partial<VueMonde> = {}) => vueFactice({ avance, cases: TOUTES, ouverte: { annee: 1909, t0: -9 }, image: () => PHOTO, ...surcharge })
 const ecran = (avance: number) => ({ W: 390, H: 700, avance })
 

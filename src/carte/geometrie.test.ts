@@ -178,7 +178,7 @@ describe('la caméra', () => {
 })
 
 describe('les zones', () => {
-  const zone = (id: string, x: number, prio: number): Zone => ({ id, x, y: 0, r: 30, data: null, prio })
+  const zone = (id: string, x: number, prio: number): Zone => ({ id, x, y: 0, r: 30, data: null, prio, section: 0 })
 
   // Mutation : `Math.max(20, …)` comme la maquette laisse des cibles de 40 px.
   it('ne descendent jamais sous 44 px de diamètre', () => {

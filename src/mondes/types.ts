@@ -79,10 +79,10 @@ export interface CaseVue {
   annee: number
   etat: EtatCase
   /**
-   * En attente du Voyage suivi (`EtatCarte.cases`) : à montrer fermée, quel que soit `etat`. Le moteur
-   * le remplit toujours ; absent (une vue de banc de test), il vaut faux.
+   * En attente du Voyage suivi (`EtatCarte.cases`) : à montrer fermée, quel que soit `etat`. Requis :
+   * le moteur le remplit toujours, et un banc de test le dit lui aussi.
    */
-  attente?: boolean
+  attente: boolean
   profondeur: number
   /**
    * Les adresses des affiches de l'année (`CaseCarte.affiches`), dans l'ordre où la page les donne ;
@@ -157,6 +157,15 @@ export interface VueMonde {
   bobine: (i: number, lx: number, ly: number, r: number) => void
   /** Vrai pour une bobine déjà trouvée (ou inconnue) : ce qui la trahit (une lueur dans la brume) se tait. */
   bobineTrouvee: (i: number) => boolean
+  /**
+   * Pose l'objet caché `i` (`Monde.objets`) dans le repère courant, centré en `lx`, `ly`, de rayon
+   * `r` : le moteur inscrit sa zone `objet` (priorité 3, rayon `r × 1,6`, comme une bobine) et **ne
+   * dessine rien**, le monde dessine son objet. Aucune zone pour un objet déjà ramassé, ni pour un
+   * rang inconnu.
+   */
+  objet: (i: number, lx: number, ly: number, r: number) => void
+  /** Vrai pour un objet déjà ramassé (ou inconnu) : le monde ne le dessine plus. Le jumeau de `bobineTrouvee`. */
+  objetRamasse: (i: number) => boolean
   /**
    * De combien la caméra est entrée dans la section : `camY − y0`, en pixels de carte (négatif tant
    * que le haut de la section est sous le haut de l'écran). Un monde à `scene` en tire tout ce qui
@@ -287,6 +296,15 @@ export interface BobinePerdue {
 }
 
 /**
+ * Un objet caché dans le décor d'un monde, à ramasser d'un toucher : le jumeau de `BobinePerdue`,
+ * réduit à sa clé. Son nom et son dessin sont au monde ; le moteur n'en joue ni envol ni son.
+ */
+export interface ObjetCache {
+  /** Stable d'une version à l'autre, unique sur toute la carte : c'est elle que le moteur retient et dit à la page, pas le rang. */
+  cle: string
+}
+
+/**
  * La musique d'un monde (plan 2d ; maquette carte v2 : l'orgue de barbarie de 1890, `PAR_TEMPS`,
  * `noteOrgue`, `planifier`). L'ambiance de la carte (`carte/son.ts`) la joue temps après temps,
  * au volume du poids de mélange du monde ; elle seule crée le contexte audio, au geste « Son ».
@@ -344,7 +362,7 @@ export interface Monde {
   siteDuChantier: (annee: number) => number | null
   /** La cinématique de sortie, par-dessus la brume, sous les voiles et le corail ; rien si `v.adieu < 0`. */
   dessinerAdieu: (v: VueMonde) => void
-  /** Un toucher sur une zone du décor : `data` est celle de la zone, `ou` son centre à l'écran (d'où partent confettis et étincelles). */
+  /** Un toucher sur une zone du décor : `data` est celle de la zone, `ou` son centre à l'écran (d'où partent confettis et étincelles). Jamais au calme, sauf pour un identifiant de `touchesAuCalme`. */
   reagir: (id: string, data: number | null, v: VueMonde, ou: { x: number; y: number }) => void
   /** Les pages du Voyage de ce monde : la fiche d'une année, la fiche d'un film, le billet, la feuille (plan 2b). */
   pages: HabillagePages
@@ -352,6 +370,17 @@ export interface Monde {
   musique: MusiqueDuMonde | null
   /** Les bobines perdues que cache le décor, que le monde pose par `VueMonde.bobine` ; aucune pour un monde à venir. */
   bobines: readonly BobinePerdue[]
+  /** Les objets cachés du décor, que le monde pose par `VueMonde.objet` et dessine lui-même ; le moteur les lit au rang de la zone touchée. Aucun : `[]`. */
+  objets: readonly ObjetCache[]
+  /**
+   * Les identifiants de zone de ce monde dont le toucher est un acte et non un décor : `reagir` les
+   * reçoit **aussi** quand le visiteur demande moins d'animations, avec une vue où `vivant` est faux.
+   * Tout autre identifiant ne lui parvient pas au calme. Aucun : `[]`.
+   *
+   * Le piège : au calme l'horloge du décor est figée. Une réaction reçue alors ne date rien
+   * (`v.marquer` daterait de l'horloge figée, et `v.age` vaudrait zéro pour toujours) : elle pose un état.
+   */
+  touchesAuCalme: readonly string[]
   /**
    * La scène collante du monde ; nulle : sa section glisse sous la caméra et le moteur y dessine la
    * route, les cases et l'avatar (1890, le monde « à venir »).

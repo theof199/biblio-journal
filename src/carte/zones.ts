@@ -12,9 +12,10 @@ export interface Zone {
   /**
    * Le rang de la section qui a inscrit la zone, dans le plan : le monde à qui elle appartient. Le
    * `y` de carte du doigt ne le dit pas : une section collante ne glisse pas, et ce que son monde
-   * pose en haut de l'écran tombe sur la section d'avant.
+   * pose en haut de l'écran tombe sur la section d'avant. Requis : une zone sans monde, hors de
+   * celles que le moteur traite lui-même, serait inerte en silence.
    */
-  section?: number
+  section: number
 }
 
 /** 44 px de diamètre : la cible tactile minimale de la spec (« Le rendu et les principes »). La maquette posait 20. */

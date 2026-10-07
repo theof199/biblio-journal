@@ -210,7 +210,7 @@ describe('ce que le tunnel couvre', () => {
 describe('le tunnel dans l’image du monde', () => {
   /** Les dix années : les `n` premières quittées sauf la dernière, en cours ; le reste fermé. */
   const casesOuvertes = (n: number): CaseVue[] =>
-    ANNEES.map((annee, i) => ({ annee, etat: i < n - 1 ? 'passee' : i === n - 1 ? 'encours' : 'verrou', profondeur: 0, affiches: [], x: 195, y: 0, pop: -9 }))
+    ANNEES.map((annee, i) => ({ annee, etat: i < n - 1 ? 'passee' : i === n - 1 ? 'encours' : 'verrou', attente: false, profondeur: 0, affiches: [], x: 195, y: 0, pop: -9 }))
   /** Ce que le monde pose par-dessus tout, lu comme une suite d'appels : comparé seulement à une autre image du même dessin. */
   const dessus = (rang: number, surcharge: Partial<VueMonde> & { t: number; vivant: boolean }): unknown => {
     const f = vueFactice({ avance: a(rang), cases: casesOuvertes(10), ouverte: { annee: 1909, t0: -9 }, ...surcharge })

@@ -67,6 +67,8 @@ export function creerMonde1900(): Monde {
     pages: PAGES_A_VENIR,
     musique: ROULEMENT,
     bobines: BOBINES,
+    objets: [],
+    touchesAuCalme: [],
     scene: {
       ecranDeLaCase,
       dessinerSuivi,

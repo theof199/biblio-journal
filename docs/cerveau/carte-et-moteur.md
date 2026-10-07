@@ -40,9 +40,9 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
   arrêtent le roulement et le passage à chaque image. La caméra s'écrit avec `defilerVers`, jamais du
   moteur (`meneur.test.ts`) : la page rend un `defiler`, un écho que le meneur attend (`attendu`) et oublie sitôt rendu, pas un geste.
 - **Chaque `majEtat` vide les tuiles du sol** : son état reste mémoïsé (`src/pages/Carte.tsx` › `donneesDesFiches`).
-- **Cinq identifiants de zone sont au moteur** : `case`, `clap`, `roulotte`, `bobine`, `date`. Les deux
-  derniers lisent `data` comme un rang dans `bobines` et `dates` du monde qui a inscrit la zone (sa `section`,
-  jamais `camY + y`) ; tout autre va à `reagir`, jamais au calme. Une priorité l'emporte sur toute distance.
+- **Six identifiants de zone sont au moteur** : `case`, `clap`, `roulotte`, `bobine`, `date`, `objet`. Les trois
+  derniers lisent `data` comme un rang dans `bobines`, `dates`, `objets` du monde qui a inscrit la zone (sa `section`, requise,
+  jamais `camY + y`) ; tout autre va à `reagir`, au calme seulement s'il est dans `src/mondes/types.ts` › `touchesAuCalme`. Un objet (`ObjetCache`, `reglerObjets`) : le moteur inscrit, le monde dessine ; la page ne l'écoute pas encore. Une priorité l'emporte sur toute distance.
 - **Un registre par appelant** (`src/mondes/index.ts` › `creerRegistre`) : le `Monde` que tient une
   page n'est pas celui que le moteur dessine, et ne sait rien de ce que l'autre garde entre deux images.
 - **Le tracé de 1890 et du monde « à venir » vit hors de leur dossier** (`src/mondes/trace.ts` › `trace1890`, `traceAVenir`, `HAUTEUR_MIN_SECTION`), celui de 1900 dans le sien ; `src/mondes/1890/ciel.ts` › `VIDE_DU_HAUT` voisine une copie de sa hauteur.

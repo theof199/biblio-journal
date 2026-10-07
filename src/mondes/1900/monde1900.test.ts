@@ -27,7 +27,7 @@ const SOURCES = import.meta.glob<string>(['./*.ts', '!./*.test.ts'], { query: '?
 
 /** Les dix années : les `ouvertes` premières quittées sauf la dernière, en cours ; le reste fermé. */
 const cases = (ouvertes: number): CaseVue[] =>
-  ANNEES.map((annee, i) => ({ annee, etat: i < ouvertes - 1 ? 'passee' : i === ouvertes - 1 ? 'encours' : 'verrou', profondeur: 0, affiches: [], x: 195, y: 0, pop: -9 }))
+  ANNEES.map((annee, i) => ({ annee, etat: i < ouvertes - 1 ? 'passee' : i === ouvertes - 1 ? 'encours' : 'verrou', attente: false, profondeur: 0, affiches: [], x: 195, y: 0, pop: -9 }))
 
 /** Le train arrêté en gare de `annee`, les `ouvertes` premières années ouvertes, le membre dans la dernière. */
 function enGare(annee: number, ouvertes: number, surcharge: Partial<VueMonde> = {}) {
@@ -222,7 +222,7 @@ describe('une année en attente du Voyage suivi', () => {
     expect(estFermee({ etat: 'verrou', attente: false })).toBe(true)
     expect(estFermee(undefined)).toBe(true)
     expect(estFermee({ etat: 'encours', attente: false })).toBe(false)
-    expect(estFermee({ etat: 'passee' })).toBe(false)
+    expect(estFermee({ etat: 'passee', attente: false })).toBe(false)
   })
 
   // Mutations : la garde d'`estFermee` retirée ; `aDevelopper` revenu à la seule lecture de `etat`.
