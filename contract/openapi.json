@@ -44315,7 +44315,7 @@
         "tags": [
           "voyage"
         ],
-        "description": "`annee_en_cours` sépare les trois statuts : `ouverte` avant elle (je peux toujours y revenir creuser), `en_cours` sur elle, `verrouillee` après (rien ne s’y ouvre encore).\n\n`visitee` dit si une ouverture existe déjà pour cette année, quel que soit son statut. `profondeur` compte les films de mon journal sortis cette année-là, y compris ceux vus avant d’y arriver ; un programme compte un, jamais ses bobines séparément. `affiche_url` est l’affiche du n°1 de mon podium cette année-là, nulle si la marche est vide.\n\n`recompense` vaut `ours` (profondeur ≥ 3, même sans ouverture — un seul film vu, même en avance, ne suffit plus depuis le 28 septembre 2026), `lion` (« Les essentiels » entièrement vus ou introuvables, accordé alors sans appel au chroniqueur) ou `palme` (`lion`, et au moins deux autres salles, à au moins un film, complètes au même sens) — `null` sinon.\n\n`progression` porte `essentiels_vus`/`essentiels_total`/`salles_completes`/`salles_autres`, même forme que sur la fiche (`GET /me/voyage/annees/{annee}`) — `null` pour une année verrouillée ou pas encore ouverte (`visitee: false`).\n\n`tampons` porte le passeport : une ligne par décennie bouclée (`decennie` croissant, `boucle_le`), où chacune de ses années porte une récompense (l’Ours au moins) et où le ticket de la première année de la décennie suivante est `utilise_le`. `boucle_le` est la plus tardive entre cet usage et, pour chaque année, le premier visionnage de son troisième film, comptés comme `profondeur` — un programme vaut un film, vu le jour de sa dernière bobine — (de son dernier, si elle en compte moins : une année au Lion peut n’en compter que deux, et sa date dit alors son dernier film vu, même si le Lion est tombé plus tard).\n\n`seance_prise` porte la dernière séance que j’ai prise (`POST /me/voyage/seances/{id}/prendre`), tant que son long n’est pas encore vu — `null` dès qu’il l’est, ou si aucune séance n’est prise.\n\n`ia` dit si le chroniqueur écrit pour moi : le compte marqué du Voyage, avec une clé posée. `source` porte ce compte quand ce n’est pas moi (`id`, `pseudo`, `annee_en_cours`), `null` pour lui. Les salles, films et ouvertures des années portées ici sont alors lus chez `source`, jamais chez moi, et bornés à mes années lisibles (celles qu’il a déjà ouvertes, jusqu’à la mienne) — au-delà, `visitee` reste faux même si `source` a continué.\n\n`source.annee_en_cours` dit où en est ce Voyage (`1895` s’il n’a jamais encaissé de ticket). Elle peut retarder de soixante secondes : encaisser un ticket n’invalide que le cache de son auteur.\n\nRéponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium et toute écriture sur une séance.",
+        "description": "`annee_en_cours` sépare les trois statuts : `ouverte` avant elle (je peux toujours y revenir creuser), `en_cours` sur elle, `verrouillee` après (rien ne s’y ouvre encore).\n\n`visitee` dit si une ouverture existe déjà pour cette année, quel que soit son statut. `profondeur` compte les films de mon journal sortis cette année-là, y compris ceux vus avant d’y arriver ; un programme compte un, jamais ses bobines séparément. `affiche_url` est l’affiche du n°1 de mon podium cette année-là, nulle si la marche est vide.\n\n`recompense` vaut `ours` (profondeur ≥ 3, même sans ouverture — un seul film vu, même en avance, ne suffit plus depuis le 28 septembre 2026), `lion` (« Les essentiels » entièrement vus ou introuvables, accordé alors sans appel au chroniqueur) ou `palme` (`lion`, et au moins deux autres salles, à au moins un film, complètes au même sens) — `null` sinon.\n\n`progression` porte `essentiels_vus`/`essentiels_total`/`salles_completes`/`salles_autres`, même forme que sur la fiche (`GET /me/voyage/annees/{annee}`) — `null` pour une année verrouillée ou pas encore ouverte (`visitee: false`).\n\n`tampons` porte le passeport : une ligne par décennie bouclée (`decennie` croissant, `boucle_le`), où chacune de ses années porte une récompense (l’Ours au moins) et où le ticket de la première année de la décennie suivante est `utilise_le`. `boucle_le` est la plus tardive entre cet usage et, pour chaque année, le premier visionnage de son troisième film, comptés comme `profondeur` — un programme vaut un film, vu le jour de sa dernière bobine — (de son dernier, si elle en compte moins : une année au Lion peut n’en compter que deux, et sa date dit alors son dernier film vu, même si le Lion est tombé plus tard).\n\n`seance_prise` porte la dernière séance que j’ai prise (`POST /me/voyage/seances/{id}/prendre`), tant que son long n’est pas encore vu — `null` dès qu’il l’est, ou si aucune séance n’est prise.\n\n`ia` dit si le chroniqueur écrit pour moi : le compte marqué du Voyage, avec une clé posée. `source` porte ce compte quand ce n’est pas moi (`id`, `pseudo`, `annee_en_cours`), `null` pour lui. Les salles, films et ouvertures des années portées ici sont alors lus chez `source`, jamais chez moi, et bornés à mes années lisibles (celles qu’il a déjà ouvertes, jusqu’à la mienne) — au-delà, `visitee` reste faux même si `source` a continué.\n\n`source.annee_en_cours` dit où en est ce Voyage (`1895` s’il n’a jamais encaissé de ticket). Elle peut retarder de soixante secondes : encaisser un ticket n’invalide que le cache de son auteur.\n\n`horaire`, sur chaque année, porte l’horaire que j’y ai accepté (`POST /me/voyage/annees/{annee}/horaire`), `null` sinon : son `echeance`, un dimanche de Paris, et son `etat`, calculé à la lecture (`accepte`, `tenu` si la gare a été bouclée un jour strictement antérieur, `manque` si l’échéance est arrivée sans cela). Le mien, jamais celui de `source`.\n\n`haltes` porte les embranchements facultatifs que j’ai atteints : une halte sort dès que l’année après laquelle elle s’embranche m’est ouverte (`apres` ≤ `annee_en_cours`), jamais avant, et la liste est vide d’ici là. Chacune porte `cle`, `nom`, `apres` et ses `films` (`tmdb_id`, `title`, `year`, `cover_url` en vignette, `plex_url`, `etat`). Le titre et l’année viennent d’un catalogue en code ; l’`etat` se calcule comme celui d’un film de salle, sur **mon** journal et **ma** marque d’introuvable, pour le **film** de cet identifiant (une série de même numéro ne le marque pas). Une halte ne se stocke pas, ne récompense rien et ne déplace ni `profondeur`, ni `recompense`, ni `progression` : un film de halte vu compte, comme tout film de mon journal, dans la `profondeur` de son année de sortie, une fois.\n\nRéponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium, toute écriture sur une séance et toute écriture sur un horaire. Un horaire peut donc rester `accepte` soixante secondes après minuit le dimanche.",
         "responses": {
           "200": {
             "description": "Ma progression dans le Voyage",
@@ -44455,6 +44455,47 @@
                               }
                             ],
                             "description": "Même forme que `progression` sur la fiche (`GET /me/voyage/annees/{annee}`) — nulle pour une année verrouillée ou pas encore ouverte (`visitee: false`)"
+                          },
+                          "horaire": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "echeance": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "description": "Le jour de l’échéance, à Paris, `AAAA-MM-JJ` : un dimanche. L’horaire est tenu si la gare est bouclée un jour **strictement antérieur**"
+                                  },
+                                  "accepte_le": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                                    "description": "L’instant où j’ai accepté cet horaire"
+                                  },
+                                  "etat": {
+                                    "type": "string",
+                                    "enum": [
+                                      "accepte",
+                                      "tenu",
+                                      "manque"
+                                    ],
+                                    "description": "`tenu` : la gare a été bouclée avant l’échéance. `manque` : l’échéance est arrivée sans cela, rien ne se perd. `accepte` : l’échéance n’est pas encore arrivée"
+                                  }
+                                },
+                                "required": [
+                                  "echeance",
+                                  "accepte_le",
+                                  "etat"
+                                ],
+                                "additionalProperties": false,
+                                "description": "L’horaire que j’ai accepté sur une gare, et où il en est"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "L’horaire que j’ai accepté sur cette gare (`POST /me/voyage/annees/{annee}/horaire`), nul si je n’en ai pas pris"
                           }
                         },
                         "required": [
@@ -44465,7 +44506,8 @@
                           "affiche_url",
                           "fond_url",
                           "recompense",
-                          "progression"
+                          "progression",
+                          "horaire"
                         ],
                         "additionalProperties": false,
                         "description": "Une année, telle qu’elle apparaît sur la carte"
@@ -44607,6 +44649,106 @@
                       ],
                       "description": "La séance que j’ai prise, tant que son long n’est pas encore vu — nulle sinon"
                     },
+                    "haltes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cle": {
+                            "type": "string",
+                            "description": "L’identifiant stable de la halte"
+                          },
+                          "nom": {
+                            "type": "string"
+                          },
+                          "apres": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "L’année après laquelle elle s’embranche : la halte est sur le tronçon entre `apres` et `apres + 1`"
+                          },
+                          "films": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "tmdb_id": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "L’identifiant TMDB du **film**"
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "description": "Le titre original, tel que le catalogue le porte"
+                                },
+                                "year": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "L’année de sortie, telle que le catalogue la porte"
+                                },
+                                "cover_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uri"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "La vignette de l’affiche — nulle tant que le film n’est pas en bibliothèque, ou s’il n’a pas d’affiche"
+                                },
+                                "plex_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uri"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Lien web vers le Plex du propriétaire, nul si le film n’y est pas"
+                                },
+                                "etat": {
+                                  "type": "string",
+                                  "enum": [
+                                    "vu",
+                                    "sur_le_plex",
+                                    "demande",
+                                    "a_demander",
+                                    "introuvable"
+                                  ],
+                                  "description": "Mon état sur ce film, calculé comme pour un film de salle"
+                                }
+                              },
+                              "required": [
+                                "tmdb_id",
+                                "title",
+                                "year",
+                                "cover_url",
+                                "plex_url",
+                                "etat"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Un film d’une halte, avec mon état"
+                            },
+                            "description": "Dans l’ordre du catalogue"
+                          }
+                        },
+                        "required": [
+                          "cle",
+                          "nom",
+                          "apres",
+                          "films"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une halte du Voyage et où j’en suis de ses films"
+                      },
+                      "description": "Les haltes dont l’année d’embranchement m’est ouverte (`apres` ≤ `annee_en_cours`), par `apres` croissant — vide tant que je n’y suis pas"
+                    },
                     "ia": {
                       "type": "boolean",
                       "description": "Le chroniqueur écrit pour moi : clé posée et compte IA du Voyage"
@@ -44654,6 +44796,7 @@
                     "ticket_a_montrer",
                     "tampons",
                     "seance_prise",
+                    "haltes",
                     "ia",
                     "source"
                   ],
@@ -44681,7 +44824,8 @@
                             "essentiels_total": 3,
                             "salles_completes": 1,
                             "salles_autres": 2
-                          }
+                          },
+                          "horaire": null
                         },
                         {
                           "annee": 1941,
@@ -44696,6 +44840,11 @@
                             "essentiels_total": 2,
                             "salles_completes": 1,
                             "salles_autres": 3
+                          },
+                          "horaire": {
+                            "echeance": "2026-09-27",
+                            "accepte_le": "2026-09-21T08:00:00.000Z",
+                            "etat": "tenu"
                           }
                         },
                         {
@@ -44706,7 +44855,8 @@
                           "affiche_url": null,
                           "fond_url": null,
                           "recompense": null,
-                          "progression": null
+                          "progression": null,
+                          "horaire": null
                         }
                       ],
                       "ticket_a_montrer": {
@@ -44729,6 +44879,39 @@
                         },
                         "court": null
                       },
+                      "haltes": [
+                        {
+                          "cle": "melies",
+                          "nom": "Halte Méliès",
+                          "apres": 1902,
+                          "films": [
+                            {
+                              "tmdb_id": 49275,
+                              "title": "Barbe-bleue",
+                              "year": 1901,
+                              "cover_url": "https://image.tmdb.org/t/p/w500/barbe-bleue.jpg",
+                              "plex_url": null,
+                              "etat": "vu"
+                            },
+                            {
+                              "tmdb_id": 49273,
+                              "title": "Le Mélomane",
+                              "year": 1903,
+                              "cover_url": "https://image.tmdb.org/t/p/w500/le-melomane.jpg",
+                              "plex_url": "https://app.plex.tv/desktop/#!/server/abc/details?key=%2Flibrary%2Fmetadata%2F4927",
+                              "etat": "sur_le_plex"
+                            },
+                            {
+                              "tmdb_id": 44333,
+                              "title": "Les Cartes vivantes",
+                              "year": 1905,
+                              "cover_url": null,
+                              "plex_url": null,
+                              "etat": "a_demander"
+                            }
+                          ]
+                        }
+                      ],
                       "ia": true,
                       "source": null
                     }
@@ -44855,7 +45038,7 @@
         "tags": [
           "voyage"
         ],
-        "description": "`prete` (`200`) si l’ouverture existe déjà pour ce membre : ses salles, dans l’ordre, avec chaque film (état et note calculés à la lecture). `en_preparation` (`202`) à la première visite d’une année ouverte ou en cours — la demande enfile l’ouverture, à redemander dans quelques secondes ; jamais pour un membre hors IA, qui n’ouvre jamais lui-même une année. `verrouillee` (`200`) après mon année en cours : rien ne s’enfile, même en visitant, et rien ne s’y sert — ticket gagné en main ou non, et même si son ouverture existe déjà (celle du compte IA s’écrit dès l’octroi du ticket). `{ configure: false }` (`200`) si `ANTHROPIC_API_KEY` manque et que l’année n’a pas encore d’ouverture, pour le compte IA seulement.\n\nPour un membre hors IA, une quatrième forme existe : `en_attente` (`200`), pour une année jusqu’à mon année en cours que le compte IA n’a pas encore ouverte ; rien ne s’enfile, `prete` dès qu’il l’ouvre. Une année après la mienne répond `verrouillee`, qu’elle soit ouverte chez le compte IA ou non.\n\n`etat` d’un film vaut `vu`, `sur_le_plex`, `demande`, `a_demander` ou `introuvable`. Pour un programme, `etat` ne vaut `vu` que quand **toutes** ses bobines le sont — chaque bobine porte le sien.\n\n`podium` porte les trois marches (`PUT`/`DELETE /me/voyage/annees/{annee}/podium/{place}`), `null` pour une place vide — présent sur `prete` et `verrouillee` (toujours vide sur cette dernière, le podium ne se posant que sur une année non verrouillée).\n\n`maturite` (`prete` seulement) porte le dernier jugement du chroniqueur sur cette année — `null` tant qu’aucun film de l’année n’a encore été noté, et toujours nul pour un membre hors IA : ce jugement n’appartient qu’au compte IA. `ticket` (`prete` seulement) porte le ticket vers `annee + 1`, s’il a été gagné — `null` sinon.\n\n`recompense` et `progression` (`prete` seulement) : la récompense de cette année (voir `GET /me/voyage`) et de quoi dessiner sa barre — `essentiels_vus`/`essentiels_total` (strictement vus, un introuvable n’y compte pas), `salles_completes`/`salles_autres` (salles hors essentiels, à au moins un film, entièrement vues ou introuvables).\n\n`seances` (`prete` seulement, brief du 21 septembre 2026, « la séance ») porte mes séances composées, par rang décroissant — la plus récente d’abord —, chacune un `long` jamais vu et un `court` facultatif (`POST /me/voyage/annees/{annee}/seances`). `seance_en_cours` dit si une composition vient d’être demandée et s’écrit encore. Pour un membre hors IA, toujours vide et faux : ce geste n’appartient qu’au compte IA.\n\n`pistes` (`prete` seulement, brief du 22 septembre 2026) : des salles que le chroniqueur propose sans jamais en ouvrir une lui-même — vide possible, renouvelée trois à la fois par `POST /me/voyage/annees/{annee}/pistes`. Une piste utilisée pour ouvrir une salle (`POST /me/voyage/annees/{annee}/salles`, corps `piste`) en disparaît. Pour un membre hors IA, toujours vide : lui seul, jamais moi, en reçoit. `demande_salle` toujours nulle pour lui, au même titre.\n\n`generique` (`prete` seulement) : nul tant qu’il n’a pas été demandé (`POST .../generique`). Pour le compte IA, le texte écrit une fois par le chroniqueur, rendu tel quel ensuite. Pour un membre hors IA, composé à la lecture à partir de mon propre journal — jamais celui du compte IA —, dès que j’ai gagné mon ticket vers `annee + 1` ; jamais stocké, jamais d’appel au chroniqueur.",
+        "description": "`prete` (`200`) si l’ouverture existe déjà pour ce membre : ses salles, dans l’ordre, avec chaque film (état et note calculés à la lecture). `en_preparation` (`202`) à la première visite d’une année ouverte ou en cours — la demande enfile l’ouverture, à redemander dans quelques secondes ; jamais pour un membre hors IA, qui n’ouvre jamais lui-même une année. `verrouillee` (`200`) après mon année en cours : rien ne s’enfile, même en visitant, et rien ne s’y sert — ticket gagné en main ou non, et même si son ouverture existe déjà (celle du compte IA s’écrit dès l’octroi du ticket). `{ configure: false }` (`200`) si `ANTHROPIC_API_KEY` manque et que l’année n’a pas encore d’ouverture, pour le compte IA seulement.\n\nPour un membre hors IA, une quatrième forme existe : `en_attente` (`200`), pour une année jusqu’à mon année en cours que le compte IA n’a pas encore ouverte ; rien ne s’enfile, `prete` dès qu’il l’ouvre. Une année après la mienne répond `verrouillee`, qu’elle soit ouverte chez le compte IA ou non.\n\n`etat` d’un film vaut `vu`, `sur_le_plex`, `demande`, `a_demander` ou `introuvable`. Pour un programme, `etat` ne vaut `vu` que quand **toutes** ses bobines le sont — chaque bobine porte le sien.\n\n`podium` porte les trois marches (`PUT`/`DELETE /me/voyage/annees/{annee}/podium/{place}`), `null` pour une place vide — présent sur `prete` et `verrouillee` (toujours vide sur cette dernière, le podium ne se posant que sur une année non verrouillée).\n\n`maturite` (`prete` seulement) porte le dernier jugement du chroniqueur sur cette année — `null` tant qu’aucun film de l’année n’a encore été noté, et toujours nul pour un membre hors IA : ce jugement n’appartient qu’au compte IA. `ticket` (`prete` seulement) porte le ticket vers `annee + 1`, s’il a été gagné — `null` sinon.\n\n`recompense` et `progression` (`prete` seulement) : la récompense de cette année (voir `GET /me/voyage`) et de quoi dessiner sa barre — `essentiels_vus`/`essentiels_total` (strictement vus, un introuvable n’y compte pas), `salles_completes`/`salles_autres` (salles hors essentiels, à au moins un film, entièrement vues ou introuvables).\n\n`seances` (`prete` seulement, brief du 21 septembre 2026, « la séance ») porte mes séances composées, par rang décroissant — la plus récente d’abord —, chacune un `long` jamais vu et un `court` facultatif (`POST /me/voyage/annees/{annee}/seances`). `seance_en_cours` dit si une composition vient d’être demandée et s’écrit encore. Pour un membre hors IA, toujours vide et faux : ce geste n’appartient qu’au compte IA.\n\n`pistes` (`prete` seulement, brief du 22 septembre 2026) : des salles que le chroniqueur propose sans jamais en ouvrir une lui-même — vide possible, renouvelée trois à la fois par `POST /me/voyage/annees/{annee}/pistes`. Une piste utilisée pour ouvrir une salle (`POST /me/voyage/annees/{annee}/salles`, corps `piste`) en disparaît. Pour un membre hors IA, toujours vide : lui seul, jamais moi, en reçoit. `demande_salle` toujours nulle pour lui, au même titre.\n\n`horaire` et `horaire_proposable` (`prete` seulement) : l’horaire que j’ai accepté sur cette gare, comme sur la carte, et l’échéance qu’accepter poserait aujourd’hui (le dimanche qui vient, à Paris), nulle si la gare ne peut pas en prendre : elle n’est pas mon année en cours propre, elle est déjà bouclée, ou elle porte déjà un horaire. Une fiche qui n’est pas `prete` n’en propose pas, et `POST …/horaire` y répond `409`.\n\n`generique` (`prete` seulement) : nul tant qu’il n’a pas été demandé (`POST .../generique`). Pour le compte IA, le texte écrit une fois par le chroniqueur, rendu tel quel ensuite. Pour un membre hors IA, composé à la lecture à partir de mon propre journal — jamais celui du compte IA —, dès que j’ai gagné mon ticket vers `annee + 1` ; jamais stocké, jamais d’appel au chroniqueur.",
         "parameters": [
           {
             "schema": {
@@ -45769,6 +45952,60 @@
                             }
                           ],
                           "description": "Le générique de fin d’année — mon parcours dans l’année, nul tant qu’il n’a pas été demandé (`POST .../generique`)"
+                        },
+                        "horaire": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "echeance": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                  "description": "Le jour de l’échéance, à Paris, `AAAA-MM-JJ` : un dimanche. L’horaire est tenu si la gare est bouclée un jour **strictement antérieur**"
+                                },
+                                "accepte_le": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                                  "description": "L’instant où j’ai accepté cet horaire"
+                                },
+                                "etat": {
+                                  "type": "string",
+                                  "enum": [
+                                    "accepte",
+                                    "tenu",
+                                    "manque"
+                                  ],
+                                  "description": "`tenu` : la gare a été bouclée avant l’échéance. `manque` : l’échéance est arrivée sans cela, rien ne se perd. `accepte` : l’échéance n’est pas encore arrivée"
+                                }
+                              },
+                              "required": [
+                                "echeance",
+                                "accepte_le",
+                                "etat"
+                              ],
+                              "additionalProperties": false,
+                              "description": "L’horaire que j’ai accepté sur une gare, et où il en est"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "L’horaire que j’ai accepté sur cette gare, nul si je n’en ai pas pris"
+                        },
+                        "horaire_proposable": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "L’échéance que `POST /me/voyage/annees/{annee}/horaire` poserait aujourd’hui : le dimanche qui vient, à Paris (le suivant si l’on est dimanche). Nulle si cette gare ne peut pas en prendre : elle n’est pas ma gare en cours, elle est déjà bouclée, ou elle porte déjà un horaire"
                         }
                       },
                       "required": [
@@ -45789,7 +46026,9 @@
                         "demande_salle",
                         "seances",
                         "seance_en_cours",
-                        "generique"
+                        "generique",
+                        "horaire",
+                        "horaire_proposable"
                       ],
                       "additionalProperties": false,
                       "description": "L’année, prête à afficher"
@@ -46188,7 +46427,13 @@
                         }
                       ],
                       "seance_en_cours": false,
-                      "generique": "Tu as ouvert 1941 sur Citizen Kane, et l’année n’a plus voulu te lâcher : Welles en premier, Bogart et Huston juste après, deux façons de regarder l’Amérique se raconter elle-même. Les essentiels sont bouclés, et cette constance t’a valu le Lion. Le Faucon maltais t’attend encore, à demander — l’ouverture parlait d’une grammaire neuve, tu l’as trouvée dans chaque contre-plongée de Kane."
+                      "generique": "Tu as ouvert 1941 sur Citizen Kane, et l’année n’a plus voulu te lâcher : Welles en premier, Bogart et Huston juste après, deux façons de regarder l’Amérique se raconter elle-même. Les essentiels sont bouclés, et cette constance t’a valu le Lion. Le Faucon maltais t’attend encore, à demander — l’ouverture parlait d’une grammaire neuve, tu l’as trouvée dans chaque contre-plongée de Kane.",
+                      "horaire": {
+                        "echeance": "2026-09-27",
+                        "accepte_le": "2026-09-21T08:00:00.000Z",
+                        "etat": "tenu"
+                      },
+                      "horaire_proposable": null
                     }
                   }
                 }
@@ -49650,6 +49895,174 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/annees/{annee}/horaire": {
+      "post": {
+        "summary": "Accepter l’horaire de ma gare en cours",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Un objectif facultatif : boucler cette gare **avant dimanche**. **Aucun corps** : l’échéance vient du serveur, c’est le dimanche qui vient, à Paris (le suivant si l’on est dimanche), celle que la fiche annonce dans `horaire_proposable`.\n\nL’horaire est `tenu` si le ticket de l’année suivante est émis un jour de Paris **strictement antérieur** à l’échéance : boucler le dimanche même, c’est être en retard. Il est `manque` dès que l’échéance arrive sans cela, et rien ne se perd. L’état se calcule à chaque lecture, rien n’en est stocké.\n\n`409` si la gare n’est pas mon année en cours propre (une année déjà passée, une année encore verrouillée, ou une année que seul le rattrapage a ouverte), si sa fiche n’est pas `prete` (`GET /me/voyage/annees/{annee}` : l’ouverture n’est pas écrite, ou, pour un membre hors IA, le compte suivi ne l’a pas encore ouverte : `en_attente`), si elle est déjà bouclée (le ticket de l’année suivante est émis), ou si elle porte déjà un horaire : **un horaire par gare**, et un horaire manqué ne se reprend pas. L’écriture n’accepte donc que ce que la fiche propose. `400` pour une année hors du Voyage.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1895,
+              "maximum": 9007199254740991
+            },
+            "in": "path",
+            "name": "annee",
+            "required": true,
+            "description": "De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête)."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "L’horaire que j’ai accepté sur une gare, et où il en est",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "echeance": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                      "description": "Le jour de l’échéance, à Paris, `AAAA-MM-JJ` : un dimanche. L’horaire est tenu si la gare est bouclée un jour **strictement antérieur**"
+                    },
+                    "accepte_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant où j’ai accepté cet horaire"
+                    },
+                    "etat": {
+                      "type": "string",
+                      "enum": [
+                        "accepte",
+                        "tenu",
+                        "manque"
+                      ],
+                      "description": "`tenu` : la gare a été bouclée avant l’échéance. `manque` : l’échéance est arrivée sans cela, rien ne se perd. `accepte` : l’échéance n’est pas encore arrivée"
+                    }
+                  },
+                  "required": [
+                    "echeance",
+                    "accepte_le",
+                    "etat"
+                  ],
+                  "additionalProperties": false,
+                  "description": "L’horaire que j’ai accepté sur une gare, et où il en est"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "echeance": "2026-09-27",
+                      "accepte_le": "2026-09-21T08:00:00.000Z",
+                      "etat": "accepte"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Retirer l’horaire d’une gare",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Retire l’horaire que j’ai accepté, **tant que son échéance n’est pas arrivée** : la gare peut alors en reprendre un.\n\n`404` si la gare n’a pas d’horaire. `409` s’il est `manque` (l’échéance est arrivée : il garde sa place, et ne se reprend pas) ou `tenu` (il est acquis). `400` pour une année hors du Voyage.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1895,
+              "maximum": 9007199254740991
+            },
+            "in": "path",
+            "name": "annee",
+            "required": true,
+            "description": "De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête)."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {

@@ -9004,7 +9004,11 @@ export interface paths {
      *
      * `source.annee_en_cours` dit où en est ce Voyage (`1895` s’il n’a jamais encaissé de ticket). Elle peut retarder de soixante secondes : encaisser un ticket n’invalide que le cache de son auteur.
      *
-     * Réponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium et toute écriture sur une séance.
+     * `horaire`, sur chaque année, porte l’horaire que j’y ai accepté (`POST /me/voyage/annees/{annee}/horaire`), `null` sinon : son `echeance`, un dimanche de Paris, et son `etat`, calculé à la lecture (`accepte`, `tenu` si la gare a été bouclée un jour strictement antérieur, `manque` si l’échéance est arrivée sans cela). Le mien, jamais celui de `source`.
+     *
+     * `haltes` porte les embranchements facultatifs que j’ai atteints : une halte sort dès que l’année après laquelle elle s’embranche m’est ouverte (`apres` ≤ `annee_en_cours`), jamais avant, et la liste est vide d’ici là. Chacune porte `cle`, `nom`, `apres` et ses `films` (`tmdb_id`, `title`, `year`, `cover_url` en vignette, `plex_url`, `etat`). Le titre et l’année viennent d’un catalogue en code ; l’`etat` se calcule comme celui d’un film de salle, sur **mon** journal et **ma** marque d’introuvable, pour le **film** de cet identifiant (une série de même numéro ne le marque pas). Une halte ne se stocke pas, ne récompense rien et ne déplace ni `profondeur`, ni `recompense`, ni `progression` : un film de halte vu compte, comme tout film de mon journal, dans la `profondeur` de son année de sortie, une fois.
+     *
+     * Réponse mise en cache 60 s par membre, invalidée par une écriture au journal (`/me/journal`), une marque « introuvable » (`PUT`/`DELETE /me/introuvables/{tmdbId}`), l’ouverture d’une année, une fournée, une écriture au podium, toute écriture sur une séance et toute écriture sur un horaire. Un horaire peut donc rester `accepte` soixante secondes après minuit le dimanche.
      */
     get: {
       responses: {
@@ -9045,6 +9049,24 @@ export interface paths {
                     /** @description Salles hors essentiels, à au moins un film — une salle vide ne compte pas */
                     salles_autres: number;
                   } | null;
+                  /** @description L’horaire que j’ai accepté sur cette gare (`POST /me/voyage/annees/{annee}/horaire`), nul si je n’en ai pas pris */
+                  horaire: ({
+                    /**
+                     * Format: date
+                     * @description Le jour de l’échéance, à Paris, `AAAA-MM-JJ` : un dimanche. L’horaire est tenu si la gare est bouclée un jour **strictement antérieur**
+                     */
+                    echeance: string;
+                    /**
+                     * Format: date-time
+                     * @description L’instant où j’ai accepté cet horaire
+                     */
+                    accepte_le: string;
+                    /**
+                     * @description `tenu` : la gare a été bouclée avant l’échéance. `manque` : l’échéance est arrivée sans cela, rien ne se perd. `accepte` : l’échéance n’est pas encore arrivée
+                     * @enum {string}
+                     */
+                    etat: "accepte" | "tenu" | "manque";
+                  }) | null;
                 })[];
               /** @description Un ticket gagné et pas encore montré — à afficher une fois, puis `POST .../montre` */
               ticket_a_montrer: {
@@ -9077,6 +9099,32 @@ export interface paths {
                   title: string;
                 } | null;
               }) | null;
+              /** @description Les haltes dont l’année d’embranchement m’est ouverte (`apres` ≤ `annee_en_cours`), par `apres` croissant — vide tant que je n’y suis pas */
+              haltes: ({
+                  /** @description L’identifiant stable de la halte */
+                  cle: string;
+                  nom: string;
+                  /** @description L’année après laquelle elle s’embranche : la halte est sur le tronçon entre `apres` et `apres + 1` */
+                  apres: number;
+                  /** @description Dans l’ordre du catalogue */
+                  films: ({
+                      /** @description L’identifiant TMDB du **film** */
+                      tmdb_id: number;
+                      /** @description Le titre original, tel que le catalogue le porte */
+                      title: string;
+                      /** @description L’année de sortie, telle que le catalogue la porte */
+                      year: number;
+                      /** @description La vignette de l’affiche — nulle tant que le film n’est pas en bibliothèque, ou s’il n’a pas d’affiche */
+                      cover_url: string | null;
+                      /** @description Lien web vers le Plex du propriétaire, nul si le film n’y est pas */
+                      plex_url: string | null;
+                      /**
+                       * @description Mon état sur ce film, calculé comme pour un film de salle
+                       * @enum {string}
+                       */
+                      etat: "vu" | "sur_le_plex" | "demande" | "a_demander" | "introuvable";
+                    })[];
+                })[];
               /** @description Le chroniqueur écrit pour moi : clé posée et compte IA du Voyage */
               ia: boolean;
               /** @description Le Voyage que je suis, sans IA — nul pour le compte IA */
@@ -9169,6 +9217,8 @@ export interface paths {
      * `seances` (`prete` seulement, brief du 21 septembre 2026, « la séance ») porte mes séances composées, par rang décroissant — la plus récente d’abord —, chacune un `long` jamais vu et un `court` facultatif (`POST /me/voyage/annees/{annee}/seances`). `seance_en_cours` dit si une composition vient d’être demandée et s’écrit encore. Pour un membre hors IA, toujours vide et faux : ce geste n’appartient qu’au compte IA.
      *
      * `pistes` (`prete` seulement, brief du 22 septembre 2026) : des salles que le chroniqueur propose sans jamais en ouvrir une lui-même — vide possible, renouvelée trois à la fois par `POST /me/voyage/annees/{annee}/pistes`. Une piste utilisée pour ouvrir une salle (`POST /me/voyage/annees/{annee}/salles`, corps `piste`) en disparaît. Pour un membre hors IA, toujours vide : lui seul, jamais moi, en reçoit. `demande_salle` toujours nulle pour lui, au même titre.
+     *
+     * `horaire` et `horaire_proposable` (`prete` seulement) : l’horaire que j’ai accepté sur cette gare, comme sur la carte, et l’échéance qu’accepter poserait aujourd’hui (le dimanche qui vient, à Paris), nulle si la gare ne peut pas en prendre : elle n’est pas mon année en cours propre, elle est déjà bouclée, ou elle porte déjà un horaire. Une fiche qui n’est pas `prete` n’en propose pas, et `POST …/horaire` y répond `409`.
      *
      * `generique` (`prete` seulement) : nul tant qu’il n’a pas été demandé (`POST .../generique`). Pour le compte IA, le texte écrit une fois par le chroniqueur, rendu tel quel ensuite. Pour un membre hors IA, composé à la lecture à partir de mon propre journal — jamais celui du compte IA —, dès que j’ai gagné mon ticket vers `annee + 1` ; jamais stocké, jamais d’appel au chroniqueur.
      */
@@ -9358,6 +9408,26 @@ export interface paths {
               seance_en_cours: boolean;
               /** @description Le générique de fin d’année — mon parcours dans l’année, nul tant qu’il n’a pas été demandé (`POST .../generique`) */
               generique: string | null;
+              /** @description L’horaire que j’ai accepté sur cette gare, nul si je n’en ai pas pris */
+              horaire: ({
+                /**
+                 * Format: date
+                 * @description Le jour de l’échéance, à Paris, `AAAA-MM-JJ` : un dimanche. L’horaire est tenu si la gare est bouclée un jour **strictement antérieur**
+                 */
+                echeance: string;
+                /**
+                 * Format: date-time
+                 * @description L’instant où j’ai accepté cet horaire
+                 */
+                accepte_le: string;
+                /**
+                 * @description `tenu` : la gare a été bouclée avant l’échéance. `manque` : l’échéance est arrivée sans cela, rien ne se perd. `accepte` : l’échéance n’est pas encore arrivée
+                 * @enum {string}
+                 */
+                etat: "accepte" | "tenu" | "manque";
+              }) | null;
+              /** @description L’échéance que `POST /me/voyage/annees/{annee}/horaire` poserait aujourd’hui : le dimanche qui vient, à Paris (le suivant si l’on est dimanche). Nulle si cette gare ne peut pas en prendre : elle n’est pas ma gare en cours, elle est déjà bouclée, ou elle porte déjà un horaire */
+              horaire_proposable: string | null;
             }) | ({
               /** @enum {boolean} */
               configure: true;
@@ -10784,6 +10854,110 @@ export interface paths {
         };
         /** @description Default Response */
         404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/annees/{annee}/horaire": {
+    /**
+     * Accepter l’horaire de ma gare en cours
+     * @description Un objectif facultatif : boucler cette gare **avant dimanche**. **Aucun corps** : l’échéance vient du serveur, c’est le dimanche qui vient, à Paris (le suivant si l’on est dimanche), celle que la fiche annonce dans `horaire_proposable`.
+     *
+     * L’horaire est `tenu` si le ticket de l’année suivante est émis un jour de Paris **strictement antérieur** à l’échéance : boucler le dimanche même, c’est être en retard. Il est `manque` dès que l’échéance arrive sans cela, et rien ne se perd. L’état se calcule à chaque lecture, rien n’en est stocké.
+     *
+     * `409` si la gare n’est pas mon année en cours propre (une année déjà passée, une année encore verrouillée, ou une année que seul le rattrapage a ouverte), si sa fiche n’est pas `prete` (`GET /me/voyage/annees/{annee}` : l’ouverture n’est pas écrite, ou, pour un membre hors IA, le compte suivi ne l’a pas encore ouverte : `en_attente`), si elle est déjà bouclée (le ticket de l’année suivante est émis), ou si elle porte déjà un horaire : **un horaire par gare**, et un horaire manqué ne se reprend pas. L’écriture n’accepte donc que ce que la fiche propose. `400` pour une année hors du Voyage.
+     */
+    post: {
+      parameters: {
+        path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
+          annee: number;
+        };
+      };
+      responses: {
+        /** @description L’horaire que j’ai accepté sur une gare, et où il en est */
+        201: {
+          content: {
+            "application/json": {
+              /**
+               * Format: date
+               * @description Le jour de l’échéance, à Paris, `AAAA-MM-JJ` : un dimanche. L’horaire est tenu si la gare est bouclée un jour **strictement antérieur**
+               */
+              echeance: string;
+              /**
+               * Format: date-time
+               * @description L’instant où j’ai accepté cet horaire
+               */
+              accepte_le: string;
+              /**
+               * @description `tenu` : la gare a été bouclée avant l’échéance. `manque` : l’échéance est arrivée sans cela, rien ne se perd. `accepte` : l’échéance n’est pas encore arrivée
+               * @enum {string}
+               */
+              etat: "accepte" | "tenu" | "manque";
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    /**
+     * Retirer l’horaire d’une gare
+     * @description Retire l’horaire que j’ai accepté, **tant que son échéance n’est pas arrivée** : la gare peut alors en reprendre un.
+     *
+     * `404` si la gare n’a pas d’horaire. `409` s’il est `manque` (l’échéance est arrivée : il garde sa place, et ne se reprend pas) ou `tenu` (il est acquis). `400` pour une année hors du Voyage.
+     */
+    delete: {
+      parameters: {
+        path: {
+          /** @description De 1895 à l’an prochain, l’année civile comptée à Paris (le plafond se lit à chaque requête). */
+          annee: number;
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        204: {
+          content: never;
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };
