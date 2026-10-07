@@ -494,8 +494,16 @@ Où vit quoi :
   maquette n'y est pas (décision 6), ni le poinçon doré du contrôleur, qui attend son lot ; leurs mots
   et leurs règles : `mondes/1900/pages/carton.ts`. **La nouvelle salle, la ligne du bas, les
   feuillets, la feuille du chroniqueur, le programme d'un film et ses bobines gardent encore les
-  composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, le monument et
-  le guichet de la décennie sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.
+  composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
+  uni. **Le guichet** (écran 11, `Grille` et `TableauDesDeparts`) : sous le fronton « Billets · 1900 à
+  1909 », une grille de laiton en plein cintre, l'employé derrière elle, qui paraît à l'ouverture et
+  hoche la tête à chaque lettre, et la tablette où l'on demande son film, que la page amène au-dessus
+  du clavier. Dessous, les années prêtes en plaques de laiton, puis le tableau des départs : l'année,
+  le film (son titre, et dessous son réalisateur et son état, sans tiret pour une bobine), la voie de
+  sa salle, celle de la fiche d'année (`Vue.voie`) ; le passage trouvé reste souligné, les réglettes
+  glissent à leur place, rien au calme. « Aucun départ pour ce nom. Essayez un réalisateur. » et
+  « Chercher hors du Voyage » sont les mots de la maquette ; ses mots et ses règles :
+  `mondes/1900/pages/guichet.ts`. `docs/cerveau/pages-1900.md` tient le compte.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
 `generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`,

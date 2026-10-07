@@ -9,6 +9,7 @@ import Correspondances from './pages/Correspondances'
 import Courroie from './pages/Courroie'
 import Frontiere from './pages/Frontiere'
 import Gare from './pages/Gare'
+import Grille from './pages/Grille'
 import GuichetDuFilm from './pages/GuichetDuFilm'
 import Guide from './pages/Guide'
 import Hale from './pages/Hale'
@@ -18,6 +19,7 @@ import LiensDeLaLigne from './pages/LiensDeLaLigne'
 import LigneDesAnnees from './pages/LigneDesAnnees'
 import NoticeDuFilm from './pages/NoticeDuFilm'
 import SousLaTete from './pages/SousLaTete'
+import TableauDesDeparts from './pages/TableauDesDeparts'
 import Tete from './pages/Tete'
 import TitreDeLaLigne from './pages/TitreDeLaLigne'
 import TrainDuSoir from './pages/TrainDuSoir'
@@ -89,7 +91,7 @@ export const PAGES_1900: HabillagePages = {
     billet: { tete: 'Le composteur', titre: 'Séance du', valider: 'Composter le billet', validerSous: 'il part au casier', tampon: 'VU', tamponAutour: 'Le voyage immobile · vu le', ouvrir: 'Composter une séance', ouvrirSous: 'ouvre le composteur' },
     decennie: { annonce: 'La ligne des années', toucher: null, passeport: 'Passeport du Voyage', palissade: { titre: 'Les affiches', sous: 'par année' }, registre: 'L’indicateur de la ligne', prochainement: 'Plaque à développer' },
     boite: { sur: 'Collection', titre: 'Le casier du contrôleur', etiquette: 'LE VOYAGE IMMOBILE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger au casier' },
-    recherche: { champ: 'Quel film ?', catalogue: 'Le guichet', affiche: 'À voir en priorité', vide: 'Aucun film à ce nom dans les salles.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher partout' },
+    recherche: { champ: 'Quel film ?', catalogue: 'Le guichet', affiche: 'À voir en priorité', vide: 'Aucun départ pour ce nom. Essayez un réalisateur.', ouvrir: 'Ouvrir la fiche', partout: 'Chercher hors du Voyage' },
     manivelle: { tirer: 'Tire la courroie', relacher: 'Relâche la courroie', charge: 'L’indicateur se met à jour…', fait: 'L’indicateur est à jour.', bouton: 'Tirer la courroie pour mettre l’indicateur à jour' },
   },
   // La tête de la gare porte l'année, titre de la page : le fronton et le corps fermé ne la répètent pas.
@@ -102,7 +104,8 @@ export const PAGES_1900: HabillagePages = {
   // Edmondson sous son composteur (écrans 6 et 7). La boîte à billets est le casier du contrôleur, une
   // case par année, d'où sort une liasse de cartons (écran 8). La page d'une décennie est la ligne :
   // l'affiche à la place du monument, l'indicateur de la ligne à celle du registre, le passeport en
-  // page à tampons de frontière, sans palissade (écrans 1 et 9).
+  // page à tampons de frontière, sans palissade (écrans 1 et 9). Le guichet est une grille de laiton,
+  // sa réponse un tableau des départs (écran 11).
   gabarits: {
     teteDAnnee: Tete,
     fronton: SousLaTete,
@@ -128,8 +131,12 @@ export const PAGES_1900: HabillagePages = {
     registre: IndicateurDeLaLigne,
     liensDeDecennie: LiensDeLaLigne,
     ordreDeDecennie: LigneDesAnnees,
+    teteDuGuichet: Grille,
+    catalogueDuGuichet: TableauDesDeparts,
   },
-  hauteurs: { bandeau: 230, scene: 240, estrade: 150, monument: 240, guichet: 140 },
+  // `guichet` : ce qui tient au-dessus de la tablette (le retour, le fronton, la grille), la place que la
+  // page ajoute en bas pour que la tablette monte au-dessus du clavier.
+  hauteurs: { bandeau: 230, scene: 240, estrade: 150, monument: 240, guichet: 230 },
   // La tête de la fiche d'année est un gabarit : cette toile ne se peint plus sur sa page.
   dessinerBandeau: unie,
   // La projection de la fiche d'un film aussi (`Hale`).
@@ -138,5 +145,6 @@ export const PAGES_1900: HabillagePages = {
   dessinerEstrade: unie,
   // Le monument de la décennie est un gabarit (`Affiche`) : cette toile ne se peint plus sur sa page.
   dessinerMonument: unie,
+  // La tête du guichet aussi (`Grille`).
   dessinerGuichet: unie,
 }

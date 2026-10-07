@@ -40,6 +40,9 @@ export function souligne(texte: string, saisie: string): ReactNode {
 /** Sous le titre du catalogue, dès qu'on cherche : « 1 résultat », « 4 résultats ». */
 export const compteDesResultats = (n: number): string => `${n} résultat${n > 1 ? 's' : ''}`
 
+/** Le nom de la liste des vues, le même quel que soit son dessin. */
+export const LES_FILMS_DU_CATALOGUE = 'Les films du catalogue'
+
 /** Tant qu'une fiche du catalogue se lit. */
 export const LE_CATALOGUE_SE_CHARGE = 'Le catalogue se charge…'
 

@@ -1,0 +1,324 @@
+/* Le guichet des années 1900, la recherche du Voyage (maquette « Voyage immobile 1900 », écran 11 :
+   `.guichet`, `.fronton`, `.grille`, `.employe`, `.tablette`, `.departs`). Deux racines : la tête
+   (`Grille.tsx`) et le tableau des départs (`TableauDesDeparts.tsx`). Les couleurs et les polices
+   viennent des jetons du monde ; les bruns et les gris de la maquette qui n'ont pas de jeton se
+   tirent du cuir, du fond et du papier. Ne bougent, sous une racine vivante et au tempo, que
+   l'employé qui paraît puis hoche la tête à chaque lettre, et les réglettes qui glissent. */
+.tete {
+  position: relative;
+  /* La place du retour, que la page pose en haut à gauche. */
+  padding-top: 60px;
+}
+
+/* Le meuble : du bois sombre, comme le casier. */
+.guichet {
+  position: relative;
+  margin: 0 12px;
+  padding: 14px;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(var(--m-velours), color-mix(in srgb, var(--m-velours) 55%, var(--m-fond)));
+  box-shadow:
+    inset 0 0 0 2px var(--m-fond),
+    0 10px 20px var(--m-ombre);
+}
+
+.fronton {
+  margin: 0;
+  text-align: center;
+  font: 700 15px var(--m-f-capitales);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--m-or2);
+}
+
+/* L'ouverture en plein cintre, ses barreaux de laiton devant l'employé. */
+.grille {
+  position: relative;
+  height: 120px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 60px 60px 0 0;
+  background: var(--m-fond);
+}
+
+.grille::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 13px, var(--m-or3) 13px 15px, var(--m-bois) 15px 16px);
+}
+
+.grille::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: var(--m-or3);
+}
+
+.employe {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 74px;
+  height: 90px;
+  margin-left: -37px;
+  transform-origin: 50% 100%;
+}
+
+.buste {
+  width: 100%;
+  height: 100%;
+  border-radius: 37px 37px 0 0;
+  background:
+    radial-gradient(circle at 50% 28%, var(--m-encre2) 0 18px, transparent 19px),
+    linear-gradient(transparent 44%, color-mix(in srgb, var(--m-encre2) 62%, var(--m-fond)) 44%);
+  transform-origin: 50% 100%;
+}
+
+/* La tablette, où l'on parle : c'est elle que la page amène au-dessus du clavier. */
+.tablette {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  margin-top: -2px;
+  padding: 10px;
+  border-top: 3px solid var(--m-or3);
+  background: color-mix(in srgb, var(--m-velours) 45%, var(--m-fond));
+  /* Amenée en haut au toucher : son filet de laiton reste visible. */
+  scroll-margin-top: 14px;
+}
+
+.tablette label {
+  font: 600 10.5px var(--m-f-capitales);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--m-or2);
+}
+
+.tablette input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--m-carton);
+  color: var(--m-encre);
+  font: 700 16px var(--m-f-presse);
+}
+
+/* L'étiquette dit déjà « Quel film ? » : le même mot, dans le champ, ne se montre pas. */
+.tablette input::placeholder {
+  color: transparent;
+}
+
+.tablette input:focus-visible,
+.annees button:focus-visible,
+.depart:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* La croix d'effacement de `type="search"` : celle du système est d'un bleu vif ; elle prend l'encre. */
+.tablette input::-webkit-search-cancel-button {
+  width: 22px;
+  height: 22px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--m-encre2);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 3.6l7 7 7-7L20.4 5l-7 7 7 7-1.4 1.4-7-7-7 7L3.6 19l7-7-7-7z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 3.6l7 7 7-7L20.4 5l-7 7 7 7-1.4 1.4-7-7-7 7L3.6 19l7-7-7-7z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  cursor: pointer;
+}
+
+/* Les années qui se cochent : des plaques de laiton, sous le guichet. */
+.annees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 16px 12px 0;
+}
+
+.annees button {
+  min-width: 56px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 60%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--m-fond) 55%, transparent);
+  color: var(--m-or2);
+  font: 700 13px var(--m-f-capitales);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.annees button[aria-pressed='true'] {
+  border-color: var(--m-or2);
+  background: linear-gradient(var(--m-or2), var(--m-or3));
+  color: var(--m-encre);
+}
+
+/* Le tableau peint, dans son cadre de bois. */
+.departs {
+  margin: 0 12px;
+  padding: 10px;
+  overflow: hidden;
+  border: 6px solid color-mix(in srgb, var(--m-velours) 72%, var(--m-fond));
+  border-radius: 3px;
+  background: var(--m-fond);
+}
+
+.sous {
+  margin: 0 0 8px;
+  font: italic 14px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.ent,
+.depart {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 46px;
+  gap: 6px;
+}
+
+.ent {
+  padding-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--m-papier) 18%, transparent);
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-doux);
+}
+
+.ent span:last-child {
+  text-align: center;
+}
+
+.reglettes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reglettes li {
+  border-bottom: 1px solid color-mix(in srgb, var(--m-papier) 10%, transparent);
+}
+
+.depart {
+  align-items: stretch;
+  min-height: 44px;
+  padding: 6px 0;
+  color: var(--m-papier);
+  text-decoration: none;
+}
+
+/* Chaque case est une réglette glissée dans le tableau. */
+.depart > * {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding: 3px 5px;
+  background: color-mix(in srgb, var(--m-papier) 9%, var(--m-fond));
+  box-shadow:
+    inset 0 -1px 0 var(--m-fond),
+    inset 0 1px 0 color-mix(in srgb, var(--m-papier) 14%, var(--m-fond));
+}
+
+.depart b {
+  font: 700 13px var(--m-f-presse);
+  font-variant-numeric: tabular-nums;
+}
+
+.titre {
+  font: 600 13px/1.2 var(--m-f-capitales);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.film small {
+  margin-top: 2px;
+  font: italic 12.5px/1.25 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.depart i {
+  position: relative;
+  justify-items: center;
+  font: 700 13px var(--m-f-capitales);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--m-or2);
+}
+
+/* Le passage trouvé : souligné au laiton, sur le tableau comme sous le titre. */
+.depart mark {
+  background: none;
+  color: inherit;
+  text-decoration: underline var(--m-or2);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* Dit au lecteur d'écran, caché à l'œil (l'en-tête de la colonne le dit). */
+.lecteur {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.aucun {
+  margin: 0;
+  padding: 10px 2px;
+  font: italic 14px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+@media (max-width: 420px) {
+  .titre {
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+}
+
+.tete[data-vivante='oui'] .employe {
+  animation: parait calc(650ms * var(--tempo)) cubic-bezier(0.2, 0.7, 0.2, 1) calc(150ms * var(--tempo)) backwards;
+}
+
+.tete[data-vivante='oui'] .buste[data-ecoute='oui'] {
+  animation: hoche calc(350ms * var(--tempo)) ease-in-out;
+}
+
+.racine[data-vivante='oui'] .reglettes li {
+  animation: reglette calc(275ms * var(--tempo)) ease-out backwards;
+}
+
+@keyframes parait {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes hoche {
+  40% {
+    transform: translateY(4px) rotate(-2deg);
+  }
+}
+
+@keyframes reglette {
+  from {
+    transform: translateX(36px);
+    opacity: 0;
+  }
+}

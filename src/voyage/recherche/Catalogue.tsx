@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import type { Monde, MotsDesPages } from '../../mondes/types'
 import type { Vue } from '../catalogue'
-import { LE_CATALOGUE_SE_CHARGE, compteDesResultats, etatLisible, phraseDesPannes, souligne } from './lisible'
+import { LES_FILMS_DU_CATALOGUE, LE_CATALOGUE_SE_CHARGE, compteDesResultats, etatLisible, phraseDesPannes, souligne } from './lisible'
 import styles from '../../pages/VoyageRecherche.module.css'
 
 /**
@@ -38,7 +38,7 @@ export interface PropsCatalogueDuGuichet {
  */
 const ListeDuCatalogue = memo(function ListeDuCatalogue({ vues, saisie, mots: m }: { vues: Vue[]; saisie: string; mots: MotsDesPages }) {
   return (
-    <ol className={styles.liste} aria-label="Les films du catalogue">
+    <ol className={styles.liste} aria-label={LES_FILMS_DU_CATALOGUE}>
       {vues.map((vue, i) => (
         <li key={vue.tmdbId}>
           <Link to={`/voyage/${vue.annee}/films/${vue.filmId}`} className={styles.entree}>
