@@ -1,0 +1,136 @@
+/* Les trois classes : le podium d'une gare (maquette « Voyage immobile 1900 » : `.classes`,
+   `.portiere`, `.marchepied`). Les couleurs et les polices viennent des jetons du monde ; rien n'y
+   bouge. */
+.classes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  margin: 0 12px;
+  padding: 16px 10px 0;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(var(--m-velours), var(--m-encre));
+}
+
+.portiere {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding-bottom: 8px;
+}
+
+/* À l'écran : la deuxième, la première, la troisième. L'ordre de lecture reste celui des places. */
+.p1 {
+  order: 2;
+}
+
+.p2 {
+  order: 1;
+}
+
+.p3 {
+  order: 3;
+}
+
+/* La portière : le teck verni, son double filet, celui du dedans en laiton. */
+.porte {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  width: 100%;
+  padding: 10px 8px 8px;
+  border: 0;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(90deg, var(--m-velours), color-mix(in srgb, var(--m-velours) 70%, var(--m-bois)) 50%, var(--m-velours));
+  color: inherit;
+  text-decoration: none;
+  box-shadow:
+    inset 0 0 0 2px var(--m-encre),
+    inset 0 0 0 4px color-mix(in srgb, var(--m-or) 25%, transparent);
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* La première classe est plus haute que les deux autres. */
+.p1 .porte {
+  padding-top: 22px;
+}
+
+.porte:focus-visible,
+.changer:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.chiffre {
+  font: 700 38px/1 var(--m-f-capitales);
+  color: var(--m-or2);
+  text-shadow: 0 1px 0 var(--m-encre);
+}
+
+/* La fenêtre : l'affiche derrière la vitre, ou la banquette vide. */
+.fenetre {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px 8px 3px 3px;
+  object-fit: cover;
+  background: var(--m-fond);
+  box-shadow: inset 0 0 0 3px var(--m-encre);
+}
+
+.vide {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  font: italic 12px/1.2 var(--m-f-texte);
+  color: var(--m-pale);
+  text-align: center;
+}
+
+.poignee {
+  width: 22px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--m-or);
+}
+
+.titre {
+  min-height: 32px;
+  font: 13px/1.2 var(--m-f-texte);
+  color: var(--m-papier);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.changer {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--m-filet);
+  border-radius: 2px;
+  background: none;
+  color: var(--m-or);
+  font: 700 11px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.marchepied {
+  height: 16px;
+  margin: 0 12px;
+  border-radius: 0 0 4px 4px;
+  background: repeating-linear-gradient(90deg, var(--m-fond) 0 3px, var(--m-encre2) 3px 9px);
+}
+
+.aide {
+  margin: 12px 16px 0;
+  font: italic 13.5px/1.4 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.message {
+  margin: 8px 16px 0;
+  font: 14px/1.4 var(--m-f-texte);
+  color: var(--m-or2);
+}

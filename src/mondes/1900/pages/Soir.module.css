@@ -1,0 +1,247 @@
+/* Le train du soir : la séance d'une gare (maquette « Voyage immobile 1900 » : `.plaisir`, `.partie`,
+   `.entracte`, `.talons`, `.pris`, `.passes`, `.bout-action`). Les couleurs et les polices viennent
+   des jetons du monde ; seul le tampon bouge, sous `data-vivante='oui'`, au tempo (`--tempo`, posé
+   par la racine). */
+.plaisir {
+  position: relative;
+  margin: 0 16px;
+  padding: 14px 14px 12px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  box-shadow: 0 4px 12px var(--m-ombre);
+}
+
+.gros {
+  margin: 0;
+  text-align: center;
+  font: 700 28px/1 var(--m-f-capitales);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.gros small {
+  display: block;
+  margin-top: 4px;
+  font: italic 400 15px var(--m-f-texte);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--m-rouge);
+}
+
+.num {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 4px 0;
+  border-block: 1px solid var(--m-encre);
+  font: 700 11px var(--m-f-presse);
+  text-transform: uppercase;
+}
+
+.pied {
+  margin-top: 12px;
+  border-bottom: 0;
+}
+
+.partie {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.affiche {
+  display: block;
+  width: 54px;
+  height: 62px;
+  object-fit: cover;
+  background: var(--m-encre);
+  box-shadow: 0 0 0 2px var(--m-encre);
+}
+
+.sansAffiche {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  font: italic 10px/1.1 var(--m-f-texte);
+  color: var(--m-pale);
+  text-align: center;
+}
+
+.partie small,
+.entracte span {
+  display: block;
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-rouge);
+}
+
+.partie b {
+  display: block;
+  font: 600 16px/1.2 var(--m-f-texte);
+  overflow-wrap: anywhere;
+}
+
+.partie em {
+  display: block;
+  font: italic 12.5px var(--m-f-texte);
+}
+
+.vu {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 6px 0;
+  font: 700 12px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-rouge);
+}
+
+.entracte {
+  margin: 10px 0 0;
+  font: italic 13.5px/1.4 var(--m-f-texte);
+}
+
+.entracte span {
+  font-style: normal;
+}
+
+/* Les talons : quatre coupons sous le pointillé, deux par rang ; seul, le dernier prend le rang. */
+.talons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 2px dashed color-mix(in srgb, var(--m-encre) 60%, transparent);
+}
+
+.talon {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--m-encre);
+  border-radius: 2px;
+  background: none;
+  color: var(--m-encre);
+  font: 700 13.5px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.talons .talon:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.plein {
+  background: var(--m-encre);
+  color: var(--m-papier);
+}
+
+.talon:focus-visible,
+.action:focus-visible,
+.vu:focus-visible,
+.passees summary:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* Le tampon « Prise » : l'encre violette des tampons, de travers. */
+.pris {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  padding: 2px 12px;
+  border: 3px double color-mix(in srgb, var(--m-violet) 90%, transparent);
+  color: color-mix(in srgb, var(--m-violet) 90%, transparent);
+  font: 700 22px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+
+.soir[data-vivante='oui'] .pris[data-frappe='oui'] {
+  animation: frapper calc(420ms * var(--tempo)) cubic-bezier(0.2, 1.6, 0.4, 1) backwards;
+}
+
+@keyframes frapper {
+  0% {
+    opacity: 0;
+    transform: rotate(-12deg) scale(2.2);
+  }
+
+  60% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(0.94);
+  }
+
+  100% {
+    transform: rotate(-12deg) scale(1);
+  }
+}
+
+.attente {
+  margin: 12px 0 0;
+  font: italic 14px/1.4 var(--m-f-texte);
+  text-align: center;
+}
+
+.attente p {
+  margin: 0 0 10px;
+}
+
+.message {
+  margin: 10px 16px 0;
+  font: 14px/1.4 var(--m-f-texte);
+  color: var(--m-or2);
+}
+
+.plaisir .message {
+  margin-inline: 0;
+  color: var(--m-rouge);
+}
+
+/* « Composer une séance » : le bouton d'action de la maquette. */
+.action {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 32px);
+  min-height: 52px;
+  margin: 0 16px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--corail);
+  color: var(--m-encre);
+  font: 700 16px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.action:disabled {
+  opacity: 0.6;
+}
+
+.passees {
+  margin: 14px 16px 0;
+  font: 14px/1.5 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.passees summary {
+  position: relative;
+  padding: 8px 0;
+  cursor: pointer;
+  font: 600 12px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-or);
+}
+
+.passees ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

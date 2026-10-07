@@ -1,4 +1,5 @@
 import type { HabillagePages, JetonDePage } from '../types'
+import Classes from './pages/Classes'
 import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
 import Courroie from './pages/Courroie'
@@ -7,6 +8,7 @@ import Guide from './pages/Guide'
 import Indicateur from './pages/Indicateur'
 import SousLaTete from './pages/SousLaTete'
 import Tete from './pages/Tete'
+import TrainDuSoir from './pages/TrainDuSoir'
 import Voie from './pages/Voie'
 import VoieFermee from './pages/VoieFermee'
 
@@ -82,8 +84,8 @@ export const PAGES_1900: HabillagePages = {
   // Le compteur des arrivées tient la place de la corde, le guide celle du boniment, l'indicateur
   // celle du programme, la courroie celle de la manivelle dessinée ; les salles sont des voies de
   // correspondance, et une salle ouverte, une voiture. La gare range ses sections : l'indicateur
-  // passe au-dessus du guide.
-  gabarits: { teteDAnnee: Tete, fronton: SousLaTete, anneeFermee: VoieFermee, corde: Compteur, boniment: Guide, programme: Indicateur, tirette: Courroie, salles: Correspondances, salle: Voie, ordreDAnnee: Gare },
+  // passe au-dessus du guide. Le podium est une voiture à trois portières, la séance un train du soir.
+  gabarits: { teteDAnnee: Tete, fronton: SousLaTete, anneeFermee: VoieFermee, corde: Compteur, boniment: Guide, programme: Indicateur, tirette: Courroie, salles: Correspondances, salle: Voie, ordreDAnnee: Gare, parade: Classes, seance: TrainDuSoir },
   hauteurs: { bandeau: 230, scene: 240, estrade: 150, monument: 240, guichet: 140 },
   // La tête de la fiche d'année est un gabarit : cette toile ne se peint plus sur sa page.
   dessinerBandeau: unie,

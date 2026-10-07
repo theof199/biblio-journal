@@ -93,6 +93,8 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/mondes/1900/pages/Courroie.module.css',
         '/src/mondes/1900/pages/Rubrique.module.css',
         '/src/mondes/1900/pages/Voies.module.css',
+        '/src/mondes/1900/pages/Classes.module.css',
+        '/src/mondes/1900/pages/Soir.module.css',
       ]),
     )
   })

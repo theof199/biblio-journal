@@ -401,7 +401,7 @@ Où vit quoi :
   lit : il garde le feuillet d'une marche, les écritures et leur garde, et passe les deux gestes,
   ouvrir le feuillet et vider) et `seance` (la séance du soir, `voyage/seance/Prospectus.tsx`, que
   `voyage/seance/Seance.tsx` lit : il garde composer, prendre, ignorer, leur verrou, le guet et le
-  feuillet des remplacements) ; aucun monde ne remplit encore ces deux-là. 1890 et le monde « à venir » n'en fournissent aucune.
+  feuillet des remplacements). 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du
@@ -428,8 +428,17 @@ Où vit quoi :
   compartiment par film (l'affiche à sa fenêtre ou « sans affiche », sa lettre, son état, sa plaque
   « occupé », « libre » ou le mot d'un introuvable ; il ouvre la fiche du film), les bobines d'un
   programme, et la porte au bout (« En voir plus » au compte IA). Leurs mots et leurs règles :
-  `mondes/1900/pages/voies.ts`. Rien n'y bouge. **La parade, la séance, la nouvelle salle et la ligne
-  du bas gardent encore les composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, la scène d'un film, le
+  `mondes/1900/pages/voies.ts`. Rien n'y bouge. Le podium est une voiture à **trois classes**
+  (`Classes`) : trois portières, la première au centre et plus haute, le chiffre romain de la classe,
+  l'affiche à la fenêtre. Toucher une portière occupée ouvre son film quand il est dans une salle de
+  l'année (`filmDeLaMarche`, `mondes/1900/pages/classes.ts`) ; « Changer », une place libre, ou un film
+  hors des salles ouvrent le feuillet de la marche ; tenir une portière occupée la vide. Une année en
+  attente a les mêmes portières, sans film à ouvrir. La séance est un **train du soir** (`TrainDuSoir`) :
+  l'affichette « Train de plaisir », le long en voiture et le court en tête, l'anecdote du trajet, les
+  quatre talons, le tampon « Prise » (le seul à bouger, jamais au calme), « Composer une séance » et les
+  séances passées ; la porte du wagon-restaurant de la maquette attend le lot À deux. **La nouvelle
+  salle, la ligne du bas, les feuillets et la feuille du chroniqueur gardent encore les composants par
+  défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur, la scène d'un film, le
   monument et le guichet sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
