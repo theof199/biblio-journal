@@ -901,6 +901,7 @@ export class MoteurCarte {
         etat: etats.get(c.annee)?.etat ?? 'verrou',
         attente: etats.get(c.annee)?.attente ?? false,
         profondeur: etats.get(c.annee)?.profondeur ?? 0,
+        affiches: etats.get(c.annee)?.affiches ?? [],
         x: c.x * this.k,
         y: c.y - this.camY,
         pop: this.pops.get(c.annee) ?? -9,

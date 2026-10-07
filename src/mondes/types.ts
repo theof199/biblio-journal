@@ -84,6 +84,11 @@ export interface CaseVue {
    */
   attente?: boolean
   profondeur: number
+  /**
+   * Les adresses des affiches de l'année (`CaseCarte.affiches`), dans l'ordre où la page les donne ;
+   * vide sans affiche. Le moteur ne les charge pas pour le monde : il les demande par `image`.
+   */
+  affiches: readonly string[]
   /** À l'écran, en px CSS. */
   x: number
   y: number

@@ -15,7 +15,7 @@ import { ANNEES, ARRETS, B1, PAS, S1 } from './trace'
 const arret = (annee: number): number => ARRETS[annee - 1900]!
 /** Les dix années : les `ouvertes` premières quittées sauf la dernière, en cours ; le reste fermé. */
 const cases = (ouvertes: number): CaseVue[] =>
-  ANNEES.map((annee, i) => ({ annee, etat: i < ouvertes - 1 ? 'passee' : i === ouvertes - 1 ? 'encours' : 'verrou', profondeur: 0, x: 195, y: 0, pop: -9 }))
+  ANNEES.map((annee, i) => ({ annee, etat: i < ouvertes - 1 ? 'passee' : i === ouvertes - 1 ? 'encours' : 'verrou', profondeur: 0, affiches: [], x: 195, y: 0, pop: -9 }))
 const vue = (annee: number, ouvertes: number) => ({ avance: arret(annee), cases: cases(ouvertes), ouverte: { annee: 1899 + ouvertes, t0: -9 }, t: 3.2, vivant: true })
 
 describe('quelle gare a quel temps', () => {

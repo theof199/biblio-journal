@@ -10,7 +10,7 @@ import { c } from './couleur'
 import type { Appel } from '../../test/contexteFactice'
 
 const cases = (etats: CaseVue['etat'][], profondeur = 0): CaseVue[] =>
-  etats.map((etat, i) => ({ annee: 1895 + i, etat, profondeur, x: 100, y: 100, pop: -9 }))
+  etats.map((etat, i) => ({ annee: 1895 + i, etat, profondeur, affiches: [], x: 100, y: 100, pop: -9 }))
 const textes = (appels: { nom: string; args: unknown[] }[]) => appels.filter((a) => a.nom === 'fillText').map((a) => a.args[0])
 
 describe('le monde des années 1890', () => {
@@ -32,7 +32,7 @@ describe('le monde des années 1890', () => {
     [1895, 1896, 1897, 1898, 1899].map((annee, i) => {
       const bouclee: readonly CaseVue['etat'][] = ['passee', 'ours', 'lion', 'palme']
       const etat: CaseVue['etat'] = i < quittees ? bouclee[i % 4]! : i === quittees ? 'encours' : 'verrou'
-      return { annee, etat, profondeur: i === quittees ? films : horsEnCours, x: 100, y: 100, pop: -9 }
+      return { annee, etat, profondeur: i === quittees ? films : horsEnCours, affiches: [], x: 100, y: 100, pop: -9 }
     })
 
   // Mutation : `if (bouclee) return 1` retiré ; ou la foire pleine dès les cinq années bouclées, sans le tampon.
@@ -351,7 +351,7 @@ describe('le décor porté, tel que la maquette le montre', () => {
   // celle qui date le `pop`, et l'affichette neuve se montrerait en entier une image avant de se coller.
   it('ne montre une affichette neuve qu’en la collant, même quand l’horloge du décor retarde', () => {
     const affichette = (pop: number) => {
-      const { vue, appels } = vueFactice({ t: 3.2, cases: [{ annee: 1895, etat: 'encours', profondeur: 0, x: 100, y: 100, pop }] })
+      const { vue, appels } = vueFactice({ t: 3.2, cases: [{ annee: 1895, etat: 'encours', profondeur: 0, affiches: [], x: 100, y: 100, pop }] })
       monde.dessinerSol(vue, { x: 195, y: 820 })
       return textes(appels).includes('22 mars')
     }

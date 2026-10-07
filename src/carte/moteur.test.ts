@@ -929,6 +929,23 @@ describe('le moteur de la carte', () => {
       ])
     })
 
+    // Idée 72. Mutations : la ligne `affiches` retirée des `cases` de `vueMonde` (le monde ne connaît
+    // plus aucune adresse) ; une liste vide rendue à toutes ; la seule première adresse rendue.
+    it('dit au monde les affiches de chaque année, dans l’ordre de la page, et une liste vide sans affiche', () => {
+      const banc = auTrain({ calme: true, enCours: 1902 })
+      const affiches = new Map([[1900, ['/covers/thumb/a.webp', '/covers/thumb/b.webp']], [1901, ['/covers/thumb/c.webp']]])
+      banc.moteur.majEtat({ cases: banc.cases.map((c) => ({ ...c, affiches: affiches.get(c.annee) ?? [] })), anneeAvatar: 1902, tampons: [], roulotte: null })
+      banc.moteur.defiler(CAMERA)
+      vus.length = 0
+      banc.moteur.image(1000)
+      const lues = vus.find((v) => v.cases.some((c) => c.annee === 1902))!.cases
+      expect(lues.filter((c) => c.annee >= 1900 && c.annee <= 1902).map((c) => [c.annee, c.affiches])).toEqual([
+        [1900, ['/covers/thumb/a.webp', '/covers/thumb/b.webp']],
+        [1901, ['/covers/thumb/c.webp']],
+        [1902, []],
+      ])
+    })
+
     // Mutations : la garde retirée autour de `dessinerCase` (les cases communes de 1901 et 1902
     // reviennent) ; la garde retirée autour de l'avatar, de sa zone `clap` ou de sa lumière.
     it('n’y dessine ni case commune, ni avatar, ni lumière, et n’y inscrit pas la zone du clap', () => {

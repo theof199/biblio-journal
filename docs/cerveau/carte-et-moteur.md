@@ -19,7 +19,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
   puis la méthode `toucher` du moteur ; une bobine ramassée, `src/carte/moteur.ts` › `ouVole`, `atterrir`.
 - **La vue d'ensemble** : `src/carte/moteur.ts` › `quitterEnsemble`, `sortieDeLEnsemble` ; ouverte, ni rappel
   ni passage (`src/carte/meneur.ts` › `ouvrirLEnsemble`) ; `src/carte/ensemble.ts` › `genreDeBande` ; `src/carte/dessin/ensemble.ts` › `dessinerEnsemble`.
-- **Un monde** : ce qu'il reçoit se fabrique dans `src/carte/moteur.ts` › `vueMonde` ; ce qu'il doit,
+- **Un monde** : ce qu'il reçoit se fabrique dans `src/carte/moteur.ts` › `vueMonde` (dont, par année, les adresses de ses affiches : `src/mondes/types.ts` › `CaseVue`) ; ce qu'il doit,
   `src/mondes/types.ts` › `SceneCollante`, `HabillagePages`, `JETONS_DE_PAGE`. Il se branche par
   `src/mondes/index.ts` › `FABRIQUES` ; le modèle est `src/mondes/1890/index.ts` › `creerMonde1890`,
   le plus court `src/mondes/avenir/index.ts` › `mondeAVenir`, le seul à `scene` `src/mondes/1900/index.ts` › `creerMonde1900` (sa fiche : `docs/cerveau/monde-1900.md`). `src/carte/placement.ts` › `placerCarte` pose les sections.
