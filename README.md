@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Douze clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Quinze clés, douze sur la fiche d'année et trois sur la fiche d'un film. Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -402,7 +402,13 @@ Où vit quoi :
   lit : il garde le feuillet d'une marche, les écritures et leur garde, et passe les deux gestes,
   ouvrir le feuillet et vider) et `seance` (la séance du soir, `voyage/seance/Prospectus.tsx`, que
   `voyage/seance/Seance.tsx` lit : il garde composer, prendre, ignorer, leur verrou, le guet et le
-  feuillet des remplacements). 1890 et le monde « à venir » n'en fournissent aucune.
+  feuillet des remplacements). Sur la fiche d'un film : `projection` (la tête, par défaut la scène du
+  monde sur une toile, `voyage/film/Projection.tsx` ; elle reçoit l'image que la page a chargée,
+  `useImageDuFilm`, et le calme), `noticeDuFilm` (`voyage/film/Notice.tsx` : le titre, les
+  réalisateurs, la raison, ta note ; elle reçoit le programme et le guichet déjà montés) et
+  `guichetDuFilm` (le dessin du guichet, `voyage/film/Comptoir.tsx`, que `voyage/film/Guichet.tsx`
+  lit : il garde les écritures et leur verrou, les adresses du billet et le feuillet du podium, et
+  passe les gestes offerts, `boutonsDuFilm`). 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du

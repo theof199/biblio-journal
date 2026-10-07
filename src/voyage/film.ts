@@ -36,6 +36,9 @@ export function boutonsDuFilm(etat: EtatFilm, plexUrl: string | null, entreeConn
   return b
 }
 
+/** Les gestes du guichet qui écrivent sans quitter la fiche. */
+export type GesteDuGuichet = 'demander' | 'introuvable' | 'remettre'
+
 /**
  * Mon dernier visionnage d'un film TMDB, dans les pages déjà chargées de **mon** journal. Jamais par
  * le seul `external_id` : un identifiant n'est unique qu'avec sa source (`itemAuJournal`,
@@ -60,6 +63,10 @@ export function dureeLisible(minutes: number): string {
   if (minutes < 60) return `${minutes} min`
   return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`
 }
+
+/** Ce qu'une fiche précise sous le titre : l'année du film et, pour un programme, sa durée (« 1897 · 12 min ») ; vide sans l'une ni l'autre. */
+export const precisionsDuFilm = (film: Pick<FilmDeSalle, 'year' | 'programme'>): string =>
+  [film.year !== null ? String(film.year) : null, film.programme ? dureeLisible(film.programme.duree_min) : null].filter(Boolean).join(' · ')
 
 /** La première bobine d'un programme qui reste à voir ; nulle pour un film, ou un programme tout vu. */
 export const bobineAVoir = (film: FilmDeSalle): Bobine | undefined => film.programme?.bobines.find((b) => b.etat !== 'vu')

@@ -63,6 +63,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/voyage/seance/Seance.module.css',
         '/src/pages/VoyageFilm.module.css',
         '/src/voyage/film/Guichet.module.css',
+        '/src/voyage/film/Notice.module.css',
         '/src/voyage/film/Programme.module.css',
         '/src/pages/VoyageBillet.module.css',
         '/src/voyage/billet/Dateur.module.css',

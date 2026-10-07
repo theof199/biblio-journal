@@ -10,6 +10,9 @@ import type { Bobine, FilmDeSalle } from '../api/voyage'
 import type { VueScene } from '../mondes/types'
 import { PAGES_1890 } from '../mondes/1890/pages'
 import { PAGES_A_VENIR } from '../mondes/avenir/pages'
+import type { PropsComptoir } from '../voyage/film/Comptoir'
+import type { PropsNotice } from '../voyage/film/Notice'
+import type { PropsProjection } from '../voyage/film/Projection'
 import { RELECTURES } from '../voyage/relecture'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
@@ -764,6 +767,156 @@ describe('la fiche d’un film du Voyage', () => {
 
     it('1890 et le monde « à venir » disent « Je l’ai vu », « poinçonner mon billet »', () => {
       for (const pages of [PAGES_1890, PAGES_A_VENIR]) expect([pages.mots.billet.ouvrir, pages.mots.billet.ouvrirSous]).toEqual(['Je l’ai vu', 'poinçonner mon billet'])
+    })
+  })
+
+  // La fiche d'un film a trois sections qu'un monde peut composer (`GabaritsDesPages` : `projection`,
+  // `noticeDuFilm`, `guichetDuFilm`). Sans gabarit, le défaut reste : tous les tests plus haut, montés
+  // sur 1890, qui n'en a aucun. Le monde de test est 1890, auquel on prête un gabarit.
+  describe('les gabarits du monde', () => {
+    let remettre = () => undefined as void
+    afterEach(() => remettre())
+    const preter = (pages: typeof PAGES_1890, gabarits: typeof PAGES_1890.gabarits) => {
+      const avant = pages.gabarits
+      pages.gabarits = gabarits
+      remettre = () => void (pages.gabarits = avant)
+    }
+
+    // Mutations : la page qui monte `Projection` sans passer par `gabaritDe` ; l'image ou le calme que
+    // la page ne passerait plus.
+    it('monte la projection du monde à la place de la toile, avec l’image chargée par la page et le calme', async () => {
+      calme()
+      vi.stubGlobal('Image', FausseImage)
+      preter(PAGES_1890, { projection: (p: PropsProjection) => <p>{`La projection du monde, ${p.film.title}, ${p.image ? (p.image as unknown as FausseImage).src : 'sans image'}, ${p.calme ? 'au calme' : 'vivante'}`}</p> })
+      monterVoyage(page(FAUCON), ROUTES)
+      expect(await screen.findByText(`La projection du monde, ${FAUCON.title}, sans image, au calme`)).toBeInTheDocument()
+      expect(screen.queryByRole('img', { name: `L’écran projette ${FAUCON.title}.` })).toBeNull()
+      // La page garde le chargement : une seule image, celle que `urlProjetee` choisit.
+      const image = FausseImage.creees.find((i) => i.src === FAUCON.cover_url)
+      act(() => image!.onload?.())
+      expect(await screen.findByText(`La projection du monde, ${FAUCON.title}, ${FAUCON.cover_url}, au calme`)).toBeInTheDocument()
+      // Le reste de la fiche est le défaut.
+      expect(screen.getByRole('heading', { level: 1, name: FAUCON.title })).toBeInTheDocument()
+    })
+
+    // Le jumeau du calme : sans « moins d'animations », la projection l'apprend. Mutation : `calme` passé en dur.
+    it('dit à la projection du monde que rien ne demande le calme', async () => {
+      preter(PAGES_1890, { projection: (p: PropsProjection) => <p>{p.calme ? 'au calme' : 'vivante'}</p> })
+      monterVoyage(page(FAUCON), ROUTES)
+      expect(await screen.findByText('vivante')).toBeInTheDocument()
+    })
+
+    /** Une notice de monde, qui dit ce qu'elle a reçu et rend les deux sections qu'on lui passe. */
+    const NoticeDuMonde = (p: PropsNotice) => (
+      <section aria-label="La notice du monde">
+        <h1>{p.film.title}</h1>
+        <p>{`salle ${p.salle.nom}, par ${p.realisateurs.map((r) => `${r.name} (${r.tmdb_id})`).join(' et ') || 'personne'}, entrée ${p.entree?.entry.id ?? 'aucune'}, ${p.phrase('adore')}`}</p>
+        <div data-testid="programme">{p.programme}</div>
+        <div data-testid="guichet">{p.guichet}</div>
+      </section>
+    )
+
+    // Mutations : la page qui monte `Notice` sans `gabaritDe` ; les réalisateurs résolus, l'entrée ou
+    // la phrase d'une réaction que la page ne passerait plus ; le guichet monté hors de la notice.
+    it('monte la notice du monde, lui passe ce que la page a lu et le guichet tout monté', async () => {
+      preter(PAGES_1890, { noticeDuFilm: NoticeDuMonde })
+      const { requetes } = monterVoyage(page(KANE), {
+        ...ROUTES,
+        [REALISATEURS(15)]: () => json({ realisateurs: [{ tmdb_id: 40, name: 'Orson Welles' }] }),
+        [JOURNAL]: () => json({ ...PAGE, items: [vuDe('e-kane', 15, { note: 9, reactions: ['adore'] })], next_cursor: null }),
+        'GET /api/reference/reactions': () => json(CATALOGUE),
+      })
+      const notice = await screen.findByRole('region', { name: 'La notice du monde' })
+      await waitFor(() => expect(notice).toHaveTextContent('salle Les essentiels, par Orson Welles (40), entrée e-kane, J’ai adoré'))
+      expect(screen.queryByText('Salle · Les essentiels')).toBeNull()
+      expect(screen.queryByRole('region', { name: 'Ta note' })).toBeNull()
+      // Le guichet est celui de la page, avec l'entrée : « Corriger » y est, et « Le film » ouvre la feuille.
+      const guichet = within(notice).getByTestId('guichet')
+      expect(within(guichet).getByRole('link', { name: /Corriger/ })).toHaveAttribute('href', '/voyage/1897/films/f-kane/billet/corriger')
+      expect(within(notice).getByTestId('programme')).toBeEmptyDOMElement()
+      // Aucune lecture de plus : la fiche, les réalisateurs, le journal, le catalogue des réactions.
+      expect(requetes.filter((r) => !r.includes('/auth/')).sort()).toEqual([ANNEE, JOURNAL, REALISATEURS(15), 'GET /api/reference/reactions'].sort())
+    })
+
+    // Le jumeau : un programme arrive à la notice tout monté, ses bobines comprises. Mutation : le
+    // programme monté par la page à côté de la notice, ou jamais.
+    it('passe à la notice du monde le programme tout monté', async () => {
+      preter(PAGES_1890, { noticeDuFilm: NoticeDuMonde })
+      monterVoyage(page(PROGRAMME), ROUTES)
+      const notice = await screen.findByRole('region', { name: 'La notice du monde' })
+      const programme = within(within(notice).getByTestId('programme')).getByRole('region', { name: 'Programme' })
+      expect(within(programme).getByRole('link', { name: 'Je l’ai vu : Le Repas de bébé' })).toBeInTheDocument()
+      expect(screen.getAllByRole('region', { name: 'Programme' })).toHaveLength(1)
+    })
+
+    /** Un dessin de guichet de monde : il dit les gestes reçus et où mène le billet, et tend trois boutons. */
+    const DessinDuMonde = (p: PropsComptoir) => (
+      <section aria-label="Le guichet du monde">
+        <p>{`${p.boutons.join(',')} | ${p.billet.vu} | ${p.billet.corriger} | ${p.entree?.entry.id ?? 'sans entrée'} | ${p.occupe ? 'occupé' : 'libre'} | ${p.erreur ?? 'sans refus'}`}</p>
+        <button type="button" onClick={() => p.onEcrire('introuvable')}>
+          Marquer
+        </button>
+        <button type="button" onClick={p.onPodium}>
+          Monter
+        </button>
+        <button type="button" onClick={p.onFilm}>
+          Lire
+        </button>
+      </section>
+    )
+
+    // Mutations : `Guichet` qui rend `Comptoir` sans `gabaritDe` ; les boutons que `Guichet` ne
+    // calculerait plus par `boutonsDuFilm` ; l'adresse du billet sans la bobine qui reste à voir ; le
+    // verrou retiré de `Guichet` (deux écritures partiraient du dessin du monde).
+    it('monte le dessin du guichet du monde : les gestes offerts, le billet de la bobine à voir, l’écriture gardée', async () => {
+      preter(PAGES_1890, { guichetDuFilm: DessinDuMonde })
+      let poses = 0
+      const { requetes } = monterVoyage(page(PROGRAMME), { ...ROUTES, 'PUT /api/me/introuvables/512': () => ((poses += 1), vide()) })
+      const guichet = await screen.findByRole('region', { name: 'Le guichet du monde' })
+      expect(within(guichet).getByText('vu,introuvable | /voyage/1897/films/p-lumiere/billet?bobine=512 | /voyage/1897/films/p-lumiere/billet/corriger | sans entrée | libre | sans refus')).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: /Je l’ai vu$/ })).toBeNull()
+      await waitFor(() => expect(compte(requetes, ANNEE)).toBe(1))
+      const marquer = within(guichet).getByRole('button', { name: 'Marquer' })
+      fireEvent.click(marquer)
+      fireEvent.click(marquer)
+      await waitFor(() => expect(compte(requetes, ANNEE)).toBe(2))
+      expect(poses).toBe(1)
+    })
+
+    // Mutations : le refus de l'API que `Guichet` ne passerait plus ; le feuillet du podium ou la
+    // feuille du chroniqueur que les rappels n'ouvriraient plus ; « corriger » offert sans entrée.
+    it('le dessin du monde reçoit le refus tel que l’API l’a écrit, et ses rappels ouvrent le podium et la feuille', async () => {
+      preter(PAGES_1890, { guichetDuFilm: DessinDuMonde })
+      monterVoyage(page(KANE), {
+        ...ROUTES,
+        [JOURNAL]: () => json({ ...PAGE, items: [], next_cursor: null }),
+        'PUT /api/me/introuvables/15': () => json({ code: 'CONFLICT', message: 'Ce film est déjà vu.', retryable: false }, 409),
+        [CARTON(15)]: () => json(CARTON_PRET),
+      })
+      const guichet = await screen.findByRole('region', { name: 'Le guichet du monde' })
+      // Vu, mais son entrée n'est pas au journal : « corriger » n'est pas offert.
+      expect(await within(guichet).findByText('podium | /voyage/1897/films/f-kane/billet | /voyage/1897/films/f-kane/billet/corriger | sans entrée | libre | sans refus')).toBeInTheDocument()
+      fireEvent.click(within(guichet).getByRole('button', { name: 'Marquer' }))
+      await waitFor(() => expect(guichet).toHaveTextContent('libre | Ce film est déjà vu.'))
+      fireEvent.click(within(guichet).getByRole('button', { name: 'Monter' }))
+      const feuillet = await screen.findByRole('dialog', { name: 'Mettre sur le podium' })
+      fireEvent.click(within(feuillet).getByRole('button', { name: 'Fermer' }))
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Mettre sur le podium' })).toBeNull())
+      fireEvent.click(within(guichet).getByRole('button', { name: 'Lire' }))
+      expect(await screen.findByRole('dialog', { name: `Le film ${CARTON_PRET.titre}` })).toBeInTheDocument()
+    })
+
+    // Le gabarit est celui du monde de l'année : prêté au monde « à venir », il ne change rien à 1890.
+    // Mutation : le gabarit lu dans un autre monde que celui de l'année.
+    it('ne prend que les gabarits du monde de l’année : un autre monde garde les défauts', async () => {
+      preter(PAGES_A_VENIR, { noticeDuFilm: NoticeDuMonde, guichetDuFilm: DessinDuMonde, projection: () => <p>La projection du monde</p> })
+      monterVoyage(page(FAUCON), ROUTES)
+      expect(await screen.findByText('Salle · Les essentiels')).toBeInTheDocument()
+      expect(screen.getByRole('img', { name: `L’écran projette ${FAUCON.title}.` })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /Je l’ai vu/ })).toBeInTheDocument()
+      expect(screen.queryByText('La projection du monde')).toBeNull()
+      expect(screen.queryByRole('region', { name: 'La notice du monde' })).toBeNull()
+      expect(screen.queryByRole('region', { name: 'Le guichet du monde' })).toBeNull()
     })
   })
 })

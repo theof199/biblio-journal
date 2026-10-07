@@ -1,5 +1,4 @@
 import { useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
@@ -9,14 +8,13 @@ import { poserSurLePodium, type FilmDeSalle, type Podium } from '../../api/voyag
 import type { Monde } from '../../mondes/types'
 import { useCalque } from '../calque'
 import Feuillet from '../Feuillet'
-import { bobineAVoir, boutonsDuFilm, tmdbVise } from '../film'
+import { bobineAVoir, boutonsDuFilm, tmdbVise, type GesteDuGuichet as Geste } from '../film'
+import { gabaritDe } from '../gabarit'
 import { choixDesMarches, corpsPodium, type Candidat } from '../podium'
+import Comptoir from './Comptoir'
 import styles from './Guichet.module.css'
 
 const messageDe = (e: unknown, repli: string) => (e instanceof ApiError ? e.message : repli)
-
-/** Les gestes du guichet qui écrivent sans quitter la fiche. */
-type Geste = 'demander' | 'introuvable' | 'remettre'
 
 /**
  * Ce que chaque geste périme, comme la fiche d'un film des Suivis (`pages/FicheFilm.tsx`), son
@@ -47,12 +45,13 @@ interface Props {
  * `boutonsDuFilm`, dans l'ordre rendu, puis « Le film » toujours. Les écritures sont gardées contre
  * le double toucher (`isPending` ne se voit qu'au rendu suivant), relisent la fiche, et un refus
  * s'affiche tel que l'API l'a écrit.
+ *
+ * Le dessin est celui du monde (`GabaritsDesPages.guichetDuFilm`), `Comptoir` sinon : ce qui écrit, le
+ * verrou, les adresses du billet et le feuillet du podium restent ici.
  */
 export default function Guichet({ monde, annee, film, podium, entree, onFilm }: Props) {
   const client = useQueryClient()
   const feuillet = useCalque('podium')
-  // Le geste qui mène au billet porte le nom que le monde lui donne.
-  const mots = monde.pages.mots.billet
   // Un programme vu en partie : les gestes visent la bobine qui reste à voir (`tmdbVise`).
   const tmdb = tmdbVise(film)
 
@@ -84,92 +83,27 @@ export default function Guichet({ monde, annee, film, podium, entree, onFilm }: 
   const aVoir = bobineAVoir(film)
   const billetVu = aVoir ? `${billet}?bobine=${aVoir.tmdb_id}` : billet
 
+  const Dessin = gabaritDe(monde, 'guichetDuFilm', Comptoir)
   return (
-    <div className={styles.guichet}>
-      {boutonsDuFilm(film.etat, film.plex_url, entree !== undefined).map((b) => {
-        switch (b) {
-          case 'corriger':
-            return (
-              <Link key={b} to={`${billet}/corriger`} state={{ item: entree }} className={styles.ticket}>
-                <span>
-                  <b>Corriger</b>
-                  <small>ta note, tes réactions</small>
-                </span>
-                <span className={styles.talon} aria-hidden="true">
-                  {film.note !== null ? `${film.note}/10` : 'VU'}
-                </span>
-              </Link>
-            )
-          case 'plex':
-            return (
-              <a key={b} href={film.plex_url ?? undefined} target="_blank" rel="noreferrer" className={styles.laiton}>
-                <i aria-hidden="true" />
-                Voir sur le Plex
-              </a>
-            )
-          case 'vu':
-            return (
-              <Link key={b} to={billetVu} className={styles.ticket}>
-                <span>
-                  <b>{mots.ouvrir}</b>
-                  <small>{mots.ouvrirSous}</small>
-                </span>
-                <span className={styles.talon} aria-hidden="true">
-                  VU ?
-                </span>
-              </Link>
-            )
-          case 'demander':
-            return (
-              <button key={b} type="button" className={styles.filet} disabled={ecrire.isPending} onClick={() => geste('demander')}>
-                Demander sur Sir
-              </button>
-            )
-          case 'introuvable':
-            return (
-              <button key={b} type="button" className={styles.gris} disabled={ecrire.isPending} onClick={() => geste('introuvable')}>
-                Introuvable
-              </button>
-            )
-          case 'remettre':
-            return (
-              <button key={b} type="button" className={styles.gris} disabled={ecrire.isPending} onClick={() => geste('remettre')}>
-                Le remettre à voir
-              </button>
-            )
-          case 'podium':
-            return (
-              <button key={b} type="button" className={styles.laiton} onClick={() => feuillet.ouvrir('choisir')}>
-                <i aria-hidden="true" />
-                Mettre sur le podium
-              </button>
-            )
-        }
-      })}
-      {film.etat === 'demande' ? <p className={styles.note}>demandé</p> : null}
-      {ecrire.error ? (
-        <p role="alert" className={styles.erreur}>
-          {messageDe(ecrire.error, 'Le guichet n’a pas pu l’écrire. Réessaie.')}
-        </p>
-      ) : null}
-      <button type="button" className={styles.filet} onClick={onFilm}>
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <circle cx="12" cy="12" r="9" />
-          <circle cx="12" cy="12" r="2" />
-          <circle cx="12" cy="6.5" r="2" />
-          <circle cx="12" cy="17.5" r="2" />
-          <circle cx="6.5" cy="12" r="2" />
-          <circle cx="17.5" cy="12" r="2" />
-        </svg>
-        Le film
-      </button>
-
+    <>
+      <Dessin
+        monde={monde}
+        film={film}
+        boutons={boutonsDuFilm(film.etat, film.plex_url, entree !== undefined)}
+        billet={{ vu: billetVu, corriger: `${billet}/corriger` }}
+        entree={entree}
+        occupe={ecrire.isPending}
+        erreur={ecrire.error ? messageDe(ecrire.error, 'Le guichet n’a pas pu l’écrire. Réessaie.') : null}
+        onEcrire={geste}
+        onPodium={() => feuillet.ouvrir('choisir')}
+        onFilm={onFilm}
+      />
       {feuillet.valeur === 'choisir' ? (
         <Feuillet monde={monde} titre="Mettre sur le podium" onFermer={feuillet.fermer}>
           <ChoixDuPodium annee={annee} podium={podium} cible={cible} onFermer={feuillet.fermer} />
         </Feuillet>
       ) : null}
-    </div>
+    </>
   )
 }
 

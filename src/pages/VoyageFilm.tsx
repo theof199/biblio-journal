@@ -3,26 +3,27 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { curseurSuivant, lireJournal, type JournalItem } from '../api/journal'
+import { curseurSuivant, lireJournal } from '../api/journal'
 import { lireRealisateursDuFilm } from '../api/personnes'
 import { lireReactions } from '../api/reactions'
 import { anneeSansSalles, estPrete, lireCarton, type Carton, type FilmDeSalle, type Podium, type Salle } from '../api/voyage'
 import { creerRegistre } from '../mondes'
 import type { Monde } from '../mondes/types'
-import { formatDateVisionnage } from '../ui/format'
 import { useMouvementReduit } from '../ui/mouvement'
 import Panne from '../ui/Panne'
 import { useRevenir } from '../ui/revenir'
 import { useFiche } from '../voyage/annee/useFiche'
 import { useCalque } from '../voyage/calque'
 import Feuille from '../voyage/Feuille'
-import { derniereEntree, dureeLisible, filmDeLaFiche, tmdbVise } from '../voyage/film'
+import { derniereEntree, filmDeLaFiche, tmdbVise } from '../voyage/film'
 import Guichet from '../voyage/film/Guichet'
+import Notice from '../voyage/film/Notice'
 import Programme from '../voyage/film/Programme'
+import Projection from '../voyage/film/Projection'
 import { urlProjetee, useImageDuFilm } from '../voyage/film/useImageDuFilm'
+import { gabaritDe } from '../voyage/gabarit'
 import { decennieDe } from '../voyage/regles'
 import { RELECTURES, etatRelecture, intervalle } from '../voyage/relecture'
-import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
 import styles from './VoyageFilm.module.css'
 
 /** Un registre pour la page, comme la carte et la fiche d'une année ont le leur. */
@@ -107,9 +108,12 @@ interface PropsFilm {
   podium: Podium
 }
 
-/** La fiche proprement dite (maquette 1890 : `initFilm`, écran V, styles 312 à 337). */
+/**
+ * La fiche proprement dite (maquette 1890 : `initFilm`, écran V). La page lit et passe : la projection
+ * et la notice sont celles du monde (`gabaritDe`), `Projection` et `Notice` sinon ; le programme et le
+ * guichet se montent ici et arrivent à la notice tout montés.
+ */
 function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
-  const { hauteurs } = monde.pages
   const calme = useMouvementReduit()
   // Ce que visent l'entrée à corriger et le carton : un programme vu en partie, la bobine qui reste à
   // voir (`tmdbVise`) ; le réalisateur et la projection restent ceux du film de la salle.
@@ -144,12 +148,9 @@ function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
     queryKey: ['realisateurs-du-film', String(film.tmdb_id)],
     queryFn: ({ signal }) => lireRealisateursDuFilm(film.tmdb_id, signal),
   })
-  const resolus = realisateurs.data?.realisateurs ?? []
 
-  // La projection (décision D1) : le fond, sinon l'affiche ; toucher l'écran relance le train.
+  // La projection (décision D1) : le fond, sinon l'affiche, que la page charge et passe à l'écran.
   const image = useImageDuFilm(urlProjetee(film))
-  const dernierT = useRef(0)
-  const touche = useRef(-9)
 
   // Le carton du chroniqueur : **jamais lu à l'ouverture**, seulement sur « Le film » (au compte IA,
   // un carton manquant s'enfile à la lecture) ; relu toutes les trois secondes tant qu'il s'écrit, dix
@@ -187,49 +188,22 @@ function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
           ? ({ type: 'erreur', message: carton.error instanceof ApiError ? carton.error.message : 'Le carton n’a pas pu se lire. Réessaie.' } as const)
           : ({ type: 'attente' } as const)
 
-  const meta = [film.year !== null ? String(film.year) : null, film.programme ? dureeLisible(film.programme.duree_min) : null].filter(Boolean).join(' · ')
+  const Ecran = gabaritDe(monde, 'projection', Projection)
+  const Fiche = gabaritDe(monde, 'noticeDuFilm', Notice)
 
   return (
     <>
-      <Toile
-        hauteur={hauteurs.scene}
-        libelle={`L’écran projette ${film.title}.`}
-        onToucher={() => {
-          if (!calme) touche.current = dernierT.current
-        }}
-        dessiner={(ctx, t, vivant) => {
-          dernierT.current = t
-          monde.pages.dessinerScene({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.scene, t, vivant, image, touche: touche.current })
-        }}
+      <Ecran monde={monde} film={film} image={image} calme={calme} />
+      <Fiche
+        monde={monde}
+        salle={salle}
+        film={film}
+        realisateurs={realisateurs.data?.realisateurs ?? []}
+        entree={entree}
+        phrase={(cle) => reactions.data?.reactions.find((r) => r.cle === cle)?.phrase ?? cle}
+        programme={film.programme ? <Programme monde={monde} annee={annee} film={film} programme={film.programme} /> : null}
+        guichet={<Guichet monde={monde} annee={annee} film={film} podium={podium} entree={entree} onFilm={() => feuille.ouvrir('film')} />}
       />
-      <div className={styles.fiche}>
-        <span className={styles.enseigne}>
-          <i aria-hidden="true" />
-          {`Salle · ${salle.nom}`}
-        </span>
-        <h1 className={styles.titre}>{film.title}</h1>
-        {film.original_title && film.original_title !== film.title ? <p className={styles.original}>{film.original_title}</p> : null}
-        <p className={styles.meta}>
-          {resolus.length > 0 ? (
-            resolus.map((r, i) => (
-              <span key={r.tmdb_id}>
-                {i > 0 ? ', ' : ''}
-                <Link to={`/suivis/realisateurs/${r.tmdb_id}`} className={styles.real}>
-                  {`${r.name} ›`}
-                </Link>
-              </span>
-            ))
-          ) : film.realisateur ? (
-            <span>{film.realisateur}</span>
-          ) : null}
-          {meta ? <span>{`${resolus.length > 0 || film.realisateur ? '· ' : ''}${meta}`}</span> : null}
-        </p>
-        {film.raison ? <p className={styles.boniment}>{film.raison}</p> : null}
-
-        {vu ? <TaNote note={film.note} entree={entree} phrase={(cle) => reactions.data?.reactions.find((r) => r.cle === cle)?.phrase ?? cle} /> : null}
-        {film.programme ? <Programme monde={monde} annee={annee} film={film} programme={film.programme} /> : null}
-        <Guichet monde={monde} annee={annee} film={film} podium={podium} entree={entree} onFilm={() => feuille.ouvrir('film')} />
-      </div>
 
       {feuille.valeur === 'film' ? (
         <Feuille
@@ -244,35 +218,5 @@ function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
         />
       ) : null}
     </>
-  )
-}
-
-/**
- * Ta note (maquette 1890 : `.ta-note`) : la note que l'API rend pour ce film, en perforations (dix
- * trous, `note` percés), la date et les réactions de mon dernier visionnage quand il est retrouvé.
- * La remarque (`carnet.comment`) est privée : elle ne s'affiche jamais ici.
- */
-function TaNote({ note, entree, phrase }: { note: number | null; entree: JournalItem | undefined; phrase: (cle: string) => string }) {
-  return (
-    <section className={styles.note} aria-label="Ta note">
-      <span className={styles.sc}>{entree ? `Ta note · vu le ${formatDateVisionnage(entree.entry.finished_at)}` : 'Ta note'}</span>
-      <div className={styles.perfo} role="img" aria-label={note !== null ? `${note} sur 10` : 'sans note'}>
-        {Array.from({ length: 10 }, (_, i) => {
-          const perce = note !== null && i < note
-          return (
-            <i key={i} className={perce ? styles.troue : undefined} data-perce={perce} aria-hidden="true">
-              {i + 1}
-            </i>
-          )
-        })}
-      </div>
-      {entree && entree.carnet.reactions.length > 0 ? (
-        <ul className={styles.cartons} aria-label="Tes réactions">
-          {entree.carnet.reactions.map((cle) => (
-            <li key={cle}>{phrase(cle)}</li>
-          ))}
-        </ul>
-      ) : null}
-    </section>
   )
 }

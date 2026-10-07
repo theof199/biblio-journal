@@ -13,6 +13,9 @@ import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
+import type { PropsComptoir } from '../voyage/film/Comptoir'
+import type { PropsNotice } from '../voyage/film/Notice'
+import type { PropsProjection } from '../voyage/film/Projection'
 import type { PropsMarches } from '../voyage/parade/Marches'
 import type { PropsRayons } from '../voyage/salles/Rayons'
 import type { PropsSalle } from '../voyage/salles/Salle'
@@ -709,6 +712,24 @@ export interface GabaritsDesPages {
    * compte IA, sur l'année en cours.
    */
   seance: ComponentType<PropsProspectus>
+  /**
+   * La projection en tête de la fiche d'un film (`voyage/film/Projection.tsx`) : par défaut la scène
+   * du monde sur une toile. Elle reçoit l'image que la page a choisie et chargée, et le calme. Le lien
+   * de retour reste à la page, posé par-dessus.
+   */
+  projection: ComponentType<PropsProjection>
+  /**
+   * La notice de la fiche d'un film (`voyage/film/Notice.tsx`) : le titre de la page, les réalisateurs
+   * et leurs liens vers les Suivis, la raison, ce que j'en ai dit. Elle reçoit le programme et le
+   * guichet déjà montés par la page et les rend tels quels ; la feuille du chroniqueur reste à la page.
+   */
+  noticeDuFilm: ComponentType<PropsNotice>
+  /**
+   * Le dessin du guichet de la fiche d'un film (`voyage/film/Comptoir.tsx`). Lu par
+   * `voyage/film/Guichet.tsx`, qui garde les écritures et leur verrou, les adresses du billet et le
+   * feuillet du podium, et lui passe les gestes offerts (`boutonsDuFilm`) : le dessin n'en ajoute aucun.
+   */
+  guichetDuFilm: ComponentType<PropsComptoir>
 }
 
 export interface HabillagePages {
