@@ -42,3 +42,11 @@ import '@fontsource/unbounded/latin-900.css'
 import '@fontsource/caveat/latin-700.css'
 // Les millésimes au pochoir des années 1890 (plan 2c, décision D9) : la palissade, l'affiche de l'adieu.
 import '@fontsource/stardos-stencil/latin-700.css'
+// Les pages des années 1900 (plan des pages 1900, décision 4) : Oswald pour le rail, Spectral pour le
+// texte, Courier Prime pour la presse. Les seules graisses que la maquette emploie.
+import '@fontsource/oswald/latin-600.css'
+import '@fontsource/oswald/latin-700.css'
+import '@fontsource/spectral/latin-400.css'
+import '@fontsource/spectral/latin-400-italic.css'
+import '@fontsource/spectral/latin-600.css'
+import '@fontsource/courier-prime/latin-700.css'
