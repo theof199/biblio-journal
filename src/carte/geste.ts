@@ -6,7 +6,11 @@
  * - un toucher bref (moins de 650 ms, moins de 10 px) est un **toucher** ;
  * - un appui de 460 ms sur une case, sans bouger, est un **appui long** (l'aperçu) ;
  * - à la souris, un survol de 520 ms sur une case vaut appui long ;
- * - bouger de plus de 10 px annule tout : c'est un défilement.
+ * - bouger de plus de 10 px annule tout : c'est un défilement, ou un **glissement** ;
+ * - le premier mouvement qui passe 10 px décide, une fois pour cet appui : plus large que haut,
+ *   c'est un glissement (`debut`, `suite` à chaque mouvement, `fin` au lever comme à l'annulation),
+ *   sinon un défilement, que le navigateur mène et dont rien n'est dit. Un appui long déjà parti
+ *   (l'aperçu est ouvert) ne devient pas un glissement.
  */
 export const APPUI_LONG_MS = 460
 export const SURVOL_MS = 520
@@ -17,6 +21,10 @@ export type Signal =
   | { type: 'toucher'; x: number; y: number }
   | { type: 'appuiLong'; annee: number }
   | { type: 'finSurvol' }
+  /** En px de l'écran : `x`, `y` où est le doigt (à la `fin`, où il était au dernier mouvement ou au lever), `x0`, `y0` où il s'est posé. */
+  | { type: 'glisse'; phase: PhaseDeGlisse; x: number; y: number; x0: number; y0: number }
+
+export type PhaseDeGlisse = 'debut' | 'suite' | 'fin'
 
 export interface Horloge {
   maintenant: () => number
@@ -25,7 +33,8 @@ export interface Horloge {
 }
 
 export class Geste {
-  private appui: { x: number; y: number; t0: number; long: boolean; bouge: boolean; jeton: unknown } | null = null
+  /** `glisse` : nul hors d'un glissement, sinon où le doigt était à son dernier mouvement (une annulation n'a pas de point). */
+  private appui: { x: number; y: number; t0: number; long: boolean; bouge: boolean; glisse: { x: number; y: number } | null; jeton: unknown } | null = null
   private survol: { annee: number | null; jeton: unknown } = { annee: null, jeton: null }
 
   constructor(
@@ -37,7 +46,7 @@ export class Geste {
 
   baisser(x: number, y: number, souris: boolean): void {
     this.annulerAppui()
-    const appui = { x, y, t0: this.horloge.maintenant(), long: false, bouge: false, jeton: null as unknown }
+    const appui = { x, y, t0: this.horloge.maintenant(), long: false, bouge: false, glisse: null as { x: number; y: number } | null, jeton: null as unknown }
     this.appui = appui
     const annee = souris ? null : this.caseEn(x, y)
     if (annee !== null) {
@@ -51,9 +60,17 @@ export class Geste {
 
   bouger(x: number, y: number, souris: boolean): void {
     const a = this.appui
-    if (a && !a.bouge && Math.hypot(x - a.x, y - a.y) > BOUGE_PX) {
+    if (a?.glisse) {
+      a.glisse = { x, y }
+      this.glisser('suite', a.x, a.y, x, y)
+    } else if (a && !a.bouge && Math.hypot(x - a.x, y - a.y) > BOUGE_PX) {
+      // La décision se prend ici et nulle part ailleurs : `bouge` posé, cette branche ne revient pas.
       a.bouge = true
       this.horloge.annuler(a.jeton)
+      if (!a.long && Math.abs(x - a.x) > Math.abs(y - a.y)) {
+        a.glisse = { x, y }
+        this.glisser('debut', a.x, a.y, x, y)
+      }
     }
     if (souris) this.survoler(x, y)
   }
@@ -63,14 +80,22 @@ export class Geste {
     if (!a) return
     this.appui = null
     this.horloge.annuler(a.jeton)
+    if (a.glisse) this.glisser('fin', a.x, a.y, x, y)
     if (a.long || a.bouge || this.horloge.maintenant() - a.t0 > TOUCHER_MAX_MS) return
     this.emettre({ type: 'toucher', x, y })
   }
 
-  /** `pointercancel` : le navigateur a pris le geste (défilement natif). */
+  /** `pointercancel` : le navigateur a pris le geste (défilement natif). Un glissement en cours y finit : il ne reste jamais ouvert. */
   annulerAppui(): void {
-    if (this.appui) this.horloge.annuler(this.appui.jeton)
+    const a = this.appui
+    if (!a) return
     this.appui = null
+    this.horloge.annuler(a.jeton)
+    if (a.glisse) this.glisser('fin', a.x, a.y, a.glisse.x, a.glisse.y)
+  }
+
+  private glisser(phase: PhaseDeGlisse, x0: number, y0: number, x: number, y: number): void {
+    this.emettre({ type: 'glisse', phase, x, y, x0, y0 })
   }
 
   /** `pointerleave` ou défilement : l'aperçu tenu par le survol se referme. */

@@ -16,7 +16,7 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
   `src/carte/meneur.ts` › `constaterLeDefilement`, `suivreLAvatar`, `viser`, `rouler`, `direBonjour`, `arretsAutour`.
   Les calculs purs : `src/carte/camera.ts` › `cibleCamera`, `poidsSections`, `presencesSections`.
 - **Le toucher** : `src/carte/geste.ts` › `APPUI_LONG_MS` (la classe `Geste`), `src/carte/zones.ts` › `trouverZone`,
-  puis la méthode `toucher` du moteur ; une bobine ramassée, `src/carte/moteur.ts` › `ouVole`, `atterrir`.
+  puis la méthode `toucher` du moteur ; une bobine ramassée, `src/carte/moteur.ts` › `ouVole`, `atterrir`. Le glissement horizontal : `src/carte/geste.ts` › `PhaseDeGlisse`, la méthode `glisser` du moteur, `src/mondes/types.ts` › `Glissement` (le contrat de `Monde.glisser` y est écrit), `src/carte/camera.ts` › `sectionALEcran`.
 - **La vue d'ensemble** : `src/carte/moteur.ts` › `quitterEnsemble`, `sortieDeLEnsemble` ; ouverte, ni rappel
   ni passage (`src/carte/meneur.ts` › `ouvrirLEnsemble`) ; `src/carte/ensemble.ts` › `genreDeBande` ; `src/carte/dessin/ensemble.ts` › `dessinerEnsemble`.
 - **Un monde** : ce qu'il reçoit se fabrique dans `src/carte/moteur.ts` › `vueMonde` (dont, par année, les adresses de ses affiches : `src/mondes/types.ts` › `CaseVue`) ; ce qu'il doit,
@@ -36,13 +36,13 @@ quelle zone lire. `src/carte/moteur.ts` et `src/carte/moteur.test.ts` ne se lise
 - **L'horloge du décor s'arrête au calme.** Ce qu'on date pour l'animer passe par la méthode `instant`
   (-9 : déjà fini), se finit dans `src/carte/moteur.ts` › `achever`, et entre dans la condition de
   `boucle`. Sinon sa promesse ne se résout jamais, et la page, qui attend `jouerAvancee`, reste inerte.
-- **Tout glissement passe par `src/carte/meneur.ts` › `prendreLaCamera`.** `suivre` et `visee`
-  arrêtent le roulement et le passage à chaque image. La caméra s'écrit avec `defilerVers`, jamais du
+- **Tout glissement de la caméra passe par `src/carte/meneur.ts` › `prendreLaCamera`.** `suivre` et `visee` arrêtent le roulement et le passage à chaque image. La caméra s'écrit avec `defilerVers`, jamais du
   moteur (`meneur.test.ts`) : la page rend un `defiler`, un écho que le meneur attend (`attendu`) et oublie sitôt rendu, pas un geste.
 - **Chaque `majEtat` vide les tuiles du sol** : son état reste mémoïsé (`src/pages/Carte.tsx` › `donneesDesFiches`).
 - **Six identifiants de zone sont au moteur** : `case`, `clap`, `roulotte`, `bobine`, `date`, `objet`. Les trois
   derniers lisent `data` comme un rang dans `bobines`, `dates`, `objets` du monde qui a inscrit la zone (sa `section`, requise,
   jamais `camY + y`) ; tout autre va à `reagir`, au calme seulement s'il est dans `src/mondes/types.ts` › `touchesAuCalme`. Un objet (`ObjetCache`, `reglerObjets`) : le moteur inscrit, le monde dessine ; la page ne l'écoute pas encore. Une priorité l'emporte sur toute distance.
+- **Un glissement du doigt est décidé une fois par appui, et sa `fin` n'est pas un lever** : elle vient aussi d'`annulerAppui` (le navigateur reprend le geste, un second doigt, un passage, la vue d'ensemble qui s'ouvre). Il va au monde de la décennie à l'écran, retenu au début, au calme aussi ; aucun monde n'en prend encore (`glisser: null` partout). `src/carte/moteur.ts` › `glissePris` fait retenir le défilement natif par la page (`touchmove` de `src/carte/CarteCanvas.tsx` › `Moteur`) : hors de lui, aucun `preventDefault` sur un doigt seul. Ce que le navigateur fait d'un geste dévié ne se voit pas sous jsdom.
 - **Un registre par appelant** (`src/mondes/index.ts` › `creerRegistre`) : le `Monde` que tient une
   page n'est pas celui que le moteur dessine, et ne sait rien de ce que l'autre garde entre deux images.
 - **Le tracé de 1890 et du monde « à venir » vit hors de leur dossier** (`src/mondes/trace.ts` › `trace1890`, `traceAVenir`, `HAUTEUR_MIN_SECTION`), celui de 1900 dans le sien ; `src/mondes/1890/ciel.ts` › `VIDE_DU_HAUT` voisine une copie de sa hauteur.

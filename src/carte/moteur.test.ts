@@ -6,7 +6,7 @@ import { APPUI_LONG_MS } from './geste'
 import { TUILE } from './dessin/sol'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Monde, MusiqueDuMonde, ObjetCache, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
+import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Glissement, Monde, MusiqueDuMonde, ObjetCache, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
 import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -84,6 +84,8 @@ const OU_SEMAPHORE = { x: 200, y: 50 }
 const OU_BOBINE_1900 = { x: 330, y: 50 }
 /** Les réactions demandées aux mondes d'essai, avec le monde qui les a reçues. */
 const reagis: Array<{ decennie: number; id: string }> = []
+/** Les glissements livrés aux mondes d'essai, avec le monde qui les a reçus et la vue qu'il a reçue. */
+const glisses: Array<{ decennie: number; g: Glissement; v: VueMonde }> = []
 function mondeDEssai(decennie: number, collant = false, arrets: readonly number[] = [], entree: readonly TempsDEntree[] = [], garni = false): Monde {
   const base = mondeAVenir(decennie)
   const scene: Monde['scene'] =
@@ -170,11 +172,14 @@ function monter(
     auCalme?: Record<number, readonly string[]>
     /** Lot « moteur » : 1890 pose, sur le manège, un objet d'un rang qu'il ne déclare pas. */
     objetInconnu?: boolean
+    /** Lot « moteur » : les mondes qui reçoivent un glissement, par décennie, et ce qu'ils rendent au début (vrai : ils le prennent). Les autres ont `glisser: null`. */
+    glisser?: Record<number, boolean>
   } = {},
 ) {
   vus.length = 0
   reactions.length = 0
   reagis.length = 0
+  glisses.length = 0
   vuesDesReactions.length = 0
   suivis.length = 0
   bandes.length = 0
@@ -206,6 +211,13 @@ function monter(
         bobines: options.deuxBobines && d === 1890 ? [BOBINE, AUTRE_BOBINE] : m.bobines,
         objets: !options.objets ? m.objets : d === 1890 ? [OBJET] : m.scene ? [OBJET_1900] : [],
         touchesAuCalme: options.auCalme?.[d] ?? m.touchesAuCalme,
+        glisser:
+          options.glisser?.[d] === undefined
+            ? m.glisser
+            : (g, v) => {
+                glisses.push({ decennie: d, g, v })
+                return options.glisser![d]!
+              },
         dessinerProche: (v) => {
           if (options.objets && d === 1890) v.objet(0, OU_OBJET.x * v.k, v.ecranY(OU_OBJET.y, 1), 8)
           if (options.objetInconnu && d === 1890) v.objet(7, MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 8)
@@ -3188,6 +3200,188 @@ describe('le moteur de la carte', () => {
             } finally {
               vi.useRealTimers()
             }
+          })
+        })
+
+        describe('le glissement horizontal (lot « moteur »)', () => {
+          const OU = { x: 200, y: 300 }
+          /** Un doigt posé loin de toute case, qui part de trente pixels vers la droite : le geste est décidé. */
+          const commencer = (moteur: MoteurCarte, y = OU.y) => {
+            moteur.pointeur('bas', OU.x, y, false)
+            moteur.pointeur('bouge', OU.x + 30, y, false)
+          }
+          const phases = () => glisses.map((x) => `${x.decennie}:${x.g.phase}`)
+          /** La caméra posée à `camY`, une image jouée. */
+          const aLEcran = (camY: number, options: Options = {}) => {
+            const banc = monter({ collant: true, calme: true, glisser: { 1890: true, 1900: true }, ...options })
+            banc.moteur.defiler(camY)
+            banc.moteur.image(1000)
+            return banc
+          }
+          /** Les deux mondes sont à l'écran et présents à 1 : le mélange seul tranche. */
+          const SUR_1890 = HAUT_1900 - (3 * H) / 4
+          const SUR_1900 = HAUT_1900 - H / 4
+
+          // Le doigt est chaque fois posé sur la part d'écran de l'autre monde : 1900 tient le bas de
+          // l'écran (sous 525 px, puis sous 175 px). À mi-écran les deux poids sont égaux, et c'est le
+          // premier, comme pour `Rappels.presences`. Mutations : le premier monde du plan
+          // (`sections[0]`) ; le monde sous le `y` du doigt ; le dernier des égaux (`lastIndexOf`
+          // dans `sectionALEcran`) ; `vueMonde(section, 0.5)`.
+          it('va au monde de la décennie à l’écran, celle que le moteur dit à la page, avec une vue de présence 1', () => {
+            for (const [camY, decennie, y] of [[SUR_1890, 1890, 600], [SUR_1900, 1900, 100], [HAUT_1900 - H / 2, 1890, 600]] as const) {
+              const banc = aLEcran(camY)
+              // Le témoin : c'est la décennie que `dessiner` nomme.
+              expect(vi.mocked(banc.rappels.presences).mock.lastCall![1]).toBe(decennie)
+              commencer(banc.moteur, y)
+              expect(phases()).toEqual([`${decennie}:debut`])
+              expect(glisses[0]!.g).toEqual({ phase: 'debut', x: OU.x + 30, y, x0: OU.x, y0: y })
+              expect(glisses[0]!.v.presence).toBe(1)
+              expect(glisses[0]!.v.cases.some((c) => c.annee === decennie + 5)).toBe(true)
+            }
+          })
+
+          // Mutation : la section relue à chaque signal au lieu d'être retenue au début.
+          it('la suite et la fin vont au monde du début, où que la caméra soit passée entre-temps', () => {
+            const banc = aLEcran(SUR_1890)
+            commencer(banc.moteur)
+            banc.moteur.defiler(HAUT_1900)
+            banc.moteur.image(1040)
+            expect(vi.mocked(banc.rappels.presences).mock.lastCall![1]).toBe(1900)
+            banc.moteur.pointeur('bouge', OU.x + 60, OU.y - 40, false)
+            banc.moteur.pointeur('haut', OU.x + 61, OU.y - 41, false)
+            expect(phases()).toEqual(['1890:debut', '1890:suite', '1890:fin'])
+            expect(glisses[2]!.g).toEqual({ phase: 'fin', x: OU.x + 61, y: OU.y - 41, x0: OU.x, y0: OU.y })
+          })
+
+          // Mutations : le retour de `glisser` ignoré (le monde qui refuse recevrait la suite, et la
+          // page retiendrait le défilement) ; `glissePris` vrai dès le début, pris ou non.
+          it('un monde qui refuse le début ne reçoit plus rien de cet appui, et le geste n’est pas pris', () => {
+            const banc = aLEcran(SUR_1890, { glisser: { 1890: false, 1900: true } })
+            commencer(banc.moteur)
+            expect(banc.moteur.glissePris).toBe(false)
+            banc.moteur.pointeur('bouge', OU.x + 60, OU.y, false)
+            banc.moteur.pointeur('haut', OU.x + 60, OU.y, false)
+            expect(phases()).toEqual(['1890:debut'])
+            expect(banc.moteur.glissePris).toBe(false)
+          })
+
+          // Mutations : `this.glissement = null` retiré de la fin (la page retiendrait le défilement
+          // pour toujours) ; la fin non livrée au monde.
+          it('un geste pris l’est du début à la fin, au lever comme à l’annulation, et le monde reçoit sa fin', () => {
+            for (const fin of ['haut', 'annule'] as const) {
+              const banc = aLEcran(SUR_1900)
+              expect(banc.moteur.glissePris).toBe(false)
+              commencer(banc.moteur)
+              expect(banc.moteur.glissePris).toBe(true)
+              banc.moteur.pointeur('bouge', OU.x + 60, OU.y, false)
+              expect(banc.moteur.glissePris).toBe(true)
+              banc.moteur.pointeur(fin, OU.x + 70, OU.y, false)
+              expect(banc.moteur.glissePris).toBe(false)
+              expect(phases()).toEqual(['1900:debut', '1900:suite', '1900:fin'])
+            }
+          })
+
+          // 1890 et le monde « à venir » : `glisser` nul. Mutation : le geste dit pris sans monde pour le prendre.
+          it('un monde sans glisser ne prend rien, et un geste vertical ne lui est pas livré', () => {
+            const sans = aLEcran(SUR_1890, { glisser: {} })
+            commencer(sans.moteur)
+            expect(sans.moteur.glissePris).toBe(false)
+            const banc = aLEcran(SUR_1900)
+            banc.moteur.pointeur('bas', OU.x, OU.y, false)
+            banc.moteur.pointeur('bouge', OU.x + 2, OU.y - 40, false)
+            banc.moteur.pointeur('bouge', OU.x + 80, OU.y - 42, false)
+            expect(glisses).toEqual([])
+            expect(banc.moteur.glissePris).toBe(false)
+          })
+
+          // Une manipulation, pas une animation. Mutation : `if (this.calme) return` en tête de `glisser`.
+          it('se reçoit au calme comme en mouvement, et la vue dit lequel', () => {
+            for (const calme of [false, true]) {
+              const banc = aLEcran(SUR_1900, { calme })
+              commencer(banc.moteur)
+              expect(phases()).toEqual(['1900:debut'])
+              expect(glisses[0]!.v.vivant).toBe(!calme)
+            }
+          })
+
+          // Mutation : `this.demander()` retiré de `glisser` (au calme la boucle dort : l'essuyage ne se verrait pas).
+          it('demande une image à chaque glissement livré, et aucune pour un glissement refusé', () => {
+            const vider = (banc: ReturnType<typeof monter>) => {
+              let ms = 1000
+              for (let i = 0; i < 200 && banc.demandees.length; i++) for (const f of banc.demandees.splice(0)) f((ms += 40))
+              // Le témoin : la boucle dort.
+              expect(banc.demandees).toHaveLength(0)
+            }
+            for (const [pris, attendues] of [[true, 1], [false, 0]] as const) {
+              const banc = aLEcran(SUR_1900, { glisser: { 1900: pris } })
+              vider(banc)
+              // Le témoin : le doigt qui se pose ne réveille rien.
+              banc.moteur.pointeur('bas', OU.x, OU.y, false)
+              expect(banc.demandees).toHaveLength(0)
+              banc.moteur.pointeur('bouge', OU.x + 30, OU.y, false)
+              expect(banc.demandees).toHaveLength(attendues)
+            }
+          })
+
+          // Le 1 × 3 du balayage : le passage qui commence annule l'appui, donc finit l'essuyage.
+          // Mutation : `this.geste.annulerAppui()` retiré de `MoteurCarte.direBonjour`.
+          it('un passage qui commence finit le glissement en cours, et le doigt resté posé ne glisse plus', () => {
+            const GARES = Array.from({ length: 10 }, (_, i) => 700 + i * 130)
+            const TEMPS: TempsDEntree[] = [{ y: -100, duree: 7000, arret: 200 }, { y: 300, duree: 500, arret: 100 }, { y: 700, duree: 800, arret: 300 }]
+            const banc = enGare({ arrets: GARES, entree: TEMPS, glisser: { 1900: true } })
+            banc.poserA(HAUT_1900 + GARES[0]!)
+            commencer(banc.moteur)
+            expect(banc.moteur.glissePris).toBe(true)
+            void banc.moteur.direBonjour(1900, 'endroit')
+            expect(banc.moteur.glissePris).toBe(false)
+            expect(phases()).toEqual(['1900:debut', '1900:fin'])
+            banc.filer(80)
+            banc.moteur.pointeur('bouge', OU.x + 90, OU.y, false)
+            expect(phases()).toEqual(['1900:debut', '1900:fin'])
+          })
+
+          // Sous la vue d'ensemble `pointeur` ne relaie plus rien au geste : le lever n'y finirait rien.
+          // Mutation : `this.geste.annulerAppui()` retiré d'`entrerEnsemble`.
+          it('la vue d’ensemble qui s’ouvre finit le glissement en cours', () => {
+            const banc = aLEcran(SUR_1900)
+            commencer(banc.moteur)
+            banc.moteur.basculerEnsemble(true)
+            expect(banc.moteur.glissePris).toBe(false)
+            expect(phases()).toEqual(['1900:debut', '1900:fin'])
+            // Et rien n'y commence.
+            commencer(banc.moteur)
+            expect(phases()).toEqual(['1900:debut', '1900:fin'])
+          })
+
+          // Deux doigts qui se resserrent bougent à l'horizontale : ce n'est pas un essuyage.
+          // Mutation : la garde `this.pincement !== null` retirée du début.
+          it('aucun glissement ne commence pendant un pincement', () => {
+            const banc = aLEcran(SUR_1900)
+            banc.moteur.pincer(100, 195, 300)
+            commencer(banc.moteur)
+            expect(glisses).toEqual([])
+            expect(banc.moteur.glissePris).toBe(false)
+            // Le témoin : les deux doigts relâchés, le même geste glisse.
+            banc.moteur.pointeur('haut', OU.x + 30, OU.y, false)
+            banc.moteur.pincer(null, 0, 0)
+            commencer(banc.moteur)
+            expect(phases()).toEqual(['1900:debut'])
+          })
+
+          // Un glissement n'est jamais un toucher : parti d'une case, il n'ouvre pas son année.
+          // Mutation : `toucher` appelé à la fin d'un glissement.
+          it('un glissement parti d’une case ne la touche pas', () => {
+            const banc = auTrain({ calme: true, glisser: { 1900: true } })
+            banc.moteur.defiler(CAMERA)
+            banc.moteur.image(1000)
+            const p = quai(1900)!
+            // Le témoin : la case se touche.
+            toucher(banc.moteur, p.x, p.y)
+            expect(banc.rappels.toucherAnnee).toHaveBeenCalledTimes(1)
+            banc.moteur.pointeur('bas', p.x, p.y, false)
+            banc.moteur.pointeur('bouge', p.x + 14, p.y, false)
+            banc.moteur.pointeur('haut', p.x + 14, p.y, false)
+            expect(banc.rappels.toucherAnnee).toHaveBeenCalledTimes(1)
           })
         })
       })

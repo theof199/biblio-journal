@@ -58,6 +58,7 @@ export function mondeAVenir(decennie: number): Monde {
     bobines: [],
     objets: [],
     touchesAuCalme: [],
+    glisser: null,
     // Ni scène collante (plan 3a) : sa section glisse sous la caméra, comme 1890.
     scene: null,
   }

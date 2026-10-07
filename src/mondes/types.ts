@@ -322,6 +322,19 @@ export interface MusiqueDuMonde {
   jouer: (ctx: BaseAudioContext, sortie: AudioNode, pas: number, t0: number) => void
 }
 
+/**
+ * Un glissement horizontal, en px CSS de l'écran (le repère de `VueMonde.zone`) : `x`, `y` où est
+ * le doigt, `x0`, `y0` où il s'est posé. À la `fin`, `x`, `y` sont ceux du lever, ou du dernier
+ * mouvement quand le geste est repris sans lever.
+ */
+export interface Glissement {
+  phase: 'debut' | 'suite' | 'fin'
+  x: number
+  y: number
+  x0: number
+  y0: number
+}
+
 export interface Monde {
   cle: string
   decennie: number
@@ -381,6 +394,21 @@ export interface Monde {
    * (`v.marquer` daterait de l'horloge figée, et `v.age` vaudrait zéro pour toujours) : elle pose un état.
    */
   touchesAuCalme: readonly string[]
+  /**
+   * Le glissement horizontal d'un doigt (ou de la souris, bouton tenu) sur la carte ; nul : le
+   * monde n'en reçoit aucun (1890, le monde « à venir »). Le moteur l'appelle pour le monde de **la
+   * décennie à l'écran** au `debut`, avec une vue de présence 1, au calme comme en mouvement
+   * (`v.vivant` le dit) : c'est une manipulation, pas une animation, et elle ne date rien.
+   *
+   * Ce qu'il rend n'est lu qu'au `debut`. Vrai : le monde prend le geste, reçoit chaque `suite` et
+   * une `fin`, une seule, et la page retient le défilement natif entre-temps. Faux : il ne reçoit
+   * plus rien de cet appui, et le doigt défile comme toujours. La `fin` arrive au lever, mais aussi
+   * quand le navigateur reprend le geste (`pointercancel`), quand un second doigt se pose, quand un
+   * passage commence ou que la vue d'ensemble s'ouvre : elle ne dit pas que le doigt s'est levé.
+   * Aucun glissement ne commence pendant un pincement ni sous la vue d'ensemble, et un glissement
+   * n'est jamais un toucher : les zones sous le doigt ne reçoivent rien.
+   */
+  glisser: ((g: Glissement, v: VueMonde) => boolean) | null
   /**
    * La scène collante du monde ; nulle : sa section glisse sous la caméra et le moteur y dessine la
    * route, les cases et l'avatar (1890, le monde « à venir »).

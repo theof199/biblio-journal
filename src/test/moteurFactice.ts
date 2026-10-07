@@ -6,7 +6,8 @@ import type { EtatCarte, Rappels } from '../carte/moteur'
 export function moteurFactice() {
   const etats: EtatCarte[] = []
   let rappels: Rappels | null = null
-  const moteur: Moteur = {
+  // `glissePris` se lit seulement sur le vrai moteur : ici le test l'écrit.
+  const moteur: { -readonly [C in keyof Moteur]: Moteur[C] } = {
     mesurer: vi.fn(),
     hauteur: 0,
     defiler: vi.fn(),
@@ -15,6 +16,7 @@ export function moteurFactice() {
     reglerVisible: vi.fn(),
     pointeur: vi.fn(),
     pincer: vi.fn(() => false),
+    glissePris: false,
     doigtsPoses: vi.fn(),
     allerIci: vi.fn(),
     basculerEnsemble: vi.fn(),

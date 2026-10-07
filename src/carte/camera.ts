@@ -40,6 +40,11 @@ export function poidsSections(camC: number, sections: readonly SectionPlacee[], 
   })
 }
 
+/** Le rang de la section de **la décennie à l'écran** : le plus fort poids de mélange, le premier en cas d'égalité ; -1 sans section. */
+export function sectionALEcran(poids: readonly number[]): number {
+  return poids.indexOf(Math.max(...poids))
+}
+
 /**
  * La **présence** de chaque monde à l'écran, de 0 à 1 : ce que le monde reçoit pour dessiner sa
  * part (`VueMonde.presence`), et ce qui dit s'il dessine. Entre deux sections ordinaires, c'est le

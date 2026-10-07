@@ -1,14 +1,14 @@
 import { clamp, ease, lerp, mixc, rgba, type Rgb } from './outils'
 import { construireRoute, pointA, type Route } from './route'
 import { placerCarte, type PlanCarte } from './placement'
-import { cibleCamera, poidsSections, presencesSections } from './camera'
+import { cibleCamera, poidsSections, presencesSections, sectionALEcran } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { genreDeBande, geoEnsemble } from './ensemble'
 import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, tremblement } from './traitement'
 import { Geste, lirePincement } from './geste'
-import type { DateVraie, Monde, MusiqueDuMonde, SceneCollante, VueMonde } from '../mondes/types'
+import type { DateVraie, Glissement, Monde, MusiqueDuMonde, SceneCollante, VueMonde } from '../mondes/types'
 import type { EtatCase } from '../voyage/regles'
 import { dessinerCase, dessinerCorail } from './dessin/cases'
 import { dessinerAvatar } from './dessin/avatar'
@@ -186,6 +186,8 @@ export class MoteurCarte {
    */
   private lectures: BandeLue[] = []
   private readonly geste: Geste
+  /** Le glissement qu'un monde a pris, de son `debut` à sa `fin` : le monde et sa section, lus une fois. */
+  private glissement: { monde: Monde; section: number } | null = null
   /** Qui mène la caméra (`meneur.ts`) : `camY` ne s'écrit que là, la page n'apprend que là où on la veut. */
   private readonly meneur: Meneur
   private readonly ctx: CanvasRenderingContext2D | null
@@ -228,6 +230,7 @@ export class MoteurCarte {
       },
       (s) => {
         if (s.type === 'toucher') this.toucher(s.x, s.y)
+        else if (s.type === 'glisse') this.glisser(s)
         else if (s.type === 'appuiLong') this.rappels.apercu(s.annee, this.ecranDeLAnnee(s.annee))
         else this.rappels.finApercu()
       },
@@ -347,6 +350,14 @@ export class MoteurCarte {
     else if (type === 'haut') this.geste.lever(x, y)
     else if (type === 'annule') this.geste.annulerAppui()
     else this.geste.quitter()
+  }
+
+  /**
+   * Vrai entre le `debut` d'un glissement qu'un monde a pris (`Monde.glisser`) et sa `fin` : la page
+   * retient alors le défilement natif (`preventDefault` de `touchmove`).
+   */
+  get glissePris(): boolean {
+    return this.glissement !== null
   }
 
   /**
@@ -726,6 +737,29 @@ export class MoteurCarte {
     this.demander()
   }
 
+  /**
+   * Un glissement horizontal va au monde de la décennie à l'écran (celle que `dessiner` dit à
+   * `Rappels.presences`), décidé au `debut` : la suite et la fin vont au même, où que soit la
+   * caméra. Au calme aussi : c'est une manipulation, pas une animation. Rien pendant un pincement.
+   */
+  private glisser(s: Glissement): void {
+    const g: Glissement = { phase: s.phase, x: s.x, y: s.y, x0: s.x0, y0: s.y0 }
+    if (s.phase === 'debut') {
+      if (this.pincement !== null || !this.ctx) return
+      const section = sectionALEcran(poidsSections(this.camY + this.H / 2, this.plan.sections, { H: this.H, collante: this.collantes }))
+      const de = this.plan.sections[section]
+      const monde = de ? this.deps.mondeDe(de.decennie) : null
+      if (!monde?.glisser?.(g, this.vueMonde(section, 1))) return
+      this.glissement = { monde, section }
+    } else {
+      const pris = this.glissement
+      if (!pris) return
+      if (s.phase === 'fin') this.glissement = null
+      pris.monde.glisser?.(g, this.vueMonde(pris.section, 1))
+    }
+    this.demander()
+  }
+
   /** Maquette : `ramasser`. La bobine quitte le décor tout de suite ; l'envol dure une seconde au tempo. */
   private ramasser(cle: string, x: number, y: number): void {
     if (this.trouvees.has(cle)) return
@@ -777,6 +811,9 @@ export class MoteurCarte {
   private entrerEnsemble(): void {
     if (this.ens.cible === 1) return
     this.ens.cible = 1
+    // Sous la vue d'ensemble `pointeur` ne relaie plus rien au geste : un glissement pris y
+    // resterait ouvert, et la page retiendrait le défilement jusqu'au prochain appui.
+    this.geste.annulerAppui()
     this.meneur.ouvrirLEnsemble()
     if (this.calme) this.ens.q = 1
     this.rappels.finApercu()
@@ -978,7 +1015,7 @@ export class MoteurCarte {
     const entrees = { H: this.H, collante: this.collantes }
     const poids = poidsSections(camC, this.plan.sections, entrees)
     const presence = presencesSections(camC, this.plan.sections, entrees)
-    const sectionP = this.plan.sections[poids.indexOf(Math.max(...poids))]
+    const sectionP = this.plan.sections[sectionALEcran(poids)]
     this.rappels.presences(this.plan.sections.map((s, i) => ({ musique: this.deps.mondeDe(s.decennie).musique, poids: poids[i] ?? 0 })), sectionP?.decennie ?? null)
     const mondeP = sectionP ? this.deps.mondeDe(sectionP.decennie) : null
     const e = this.ens.q ? ease(this.ens.q) : 0

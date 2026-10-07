@@ -7,7 +7,7 @@ import styles from './CarteCanvas.module.css'
 /** Ce que la page attend d'un moteur : `MoteurCarte`, ou sa doublure dans un test. */
 export type Moteur = Pick<
   MoteurCarte,
-  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'direBonjour' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'detruire'
+  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'glissePris' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'direBonjour' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'detruire'
 >
 export type FabriqueMoteur = (canvas: HTMLCanvasElement, rappels: Rappels) => Moteur
 
@@ -171,7 +171,11 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
       const deux = e.touches.length === 2
       const xMilieu = deux ? (e.touches[0]!.clientX + e.touches[1]!.clientX) / 2 - r.left : 0
       const yMilieu = deux ? (e.touches[0]!.clientY + e.touches[1]!.clientY) / 2 - r.top : 0
-      if (moteur.pincer(ecart(e.touches), xMilieu, yMilieu) && e.cancelable) e.preventDefault()
+      const pince = moteur.pincer(ecart(e.touches), xMilieu, yMilieu)
+      // Un glissement qu'un monde a pris (la buée qu'on essuie) retient aussi le défilement natif :
+      // sans quoi un essuyage dévié vers le haut ferait rouler la carte. `touchmove` seul : les deux
+      // autres écoutes sont passives, et un doigt qui défile n'est jamais retenu.
+      if ((pince || (e.type === 'touchmove' && moteur.glissePris)) && e.cancelable) e.preventDefault()
     }
     // Le nombre de doigts posés sur la carte : il survit au `pointercancel` du défilement natif, que
     // le moteur ne doit pas combattre. `targetTouches`, pas `touches` : un doigt posé ailleurs que

@@ -169,7 +169,8 @@ describe('le geste, ses bornes et ses jumeaux', () => {
     geste.bouger(10, 10, false)
     vi.advanceTimersByTime(1000)
     geste.lever(10, 10)
-    expect(signaux).toEqual([])
+    // Le geste est horizontal : il glisse (lot « moteur »), et ne dit rien d'autre.
+    expect(signaux.filter((x) => x.type !== 'glisse')).toEqual([])
   })
 
   // Mutation : `baisser` qui arme l’appui long à la souris.
@@ -185,5 +186,125 @@ describe('le pincement, son jumeau', () => {
   // Mutation : `fermer` sans regarder `ensembleOuvert`.
   it('écarter quand la vue d’ensemble est fermée n’est rien', () => {
     expect(lirePincement(100, 140, false)).toBeNull()
+  })
+})
+
+describe('le glissement horizontal (lot « moteur »)', () => {
+  let signaux: Signal[]
+  let geste: Geste
+  beforeEach(() => {
+    vi.useFakeTimers()
+    signaux = []
+    geste = new Geste(
+      { maintenant: () => Date.now(), programmer: (fn, ms) => setTimeout(fn, ms), annuler: (j) => clearTimeout(j as number) },
+      (x) => (x < 50 ? 1897 : null),
+      (s) => signaux.push(s),
+    )
+  })
+  afterEach(() => vi.useRealTimers())
+  const glisse = (phase: 'debut' | 'suite' | 'fin', x: number, y: number, x0 = 200, y0 = 300): Signal => ({ type: 'glisse', phase, x, y, x0, y0 })
+
+  // Mutation : la comparaison retournée (`<` à la place de `>` entre `|dx|` et `|dy|`).
+  it('un geste plus large que haut est un glissement, un geste plus haut que large n’en est pas un', () => {
+    geste.baisser(200, 300, false)
+    geste.bouger(214, 304, false)
+    expect(signaux).toEqual([glisse('debut', 214, 304)])
+    geste.bouger(260, 290, false)
+    expect(signaux).toEqual([glisse('debut', 214, 304), glisse('suite', 260, 290)])
+    geste.lever(261, 290)
+    signaux.length = 0
+    geste.baisser(200, 300, false)
+    geste.bouger(204, 314, false)
+    geste.bouger(206, 380, false)
+    geste.lever(206, 380)
+    expect(signaux).toEqual([])
+  })
+
+  // Mutation : le seuil `BOUGE_PX` retiré de la décision (un doigt qui tremble glisserait, et son
+  // toucher serait perdu).
+  it('sous dix pixels rien ne glisse, et le toucher reste un toucher', () => {
+    geste.baisser(200, 300, false)
+    geste.bouger(208, 301, false)
+    geste.lever(208, 301)
+    expect(signaux).toEqual([{ type: 'toucher', x: 208, y: 301 }])
+  })
+
+  // Mutation : la décision reprise à chaque mouvement (la garde `!a.bouge` retirée).
+  it('un geste commencé à la verticale ne devient pas un glissement en route', () => {
+    geste.baisser(200, 300, false)
+    geste.bouger(202, 330, false)
+    geste.bouger(280, 332, false)
+    geste.bouger(340, 334, false)
+    geste.lever(340, 334)
+    expect(signaux).toEqual([])
+  })
+
+  // Le jumeau : un glissement dévié vers le haut reste un glissement, jusqu'au lever.
+  // Mutation : la `suite` gardée par la même comparaison que le `debut`.
+  it('un glissement dévié à la verticale reste un glissement', () => {
+    geste.baisser(200, 300, false)
+    geste.bouger(230, 300, false)
+    geste.bouger(232, 200, false)
+    expect(signaux).toEqual([glisse('debut', 230, 300), glisse('suite', 232, 200)])
+  })
+
+  // Mutations : le `toucher` émis au lever d'un glissement (la garde `bouge` retirée de `lever`) ;
+  // la `fin` retirée de `lever`.
+  it('un glissement finit au lever, par une fin et sans toucher, même bref', () => {
+    geste.baisser(200, 300, false)
+    geste.bouger(230, 300, false)
+    vi.advanceTimersByTime(60)
+    geste.lever(236, 302)
+    expect(signaux).toEqual([glisse('debut', 230, 300), glisse('fin', 236, 302)])
+    // Rien ne reste ouvert : un mouvement sans appui ne dit rien.
+    geste.bouger(300, 300, false)
+    geste.lever(300, 300)
+    expect(signaux).toHaveLength(2)
+  })
+
+  // Mutations : la `fin` retirée d'`annulerAppui` ; le point de la fin pris au poser (`a.x`, `a.y`)
+  // au lieu du dernier mouvement ; l'appui laissé en place (une seconde annulation redirait la fin).
+  it('un pointercancel finit le glissement là où le doigt était, une seule fois', () => {
+    geste.baisser(200, 300, false)
+    geste.bouger(230, 300, false)
+    geste.bouger(250, 296, false)
+    signaux.length = 0
+    geste.annulerAppui()
+    geste.annulerAppui()
+    expect(signaux).toEqual([glisse('fin', 250, 296)])
+  })
+
+  // Un second doigt qui se pose (`baisser` sans `lever`) : le glissement d'avant est fini.
+  // Mutation : `annulerAppui` retiré de `baisser`.
+  it('un appui neuf finit le glissement d’avant', () => {
+    geste.baisser(200, 300, false)
+    geste.bouger(230, 300, false)
+    signaux.length = 0
+    geste.baisser(100, 100, false)
+    expect(signaux).toEqual([glisse('fin', 230, 300)])
+  })
+
+  // Mutation : la garde `!a.long` retirée de la décision.
+  it('un appui long déjà parti ne devient pas un glissement', () => {
+    geste.baisser(10, 10, false)
+    vi.advanceTimersByTime(470)
+    geste.bouger(60, 10, false)
+    geste.lever(60, 10)
+    expect(signaux).toEqual([{ type: 'appuiLong', annee: 1897 }])
+  })
+
+  // Mutation : la minuterie non annulée quand le mouvement décide d'un glissement.
+  it('un glissement parti d’une case n’ouvre pas son aperçu', () => {
+    geste.baisser(10, 10, false)
+    geste.bouger(40, 10, false)
+    vi.advanceTimersByTime(600)
+    expect(signaux).toEqual([glisse('debut', 40, 10, 10, 10)])
+  })
+
+  // Mutation : le glissement réservé au doigt (`!souris` dans la décision).
+  it('à la souris, bouton tenu, le geste glisse aussi', () => {
+    geste.baisser(200, 300, true)
+    geste.bouger(230, 300, true)
+    expect(signaux).toContainEqual(glisse('debut', 230, 300))
   })
 })

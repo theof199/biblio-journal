@@ -58,6 +58,7 @@ export function creerMonde1890(): Monde {
     bobines: BOBINES,
     objets: [],
     touchesAuCalme: [],
+    glisser: null,
     // Plan 3a : la foire glisse sous la caméra, le moteur y dessine la route, les cases et l'avatar.
     scene: null,
   }

@@ -69,6 +69,7 @@ export function creerMonde1900(): Monde {
     bobines: BOBINES,
     objets: [],
     touchesAuCalme: [],
+    glisser: null,
     scene: {
       ecranDeLaCase,
       dessinerSuivi,

@@ -224,6 +224,49 @@ describe('le pont entre le DOM et le moteur', () => {
     expect(moteur.pincer).toHaveBeenLastCalledWith(null, 0, 0)
   })
 
+  // Lot « moteur » : un glissement qu'un monde a pris retient le défilement natif, et lui seul. Un
+  // doigt qui défile ne rencontre aucun `preventDefault`. Mutations : `preventDefault` toujours ;
+  // jamais (`glissePris` non lu).
+  it('retient le défilement natif pendant un glissement pris, et jamais en dehors', () => {
+    const { moteur, vue } = monter()
+    const unDoigt = { touches: [{ clientX: 100, clientY: 300 }], cancelable: true }
+    // `fireEvent` rend faux quand l'événement a été retenu.
+    expect(fireEvent.touchMove(vue, unDoigt)).toBe(true)
+    moteur.glissePris = true
+    expect(fireEvent.touchMove(vue, unDoigt)).toBe(false)
+    moteur.glissePris = false
+    expect(fireEvent.touchMove(vue, unDoigt)).toBe(true)
+  })
+
+  // Le pincement garde sa retenue, glissement ou non, et reste relayé pendant un glissement.
+  // Mutation : `pincer` court-circuité par `glissePris` (`glissePris || pincer(…)`).
+  it('relaie encore le pincement pendant un glissement pris, et le retient comme avant', () => {
+    const { moteur, vue } = monter()
+    const deuxDoigts = { touches: [{ clientX: 100, clientY: 300 }, { clientX: 160, clientY: 380 }], cancelable: true }
+    vi.mocked(moteur.pincer).mockReturnValue(true)
+    expect(fireEvent.touchMove(vue, deuxDoigts)).toBe(false)
+    moteur.glissePris = true
+    vi.mocked(moteur.pincer).mockClear()
+    fireEvent.touchMove(vue, deuxDoigts)
+    expect(moteur.pincer).toHaveBeenCalledTimes(1)
+  })
+
+  // Les écoutes de `touchstart` et de `touchend` sont passives : y retenir ne retient rien et fait
+  // protester le navigateur. jsdom ne le dirait pas : l'écouteur est appelé à la main.
+  // Mutation : la garde `e.type === 'touchmove'` retirée.
+  it('ne retient un glissement pris qu’au mouvement, pas au poser ni au lever', () => {
+    const { moteur, vue, ecoutes } = monter()
+    moteur.glissePris = true
+    const retenus = ['touchstart', 'touchmove', 'touchend'].filter((type) => {
+      const retenir = vi.fn()
+      for (const [t, ecouteur] of ecoutes.mock.calls) {
+        if (t === type && typeof ecouteur === 'function') ecouteur.call(vue, { type, touches: [{ clientX: 1, clientY: 1 }], targetTouches: [], cancelable: true, preventDefault: retenir } as unknown as Event)
+      }
+      return retenir.mock.calls.length > 0
+    })
+    expect(retenus).toEqual(['touchmove'])
+  })
+
   // Plan 3a : le rappel neuf du moteur arrive à la page. Mutation : la ligne `entreeProche` retirée
   // du relais (la page n'offrirait jamais « Prendre le train »).
   it('relaie à la page l’entrée à portée de geste que dit le moteur', () => {
