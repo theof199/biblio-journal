@@ -12,6 +12,8 @@ import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
+import type { PropsRayons } from '../voyage/salles/Rayons'
+import type { PropsSalle } from '../voyage/salles/Salle'
 
 /**
  * Ce qui fait un monde (décision du propriétaire du 28 septembre 2026) : sa palette, son décor,
@@ -672,6 +674,18 @@ export interface GabaritsDesPages {
    * `Manivelle`, qui garde le geste, les seuils, les écouteurs, la région d'état et le bouton du bas.
    */
   tirette: ComponentType<PropsTirette>
+  /**
+   * Le cadre des salles d'une fiche prête (`voyage/salles/Rayons.tsx`) : ce qui les entoure, leur
+   * titre. Il reçoit les salles déjà montées, une par salle ; la nouvelle salle et la feuille du
+   * contexte restent à la page, après lui.
+   */
+  salles: ComponentType<PropsRayons>
+  /**
+   * Une salle de la fiche d'année (`voyage/salles/Salle.tsx`) : ses films, leur état, le contexte,
+   * « En voir plus ». Lue par `voyage/salles/Salles.tsx`, qui garde le guet de la fournée, la requête
+   * du contexte et le calque `voiture` de l'adresse.
+   */
+  salle: ComponentType<PropsSalle>
 }
 
 export interface HabillagePages {

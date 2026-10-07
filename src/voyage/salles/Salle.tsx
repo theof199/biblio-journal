@@ -2,16 +2,32 @@ import { Link } from 'react-router-dom'
 import type { FilmDeSalle, Salle as SalleDeLAnnee } from '../../api/voyage'
 import type { Monde } from '../../mondes/types'
 import { ampoules, compteDeLaSalle, contexteLisible, etiquetteEtat, porteDeLEtagere, salleComplete } from '../salles'
-import { useFournee } from './useFournee'
+import type { useFournee } from './useFournee'
 import styles from './Salle.module.css'
 
-interface Props {
+/** Ce que reçoit une salle de la fiche d'année, par défaut ou du monde (`gabarits.salle`). */
+export interface PropsSalle {
   monde: Monde
   annee: number
   salle: SalleDeLAnnee
   ia: boolean
   /** Ouvre la feuille du chroniqueur sur le contexte de cette salle. */
   onContexte: () => void
+  /**
+   * « En voir plus » et son guet, tenus par la page (`useFournee`) : le geste, son erreur, l'abandon
+   * du guet et « Réessayer ». Le guet court que la salle soit dépliée ou non.
+   */
+  fournee: ReturnType<typeof useFournee>
+  /** Le numéro de la salle dans l'année (`numeroDeLaSalle`). */
+  numero: number
+  /**
+   * Pour un monde qui range ses films derrière la salle : elle est dépliée (le calque `voiture` de
+   * l'adresse porte son identifiant), et les deux gestes qui la déplient et la replient. Le défaut
+   * montre toujours ses films et n'en lit rien.
+   */
+  ouverte: boolean
+  onOuvrir: () => void
+  onFermer: () => void
 }
 
 /** Le traitement des affiches du monde, par `filter` CSS : jamais une lecture de pixels. */
@@ -67,10 +83,9 @@ function Affiche({ film, annee, monde }: { film: FilmDeSalle; annee: number; mon
  * enseigne, une ampoule par film, le tampon « COMPLET » ; la raison d'être, qui ouvre le contexte
  * quand il se lit ; le compte ; l'étagère d'affiches, fermée par sa porte.
  */
-export default function Salle({ monde, annee, salle, ia, onContexte }: Props) {
+export default function Salle({ monde, annee, salle, ia, onContexte, fournee }: Pick<PropsSalle, 'monde' | 'annee' | 'salle' | 'ia' | 'onContexte' | 'fournee'>) {
   const complete = salleComplete(salle)
   const porte = porteDeLEtagere(salle, ia)
-  const fournee = useFournee(annee, salle)
 
   return (
     <section className={`${styles.salle} ${complete ? styles.complete : ''}`} aria-label={`Salle ${salle.nom}`}>

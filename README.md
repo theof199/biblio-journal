@@ -379,7 +379,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Sept clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Neuf clés, toutes sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -389,7 +389,12 @@ Où vit quoi :
   films et l'Ours, les essentiels et le Lion, les salles et la Palme, le ticket, chacun atteint ou
   non), si l'année est bouclée (`estBouclee` : son ticket est émis, ou elle est derrière soi) et ce
   que le retour d'un billet a gagné ; le programme se monte sur toute fiche prête, et ne reçoit de pas
-  que pour l'année en cours. 1890 et le monde « à venir » n'en fournissent aucune.
+  que pour l'année en cours. Enfin `salles` (le cadre des salles, `voyage/salles/Rayons.tsx`) et
+  `salle` (une salle, `voyage/salles/Salle.tsx`), que `voyage/salles/Salles.tsx` lit : il garde
+  « En voir plus » et son guet (`useFournee`, une fois par salle), la requête du contexte, la nouvelle
+  salle et le calque `voiture`, et passe à chaque salle son numéro (`numeroDeLaSalle`,
+  `voyage/salles.ts` : son rang, jamais sa place dans la réponse), si elle est dépliée, et les deux
+  gestes qui la déplient et la replient. 1890 et le monde « à venir » n'en fournissent aucune.
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sept sections. La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
@@ -410,7 +415,8 @@ Où vit quoi :
   monument et le guichet sont des fonds unis. `docs/cerveau/pages-1900.md` tient le compte.
 
 **Les calques vivent dans l'adresse** (`voyage/calque.ts`) : `feuille=` (`ouverture`,
-`generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`. Le geste
+`generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`,
+`voiture=` (l'identifiant de la salle dépliée, pour un monde qui range ses films derrière elle). Le geste
 « retour » du téléphone ferme donc un calque sans quitter la page. Ouvert par la page, il se ferme
 en reculant dans l'historique ; arrivé avec l'adresse, en retirant son paramètre. Échap ne ferme
 que le dernier calque ouvert (`voyage/dialogue.ts`).

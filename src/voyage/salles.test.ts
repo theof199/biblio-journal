@@ -7,6 +7,7 @@ import {
   contexteLisible,
   doitDemanderContexte,
   etiquetteEtat,
+  numeroDeLaSalle,
   pistesApresUsage,
   porteDeLEtagere,
   salleComplete,
@@ -15,6 +16,18 @@ import {
 import { filmDeSalle, salle } from '../test/voyage'
 
 const f = (id: string, etat: 'vu' | 'sur_le_plex' | 'demande' | 'a_demander' | 'introuvable') => filmDeSalle({ id, tmdb_id: Number(id), etat })
+
+describe('le numéro d’une salle', () => {
+  // Mutation : l'indice du tableau (`i + 1`) à la place du rang. Deux lectures dans un autre ordre
+  // donneraient deux numéros à la même salle.
+  it('est son rang, quel que soit l’ordre de la réponse, et jamais deux fois le même', () => {
+    const salles = [salle({ id: 'a', rang: 3, films: [] }), salle({ id: 'b', rang: 1, films: [] }), salle({ id: 'c', rang: 7, films: [] })]
+    const numeros = (liste: typeof salles) => Object.fromEntries(liste.map((s) => [s.id, numeroDeLaSalle(s)]))
+    expect(numeros(salles)).toEqual({ a: 3, b: 1, c: 7 })
+    expect(numeros([...salles].reverse())).toEqual(numeros(salles))
+    expect(new Set(Object.values(numeros(salles))).size).toBe(3)
+  })
+})
 
 describe('une salle', () => {
   // Mutations : `every` remplacé par `some` ; l'introuvable oublié dans `acquis` ; la garde de la salle vide retirée.

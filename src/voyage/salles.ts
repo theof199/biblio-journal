@@ -15,6 +15,14 @@ export const salleComplete = (s: Pick<Salle, 'films'>): boolean => s.films.lengt
 /** Les ampoules de l'auvent : une par film, allumée s'il est vu — un introuvable reste éteint. */
 export const ampoules = (s: Pick<Salle, 'films'>): boolean[] => s.films.map((f) => f.etat === 'vu')
 
+/**
+ * Le numéro d'une salle : son rang dans l'année, que l'API garde unique par année et qui ne bouge plus
+ * une fois la salle écrite. Jamais sa place dans la réponse : deux lectures dans un autre ordre, ou
+ * une liste filtrée, donneraient deux numéros à la même salle. Écrit une fois, lu par qui numérote une
+ * salle (la voie d'une gare, le tableau des départs).
+ */
+export const numeroDeLaSalle = (s: Pick<Salle, 'rang'>): number => s.rang
+
 /** « 4 vus sur 5 ». */
 export function compteDeLaSalle(s: Pick<Salle, 'films'>): string {
   const v = s.films.filter((f) => f.etat === 'vu').length

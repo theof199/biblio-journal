@@ -16,12 +16,14 @@ import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import { confierLeRetour, oublierLeRetour } from '../voyage/annee/retour'
+import type { PropsRayons } from '../voyage/salles/Rayons'
+import type { PropsSalle } from '../voyage/salles/Salle'
 import { exemple } from '../test/contrat'
 import { contexteFactice } from '../test/contexteFactice'
 import { visionnage } from '../test/journal'
 import { SESSION, monterVoyage } from '../test/pageVoyage'
 import { json } from '../test/serveur'
-import { ficheEnAttente, fichePrete, ficheVerrouillee, voyage1890 } from '../test/voyage'
+import { ficheEnAttente, fichePrete, ficheVerrouillee, filmDeSalle, salle, voyage1890 } from '../test/voyage'
 
 const SOURCE_ID = '22222222-2222-4222-8222-222222222222'
 const VOYAGE = voyage1890(
@@ -1240,6 +1242,122 @@ describe('la fiche d’une année', () => {
         // Le rechargement a pu finir entre deux rendus : la tirette l'a su à un moment.
         await waitFor(() => expect(recues.tirette.some((p) => p.charge)).toBe(true))
         expect(screen.getByRole('button', { name: mots.bouton })).toBeInTheDocument()
+      })
+    })
+
+    // Plan des pages 1900, brief 3 : le cadre des salles et chaque salle sont deux sections de plus. Le
+    // défaut reste sans gabarit : tout `Salles.test.tsx` le tient pour 1890 sans avoir été retouché.
+    describe('le cadre des salles et la salle', () => {
+      // Dans la réponse, la salle de rang 5 vient avant celle de rang 2 : un numéro n'est pas une place.
+      const SALLES = [
+        salle({ id: 's-cinq', rang: 5, nom: 'La cinquième', contexte: 'Le contexte écrit.', films: [filmDeSalle({ id: 'f1', tmdb_id: 1, etat: 'vu' })] }),
+        salle({ id: 's-deux', rang: 2, nom: 'La deuxième', films: [filmDeSalle({ id: 'f2', tmdb_id: 2, etat: 'a_demander' })] }),
+      ]
+      const fiche = () => json(nue({ salles: SALLES, demande_salle: null }))
+      function preterLesSalles(lesquels: ('salles' | 'salle')[] = ['salles', 'salle']) {
+        const recues: PropsSalle[] = []
+        const tous = {
+          salles: (p: PropsRayons) => (
+            <section aria-label="Le cadre du monde">
+              {`${p.annee} : ${p.salles.map((s) => s.nom).join(', ')}`}
+              {p.children}
+            </section>
+          ),
+          salle: (p: PropsSalle) => (
+            recues.push(p),
+            (
+              <section aria-label={`La salle du monde ${p.numero}`}>
+                {p.ouverte ? 'dépliée' : 'repliée'}
+                <button type="button" onClick={p.onOuvrir}>{`Déplier ${p.numero}`}</button>
+                <button type="button" onClick={p.onFermer}>{`Replier ${p.numero}`}</button>
+                <button type="button" onClick={p.onContexte}>{`Le contexte ${p.numero}`}</button>
+                <button type="button" onClick={p.fournee.demander}>{`En voir plus ${p.numero}`}</button>
+              </section>
+            )
+          ),
+        }
+        const avant = PAGES_1890.gabarits
+        PAGES_1890.gabarits = Object.fromEntries(lesquels.map((cle) => [cle, tous[cle]]))
+        remettre = () => void (PAGES_1890.gabarits = avant)
+        return (id: string) => recues.filter((p) => p.salle.id === id).pop()!
+      }
+      const etats = () => screen.getAllByRole('region', { name: /^La salle du monde/ }).map((r) => `${r.getAttribute('aria-label')!.slice(18)} ${r.firstChild!.textContent}`)
+
+      // Mutations, dans `Salles` : `Salle` ou `Rayons` monté sans passer par `gabaritDe` ; le numéro
+      // pris à l'indice du tableau (`i + 1`) au lieu de `numeroDeLaSalle` ; `ia` que la page ne
+      // passerait plus ; la nouvelle salle montée dans le cadre, ou retirée.
+      it('monte le cadre et les salles du monde, numérotées par leur rang, et garde la nouvelle salle', async () => {
+        const derniere = preterLesSalles()
+        monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': fiche })
+        const cadre = await screen.findByRole('region', { name: 'Le cadre du monde' })
+        expect(cadre).toHaveTextContent('1897 : La cinquième, La deuxième')
+        expect(within(cadre).getAllByRole('region').map((r) => r.getAttribute('aria-label'))).toEqual(['La salle du monde 5', 'La salle du monde 2'])
+        // Les défauts ne sont plus là : ni la baraque, ni son étagère.
+        expect(screen.queryByRole('region', { name: 'Salle La cinquième' })).toBeNull()
+        expect(screen.queryByRole('list', { name: /^L’étagère/ })).toBeNull()
+        const { monde, annee, ia, numero, ouverte } = derniere('s-deux')
+        expect({ decennie: monde.decennie, annee, ia, numero, ouverte }).toEqual({ decennie: 1890, annee: 1897, ia: true, numero: 2, ouverte: false })
+        // La nouvelle salle reste à la page, après le cadre.
+        const nouvelle = screen.getByRole('button', { name: 'Ouvrir une nouvelle salle' })
+        expect(cadre.contains(nouvelle)).toBe(false)
+        expect(cadre.compareDocumentPosition(nouvelle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      })
+
+      // Le jumeau : une clé ne décide pas de l'autre. Mutation : `Rayons` lu sous la clé `salle`.
+      it('sans cadre du monde, monte la salle du monde dans le défaut, et inversement', async () => {
+        preterLesSalles(['salle'])
+        const seule = monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': fiche })
+        expect(await screen.findByRole('region', { name: 'La salle du monde 5' })).toBeInTheDocument()
+        expect(screen.queryByRole('region', { name: 'Le cadre du monde' })).toBeNull()
+        seule.unmount()
+        remettre?.()
+        preterLesSalles(['salles'])
+        monterVoyage('/voyage/1897', { ...ROUTES, 'GET /api/me/voyage/annees/1897': fiche })
+        const cadre = await screen.findByRole('region', { name: 'Le cadre du monde' })
+        expect(within(cadre).getByRole('region', { name: 'Salle La cinquième' })).toBeInTheDocument()
+      })
+
+      // La salle dépliée vit dans l'adresse : un rechargement la rouvre, et elle seule. Mutations, dans
+      // `Salles` : l'état gardé hors de l'adresse (`useState`) ; `ouverte` vraie pour toutes ; le
+      // calque lu sous un autre nom que celui qu'il écrit.
+      it('déplie la salle que l’adresse nomme, et elle seule ; les deux gestes passent par l’adresse', async () => {
+        preterLesSalles()
+        const rechargee = monterVoyage('/voyage/1897?voiture=s-deux', { ...ROUTES, 'GET /api/me/voyage/annees/1897': fiche })
+        await screen.findByRole('region', { name: 'Le cadre du monde' })
+        expect(etats()).toEqual(['5 repliée', '2 dépliée'])
+        // Venue d'un lien, elle se replie en retirant son paramètre, sans quitter l'année.
+        fireEvent.click(screen.getByRole('button', { name: 'Replier 2' }))
+        await waitFor(() => expect(etats()).toEqual(['5 repliée', '2 repliée']))
+        fireEvent.click(screen.getByRole('button', { name: 'Déplier 5' }))
+        await waitFor(() => expect(etats()).toEqual(['5 dépliée', '2 repliée']))
+        rechargee.unmount()
+        // Ouverte par la page, elle se replie en reculant dans l'historique : on retombe sur l'année,
+        // pas sur la carte d'où l'on venait.
+        monterVoyage(['/voyage', '/voyage/1897', { pathname: '/voyage/1897', search: '?voiture=s-cinq', state: { calque: 'voiture' } }], { ...ROUTES, 'GET /api/me/voyage/annees/1897': fiche })
+        await screen.findByRole('region', { name: 'Le cadre du monde' })
+        expect(etats()).toEqual(['5 dépliée', '2 repliée'])
+        fireEvent.click(screen.getByRole('button', { name: 'Replier 5' }))
+        await waitFor(() => expect(etats()).toEqual(['5 repliée', '2 repliée']))
+        expect(screen.getByRole('region', { name: 'L’année 1897' })).toBeInTheDocument()
+      })
+
+      // Ce qui lit ou écrit reste à la page : le contexte déjà écrit se lit sans appel, « En voir
+      // plus » part de la page. Mutations, dans `Salles` : la requête du contexte lancée sans condition
+      // (`enabled: true`) ; `fournee` que la page ne passerait plus (un geste vide).
+      it('garde à la page le contexte, lu sans appel quand il est écrit, et la fournée', async () => {
+        preterLesSalles()
+        const { requetes } = monterVoyage('/voyage/1897', {
+          ...ROUTES,
+          'GET /api/me/voyage/annees/1897': fiche,
+          'POST /api/me/voyage/annees/1897/salles/s-cinq/contexte': () => json({ contexte: 'Un contexte redemandé.' }),
+          'POST /api/me/voyage/salles/s-deux/plus': () => json({ statut: 'en_cours' }, 202),
+        })
+        fireEvent.click(await screen.findByRole('button', { name: 'Le contexte 5' }))
+        expect(await screen.findByRole('dialog')).toHaveTextContent('Le contexte écrit.')
+        await act(async () => undefined)
+        expect(requetes.filter((r) => r.includes('/contexte'))).toEqual([])
+        fireEvent.click(screen.getByRole('button', { name: 'En voir plus 2' }))
+        await waitFor(() => expect(requetes).toContain('POST /api/me/voyage/salles/s-deux/plus'))
       })
     })
   })
