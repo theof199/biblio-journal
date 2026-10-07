@@ -98,12 +98,17 @@ describe('les règles des voies', () => {
 
   // Mutations : la voiture qui se remplit dite complète ; une salle vide dite complète.
   it('une voie dit qu’elle est complète ou qu’elle se remplit, et rien sinon', () => {
-    expect([mentionDeLaVoie(ESSENTIELS), mentionDeLaVoie({ ...ESSENTIELS, fournee_en_cours: true }), mentionDeLaVoie(MELIES), mentionDeLaVoie({ films: [], fournee_en_cours: false })]).toEqual([
+    expect([mentionDeLaVoie(ESSENTIELS, false), mentionDeLaVoie({ ...ESSENTIELS, fournee_en_cours: true }, false), mentionDeLaVoie(MELIES, false), mentionDeLaVoie({ films: [], fournee_en_cours: false }, false)]).toEqual([
       MOTS_DES_VOIES.complete,
       MOTS_DES_VOIES.seRemplit,
       null,
       null,
     ])
+  })
+
+  // Mutation : `abandon` ignoré (une fournée abandonnée se promettrait sans fin).
+  it('une voie dont la fournée est restée sans réponse ne dit plus qu’elle se remplit', () => {
+    expect([mentionDeLaVoie({ ...MELIES, fournee_en_cours: true }, true), mentionDeLaVoie({ ...ESSENTIELS, fournee_en_cours: true }, true), mentionDeLaVoie(MELIES, true)]).toEqual([null, MOTS_DES_VOIES.complete, null])
   })
 })
 
@@ -293,7 +298,8 @@ describe('la voiture d’une salle', () => {
 
   // Le guet d'une fournée s'arrête au plafond : la voiture le dit, et « Réessayer » le reprend sans
   // rien redemander au chroniqueur. Sur le modèle du défaut (`Salles.test.tsx`). Mutations, dans
-  // `Voiture` : l'abandon tu (le bloc `fournee.abandon` retiré) ; « Réessayer » non branché.
+  // `Voiture` : l'abandon tu (le bloc `fournee.abandon` retiré) ; « Réessayer » non branché ;
+  // l'abandon non passé à `mentionDeLaVoie`, dans `Voie` ou dans `Voiture`.
   it('une fournée restée sans réponse le dit dans la voiture, et « Réessayer » reprend le guet', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
@@ -301,12 +307,18 @@ describe('la voiture d’une salle', () => {
       const lectures = () => requetes.filter((r) => r === FICHE).length
       const v = await screen.findByRole('dialog', { name: 'Méliès, toujours' })
       expect(within(v).queryByRole('alert')).toBeNull()
+      const laVoie = async () => (await voies())[0]!.getAttribute('aria-label')
+      expect(await laVoie()).toBe(`Voie 3, Méliès, toujours, 1 vu sur 4, ${MOTS_DES_VOIES.seRemplit}`)
       for (let i = 0; i < RELECTURES.fournee.plafond + 4; i += 1) await vi.advanceTimersByTimeAsync(RELECTURES.fournee.ms)
       expect(await within(v).findByRole('alert')).toHaveTextContent('Le chroniqueur n’a pas répondu, reviens plus tard.')
       expect(lectures()).toBe(1 + RELECTURES.fournee.plafond)
+      // Le guet abandonné, ni la voie ni le panneau ne promettent plus que la voiture se remplit.
+      expect(await laVoie()).toBe('Voie 3, Méliès, toujours, 1 vu sur 4')
+      expect(within(v).getByRole('heading', { level: 2 }).parentElement).toHaveTextContent(/^Voie 3Méliès, toujours$/)
       fireEvent.click(within(v).getByRole('button', { name: 'Réessayer' }))
       await waitFor(() => expect(lectures()).toBe(2 + RELECTURES.fournee.plafond))
       expect(within(v).queryByRole('alert')).toBeNull()
+      expect(await laVoie()).toBe(`Voie 3, Méliès, toujours, 1 vu sur 4, ${MOTS_DES_VOIES.seRemplit}`)
       await vi.advanceTimersByTimeAsync(RELECTURES.fournee.ms)
       expect(lectures()).toBe(3 + RELECTURES.fournee.plafond)
       expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])

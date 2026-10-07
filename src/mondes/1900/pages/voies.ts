@@ -20,9 +20,12 @@ export const MOTS_DES_VOIES = {
   programme: 'Programme',
 } as const
 
-/** Ce qu'une voie dit sous le nom de sa salle : elle est complète, ou elle se remplit ; rien sinon. */
-export function mentionDeLaVoie(s: Pick<Salle, 'films' | 'fournee_en_cours'>): string | null {
-  if (s.fournee_en_cours) return MOTS_DES_VOIES.seRemplit
+/**
+ * Ce qu'une voie dit sous le nom de sa salle : elle est complète, ou elle se remplit ; rien sinon. Une
+ * fournée dont le guet a abandonné ne se promet plus : la voiture dit que le chroniqueur n'a pas répondu.
+ */
+export function mentionDeLaVoie(s: Pick<Salle, 'films' | 'fournee_en_cours'>, abandon: boolean): string | null {
+  if (s.fournee_en_cours && !abandon) return MOTS_DES_VOIES.seRemplit
   return salleComplete(s) ? MOTS_DES_VOIES.complete : null
 }
 

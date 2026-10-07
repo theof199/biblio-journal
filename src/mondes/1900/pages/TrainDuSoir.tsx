@@ -6,8 +6,9 @@ import { etiquetteEtat } from '../../../voyage/salles'
 import { billetDuMorceau, ligneDeSeancePassee } from '../../../voyage/seance'
 import type { PropsProspectus } from '../../../voyage/seance/Prospectus'
 import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
-import { MOTS_DES_CLASSES, MOTS_DU_SOIR } from './classes'
+import { MOTS_DU_SOIR } from './classes'
 import Rubrique from './Rubrique'
+import { MOTS_DES_VOIES } from './voies'
 import styles from './Soir.module.css'
 
 /**
@@ -126,7 +127,7 @@ export default function TrainDuSoir({ monde, annee, zone, carte, passees, compos
 function Partie({ annee, role, film, introuvable }: { annee: number; role: string; film: FilmSeance; introuvable: string }) {
   return (
     <div className={styles.partie}>
-      {film.cover_url ? <img className={styles.affiche} src={film.cover_url} alt="" decoding="async" /> : <span className={`${styles.affiche} ${styles.sansAffiche}`}>{MOTS_DES_CLASSES.sansAffiche}</span>}
+      {film.cover_url ? <img className={styles.affiche} src={film.cover_url} alt="" decoding="async" /> : <span className={`${styles.affiche} ${styles.sansAffiche}`}>{MOTS_DES_VOIES.sansAffiche}</span>}
       <div>
         <small>{role}</small>
         <b>{film.title}</b>

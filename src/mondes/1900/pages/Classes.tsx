@@ -4,6 +4,7 @@ import { useAppuiLong } from '../../../voyage/parade/appuiLong'
 import type { PropsMarches } from '../../../voyage/parade/Marches'
 import { classeDe, filmDeLaMarche, MOTS_DES_CLASSES } from './classes'
 import Rubrique from './Rubrique'
+import { MOTS_DES_VOIES } from './voies'
 import styles from './Classes.module.css'
 
 const PLACES = [1, 2, 3] as const
@@ -66,7 +67,7 @@ function Portiere({ place, marche, versLeFilm, onOuvrir, onVider }: PropsPortier
       {marche?.cover_url ? (
         <img className={styles.fenetre} src={marche.cover_url} alt="" decoding="async" draggable={false} />
       ) : (
-        <span className={`${styles.fenetre} ${styles.vide}`}>{marche ? MOTS_DES_CLASSES.sansAffiche : MOTS_DES_CLASSES.libre}</span>
+        <span className={`${styles.fenetre} ${styles.vide}`}>{marche ? MOTS_DES_VOIES.sansAffiche : MOTS_DES_CLASSES.libre}</span>
       )}
       <span className={styles.poignee} aria-hidden="true" />
     </>

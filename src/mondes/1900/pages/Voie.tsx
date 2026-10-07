@@ -11,7 +11,7 @@ import styles from './Voies.module.css'
  */
 export default function Voie(props: PropsSalle) {
   const { salle, numero, ouverte, onOuvrir } = props
-  const mention = mentionDeLaVoie(salle)
+  const mention = mentionDeLaVoie(salle, props.fournee.abandon)
   const compte = compteDeLaSalle(salle)
   return (
     <li>

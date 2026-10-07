@@ -9,7 +9,6 @@ export const MOTS_DES_CLASSES = {
   libre: 'place libre',
   aChoisir: 'à choisir',
   changer: 'Changer',
-  sansAffiche: 'sans affiche',
   aide: 'Toucher une portière pour ouvrir son film · la tenir pour la vider',
   aideSansFilm: 'Toucher une portière pour y installer un film · la tenir pour la vider',
 } as const

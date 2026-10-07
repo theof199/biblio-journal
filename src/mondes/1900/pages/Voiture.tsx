@@ -59,7 +59,7 @@ export default function Voiture({ monde, annee, salle, ia, numero, onContexte, o
   const photo = imageDu1900('fenetre-train')
   const perdu = monde.pages.mots.introuvable
   const porte = porteDeLEtagere(salle, ia)
-  const mention = mentionDeLaVoie(salle)
+  const mention = mentionDeLaVoie(salle, fournee.abandon)
   const phrase = phraseDeLaVoiture(salle)
   return (
     <div className={styles.voiture} role="dialog" aria-modal="true" aria-labelledby={id}>
