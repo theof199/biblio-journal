@@ -181,8 +181,13 @@ export class MoteurCarte {
   private ouverte = { annee: 0, t0: -9 }
   /** Les bobines perdues trouvées sur cet appareil (plan 2d), par clé : ni dessinées, ni touchables. */
   private trouvees = new Set<string>()
-  /** Les objets cachés déjà ramassés, par clé, une seule table pour toute la carte : leur zone ne s'inscrit plus. */
+  /** Les objets cachés que la page dit ramassés, par clé, une seule table pour toute la carte : leur zone ne s'inscrit plus. */
   private ramasses = new Set<string>()
+  /**
+   * Ceux qu'un toucher vient de prendre et dont la page n'a encore rien dit : ni dans sa liste
+   * (`reglerObjets`, qui les confirme), ni rendus (`rendreObjet`). Leur zone ne s'inscrit pas non plus.
+   */
+  private enMain = new Set<string>()
   /** La bobine qui vole vers le compteur, d'où elle part et depuis quand ; nulle sinon. */
   private envol: { cle: string; x0: number; y0: number; t0: number } | null = null
   /**
@@ -329,10 +334,22 @@ export class MoteurCarte {
 
   /**
    * Les objets cachés déjà ramassés, d'après la page : le jumeau de `reglerBobines`. Leur zone ne s'inscrit plus.
-   * Pour le lot « Objets » : la table est écrasée en entier, ce que `toucher` vient d'y ajouter compris si la page ne le rend pas (constat de relecture, laissé tel quel) : à retailler là.
+   * La liste de la page remplace la sienne d'avant, jamais ce qu'un toucher vient de prendre : la page
+   * rend sa liste à chaque relecture, souvent avant que son écriture ait répondu. Un objet en main
+   * que la liste nomme est confirmé : il ne tient plus qu'à elle, et revient si elle l'oublie.
    */
   reglerObjets(cles: readonly string[]): void {
     this.ramasses = new Set(cles)
+    for (const cle of cles) this.enMain.delete(cle)
+    this.demander()
+  }
+
+  /**
+   * La page rend un objet que le toucher avait pris : son écriture a été refusée, ou est tombée en
+   * panne. Il revient dans le décor, touchable. Rien pour un objet que la page a confirmé depuis.
+   */
+  rendreObjet(cle: string): void {
+    this.enMain.delete(cle)
     this.demander()
   }
 
@@ -733,8 +750,8 @@ export class MoteurCarte {
     // Un objet se ramasse aussi au calme : rien ne vole, la page seule en fait quelque chose.
     if (z.id === 'objet' && z.data !== null) {
       const o = monde?.objets[z.data]
-      if (o && !this.ramasses.has(o.cle)) {
-        this.ramasses.add(o.cle)
+      if (o && !this.ramasses.has(o.cle) && !this.enMain.has(o.cle)) {
+        this.enMain.add(o.cle)
         this.rappels.objet?.(o.cle, { x: z.x, y: z.y })
         this.demander()
       }
@@ -954,7 +971,7 @@ export class MoteurCarte {
     }
     const ramasse = (i: number) => {
       const o = monde.objets[i]
-      return !o || this.ramasses.has(o.cle)
+      return !o || this.ramasses.has(o.cle) || this.enMain.has(o.cle)
     }
     // Le monde d'après, s'il a un passage d'entrée : ce que le bouton de la page appelle, donné au décor.
     const suivante = this.plan.sections[section + 1]

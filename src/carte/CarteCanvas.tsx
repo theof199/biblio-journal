@@ -7,7 +7,7 @@ import styles from './CarteCanvas.module.css'
 /** Ce que la page attend d'un moteur : `MoteurCarte`, ou sa doublure dans un test. */
 export type Moteur = Pick<
   MoteurCarte,
-  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'glissePris' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'direBonjour' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'detruire'
+  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'glissePris' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'direBonjour' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'reglerObjets' | 'rendreObjet' | 'detruire'
 >
 export type FabriqueMoteur = (canvas: HTMLCanvasElement, rappels: Rappels) => Moteur
 
@@ -91,6 +91,8 @@ interface Props {
   calme: boolean
   /** Les bobines perdues déjà trouvées sur cet appareil (plan 2d). */
   bobines: readonly string[]
+  /** Les objets cachés déjà ramassés, d'après la page (l'état du voyageur) : le moteur garde en plus ce qu'un toucher vient de prendre. */
+  objets: readonly string[]
   rappels: Omit<Rappels, 'defilerVers'>
   /** Le moteur monté, pour que la page le commande (ticket, « Tu es ici ») ; nul au démontage. */
   surMoteur: (m: Moteur | null) => void
@@ -102,7 +104,7 @@ interface Props {
  * et chaque événement relayé. Le canvas est décoratif pour les lecteurs d'écran : la page porte
  * la liste des années.
  */
-export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }: Props) {
+export default function CarteCanvas({ etat, calme, bobines, objets, rappels, surMoteur }: Props) {
   const fabrique = useContext(FabriqueMoteurContexte)
   const vueRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -131,6 +133,7 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
       clap: () => rappelsRef.current.clap(),
       presences: (liste, decennie) => rappelsRef.current.presences(liste, decennie),
       entreeProche: (d) => rappelsRef.current.entreeProche?.(d),
+      objet: (cle, ou) => rappelsRef.current.objet?.(cle, ou),
       defilerVers: (y) => {
         vue.scrollTop = y
       },
@@ -244,6 +247,8 @@ export default function CarteCanvas({ etat, calme, bobines, rappels, surMoteur }
   useEffect(() => moteurRef.current?.reglerCalme(calme), [calme])
 
   useEffect(() => moteurRef.current?.reglerBobines(bobines), [bobines])
+
+  useEffect(() => moteurRef.current?.reglerObjets(objets), [objets])
 
   return (
     <div ref={vueRef} className={styles.vue}>

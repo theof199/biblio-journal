@@ -41,8 +41,8 @@ const OU_AUTRE_BOBINE = { x: 190, y: DATE.y }
  * et chez l'autre. Celui de 1890 mord sur le manège : un toucher qui ne le trouve plus tombe sur le
  * manège. Celui du monde collant se pose à l'écran, en haut, comme sa dépêche.
  */
-const OBJET: ObjetCache = { cle: 'la-lorgnette' }
-const OBJET_1900: ObjetCache = { cle: 'le-sifflet' }
+const OBJET: ObjetCache = { cle: 'la-lorgnette', phrase: '', Dessin: () => null }
+const OBJET_1900: ObjetCache = { cle: 'le-sifflet', phrase: '', Dessin: () => null }
 const OU_OBJET = { x: MANEGE.x + 12, y: MANEGE.y }
 const OU_OBJET_1900 = { x: 130, y: 60 }
 /** Les vues que les mondes d'essai ont reçues avec une réaction. */
@@ -3031,6 +3031,59 @@ describe('le moteur de la carte', () => {
             banc.moteur.image(1040)
             toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
             expect(cles(banc)).toEqual([OBJET.cle])
+          })
+
+          // Lot d'écrans, brief 4 : la page rend sa liste à chaque relecture de l'état du voyageur, souvent
+          // avant que son écriture ait répondu. Ce qu'un toucher vient de prendre n'y est pas encore : il
+          // reste pris. Mutations : `reglerObjets` tel qu'il était (la table écrasée en entier, `enMain`
+          // vidé avec elle) ; `ramasse` qui ne lit pas `enMain` ; la garde `enMain.has` retirée de `toucher`.
+          it('un objet que le toucher vient de prendre le reste quand la page rend sa liste sans lui', () => {
+            const banc = devantLeManege()
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            banc.moteur.reglerObjets([])
+            banc.moteur.image(1040)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(true)
+            banc.moteur.reglerObjets(['un-autre'])
+            // Avant toute image neuve, la zone de l'image d'avant ne ramasse pas non plus.
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            banc.moteur.image(1080)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(true)
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(cles(banc)).toEqual([OBJET.cle])
+          })
+
+          // L'écriture refusée ou en panne : la page rend l'objet, il revient dans le décor et se
+          // retouche, au calme aussi (une image est demandée). Mutations : `rendreObjet` qui ne retire
+          // rien d'`enMain` ; sans `this.demander()`.
+          it('un objet rendu par la page revient dans le décor, et se retouche', () => {
+            const banc = devantLeManege({ calme: true })
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            for (let i = 0; i < 50 && banc.demandees.length; i++) for (const f of banc.demandees.splice(0)) f(1040 + i)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(true)
+            banc.moteur.rendreObjet(OBJET.cle)
+            expect(banc.demandees.length).toBe(1)
+            for (const f of banc.demandees.splice(0)) f(1200)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(false)
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            expect(cles(banc)).toEqual([OBJET.cle, OBJET.cle])
+          })
+
+          // Confirmé par la liste de la page, l'objet ne tient plus qu'à elle : si une relecture ne le
+          // nomme plus, il revient. Et le rendre après coup ne défait pas ce que la page dit ramassé.
+          // Mutations : la confirmation retirée de `reglerObjets` (`enMain` jamais allégé : l'objet
+          // resterait pris à jamais) ; `rendreObjet` qui retire aussi de `ramasses`.
+          it('un objet que la page a confirmé ne tient plus qu’à sa liste', () => {
+            const banc = devantLeManege()
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            banc.moteur.reglerObjets([OBJET.cle])
+            banc.moteur.reglerObjets([])
+            banc.moteur.image(1040)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(false)
+            toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+            banc.moteur.reglerObjets([OBJET.cle])
+            banc.moteur.rendreObjet(OBJET.cle)
+            banc.moteur.image(1080)
+            expect(derniereVueDe(1898).objetRamasse(0)).toBe(true)
           })
 
           // Au calme la boucle s'arrête : sans image demandée, l'objet ramassé (ou que la page vient de

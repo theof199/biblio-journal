@@ -370,12 +370,17 @@ export interface BobinePerdue {
 }
 
 /**
- * Un objet caché dans le décor d'un monde, à ramasser d'un toucher : le jumeau de `BobinePerdue`,
- * réduit à sa clé. Son nom et son dessin sont au monde ; le moteur n'en joue ni envol ni son.
+ * Un objet caché dans le décor d'un monde, à ramasser d'un toucher : le jumeau de `BobinePerdue`.
+ * Le moteur n'en lit que la clé et n'en joue ni envol ni son ; le monde le dessine dans son décor.
+ * La page, qui écrit le ramassage, en lit de quoi le dire et de quoi le faire voler vers la sacoche.
  */
 export interface ObjetCache {
-  /** Stable d'une version à l'autre, unique sur toute la carte : c'est elle que le moteur retient et dit à la page, pas le rang. */
+  /** Stable d'une version à l'autre, unique sur toute la carte : c'est elle que le moteur retient et dit à la page, pas le rang. Celle du contrat (`POST /me/voyage/objets/{cle}/ramasser`). */
   cle: string
+  /** Ce que la page dit une fois l'objet rangé, sous son compte : une phrase entière, faite pour l'affichage. */
+  phrase: string
+  /** Son dessin, muet (`aria-hidden`), qui remplit le carré où la page le pose pour l'envol. Il ne lit rien. */
+  Dessin: ComponentType
 }
 
 /**

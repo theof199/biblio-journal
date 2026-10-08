@@ -162,14 +162,15 @@ describe('le pont entre le DOM et le moteur', () => {
   afterEach(() => vi.restoreAllMocks())
 
   const ETAT: EtatCarte = { cases: [], anneeAvatar: 0, tampons: [], tickets: [], roulotte: null }
+  const OBJETS: readonly string[] = ['melon']
   const monter = () => {
     const banc = moteurFactice()
     const ecoutes = vi.spyOn(HTMLElement.prototype, 'addEventListener')
-    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn() }
-    const { container } = render(
-      createElement(FabriqueMoteurContexte.Provider, { value: banc.fabrique }, createElement(CarteCanvas, { etat: ETAT, calme: false, bobines: [], rappels, surMoteur: () => undefined })),
-    )
-    return { ...banc, vue: container.firstElementChild as HTMLElement, ecoutes, page: rappels }
+    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn(), objet: vi.fn() }
+    const arbre = (objets: readonly string[]) =>
+      createElement(FabriqueMoteurContexte.Provider, { value: banc.fabrique }, createElement(CarteCanvas, { etat: ETAT, calme: false, bobines: [], objets, rappels, surMoteur: () => undefined }))
+    const { container, rerender } = render(arbre(OBJETS))
+    return { ...banc, vue: container.firstElementChild as HTMLElement, ecoutes, page: rappels, rendre: (objets: readonly string[]) => rerender(arbre(objets)) }
   }
 
   // Plan 3a : le navigateur relève le pointeur (`pointercancel`) dès qu'il prend le geste pour
@@ -274,5 +275,24 @@ describe('le pont entre le DOM et le moteur', () => {
     banc.rappels().entreeProche?.(1900)
     banc.rappels().entreeProche?.(null)
     expect(banc.page.entreeProche.mock.calls).toEqual([[1900], [null]])
+  })
+
+  // Lot d'écrans, brief 4 : les objets ramassés vont au moteur comme les bobines, au montage puis à
+  // chaque liste neuve, et à elle seulement. Mutations : l'effet `reglerObjets` retiré ; sans sa
+  // dépendance (une seule fois) ; à chaque rendu (une image demandée par rendu de la page).
+  it('donne au moteur les objets ramassés, au montage et à chaque liste neuve seulement', () => {
+    const banc = monter()
+    expect(vi.mocked(banc.moteur.reglerObjets).mock.calls).toEqual([[['melon']]])
+    banc.rendre(OBJETS)
+    expect(banc.moteur.reglerObjets).toHaveBeenCalledTimes(1)
+    banc.rendre(['melon', 'montre'])
+    expect(vi.mocked(banc.moteur.reglerObjets).mock.calls).toEqual([[['melon']], [['melon', 'montre']]])
+  })
+
+  // Mutation : la ligne `objet` retirée du relais (la page n'apprendrait jamais qu'on a touché un objet).
+  it('relaie à la page l’objet que le moteur dit ramassé, sa clé et l’endroit', () => {
+    const banc = monter()
+    banc.rappels().objet?.('melon', { x: 12, y: 34 })
+    expect(banc.page.objet.mock.calls).toEqual([['melon', { x: 12, y: 34 }]])
   })
 })

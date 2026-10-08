@@ -71,6 +71,8 @@ const LIBELLE = { palme: 'Palme', lion: 'Lion', ours: 'Ours', encours: 'en cours
  * le pose tel quel, d'où la chaîne vide ; à React 19, il devient un booléen.
  */
 const INERTE = { inert: '' }
+/** Stable : une liste neuve à chaque rendu rappellerait `reglerObjets`, donc une image, à chaque rendu. */
+const AUCUN_OBJET: readonly string[] = []
 
 export default function Carte() {
   const { user } = useSession()
@@ -424,6 +426,7 @@ export default function Carte() {
             etat={etat}
             calme={calme}
             bobines={trouvees}
+            objets={AUCUN_OBJET}
             surMoteur={setMoteur}
             rappels={{
               toucherAnnee: (a) => navigate(`/voyage/${a}`),
