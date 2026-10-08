@@ -28,8 +28,12 @@ export function useVisiteDeRubrique(rubrique: Rubrique, montree: boolean): { vue
 
   const { mutate } = useMutation({
     mutationFn: () => marquerRubriqueVue(rubrique),
-    onSuccess: (vue) =>
-      client.setQueryData<Voyageur>(cles.voyageur, (v) => (v ? { ...v, rubriques: v.rubriques.map((r) => (r.rubrique === vue.rubrique ? vue : r)) } : v)),
+    // Une relecture de l'état partie pendant le `POST` atterrirait après et rendrait le `vue_le`
+    // d'avant : elle est annulée d'abord (l'état rendu à ce qu'il était, toujours périmé s'il l'était).
+    onSuccess: async (vue) => {
+      await client.cancelQueries({ queryKey: cles.voyageur, exact: true })
+      client.setQueryData<Voyageur>(cles.voyageur, (v) => (v ? { ...v, rubriques: v.rubriques.map((r) => (r.rubrique === vue.rubrique ? vue : r)) } : v))
+    },
   })
   const partie = useRef(false)
   const aMarquer = montree && arrivee !== null && !voyageur.isFetching && !voyageur.error

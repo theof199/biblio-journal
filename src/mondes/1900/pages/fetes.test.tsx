@@ -381,6 +381,14 @@ describe('les fêtes de 1900, dans le séquenceur', () => {
   // le badge neuf monté avant le premier pas ; ses mots dits avant la fin ; la phrase de la maquette
   // ou la règle à la place de la devise servie (constat 9 du plan) ; les badges d'avant non montrés,
   // ou muets ; le badge neuf muet.
+  // Une devise nulle ne laisse pas un paragraphe vide sous le nom. Mutation : le `<p>` de la devise
+  // monté sans regarder `devise`.
+  it('un badge sans devise ne dit que « Étiquette collée » et son nom : aucun paragraphe vide', async () => {
+    const { container } = monter([{ ...BADGE_COLLE, place: { ...BADGE_COLLE.place, devise: null } }])
+    await passer(BADGE[0] + BADGE[1] + BADGE[2])
+    expect([...container.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['Étiquette collée', 'La Correspondance'])
+  })
+
   it('un badge se colle sur la malle, à côté de ceux d’avant, puis dit « Étiquette collée », son nom et la devise servie', async () => {
     const { container, onFin } = monter([BADGE_COLLE])
     expect(screen.getByRole('dialog', { name: 'Étiquette collée : La Correspondance' })).toHaveFocus()

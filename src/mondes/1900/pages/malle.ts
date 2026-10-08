@@ -139,13 +139,14 @@ export function ceQueDitLaTrace(place: PlaceDeMalle): string | null {
 /**
  * Le nom lu d'une place (maquette, l. 3854), avec ce que le contrat sert : le nom, la règle, et le jour
  * du collage dit à Paris. **Une cachée non gagnée ne dit rien d'elle** : ni nom, ni règle, ni clé, même
- * si un champ en venait.
+ * si un champ en venait. **Collée depuis ma dernière visite, elle le dit dans son nom** (`nouvelle`) :
+ * le bouton d'une place n'a que ce nom, et le mot écrit sous elle ne se lit pas.
  */
-export function nomLuDeLaPlace(place: PlaceDeMalle): string {
+export function nomLuDeLaPlace(place: PlaceDeMalle, nouvelle = false): string {
   const etat = etatDeLaPlace(place)
   if (etat === 'cachee') return MOTS_DE_LA_MALLE.cachee
   const regle = place.regle === null ? '' : ` ${place.regle}`
-  if (etat === 'collee') return `${place.nom}, étiquette collée le ${jourDeParis(place.collee_le!)}.${regle}`
+  if (etat === 'collee') return `${place.nom}, ${nouvelle ? `${MOTS_DE_LA_MALLE.nouvelle} ` : ''}étiquette collée le ${jourDeParis(place.collee_le!)}.${regle}`
   const p = place.progression
   const compte = p !== null && p.seuil > 1 ? `, ${compteDeLaTrace(p)}` : ''
   return `${place.nom}, pas encore gagnée${compte}.${regle}`

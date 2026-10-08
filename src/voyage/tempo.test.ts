@@ -64,9 +64,8 @@ const DUREE = /(?<![\w.#-])-?\d*\.?\d+m?s\b/g
  */
 const AMBIANCE: Record<string, (selecteur: string) => boolean> = {
   '/src/voyage/annee/Corde.module.css': (s) => /^\.billet\b/.test(s),
-  // La carte : le point rouge de la sacoche bat en boucle (lot d'écrans, brief 5). L'aperçu d'une année
-  // et le carton d'un monde paraissent sans suivre le geste « vu » : leurs durées d'avant, hors tempo.
-  '/src/carte/Carte.module.css': (s) => s === '.boutons .point' || s === '.apercu' || s === '.carton',
+  // La carte : le point rouge de la sacoche bat en boucle (lot d'écrans, brief 5).
+  '/src/carte/Carte.module.css': (s) => s === '.boutons .point',
   // La tête de la gare 1900 : la trotteuse de l'horloge, la lanterne du laboratoire et le feu du sémaphore, en boucle.
   '/src/mondes/1900/pages/Tete.module.css': (s) => /^\.tete\[data-vivante='oui'\] \.(trotteuse|lanterne|feu)$/.test(s),
   // La courroie 1900 : l'anneau qui tourne tant que l'indicateur se relit, en boucle.
@@ -74,6 +73,18 @@ const AMBIANCE: Record<string, (selecteur: string) => boolean> = {
   // La fausse voiture d'un Hale's Tours : l'écran et les banquettes qui tanguent, le faisceau et l'écran qui scintillent, en boucle.
   '/src/mondes/1900/pages/Hale.module.css': (s) => /^\.hale\[data-vivante='oui'\] \.(ecran|ecran::after|faisceau|banquettes)$/.test(s),
 }
+
+/**
+ * Les exemptions héritées : ni boucle ni survol, donc pas de l'ambiance. Deux règles de la carte
+ * écrites avant que sa feuille soit gardée (lot d'écrans, brief 5), qui paraissent une fois sans suivre
+ * le geste « vu » et gardent leur durée d'avant, hors tempo. La table ne s'allonge pas : une règle
+ * neuve s'écrit au tempo, et une exemption que la feuille n'emploie plus se retire.
+ */
+const EXEMPTIONS_HERITEES: Record<string, readonly string[]> = {
+  // L'aperçu d'une année (0,24 s) et le carton d'un monde (1,2 s).
+  '/src/carte/Carte.module.css': ['.apercu', '.carton'],
+}
+const exemptee = (chemin: string, s: string) => (AMBIANCE[chemin]?.(s) ?? false) || (EXEMPTIONS_HERITEES[chemin]?.includes(s) ?? false)
 
 /** Le sélecteur de la règle où tombe la position `i`. */
 const selecteur = (css: string, i: number) => css.slice(css.lastIndexOf('}', i) + 1, css.lastIndexOf('{', i)).split('{').pop()!.trim()
@@ -124,7 +135,7 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     for (const nom of ANIMATIONS[chemin] ?? []) expect(css).toMatch(new RegExp(`animation:\\s*${nom}\\s+calc\\(\\s*\\d+ms\\s*\\*\\s*var\\(--tempo\\)`))
     const reste = css.replace(AU_TEMPO, 'TEMPO')
     const enDur = [...reste.matchAll(DUREE)]
-      .filter((m) => !(AMBIANCE[chemin]?.(selecteur(reste, m.index)) ?? false))
+      .filter((m) => !exemptee(chemin, selecteur(reste, m.index)))
       .map((m) => `${selecteur(reste, m.index)} : ${m[0]}`)
     expect(enDur).toEqual([])
   })
@@ -210,6 +221,32 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     // Chaque durée et chaque pause est un nombre écrit : ni appel, ni calcul, ni constante venue d'ailleurs.
     const valeurs = [...code.matchAll(/\b(?:duree|arret):\s*([^,}]+)/g)].map(([, valeur]) => valeur!.trim())
     expect(valeurs.filter((valeur) => !/^\d+$/.test(valeur))).toEqual([])
+  })
+
+  // Une exemption héritée nomme une règle qui existe et qui porte encore une durée en dur : sinon elle
+  // ne garde plus rien et laisserait passer la prochaine règle du même nom. Mutations : `.fantome`
+  // ajouté à la table ; la durée de `.carton` passée au tempo sans retirer sa ligne.
+  it('chaque exemption héritée sert encore : sa règle existe et porte une durée hors tempo', () => {
+    for (const [chemin, selecteurs] of Object.entries(EXEMPTIONS_HERITEES)) {
+      const reste = sansCommentaires(FEUILLES[chemin] ?? '').replace(AU_TEMPO, 'TEMPO')
+      const enDur = new Set([...reste.matchAll(DUREE)].map((m) => selecteur(reste, m.index)))
+      expect(selecteurs.filter((s) => !enDur.has(s))).toEqual([])
+    }
+  })
+
+  // L'envol d'un objet ramassé (lot d'écrans, brief 4) : la page attend la durée que la feuille joue,
+  // sinon l'objet est retiré en plein vol ou reste posé sur la pastille. Mutations : `1300ms` changé
+  // dans `.vol` sans toucher à la page ; `auTempo(1300)` changé dans la page sans toucher à la
+  // feuille ; `DUREE_DE_L_ENVOL = 1300`, sans `auTempo` ; le ramassage qui attend un nombre écrit.
+  it('l’envol d’un objet dure dans la page ce qu’il dure dans la feuille de la carte', () => {
+    const code = sansCommentaires(PAGE_DE_LA_CARTE)
+    const page = [...code.matchAll(/^const DUREE_DE_L_ENVOL = auTempo\((\d+)\)$/gm)].map(([, ms]) => ms)
+    expect(page).toHaveLength(1)
+    const css = sansCommentaires(FEUILLES['/src/carte/Carte.module.css'] ?? '')
+    const feuille = [...css.matchAll(/animation:\s*envol\s+calc\(\s*(\d+)ms\s*\*\s*var\(--tempo\)\s*\)/g)].map(([, ms]) => ms)
+    expect(feuille).toEqual(page)
+    // Le ramassage attend cette constante, et aucune autre attente de la page n'est un nombre écrit pour elle.
+    expect(code.match(/envol = attendre\(([^)]*)\)/)?.[1]).toBe('DUREE_DE_L_ENVOL')
   })
 
   // Le point rouge de la sacoche (lot d'écrans, brief 5) : une boucle, et au calme un point fixe. Les

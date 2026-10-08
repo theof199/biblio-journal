@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import type { QueryClient } from '@tanstack/react-query'
 import type { Depenses, Malle, RubriqueVue, TicketUtilise, Tickets, Voyage, Voyageur } from '../../../api/voyage'
 import { exemple } from '../../../test/contrat'
 import { monterVoyage } from '../../../test/pageVoyage'
@@ -98,6 +99,12 @@ const rubriques = (page: HTMLElement) => within(page).getAllByRole('heading', { 
  * ce qu'elle lit est parti et revenu (le cache ne lit ni n'écrit plus rien). `ecrit` est ce qu'elle disait **avant le dépli** : les crédits des images
  * nomment des cartes postales de gare, qui ne sont pas le courrier.
  */
+// Pas de pause : on attend le fait. Une requête part au montage de son bloc ; une lecture qu'une autre
+// déclenche est encore en vol, et le cache le sait. Une lecture refusée que le cache relance est déjà
+// partie, donc déjà comptée : on ne l'attend pas.
+const auCalme = (client: QueryClient) =>
+  waitFor(() => expect(client.getQueryCache().getAll().filter((q) => q.state.fetchStatus === 'fetching' && q.state.fetchFailureCount === 0).length + client.isMutating()).toBe(0))
+
 async function sacocheDepliee() {
   const { requetes, client } = monterVoyage(SACOCHE, ROUTES)
   await sacoche()
@@ -106,11 +113,7 @@ async function sacocheDepliee() {
   const ecrit = page.textContent ?? ''
   await deplier()
   await region(M.coulisses.depenses)
-  // Pas de pause : on attend le fait. Une requête part au montage de son bloc, donc avant que la région
-  // des dépenses paraisse ; une lecture qu'une autre déclenche est encore en vol, et le cache le sait.
-  // Une lecture refusée que le cache relance est déjà partie, donc déjà comptée : on ne l'attend pas.
-  const enVol = () => client.getQueryCache().getAll().filter((q) => q.state.fetchStatus === 'fetching' && q.state.fetchFailureCount === 0)
-  await waitFor(() => expect(enVol().length + client.isMutating()).toBe(0))
+  await auCalme(client)
   return { page, ecrit, requetes }
 }
 
@@ -343,10 +346,10 @@ describe('la sacoche du voyageur en 1900', () => {
   // de crédits sur deux.
   it('les coulisses sont repliées, et rien ne lit les dépenses ; dépliées, elles disent les dépenses et tous les crédits', async () => {
     let repondre!: (r: Response) => void
-    const { requetes } = monterVoyage(SACOCHE, { ...ROUTES, [DEPENSES]: () => new Promise<Response>((r) => (repondre = r)) })
+    const { requetes, client } = monterVoyage(SACOCHE, { ...ROUTES, [DEPENSES]: () => new Promise<Response>((r) => (repondre = r)) })
     const coulisses = await region(M.coulisses.titre)
     await tickets()
-    await new Promise((r) => setTimeout(r, 50))
+    await auCalme(client)
     const pli = within(coulisses).getByRole('button', { name: M.coulisses.titre })
     expect(pli).toHaveAttribute('aria-expanded', 'false')
     expect(pli).not.toHaveAttribute('aria-controls')

@@ -43,13 +43,17 @@ function MalleDeLaDecennie({ decennie, Dessin }: { decennie: number; Dessin: Gab
   const montree = malle.data !== undefined && malle.data.etiquettes.length > 0
   const visite = useVisiteDeRubrique('etiquette', montree && !malle.error)
 
+  // Ouverte, la malle en cache reste à l'écran si sa relecture tombe en panne : le dialogue ne se
+  // referme pas seul sous le doigt (l'adresse dirait encore `?malle`, le focus serait perdu). La panne
+  // se dit sur la ligne, une fois la malle refermée.
+  const erreur = montree && calque.valeur !== null ? null : malle.error
   // Rien avant la réponse : la rubrique ne paraît pas pour disparaître devant une décennie sans malle.
-  if (!malle.error && !montree) return null
-  const lue = malle.error ? null : malle.data!
+  if (!erreur && !montree) return null
+  const lue = erreur ? null : malle.data!
   return (
     <section className={commun.bloc} aria-label="Malle">
       <Dessin
-        panne={malle.error ? { erreur: malle.error, reessayer: () => void malle.refetch() } : null}
+        panne={erreur ? { erreur, reessayer: () => void malle.refetch() } : null}
         malle={lue}
         nouvelles={lue && visite ? lue.etiquettes.filter((p) => estNouveau(p.collee_le, visite.vueLe)).map((p) => p.numero) : []}
         ouverte={lue !== null && calque.valeur !== null}
@@ -65,7 +69,8 @@ function MalleDeLaDecennie({ decennie, Dessin }: { decennie: number; Dessin: Gab
  * bloc ne se monte que si le monde de mon année en cours compose `malleDeLaSacoche` (`gabaritSeul`),
  * et ne lit rien sinon — ni la malle, ni l'état du voyageur. Monté, il lit la malle de la décennie de
  * mon année en cours et l'état du voyageur, marque la rubrique `etiquette` vue quand la malle est lue
- * (`useVisiteDeRubrique`), et tombe seul en panne. La carte en panne, la page prend le monde du
+ * (`useVisiteDeRubrique`), et tombe seul en panne — sauf ouverte : la malle en cache reste alors à
+ * l'écran, et la panne attend qu'on la referme. La carte en panne, la page prend le monde du
  * départ : sans année en cours, pas de malle.
  */
 export default function Malle({ monde }: { monde: Monde | null }) {

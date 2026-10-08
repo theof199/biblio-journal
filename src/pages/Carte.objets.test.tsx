@@ -157,6 +157,24 @@ describe('les objets sur le quai, côté page', () => {
     expect(banc.client.getQueryData<Voyageur>(cles.voyageur)?.objets).toEqual([LANTERNE, MELON])
   })
 
+  // Une lecture de l'état en vol au moment du ramassage (une écriture d'ailleurs a périmé le préfixe)
+  // porte l'état d'avant : atterrie après, elle effacerait la ligne. Mutation : `cancelQueries` retiré
+  // de `ramasser.onSuccess`.
+  it('une lecture de l’état partie avant le ramassage et revenue après ne défait pas la ligne ramassée', async () => {
+    calme()
+    let lectures = 0
+    let relire: (r: Response) => void = () => undefined
+    const banc = await monter({ [LIRE]: () => (++lectures === 1 ? json(ETAT) : new Promise<Response>((fin) => (relire = fin))), [RAMASSER_LE_MELON]: () => json(MELON) })
+    void banc.client.refetchQueries({ queryKey: cles.voyageur, exact: true })
+    await waitFor(() => expect(lectures).toBe(2))
+    banc.toucher('melon')
+    await screen.findByText('Objet trouvé 2 sur 10')
+    await act(async () => relire(json(ETAT)))
+    await waitFor(() => expect(banc.client.isFetching() + banc.client.isMutating()).toBe(0))
+    expect(banc.client.getQueryData<Voyageur>(cles.voyageur)?.objets).toEqual([LANTERNE, MELON])
+    expect(banc.dits().pop()).toEqual(['lanterne', 'melon'])
+  })
+
   // Le compte se dit sur le catalogue du monde de l'objet et sur ce que le cache tient, jamais sur dix.
   // Mutations : « sur 10 » écrit ; le compte pris sur la réponse (1) ou sur tout l'état sans le
   // catalogue ; la phrase du monde remplacée par la clé.
@@ -218,6 +236,60 @@ describe('les objets sur le quai, côté page', () => {
     await banc.passer(1)
     expect(etat()).toHaveTextContent('Objet trouvé 2 sur 10')
     expect(enVol()).toBe(0)
+  })
+
+  // Où l'objet vole : du point touché au milieu de la pastille de la sacoche, dans le repère de
+  // l'écran de la carte (une règle de position, pas un tracé). Sans pastille mesurable, le coin bas
+  // droit de la maquette. Mutations : `- e.left` ou `- e.top` retiré ; le coin de la pastille au lieu
+  // de son milieu ; le repli pris alors que la pastille se mesure ; `--x0` posé sur la cible.
+  it.each([
+    ['la pastille mesurée', { left: 300, top: 600, width: 48, height: 40 }, { x: '314px', y: '600px' }],
+    ['sans pastille mesurable', { left: 0, top: 0, width: 0, height: 0 }, { x: '356px', y: '670px' }],
+  ])('l’envol vise le milieu de la pastille de la sacoche, dans le repère de l’écran : %s', async (_cas, pastille, cible) => {
+    const banc = await monter({ [RAMASSER_LE_MELON]: () => new Promise<Response>(() => undefined) })
+    const ecran = { left: 10, top: 20, width: 390, height: 760 }
+    const lien = screen.getByRole('link', { name: /^Sacoche du voyageur/ })
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const r = this === lien ? pastille : this.classList.contains(stylesDeLaCarte.ecran!) ? ecran : { left: 0, top: 0, width: 0, height: 0 }
+      return { ...r, x: r.left, y: r.top, right: r.left + r.width, bottom: r.top + r.height, toJSON: () => r }
+    })
+    banc.toucher('melon')
+    const vol = document.querySelector<HTMLElement>(`.${stylesDeLaCarte.vol}`)!
+    expect({ x: vol.style.getPropertyValue('--x1'), y: vol.style.getPropertyValue('--y1') }).toEqual(cible)
+    expect({ x: vol.style.getPropertyValue('--x0'), y: vol.style.getPropertyValue('--y0') }).toEqual({ x: `${OU.x}px`, y: `${OU.y}px` })
+  })
+
+  // La carte quittée pendant un ramassage. Accepté : le cache apprend la ligne quand même (`onSuccess`
+  // survit au départ), et la consigne la montre. Refusé : rien n'est rendu à un moteur détruit.
+  // Mutations : la ligne posée dans la suite du geste, après la garde `monte` (la consigne ne la voit
+  // pas) ; `if (monte.current)` retiré devant `rendreObjet`.
+  it('la carte quittée avant la réponse : accepté, la sacoche montre l’objet ; refusé, rien n’est rendu au moteur détruit', async () => {
+    calme()
+    let repondre: (r: Response) => void = () => undefined
+    const banc = await monter({
+      [RAMASSER_LE_MELON]: () => new Promise<Response>((fin) => (repondre = fin)),
+      'POST /api/me/voyage/rubriques/objet/vue': () => json({ rubrique: 'objet', vue_le: '2026-10-08T11:00:00.000Z' }),
+    })
+    const partir = async () => {
+      banc.toucher('melon')
+      await waitFor(() => expect(banc.client.isMutating()).toBe(1))
+      fireEvent.click(screen.getByRole('link', { name: /^Sacoche du voyageur/ }))
+      return screen.findByRole('region', { name: 'Objets trouvés' })
+    }
+    // Refusé d'abord : l'objet n'entre pas au cache, et le moteur de la carte quittée n'est plus touché.
+    await partir()
+    await waitFor(() => expect(banc.moteur.detruire).toHaveBeenCalled())
+    await act(async () => repondre(json(REFUS, 404)))
+    await waitFor(() => expect(banc.client.isMutating()).toBe(0))
+    expect(banc.moteur.rendreObjet).not.toHaveBeenCalled()
+    expect(banc.client.getQueryData<Voyageur>(cles.voyageur)?.objets).toEqual([LANTERNE])
+    // De retour sur la carte, le même geste, accepté cette fois après le départ.
+    fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+    await screen.findByRole('link', { name: /^Sacoche du voyageur/ })
+    const consigne = await partir()
+    await act(async () => repondre(json(MELON)))
+    expect(await within(consigne).findByRole('img', { name: '1901 : un chapeau melon, dans la sacoche' })).toBeInTheDocument()
+    expect(banc.requetes.filter((r) => r === LIRE)).toHaveLength(1)
   })
 
   // Refusé en plein vol, l'objet ne vole plus : il est déjà revenu sur le quai. Mutation : le vol

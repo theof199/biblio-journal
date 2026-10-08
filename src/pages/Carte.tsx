@@ -374,7 +374,10 @@ export default function Carte() {
     // relirait la carte, les tickets, la malle et les fiches montées, et poser la réponse à la place
     // de l'état effacerait les rubriques vues, le contrôleur et les poinçons. Ici et non dans le
     // rappel du geste : la sacoche doit le voir même si la carte est quittée avant la réponse.
-    onSuccess: (ligne) => {
+    // Une lecture de l'état partie avant la réponse atterrirait après et effacerait la ligne : elle
+    // est annulée d'abord (l'état rendu à ce qu'il était, toujours périmé s'il l'était).
+    onSuccess: async (ligne) => {
+      await client.cancelQueries({ queryKey: cles.voyageur, exact: true })
       client.setQueryData<Voyageur>(cles.voyageur, (e) => e && { ...e, objets: [...e.objets.filter((o) => o.cle !== ligne.cle), ligne].sort((a, b) => a.annee - b.annee) })
     },
   })

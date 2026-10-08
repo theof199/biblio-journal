@@ -107,7 +107,7 @@ function MalleOuverte({ malle, nouvelles, onFermer }: { malle: Malle; nouvelles:
                       style={{ transform: `translate(${x}px, ${y}px) ${touchee ? 'scale(1.1)' : `rotate(${r}deg)`}` }}
                       data-etat={etatDeLaPlace(p)}
                       aria-pressed={touchee}
-                      aria-label={nomLuDeLaPlace(p)}
+                      aria-label={nomLuDeLaPlace(p, neuve)}
                       onClick={() => setNumero(p.numero)}
                     >
                       <BadgeDeMalle place={p} muet />

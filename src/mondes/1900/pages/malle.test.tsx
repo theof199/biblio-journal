@@ -104,6 +104,18 @@ describe('ce que dit une place', () => {
     expect(ceQueDitLaTrace(collee)).toBeNull()
   })
 
+  // Le bouton d'une place n'a que son nom lu : « nouvelle » s'y dit, pour une collée seulement (une
+  // trace ou une cachée n'est jamais nouvelle, quoi qu'on passe). Mutations : `nouvelle` ignoré par
+  // `nomLuDeLaPlace` ; le mot dit aussi d'une trace ; dit d'une cachée.
+  it('collée depuis ma dernière visite, une place le dit dans son nom lu ; une trace et une cachée, jamais', () => {
+    vi.stubEnv('TZ', 'UTC')
+    const collee = place({ collee_le: '2026-09-29T20:41:07.000Z', progression: null })
+    expect(nomLuDeLaPlace(collee, true)).toBe('Le Train de nuit, nouvelle étiquette collée le 29 septembre 2026. Composter cinq séances après minuit.')
+    expect(nomLuDeLaPlace(collee, false)).toBe(nomLuDeLaPlace(collee))
+    expect(nomLuDeLaPlace(collee)).not.toMatch(/nouvelle/i)
+    for (const p of [place({}), CACHEE]) expect(nomLuDeLaPlace(p, true)).toBe(nomLuDeLaPlace(p))
+  })
+
   // Le contrat sert tout nul ; la règle tient même si un champ en venait. Mutation : le libellé commun
   // (la branche de la cachée retirée de `nomLuDeLaPlace` : « null, pas encore gagnée »).
   it('une cachée non gagnée ne dit rien d’elle : ni nom, ni règle, ni clé', () => {

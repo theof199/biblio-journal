@@ -227,6 +227,37 @@ describe('la malle de la sacoche, une clé sans défaut', () => {
     expect(`${adresse.pathname}${adresse.search}`).toBe(SACOCHE)
   })
 
+  // Ouverte, la malle ne se referme pas seule quand sa relecture tombe en panne : celle du cache reste,
+  // l'adresse dit toujours vrai, et la panne se dit une fois refermée ; la marque, elle, ne repart pas.
+  // Mutation : dans `Malle.tsx`, `erreur` rendu à `malle.error` (la malle relue en panne se ferme sous le doigt).
+  it('ouverte, la malle relue en panne reste ouverte sur celle du cache ; refermée, sa ligne dit la panne', async () => {
+    preter({ malleDeLaSacoche: MalleDuMonde })
+    let enPanne = false
+    const { client, requetes } = monter({ ...ROUTES, [MALLE]: () => (enPanne ? panne('La malle est en panne.')() : json(LA_MALLE)) }, ['/voyage', SACOCHE])
+    await waitFor(() => expect(vueEnCache(client)).toBe(MARQUE.vue_le))
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la malle' }))
+    await waitFor(() => expect(dit()).toMatch(/ouverte$/))
+    enPanne = true
+    await act(async () => {
+      await client.refetchQueries({ queryKey: cles.malle(1890), exact: true })
+    })
+    await waitFor(() => expect(client.getQueryState(cles.malle(1890))?.status).toBe('error'))
+    expect(dit()).toBe('sans panne | 1 sur 15 | nouvelles : 7 | ouverte')
+    expect(`${adresse.pathname}${adresse.search}`).toBe(`${SACOCHE}?malle=ouverte`)
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer la malle' }))
+    await waitFor(() => expect(dit()).toBe('panne | rien | nouvelles : aucune | fermée'))
+    expect(`${adresse.pathname}${adresse.search}`).toBe(SACOCHE)
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([VUE])
+  })
+
+  // Rien en cache, il n'y a pas de malle à garder : arrivée par l'adresse, la panne se dit. Mutation :
+  // `erreur` tue dès que l'adresse dit ouverte, sans regarder `montree` (le bloc ne rendrait rien).
+  it('arrivée avec l’adresse et la malle en panne, sans rien en cache : la panne se dit', async () => {
+    preter({ malleDeLaSacoche: MalleDuMonde })
+    monter({ ...ROUTES, [MALLE]: panne('La malle est en panne.') }, [`${SACOCHE}?malle=ouverte`])
+    await waitFor(() => expect(dit()).toBe('panne | rien | nouvelles : aucune | fermée'))
+  })
+
   // Mutation : `ouverte` lu d'un état du bloc et non de l'adresse (un rechargement la refermerait).
   it('arrivée avec l’adresse, elle est ouverte, et se referme sans quitter la sacoche', async () => {
     preter({ malleDeLaSacoche: MalleDuMonde })

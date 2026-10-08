@@ -400,12 +400,20 @@ describe('les objets oubliés sur le quai', () => {
   // Les places de la lanterne et du parapluie sont posées ici, hors maquette : aucune ne tombe sur la
   // bobine ou la dépêche de sa gare, dont la zone la couvrirait (ou l'inverse). Les zones se
   // comptent à leur rayon inscrit : 1,6 fois le rayon pour l'objet et la bobine, 26 px pour la dépêche.
-  // Mutation : la lanterne posée à la place de la bobine de 1900 (`dx: -122, bas: 33`).
+  // Mutations : la lanterne posée à la place de la bobine de 1900 (`dx: -122, bas: 33`) ; dans
+  // `objetsSurLeQuai`, la place prise à un autre repère que celui de la bobine.
   it('aucun objet ne se pose sur la bobine ni sur la dépêche de sa gare', () => {
     const heurts: string[] = []
     for (const H of [640, 760, 900]) {
-      for (const o of OBJETS) {
-        const ici = { x: o.quai.dx, y: H * (1 - o.quai.bas / 100) - 12 }
+      for (const [rang, o] of OBJETS.entries()) {
+        // La place vient de la règle elle-même, le train arrêté dans sa gare : rien n'est recalculé ici.
+        const { vue } = enGare(o.annee, 10, { H })
+        const pose = objetsSurLeQuai(vue).find((p) => p.rang === rang)
+        if (!pose) {
+          heurts.push(`${o.cle} ne se propose pas, H ${H}`)
+          continue
+        }
+        const ici = { x: pose.x - milieuDeLaGare(vue, rang), y: pose.y }
         CACHETTES.filter((b) => b.an === o.annee).forEach((b) => {
           if (Math.hypot(ici.x - b.dx, ici.y - (H * (1 - b.bas / 100) - 12)) < (RAYON_D_OBJET + 8) * 1.6) heurts.push(`${o.cle} et la bobine, H ${H}`)
         })

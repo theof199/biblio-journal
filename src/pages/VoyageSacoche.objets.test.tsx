@@ -205,6 +205,31 @@ describe('les objets trouvés de la sacoche, une clé sans défaut', () => {
     expect(dit()).toBe('panne | rien')
   })
 
+  // Une relecture de l'état partie pendant le `POST` de la marque porte le `vue_le` d'avant : atterrie
+  // après, elle le rendrait au cache, et le point de la carte se rallumerait. Mutation : `cancelQueries`
+  // retiré d'`onSuccess` dans `visite.ts`.
+  it('une relecture de l’état partie pendant la marque et revenue après ne défait pas la date posée', async () => {
+    preter({ objetsDeLaSacoche: ObjetsDuMonde })
+    let lectures = 0
+    let relire!: (r: Response) => void
+    let marquer!: (r: Response) => void
+    const { client, requetes } = monterVoyage(SACOCHE, {
+      ...ROUTES,
+      [VOYAGEUR]: () => (++lectures === 1 ? json(ETAT) : new Promise<Response>((r) => (relire = r))),
+      [VUE]: () => new Promise<Response>((r) => (marquer = r)),
+    })
+    const vueEnCache = () => client.getQueryData<Voyageur>(cles.voyageur)?.rubriques.find((r) => r.rubrique === 'objet')?.vue_le
+    await waitFor(() => expect(typeof marquer).toBe('function'))
+    void client.refetchQueries({ queryKey: cles.voyageur, exact: true })
+    await waitFor(() => expect(lectures).toBe(2))
+    act(() => marquer(json(MARQUE)))
+    await waitFor(() => expect(vueEnCache()).toBe(MARQUE.vue_le))
+    await act(async () => relire(json(ETAT)))
+    await waitFor(() => expect(client.isFetching() + client.isMutating()).toBe(0))
+    expect(vueEnCache()).toBe(MARQUE.vue_le)
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([VUE])
+  })
+
   // Les deux rubriques montées ensemble : une seule lecture de l'état, chacune sa marque, et chaque
   // marque ne pose que son champ. Mutation : dans `visite.ts`, la réponse du `POST` posée sur toutes
   // les rubriques (`rubriques.map(() => vue)` : la seconde marque écraserait la première).

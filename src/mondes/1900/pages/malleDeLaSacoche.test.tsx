@@ -147,8 +147,11 @@ describe('la malle dans la sacoche de 1900', () => {
     monterVoyage(SACOCHE, ROUTES)
     const malle = await ouvrir()
     expect(within(malle).getByRole('heading', { level: 2 })).toHaveTextContent(`${M.ouverte.titre} 1 sur 3`)
-    expect(places(malle).map((b) => b.getAttribute('aria-label'))).toEqual(TROIS_PLACES.etiquettes.map(nomLuDeLaPlace))
-    expect(touchee(malle)).toEqual([nomLuDeLaPlace(CORRESPONDANCE)])
+    // Le bouton d'une place n'a que ce nom : collée depuis ma dernière visite, la Correspondance y dit
+    // « nouvelle », et elle seule. Mutation : `neuve` non passé à `nomLuDeLaPlace` par le bouton.
+    await waitFor(() => expect(places(malle).map((b) => b.getAttribute('aria-label'))).toEqual([nomLuDeLaPlace(CORRESPONDANCE, true), nomLuDeLaPlace(TRAIN_DE_NUIT), nomLuDeLaPlace(CACHEE)]))
+    expect(nomLuDeLaPlace(CORRESPONDANCE, true)).toMatch(/^La Correspondance, nouvelle étiquette collée le /)
+    expect(touchee(malle)).toEqual([nomLuDeLaPlace(CORRESPONDANCE, true)])
     // Un seul nom par place : aucune image nommée, ni dans la malle ouverte ni sur la ligne.
     expect(within(malle).queryAllByRole('img')).toEqual([])
     expect(within(await region()).queryAllByRole('img')).toEqual([])
@@ -223,9 +226,11 @@ describe('la malle dans la sacoche de 1900', () => {
     expect(bouton).toHaveTextContent('3 étiquettes sur 4')
     const malle = await ouvrir()
     expect(places(malle).map(motSurLaPlace)).toEqual(['', M.nouvelle, '', M.nouvelle])
+    // Et leur nom lu le dit, celui du Coloriste non.
+    expect(places(malle).map((b) => b.getAttribute('aria-label'))).toEqual([nomLuDeLaPlace(coloriste), nomLuDeLaPlace(CORRESPONDANCE, true), nomLuDeLaPlace(TRAIN_DE_NUIT), nomLuDeLaPlace(express, true)])
     fireEvent.click(within(malle).getByRole('button', { name: nomLuDeLaPlace(coloriste) }))
     expect(within(fiche(malle)).getByText(/^Étiquette nº/)).toHaveTextContent(/^Étiquette nº 2$/)
-    fireEvent.click(within(malle).getByRole('button', { name: nomLuDeLaPlace(express) }))
+    fireEvent.click(within(malle).getByRole('button', { name: nomLuDeLaPlace(express, true) }))
     expect(within(fiche(malle)).getByText(/^Étiquette nº/)).toHaveTextContent(/^Étiquette nº 9 · nouvelle$/)
   })
 

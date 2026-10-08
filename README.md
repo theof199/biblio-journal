@@ -181,8 +181,10 @@ rien de neuf (`pages/Carte.objets.test.tsx`). Tant que cet état n'est pas lu, o
 ne se propose, sans un mot. Un toucher (au calme aussi) l'ôte du décor et la page l'écrit
 (`POST /me/voyage/objets/{cle}/ramasser`), une fois par objet (un verrou par clé). Accepté, **le cache
 ne gagne que la ligne rendue** : ni le préfixe `voyage` périmé, ni l'état relu, et la consigne de la
-sacoche le montre sans rien relire ; l'objet vole du quai à la pastille de la sacoche
-(`DUREE_DE_L_ENVOL` de la page, au tempo), puis la région d'état dit « Objet trouvé 2 sur 10 », compté
+sacoche le montre sans rien relire ; une lecture de l'état encore en vol est annulée avant l'écriture
+(`cancelQueries`, sur la clé exacte : atterrie après, elle effacerait la ligne) ; l'objet vole du quai
+au milieu de la pastille de la sacoche (`DUREE_DE_L_ENVOL` de la page, au tempo, que
+`voyage/tempo.test.ts` lie à la durée de `.vol` dans la feuille), puis la région d'état dit « Objet trouvé 2 sur 10 », compté
 sur le catalogue du monde, et la phrase de l'objet (`ObjetCache.phrase`). Au calme, rien ne vole ni
 n'attend. Refusé ou en panne, il est rendu au moteur (`rendreObjet`) et revient sur le quai, sans un
 mot. Le moteur tient deux listes : ce que la page dit ramassé (`reglerObjets`) et ce qu'un toucher
@@ -202,8 +204,10 @@ n'attend aucune de ces deux lectures, et leur panne se tait : pas de point pour 
 prive de ses dates, et la carte reste. **Le point se lit sur le cache, que deux écritures tiennent
 champ par champ** : la sacoche y pose le `vue_le` rendu par le serveur (`useVisiteDeRubrique`), si bien
 qu'au retour le point est éteint sans rien relire ; ramasser y ajoute sa ligne, datée par le serveur
-après ma visite, et le rallume. Il bat en boucle (hors tempo, déclaré dans `voyage/tempo.test.ts`, qui
-garde depuis toute la feuille `carte/Carte.module.css`) ; au calme, un point fixe
+après ma visite, et le rallume. L'état relu en panne, le point et les objets ramassés restent ceux du
+cache. Il bat en boucle (hors tempo, déclaré dans `AMBIANCE` de `voyage/tempo.test.ts`, qui
+garde depuis toute la feuille `carte/Carte.module.css` ; l'aperçu et le carton, d'avant, y sont des
+`EXEMPTIONS_HERITEES`, une table qui ne s'allonge pas) ; au calme, un point fixe
 (`pages/Carte.point.test.tsx`).
 
 **La référence de 1890** (`carte/reference1890.test.ts`). Ce que le moteur dessine pour le vrai
@@ -864,7 +868,8 @@ sa date), « 5 étiquettes sur 15 » **avec le total que le serveur sert**, « L
 visite. La toucher ouvre la malle par-dessus la sacoche, **dans l'adresse** (`?malle=ouverte` : le
 retour du téléphone, « Refermer » et Échap la referment, un rechargement la rouvre) : la valise, ses
 places telles que le serveur les range, par numéro, chacune son badge (`BadgeDeMalle`, muet : le
-bouton de la place porte le seul nom lu), « Nouvelle » sous celles qui le sont, la plaque de la
+bouton de la place porte le seul nom lu), « Nouvelle » sous celles qui le sont et dans leur nom lu
+(`nomLuDeLaPlace`), la plaque de la
 décennie ; au pied, la fiche de la place touchée (la dernière collée en s'ouvrant, sinon la
 première) : son numéro, son nom, sa règle, « Collée le … » ou ce qui manque avec sa jauge, « à
 gagner » pour un seuil de un, et rien d'elle pour une cachée. Une décennie sans malle ne montre rien ;
@@ -933,10 +938,12 @@ n'en ont pas encore**
   sacoche du voyageur ») : son bloc lecteur
   (`voyage/sacoche/Malle.tsx`, entre le passeport et le portefeuille) lit la malle de la décennie de
   mon année en cours et l'état du voyageur, ne rend rien pour une décennie sans malle, tombe seul en
-  panne et ouvre la malle dans l'adresse (`?malle=ouverte` : le retour la referme). **La rubrique
+  panne et ouvre la malle dans l'adresse (`?malle=ouverte` : le retour la referme ; ouverte, la malle
+  en cache reste à l'écran si sa relecture tombe en panne, et la panne se dit une fois refermée). **La rubrique
   `etiquette` se marque vue une fois par visite**, la malle lue (`voyage/sacoche/visite.ts`,
   `useVisiteDeRubrique`, qui servira aux objets trouvés et au courrier) : « nouvelle » se calcule sur
-  le `vue_le` lu à l'arrivée, figé pour la visite, et le cache n'apprend que la date du serveur
+  le `vue_le` lu à l'arrivée, figé pour la visite, et le cache n'apprend que la date du serveur, une
+  relecture de l'état encore en vol annulée d'abord
   (`pages/VoyageSacoche.malle.test.tsx`, sur un 1890 auquel on prête un dessin). La seconde est
   `objetsDeLaSacoche`, que 1900 remplit aussi (plus haut, « La sacoche du voyageur ») : son bloc lecteur (`voyage/sacoche/Objets.tsx`,
   entre le portefeuille et les coulisses) ne lit que l'état du voyageur, passe au dessin ce que le

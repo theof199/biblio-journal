@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom'
 import type { Location } from 'react-router-dom'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import App from '../App'
 import { cles } from '../api/cles'
 import { createQueryClient } from '../api/queryClient'
@@ -12,7 +12,7 @@ import { MOTS_DE_LA_SACOCHE } from '../mondes/1900/pages/sacoche'
 import { FICHIERS_DE_CREDITS } from '../voyage/sacoche'
 import { exemple } from '../test/contrat'
 import { json, servir } from '../test/serveur'
-import { annee, voyage1890 } from '../test/voyage'
+import { ROUTES_DU_JEU, annee, voyage1890 } from '../test/voyage'
 
 // La page se charge à la demande dans l'app (`paresseux`) : sans ce chargement préalable, le premier
 // test qui la monte paierait sa compilation dans le délai d'un `findByRole` (le remède de
@@ -91,6 +91,11 @@ function monter(historique: string[] = ['/voyage/sacoche']) {
 }
 
 const region = (nom: string) => screen.findByRole('region', { name: nom })
+/** Pas de pause : plus aucune lecture en vol qui n'ait déjà été refusée, plus aucune écriture. */
+const auCalme = (client: QueryClient) =>
+  waitFor(() => expect(client.getQueryCache().getAll().filter((q) => q.state.fetchStatus === 'fetching' && q.state.fetchFailureCount === 0).length + client.isMutating()).toBe(0))
+/** Les régions de la page, par leur nom, dans l'ordre : elles se nomment, elles ne se comptent pas. */
+const regionsDe = (page: HTMLElement) => within(page).getAllByRole('region').map((r) => r.getAttribute('aria-label') ?? document.getElementById(r.getAttribute('aria-labelledby') ?? '')?.textContent?.replace(/[▸▾]$/, '') ?? '')
 const deplier = async () => fireEvent.click(within(await region('Coulisses')).getByRole('button', { name: /Coulisses/ }))
 /** Le texte d'un ticket du portefeuille, l'année d'abord. */
 const ticketDe = async (a: number) => {
@@ -137,7 +142,7 @@ describe('la sacoche du voyageur', () => {
     await ticketDe(1898)
     await deplier()
     await waitFor(() => expect(client.getQueryState(cles.depenses)?.status).toBe('success'))
-    await new Promise((r) => setTimeout(r, 50))
+    await auCalme(client)
 
     const duVoyage = requetes.filter((r) => r.includes('/me/voyage'))
     expect(duVoyage.filter((r) => r.includes('/annees'))).toEqual([])
@@ -234,8 +239,10 @@ describe('la sacoche du voyageur', () => {
   // arrivée) ; `key={monde?.nom}` sur un bloc (la région se remonte).
   it('ouverte par un lien direct, n’habille rien tant que la carte n’a pas répondu, puis prend le monde de mon année sans remonter ses trois régions', async () => {
     let carte!: (r: Response) => void
-    const requetes = routes({ [VOYAGE]: () => new Promise<Response>((r) => (carte = r)) })
-    monter()
+    // 1900 monte la malle et les objets trouvés : leurs routes sont servies (une malle vide ne paraît
+    // pas, une consigne vide si), et l'on attend le calme du cache avant de regarder les régions.
+    const requetes = routes({ ...ROUTES_DU_JEU, [VOYAGE]: () => new Promise<Response>((r) => (carte = r)) })
+    const client = monter()
 
     const page = await region('La sacoche du voyageur')
     await waitFor(() => expect(typeof carte).toBe('function'))
@@ -256,15 +263,16 @@ describe('la sacoche du voyageur', () => {
     expect(await screen.findByRole('heading', { level: 1, name: MOTS_DE_LA_SACOCHE.titre })).toBeInTheDocument()
     expect(within(page).queryByRole('status')).toBeNull()
     expect(page.style.getPropertyValue('--m-tel')).toBe(PAGES_1900.jetons['--m-tel'])
-    const apres = [...page.querySelectorAll(':scope > section')]
-    expect(apres).toHaveLength(3)
+    await auCalme(client)
+    // Les trois régions d'avant, chacune par son nom, sont les mêmes nœuds ; ce que le jeu de 1900
+    // ajoute entre elles se nomme aussi.
+    const apres = [screen.getByRole('region', { name: 'Passeport' }), screen.getByRole('region', { name: 'Portefeuille' }), screen.getByRole('region', { name: MOTS_DE_LA_SACOCHE.coulisses.titre })]
     for (const [i, bloc] of apres.entries()) {
       expect(bloc).toBe(blocs[i])
       expect(bloc).toBeVisible()
       expect(bloc).not.toBeEmptyDOMElement()
     }
-    expect(apres[0]).toBe(screen.getByRole('region', { name: 'Passeport' }))
-    expect(apres[1]).toBe(screen.getByRole('region', { name: 'Portefeuille' }))
+    expect(regionsDe(page)).toEqual(['Passeport', 'Portefeuille', 'Objets trouvés', MOTS_DE_LA_SACOCHE.coulisses.titre])
   })
 
   // La carte en panne, la page prend le monde du départ et chaque bloc dit ce qu'il a ; « Réessayer »
@@ -278,12 +286,13 @@ describe('la sacoche du voyageur', () => {
     let carte!: (r: Response) => void
     let lectures = 0
     const requetes = routes({
+      ...ROUTES_DU_JEU,
       [VOYAGE]: () => {
         lectures += 1
         return lectures === 1 ? erreurApi('La carte est en panne.', 500) : new Promise<Response>((r) => (carte = r))
       },
     })
-    monter()
+    const client = monter()
 
     const page = await region('La sacoche du voyageur')
     const passeport = await region('Passeport')
@@ -300,7 +309,10 @@ describe('la sacoche du voyageur', () => {
 
     act(() => carte(json(EN_1901)))
     expect(await screen.findByRole('heading', { level: 1, name: MOTS_DE_LA_SACOCHE.titre })).toBeInTheDocument()
-    expect(page.querySelectorAll(':scope > section')[2]).toBe(coulisses)
+    await auCalme(client)
+    // Par son nom, jamais par son rang : 1900 monte ses blocs du jeu avant elle.
+    expect(screen.getByRole('region', { name: MOTS_DE_LA_SACOCHE.coulisses.titre })).toBe(coulisses)
+    expect(regionsDe(page)).toEqual(['Passeport', 'Portefeuille', 'Objets trouvés', MOTS_DE_LA_SACOCHE.coulisses.titre, 'Dépenses', 'Crédits des images'])
     expect(coulisses).toBeVisible()
     expect(within(coulisses).getByRole('button', { expanded: true })).toBeInTheDocument()
     expect(within(coulisses).queryByRole('button', { expanded: false })).toBeNull()
@@ -360,11 +372,11 @@ describe('la sacoche du voyageur', () => {
   // Mutations : `useState(true)` ; la lecture des dépenses montée avec les Coulisses repliées.
   it('les Coulisses sont repliées au premier rendu, et rien ne lit les dépenses avant le dépli', async () => {
     const requetes = routes()
-    monter()
+    const client = monter()
 
     const coulisses = await region('Coulisses')
     await ticketDe(1898)
-    await new Promise((r) => setTimeout(r, 50))
+    await auCalme(client)
     expect(within(coulisses).getByRole('button', { name: /Coulisses/ })).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByRole('region', { name: 'Dépenses' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Crédits des images' })).not.toBeInTheDocument()

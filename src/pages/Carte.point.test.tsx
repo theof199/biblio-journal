@@ -161,6 +161,27 @@ describe('le point rouge de la sacoche, sur la carte de 1900', () => {
     expect(points()).toBe(n)
   })
 
+  // L'état relu en panne, celui d'avant encore en cache : la carte garde ce qu'elle savait. Mutations :
+  // dans `Carte.tsx`, l'état du point pris nul en erreur (`voyageur.error ? undefined : voyageur.data` :
+  // le point s'éteint) ; de même pour `ramasses` (les dix objets passeraient pour ramassés).
+  it('l’état relu en panne, le point et les objets ramassés restent ceux du cache, sans un mot', async () => {
+    let enPanne = false
+    const banc = await monter(etat([LANTERNE], { etiquette: APRES_TOUT, objet: AVANT_TOUT }), { [LIRE]: () => (enPanne ? json({ code: 'INTERNAL', message: 'Panne.', retryable: false }, 500) : json(etat([LANTERNE], { etiquette: APRES_TOUT, objet: AVANT_TOUT }))) })
+    await banc.calme()
+    expect(points()).toBe(1)
+    enPanne = true
+    await act(async () => {
+      await banc.client.refetchQueries({ queryKey: cles.voyageur, exact: true })
+    })
+    await waitFor(() => expect(banc.client.getQueryState(cles.voyageur)?.status).toBe('error'))
+    await banc.calme()
+    expect(nom()).toBe(`${SACOCHE} : ${OBJET}`)
+    expect(points()).toBe(1)
+    expect(vi.mocked(banc.moteur.reglerObjets).mock.calls.pop()![0]).toEqual(['lanterne'])
+    laCarteEstLa()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   // De retour de la sacoche, le point est éteint sans relecture : le crochet de la visite a écrit le
   // cache, champ par champ. Mutation : `useVisiteDeRubrique` n'écrit plus le cache (son `onSuccess`
   // retiré).

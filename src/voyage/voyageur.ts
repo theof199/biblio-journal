@@ -100,7 +100,7 @@ export function rubriquesDeLaPastille(monde: Monde): readonly RubriqueDeLaPastil
 export function nouveautesDeLaSacoche(montees: readonly RubriqueDeLaPastille[], lu: LuPourLaPastille): string[] {
   if (!lu.voyageur) return []
   const dates: DatesDesRubriques = {}
-  for (const r of montees) dates[r.rubrique] = r.dates(lu) ?? []
+  for (const r of montees) dates[r.rubrique] = r.dates(lu)
   const allumees = rubriquesAllumees(lu.voyageur.rubriques, dates)
   return montees.filter((r) => allumees.includes(r.rubrique)).map((r) => r.pourquoi)
 }

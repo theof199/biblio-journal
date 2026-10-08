@@ -37,7 +37,7 @@ export default function BadgeColleSurLaMalle({ scene, pas, fini, sur }: PropsFet
         <>
           <p className={styles.sur}>{sur}</p>
           <p className={styles.titre}>{scene.place.nom}</p>
-          <p className={styles.sous}>{scene.place.devise}</p>
+          {scene.place.devise === null ? null : <p className={styles.sous}>{scene.place.devise}</p>}
         </>
       ) : null}
     </div>
