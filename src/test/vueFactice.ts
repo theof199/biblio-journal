@@ -43,6 +43,8 @@ export function vueFactice(surcharge: Partial<VueMonde> = {}) {
     // Aucun monde à passage ne suit : la décennie d'après est cachée.
     passer: null,
     ticketDApres: false,
+    // Aucune halte servie : le membre n'est pas à l'année d'un embranchement.
+    haltes: [],
     ...surcharge,
   }
   return { vue, appels, zones }

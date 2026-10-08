@@ -293,12 +293,16 @@ export default function Carte() {
         annee: a.annee,
         etat,
         attente,
+        // L'horaire tel que servi : son état et son échéance, que le serveur décide (brief 9 des écrans
+        // des lots). Rien ne se dessine encore : le monde le reçoit par `CaseVue.horaire`.
+        horaire: a.horaire ? { etat: a.horaire.etat, echeance: a.horaire.echeance } : null,
         profondeur: a.profondeur,
         jauge: jauge(a.progression, a.recompense),
         affiches: affichesDeColonne(a, estPrete(fiche) ? fiche : undefined),
       }
     })
     const cachee = premiereDecennieCachee(v.annees, v.annee_en_cours, aUneScene)
+    const montrees = anneesMontrees(cases, v.annee_en_cours, aUneScene)
     return {
       anneeAvatar,
       tampons: v.tampons.map((t) => t.decennie),
@@ -312,7 +316,13 @@ export default function Carte() {
           ? { pseudo: v.source.pseudo, annee: v.source.annee_en_cours }
           : null,
       // La liste pour lecteur d'écran se lit sur ces cases : elle ne nomme pas plus une année cachée.
-      cases: anneesMontrees(cases, v.annee_en_cours, aUneScene),
+      cases: montrees,
+      // Les haltes servies, pour le monde qui en dessinera l'embranchement : jamais celle d'une année
+      // que la carte ne montre pas (une décennie cachée, `premiereDecennieCachee`). Le compte se fait
+      // sur ce qui est servi, jamais sur un catalogue de l'appli.
+      haltes: v.haltes
+        .filter((h) => montrees.some((c) => c.annee === h.apres))
+        .map((h) => ({ cle: h.cle, apres: h.apres, vus: h.films.filter((f) => f.etat === 'vu').length, total: h.films.length })),
     }
   }, [v, anneeAvatar, fiches, user.pseudo, ticketsEmis])
 

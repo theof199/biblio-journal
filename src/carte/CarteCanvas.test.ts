@@ -166,7 +166,7 @@ describe('le pont entre le DOM et le moteur', () => {
   const monter = () => {
     const banc = moteurFactice()
     const ecoutes = vi.spyOn(HTMLElement.prototype, 'addEventListener')
-    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn(), objet: vi.fn() }
+    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn() }
     const arbre = (objets: readonly string[]) =>
       createElement(FabriqueMoteurContexte.Provider, { value: banc.fabrique }, createElement(CarteCanvas, { etat: ETAT, calme: false, bobines: [], objets, rappels, surMoteur: () => undefined }))
     const { container, rerender } = render(arbre(OBJETS))
@@ -294,5 +294,14 @@ describe('le pont entre le DOM et le moteur', () => {
     const banc = monter()
     banc.rappels().objet?.('melon', { x: 12, y: 34 })
     expect(banc.page.objet.mock.calls).toEqual([['melon', { x: 12, y: 34 }]])
+  })
+
+  // Brief 9 des écrans des lots. Mutation : la ligne `aiguillage` retirée du relais (la page
+  // n'apprendrait jamais qu'un aiguillage est touché).
+  it('relaie à la page l’aiguillage que le moteur dit touché, par la clé de sa halte', () => {
+    const banc = monter()
+    banc.rappels().aiguillage?.('melies')
+    expect(banc.page.aiguillage.mock.calls).toEqual([['melies']])
+    expect(banc.page.objet).not.toHaveBeenCalled()
   })
 })

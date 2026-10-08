@@ -55,5 +55,6 @@ export function vuePage(o: { ctx: CanvasRenderingContext2D; W: number; H: number
     entree: -1,
     passer: null,
     ticketDApres: false,
+    haltes: [],
   }
 }

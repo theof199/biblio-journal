@@ -113,6 +113,28 @@ export interface DateVraie {
   image: { url: string; legende: string } | null
 }
 
+/**
+ * L'horaire accepté sur une année (`GET /me/voyage`, `annees[].horaire`) : où il en est, et le jour de
+ * son échéance, `AAAA-MM-JJ`, à Paris. Une date sans heure : elle ne passe jamais par le fuseau de
+ * l'appareil. Le serveur décide de l'état, le monde ne le recalcule pas d'après l'horloge.
+ */
+export interface HoraireVue {
+  etat: 'accepte' | 'tenu' | 'manque'
+  echeance: string
+}
+
+/**
+ * Une halte servie (`GET /me/voyage`, `haltes[]`) : sa clé, l'année après laquelle elle s'embranche
+ * (le tronçon entre `apres` et `apres + 1`), et de quoi dire « 2 sur 3 » : les films vus, sur ceux
+ * que le serveur sert. Aucun catalogue dans l'appli : une halte que le serveur ne sert pas n'existe pas.
+ */
+export interface HalteVue {
+  cle: string
+  apres: number
+  vus: number
+  total: number
+}
+
 /** Une case telle que le monde la voit pour y poser ses figurants. */
 export interface CaseVue {
   annee: number
@@ -122,6 +144,11 @@ export interface CaseVue {
    * le moteur le remplit toujours, et un banc de test le dit lui aussi.
    */
   attente: boolean
+  /**
+   * L'horaire accepté sur cette année (`CaseCarte.horaire`), nul si le membre n'en a pas pris. Requis
+   * comme `attente` : le moteur le remplit toujours, et un banc de test le dit lui aussi.
+   */
+  horaire: HoraireVue | null
   profondeur: number
   /**
    * Les adresses des affiches de l'année (`CaseCarte.affiches`), dans l'ordre où la page les donne ;
@@ -227,6 +254,14 @@ export interface VueMonde {
    * ouverte (`passer` le dit) : entre les deux, le membre tient son ticket sans l'avoir utilisé.
    */
   ticketDApres: boolean
+  /**
+   * Les haltes servies qui s'embranchent après une année **de cette section** (`EtatCarte.haltes`),
+   * dans l'ordre où la page les donne ; aucune : `[]`. Le monde qui en dessine l'embranchement y
+   * inscrit lui-même la zone `aiguillage` (`zone`), dont `data` est **le rang de la halte dans cette
+   * liste** : le moteur ne la passe jamais à `reagir`, il dit sa clé à la page
+   * (`Rappels.aiguillage`), au calme aussi.
+   */
+  haltes: readonly HalteVue[]
 }
 
 /**
@@ -456,7 +491,7 @@ export interface Monde {
   siteDuChantier: (annee: number) => number | null
   /** La cinématique de sortie, par-dessus la brume, sous les voiles et le corail ; rien si `v.adieu < 0`. */
   dessinerAdieu: (v: VueMonde) => void
-  /** Un toucher sur une zone du décor : `data` est celle de la zone, `ou` son centre à l'écran (d'où partent confettis et étincelles). Jamais au calme, sauf pour un identifiant de `touchesAuCalme`. */
+  /** Un toucher sur une zone du décor : `data` est celle de la zone, `ou` son centre à l'écran (d'où partent confettis et étincelles). Jamais au calme, sauf pour un identifiant de `touchesAuCalme`. Jamais pour une zone que le moteur traite lui-même (`aiguillage` en est). */
   reagir: (id: string, data: number | null, v: VueMonde, ou: { x: number; y: number }) => void
   /** Les pages du Voyage de ce monde : la fiche d'une année, la fiche d'un film, le billet, la feuille (plan 2b). */
   pages: HabillagePages

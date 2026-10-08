@@ -921,7 +921,8 @@ L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquet
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
 ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
-billets passe sur la carte et son poinçon doré reste au casier ; les quatre autres n'ont rien**
+billets passe sur la carte et son poinçon doré reste au casier ; les quatre autres n'ont rien à l'écran
+(l'horaire et les haltes vont déjà jusqu'au monde, plus bas)**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -940,6 +941,20 @@ billets passe sur la carte et son poinçon doré reste au casier ; les quatre au
   ce qui est nouveau depuis une date. Deux instants s'y comparent, jamais deux chaînes. Le serveur ne
   calcule ni l'un ni l'autre. La carte le montre sur la pastille de la sacoche (`RUBRIQUES_DE_LA_PASTILLE`,
   `rubriquesDeLaPastille`, `nouveautesDeLaSacoche`, `nomDeLaSacoche` : « La carte du Voyage »).
+- **La carte en sait plus, sans rien dessiner** (brief 9 des écrans des lots). `GET /me/voyage` sert
+  déjà l'horaire de chaque année et les haltes : `pages/Carte.tsx` les met dans l'état de la carte,
+  dans le même `useMemo` que les cases (relue à l'identique, la carte ne refait pas son état), et le
+  moteur les passe au monde. Par année, `CaseVue.horaire` : l'état (`accepte`, `tenu`, `manque`) et
+  l'échéance tels que servis, ou nul ; l'appli ne calcule ni l'un ni l'autre. Par monde,
+  `VueMonde.haltes` : la clé, `apres`, et de quoi dire « 2 sur 3 » (les films vus, sur ceux que le
+  serveur sert), pour les seules haltes qui s'embranchent après une année de sa section ; une halte
+  d'une année que la carte ne montre pas (une décennie cachée) n'est pas passée. **Une septième zone
+  est au moteur, `aiguillage`** (`halte` est déjà la gare au bout de la foire, et reste au monde) : le
+  monde qui dessinera un embranchement l'inscrit, `data` au rang de la halte dans sa vue, et son
+  toucher dit la clé de la halte à la page (`Rappels.aiguillage`, relayé par `CarteCanvas`), au calme
+  aussi (c'est une lecture), jamais à `reagir`. **Aucun monde ne l'inscrit encore et la page ne
+  l'écoute pas** : la plaque d'une gare (brief 11) et la halte (brief 12) s'y brancheront.
+  `carte/moteur.test.ts` et `pages/Carte.haltes.test.tsx` le tiennent.
 - **Le contrôleur passe sur la carte** (`voyage/controleur/Controleur.tsx`, la clé sans défaut
   `controleurDeLaCarte`, la seule que lit `pages/Carte.tsx`, au monde de mon année en cours ; 1900 la
   remplit). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne

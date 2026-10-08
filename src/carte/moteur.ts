@@ -9,7 +9,7 @@ import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, tremblement } from './traitement'
 import { Geste, lirePincement } from './geste'
-import type { DateVraie, Glissement, Monde, MusiqueDuMonde, SceneCollante, VueMonde } from '../mondes/types'
+import type { DateVraie, Glissement, HalteVue, HoraireVue, Monde, MusiqueDuMonde, SceneCollante, VueMonde } from '../mondes/types'
 import type { EtatCase } from '../voyage/regles'
 import { dessinerCase, dessinerCorail } from './dessin/cases'
 import { dessinerAvatar } from './dessin/avatar'
@@ -36,6 +36,11 @@ export interface CaseCarte {
   annee: number
   etat: EtatCase
   attente: boolean
+  /**
+   * L'horaire accepté sur l'année (`GET /me/voyage`), nul ou absent : aucun. Le moteur n'en tire rien,
+   * il le passe au monde (`CaseVue.horaire`, toujours rempli).
+   */
+  horaire?: HoraireVue | null
   profondeur: number
   jauge: { vus: number; total: number } | null
   affiches: readonly string[]
@@ -59,6 +64,11 @@ export interface EtatCarte {
    * monde (`VueMonde.roulotte`). Absente (`null`) : pas de roulotte.
    */
   roulotte: { pseudo: string; annee: number | null } | null
+  /**
+   * Les haltes servies, celles d'une décennie cachée ôtées par la page ; absente : aucune. Le moteur
+   * donne à chaque monde celles de sa section (`VueMonde.haltes`) et y lit la zone `aiguillage`.
+   */
+  haltes?: readonly HalteVue[]
 }
 export interface Rappels {
   toucherAnnee: (annee: number) => void
@@ -103,6 +113,12 @@ export interface Rappels {
    * moteur n'en joue rien, ni envol ni son. Optionnel : une page qui ne garde pas d'objets ne l'écoute pas.
    */
   objet?: (cle: string, ou: { x: number; y: number }) => void
+  /**
+   * L'aiguillage d'une halte vient d'être touché (la zone `aiguillage`, qu'un monde inscrit) : la clé
+   * de la halte. Au calme aussi, c'est une lecture ; le moteur n'en joue rien. Optionnel : une page
+   * qui n'ouvre pas de halte ne l'écoute pas.
+   */
+  aiguillage?: (cle: string) => void
 }
 /** Sous cette hauteur d'écran, l'avatar est sous le bandeau du haut (le HUD de la page) : il n'est pas vu. */
 export const HAUT_MASQUE = 110
@@ -766,6 +782,13 @@ export class MoteurCarte {
       }
       return
     }
+    // Un aiguillage se lit aussi au calme, comme une date : la page ouvre sa halte. Il est au moteur,
+    // avec ou sans rang : jamais il ne va à `reagir` (`halte`, la gare au bout de la foire, y va).
+    if (z.id === 'aiguillage') {
+      const h = z.data === null ? undefined : this.haltesDe(z.section)[z.data]
+      if (h) this.rappels.aiguillage?.(h.cle)
+      return
+    }
     if (!monde) return
     // Au calme, le décor ne réagit pas : seul passe ce que le monde déclare comme un acte.
     if (this.calme && !monde.touchesAuCalme.includes(z.id)) return
@@ -948,6 +971,13 @@ export class MoteurCarte {
     }
   }
 
+  /** Les haltes d'une section : celles qui s'embranchent après une de ses années, dans l'ordre de la page. Le rang d'une zone `aiguillage` s'y lit. */
+  private haltesDe(section: number): readonly HalteVue[] {
+    const haltes = this.etat.haltes ?? []
+    if (haltes.length === 0) return haltes
+    return haltes.filter((h) => this.plan.cases.some((c) => c.section === section && c.annee === h.apres))
+  }
+
   /** La vue qu'un monde reçoit pour dessiner sa part : son repère, son horloge, ses zones. */
   private vueMonde(section: number, presence: number): VueMonde {
     const s = this.plan.sections[section]!
@@ -1010,6 +1040,7 @@ export class MoteurCarte {
         annee: c.annee,
         etat: etats.get(c.annee)?.etat ?? 'verrou',
         attente: etats.get(c.annee)?.attente ?? false,
+        horaire: etats.get(c.annee)?.horaire ?? null,
         profondeur: etats.get(c.annee)?.profondeur ?? 0,
         affiches: etats.get(c.annee)?.affiches ?? [],
         x: c.x * this.k,
@@ -1038,6 +1069,7 @@ export class MoteurCarte {
       entree: this.meneur.ageDuPassage(s.decennie),
       ticketDApres: this.etat.tickets.some((annee) => annee >= s.decennie + 10),
       passer: suivante && this.tempsDe(section + 1).length > 0 ? () => void this.direBonjour(suivante.decennie, 'endroit') : null,
+      haltes: this.haltesDe(section),
     }
   }
 

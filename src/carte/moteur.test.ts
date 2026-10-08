@@ -6,7 +6,7 @@ import { APPUI_LONG_MS } from './geste'
 import { TUILE } from './dessin/sol'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Glissement, Monde, MusiqueDuMonde, ObjetCache, Ralenti, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
+import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Glissement, HalteVue, HoraireVue, Monde, MusiqueDuMonde, ObjetCache, Ralenti, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
 import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -45,6 +45,14 @@ const OBJET: ObjetCache = { cle: 'la-lorgnette', phrase: '', Dessin: () => null 
 const OBJET_1900: ObjetCache = { cle: 'le-sifflet', phrase: '', Dessin: () => null }
 const OU_OBJET = { x: MANEGE.x + 12, y: MANEGE.y }
 const OU_OBJET_1900 = { x: 130, y: 60 }
+// Brief 9 des écrans des lots : trois haltes, une sur la foire et deux sur la ligne, que la page donne
+// dans cet ordre. Le rang d'un aiguillage se lit dans celles de sa section, pas dans la liste entière.
+const HALTE_DE_LA_FOIRE: HalteVue = { cle: 'la-baraque', apres: 1897, vus: 0, total: 1 }
+const HALTE_MELIES: HalteVue = { cle: 'melies', apres: 1902, vus: 2, total: 3 }
+const HALTE_ZECCA: HalteVue = { cle: 'zecca', apres: 1901, vus: 0, total: 2 }
+const HALTES = [HALTE_DE_LA_FOIRE, HALTE_MELIES, HALTE_ZECCA]
+/** Où le monde collant pose l'aiguillage de la halte de rang `i`, à l'écran. */
+const ouAiguillage1900 = (i: number) => ({ x: 80 + 130 * i, y: 60 })
 /** Les vues que les mondes d'essai ont reçues avec une réaction. */
 const vuesDesReactions: VueMonde[] = []
 const MUSIQUE: MusiqueDuMonde = { battue: 0.36, temps: 24, volume: 0.5, filtre: 2300, jouer: () => undefined }
@@ -173,6 +181,12 @@ function monter(
     objets?: boolean
     /** Lot « moteur » : les identifiants de zone dont le toucher vaut au calme, par décennie (`Monde.touchesAuCalme`). */
     auCalme?: Record<number, readonly string[]>
+    /** Brief 9 des écrans des lots : chaque monde d'essai inscrit une zone `aiguillage` par halte reçue (`VueMonde.haltes`), à son rang ; 1890 sur le manège. */
+    aiguillages?: boolean
+    /** Brief 9 : 1890 inscrit sur le manège un aiguillage sans rang (`'nu'`), ou d'un rang qu'aucune halte ne tient (`'inconnu'`). */
+    aiguillagePerdu?: 'nu' | 'inconnu'
+    /** Brief 9 : 1890 inscrit sur le manège la zone `halte` de sa petite gare (`mondes/1890/halte.ts`), un rang en `data`, devant tout le décor. */
+    halteDeLaFoire?: boolean
     /** Lot « moteur » : 1890 pose, sur le manège, un objet d'un rang qu'il ne déclare pas. */
     objetInconnu?: boolean
     /** Lot « moteur » : les mondes qui reçoivent un glissement, par décennie, et ce qu'ils rendent au début (vrai : ils le prennent). Les autres ont `glisser: null`. */
@@ -224,6 +238,9 @@ function monter(
         dessinerProche: (v) => {
           if (options.objets && d === 1890) v.objet(0, OU_OBJET.x * v.k, v.ecranY(OU_OBJET.y, 1), 8)
           if (options.objetInconnu && d === 1890) v.objet(7, MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 8)
+          if (options.aiguillages) v.haltes.forEach((_h, i) => (m.scene ? v.zone('aiguillage', ouAiguillage1900(i).x, ouAiguillage1900(i).y, 20, i, 3) : d === 1890 ? v.zone('aiguillage', MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 20, i, 3) : undefined))
+          if (options.halteDeLaFoire && d === 1890) v.zone('halte', MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 20, 0, 3)
+          if (options.aiguillagePerdu && d === 1890) v.zone('aiguillage', MANEGE.x * v.k, v.ecranY(MANEGE.y, 1), 20, options.aiguillagePerdu === 'inconnu' ? 7 : undefined, 3)
           if (options.objets && m.scene) v.objet(0, OU_OBJET_1900.x, OU_OBJET_1900.y, 8)
           if (options.deuxBobines && d === 1890) v.bobine(1, OU_AUTRE_BOBINE.x * v.k, v.ecranY(OU_AUTRE_BOBINE.y, 1), 8)
           if (!particules) return
@@ -234,7 +251,7 @@ function monter(
       }
     },
   }
-  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn(), objet: vi.fn() }
+  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn() }
   const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(options.calme ?? false)
@@ -3160,6 +3177,115 @@ describe('le moteur de la carte', () => {
             const chezLui = aLaFrontiere({ calme: true, auCalme: { 1900: ['semaphore'] } })
             toucher(chezLui.moteur, OU_SEMAPHORE.x, OU_SEMAPHORE.y)
             expect(reagis).toEqual([{ decennie: 1900, id: 'semaphore' }])
+          })
+        })
+
+        // Lot d'écrans, brief 9 : la carte en sait plus. Le monde reçoit l'horaire d'une année et les
+        // haltes de sa section ; la septième zone du moteur, `aiguillage`, dit la clé de sa halte à la
+        // page. Rien ne se dessine : aucun de ces tests ne regarde un trait.
+        describe('l’horaire, les haltes et l’aiguillage (lot d’écrans, brief 9)', () => {
+          const HORAIRE: HoraireVue = { etat: 'accepte', echeance: '2026-10-11' }
+          /** 1903 en cours, la frontière à l'écran ; `etat` : ce que la page ajoute aux cases et à l'état. */
+          const aLaFrontiere = (options: Options = {}, haltes: readonly HalteVue[] | null = HALTES) => {
+            const banc = auTrain({ enCours: 1903, aiguillages: true, ...options })
+            const cases = banc.cases.map((c): CaseCarte => (c.annee === 1902 ? { ...c, horaire: HORAIRE } : c.annee === 1901 ? { ...c, horaire: null } : c))
+            banc.moteur.majEtat({ cases, anneeAvatar: 1903, tampons: [], tickets: [], roulotte: null, ...(haltes ? { haltes } : null) })
+            banc.moteur.defiler(CAMERA)
+            banc.moteur.image(1000)
+            return banc
+          }
+          const devantLeManege = (options: Options = {}, haltes: readonly HalteVue[] = HALTES) => {
+            const banc = monter(options)
+            banc.moteur.majEtat({ cases: banc.cases, anneeAvatar: 1898, tampons: [], tickets: [], roulotte: null, haltes })
+            banc.moteur.defiler(MARGE_HAUT)
+            banc.moteur.image(1000)
+            return banc
+          }
+          const cles = (banc: ReturnType<typeof monter>) => vi.mocked(banc.rappels.aiguillage!).mock.calls.map((a) => a[0])
+          const derniereVueDe = (annee: number) => vus.filter((v) => v.cases.some((c) => c.annee === annee)).pop()!
+
+          // Mutations : le champ oublié dans `vueMonde` ; `?? null` retiré (une case sans horaire, ou
+          // dont la page n'a rien dit, se lirait `undefined`).
+          it('l’horaire d’une case arrive au monde tel que la page le donne, et nul pour une case qui n’en a pas', () => {
+            aLaFrontiere()
+            const horaires = new Map(derniereVueDe(1902).cases.map((c) => [c.annee, c.horaire]))
+            expect(horaires.get(1902)).toEqual(HORAIRE)
+            // 1901 : nul dit par la page ; 1903 : le champ absent de la case ; 1905 : une année fermée.
+            expect(horaires.get(1901)).toBeNull()
+            expect(horaires.get(1903)).toBeNull()
+            expect(horaires.get(1905)).toBeNull()
+            expect(derniereVueDe(1897).cases.map((c) => c.horaire)).toEqual([null, null, null, null, null])
+          })
+
+          // Mutations : `haltes: this.etat.haltes ?? []` (chaque monde les recevrait toutes) ; le filtre
+          // sur la décennie de la section au lieu de ses années ne se distingue pas ici, et n'est pas gardé.
+          it('un monde reçoit les haltes qui s’embranchent après une de ses années, dans l’ordre de la page, et aucune sans halte servie', () => {
+            aLaFrontiere()
+            expect(derniereVueDe(1902).haltes).toEqual([HALTE_MELIES, HALTE_ZECCA])
+            expect(derniereVueDe(1897).haltes).toEqual([HALTE_DE_LA_FOIRE])
+            // L'état sans le champ (un banc d'avant le brief), puis vide.
+            aLaFrontiere({}, null)
+            expect(derniereVueDe(1902).haltes).toEqual([])
+            expect(derniereVueDe(1897).haltes).toEqual([])
+            aLaFrontiere({}, [])
+            expect(derniereVueDe(1902).haltes).toEqual([])
+          })
+
+          // Mutations : `aiguillage` retiré des identifiants du moteur (le toucher irait à `reagir`) ;
+          // sa branche placée après la garde du calme ; le rang lu dans la liste entière (le rang 0 de
+          // la ligne dirait la halte de la foire).
+          it('un aiguillage touché dit à la page la clé de sa halte, au calme aussi, et jamais à `reagir`', () => {
+            for (const calme of [false, true]) {
+              const banc = aLaFrontiere({ calme })
+              toucher(banc.moteur, ouAiguillage1900(0).x, ouAiguillage1900(0).y)
+              expect(cles(banc)).toEqual(['melies'])
+              toucher(banc.moteur, ouAiguillage1900(1).x, ouAiguillage1900(1).y)
+              expect(cles(banc)).toEqual(['melies', 'zecca'])
+              expect(reagis).toEqual([])
+              expect(banc.rappels.objet).not.toHaveBeenCalled()
+              expect(banc.rappels.date).not.toHaveBeenCalled()
+              expect(banc.rappels.toucherAnnee).not.toHaveBeenCalled()
+            }
+          })
+
+          // Mutation : les haltes lues au monde sous le `y` de carte du doigt au lieu de `z.section`
+          // ne se distingue pas ici (le manège est dans 1890) ; celle-ci tient l'autre moitié de la
+          // règle du rang : la foire lit sa halte, pas la première de la ligne.
+          it('l’aiguillage de la foire dit la halte de la foire', () => {
+            const banc = devantLeManege({ aiguillages: true }, [HALTE_MELIES, HALTE_DE_LA_FOIRE])
+            toucher(banc.moteur, MANEGE.x, MANEGE.y)
+            expect(cles(banc)).toEqual(['la-baraque'])
+            expect(reactions).toEqual([])
+          })
+
+          // `halte` est la petite gare au bout de la foire, pas un embranchement (constat 5 du plan) :
+          // sa zone reste au monde, une halte servie au rang de sa `data` ou non, et au calme par
+          // `touchesAuCalme` comme avant. Mutation : `halte` joint à `aiguillage` dans la branche du moteur.
+          it('la zone `halte` de la foire va toujours à `reagir`, jamais au rappel de l’aiguillage', () => {
+            for (const calme of [false, true]) {
+              const banc = devantLeManege({ halteDeLaFoire: true, calme, auCalme: { 1890: ['halte'] } })
+              toucher(banc.moteur, MANEGE.x, MANEGE.y)
+              expect(reactions).toEqual(['halte'])
+              expect(banc.rappels.aiguillage).not.toHaveBeenCalled()
+            }
+          })
+
+          // Un aiguillage est au moteur, avec ou sans halte à son rang : le monde ne le reçoit jamais.
+          // Mutation : `z.data !== null` dans la condition de la branche (sans rang, il irait à
+          // `reagir`) ; `return` gardé au seul cas d'une halte trouvée (le rang inconnu irait à `reagir`).
+          it('un aiguillage sans rang, ou d’un rang qu’aucune halte ne tient, ne dit rien, ni à la page ni au monde', () => {
+            for (const aiguillagePerdu of ['nu', 'inconnu'] as const) {
+              for (const calme of [false, true]) {
+                const banc = devantLeManege({ aiguillagePerdu, calme })
+                toucher(banc.moteur, MANEGE.x, MANEGE.y)
+                expect(banc.rappels.aiguillage).not.toHaveBeenCalled()
+                expect(reactions).toEqual([])
+              }
+            }
+            // Le témoin : sans cette zone, le manège est bien sous le doigt.
+            const temoin = devantLeManege()
+            toucher(temoin.moteur, MANEGE.x, MANEGE.y)
+            expect(reactions).toEqual(['manege'])
           })
         })
 
