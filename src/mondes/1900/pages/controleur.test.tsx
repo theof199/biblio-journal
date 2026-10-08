@@ -62,8 +62,14 @@ function AuCasier() {
   )
 }
 
-/** La carte d'un membre en 1903, où le contrôleur attend ; `client` porte ce qui est déjà en cache. */
-async function monter(routes: Routes = {}, client: QueryClient = createQueryClient()) {
+/**
+ * La carte d'un membre en 1903, où le contrôleur attend ; `client` porte ce qui est déjà en cache.
+ * Elle rend la main sur un fait de l'écran : la portière, puis le `carton` du billet demandé, que le
+ * journal lu fait paraître. Le calme du cache ne dit pas que React a rendu ce que le cache vient
+ * d'apprendre : un test qui ne s'y fie qu'à lui lit, sous charge, la portière d'avant le journal. Sans
+ * carton attendu (`null`), le journal est à poser dans `client` : il est alors là au premier rendu.
+ */
+async function monter(routes: Routes = {}, client: QueryClient = createQueryClient(), carton: string | null = MODELE.media.title) {
   const f = moteurFactice()
   const requetes = servir({
     'GET /api/auth/me': () => json(SESSION),
@@ -85,10 +91,17 @@ async function monter(routes: Routes = {}, client: QueryClient = createQueryClie
     </QueryClientProvider>,
   )
   const portiere = await screen.findByRole('dialog', { name: M.nom })
+  if (carton !== null) await within(portiere).findByText(carton)
   await waitFor(() => expect(client.isFetching() + client.isMutating()).toBe(0))
   return { requetes, client, portiere }
 }
 
+/** Mon journal déjà lu, sans le billet demandé sur sa première page : la portière le sait dès son premier rendu. */
+const avecUnJournalSansLeBillet = () => {
+  const client = createQueryClient()
+  client.setQueryData(cles.journal, { pages: [journal([UN_PLUS_ANCIEN])], pageParams: [undefined] })
+  return client
+}
 /** La boîte des années 1900 déjà lue : le billet demandé y est le deuxième vu. */
 const avecLaBoite = () => {
   const client = createQueryClient()
@@ -259,7 +272,10 @@ describe('le contrôleur sur la carte de 1903', () => {
     expect(within(sansBoite.portiere).getByText('The Great Train Robbery')).toBeInTheDocument()
     expect(sansBoite.portiere.textContent).not.toMatch(/N°/)
     cleanup()
-    const { portiere } = await monter({ [JOURNAL]: () => json(journal([UN_PLUS_ANCIEN])), [REPONDRE]: () => json(PRESENTE) })
+    // Le journal est en cache, donc au premier rendu de la portière : ce qui manque ici manque pour de
+    // bon, et non parce que le journal n'est pas encore rendu (il n'est pas relu : `requetes` le dit).
+    const { portiere, requetes } = await monter({ [REPONDRE]: () => json(PRESENTE) }, avecUnJournalSansLeBillet(), null)
+    expect(requetes).not.toContain(JOURNAL)
     expect(within(portiere).queryByText('The Great Train Robbery')).toBeNull()
     expect(within(portiere).queryByText('Le Voyage dans la Lune')).toBeNull()
     expect(portiere.textContent).not.toMatch(/Ch\. de fer du Voyage|N°/)

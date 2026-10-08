@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { useSyncExternalStore } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { estPrete, type FicheAnnee, type FichePrete, type Horaire, type Voyage } from '../api/voyage'
 import { PAGES_1890 } from '../mondes/1890/pages'
@@ -63,6 +65,27 @@ const HoraireDuMonde = (p: PropsHoraireDeLAnnee) => (
     ) : null}
     {p.erreur ? <p role="alert">{p.erreur}</p> : null}
   </section>
+)
+
+/**
+ * Un témoin à l'écran de ce que le cache sait de la fiche : abonné au cache (pas un observateur de la
+ * clé, qui lui prendrait ses options), il est prévenu dans la même fournée que la page et se rend dans
+ * la même passe. Le calme du cache ne dit pas que React a rendu une relecture tombée ; « fiche : error »
+ * à l'écran, si.
+ */
+const TemoinDeLaFiche = () => {
+  const client = useQueryClient()
+  const etat = useSyncExternalStore(
+    (prevenir) => client.getQueryCache().subscribe(prevenir),
+    () => client.getQueryState(cles.annee(1897))?.status,
+  )
+  return <p>{`fiche : ${etat}`}</p>
+}
+const HoraireEtTemoin = (p: PropsHoraireDeLAnnee) => (
+  <>
+    <HoraireDuMonde {...p} />
+    <TemoinDeLaFiche />
+  </>
 )
 
 let remettre: (() => void) | null = null
@@ -232,7 +255,7 @@ describe('le bloc lecteur de l’horaire', () => {
   // tombe. Mutations : la fiche du cache non écrite (la proposition resterait, fausse) ; la case de
   // la carte non écrite ; toutes les cases de la carte écrites.
   it('accepté, la fiche et la carte en cache l’apprennent de la réponse, même si leur relecture tombe en panne', async () => {
-    preter()
+    preter({ horaireDeLAnnee: HoraireEtTemoin })
     let ecrit = false
     const { client } = monterVoyage(
       '/voyage/1897',
@@ -244,6 +267,8 @@ describe('le bloc lecteur de l’horaire', () => {
     )
     fireEvent.click(await tenir())
     await waitFor(() => expect(screen.getByTestId('horaire')).toHaveTextContent('1897 | accepte 2026-10-18 | proposé : rien'))
+    // La relecture tombée est rendue (le témoin la dit à l'écran) : ce qui suit n'est pas l'écran d'avant elle.
+    await screen.findByText('fiche : error')
     await waitFor(() => expect(client.isFetching()).toBe(0))
     expect(screen.getByTestId('horaire')).toHaveTextContent('1897 | accepte 2026-10-18 | proposé : rien')
     expect(ficheEnCache(client)).toEqual({ horaire: ACCEPTE, horaire_proposable: null })

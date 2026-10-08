@@ -114,9 +114,14 @@ describe('la carte en sait plus : l’horaire et les haltes, de la page au moteu
   it('la carte relue à l’identique ne refait pas l’état, un horaire accepté ou un film de halte vu le refont', async () => {
     let servi = voyage(1903, { haltes: [MELIES] })
     const banc = await monter(() => servi)
-    const relire = async () => {
+    // La relecture rendue par le cache ne dit pas que la page a refait son état : ce qui change
+    // s'attend sur l'état reçu par le moteur (`recu`), et le compte se lit après lui seulement. La
+    // relecture à l'identique, qui ne montre rien, est tenue par le compte d'après : un état de trop,
+    // même arrivé tard, y serait.
+    const relire = async (recu?: () => void) => {
       await act(() => banc.client.refetchQueries({ queryKey: cles.voyage, exact: true }))
       await waitFor(() => expect(banc.client.isFetching()).toBe(0))
+      if (recu) await waitFor(recu)
     }
     const avant = banc.etats.length
     const lues = () => banc.requetes.filter((r) => r === 'GET /api/me/voyage').length
@@ -125,15 +130,13 @@ describe('la carte en sait plus : l’horaire et les haltes, de la page au moteu
     expect(lues()).toBe(lectures + 1)
     expect(banc.etats).toHaveLength(avant)
     servi = voyage(1903, { haltes: [{ ...MELIES, films: MELIES.films.map((f) => ({ ...f, etat: 'vu' as const })) }] })
-    await relire()
+    await relire(() => expect(banc.dernier().haltes).toEqual([{ cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 3, total: 3 }]))
     expect(banc.etats).toHaveLength(avant + 1)
-    expect(banc.dernier().haltes).toEqual([{ cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 3, total: 3 }])
     HORAIRES[1904] = ACCEPTE
     try {
       servi = voyage(1903, { haltes: servi.haltes })
-      await relire()
+      await relire(() => expect(banc.dernier().cases.find((c) => c.annee === 1904)!.horaire).toEqual({ etat: 'accepte', echeance: '2026-10-14' }))
       expect(banc.etats).toHaveLength(avant + 2)
-      expect(banc.dernier().cases.find((c) => c.annee === 1904)!.horaire).toEqual({ etat: 'accepte', echeance: '2026-10-14' })
     } finally {
       delete HORAIRES[1904]
     }
