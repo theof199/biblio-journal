@@ -10965,6 +10965,799 @@ export interface paths {
       };
     };
   };
+  "/me/voyage/cartes-postales": {
+    /**
+     * Mon courrier du Voyage
+     * @description Les cartes postales que j’ai reçues, celles que j’ai envoyées, et mes gares bouclées qui attendent encore la leur (`en_attente`).
+     *
+     * **Une carte n’est lue que par ses deux membres** : son expéditeur et son destinataire. C’est, avec le carnet, l’une des deux choses privées entre membres ; aucune autre route ne sert un mot, et le rôle d’administratrice n’y change rien.
+     *
+     * `lue_le` n’est servi que sur les cartes reçues : l’expéditeur ne sait pas si sa carte a été lue. Une carte reçue dont `lue_le` est nul est nouvelle. Cette lecture n’écrit rien.
+     */
+    get: {
+      responses: {
+        /** @description Mon courrier du Voyage : ce que j’ai reçu, ce que j’ai envoyé, et les gares qui attendent leur carte */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Ma boîte de réception, de la plus récente à la plus ancienne */
+              recues: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur */
+                  annee: number;
+                  /** @description Qui l’a écrite */
+                  expediteur: {
+                    /** Format: uuid */
+                    id: string;
+                    pseudo: string;
+                    avatar_url: string | null;
+                    /** @description Couleur d'identité au format #RRGGBB */
+                    identity_color: string;
+                    /**
+                     * @description Rôle du membre
+                     * @enum {string}
+                     */
+                    role: "user" | "admin";
+                    /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                    deactivated: boolean;
+                  };
+                  /** @description À qui elle est adressée */
+                  destinataire: {
+                    /** Format: uuid */
+                    id: string;
+                    pseudo: string;
+                    avatar_url: string | null;
+                    /** @description Couleur d'identité au format #RRGGBB */
+                    identity_color: string;
+                    /**
+                     * @description Rôle du membre
+                     * @enum {string}
+                     */
+                    role: "user" | "admin";
+                    /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                    deactivated: boolean;
+                  };
+                  /** @description L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression */
+                  gare_destinataire: number;
+                  /** @description Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres */
+                  mot: string;
+                  /**
+                   * Format: date-time
+                   * @description L’instant de l’envoi
+                   */
+                  postee_le: string;
+                  /** @description L’instant où je l’ai marquée lue. Nul tant qu’elle est nouvelle. Servi au seul destinataire */
+                  lue_le: string | null;
+                })[];
+              /** @description Ma boîte d’envoi, par gare, de la plus récente à la plus ancienne */
+              envoyees: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur */
+                  annee: number;
+                  /** @description Qui l’a écrite */
+                  expediteur: {
+                    /** Format: uuid */
+                    id: string;
+                    pseudo: string;
+                    avatar_url: string | null;
+                    /** @description Couleur d'identité au format #RRGGBB */
+                    identity_color: string;
+                    /**
+                     * @description Rôle du membre
+                     * @enum {string}
+                     */
+                    role: "user" | "admin";
+                    /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                    deactivated: boolean;
+                  };
+                  /** @description À qui elle est adressée */
+                  destinataire: {
+                    /** Format: uuid */
+                    id: string;
+                    pseudo: string;
+                    avatar_url: string | null;
+                    /** @description Couleur d'identité au format #RRGGBB */
+                    identity_color: string;
+                    /**
+                     * @description Rôle du membre
+                     * @enum {string}
+                     */
+                    role: "user" | "admin";
+                    /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                    deactivated: boolean;
+                  };
+                  /** @description L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression */
+                  gare_destinataire: number;
+                  /** @description Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres */
+                  mot: string;
+                  /**
+                   * Format: date-time
+                   * @description L’instant de l’envoi
+                   */
+                  postee_le: string;
+                })[];
+              /** @description Mes gares bouclées qui n’ont pas encore envoyé leur carte, de la plus ancienne à la plus récente */
+              en_attente: number[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    /**
+     * Poster la carte d’une gare bouclée
+     * @description À chaque gare bouclée, une carte : un mot de 140 signes au plus, adressé à **un membre que je suis**, choisi à l’envoi. L’adresse (`gare_destinataire`) est la gare où il se trouve à cet instant, et ne bouge plus.
+     *
+     * **Une carte postée ne se corrige ni ne se retire**, et une gare n’en envoie qu’une.
+     *
+     * `409` si la gare n’est pas bouclée chez moi (le ticket de l’année suivante n’est pas émis), si le destinataire n’est pas un membre que je suis (moi-même, un inconnu et un compte désactivé compris), ou si la carte de cette gare est déjà partie. `400` pour un mot vide ou de plus de 140 signes.
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": {
+            /** @description La gare bouclée d’où part la carte */
+            annee: number;
+            /**
+             * Format: uuid
+             * @description Un membre que je suis
+             */
+            destinataire_id: string;
+            /** @description Le mot, de 1 à 140 signes, espaces de bord retirés. Il tient sur une ligne : ni saut de ligne ni autre caractère de contrôle, et au moins un signe qui se voit (un mot fait d’espaces ou de caractères de largeur nulle est refusé) */
+            mot: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Une carte que j’ai postée. Elle ne dit pas si elle a été lue */
+        201: {
+          content: {
+            "application/json": {
+              /** Format: uuid */
+              id: string;
+              /** @description La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur */
+              annee: number;
+              /** @description Qui l’a écrite */
+              expediteur: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description À qui elle est adressée */
+              destinataire: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression */
+              gare_destinataire: number;
+              /** @description Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres */
+              mot: string;
+              /**
+               * Format: date-time
+               * @description L’instant de l’envoi
+               */
+              postee_le: string;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/cartes-postales/{id}/lue": {
+    /**
+     * Marquer lue une carte reçue
+     * @description Pose `lue_le` sur une carte **que j’ai reçue**. La première lecture fait foi : la marquer de nouveau répond `200` sans la redater.
+     *
+     * `404` pour toute carte qui n’est pas dans ma boîte de réception : une carte que j’ai envoyée, celle d’autres membres, un identifiant inconnu. La réponse est la même dans les trois cas : l’existence d’une carte ne se dit pas.
+     */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Une carte que j’ai reçue */
+        200: {
+          content: {
+            "application/json": {
+              /** Format: uuid */
+              id: string;
+              /** @description La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur */
+              annee: number;
+              /** @description Qui l’a écrite */
+              expediteur: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description À qui elle est adressée */
+              destinataire: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression */
+              gare_destinataire: number;
+              /** @description Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres */
+              mot: string;
+              /**
+               * Format: date-time
+               * @description L’instant de l’envoi
+               */
+              postee_le: string;
+              /** @description L’instant où je l’ai marquée lue. Nul tant qu’elle est nouvelle. Servi au seul destinataire */
+              lue_le: string | null;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/tables": {
+    /**
+     * Mes tables du wagon-restaurant
+     * @description Les tables que j’ai dressées et celles où je suis invité, du soir le plus récent au plus ancien. **Une table n’est servie qu’à ses deux convives** : aucune route ne lit celles d’un autre membre.
+     *
+     * `vu_ensemble` se calcule à chaque lecture, sur les deux journaux : l’invité a pris sa place, et chacun des deux a une entrée de journal de ce film datée du soir ou du lendemain. `mon_billet` est alors **mon** entrée, celle qui porte « Vu ensemble » ; elle est nulle sinon. Cette lecture n’écrit rien.
+     */
+    get: {
+      responses: {
+        /** @description Mes tables du wagon-restaurant */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Mes tables, celles que j’ai dressées et celles où je suis invité, du soir le plus récent au plus ancien */
+              tables: ({
+                  /** Format: uuid */
+                  id: string;
+                  /**
+                   * Format: date
+                   * @description Le soir de la table, un jour de Paris : celui où elle a été dressée
+                   */
+                  soir: string;
+                  /** @description Le film proposé aux deux convives */
+                  film: {
+                    /** @description L’identifiant TMDB du film (jamais d’une série) */
+                    tmdb_id: number;
+                    /** @description Son titre, recopié par le serveur au moment où la table est dressée */
+                    titre: string;
+                  };
+                  /** @description Qui a dressé la table */
+                  hote: {
+                    /** Format: uuid */
+                    id: string;
+                    pseudo: string;
+                    avatar_url: string | null;
+                    /** @description Couleur d'identité au format #RRGGBB */
+                    identity_color: string;
+                    /**
+                     * @description Rôle du membre
+                     * @enum {string}
+                     */
+                    role: "user" | "admin";
+                    /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                    deactivated: boolean;
+                  };
+                  /** @description Qui y est invité */
+                  invite: {
+                    /** Format: uuid */
+                    id: string;
+                    pseudo: string;
+                    avatar_url: string | null;
+                    /** @description Couleur d'identité au format #RRGGBB */
+                    identity_color: string;
+                    /**
+                     * @description Rôle du membre
+                     * @enum {string}
+                     */
+                    role: "user" | "admin";
+                    /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                    deactivated: boolean;
+                  };
+                  /**
+                   * @description Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse
+                   * @enum {string}
+                   */
+                  etat: "attend" | "a_pris_sa_place" | "a_decline";
+                  /** @description Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain */
+                  vu_ensemble: boolean;
+                  /** @description Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet */
+                  mon_billet: ({
+                    /** Format: uuid */
+                    id: string;
+                    /** Format: uuid */
+                    user_id: string;
+                    /** Format: uuid */
+                    media_id: string;
+                    started_at: string | null;
+                    /** Format: date */
+                    finished_at: string;
+                    /** @description La note de cette fois-là, indépendante de celle de l’œuvre */
+                    rating: number | null;
+                    /** @description Un mot sur cette fois-là, distinct de la critique de l’œuvre */
+                    comment: string | null;
+                    /** Format: date-time */
+                    created_at: string;
+                  }) | null;
+                  /**
+                   * Format: date-time
+                   * @description L’instant où la table a été dressée
+                   */
+                  proposee_le: string;
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    /**
+     * Dresser une table pour ce soir
+     * @description Propose à **un membre que je suis** le même film pour ce soir. Le soir est le jour de Paris à l’instant de l’appel ; le titre est recopié de la fiche du film, que la médiathèque ou les salles du Voyage doivent déjà connaître. Je suis à ma table dès qu’elle est dressée ; l’invité `attend`.
+     *
+     * `409` si l’invité n’est pas un membre que je suis (moi-même, un inconnu et un compte désactivé compris), si le film n’est connu ni de la médiathèque ni du Voyage, ou si j’ai déjà une table ce soir : une table que j’ai dressée et qui n’est pas déclinée, ou une place que j’ai prise. **Rien de la soirée de l’invité n’est lu** : une invitation qui attend ne l’occupe pas, il peut en recevoir plusieurs.
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": {
+            /**
+             * Format: uuid
+             * @description Un membre que je suis
+             */
+            invite_id: string;
+            /** @description L’identifiant TMDB d’un film que la médiathèque ou le Voyage connaît déjà */
+            tmdb_id: number;
+          };
+        };
+      };
+      responses: {
+        /** @description Une table du wagon-restaurant, telle que la lit l’un de ses deux convives */
+        201: {
+          content: {
+            "application/json": {
+              /** Format: uuid */
+              id: string;
+              /**
+               * Format: date
+               * @description Le soir de la table, un jour de Paris : celui où elle a été dressée
+               */
+              soir: string;
+              /** @description Le film proposé aux deux convives */
+              film: {
+                /** @description L’identifiant TMDB du film (jamais d’une série) */
+                tmdb_id: number;
+                /** @description Son titre, recopié par le serveur au moment où la table est dressée */
+                titre: string;
+              };
+              /** @description Qui a dressé la table */
+              hote: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description Qui y est invité */
+              invite: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /**
+               * @description Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse
+               * @enum {string}
+               */
+              etat: "attend" | "a_pris_sa_place" | "a_decline";
+              /** @description Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain */
+              vu_ensemble: boolean;
+              /** @description Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet */
+              mon_billet: ({
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                user_id: string;
+                /** Format: uuid */
+                media_id: string;
+                started_at: string | null;
+                /** Format: date */
+                finished_at: string;
+                /** @description La note de cette fois-là, indépendante de celle de l’œuvre */
+                rating: number | null;
+                /** @description Un mot sur cette fois-là, distinct de la critique de l’œuvre */
+                comment: string | null;
+                /** Format: date-time */
+                created_at: string;
+              }) | null;
+              /**
+               * Format: date-time
+               * @description L’instant où la table a été dressée
+               */
+              proposee_le: string;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/tables/{id}/place": {
+    /**
+     * Prendre ma place à une table
+     * @description L’invité prend sa place, **jusqu’au soir de la table** (jour de Paris). La prendre de nouveau répond `200` sans rien changer.
+     *
+     * `404` pour toute table où je ne suis pas **l’invité** : une table que j’ai dressée, celle de deux autres membres, un identifiant inconnu. La réponse est la même dans les trois cas, rôle d’administratrice compris.
+     *
+     * `409` si le soir est passé, si j’ai décliné cette table (elle ne se reprend pas), ou si je suis déjà à table ce soir-là.
+     */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Une table du wagon-restaurant, telle que la lit l’un de ses deux convives */
+        200: {
+          content: {
+            "application/json": {
+              /** Format: uuid */
+              id: string;
+              /**
+               * Format: date
+               * @description Le soir de la table, un jour de Paris : celui où elle a été dressée
+               */
+              soir: string;
+              /** @description Le film proposé aux deux convives */
+              film: {
+                /** @description L’identifiant TMDB du film (jamais d’une série) */
+                tmdb_id: number;
+                /** @description Son titre, recopié par le serveur au moment où la table est dressée */
+                titre: string;
+              };
+              /** @description Qui a dressé la table */
+              hote: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description Qui y est invité */
+              invite: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /**
+               * @description Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse
+               * @enum {string}
+               */
+              etat: "attend" | "a_pris_sa_place" | "a_decline";
+              /** @description Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain */
+              vu_ensemble: boolean;
+              /** @description Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet */
+              mon_billet: ({
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                user_id: string;
+                /** Format: uuid */
+                media_id: string;
+                started_at: string | null;
+                /** Format: date */
+                finished_at: string;
+                /** @description La note de cette fois-là, indépendante de celle de l’œuvre */
+                rating: number | null;
+                /** @description Un mot sur cette fois-là, distinct de la critique de l’œuvre */
+                comment: string | null;
+                /** Format: date-time */
+                created_at: string;
+              }) | null;
+              /**
+               * Format: date-time
+               * @description L’instant où la table a été dressée
+               */
+              proposee_le: string;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/tables/{id}/decliner": {
+    /**
+     * Décliner une table
+     * @description L’invité décline, qu’il ait pris sa place ou non, **jusqu’au soir de la table**. Décliner de nouveau répond `200` sans rien changer. L’hôte retrouve sa soirée et peut dresser une autre table.
+     *
+     * `404` pour toute table où je ne suis pas **l’invité** : une table que j’ai dressée, celle de deux autres membres, un identifiant inconnu. La réponse est la même dans les trois cas, rôle d’administratrice compris.
+     *
+     * `409` si le soir est passé.
+     */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Une table du wagon-restaurant, telle que la lit l’un de ses deux convives */
+        200: {
+          content: {
+            "application/json": {
+              /** Format: uuid */
+              id: string;
+              /**
+               * Format: date
+               * @description Le soir de la table, un jour de Paris : celui où elle a été dressée
+               */
+              soir: string;
+              /** @description Le film proposé aux deux convives */
+              film: {
+                /** @description L’identifiant TMDB du film (jamais d’une série) */
+                tmdb_id: number;
+                /** @description Son titre, recopié par le serveur au moment où la table est dressée */
+                titre: string;
+              };
+              /** @description Qui a dressé la table */
+              hote: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description Qui y est invité */
+              invite: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /**
+               * @description Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse
+               * @enum {string}
+               */
+              etat: "attend" | "a_pris_sa_place" | "a_decline";
+              /** @description Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain */
+              vu_ensemble: boolean;
+              /** @description Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet */
+              mon_billet: ({
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                user_id: string;
+                /** Format: uuid */
+                media_id: string;
+                started_at: string | null;
+                /** Format: date */
+                finished_at: string;
+                /** @description La note de cette fois-là, indépendante de celle de l’œuvre */
+                rating: number | null;
+                /** @description Un mot sur cette fois-là, distinct de la critique de l’œuvre */
+                comment: string | null;
+                /** Format: date-time */
+                created_at: string;
+              }) | null;
+              /**
+               * Format: date-time
+               * @description L’instant où la table a été dressée
+               */
+              proposee_le: string;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
   "/me/senscritique": {
     /**
      * L’état de ma liaison SensCritique

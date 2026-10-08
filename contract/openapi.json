@@ -50075,6 +50075,2370 @@
         }
       }
     },
+    "/me/voyage/cartes-postales": {
+      "get": {
+        "summary": "Mon courrier du Voyage",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Les cartes postales que j’ai reçues, celles que j’ai envoyées, et mes gares bouclées qui attendent encore la leur (`en_attente`).\n\n**Une carte n’est lue que par ses deux membres** : son expéditeur et son destinataire. C’est, avec le carnet, l’une des deux choses privées entre membres ; aucune autre route ne sert un mot, et le rôle d’administratrice n’y change rien.\n\n`lue_le` n’est servi que sur les cartes reçues : l’expéditeur ne sait pas si sa carte a été lue. Une carte reçue dont `lue_le` est nul est nouvelle. Cette lecture n’écrit rien.",
+        "responses": {
+          "200": {
+            "description": "Mon courrier du Voyage : ce que j’ai reçu, ce que j’ai envoyé, et les gares qui attendent leur carte",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "recues": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "annee": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur"
+                          },
+                          "expediteur": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pseudo": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "identity_color": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$",
+                                "description": "Couleur d'identité au format #RRGGBB"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "user",
+                                  "admin"
+                                ],
+                                "description": "Rôle du membre"
+                              },
+                              "deactivated": {
+                                "type": "boolean",
+                                "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "pseudo",
+                              "avatar_url",
+                              "identity_color",
+                              "role",
+                              "deactivated"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Qui l’a écrite"
+                          },
+                          "destinataire": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pseudo": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "identity_color": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$",
+                                "description": "Couleur d'identité au format #RRGGBB"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "user",
+                                  "admin"
+                                ],
+                                "description": "Rôle du membre"
+                              },
+                              "deactivated": {
+                                "type": "boolean",
+                                "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "pseudo",
+                              "avatar_url",
+                              "identity_color",
+                              "role",
+                              "deactivated"
+                            ],
+                            "additionalProperties": false,
+                            "description": "À qui elle est adressée"
+                          },
+                          "gare_destinataire": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression"
+                          },
+                          "mot": {
+                            "type": "string",
+                            "description": "Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres"
+                          },
+                          "postee_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "L’instant de l’envoi"
+                          },
+                          "lue_le": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "L’instant où je l’ai marquée lue. Nul tant qu’elle est nouvelle. Servi au seul destinataire"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "annee",
+                          "expediteur",
+                          "destinataire",
+                          "gare_destinataire",
+                          "mot",
+                          "postee_le",
+                          "lue_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une carte que j’ai reçue"
+                      },
+                      "description": "Ma boîte de réception, de la plus récente à la plus ancienne"
+                    },
+                    "envoyees": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "annee": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur"
+                          },
+                          "expediteur": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pseudo": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "identity_color": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$",
+                                "description": "Couleur d'identité au format #RRGGBB"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "user",
+                                  "admin"
+                                ],
+                                "description": "Rôle du membre"
+                              },
+                              "deactivated": {
+                                "type": "boolean",
+                                "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "pseudo",
+                              "avatar_url",
+                              "identity_color",
+                              "role",
+                              "deactivated"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Qui l’a écrite"
+                          },
+                          "destinataire": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pseudo": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "identity_color": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$",
+                                "description": "Couleur d'identité au format #RRGGBB"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "user",
+                                  "admin"
+                                ],
+                                "description": "Rôle du membre"
+                              },
+                              "deactivated": {
+                                "type": "boolean",
+                                "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "pseudo",
+                              "avatar_url",
+                              "identity_color",
+                              "role",
+                              "deactivated"
+                            ],
+                            "additionalProperties": false,
+                            "description": "À qui elle est adressée"
+                          },
+                          "gare_destinataire": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression"
+                          },
+                          "mot": {
+                            "type": "string",
+                            "description": "Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres"
+                          },
+                          "postee_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "L’instant de l’envoi"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "annee",
+                          "expediteur",
+                          "destinataire",
+                          "gare_destinataire",
+                          "mot",
+                          "postee_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une carte que j’ai postée. Elle ne dit pas si elle a été lue"
+                      },
+                      "description": "Ma boîte d’envoi, par gare, de la plus récente à la plus ancienne"
+                    },
+                    "en_attente": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "description": "Mes gares bouclées qui n’ont pas encore envoyé leur carte, de la plus ancienne à la plus récente"
+                    }
+                  },
+                  "required": [
+                    "recues",
+                    "envoyees",
+                    "en_attente"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Mon courrier du Voyage : ce que j’ai reçu, ce que j’ai envoyé, et les gares qui attendent leur carte"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "recues": [
+                        {
+                          "id": "3c7e9b20-1f5a-4d82-b6c4-7e1a0d5f8b32",
+                          "annee": 1900,
+                          "expediteur": {
+                            "id": "22222222-2222-4222-8222-222222222222",
+                            "pseudo": "bob",
+                            "avatar_url": null,
+                            "identity_color": "#3A7CA5",
+                            "role": "user",
+                            "deactivated": false
+                          },
+                          "destinataire": {
+                            "id": "11111111-1111-4111-8111-111111111111",
+                            "pseudo": "alice",
+                            "avatar_url": null,
+                            "identity_color": "#E4572E",
+                            "role": "admin",
+                            "deactivated": false
+                          },
+                          "gare_destinataire": 1902,
+                          "mot": "Je quitte 1900. Garde-moi une place dans le train.",
+                          "postee_le": "2026-10-06T08:30:00.000Z",
+                          "lue_le": "2026-10-06T12:04:11.000Z"
+                        }
+                      ],
+                      "envoyees": [
+                        {
+                          "id": "8a4f2c1e-6b3d-4e7a-9c15-2d0e7b9a4f61",
+                          "annee": 1901,
+                          "expediteur": {
+                            "id": "11111111-1111-4111-8111-111111111111",
+                            "pseudo": "alice",
+                            "avatar_url": null,
+                            "identity_color": "#E4572E",
+                            "role": "admin",
+                            "deactivated": false
+                          },
+                          "destinataire": {
+                            "id": "22222222-2222-4222-8222-222222222222",
+                            "pseudo": "bob",
+                            "avatar_url": null,
+                            "identity_color": "#3A7CA5",
+                            "role": "user",
+                            "deactivated": false
+                          },
+                          "gare_destinataire": 1902,
+                          "mot": "Bons baisers de 1901 : le Petit Chaperon rouge de Méliès vaut le détour.",
+                          "postee_le": "2026-10-05T19:12:40.000Z"
+                        }
+                      ],
+                      "en_attente": [
+                        1900
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Poster la carte d’une gare bouclée",
+        "tags": [
+          "voyage"
+        ],
+        "description": "À chaque gare bouclée, une carte : un mot de 140 signes au plus, adressé à **un membre que je suis**, choisi à l’envoi. L’adresse (`gare_destinataire`) est la gare où il se trouve à cet instant, et ne bouge plus.\n\n**Une carte postée ne se corrige ni ne se retire**, et une gare n’en envoie qu’une.\n\n`409` si la gare n’est pas bouclée chez moi (le ticket de l’année suivante n’est pas émis), si le destinataire n’est pas un membre que je suis (moi-même, un inconnu et un compte désactivé compris), ou si la carte de cette gare est déjà partie. `400` pour un mot vide ou de plus de 140 signes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "annee": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991,
+                    "description": "La gare bouclée d’où part la carte"
+                  },
+                  "destinataire_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "Un membre que je suis"
+                  },
+                  "mot": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 140,
+                    "description": "Le mot, de 1 à 140 signes, espaces de bord retirés. Il tient sur une ligne : ni saut de ligne ni autre caractère de contrôle, et au moins un signe qui se voit (un mot fait d’espaces ou de caractères de largeur nulle est refusé)"
+                  }
+                },
+                "required": [
+                  "annee",
+                  "destinataire_id",
+                  "mot"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Une carte que j’ai postée. Elle ne dit pas si elle a été lue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "annee": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur"
+                    },
+                    "expediteur": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui l’a écrite"
+                    },
+                    "destinataire": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "À qui elle est adressée"
+                    },
+                    "gare_destinataire": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression"
+                    },
+                    "mot": {
+                      "type": "string",
+                      "description": "Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres"
+                    },
+                    "postee_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant de l’envoi"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "annee",
+                    "expediteur",
+                    "destinataire",
+                    "gare_destinataire",
+                    "mot",
+                    "postee_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une carte que j’ai postée. Elle ne dit pas si elle a été lue"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "8a4f2c1e-6b3d-4e7a-9c15-2d0e7b9a4f61",
+                      "annee": 1901,
+                      "expediteur": {
+                        "id": "11111111-1111-4111-8111-111111111111",
+                        "pseudo": "alice",
+                        "avatar_url": null,
+                        "identity_color": "#E4572E",
+                        "role": "admin",
+                        "deactivated": false
+                      },
+                      "destinataire": {
+                        "id": "22222222-2222-4222-8222-222222222222",
+                        "pseudo": "bob",
+                        "avatar_url": null,
+                        "identity_color": "#3A7CA5",
+                        "role": "user",
+                        "deactivated": false
+                      },
+                      "gare_destinataire": 1902,
+                      "mot": "Bons baisers de 1901 : le Petit Chaperon rouge de Méliès vaut le détour.",
+                      "postee_le": "2026-10-05T19:12:40.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/cartes-postales/{id}/lue": {
+      "post": {
+        "summary": "Marquer lue une carte reçue",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Pose `lue_le` sur une carte **que j’ai reçue**. La première lecture fait foi : la marquer de nouveau répond `200` sans la redater.\n\n`404` pour toute carte qui n’est pas dans ma boîte de réception : une carte que j’ai envoyée, celle d’autres membres, un identifiant inconnu. La réponse est la même dans les trois cas : l’existence d’une carte ne se dit pas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Une carte que j’ai reçue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "annee": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "La gare bouclée d’où la carte est partie : une année du Voyage de l’expéditeur"
+                    },
+                    "expediteur": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui l’a écrite"
+                    },
+                    "destinataire": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "À qui elle est adressée"
+                    },
+                    "gare_destinataire": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "L’adresse : la gare où se trouvait le destinataire à l’instant de l’envoi (son année en cours propre). Figée, elle ne suit pas sa progression"
+                    },
+                    "mot": {
+                      "type": "string",
+                      "description": "Le mot, 140 signes au plus. Il ne sort que par cette boîte, pour ses deux membres"
+                    },
+                    "postee_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant de l’envoi"
+                    },
+                    "lue_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "L’instant où je l’ai marquée lue. Nul tant qu’elle est nouvelle. Servi au seul destinataire"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "annee",
+                    "expediteur",
+                    "destinataire",
+                    "gare_destinataire",
+                    "mot",
+                    "postee_le",
+                    "lue_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une carte que j’ai reçue"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "3c7e9b20-1f5a-4d82-b6c4-7e1a0d5f8b32",
+                      "annee": 1900,
+                      "expediteur": {
+                        "id": "22222222-2222-4222-8222-222222222222",
+                        "pseudo": "bob",
+                        "avatar_url": null,
+                        "identity_color": "#3A7CA5",
+                        "role": "user",
+                        "deactivated": false
+                      },
+                      "destinataire": {
+                        "id": "11111111-1111-4111-8111-111111111111",
+                        "pseudo": "alice",
+                        "avatar_url": null,
+                        "identity_color": "#E4572E",
+                        "role": "admin",
+                        "deactivated": false
+                      },
+                      "gare_destinataire": 1902,
+                      "mot": "Je quitte 1900. Garde-moi une place dans le train.",
+                      "postee_le": "2026-10-06T08:30:00.000Z",
+                      "lue_le": "2026-10-06T12:04:11.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/tables": {
+      "get": {
+        "summary": "Mes tables du wagon-restaurant",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Les tables que j’ai dressées et celles où je suis invité, du soir le plus récent au plus ancien. **Une table n’est servie qu’à ses deux convives** : aucune route ne lit celles d’un autre membre.\n\n`vu_ensemble` se calcule à chaque lecture, sur les deux journaux : l’invité a pris sa place, et chacun des deux a une entrée de journal de ce film datée du soir ou du lendemain. `mon_billet` est alors **mon** entrée, celle qui porte « Vu ensemble » ; elle est nulle sinon. Cette lecture n’écrit rien.",
+        "responses": {
+          "200": {
+            "description": "Mes tables du wagon-restaurant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tables": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "soir": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                            "description": "Le soir de la table, un jour de Paris : celui où elle a été dressée"
+                          },
+                          "film": {
+                            "type": "object",
+                            "properties": {
+                              "tmdb_id": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "L’identifiant TMDB du film (jamais d’une série)"
+                              },
+                              "titre": {
+                                "type": "string",
+                                "description": "Son titre, recopié par le serveur au moment où la table est dressée"
+                              }
+                            },
+                            "required": [
+                              "tmdb_id",
+                              "titre"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Le film proposé aux deux convives"
+                          },
+                          "hote": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pseudo": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "identity_color": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$",
+                                "description": "Couleur d'identité au format #RRGGBB"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "user",
+                                  "admin"
+                                ],
+                                "description": "Rôle du membre"
+                              },
+                              "deactivated": {
+                                "type": "boolean",
+                                "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "pseudo",
+                              "avatar_url",
+                              "identity_color",
+                              "role",
+                              "deactivated"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Qui a dressé la table"
+                          },
+                          "invite": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pseudo": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "identity_color": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$",
+                                "description": "Couleur d'identité au format #RRGGBB"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "user",
+                                  "admin"
+                                ],
+                                "description": "Rôle du membre"
+                              },
+                              "deactivated": {
+                                "type": "boolean",
+                                "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "pseudo",
+                              "avatar_url",
+                              "identity_color",
+                              "role",
+                              "deactivated"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Qui y est invité"
+                          },
+                          "etat": {
+                            "type": "string",
+                            "enum": [
+                              "attend",
+                              "a_pris_sa_place",
+                              "a_decline"
+                            ],
+                            "description": "Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse"
+                          },
+                          "vu_ensemble": {
+                            "type": "boolean",
+                            "description": "Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain"
+                          },
+                          "mon_billet": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "user_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "media_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "started_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "finished_at": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "rating": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 10,
+                                        "description": "Note sur 10"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "La note de cette fois-là, indépendante de celle de l’œuvre"
+                                  },
+                                  "comment": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Un mot sur cette fois-là, distinct de la critique de l’œuvre"
+                                  },
+                                  "created_at": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "user_id",
+                                  "media_id",
+                                  "started_at",
+                                  "finished_at",
+                                  "rating",
+                                  "comment",
+                                  "created_at"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Une entrée de journal"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet"
+                          },
+                          "proposee_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "L’instant où la table a été dressée"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "soir",
+                          "film",
+                          "hote",
+                          "invite",
+                          "etat",
+                          "vu_ensemble",
+                          "mon_billet",
+                          "proposee_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une table du wagon-restaurant, telle que la lit l’un de ses deux convives"
+                      },
+                      "description": "Mes tables, celles que j’ai dressées et celles où je suis invité, du soir le plus récent au plus ancien"
+                    }
+                  },
+                  "required": [
+                    "tables"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Mes tables du wagon-restaurant"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "tables": [
+                        {
+                          "id": "5e1b7a94-2c6f-4b0d-a3e8-9f4c1d7b2a60",
+                          "soir": "2026-10-06",
+                          "film": {
+                            "tmdb_id": 22968,
+                            "titre": "Le Voyage à travers l’impossible"
+                          },
+                          "hote": {
+                            "id": "11111111-1111-4111-8111-111111111111",
+                            "pseudo": "alice",
+                            "avatar_url": null,
+                            "identity_color": "#E4572E",
+                            "role": "admin",
+                            "deactivated": false
+                          },
+                          "invite": {
+                            "id": "22222222-2222-4222-8222-222222222222",
+                            "pseudo": "bob",
+                            "avatar_url": null,
+                            "identity_color": "#3A7CA5",
+                            "role": "user",
+                            "deactivated": false
+                          },
+                          "etat": "attend",
+                          "vu_ensemble": false,
+                          "mon_billet": null,
+                          "proposee_le": "2026-10-06T17:40:00.000Z"
+                        },
+                        {
+                          "id": "b2d48f13-7a05-4c9e-8e61-0a3f5c7d9e24",
+                          "soir": "2026-10-02",
+                          "film": {
+                            "tmdb_id": 775,
+                            "titre": "Le Voyage dans la Lune"
+                          },
+                          "hote": {
+                            "id": "22222222-2222-4222-8222-222222222222",
+                            "pseudo": "bob",
+                            "avatar_url": null,
+                            "identity_color": "#3A7CA5",
+                            "role": "user",
+                            "deactivated": false
+                          },
+                          "invite": {
+                            "id": "11111111-1111-4111-8111-111111111111",
+                            "pseudo": "alice",
+                            "avatar_url": null,
+                            "identity_color": "#E4572E",
+                            "role": "admin",
+                            "deactivated": false
+                          },
+                          "etat": "a_pris_sa_place",
+                          "vu_ensemble": true,
+                          "mon_billet": {
+                            "id": "7c0e3b58-4d19-4f6a-b2c7-1e8a9d0f5b43",
+                            "user_id": "11111111-1111-4111-8111-111111111111",
+                            "media_id": "3f1c2a52-6f0e-4d8a-9a57-0b7a4f7a1c11",
+                            "started_at": null,
+                            "finished_at": "2026-10-03",
+                            "rating": 8,
+                            "comment": null,
+                            "created_at": "2026-10-03T09:15:00.000Z"
+                          },
+                          "proposee_le": "2026-10-02T16:05:00.000Z"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Dresser une table pour ce soir",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Propose à **un membre que je suis** le même film pour ce soir. Le soir est le jour de Paris à l’instant de l’appel ; le titre est recopié de la fiche du film, que la médiathèque ou les salles du Voyage doivent déjà connaître. Je suis à ma table dès qu’elle est dressée ; l’invité `attend`.\n\n`409` si l’invité n’est pas un membre que je suis (moi-même, un inconnu et un compte désactivé compris), si le film n’est connu ni de la médiathèque ni du Voyage, ou si j’ai déjà une table ce soir : une table que j’ai dressée et qui n’est pas déclinée, ou une place que j’ai prise. **Rien de la soirée de l’invité n’est lu** : une invitation qui attend ne l’occupe pas, il peut en recevoir plusieurs.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "invite_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "Un membre que je suis"
+                  },
+                  "tmdb_id": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647,
+                    "description": "L’identifiant TMDB d’un film que la médiathèque ou le Voyage connaît déjà"
+                  }
+                },
+                "required": [
+                  "invite_id",
+                  "tmdb_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Une table du wagon-restaurant, telle que la lit l’un de ses deux convives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "soir": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                      "description": "Le soir de la table, un jour de Paris : celui où elle a été dressée"
+                    },
+                    "film": {
+                      "type": "object",
+                      "properties": {
+                        "tmdb_id": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "L’identifiant TMDB du film (jamais d’une série)"
+                        },
+                        "titre": {
+                          "type": "string",
+                          "description": "Son titre, recopié par le serveur au moment où la table est dressée"
+                        }
+                      },
+                      "required": [
+                        "tmdb_id",
+                        "titre"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le film proposé aux deux convives"
+                    },
+                    "hote": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui a dressé la table"
+                    },
+                    "invite": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui y est invité"
+                    },
+                    "etat": {
+                      "type": "string",
+                      "enum": [
+                        "attend",
+                        "a_pris_sa_place",
+                        "a_decline"
+                      ],
+                      "description": "Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse"
+                    },
+                    "vu_ensemble": {
+                      "type": "boolean",
+                      "description": "Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain"
+                    },
+                    "mon_billet": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "user_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "media_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "started_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "finished_at": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "rating": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10,
+                                  "description": "Note sur 10"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "La note de cette fois-là, indépendante de celle de l’œuvre"
+                            },
+                            "comment": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Un mot sur cette fois-là, distinct de la critique de l’œuvre"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "user_id",
+                            "media_id",
+                            "started_at",
+                            "finished_at",
+                            "rating",
+                            "comment",
+                            "created_at"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Une entrée de journal"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet"
+                    },
+                    "proposee_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant où la table a été dressée"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "soir",
+                    "film",
+                    "hote",
+                    "invite",
+                    "etat",
+                    "vu_ensemble",
+                    "mon_billet",
+                    "proposee_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une table du wagon-restaurant, telle que la lit l’un de ses deux convives"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "5e1b7a94-2c6f-4b0d-a3e8-9f4c1d7b2a60",
+                      "soir": "2026-10-06",
+                      "film": {
+                        "tmdb_id": 22968,
+                        "titre": "Le Voyage à travers l’impossible"
+                      },
+                      "hote": {
+                        "id": "11111111-1111-4111-8111-111111111111",
+                        "pseudo": "alice",
+                        "avatar_url": null,
+                        "identity_color": "#E4572E",
+                        "role": "admin",
+                        "deactivated": false
+                      },
+                      "invite": {
+                        "id": "22222222-2222-4222-8222-222222222222",
+                        "pseudo": "bob",
+                        "avatar_url": null,
+                        "identity_color": "#3A7CA5",
+                        "role": "user",
+                        "deactivated": false
+                      },
+                      "etat": "attend",
+                      "vu_ensemble": false,
+                      "mon_billet": null,
+                      "proposee_le": "2026-10-06T17:40:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/tables/{id}/place": {
+      "post": {
+        "summary": "Prendre ma place à une table",
+        "tags": [
+          "voyage"
+        ],
+        "description": "L’invité prend sa place, **jusqu’au soir de la table** (jour de Paris). La prendre de nouveau répond `200` sans rien changer.\n\n`404` pour toute table où je ne suis pas **l’invité** : une table que j’ai dressée, celle de deux autres membres, un identifiant inconnu. La réponse est la même dans les trois cas, rôle d’administratrice compris.\n\n`409` si le soir est passé, si j’ai décliné cette table (elle ne se reprend pas), ou si je suis déjà à table ce soir-là.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Une table du wagon-restaurant, telle que la lit l’un de ses deux convives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "soir": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                      "description": "Le soir de la table, un jour de Paris : celui où elle a été dressée"
+                    },
+                    "film": {
+                      "type": "object",
+                      "properties": {
+                        "tmdb_id": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "L’identifiant TMDB du film (jamais d’une série)"
+                        },
+                        "titre": {
+                          "type": "string",
+                          "description": "Son titre, recopié par le serveur au moment où la table est dressée"
+                        }
+                      },
+                      "required": [
+                        "tmdb_id",
+                        "titre"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le film proposé aux deux convives"
+                    },
+                    "hote": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui a dressé la table"
+                    },
+                    "invite": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui y est invité"
+                    },
+                    "etat": {
+                      "type": "string",
+                      "enum": [
+                        "attend",
+                        "a_pris_sa_place",
+                        "a_decline"
+                      ],
+                      "description": "Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse"
+                    },
+                    "vu_ensemble": {
+                      "type": "boolean",
+                      "description": "Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain"
+                    },
+                    "mon_billet": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "user_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "media_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "started_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "finished_at": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "rating": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10,
+                                  "description": "Note sur 10"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "La note de cette fois-là, indépendante de celle de l’œuvre"
+                            },
+                            "comment": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Un mot sur cette fois-là, distinct de la critique de l’œuvre"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "user_id",
+                            "media_id",
+                            "started_at",
+                            "finished_at",
+                            "rating",
+                            "comment",
+                            "created_at"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Une entrée de journal"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet"
+                    },
+                    "proposee_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant où la table a été dressée"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "soir",
+                    "film",
+                    "hote",
+                    "invite",
+                    "etat",
+                    "vu_ensemble",
+                    "mon_billet",
+                    "proposee_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une table du wagon-restaurant, telle que la lit l’un de ses deux convives"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "5e1b7a94-2c6f-4b0d-a3e8-9f4c1d7b2a60",
+                      "soir": "2026-10-06",
+                      "film": {
+                        "tmdb_id": 22968,
+                        "titre": "Le Voyage à travers l’impossible"
+                      },
+                      "hote": {
+                        "id": "11111111-1111-4111-8111-111111111111",
+                        "pseudo": "alice",
+                        "avatar_url": null,
+                        "identity_color": "#E4572E",
+                        "role": "admin",
+                        "deactivated": false
+                      },
+                      "invite": {
+                        "id": "22222222-2222-4222-8222-222222222222",
+                        "pseudo": "bob",
+                        "avatar_url": null,
+                        "identity_color": "#3A7CA5",
+                        "role": "user",
+                        "deactivated": false
+                      },
+                      "etat": "a_pris_sa_place",
+                      "vu_ensemble": false,
+                      "mon_billet": null,
+                      "proposee_le": "2026-10-06T17:40:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/tables/{id}/decliner": {
+      "post": {
+        "summary": "Décliner une table",
+        "tags": [
+          "voyage"
+        ],
+        "description": "L’invité décline, qu’il ait pris sa place ou non, **jusqu’au soir de la table**. Décliner de nouveau répond `200` sans rien changer. L’hôte retrouve sa soirée et peut dresser une autre table.\n\n`404` pour toute table où je ne suis pas **l’invité** : une table que j’ai dressée, celle de deux autres membres, un identifiant inconnu. La réponse est la même dans les trois cas, rôle d’administratrice compris.\n\n`409` si le soir est passé.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Une table du wagon-restaurant, telle que la lit l’un de ses deux convives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "soir": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                      "description": "Le soir de la table, un jour de Paris : celui où elle a été dressée"
+                    },
+                    "film": {
+                      "type": "object",
+                      "properties": {
+                        "tmdb_id": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "L’identifiant TMDB du film (jamais d’une série)"
+                        },
+                        "titre": {
+                          "type": "string",
+                          "description": "Son titre, recopié par le serveur au moment où la table est dressée"
+                        }
+                      },
+                      "required": [
+                        "tmdb_id",
+                        "titre"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le film proposé aux deux convives"
+                    },
+                    "hote": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui a dressé la table"
+                    },
+                    "invite": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Qui y est invité"
+                    },
+                    "etat": {
+                      "type": "string",
+                      "enum": [
+                        "attend",
+                        "a_pris_sa_place",
+                        "a_decline"
+                      ],
+                      "description": "Où en est l’invité : `attend` (il n’a pas répondu), `a_pris_sa_place`, `a_decline`. L’hôte, lui, est à sa table dès qu’il la dresse"
+                    },
+                    "vu_ensemble": {
+                      "type": "boolean",
+                      "description": "Calculé à chaque lecture, jamais stocké : l’invité a pris sa place, et chacun des deux a dans son journal une entrée de ce film datée du soir ou du lendemain"
+                    },
+                    "mon_billet": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "user_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "media_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "started_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "finished_at": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "rating": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10,
+                                  "description": "Note sur 10"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "La note de cette fois-là, indépendante de celle de l’œuvre"
+                            },
+                            "comment": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Un mot sur cette fois-là, distinct de la critique de l’œuvre"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "user_id",
+                            "media_id",
+                            "started_at",
+                            "finished_at",
+                            "rating",
+                            "comment",
+                            "created_at"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Une entrée de journal"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Mon entrée de journal de ce film, celle du soir ou du lendemain : le billet qui porte « Vu ensemble ». Nulle tant que `vu_ensemble` est faux. Jamais celle de l’autre convive, et jamais rien du carnet"
+                    },
+                    "proposee_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant où la table a été dressée"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "soir",
+                    "film",
+                    "hote",
+                    "invite",
+                    "etat",
+                    "vu_ensemble",
+                    "mon_billet",
+                    "proposee_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une table du wagon-restaurant, telle que la lit l’un de ses deux convives"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "5e1b7a94-2c6f-4b0d-a3e8-9f4c1d7b2a60",
+                      "soir": "2026-10-06",
+                      "film": {
+                        "tmdb_id": 22968,
+                        "titre": "Le Voyage à travers l’impossible"
+                      },
+                      "hote": {
+                        "id": "11111111-1111-4111-8111-111111111111",
+                        "pseudo": "alice",
+                        "avatar_url": null,
+                        "identity_color": "#E4572E",
+                        "role": "admin",
+                        "deactivated": false
+                      },
+                      "invite": {
+                        "id": "22222222-2222-4222-8222-222222222222",
+                        "pseudo": "bob",
+                        "avatar_url": null,
+                        "identity_color": "#3A7CA5",
+                        "role": "user",
+                        "deactivated": false
+                      },
+                      "etat": "a_decline",
+                      "vu_ensemble": false,
+                      "mon_billet": null,
+                      "proposee_le": "2026-10-06T17:40:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/senscritique": {
       "get": {
         "summary": "L’état de ma liaison SensCritique",
@@ -51299,7 +53663,7 @@
     },
     {
       "name": "carnet",
-      "description": "La partie privée du journal — la seule exception à « tout est public ». Ne parle que de l’utilisateur de la session."
+      "description": "La partie privée du journal — la première exception à « tout est public » (la seconde est le mot d’une carte postale du Voyage). Ne parle que de l’utilisateur de la session."
     },
     {
       "name": "senscritique",
