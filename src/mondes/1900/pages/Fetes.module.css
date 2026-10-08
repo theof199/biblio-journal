@@ -4,7 +4,8 @@
    qui garde le dialogue, le déroulé et le choix. Les couleurs et les polices viennent des jetons du
    monde : le vert du guidon et de la Palme de la maquette, qui n'a pas de jeton, est le bleu de
    l'émail. Rien ne bouge hors d'une racine vivante, et tout y est au tempo (`--tempo`, posé par la
-   racine) : les durées suivent les pas de `deroule.ts`, que la scène joue seule. */
+   racine) : les durées suivent les pas de `deroule.ts`, que la scène joue seule (`fetes.test.tsx`,
+   « les durées des fêtes de 1900 », refuse qu'une des deux change sans l'autre). */
 .fete {
   display: flex;
   flex-direction: column;

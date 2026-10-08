@@ -14,7 +14,9 @@ import { confierLeRetour, oublierLeRetour } from '../../../voyage/annee/retour'
 import Celebrations from '../../../voyage/celebrations/Celebrations'
 import { ANNEE, GARDE_DU_CHOIX, PAS_DE_L_ANNEE, RECOMPENSE, SALLE } from '../../../voyage/celebrations/deroule'
 import type { Scene } from '../../../voyage/celebrations/scenes'
+import { TEMPO } from '../../../voyage/tempo'
 import { FENETRES, cartonDeLaVoiture, fenetresDeLaVoiture, trajetDuBon } from './fetes'
+import FEUILLE_DES_FETES from './Fetes.module.css?raw'
 
 /**
  * Les fêtes des années 1900 (plan des pages 1900, brief 11 ; maquette, écran 13) : la voiture
@@ -78,6 +80,41 @@ describe('les règles des fêtes de 1900', () => {
   it('le « Bon pour » dit la gare où le ticket mène, et l’année seule quand elle n’a pas de lieu', () => {
     expect(trajetDuBon(1904, 1905)).toBe('de 1904 à Bassersdorf')
     expect(trajetDuBon(1909, 1910)).toBe('de 1909 à 1910')
+  })
+})
+
+describe('les durées des fêtes de 1900', () => {
+  const CSS = FEUILLE_DES_FETES.replace(/\/\*[\s\S]*?\*\//g, '')
+  /** La durée et le délai d'une animation nommée, en millisecondes, tels que la feuille les joue au tempo. */
+  const jouee = (nom: string) => {
+    const regle = new RegExp(`animation:\\s*${nom}\\s[^;]*;`).exec(CSS)?.[0] ?? ''
+    const [duree = Number.NaN, delai = 0] = [...regle.matchAll(/calc\(\s*(\d+)ms\s*\*\s*var\(--tempo\)\s*\)/g)].map((m) => Number(m[1]) * TEMPO)
+    return { duree, delai, fin: duree + delai }
+  }
+
+  // Le jumeau de « les durées du carton » (`composteur.test.tsx`) : la scène attend les pas de
+  // `deroule.ts`, la feuille des fêtes joue ses propres durées, et rien d'autre ne les lie. Chaque
+  // geste qui mène à un pas dure ce pas ; ce qui se joue pendant un pas tient dedans.
+  // Mutations, dans la feuille seule : `pointe` à 900 ms ; `pinceau`, `colle`, la durée ou le délai de
+  // `glissiere`, le délai de `leve` ou d'`eclaire-colle` changés ; `eclaire` plus long que le pas de
+  // la salle ; `frappe` ou `monte` plus longs que le pas qui les suit.
+  it('la voiture complète joue le pas de la salle : « Complet » est tombé quand le carton vient, et le guidon se lève avec lui', () => {
+    expect(jouee('glissiere').fin).toBe(SALLE[0])
+    expect(jouee('leve').delai).toBe(SALLE[0])
+    expect(jouee('eclaire').fin).toBeLessThanOrEqual(SALLE[0])
+  })
+
+  it('l’étiquette de malle joue les pas de la récompense : le pinceau passe, la colle luit, puis l’étiquette se colle', () => {
+    expect(jouee('pinceau').fin).toBe(RECOMPENSE[0])
+    expect(jouee('eclaire-colle').fin).toBe(RECOMPENSE[0])
+    expect(jouee('colle').fin).toBe(RECOMPENSE[1])
+  })
+
+  it('la ligne bouclée joue les pas de l’année : une ligne pointée par pas, le tampon frappé avant le titre, chaque mot monté avant le suivant', () => {
+    const lignes = ANNEE.slice(1, PAS_DE_L_ANNEE.ampoules)
+    expect(new Set(lignes)).toEqual(new Set([jouee('pointe').fin]))
+    expect(jouee('frappe').fin).toBeLessThanOrEqual(ANNEE[PAS_DE_L_ANNEE.medaille])
+    expect(jouee('monte').fin).toBeLessThanOrEqual(Math.min(...ANNEE.slice(PAS_DE_L_ANNEE.titre)))
   })
 })
 

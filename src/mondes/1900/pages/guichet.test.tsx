@@ -259,6 +259,24 @@ describe('la grille du guichet', () => {
     }
   })
 
+  // « Rechercher » du clavier ne fait que le replier : la page retire le doigt du champ par la `ref`
+  // qu'elle lui a passée, et relit par elle qui a le doigt quand un toucher s'achève (la place du
+  // clavier reste sous le champ touché). Mutations : la `ref` du champ perdue sur la tablette
+  // (`ref={undefined}` après `{...champ}`) ; l'envoi avalé (`onSubmit` retiré du formulaire).
+  it('« Rechercher » du clavier retire le doigt du champ de la tablette, et la place du clavier reste sous le champ qu’on touche', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(pointer: coarse)', media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    monterVoyage(PAGE, ROUTES)
+    await lu()
+    act(() => champ().focus())
+    expect(champ()).toHaveFocus()
+    fireEvent.pointerDown(champ())
+    fireEvent.click(champ())
+    expect(screen.getByTestId('place-du-clavier')).toBeInTheDocument()
+    fireEvent.submit(screen.getByRole('search'))
+    expect(champ()).not.toHaveFocus()
+    expect(screen.queryByTestId('place-du-clavier')).not.toBeInTheDocument()
+  })
+
   const buste = () => document.querySelector(`.${styles.buste!}`)!
   const racines = () => [...document.querySelectorAll('[data-vivante]')].filter((e) => e.matches(`.${styles.tete!}, .${styles.racine!}`))
 

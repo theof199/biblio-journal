@@ -191,6 +191,20 @@ describe('la ligne des années 1900', () => {
     expect(liste.getAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'step').map((a) => a.getAttribute('href'))).toEqual(['/voyage/1903'])
   })
 
+  // Le ticket de l'année suivante boucle l'année en cours (`estBouclee`), et il ne se lit que parmi mes
+  // tickets une fois montré : c'est la page qui les passe aux arrêts. Tant qu'ils ne sont pas lus,
+  // l'année dit encore son compte. Mutation : dans la page, `arrets(v, items, [], d)` (les tickets
+  // ignorés : l'année au ticket émis garde son compte).
+  it('l’année en cours se dit bouclée dès que mes tickets portent celui de l’année suivante, et dit son compte tant qu’ils ne sont pas lus', async () => {
+    const enCours = async () => (await rangees())[3]
+    let tickets!: (r: Response) => void
+    monterVoyage(LIGNE, routes(VOYAGE, { [TICKETS]: () => new Promise<Response>((r) => (tickets = r)) }))
+    expect(await enCours()).toBe('→ 19.031903 | Longueville · tu es ici | Ours · 2 sur 5')
+    await waitFor(() => expect(typeof tickets).toBe('function'))
+    tickets(json({ tickets: [ticket(1903, '2026-09-20T10:00:00.000Z'), ticket(1904)] }))
+    await waitFor(async () => expect(await enCours()).toBe('→ 19.031903 | Longueville · tu es ici | Ours'))
+  })
+
   // Le départ du Voyage tombe au milieu des années 1890 : l'indicateur, prêté à leur page, n'y ouvre
   // aucune année d'avant 1895. Mutation : la même (le lien sans `ouvrable`).
   it('n’ouvre aucune année d’avant le départ du Voyage', async () => {
