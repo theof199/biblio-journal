@@ -11,6 +11,7 @@ import type { PropsBoniment } from '../voyage/annee/Boniment'
 import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsHoraireDeLAnnee } from '../voyage/annee/Horaire'
+import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
@@ -936,7 +937,7 @@ export interface GabaritsDesPages {
   /**
    * Le contrôleur des billets qui passe sur la carte (plan des écrans des lots, brief 7) : son
    * dialogue entier, la demande, les deux réponses, la portière qu'on referme. **Sans défaut**
-   * (`ClesSansDefaut`), et la seule clé que lit `pages/Carte.tsx`, au monde de mon année en cours : un
+   * (`ClesSansDefaut`), que `pages/Carte.tsx` lit au monde de mon année en cours (avec `halteDeLaCarte`, lue au monde de la halte) : un
    * monde qui ne la compose pas ne lit pas l'état du voyageur pour lui et ne monte pas
    * `voyage/controleur/Controleur.tsx`, qui garde la lecture du billet, l'écriture de la réponse, son
    * verrou, Échap et le focus.
@@ -950,6 +951,14 @@ export interface GabaritsDesPages {
    * son programme. Le bloc ne lit aucune route : tout vient de la fiche que la page tient.
    */
   horaireDeLAnnee: ComponentType<PropsHoraireDeLAnnee>
+  /**
+   * Une halte ouverte sur la carte (plan des écrans des lots, brief 12) : son dialogue entier, le nom
+   * servi, le compte, ses films, « Revenir sur la ligne ». **Sans défaut** (`ClesSansDefaut`), lue par
+   * `pages/Carte.tsx` au monde **de la décennie de la halte** (son `apres`) : un monde qui ne la
+   * compose pas n'ouvre rien, même si un aiguillage dit sa clé, et ne monte pas
+   * `voyage/halte/Halte.tsx`, qui garde Échap, le focus et le compte. Rien n'y lit ni n'y écrit.
+   */
+  halteDeLaCarte: ComponentType<PropsHalteDeLaCarte>
 }
 
 /**
@@ -958,7 +967,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

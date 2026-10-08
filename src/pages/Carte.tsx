@@ -21,7 +21,10 @@ import { useMouvementReduit } from '../ui/mouvement'
 import Celebrations from '../voyage/celebrations/Celebrations'
 import { sceneDuRattrapage, type Scene } from '../voyage/celebrations/scenes'
 import Controleur from '../voyage/controleur/Controleur'
+import { useCalque } from '../voyage/calque'
 import { gabaritSeul } from '../voyage/gabarit'
+import Halte from '../voyage/halte/Halte'
+import { compteDeLaHalte } from '../voyage/halte/compte'
 import { horaireDePlaque } from '../voyage/horaire'
 import { tamponDe } from '../voyage/passeport'
 import { nomDeLaSacoche, nouveautesDeLaSacoche, rubriquesDeLaPastille } from '../voyage/voyageur'
@@ -336,7 +339,7 @@ export default function Carte() {
       // sur ce qui est servi, jamais sur un catalogue de l'appli.
       haltes: v.haltes
         .filter((h) => montrees.some((c) => c.annee === h.apres))
-        .map((h) => ({ cle: h.cle, nom: h.nom, apres: h.apres, vus: h.films.filter((f) => f.etat === 'vu').length, total: h.films.length })),
+        .map((h) => ({ cle: h.cle, nom: h.nom, apres: h.apres, ...compteDeLaHalte(h.films) })),
     }
   }, [v, anneeAvatar, fiches, user.pseudo, ticketsEmis])
 
@@ -435,6 +438,19 @@ export default function Carte() {
   // deux enveloppes et pour le rendu du dialogue : mon année en cours passée, portière ouverte, à un
   // monde sans la clé (la carte relue), les enveloppes inertes sans dialogue feraient une carte morte.
   const portiereOuverte = controle !== null && DessinDuControleur !== null
+  // Une halte ouverte (brief 12) : **l'adresse le dit** (`?halte=<clé>` : le retour du téléphone la
+  // ferme, un rechargement la rouvre), et rien d'autre. Elle n'existe que servie, montrée par la
+  // carte (`etat.haltes` : jamais celle d'une décennie cachée) et dessinée par le monde de sa
+  // décennie (`halteDeLaCarte`, sans défaut) : une clé inconnue dans l'adresse n'ouvre rien. Portée
+  // par l'adresse avant que l'écran soit libre (un rechargement devant une avancée, une fête, ou la
+  // portière déjà ouverte), elle attend : jamais deux dialogues, jamais par-dessus une avancée.
+  const calqueDeLaHalte = useCalque('halte')
+  const halteDemandee = etat?.haltes?.some((h) => h.cle === calqueDeLaHalte.valeur) ? v?.haltes.find((h) => h.cle === calqueDeLaHalte.valeur) : undefined
+  const DessinDeLaHalte = halteDemandee ? gabaritSeul(mondes(decennieDe(halteDemandee.apres)), 'halteDeLaCarte') : null
+  const halteOuverte = !!v && halteDemandee !== undefined && DessinDeLaHalte !== null && anneeAvatar === v.annee_en_cours && !feteAVenir && fete === null && !portiereOuverte
+  // Un dialogue de la carte est ouvert, la portière ou une halte : les deux enveloppes sont inertes
+  // dessous, et le focus rendu au document revient au titre quand il se ferme.
+  const dialogueOuvert = portiereOuverte || halteOuverte
   /**
    * **Le plein écran est occupé** : le seul fait que lit un dialogue de la carte qui entre de lui-même
    * (le contrôleur ; l'horaire et la halte s'y brancheront), à la place de gardes dispersées. Vrai tant
@@ -452,7 +468,7 @@ export default function Carte() {
    *   avant que la mutation ne se dise finie, et la relue peut poser une avancée) ;
    * - ce qui est déjà ouvert : l'affiche d'une date, un aperçu, une bobine ou un objet en vol, un
    *   objet en cours de ramassage, un message d'état, la phrase de la roulotte ;
-   * - un dialogue de la carte déjà entré (`portiereOuverte`).
+   * - un dialogue de la carte déjà entré (`portiereOuverte`, `halteOuverte`).
    *
    * Qui ajoute à la carte un calque ou un dialogue l'ajoute ici (`docs/cerveau/carte-et-moteur.md`).
    */
@@ -472,7 +488,7 @@ export default function Carte() {
     ramasser.isPending ||
     message !== null ||
     roulotteDite ||
-    portiereOuverte
+    dialogueOuvert
   const billetDemande = DessinDuControleur && voyageur.data?.controleur.attend ? voyageur.data.controleur.billet : null
   useEffect(() => {
     if (pleinEcranOccupe || !billetDemande || controleurPasse.current) return
@@ -480,15 +496,31 @@ export default function Carte() {
     setControle(billetDemande)
   }, [pleinEcranOccupe, billetDemande])
   const fermerLaPortiere = useCallback(() => setControle(null), [])
+  // L'aiguillage touché (`Rappels.aiguillage`, la clé d'une halte) : la halte s'ouvre dans l'adresse,
+  // jamais par-dessus autre chose (`pleinEcranOccupe`, le seul fait lu), et seulement si un monde la
+  // dessine. Le moteur ne dédoublonne pas : deux touchers avant le rendu suivant n'empilent pas deux
+  // entrées d'historique (une référence, que l'adresse rend dès qu'elle ne dit plus cette halte).
+  const halteEnRoute = useRef<string | null>(null)
+  const halteDeLAdresse = calqueDeLaHalte.valeur
+  useEffect(() => {
+    if (halteDeLAdresse !== halteEnRoute.current) halteEnRoute.current = null
+  }, [halteDeLAdresse])
+  const prendreLAiguillage = (cle: string) => {
+    if (pleinEcranOccupe || halteEnRoute.current !== null) return
+    const halte = etat?.haltes?.find((h) => h.cle === cle)
+    if (!halte || gabaritSeul(mondes(decennieDe(halte.apres)), 'halteDeLaCarte') === null) return
+    halteEnRoute.current = cle
+    calqueDeLaHalte.ouvrir(cle)
+  }
   // Il est entré seul : le plus souvent rien n'avait le focus, et `useDialogue` n'a rien à qui le
   // rendre. La portière refermée, un focus tombé au document revient au titre de la carte (hors des
   // enveloppes, jamais inerte) ; rendu par le dialogue à l'élément qui l'avait, il y reste.
   const titreRef = useRef<HTMLHeadingElement>(null)
   const portiereVue = useRef(false)
   useEffect(() => {
-    if (portiereVue.current && !portiereOuverte && (document.activeElement === null || document.activeElement === document.body)) titreRef.current?.focus()
-    portiereVue.current = portiereOuverte
-  }, [portiereOuverte])
+    if (portiereVue.current && !dialogueOuvert && (document.activeElement === null || document.activeElement === document.body)) titreRef.current?.focus()
+    portiereVue.current = dialogueOuvert
+  }, [dialogueOuvert])
 
   if (voyage.isPending) return <p role="status">Chargement…</p>
   if (voyage.error || !v) return <Panne erreur={voyage.error} onReessayer={() => void voyage.refetch()} />
@@ -609,7 +641,7 @@ export default function Carte() {
           répond tant qu'elle joue, ni au doigt ni au clavier. Le moteur, lui, mène toujours la caméra.
           Deux enveloppes : la toile seule répond pendant le passage d'entrée (`bonjour`), où le moteur
           ne fait d'un toucher que poser le passage à sa fin ; le reste attend la fin de l'avancée. */}
-      <div className={styles.fond} {...((avancee && !bonjour) || portiereOuverte ? INERTE : null)}>
+      <div className={styles.fond} {...((avancee && !bonjour) || dialogueOuvert ? INERTE : null)}>
         {etat ? (
           <CarteCanvas
             etat={etat}
@@ -638,11 +670,12 @@ export default function Carte() {
               // Le passage que le moteur joue sans le bouton (la halte au bout de la foire, le repos d'un
               // défilement dans l'entrée) : la page l'apprend ici, et aucun dialogue n'entre par-dessus.
               passage: setPassage,
+              aiguillage: prendreLAiguillage,
             }}
           />
         ) : null}
       </div>
-      <div className={styles.fond} {...(avancee || portiereOuverte ? INERTE : null)}>
+      <div className={styles.fond} {...(avancee || dialogueOuvert ? INERTE : null)}>
 
         <header className={styles.hud}>
           <div>
@@ -824,6 +857,8 @@ export default function Carte() {
       ) : null}
       {/* Le contrôleur des billets, par-dessus la carte, que son dialogue rend inerte. */}
       {portiereOuverte && controle && DessinDuControleur ? <Controleur monde={monde} Dessin={DessinDuControleur} billet={controle} depart={v.depart} onFermer={fermerLaPortiere} /> : null}
+      {/* Une halte ouverte, par-dessus la carte inerte : le dessin du monde de sa décennie. */}
+      {halteOuverte && halteDemandee && DessinDeLaHalte ? <Halte monde={mondes(decennieDe(halteDemandee.apres))} Dessin={DessinDeLaHalte} halte={halteDemandee} onFermer={calqueDeLaHalte.fermer} /> : null}
       {/* Un monde à passage n'a pas de carton : ses lignes sont dites, hors de vue. */}
       {annonce !== null ? (
         <p role="status" className="sr-only">

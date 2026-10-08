@@ -9,6 +9,9 @@ type Json<T> = T extends { content: { 'application/json': infer J } } ? J : neve
 
 export type Voyage = Json<paths['/me/voyage']['get']['responses'][200]>
 export type AnneeCarte = Voyage['annees'][number]
+/** Une halte servie par la carte, et un de ses films : rien d'autre ne les sert, rien ne les écrit. */
+export type Halte = Voyage['haltes'][number]
+export type FilmDeHalte = Halte['films'][number]
 export type Progression = NonNullable<AnneeCarte['progression']>
 export type Recompense = NonNullable<AnneeCarte['recompense']>
 /** La séance prise, tant que son long n'est pas encore vu — nulle sinon (`GET /me/voyage`, pour la carte « Ce soir » de l'accueil). */

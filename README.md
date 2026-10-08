@@ -423,7 +423,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trente-neuf clés, une sur la carte, treize sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Cinq d'entre elles, `controleurDeLaCarte` sur la carte, `horaireDeLAnnee` sur la fiche d'année, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Quarante clés, deux sur la carte, treize sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Six d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` sur la fiche d'année, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -953,8 +953,22 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   est au moteur, `aiguillage`** (`halte` est déjà la gare au bout de la foire, et reste au monde) : le
   monde qui dessinera un embranchement l'inscrit, `data` au rang de la halte dans sa vue, et son
   toucher dit la clé de la halte à la page (`Rappels.aiguillage`, relayé par `CarteCanvas`), au calme
-  aussi (c'est une lecture), jamais à `reagir`. **Aucun monde ne l'inscrit encore et la page ne
-  l'écoute pas** : la halte (brief 12) s'y branchera.
+  aussi (c'est une lecture), jamais à `reagir`. **La page l'écoute** (brief 12 ; `pages/Carte.tsx`,
+  `prendreLAiguillage`) : la halte s'ouvre **dans l'adresse** (`?halte=<clé>`, `voyage/calque.ts` : le
+  retour du téléphone la ferme, Échap et son bouton aussi, un rechargement la rouvre), par une clé de
+  gabarit sans défaut, `halteDeLaCarte`, lue au monde **de la décennie de la halte** (son `apres`) :
+  sans elle ni le toucher ni l'adresse n'ouvrent rien. Elle n'existe que servie et montrée par la
+  carte : une clé inconnue n'ouvre rien, aucun catalogue n'est dans l'appli. Le bloc lecteur
+  (`voyage/halte/Halte.tsx`) ne lit ni n'écrit aucune route (une halte n'a pas d'écriture : un film vu
+  passe par le journal) ; il garde Échap, le focus et le compte (`voyage/halte/compte.ts`,
+  `compteDeLaHalte` : les films à l'état `vu` sur ceux que le serveur sert, la même règle que pour le
+  monde) et passe la halte telle que servie. **Jamais par-dessus autre chose** : le toucher ne lit que
+  `pleinEcranOccupe` ; portée par l'adresse avant que l'écran soit libre, elle attend la fin de
+  l'avancée, de la fête ou de la portière (`halteOuverte`), et ouverte elle tient le plein écran (le
+  contrôleur attend). Les deux enveloppes sont inertes sous elle comme sous la portière
+  (`dialogueOuvert`), et refermée le focus tombé au document revient au titre. Le moteur ne
+  dédoublonne pas : deux touchers avant le rendu n'empilent qu'une entrée d'historique
+  (`halteEnRoute`). `pages/Carte.halte.test.tsx` le tient sur un 1890 auquel on prête un dessin.
   **La plaque d'une gare dit son horaire** (brief 11 ; `voyage/horaire.ts`, `horaireDePlaque`, une
   règle pure tirée de `CaseVue.horaire`) : tenu, « à l'heure » et `tenu` pour le filet doré ; accepté,
   « avant » et le jour de la semaine de l'échéance servie (`semaineDeLEcheance` : un mercredi se dit
@@ -1022,7 +1036,7 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   `mondes/1900/pages/horaire.test.tsx` tient les mots et ce qui s'offre, `voyage/horaire.test.ts` les
   jours.
 - **Le contrôleur passe sur la carte** (`voyage/controleur/Controleur.tsx`, la clé sans défaut
-  `controleurDeLaCarte`, la seule que lit `pages/Carte.tsx`, au monde de mon année en cours ; 1900 la
+  `controleurDeLaCarte`, que `pages/Carte.tsx` lit au monde de mon année en cours (l'autre clé de la carte, `halteDeLaCarte`, se lit au monde de la halte) ; 1900 la
   remplit). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne
   s'ouvre. Avec elle, **il entre seul quand `controleur.attend` est vrai, une fois par visite de la
   carte** (une référence de la page : rien n'est retenu sur l'appareil, la carte remontée le revoit

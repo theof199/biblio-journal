@@ -1,0 +1,342 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, useLocation, useNavigate, type Location, type NavigateFunction } from 'react-router-dom'
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
+import App from '../App'
+import { cles } from '../api/cles'
+import { createQueryClient } from '../api/queryClient'
+import type { Halte, Voyage, Voyageur } from '../api/voyage'
+import { FabriqueMoteurContexte } from '../carte/CarteCanvas'
+import { PAGES_1890 } from '../mondes/1890/pages'
+import type { HabillagePages } from '../mondes/types'
+import { exemple } from '../test/contrat'
+import { moteurFactice } from '../test/moteurFactice'
+import { json, servir } from '../test/serveur'
+import { voyage1890 } from '../test/voyage'
+import type { PropsControleurDeLaCarte } from '../voyage/controleur/Controleur'
+import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
+
+// Une halte s'ouvre sur la carte (plan des écrans des lots, brief 12) par une clé de gabarit **sans
+// défaut**, `halteDeLaCarte`, lue au monde de la décennie de la halte. Aucun monde ne la remplit dans
+// ce fichier : il tient le bloc lecteur et les gardes de la page sur un 1890 auquel on prête un
+// dessin qui dit ce qu'il reçoit, et une halte que le test sert sur la foire (l'API n'en sert
+// aucune avant 1902). Le moteur est factice : le test joue le rappel `aiguillage` lui-même.
+const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)
+const VOYAGE = 'GET /api/me/voyage'
+const TICKETS = 'GET /api/me/voyage/tickets'
+const LIRE = 'GET /api/me/voyage/voyageur'
+const MONTRE = 'POST /api/me/voyage/tickets/1899/montre'
+const MELIES = exemple<Voyage>('/me/voyage', 'get', 200).haltes[0]!
+/** Une halte de deux films sur la foire, après 1897 : un vu, un introuvable sans affiche. */
+const BARAQUE: Halte = {
+  cle: 'baraque',
+  nom: 'Halte de la baraque',
+  apres: 1897,
+  films: [
+    { ...MELIES.films[0]!, title: 'Le Manoir du diable', year: 1896 },
+    { ...MELIES.films[2]!, title: 'La Fée aux choux', year: 1896, etat: 'introuvable' },
+  ],
+}
+const en = (enCours: number, haltes: Halte[] = [BARAQUE]): Voyage =>
+  voyage1890(
+    enCours,
+    [1895, 1896, 1897, 1898, 1899].map((annee) =>
+      annee < enCours
+        ? { annee, statut: 'ouverte' as const, visitee: true, recompense: null, progression: null }
+        : { annee, statut: annee === enCours ? ('en_cours' as const) : ('verrouillee' as const), visitee: false, recompense: null, progression: null, profondeur: 0 },
+    ),
+    { haltes },
+  )
+const EN_1898 = en(1898)
+const BASE = exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)
+const IL_ATTEND: Voyageur = { ...BASE, controleur: { attend: true, billet: { log_entry_id: 'b0000000-0000-4000-8000-000000000002', media_id: 'd0000000-0000-4000-8000-000000000007' } } }
+
+/** Chaque rendu du dessin prêté : un dialogue posé le temps d'un seul rendu ne se voit pas autrement. */
+const rendus = vi.fn()
+/** Le dessin prêté : ce qu'il reçoit, ligne par ligne, et son seul geste. */
+const Dessin = ({ halte, compte, premier, fermer }: PropsHalteDeLaCarte) => (
+  <div role="dialog" aria-modal="true" aria-label={halte.nom}>
+    {void rendus()}
+    <p data-testid="compte">{`${compte.vus} sur ${compte.total}`}</p>
+    <ul>
+      {halte.films.map((f) => (
+        <li key={f.tmdb_id}>{`${f.title}, ${f.year}, ${f.etat}, ${f.cover_url ?? 'sans affiche'}, ${f.plex_url ?? 'sans Plex'}`}</li>
+      ))}
+    </ul>
+    <button ref={premier} type="button" onClick={fermer}>
+      Revenir
+    </button>
+  </div>
+)
+const Portiere = (p: PropsControleurDeLaCarte) => (
+  <div role="dialog" aria-modal="true" aria-label="Le contrôleur">
+    <button ref={p.premier} type="button" onClick={p.fermer}>
+      Laisser
+    </button>
+  </div>
+)
+
+/** Le témoin de l'adresse : où l'on est, et de quoi reculer comme le fait le retour du téléphone. */
+const adresse: { ou: Location | null; aller: NavigateFunction | null } = { ou: null, aller: null }
+function Temoin() {
+  adresse.ou = useLocation()
+  adresse.aller = useNavigate()
+  return null
+}
+const ou = () => `${adresse.ou!.pathname}${adresse.ou!.search}`
+const reculer = () => act(async () => void adresse.aller!(-1))
+
+interface Options {
+  voyage?: Voyage
+  depuis?: string
+  client?: QueryClient
+  moteur?: ReturnType<typeof moteurFactice>
+  routes?: Record<string, () => Response>
+}
+async function monter({ voyage = EN_1898, depuis = '/voyage', client = createQueryClient(), moteur: f = moteurFactice(), routes = {} }: Options = {}) {
+  const requetes = servir({
+    'GET /api/auth/me': () => json(SESSION),
+    [VOYAGE]: () => json(voyage),
+    [TICKETS]: () => json({ tickets: [] }),
+    ...routes,
+  })
+  render(
+    <QueryClientProvider client={client}>
+      <FabriqueMoteurContexte.Provider value={f.fabrique}>
+        <MemoryRouter initialEntries={[depuis]}>
+          <Temoin />
+          <App />
+        </MemoryRouter>
+      </FabriqueMoteurContexte.Provider>
+    </QueryClientProvider>,
+  )
+  await waitFor(() => expect(f.etats.length).toBeGreaterThan(0))
+  const calme = () => waitFor(() => expect(client.isFetching() + client.isMutating()).toBe(0))
+  await calme()
+  return { ...f, client, requetes, calme }
+}
+const toucher = (banc: { rappels: () => { aiguillage?: (cle: string) => void } }, cle = 'baraque') => act(async () => banc.rappels().aiguillage?.(cle))
+const halte = () => screen.findByRole('dialog', { name: 'Halte de la baraque' })
+const aucunDialogue = () => expect(screen.queryByRole('dialog')).toBeNull()
+const inertes = () => screen.getByRole('heading', { level: 1, hidden: true }).parentElement!.querySelectorAll(':scope > [inert]').length
+function retenue<T>() {
+  let lacher!: (valeur: T) => void
+  const promesse = new Promise<T>((fin) => (lacher = fin))
+  return { promesse, lacher }
+}
+
+describe('la halte sur la carte, une clé sans défaut', () => {
+  let remettre: Array<() => void> = []
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    // Au calme : la fête du rattrapage offre son choix sans attendre ses pas.
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    localStorage.clear()
+    sessionStorage.clear()
+    rendus.mockClear()
+  })
+  afterEach(() => {
+    remettre.forEach((r) => r())
+    remettre = []
+    vi.unstubAllGlobals()
+  })
+  const preter = (gabarits: Partial<HabillagePages['gabarits']> = { halteDeLaCarte: Dessin }) => {
+    const avant = PAGES_1890.gabarits
+    PAGES_1890.gabarits = { ...avant, ...gabarits }
+    remettre.push(() => void (PAGES_1890.gabarits = avant))
+  }
+
+  // Décision 1 du propriétaire : 1900 seulement. Le vrai 1890 ne compose pas la clé : un aiguillage
+  // qui dirait la clé d'une halte servie n'ouvre rien, et l'adresse qui la porte non plus. `servir`
+  // refuse toute route qu'il ne nomme pas. Mutations : un dessin de repli à la place de
+  // `gabaritSeul` (dans le geste, puis dans le rendu) ; l'adresse écrite sans regarder la clé.
+  it('sans la clé, ni le toucher ni l’adresse n’ouvrent rien, et la carte de 1898 ne lit que la session, la carte et les tickets', async () => {
+    const banc = await monter()
+    await toucher(banc)
+    aucunDialogue()
+    expect(ou()).toBe('/voyage')
+    expect(inertes()).toBe(0)
+    expect([...banc.requetes].sort()).toEqual(['GET /api/auth/me', VOYAGE, TICKETS])
+  })
+  it('sans la clé, l’adresse qui porte une halte servie n’ouvre rien et la carte reste vivante', async () => {
+    await monter({ depuis: '/voyage?halte=baraque' })
+    aucunDialogue()
+    expect(inertes()).toBe(0)
+  })
+
+  // Le bloc ne lit rien : tout vient de `GET /me/voyage`. Mutations : dans `Halte.tsx`, le compte en
+  // dur (`{ vus: 2, total: 3 }`) ; la référence du bouton remplacée par une neuve (le focus reste au
+  // document) ; dans `Carte.tsx`, `dialogueOuvert` rendu à `portiereOuverte` sur une enveloppe, puis
+  // sur l'autre ; la halte prise par son rang au lieu de sa clé (`v.haltes[0]`).
+  it('la clé prêtée : le toucher ouvre la halte servie, telle que servie, le compte sur ses films, le focus sur son bouton, la carte inerte dessous, sans rien lire', async () => {
+    preter()
+    const banc = await monter({ voyage: en(1898, [{ ...MELIES, apres: 1896 }, BARAQUE]) })
+    await toucher(banc)
+    const dialogue = await halte()
+    expect(ou()).toBe('/voyage?halte=baraque')
+    expect(screen.getByTestId('compte').textContent).toBe('1 sur 2')
+    expect(within(dialogue).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Le Manoir du diable, 1896, vu, https://image.tmdb.org/t/p/w500/barbe-bleue.jpg, sans Plex',
+      'La Fée aux choux, 1896, introuvable, sans affiche, sans Plex',
+    ])
+    expect(screen.getByRole('button', { name: 'Revenir' })).toHaveFocus()
+    expect(inertes()).toBe(2)
+    expect([...banc.requetes].sort()).toEqual(['GET /api/auth/me', VOYAGE, TICKETS])
+  })
+
+  // Aucun catalogue dans l'appli. Mutations : la garde `!halte` retirée du geste (l'adresse
+  // porterait une clé que rien ne sert) ; le rendu qui prend la première halte quand la clé manque.
+  it('une clé que le serveur ne sert pas n’ouvre rien, par le toucher comme par l’adresse', async () => {
+    preter()
+    const banc = await monter()
+    await toucher(banc, 'melies')
+    aucunDialogue()
+    expect(ou()).toBe('/voyage')
+    await act(async () => void adresse.aller!('/voyage?halte=melies'))
+    aucunDialogue()
+    expect(inertes()).toBe(0)
+  })
+
+  describe('le dialogue est dans l’adresse', () => {
+    // Mutation : l'état gardé hors de l'adresse (`useState` à la place de `useCalque` : rien n'est
+    // empilé, le retour quitte la carte ou ne fait rien, et le dialogue reste).
+    it('le retour du téléphone le ferme, et l’on reste sur la carte', async () => {
+      preter()
+      const banc = await monter()
+      await toucher(banc)
+      await halte()
+      await reculer()
+      aucunDialogue()
+      expect(ou()).toBe('/voyage')
+      expect(inertes()).toBe(0)
+    })
+
+    // Le moteur ne dédoublonne pas. Mutation : la référence `halteEnRoute` retirée (deux entrées
+    // d'historique : un retour laisse la halte ouverte).
+    it('deux touchers avant le rendu n’ouvrent qu’une fois : un seul retour referme', async () => {
+      preter()
+      const banc = await monter()
+      await act(async () => {
+        banc.rappels().aiguillage?.('baraque')
+        banc.rappels().aiguillage?.('baraque')
+      })
+      await halte()
+      await reculer()
+      aucunDialogue()
+      expect(ou()).toBe('/voyage')
+    })
+
+    // Mutation : la référence jamais rendue (l'effet retiré) : refermée, la halte ne se rouvre plus.
+    it('refermée par son bouton, elle se rouvre au toucher suivant ; Échap la referme aussi', async () => {
+      preter()
+      const banc = await monter()
+      await toucher(banc)
+      fireEvent.click(await screen.findByRole('button', { name: 'Revenir' }))
+      await waitFor(aucunDialogue)
+      expect(ou()).toBe('/voyage')
+      await toucher(banc)
+      await halte()
+      fireEvent.keyDown(document, { key: 'Escape' })
+      await waitFor(aucunDialogue)
+      expect(ou()).toBe('/voyage')
+    })
+
+    // Mutation : `dialogueOuvert` rendu à `portiereOuverte` dans l'effet du focus.
+    it('refermée, le focus tombé au document revient au titre de la carte', async () => {
+      preter()
+      const banc = await monter()
+      await toucher(banc)
+      fireEvent.click(await screen.findByRole('button', { name: 'Revenir' }))
+      await waitFor(aucunDialogue)
+      expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+    })
+
+    it('l’adresse qui la porte l’ouvre à l’arrivée', async () => {
+      preter()
+      await monter({ depuis: '/voyage?halte=baraque' })
+      await halte()
+      expect(inertes()).toBe(2)
+    })
+  })
+
+  describe('jamais par-dessus autre chose', () => {
+    // L'appareil a montré 1897, mon année en cours est 1898 : la marche joue. Mutations : la garde
+    // `pleinEcranOccupe` retirée du geste (le toucher ouvrirait pendant la marche : l'adresse le
+    // dirait) ; `anneeAvatar === v.annee_en_cours` retiré de `halteOuverte` (le dialogue se poserait
+    // sur l'avancée).
+    it('pendant une avancée, le toucher n’ouvre rien et l’adresse attend ; elle finie, la halte de l’adresse s’ouvre', async () => {
+      preter()
+      localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1897')
+      const f = moteurFactice()
+      const marche = retenue<void>()
+      vi.mocked(f.moteur.marcher).mockImplementationOnce(() => marche.promesse)
+      const banc = await monter({ moteur: f })
+      await waitFor(() => expect(f.moteur.marcher).toHaveBeenCalledWith(1898))
+      await toucher(banc)
+      expect(ou()).toBe('/voyage')
+      aucunDialogue()
+      await act(async () => void adresse.aller!('/voyage?halte=baraque'))
+      aucunDialogue()
+      await act(async () => marche.lacher())
+      await halte()
+    })
+
+    // Mutation : `date !== null` n'est tenu que par `pleinEcranOccupe` : la garde du geste retirée.
+    it('l’affiche d’une date ouverte : le toucher n’ouvre rien', async () => {
+      preter()
+      const banc = await monter()
+      act(() => banc.rappels().date({ an: 1895, x: 38, y: 112, court: '22 mars', lieu: 'Paris', titre: 'La première projection', jour: 'Vendredi 22 mars 1895', texte: 'Un texte.', image: null }))
+      await toucher(banc)
+      expect(ou()).toBe('/voyage')
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    })
+
+    // Mutations : `fete === null` retiré de `halteOuverte` (deux dialogues) ; `!feteAVenir` retiré
+    // (la halte se monterait le temps du rendu qui décide la fête, et prendrait le focus : le
+    // compte des rendus du dessin le voit, aucun dialogue ne reste pour le dire).
+    it('pendant la fête du rattrapage, la halte de l’adresse attend ; la fête finie, elle s’ouvre', async () => {
+      preter()
+      const aMontrer: Voyage = { ...EN_1898, ticket_a_montrer: { annee: 1899, motif: 'Tu as fait le tour de 1898.', emis_le: '2026-09-21T21:00:00.000Z' } }
+      await monter({ voyage: aMontrer, depuis: '/voyage?halte=baraque', routes: { [MONTRE]: () => new Response(null, { status: 204 }) } })
+      expect(await screen.findByRole('dialog', { name: '1898 est bouclée' })).toBeInTheDocument()
+      await act(async () => undefined)
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+      expect(rendus).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Le garder' }))
+      await halte()
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    })
+
+    // La halte ouverte tient l'écran : le contrôleur, qui entre seul, attend qu'elle se referme.
+    // Mutation : `dialogueOuvert` rendu à `portiereOuverte` dans `pleinEcranOccupe`.
+    it('la halte ouverte, le contrôleur qui attend n’entre pas ; refermée, il entre', async () => {
+      preter({ halteDeLaCarte: Dessin, controleurDeLaCarte: Portiere })
+      const client = createQueryClient()
+      client.setQueryData(cles.voyage, EN_1898)
+      client.setQueryData(cles.tickets, { tickets: [] })
+      client.setQueryData(cles.voyageur, IL_ATTEND)
+      const banc = await monter({ depuis: '/voyage?halte=baraque', client, routes: { [LIRE]: () => json(IL_ATTEND), 'GET /api/me/journal?limit=20': () => json({ items: [], next_cursor: null }) } })
+      await halte()
+      await banc.calme()
+      await act(async () => undefined)
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+      fireEvent.click(screen.getByRole('button', { name: 'Revenir' }))
+      expect(await screen.findByRole('dialog', { name: 'Le contrôleur' })).toBeInTheDocument()
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    })
+
+    // La portière est entrée seule ; l'adresse reçoit ensuite une halte (l'historique avancé).
+    // Mutation : `!portiereOuverte` retiré de `halteOuverte` (deux dialogues).
+    it('la portière ouverte, la halte de l’adresse attend ; refermée, elle s’ouvre', async () => {
+      preter({ halteDeLaCarte: Dessin, controleurDeLaCarte: Portiere })
+      const banc = await monter({ routes: { [LIRE]: () => json(IL_ATTEND), 'GET /api/me/journal?limit=20': () => json({ items: [], next_cursor: null }) } })
+      await screen.findByRole('dialog', { name: 'Le contrôleur' })
+      await banc.calme()
+      await act(async () => void adresse.aller!('/voyage?halte=baraque'))
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+      expect(screen.queryByTestId('compte')).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Laisser' }))
+      await halte()
+    })
+  })
+})
