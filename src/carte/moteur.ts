@@ -543,6 +543,8 @@ export class MoteurCarte {
   }
 
   detruire(): void {
+    // Un passage en cours ne finira plus : la page l'apprend (`passage(false)`), et qui l'attendait est libéré.
+    this.meneur.arreterLePassage()
     if (this.raf) this.deps.annulerImage(this.raf)
     this.raf = 0
     this.tuiles.clear()

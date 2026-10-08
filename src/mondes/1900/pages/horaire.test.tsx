@@ -191,4 +191,67 @@ describe('l’horaire sur la fiche d’une année 1900', () => {
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByText(/a déjà son horaire/)).toBeNull()
   })
+
+  // Un seul nom pour la région et pour son titre (relecture des briefs 9 et 10). Mutations :
+  // `aria-hidden` retiré de la précision (le titre se lirait « L'horaire facultatif ») ;
+  // `aria-describedby` retiré (« facultatif » ne serait plus lu nulle part).
+  it('la région et son titre portent le même nom, « facultatif » en est la description', async () => {
+    monterVoyage('/voyage/1904', routes(PROPOSEE))
+    const bloc = await lHoraire()
+    expect(within(bloc).getByRole('heading', { level: 2 })).toHaveAccessibleName('L’horaire')
+    expect(bloc).toHaveAccessibleDescription('facultatif')
+    expect(bloc).toHaveTextContent('L’horairefacultatif')
+  })
+
+  // Mutations : le focus jamais rendu (il reste au document) ; la région d'état laissée vide ; l'état
+  // dit aussi pour un horaire manqué dès l'arrivée (`auMontage` ignoré) ; la région d'état remontée
+  // d'un état à l'autre (un autre nœud : rien ne serait annoncé).
+  it('un refus qui mène à « manqué » rend le focus à la région et le dit dans la région d’état, qui reste la même', async () => {
+    let refuse = false
+    monterVoyage(
+      '/voyage/1904',
+      routes(PROPOSEE, {
+        [TENIR]: () => ((refuse = true), refus(409, 'Cette gare a déjà son horaire : un horaire manqué ne se reprend pas.')),
+        [ANNEE]: () => json(refuse ? MANQUEE : PROPOSEE),
+      }),
+    )
+    const bloc = await lHoraire()
+    const etat = within(bloc).getByRole('status')
+    expect(etat).toBeEmptyDOMElement()
+    talon('Tenir l’horaire').focus()
+    fireEvent.click(talon('Tenir l’horaire'))
+    await waitFor(() => expect(bloc).toHaveTextContent('Il fallait arriver avant'))
+    expect(talons()).toEqual([])
+    expect(bloc).toHaveFocus()
+    expect(within(bloc).getByRole('status')).toBe(etat)
+    expect(etat).toHaveTextContent('Horaire manqué. Il fallait arriver avant mercredi 14 octobre 2026. Rien ne se perd.')
+  })
+
+  it('manqué dès l’arrivée : la ligne suffit, la région d’état ne dit rien et le focus n’est pas pris', async () => {
+    monterVoyage('/voyage/1904', routes(MANQUEE))
+    const bloc = await lHoraire()
+    expect(within(bloc).getByRole('status')).toBeEmptyDOMElement()
+    expect(bloc).not.toHaveFocus()
+    expect(bloc).not.toHaveAccessibleDescription()
+  })
+
+  // Mutation : le dessin rendu nul sans horaire ni proposition, même après mon retrait.
+  it('retiré, puis la fiche relue en panne : la phrase du retrait reste, sans affichette ni talon', async () => {
+    let ecrit = false
+    monterVoyage(
+      '/voyage/1904',
+      routes(ACCEPTEE, {
+        [ANNEE]: () => (ecrit ? refus(400, 'La fiche est en panne.') : json(ACCEPTEE)),
+        [RETIRER]: () => ((ecrit = true), new Response(null, { status: 204 })),
+      }),
+    )
+    const bloc = await lHoraire()
+    talon('Sans horaire').focus()
+    fireEvent.click(talon('Sans horaire'))
+    await waitFor(() => expect(within(bloc).getByRole('status')).toHaveTextContent('Sans horaire : la gare de 1904 se boucle quand tu veux, rien ne se perd.'))
+    expect(talons()).toEqual([])
+    expect(bloc).toHaveFocus()
+    expect(bloc).not.toHaveTextContent('Arriver avant')
+    expect(bloc).not.toHaveTextContent('facultatif')
+  })
 })

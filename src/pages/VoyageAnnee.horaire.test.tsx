@@ -289,11 +289,14 @@ describe('le bloc lecteur de l’horaire', () => {
   })
 
   // Mutations : le repli retiré (l'horaire retiré resterait « accepté » à l'écran, « Sans horaire »
-  // offert) ; la case de la carte non écrite.
-  it('retiré, puis la fiche relue en panne : l’écran ne dit plus un horaire qui n’existe plus', async () => {
+  // offert) ; la case de la carte non écrite ; le bloc rendu nul sans horaire ni proposition même après
+  // mon retrait (la phrase du retrait ne serait jamais dite) ; « Tenir l'horaire » offert sans
+  // proposition ; la fiche écrite à la main non re-périmée (fraîche, elle ne se relirait pas avant
+  // trente secondes) ; re-périmée en la relisant (`refetchType` retiré : une troisième lecture).
+  it('retiré, puis la fiche relue en panne : l’écran ne dit plus un horaire qui n’existe plus, dit le retrait, et la fiche reste à relire', async () => {
     preter()
     let ecrit = false
-    const { client } = monterVoyage(
+    const { client, requetes } = monterVoyage(
       '/voyage/1897',
       routes(ACCEPTEE, {
         [ANNEE]: () => (ecrit ? refus(400, 'La fiche est en panne.') : json(ACCEPTEE)),
@@ -303,9 +306,38 @@ describe('le bloc lecteur de l’horaire', () => {
     )
     fireEvent.click(await retirer())
     await waitFor(() => expect(ficheEnCache(client)).toEqual({ horaire: null, horaire_proposable: null }))
-    await waitFor(() => expect(screen.queryByTestId('horaire')).toBeNull())
+    await waitFor(() => expect(screen.getByTestId('horaire')).toHaveTextContent('1897 | aucun | proposé : rien | arrivée : rien | libre | vient : retire'))
     expect(screen.queryByRole('button', { name: 'Sans horaire' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Tenir l’horaire' })).toBeNull()
     expect(caseEnCache(client)).toBeNull()
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(client.getQueryState(cles.annee(1897))).toMatchObject({ status: 'success', isInvalidated: true })
+    expect(requetes.filter((r) => r === ANNEE)).toHaveLength(2)
+  })
+
+  // Le refus dit que la gare a changé, et la fiche ne peut pas se relire : l'écran reste sur l'état
+  // refusé. Mutations : le message tu quand la fiche est en panne (le geste rejouerait le même refus
+  // muet) ; la relecture non attendue avant de lire la panne (`void relire()` : rien ne serait dit).
+  it.each([
+    ['409 à l’acceptation', PROPOSEE, TENIR, 409, 'Cette gare a déjà son horaire : un horaire manqué ne se reprend pas.'],
+    ['404 au retrait', ACCEPTEE, RETIRER, 404, 'Cette gare n’a pas d’horaire.'],
+  ])('un %s dont la relecture tombe en panne dit le refus du serveur, et le geste se refait', async (_, depart, ecriture, status, message) => {
+    preter()
+    let refuse = false
+    const { requetes, client } = monterVoyage(
+      '/voyage/1897',
+      routes(depart, {
+        [ANNEE]: () => (refuse ? refus(400, 'La fiche est en panne.') : json(depart)),
+        [ecriture]: () => ((refuse = true), refus(status, message)),
+      }),
+    )
+    const bouton = ecriture === TENIR ? await tenir() : await retirer()
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    fireEvent.click(bouton)
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.getByTestId('horaire')).toHaveTextContent('libre | vient : rien')
+    fireEvent.click(ecriture === TENIR ? await tenir() : await retirer())
+    await waitFor(() => expect(requetes.filter((r) => r === ecriture)).toHaveLength(2))
   })
 
   // Un `409` (la gare a changé ailleurs) et le `404` d'un horaire déjà retiré ne sont pas des pannes.

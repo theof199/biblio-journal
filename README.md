@@ -971,10 +971,13 @@ haltes y vont déjà jusqu'au monde, plus bas)**
   (l'horaire rendu, plus de proposition ; la case de l'année sur la carte), puis la fiche et la carte
   se relisent **en `exact`** ; retiré, la fiche se relit d'abord (la gare repropose une échéance que
   seul le serveur connaît), les gestes attendent, et elle ne s'écrit à la main, sans horaire ni
-  proposition, que si cette relecture échoue. **Jamais le préfixe `voyage`** : la malle (que la fête
+  proposition, que si cette relecture échoue : elle se re-périme alors aussitôt, sans se relire (écrite
+  à la main elle se dirait fraîche et sa panne serait effacée), et le bloc reste à l'écran le temps de
+  dire le retrait, sans rien offrir. **Jamais le préfixe `voyage`** : la malle (que la fête
   d'un retour attend), les tickets, l'état du voyageur et les autres fiches montées seraient relus
   pour rien. Un `409` (la gare a changé ailleurs) ou le `404` d'un horaire déjà retiré : la fiche et
-  la carte se relisent, rien ne se dit. Tout autre refus et une panne du réseau se disent avec le
+  la carte se relisent, rien ne se dit ; si la fiche ne peut pas se relire, le refus du serveur se dit
+  (l'écran resterait sur l'état refusé, et le geste rejouerait le même refus muet). Tout autre refus et une panne du réseau se disent avec le
   message reçu, l'horaire reste ce qu'il était et le geste se refait. Ce que le cache apprend est
   dans `useMutation` : la page quittée pendant l'envoi, la carte le sait quand même. La tête et le
   programme reçoivent de quoi dire un horaire tenu (`aLHeure`, `horaireTenu` : son échéance, son
@@ -994,7 +997,11 @@ haltes y vont déjà jusqu'au monde, plus bas)**
   l'heure » (`Tete`, `aLHeure`), et l'indicateur dit en tête de ses lignes « Horaire tenu », l'échéance
   et le jour de l'arrivée (`Indicateur`, `horaireTenu` : « Avant dimanche 11 octobre 2026 : arrivé le
   samedi 10 octobre 2026. »). **Manqué, une ligne**, sans talon : « Il fallait arriver avant… Rien ne se
-  perd. » (décision 7). **Le jour se lit dans la date servie** (`voyage/horaire.ts`, que la carte
+  perd. » (décision 7). La région et son titre portent un seul nom, « L'horaire » (« facultatif » se voit
+  dans le titre et se lit comme la description de la région) ; quand les talons disparaissent sous les
+  yeux (un refus qui mène à « manqué », un retrait dont la fiche ne se relit pas), la région reprend le
+  focus tombé au document, et sa région d'état, la même d'un état à l'autre, dit « Horaire manqué. Il
+  fallait arriver avant… ». **Le jour se lit dans la date servie** (`voyage/horaire.ts`, que la carte
   reprendra) : `jourDeLEcheance` dit une échéance sans heure sans passer par le fuseau de l'appareil
   (la maquette écrit « dimanche » en dur ; la base ne tient pas « un dimanche »), `jourDArrivee` dit
   l'instant du ticket émis à Paris, comme le serveur le compte. Rien n'y bouge ;
@@ -1010,7 +1017,7 @@ haltes y vont déjà jusqu'au monde, plus bas)**
   à mon année en cours), la fête du rattrapage lancée ou sur le point de l'être, un passage au geste
   (fini ou en échec, il rend la main) **ou lancé sans le bouton** (la halte au bout de la foire, le
   repos d'un défilement arrêté dans l'entrée : le moteur le dit par `Rappels.passage`, vrai puis faux,
-  jamais au calme où rien n'est en cours), la vue d'ensemble, un ticket en cours d'encaissement
+  faux aussi quand le moteur est détruit pendant un passage, jamais au calme où rien n'est en cours), la vue d'ensemble, un ticket en cours d'encaissement
   (« L'utiliser » à la fête comme « Utiliser le ticket »), puis la carte en relecture, qui peut poser
   l'avancée, et tant que quelque chose est déjà ouvert (l'affiche d'une date, un aperçu, une bobine ou
   un objet en vol, un message d'état comme « Objet trouvé », la phrase de la roulotte) ; il entre quand

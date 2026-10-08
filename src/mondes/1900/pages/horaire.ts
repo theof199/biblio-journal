@@ -46,3 +46,6 @@ export function phraseDeLHoraireTenu(echeance: string, arriveeLe: string | null)
 
 /** La seule ligne d'un horaire manqué. */
 export const phraseDeLHoraireManque = (echeance: string): string => `Il fallait arriver avant ${jourDeLEcheance(echeance)}. Rien ne se perd.`
+
+/** Ce que la région d'état dit quand l'horaire vient d'être manqué sous mes yeux (un refus, puis la fiche relue). */
+export const horaireManqueDit = (echeance: string): string => `${MOTS_DE_L_HORAIRE.manque}. ${phraseDeLHoraireManque(echeance)}`

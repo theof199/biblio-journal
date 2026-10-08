@@ -20,7 +20,7 @@ export interface PropsHoraireDeLAnnee {
   proposable: string | null
   /** L'instant où la gare a été bouclée (le ticket de l'année suivante émis), pour un horaire tenu ; nul sinon. */
   arriveeLe: string | null
-  /** « Tenir l'horaire » : seulement quand la fiche le propose. */
+  /** « Tenir l'horaire » : seulement quand la fiche le propose (jamais sans horaire ni proposition : un retrait dont la relecture a échoué). */
   onTenir: (() => void) | null
   /** « Sans horaire » : seulement tant que l'horaire est accepté, ni tenu ni manqué. */
   onRetirer: (() => void) | null
@@ -57,7 +57,7 @@ interface Props {
  * ces deux clés se relisent en `exact`, jamais le préfixe `voyage` (la malle, que la fête d'un retour
  * attend, les tickets, l'état du voyageur et les autres fiches seraient relus pour rien, et relire
  * une fiche n'est pas anodin). Un `409` ou un `404` : la gare a changé ailleurs, la fiche et la carte
- * se relisent, rien ne se dit.
+ * se relisent, rien ne se dit ; si la fiche ne peut pas se relire, le refus du serveur se dit.
  */
 export default function Horaire({ monde, annee, fiche, Dessin }: Props) {
   const client = useQueryClient()
@@ -69,6 +69,7 @@ export default function Horaire({ monde, annee, fiche, Dessin }: Props) {
     client.setQueryData<Voyage>(cles.voyage, (v) => (v ? { ...v, annees: v.annees.map((a) => (a.annee === annee ? { ...a, horaire: h } : a)) } : v))
   const poserSurLaFiche = (h: HoraireServi | null) =>
     client.setQueryData<FicheAnnee>(cles.annee(annee), (f) => (estPrete(f) ? { ...f, horaire: h, horaire_proposable: null } : f))
+  const ficheEnPanne = () => client.getQueryState(cles.annee(annee))?.status === 'error'
   const relire = () =>
     Promise.all([client.invalidateQueries({ queryKey: cles.annee(annee), exact: true }), client.invalidateQueries({ queryKey: cles.voyage, exact: true })])
 
@@ -90,10 +91,15 @@ export default function Horaire({ monde, annee, fiche, Dessin }: Props) {
       // Retiré, la gare en repropose un, dont l'échéance n'est qu'au serveur : la fiche se relit
       // d'abord, et ne s'écrit à la main (sans horaire, sans proposition) que si sa relecture échoue.
       await relire()
-      if (client.getQueryState(cles.annee(annee))?.status === 'error') poserSurLaFiche(null)
+      if (!ficheEnPanne()) return
+      // Écrire la fiche à la main la dit fraîche et efface sa panne : elle se re-périme aussitôt, sans
+      // se relire (elle vient d'échouer), pour que sa prochaine visite la redemande au serveur.
+      poserSurLaFiche(null)
+      await client.invalidateQueries({ queryKey: cles.annee(annee), exact: true, refetchType: 'none' })
     },
-    onError: (e) => {
-      if (aChange(e)) void relire()
+    // Attendue : le rappel de `lancer` lit ensuite si la relecture a laissé la fiche en panne.
+    onError: async (e) => {
+      if (aChange(e)) await relire()
     },
   })
 
@@ -106,14 +112,19 @@ export default function Horaire({ monde, annee, fiche, Dessin }: Props) {
     ecrire.mutate(geste, {
       onSuccess: () => setVient(geste === 'accepter' ? 'accepte' : 'retire'),
       onError: (e) => {
-        if (!aChange(e)) setErreur(e.message)
+        // Un refus qui n'est pas une panne ne se dit pas : la fiche relue montre ce que la gare est
+        // devenue. Sauf si cette relecture est tombée : l'écran resterait sur l'état que le serveur
+        // refuse, et le geste rejouerait le même refus muet. Le message du serveur le dit alors.
+        if (!aChange(e) || ficheEnPanne()) setErreur(e.message)
       },
       onSettled: () => void (envoi.current = false),
     })
   }
 
   const { horaire, horaire_proposable: proposable } = fiche
-  if (!horaire && proposable === null) return null
+  // Ni horaire ni proposition, le bloc n'existe pas ; sauf juste après mon retrait, quand la fiche n'a
+  // pas pu se relire : la phrase du retrait reste à dire, sans rien offrir.
+  if (!horaire && proposable === null && vient !== 'retire') return null
   return (
     <Dessin
       monde={monde}
@@ -121,7 +132,7 @@ export default function Horaire({ monde, annee, fiche, Dessin }: Props) {
       horaire={horaire}
       proposable={horaire ? null : proposable}
       arriveeLe={horaire?.etat === 'tenu' ? (fiche.ticket?.emis_le ?? null) : null}
-      onTenir={horaire ? null : () => lancer('accepter')}
+      onTenir={horaire || proposable === null ? null : () => lancer('accepter')}
       onRetirer={horaire?.etat === 'accepte' ? () => lancer('retirer') : null}
       occupe={ecrire.isPending}
       vient={vient}

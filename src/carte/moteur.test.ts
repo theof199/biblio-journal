@@ -2164,6 +2164,22 @@ describe('le moteur de la carte', () => {
             expect(dits(banc)).toEqual([true, false])
           })
 
+          // Mutation : `arreterLePassage` retiré de `detruire` (ni `passage(false)` ni la promesse du bouton).
+          it('le moteur détruit pendant le passage le dit fini, et libère qui l’attendait', async () => {
+            const banc = auPassage()
+            let fini = false
+            void banc.moteur.direBonjour(1900, 'endroit').then(() => (fini = true))
+            banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+            expect(dits(banc)).toEqual([true])
+            banc.moteur.detruire()
+            expect(dits(banc)).toEqual([true, false])
+            await Promise.resolve()
+            expect(fini).toBe(true)
+            // Détruit sans passage en cours : rien n'est dit.
+            banc.moteur.detruire()
+            expect(dits(banc)).toEqual([true, false])
+          })
+
           // Mutation : `passage(true)` dit à l'entrée de `Meneur.direBonjour`, avant ses gardes.
           it('une seule fois pour deux demandes, et jamais au calme ni pour un monde sans temps, où rien n’est en cours', () => {
             const banc = auPassage()
