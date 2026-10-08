@@ -1,0 +1,209 @@
+/* Une halte ouverte sur la carte de 1900 (maquette « Voyage immobile 1900 » : `.halte`, `.halte-ind`) :
+   un dialogue par-dessus la carte, le ciel pâle d'une campagne, la petite gare dessinée au pied, sa
+   plaque émaillée et son indicateur de papier. La maquette y posait une photographie du lointain et
+   un vert (`--halte`) : ici ni l'une ni l'autre, le bleu de l'émail en attendant le choix du
+   propriétaire (décision 12). Toute durée est au tempo, et rien ne bouge hors de `data-vivante='oui'`. */
+.halte {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-calque);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 16px calc(16px + var(--coque-bas, 0px));
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 92% 62% at 50% 58%, transparent 45%, color-mix(in srgb, var(--m-velours) 34%, transparent)),
+    linear-gradient(color-mix(in srgb, var(--m-papier2) 82%, var(--m-email)), var(--m-papier) 34%, var(--m-papier2) 62%);
+  color: var(--m-encre);
+}
+
+.decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.decor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.plaque {
+  position: relative;
+  margin: 0;
+  padding: 7px 18px 8px;
+  background: var(--m-email);
+  box-shadow:
+    inset 0 0 0 2px var(--m-papier),
+    inset 0 0 0 3.5px var(--m-email),
+    0 5px 12px var(--m-ombre);
+  color: var(--m-papier);
+  text-align: center;
+}
+
+.plaque b {
+  display: block;
+  font: 400 24px/1.1 var(--m-f-titre);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plaque small {
+  display: block;
+  margin-top: 2px;
+  font: 400 10.5px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.indicateur {
+  position: relative;
+  width: min(312px, 100%);
+  max-height: 46%;
+  padding: 8px 10px 9px;
+  overflow-y: auto;
+  background: var(--m-papier);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--m-encre) 30%, transparent),
+    0 8px 16px var(--m-ombre);
+  transform: rotate(-0.8deg);
+}
+
+.entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--m-encre);
+  font: 700 10.5px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.entete span {
+  color: var(--m-email);
+}
+
+.entete b {
+  font: 700 15px var(--m-f-presse);
+  letter-spacing: 0;
+}
+
+.indicateur ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.indicateur li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'affiche titre annee'
+    'affiche etat plex';
+  gap: 1px 9px;
+  align-items: baseline;
+  padding: 6px 2px;
+  border-bottom: 1px dotted color-mix(in srgb, var(--m-encre) 45%, transparent);
+}
+
+.indicateur li:last-child {
+  border-bottom: 0;
+}
+
+.indicateur img,
+.sans {
+  grid-area: affiche;
+  align-self: center;
+  width: 34px;
+  height: 50px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-encre) 40%, transparent);
+}
+
+.indicateur img {
+  display: block;
+  object-fit: cover;
+  filter: sepia(0.35) saturate(0.85);
+}
+
+.sans {
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--m-encre) 8%, var(--m-papier2));
+  color: var(--m-encre2);
+  font: italic 9px/1.15 var(--m-f-texte);
+  text-align: center;
+}
+
+.titre {
+  grid-area: titre;
+  font: 15px/1.25 var(--m-f-texte);
+}
+
+.indicateur small {
+  grid-area: annee;
+  justify-self: end;
+  font: 700 12px var(--m-f-presse);
+}
+
+.indicateur em {
+  grid-area: etat;
+  color: var(--m-rouge);
+  font: normal 700 10px var(--m-f-corps);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.indicateur li[data-etat='vu'] em {
+  color: var(--m-violet);
+}
+
+.indicateur li[data-etat='introuvable'] em {
+  color: var(--m-encre2);
+}
+
+.indicateur a {
+  grid-area: plex;
+  justify-self: end;
+  padding: 6px 0 6px 8px;
+  color: var(--m-email);
+  font: 700 10px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.revenir {
+  position: relative;
+  width: 100%;
+  min-height: 48px;
+  margin-top: auto;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--corail);
+  color: var(--m-encre);
+  font: 700 13.5px var(--m-f-capitales);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.revenir:focus-visible,
+.indicateur a:focus-visible {
+  outline: 2px solid var(--m-email);
+  outline-offset: 2px;
+}
+
+.halte[data-vivante='oui'] {
+  animation: entre calc(950ms * var(--tempo)) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes entre {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}

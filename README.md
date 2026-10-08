@@ -969,6 +969,23 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   (`dialogueOuvert`), et refermée le focus tombé au document revient au titre. Le moteur ne
   dédoublonne pas : deux touchers avant le rendu n'empilent qu'une entrée d'historique
   (`halteEnRoute`). `pages/Carte.halte.test.tsx` le tient sur un 1890 auquel on prête un dessin.
+  **1900 la dessine** (maquette « Voyage immobile 1900 », l'aiguillage et `#halte`). Sur la carte
+  (`mondes/1900/aiguillage.ts`) : pour chaque halte **servie** et aucune autre, un levier à contrepoids
+  au bout du quai de la gare `apres`, sous une étiquette au nom servi, et un poteau fléché sur le
+  tronçon, qui écrit le nom et « EMBRANCHEMENT · n FILMS » sur le compte servi ; la règle de place est
+  pure (`aiguillagesALEcran` : ni dans une gare à développer, ni hors de la fenêtre de la section ; le
+  levier est à l'écran quand le train est arrêté en gare d'`apres`), et le monde inscrit la zone
+  `aiguillage` au rang de la halte dans sa vue. Rien n'y bouge, le trait n'a pas de test. Le dialogue
+  (`mondes/1900/pages/HalteDeLaCarte.tsx`, `Halte.module.css`, les mots dans `halte.ts`) : la petite
+  gare dessinée (`DessinDeLaHalte.tsx`, les tracés de la maquette, aucune photographie), la plaque au
+  nom servi et « hors ligne · embranchement », l'indicateur (« Halte · n films », « v sur n », puis par
+  film son affiche ou « sans affiche », son titre, son année, son état par les mots d'un film de salle,
+  les cinq du contrat, et « Voir sur le Plex » s'il en a un) et « Revenir sur la ligne », le seul
+  bouton : **aucun geste n'y marque un film vu et aucun film ne s'y ouvre** (décision 9). Il entre en
+  glissant au tempo, jamais au calme, et son bouton reste inerte un instant hors du calme
+  (`GARDE_DU_CHOIX`). Le vert de la maquette n'est pas porté : le bleu de l'émail, en attendant le
+  choix du propriétaire (décision 12). Le HUD réécrit pour la halte et le levier qui bascule ne sont
+  pas faits. `mondes/1900/monde1900.test.ts` et `mondes/1900/pages/halte.test.tsx` le tiennent.
   **La plaque d'une gare dit son horaire** (brief 11 ; `voyage/horaire.ts`, `horaireDePlaque`, une
   règle pure tirée de `CaseVue.horaire`) : tenu, « à l'heure » et `tenu` pour le filet doré ; accepté,
   « avant » et le jour de la semaine de l'échéance servie (`semaineDeLEcheance` : un mercredi se dit

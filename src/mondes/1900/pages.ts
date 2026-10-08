@@ -8,6 +8,7 @@ import Composteur from './pages/Composteur'
 import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
 import ControleurDeLaCarte from './pages/ControleurDeLaCarte'
+import HalteDeLaCarte from './pages/HalteDeLaCarte'
 import CoulissesDeLaSacoche from './pages/CoulissesDeLaSacoche'
 import Courroie from './pages/Courroie'
 import EtiquetteDeMalle from './pages/EtiquetteDeMalle'
@@ -164,6 +165,7 @@ export const PAGES_1900: HabillagePages = {
     feteDuBadge: BadgeColleSurLaMalle,
     feteDeLAnnee: LigneBouclee,
     controleurDeLaCarte: ControleurDeLaCarte,
+    halteDeLaCarte: HalteDeLaCarte,
   },
   // `guichet` : ce qui tient au-dessus de la tablette (le retour, le fronton, la grille), la place que la
   // page ajoute en bas pour que la tablette monte au-dessus du clavier.

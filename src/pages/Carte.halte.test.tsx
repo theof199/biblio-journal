@@ -12,7 +12,7 @@ import type { HabillagePages } from '../mondes/types'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
-import { voyage1890 } from '../test/voyage'
+import { malleVide, voyage1890 } from '../test/voyage'
 import type { PropsControleurDeLaCarte } from '../voyage/controleur/Controleur'
 import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
 
@@ -340,3 +340,61 @@ describe('la halte sur la carte, une clé sans défaut', () => {
     })
   })
 })
+
+// Le vrai 1900, sans rien prêter : son monde compose la clé, celui de 1890 non.
+describe('la halte sur la carte de 1900', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    localStorage.clear()
+    sessionStorage.clear()
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const jusqua = (enCours: number, fin = 1909): Voyage =>
+    voyage1890(
+      enCours,
+      Array.from({ length: fin - 1895 + 1 }, (_, i) => 1895 + i).map((annee) =>
+        annee < enCours
+          ? { annee, statut: 'ouverte' as const, visitee: true, recompense: null, progression: null }
+          : { annee, statut: annee === enCours ? ('en_cours' as const) : ('verrouillee' as const), visitee: false, recompense: null, progression: null, profondeur: 0 },
+      ),
+      { haltes: [MELIES] },
+    )
+  const ROUTES = { [LIRE]: () => json({ ...BASE, controleur: { attend: false, billet: null } }), 'GET /api/me/voyage/decennies/1900/etiquettes': () => json(malleVide(1900)) }
+
+  // La clé se lit au monde de la halte, pas à celui de mon année en cours : rendu en 1910 (le monde
+  // « à venir », qui ne compose rien), la ligne de 1900 est toujours à l'écran, et sa halte s'ouvre.
+  // Mutation : le gabarit lu au monde de `v.annee_en_cours`, dans le rendu puis dans le geste.
+  it('rendu en 1910, dans un monde qui ne compose pas la clé, la halte de la ligne de 1900 s’ouvre encore', async () => {
+    const banc = await monter({ voyage: jusqua(1910, 1910), routes: ROUTES })
+    await toucher(banc, 'melies')
+    expect(await screen.findByRole('dialog', { name: 'Halte Méliès' })).toBeInTheDocument()
+  })
+
+  // Mutation : `halteDeLaCarte` retirée de `PAGES_1900`.
+  it('en 1903, l’aiguillage touché ouvre la Halte Méliès telle que servie : son compte, ses trois films, sans rien lire de plus', async () => {
+    const banc = await monter({ voyage: jusqua(1903), routes: ROUTES })
+    const avant = [...banc.requetes]
+    await toucher(banc, 'melies')
+    const dialogue = await screen.findByRole('dialog', { name: 'Halte Méliès' })
+    expect(ou()).toBe('/voyage?halte=melies')
+    expect(dialogue).toHaveTextContent('Halte · 3 films')
+    expect(dialogue).toHaveTextContent('1 sur 3')
+    expect(within(dialogue).getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByRole('button', { name: 'Revenir sur la ligne' })).toHaveFocus()
+    expect(banc.requetes).toEqual(avant)
+  })
+
+  // 1900 est caché à qui est en 1899 : la halte que le serveur servirait quand même n'a pas de
+  // tronçon à l'écran, et l'adresse qui la porte n'ouvre rien. Mutation : `etat.haltes` (les haltes
+  // montrées) remplacé par `v.haltes` dans `halteDemandee`.
+  it('en 1899, la halte servie d’une décennie cachée ne s’ouvre pas, même portée par l’adresse, et la carte ne lit que la session, la carte et les tickets', async () => {
+    const banc = await monter({ voyage: jusqua(1899), depuis: '/voyage?halte=melies' })
+    await toucher(banc, 'melies')
+    aucunDialogue()
+    expect(inertes()).toBe(0)
+    expect([...banc.requetes].sort()).toEqual(['GET /api/auth/me', VOYAGE, TICKETS])
+  })
+})
+

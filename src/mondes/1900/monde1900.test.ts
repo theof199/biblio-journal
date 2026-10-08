@@ -10,6 +10,7 @@ import { vueFactice } from '../../test/vueFactice'
 import { contexteFactice } from '../../test/contexteFactice'
 import { aDevelopper, developpement, ecranDeLaCase, estFermee, gareALEcran, milieuDeLaGare, objetsSurLeQuai, RAYON_D_OBJET } from './gares'
 import { OBJETS, phraseDeLObjet } from './objets'
+import { aiguillagesALEcran, filmsDuPoteau, RAYON_DU_LEVIER } from './aiguillage'
 import { CACHETTES } from './bobines'
 import { DATES, PLACES_DES_DEPECHES } from './depeches'
 import { vitreOuverte } from './passage'
@@ -520,5 +521,69 @@ describe('la bande de la vue d’ensemble', () => {
     const lire = lectureDeLaBande(cadre, ANNEES)
     for (const [x, y] of [[9, 430], [380, 430], [195, 399], [195, 460], [-50, -50]] as const) expect(lire(x, y)).toBeNull()
     expect(lectureDeLaBande(cadre, [])(195, 430)).toBeNull()
+  })
+})
+
+// Plan des écrans des lots, brief 12 : l'embranchement d'une halte. Les règles seulement (lequel se
+// dessine, où, à quel rang) et la zone que le monde inscrit : rien ici ne regarde le tracé du levier.
+describe('l’aiguillage d’une halte servie', () => {
+  const MELIES = { cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 1, total: 3 }
+  const ZECCA = { cle: 'zecca', nom: 'Halte Zecca', apres: 1901, vus: 0, total: 2 }
+  const aiguillages = (f: ReturnType<typeof enGare>) => {
+    creerMonde1900().dessinerMoyen(f.vue)
+    return f.zones.filter((z) => z.id === 'aiguillage')
+  }
+
+  // Aucun catalogue dans l'appli. Mutation : la halte écrite dans le monde (`v.haltes` remplacé, ou
+  // complété quand il est vide, par une table `[{ apres: 1902, … }]` dans `aiguillagesALEcran`).
+  it('aucun levier sans halte servie : ni place, ni zone, dans aucune gare', () => {
+    for (const annee of ANNEES) {
+      const f = enGare(annee, 10)
+      expect(f.vue.haltes).toEqual([])
+      expect(aiguillagesALEcran(f.vue), `gare de ${annee}`).toEqual([])
+      expect(aiguillages(f), `gare de ${annee}`).toEqual([])
+    }
+  })
+
+  // Le brief : à l'arrêt de la gare `apres`, le levier est à l'écran, sa zone entière. Mutations : le
+  // levier posé sur le tronçon (`i + 0.5`, hors de l'écran à l'arrêt) ; `apres - 1899` (la gare d'après).
+  it('servie, son levier se tient dans la gare d’après laquelle elle s’embranche, à l’écran quand le train y est arrêté', () => {
+    for (const W of [320, 390, 430]) {
+      const f = enGare(1902, 3, { haltes: [MELIES], W })
+      const [a] = aiguillagesALEcran(f.vue)
+      expect(a!.levier.x - RAYON_DU_LEVIER, `largeur ${W}`).toBeGreaterThanOrEqual(0)
+      expect(a!.levier.x, `largeur ${W}`).toBeLessThan(W / 2)
+      expect(a!.poteau.x, `largeur ${W}`).toBe(milieuDeLaGare(f.vue, 2.5))
+    }
+    expect(aiguillages(enGare(1902, 3, { haltes: [MELIES] }))).toHaveLength(1)
+    // Arrêté ailleurs, le levier de 1902 est hors de l'écran : aucune zone.
+    expect(aiguillages(enGare(1900, 3, { haltes: [MELIES] }))).toEqual([])
+    expect(aiguillages(enGare(1903, 4, { haltes: [MELIES] }))).toEqual([])
+  })
+
+  // Le moteur lit le rang dans `v.haltes`, les haltes de la section, pas l'année ni un rang de
+  // catalogue. Mutations : `data` à `apres - 1900` ; à zéro pour toutes.
+  it('la zone porte le rang de la halte dans la vue, quel que soit son `apres`', () => {
+    expect(aiguillages(enGare(1902, 3, { haltes: [MELIES] })).map((z) => z.data)).toEqual([0])
+    expect(aiguillages(enGare(1902, 3, { haltes: [ZECCA, MELIES] })).map((z) => z.data)).toEqual([1])
+    expect(aiguillages(enGare(1901, 3, { haltes: [ZECCA, MELIES] })).map((z) => z.data)).toEqual([0])
+  })
+
+  // La règle des plaques, des dépêches et des objets. Mutations : la garde `aDevelopper` ôtée ;
+  // `dansLaFenetre` remplacé par vrai.
+  it('aucun dans une gare à développer, ni tant que la vitre n’a pas rempli l’écran, ni pour une année hors de la ligne', () => {
+    expect(aiguillagesALEcran(enGare(1902, 2, { haltes: [MELIES] }).vue)).toEqual([])
+    expect(aiguillagesALEcran(enGare(1902, 3, { haltes: [MELIES], cases: cases(3).map((k) => (k.annee === 1902 ? { ...k, attente: true } : k)) }).vue)).toEqual([])
+    expect(aiguillagesALEcran(enGare(1902, 3, { haltes: [MELIES], ouverte: { annee: 1901, t0: -9 } }).vue)).toEqual([])
+    expect(aiguillagesALEcran(enGare(1900, 10, { haltes: [{ ...MELIES, apres: 1900 }], avance: S1 }).vue)).toEqual([])
+    expect(aiguillagesALEcran(enGare(1900, 10, { haltes: [{ ...MELIES, apres: 1900 }] }).vue)).toHaveLength(1)
+    expect(aiguillagesALEcran(enGare(1902, 10, { haltes: [{ ...MELIES, apres: 1912 }] }).vue)).toEqual([])
+  })
+
+  // Mutation : « 3 FILMS » écrit dans le trait.
+  it('le poteau compte les films servis, jamais trois d’avance', () => {
+    expect(filmsDuPoteau(3)).toBe('EMBRANCHEMENT · 3 FILMS')
+    expect(filmsDuPoteau(2)).toBe('EMBRANCHEMENT · 2 FILMS')
+    expect(filmsDuPoteau(1)).toBe('EMBRANCHEMENT · 1 FILM')
   })
 })

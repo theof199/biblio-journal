@@ -11,6 +11,7 @@ import { ANNEES, E } from './trace'
 import { DATES, PLACES_DES_DEPECHES } from './depeches'
 import { CACHETTES } from './bobines'
 import { OBJETS, type ObjetTrouve } from './objets'
+import { dessinerAiguillages } from './aiguillage'
 
 /** Le lieu de chaque photographie (maquette : `LIEU`, l. 2733) : celui de l'image, pas celui des événements de l'année. */
 export const LIEU: Readonly<Record<number, string>> = {
@@ -427,5 +428,7 @@ export function dessinerMoyen(v: VueMonde): void {
     objetPose(g, OBJETS[rang]!, x, y)
     v.objet(rang, x, y, RAYON_D_OBJET)
   }
+  // L'embranchement d'une halte servie : son poteau sur le tronçon, son levier au bout du quai.
+  dessinerAiguillages(v)
   g.restore()
 }
