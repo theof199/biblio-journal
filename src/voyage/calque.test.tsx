@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useCalque } from './calque'
 
@@ -69,6 +69,39 @@ describe('un calque dans l’adresse', () => {
     monter(['/voyage', '/voyage/1897?bobine=12&feuille=ouverture'])
     fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
     expect(screen.getByTestId('adresse')).toHaveTextContent(/^\/voyage\/1897\?bobine=12$/)
+  })
+
+  // Deux touchers sur « Fermer » (ou deux Échap) avant que React ait rendu : un seul recul, sinon le
+  // second quitte la page pour la carte. Mutation : la référence « fermeture partie » retirée.
+  it('deux fermetures avant le rendu ne reculent que d’une entrée', () => {
+    monter(['/voyage', '/voyage/1897'])
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir' }))
+    const fermer = screen.getByRole('button', { name: 'Fermer' })
+    act(() => {
+      fireEvent.click(fermer)
+      fireEvent.click(fermer)
+    })
+    expect(screen.getByTestId('adresse')).toHaveTextContent(/^\/voyage\/1897$/)
+    expect(screen.queryByText('La carte')).toBeNull()
+  })
+
+  // La fermeture partie est rendue quand l'adresse a bougé. Mutations : la référence jamais rendue
+  // (rouvert, le calque ne se referme plus) ; rendue au changement de valeur seulement (la même
+  // valeur empilée deux fois : la seconde entrée ne se referme plus).
+  it('refermé puis rouvert, il se referme encore ; la même valeur empilée deux fois se referme deux fois', () => {
+    monter(['/voyage', '/voyage/1897'])
+    for (let tour = 0; tour < 2; tour += 1) {
+      fireEvent.click(screen.getByRole('button', { name: 'Ouvrir' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+      expect(screen.queryByRole('dialog')).toBeNull()
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    expect(screen.getByRole('dialog', { name: 'ouverture' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByTestId('adresse')).toHaveTextContent(/^\/voyage\/1897$/)
   })
 
   // Mutation : `ouvertIci` qui ne regarde pas le nom du calque (`state.calque !== undefined`) : la

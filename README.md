@@ -291,7 +291,7 @@ l'Exposition : quatre toiles défilent à des vitesses différentes derrière la
 ne bouge pas (`toiles.ts`, `RAPPORTS`), et tout se tire de l'avance de la caméra. La section porte
 en haut la zone du passage, puis dix gares, une par année, à 700 px de geste l'une de l'autre
 (`trace.ts`, `ARRETS`, `PAS`) ; chaque gare est une photographie d'époque. Une année fermée, en
-attente du Voyage suivi (`gares.ts`, `estFermee`, que la bande de la vue d'ensemble lit aussi), ou où
+attente du Voyage suivi (`estFermee`, la règle de la carte entière, dans `voyage/regles.ts` : la gare, la bande de la vue d'ensemble et la liste des années de la page lisent la même), ou où
 le membre n'est pas encore arrivé, se montre en plaque négative (`gares.ts`, `aDevelopper`), sous une
 lanterne rouge de 1901 à 1909 ; la plaque se développe sous les yeux à l'arrivée du membre
 (`durees.ts`, `DEVELOPPEMENT`). L'heure est celle de la gare, de l'aube de 1900 à la nuit de 1909
@@ -556,7 +556,9 @@ Où vit quoi :
 `generique`, `salle-<id>`, `film`), `marche=`, `podium=`, `nouvelle-salle=`, `remplacer=`,
 `voiture=` (l'identifiant de la salle dépliée, pour un monde qui range ses films derrière elle). Le geste
 « retour » du téléphone ferme donc un calque sans quitter la page. Ouvert par la page, il se ferme
-en reculant dans l'historique ; arrivé avec l'adresse, en retirant son paramètre. Échap ne ferme
+en reculant dans l'historique ; arrivé avec l'adresse, en retirant son paramètre. **Une fermeture
+par ouverture** : deux fermetures avant le rendu (deux touchers, deux Échap) ne reculent que d'une
+entrée, la première est retenue jusqu'à ce que l'adresse ait bougé. Échap ne ferme
 que le dernier calque ouvert (`voyage/dialogue.ts`).
 
 **Le chroniqueur n'est appelé que sur un geste** : ouvrir une année, lire le générique, ouvrir le
@@ -962,10 +964,20 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   (`voyage/halte/Halte.tsx`) ne lit ni n'écrit aucune route (une halte n'a pas d'écriture : un film vu
   passe par le journal) ; il garde Échap, le focus et le compte (`voyage/halte/compte.ts`,
   `compteDeLaHalte` : les films à l'état `vu` sur ceux que le serveur sert, la même règle que pour le
-  monde) et passe la halte telle que servie. **Jamais par-dessus autre chose** : le toucher ne lit que
-  `pleinEcranOccupe` ; portée par l'adresse avant que l'écran soit libre, elle attend la fin de
-  l'avancée, de la fête ou de la portière (`halteOuverte`), et ouverte elle tient le plein écran (le
-  contrôleur attend). Les deux enveloppes sont inertes sous elle comme sous la portière
+  monde) et passe la halte telle que servie. **Jamais par-dessus autre chose** : la carte tire un seul
+  « dialogue courant » d'un ordre écrit une fois (`pages/Carte.tsx`, `ORDRE_DES_DIALOGUES`,
+  `dialogueCourant`) : l'avancée, la fête du rattrapage, un passage, la vue d'ensemble, l'affiche
+  d'une date, l'aperçu, puis la portière du contrôleur, puis la halte. Le premier qui prétend à l'écran
+  le tient, les autres attendent : une halte que l'adresse porte (un rechargement, l'historique
+  avancé) attend son tour (`halteOuverte`), et ouverte elle tient le plein écran (le contrôleur
+  attend). Ce qui ne fait que passer (un message, la carte relue, un vol, un ramassage, la phrase de la
+  roulotte) n'est pas dans l'ordre : il ne ferme pas une halte ouverte. **Un dialogue neuf s'ajoute
+  d'un nom dans cet ordre**, et le type oblige à dire quand il prétend à l'écran. Le toucher du levier
+  lit `pleinEcranOccupe` (le dialogue courant ou ce qui passe) : sous un dialogue courant il est
+  refusé net ; pendant que quelque chose passe (en gare de 1902 le parapluie ramassé et son message
+  tiennent l'écran plus de quatre secondes), sa clé est retenue, la dernière seulement, et la halte
+  s'ouvre quand l'écran se libère, sauf si un dialogue a pris l'écran entre-temps (`halteAttendue`).
+  Les deux enveloppes sont inertes sous elle comme sous la portière
   (`dialogueOuvert`), et refermée le focus tombé au document revient au titre. Le moteur ne
   dédoublonne pas : deux touchers avant le rendu n'empilent qu'une entrée d'historique
   (`halteEnRoute`). `pages/Carte.halte.test.tsx` le tient sur un 1890 auquel on prête un dessin.
@@ -974,8 +986,10 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   au bout du quai de la gare `apres`, sous une étiquette au nom servi, et un poteau fléché sur le
   tronçon, qui écrit le nom et « EMBRANCHEMENT · n FILMS » sur le compte servi ; la règle de place est
   pure (`aiguillagesALEcran` : ni dans une gare à développer, ni hors de la fenêtre de la section ; le
-  levier est à l'écran quand le train est arrêté en gare d'`apres`), et le monde inscrit la zone
-  `aiguillage` au rang de la halte dans sa vue. Rien n'y bouge, le trait n'a pas de test. Le dialogue
+  levier est à l'écran quand le train est arrêté en gare d'`apres`), et elle dit aussi la zone du
+  levier (son centre à mi-hauteur de sa vue, son rayon, sa priorité 2, devant la case et la voiture
+  de sa gare, derrière une bobine), que le monde inscrit telle quelle, `aiguillage`, au rang de la
+  halte dans sa vue. Rien n'y bouge, le trait n'a pas de test. Le dialogue
   (`mondes/1900/pages/HalteDeLaCarte.tsx`, `Halte.module.css`, les mots dans `halte.ts`) : la petite
   gare dessinée (`DessinDeLaHalte.tsx`, les tracés de la maquette, aucune photographie), la plaque au
   nom servi et « hors ligne · embranchement », l'indicateur (« Halte · n films », « v sur n », puis par
@@ -996,7 +1010,8 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   l'année en cours ; rien n'y bouge, et le trait n'a pas de test. La liste des années pour lecteur
   d'écran (`pages/Carte.tsx`, `horaireLu`) dit les mêmes mots après l'état de l'année (« 1902, passée,
   à l'heure »), dans un monde qui compose `horaireDeLAnnee` seulement : en 1890 elle se tait, quoi que
-  serve l'API. Ni la bande de la vue d'ensemble ni l'aperçu d'une année ne le disent. Aucune requête
+  serve l'API ; elle se tait aussi, comme la plaque à développer, pour une année fermée (`estFermee`)
+  et tant que l'avatar n'y est pas arrivé (le trajet). Ni la bande de la vue d'ensemble ni l'aperçu d'une année ne le disent. Aucune requête
   de plus : tout vient de `GET /me/voyage`. `voyage/horaire.test.ts`, `mondes/1900/habillage.test.ts`
   et `pages/Carte.haltes.test.tsx` le tiennent.
   `carte/moteur.test.ts` et `pages/Carte.haltes.test.tsx` le tiennent.
@@ -1066,10 +1081,13 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   (« L'utiliser » à la fête comme « Utiliser le ticket »), puis la carte en relecture, qui peut poser
   l'avancée, et tant que quelque chose est déjà ouvert (l'affiche d'une date, un aperçu, une bobine ou
   un objet en vol, un message d'état comme « Objet trouvé », la phrase de la roulotte) ; il entre quand
-  ce fait retombe. **Tout dialogue de la carte qui entre de lui-même lit ce fait, et tout calque neuf
-  s'y ajoute** (l'horaire et la halte s'y brancheront). Son dialogue rend la carte inerte dessous, et
-  l'inertie comme le rendu se lisent sur un seul booléen, `portiereOuverte` (le billet retenu **et** le
-  dessin du monde) : portière ouverte, mon année en cours passée à un monde sans la clé ne laisse pas
+  ce fait retombe. **Tout dialogue de la carte qui entre de lui-même lit ce fait, et tout dialogue
+  neuf s'ajoute à l'ordre dont il se tire** (`ORDRE_DES_DIALOGUES` ; la halte y est, après la portière ;
+  l'horaire n'est pas un dialogue : il se dit sur la plaque et sur la fiche). Son dialogue rend la carte
+  inerte dessous, et l'inertie comme le rendu se lisent sur un seul booléen, `portiereOuverte` (la
+  portière est le dialogue courant : le billet retenu **et** le dessin du monde, et rien de plus fort
+  à l'écran ; une avancée ou une fête que la carte relue poserait la couvre le temps de se jouer) :
+  portière ouverte, mon année en cours passée à un monde sans la clé ne laisse pas
   une carte inerte sans dialogue. Le bloc lecteur montre **le billet demandé tel
   que mon journal le dit** (le contrat n'en donne que deux identifiants) : il lit la première page du
   journal, sous la clé de l'accueil, y cherche l'entrée par son identifiant, jamais la page suivante,

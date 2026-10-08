@@ -63,6 +63,14 @@ export function jauge(progression: Progression | null, recompense: Recompense | 
 export type EtatCase = 'palme' | 'lion' | 'ours' | 'encours' | 'passee' | 'verrou'
 
 /**
+ * **La seule règle de « fermée »** d'une année de la carte : sans case, verrouillée, ou en attente du
+ * Voyage suivi (une année en attente se montre fermée partout, plaque comprise, comme la case commune
+ * et le corail du moteur). Hors des mondes, pour que la page la lise sans importer un monde : la gare
+ * et la bande de 1900 (`mondes/1900/gares.ts`) et la liste des années de la carte lisent la même.
+ */
+export const estFermee = (a: { etat: EtatCase; attente?: boolean } | undefined): boolean => !a || a.etat === 'verrou' || a.attente === true
+
+/**
  * L'état d'une case. `attente` : pour un membre hors IA, une année lisible que le Voyage suivi
  * n'a pas encore ouverte (spec du Voyage à deux, « L'option A ») — non verrouillée et
  * `visitee: false`. Jamais vraie pour le compte IA : chez lui, la même année s'ouvre à la visite.

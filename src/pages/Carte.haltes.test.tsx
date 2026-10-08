@@ -39,8 +39,7 @@ const voyage = (enCours: number, surcharge: Partial<Voyage> = {}) =>
     surcharge,
   )
 
-async function monter(servi: () => Voyage) {
-  const f = moteurFactice()
+async function monter(servi: () => Voyage, f = moteurFactice()) {
   const client = createQueryClient()
   const requetes = servir({
     'GET /api/auth/me': () => json(SESSION),
@@ -58,7 +57,9 @@ async function monter(servi: () => Voyage) {
       </FabriqueMoteurContexte.Provider>
     </QueryClientProvider>,
   )
+  // Deux faits de la carte lue et rendue : l'état reçu par le moteur, la liste des années à l'écran.
   await waitFor(() => expect(f.etats.length).toBeGreaterThan(0))
+  await screen.findAllByRole('navigation', { name: 'Les années du Voyage' })
   await waitFor(() => expect(client.isFetching()).toBe(0))
   const dernier = () => f.etats[f.etats.length - 1]!
   return { ...f, client, requetes, dernier }
@@ -181,6 +182,25 @@ describe('la liste des années dit l’horaire d’une gare, comme sa plaque', (
       '1908, à tourner',
       '1909, à tourner',
     ])
+  })
+
+  // La plaque d'une gare reste à développer tant que le membre n'y est pas arrivé (`aDevelopper` du
+  // monde : `annee > ouverte.annee`, l'année de l'avatar) : la liste se tait avec elle pendant le
+  // trajet. L'appareil a montré 1903, mon année en cours est 1904, qui porte un horaire accepté
+  // ailleurs ; la marche est retenue. Mutation : `c.annee > anneeAvatar` retiré de `horaireLu`.
+  it('pendant le trajet vers une année, la liste se tait comme sa plaque ; arrivé, elle dit son horaire', async () => {
+    localStorage.setItem(`journal.carte.annee-vue.${SESSION.user.id}`, '1903')
+    const f = moteurFactice()
+    let arriver!: () => void
+    vi.mocked(f.moteur.marcher).mockImplementationOnce(() => new Promise<void>((fin) => (arriver = fin)))
+    await monter(() => {
+      const v = servi()
+      return { ...v, annees: v.annees.map((a) => (a.annee === 1904 ? { ...a, horaire: ACCEPTE } : a)) }
+    }, f)
+    await waitFor(() => expect(f.moteur.marcher).toHaveBeenCalledWith(1904))
+    expect(lues().slice(8, 10)).toEqual(['1903, passée, avant mercredi', '1904, en cours'])
+    await act(async () => arriver())
+    await waitFor(() => expect(lues()[9]).toBe('1904, en cours, avant mercredi'))
   })
 
   // Une année en attente du Voyage suivi se montre fermée partout, plaque comprise (`estFermee`).

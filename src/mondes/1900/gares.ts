@@ -1,6 +1,7 @@
-import type { CaseVue, VueMonde } from '../types'
+import type { VueMonde } from '../types'
 import { clamp } from '../../carte/outils'
 import { horaireDePlaque, type HoraireDePlaque } from '../../voyage/horaire'
+import { estFermee } from '../../voyage/regles'
 import { c, F_CORPS, F_PRESSE, F_RAIL } from './couleur'
 import { cuire, fondre } from './cuisson'
 import { POSE } from './donnees'
@@ -57,10 +58,10 @@ export function ecranDeLaCase(v: VueMonde, annee: number): { x: number; y: numbe
 
 /**
  * La seule règle de « fermée » du monde, lue par la gare (`aDevelopper`) comme par la bande de la vue
- * d'ensemble : une année sans case, verrouillée, ou en attente du Voyage suivi. Une année en attente
- * se montre fermée partout, plaque comprise, comme la case commune et le corail du moteur.
+ * d'ensemble : celle de la carte entière (`voyage/regles.ts`, `estFermee`), que la liste des années
+ * de la page lit aussi. Elle ne se réécrit pas ici.
  */
-export const estFermee = (a: Pick<CaseVue, 'etat' | 'attente'> | undefined): boolean => !a || a.etat === 'verrou' || a.attente === true
+export { estFermee }
 
 /**
  * Vrai tant que la gare d'une année est une plaque à développer : l'année est fermée (`estFermee`),

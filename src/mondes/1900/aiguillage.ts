@@ -7,12 +7,19 @@ import { ANNEES } from './trace'
 /** Le rayon de la zone du levier : sa vue de 56 sur 84 tient dedans, et un doigt aussi. */
 export const RAYON_DU_LEVIER = 34
 
-/** Un embranchement à l'écran : la halte, son rang **dans `v.haltes`** (celui que lit le moteur), le pied du levier et celui du poteau. */
+/** La zone du levier passe devant la zone `case` de sa gare et devant la voiture du Voyage suivi (1), comme une dépêche ; derrière une bobine (3). */
+export const PRIORITE_DU_LEVIER = 2
+/**
+ * Un embranchement à l'écran : la halte, son rang **dans `v.haltes`** (celui que lit le moteur), le
+ * pied du levier et celui du poteau, et la zone à inscrire pour le levier : son centre à mi-hauteur
+ * de sa vue (84 de haut, le pied en bas), son rayon et sa priorité.
+ */
 export interface AiguillageALEcran {
   halte: HalteVue
   rang: number
   levier: { x: number; y: number }
   poteau: { x: number; y: number }
+  zone: { x: number; y: number; r: number; priorite: number }
 }
 
 /**
@@ -33,7 +40,8 @@ export function aiguillagesALEcran(v: Pick<VueMonde, 'W' | 'H' | 'avance' | 'cas
     const y = v.H * 0.705
     if (!dansLaFenetre(v, y)) return []
     const milieu = milieuDeLaGare(v, i)
-    return [{ halte, rang, levier: { x: milieu - Math.min(128, v.W / 2 - 72), y }, poteau: { x: milieuDeLaGare(v, i + 0.5), y } }]
+    const levier = { x: milieu - Math.min(128, v.W / 2 - 72), y }
+    return [{ halte, rang, levier, poteau: { x: milieuDeLaGare(v, i + 0.5), y }, zone: { x: levier.x, y: levier.y - 42, r: RAYON_DU_LEVIER, priorite: PRIORITE_DU_LEVIER } }]
   })
 }
 
@@ -156,13 +164,13 @@ function poteau(g: CanvasRenderingContext2D, x: number, y: number, halte: HalteV
 /**
  * Les aiguillages sur la toile des gares, dans le repère de l'écran : le poteau, puis le levier, dont
  * la zone `aiguillage` porte le rang de la halte dans la vue (le moteur dit sa clé à la page, au calme
- * aussi). Rien n'y bouge. Elle passe devant la zone `case` de sa gare (priorité 2, comme une dépêche).
+ * aussi). Rien n'y bouge. La zone est celle que dit la règle pure (`AiguillageALEcran.zone`), telle quelle.
  */
 export function dessinerAiguillages(v: VueMonde): void {
   for (const a of aiguillagesALEcran(v)) {
     if (a.poteau.x > -90 && a.poteau.x < v.W + 90) poteau(v.ctx, a.poteau.x, a.poteau.y, a.halte)
     if (a.levier.x < -40 || a.levier.x > v.W + 40) continue
     levier(v.ctx, a.levier.x, a.levier.y, a.halte.nom)
-    v.zone('aiguillage', a.levier.x, a.levier.y - 42, RAYON_DU_LEVIER, a.rang, 2)
+    v.zone('aiguillage', a.zone.x, a.zone.y, a.zone.r, a.rang, a.zone.priorite)
   }
 }

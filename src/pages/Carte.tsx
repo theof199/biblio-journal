@@ -35,6 +35,7 @@ import {
   compterRecompenses,
   decennieDe,
   detecterFrontiereAvancee,
+  estFermee,
   estMontree,
   etatDeCase,
   jauge,
@@ -56,12 +57,27 @@ const aUneScene = (decennie: number) => mondes(decennie).scene !== null
  * des lots, brief 11) : la règle de la plaque (`horaireDePlaque` : « à l'heure », « avant dimanche »,
  * rien pour un horaire manqué ni pour une année fermée), et seulement dans un monde qui compose
  * l'horaire (`horaireDeLAnnee`, la présence que regarde aussi la fiche d'année) : en 1890 la liste se tait.
+ * Fermée se dit par la règle que lit la plaque (`estFermee`, `voyage/regles.ts`), et la liste se tait
+ * comme elle tant que l'avatar n'est pas arrivé à l'année (`aDevelopper` du monde : le trajet).
  */
-function horaireLu(c: Pick<CaseCarte, 'annee' | 'etat' | 'attente' | 'horaire'>): string {
+function horaireLu(c: Pick<CaseCarte, 'annee' | 'etat' | 'attente' | 'horaire'>, anneeAvatar: number | null): string {
   if (gabaritSeul(mondes(decennieDe(c.annee)), 'horaireDeLAnnee') === null) return ''
-  const dit = horaireDePlaque(c.horaire, c.etat === 'verrou' || c.attente)
+  const dit = horaireDePlaque(c.horaire, estFermee(c) || anneeAvatar === null || c.annee > anneeAvatar)
   return dit ? `, ${dit.mention}` : ''
 }
+
+/**
+ * **L'ordre des dialogues de la carte** : ce qui tient l'écran, du plus fort au plus faible. Un seul
+ * est le « dialogue courant » (`dialogueCourant`, dans la page), le premier de cet ordre dont le
+ * prétendant est vrai ; les autres attendent qu'il retombe. D'abord ce qui tient l'écran seul
+ * (l'avancée, la fête du rattrapage, un passage, la vue d'ensemble, l'affiche d'une date, l'aperçu),
+ * puis la portière du contrôleur, puis la halte. **Un dialogue neuf s'ajoute ici, à son rang** : le
+ * type oblige alors la page à dire quand il prétend à l'écran, et rien d'autre n'est à retoucher.
+ */
+export const ORDRE_DES_DIALOGUES = ['avancee', 'fete', 'passage', 'ensemble', 'affiche', 'apercu', 'portiere', 'halte'] as const
+export type DialogueDeLaCarte = (typeof ORDRE_DES_DIALOGUES)[number]
+/** Le premier de l'ordre qui prétend à l'écran, ou nul : l'écran est à qui veut. */
+export const premierDialogue = (pretendants: Record<DialogueDeLaCarte, boolean>): DialogueDeLaCarte | null => ORDRE_DES_DIALOGUES.find((d) => pretendants[d]) ?? null
 
 /** Le passage d'entrée (plan 3b) : un monde à scène dont `entree` porte au moins un temps. */
 const aUnPassage = (decennie: number) => (mondes(decennie).scene?.entree.length ?? 0) > 0
@@ -434,61 +450,68 @@ export default function Carte() {
   const [controle, setControle] = useState<BilletDemande | null>(null)
   const controleurPasse = useRef(false)
   const [passage, setPassage] = useState(false)
-  // La portière ouverte : le billet retenu **et** le dessin du monde. Un seul fait pour l'inertie des
-  // deux enveloppes et pour le rendu du dialogue : mon année en cours passée, portière ouverte, à un
-  // monde sans la clé (la carte relue), les enveloppes inertes sans dialogue feraient une carte morte.
-  const portiereOuverte = controle !== null && DessinDuControleur !== null
   // Une halte ouverte (brief 12) : **l'adresse le dit** (`?halte=<clé>` : le retour du téléphone la
   // ferme, un rechargement la rouvre), et rien d'autre. Elle n'existe que servie, montrée par la
   // carte (`etat.haltes` : jamais celle d'une décennie cachée) et dessinée par le monde de sa
   // décennie (`halteDeLaCarte`, sans défaut) : une clé inconnue dans l'adresse n'ouvre rien. Portée
-  // par l'adresse avant que l'écran soit libre (un rechargement devant une avancée, une fête, ou la
-  // portière déjà ouverte), elle attend : jamais deux dialogues, jamais par-dessus une avancée.
+  // par l'adresse avant que l'écran soit libre (un rechargement, l'historique avancé), elle attend
+  // son tour dans l'ordre des dialogues : jamais deux dialogues, jamais par-dessus une avancée.
   const calqueDeLaHalte = useCalque('halte')
   const halteDemandee = etat?.haltes?.some((h) => h.cle === calqueDeLaHalte.valeur) ? v?.haltes.find((h) => h.cle === calqueDeLaHalte.valeur) : undefined
   const DessinDeLaHalte = halteDemandee ? gabaritSeul(mondes(decennieDe(halteDemandee.apres)), 'halteDeLaCarte') : null
-  const halteOuverte = !!v && halteDemandee !== undefined && DessinDeLaHalte !== null && anneeAvatar === v.annee_en_cours && !feteAVenir && fete === null && !portiereOuverte
+  /**
+   * **Le dialogue courant** : le seul qui tient l'écran, le premier de `ORDRE_DES_DIALOGUES` qui y
+   * prétend ; nul, l'écran est libre de tout dialogue. Calculé au rendu, sans référence : il vaut dans
+   * la passe d'effets du rendu même qui le décide. `portiereOuverte`, `halteOuverte`, `dialogueOuvert`
+   * et `pleinEcranOccupe` ne lisent que lui : jamais une garde à part. Ce que chacun prétend :
+   *
+   * - `avancee` : une avancée en cours **ou à venir**, l'avatar pas encore rendu à mon année en cours
+   *   (`avancee` seule ne le dit pas, l'effet de la frontière la pose dans la passe où on la lirait
+   *   encore nulle ; son passage d'entrée, son tampon et son carton y sont compris) ;
+   * - `fete` : la fête du rattrapage, lancée (`fete`) ou sur le point de l'être (`feteAVenir`) ;
+   * - `passage` : lancé par le bouton ou par le moteur sans lui (`Rappels.passage` : la halte au bout
+   *   de la foire, le repos d'un défilement dans l'entrée) ; `ensemble` : la vue d'ensemble ;
+   * - `affiche` : la petite affiche d'une date ; `apercu` : l'aperçu d'une année ;
+   * - `portiere` : le billet retenu **et** le dessin du monde (mon année en cours passée, portière
+   *   ouverte, à un monde sans la clé : des enveloppes inertes sans dialogue feraient une carte morte) ;
+   * - `halte` : l'adresse porte une halte servie, montrée et dessinée.
+   *
+   * Aucun terme passager n'y entre (un message, la carte relue, un vol) : une halte que l'adresse
+   * porte se fermerait à chaque relecture de la carte.
+   */
+  const dialogueCourant = premierDialogue({
+    avancee: !v || anneeAvatar !== v.annee_en_cours,
+    fete: feteAVenir || fete !== null,
+    passage,
+    ensemble,
+    affiche: date !== null,
+    apercu: apercu !== null,
+    portiere: controle !== null && DessinDuControleur !== null,
+    halte: halteDemandee !== undefined && DessinDeLaHalte !== null,
+  })
+  const portiereOuverte = dialogueCourant === 'portiere'
+  const halteOuverte = dialogueCourant === 'halte'
   // Un dialogue de la carte est ouvert, la portière ou une halte : les deux enveloppes sont inertes
   // dessous, et le focus rendu au document revient au titre quand il se ferme.
   const dialogueOuvert = portiereOuverte || halteOuverte
   /**
-   * **Le plein écran est occupé** : le seul fait que lit un dialogue de la carte qui entre de lui-même
-   * (le contrôleur ; l'horaire et la halte s'y brancheront), à la place de gardes dispersées. Vrai tant
-   * que quelque chose tient l'écran ou va le prendre, et calculé au rendu, sans référence : il vaut
-   * dans la passe d'effets du rendu même qui le décide.
-   *
-   * - une avancée en cours **ou à venir** : l'avatar pas encore rendu à mon année en cours (`avancee`
-   *   seule ne le dit pas, l'effet de la frontière la pose dans la passe où on la lirait encore nulle ;
-   *   son passage d'entrée, son tampon et son carton y sont compris) ;
-   * - la fête du rattrapage, lancée (`fete`) ou sur le point de l'être (`feteAVenir`) ;
-   * - un passage, lancé par le bouton ou par le moteur sans lui (`Rappels.passage` : la halte au bout de
-   *   la foire, le repos d'un défilement dans l'entrée), la vue d'ensemble ;
-   * - un ticket en cours d'encaissement (`utiliser.isPending`, vrai dès le rendu qui suit le geste :
-   *   celui qui ferme la fête), puis la carte en relecture (`voyage.isFetching` : `onSuccess` la périme
-   *   avant que la mutation ne se dise finie, et la relue peut poser une avancée) ;
-   * - ce qui est déjà ouvert : l'affiche d'une date, un aperçu, une bobine ou un objet en vol, un
-   *   objet en cours de ramassage, un message d'état, la phrase de la roulotte ;
-   * - un dialogue de la carte déjà entré (`portiereOuverte`, `halteOuverte`).
-   *
-   * Qui ajoute à la carte un calque ou un dialogue l'ajoute ici (`docs/cerveau/carte-et-moteur.md`).
+   * Ce qui occupe l'écran **un instant** et retombe seul, sans geste : un ticket en cours
+   * d'encaissement (`utiliser.isPending`, vrai dès le rendu qui suit le geste : celui qui ferme la
+   * fête), puis la carte en relecture (`voyage.isFetching` : `onSuccess` la périme avant que la
+   * mutation ne se dise finie, et la relue peut poser une avancée) ; une bobine ou un objet en vol,
+   * un objet en cours de ramassage, un message d'état, la phrase de la roulotte.
    */
-  const pleinEcranOccupe =
-    !v ||
-    anneeAvatar !== v.annee_en_cours ||
-    feteAVenir ||
-    fete !== null ||
-    passage ||
-    ensemble ||
-    utiliser.isPending ||
-    voyage.isFetching ||
-    date !== null ||
-    apercu !== null ||
-    enVol !== null ||
-    vols.length > 0 ||
-    ramasser.isPending ||
-    message !== null ||
-    roulotteDite ||
-    dialogueOuvert
+  const passager = utiliser.isPending || voyage.isFetching || enVol !== null || vols.length > 0 || ramasser.isPending || message !== null || roulotteDite
+  /**
+   * **Le plein écran est occupé** : le seul fait que lit un dialogue de la carte qui entre de lui-même
+   * (le contrôleur) ou sous un toucher (l'aiguillage d'une halte), à la place de gardes dispersées.
+   * Vrai tant qu'un dialogue tient l'écran ou va le prendre (`dialogueCourant`), ou que quelque chose
+   * y passe (`passager`).
+   *
+   * Qui ajoute à la carte un calque ou un dialogue l'ajoute à `ORDRE_DES_DIALOGUES`
+   * (`docs/cerveau/carte-et-moteur.md`).
+   */
+  const pleinEcranOccupe = dialogueCourant !== null || passager
   const billetDemande = DessinDuControleur && voyageur.data?.controleur.attend ? voyageur.data.controleur.billet : null
   useEffect(() => {
     if (pleinEcranOccupe || !billetDemande || controleurPasse.current) return
@@ -505,13 +528,32 @@ export default function Carte() {
   useEffect(() => {
     if (halteDeLAdresse !== halteEnRoute.current) halteEnRoute.current = null
   }, [halteDeLAdresse])
-  const prendreLAiguillage = (cle: string) => {
-    if (pleinEcranOccupe || halteEnRoute.current !== null) return
+  // Le levier touché pendant que quelque chose **passe** (`passager` : en gare de 1902, le parapluie
+  // qu'on vient de ramasser et son message tiennent l'écran plus de quatre secondes) n'est pas jeté :
+  // sa clé est retenue, la dernière seulement, et la halte s'ouvre quand l'écran se libère. Sous ce
+  // qui tient l'écran seul (`dialogueCourant`), le refus reste sec, et une demande retenue est
+  // abandonnée : le membre a fait autre chose.
+  const halteAttendue = useRef<string | null>(null)
+  const ouvrirLaHalte = (cle: string) => {
     const halte = etat?.haltes?.find((h) => h.cle === cle)
-    if (!halte || gabaritSeul(mondes(decennieDe(halte.apres)), 'halteDeLaCarte') === null) return
+    if (!halte || gabaritSeul(mondes(decennieDe(halte.apres)), 'halteDeLaCarte') === null) return false
     halteEnRoute.current = cle
     calqueDeLaHalte.ouvrir(cle)
+    return true
   }
+  const prendreLAiguillage = (cle: string) => {
+    if (dialogueCourant !== null || halteEnRoute.current !== null) return
+    if (!passager) return void ouvrirLaHalte(cle)
+    if (etat?.haltes?.some((h) => h.cle === cle)) halteAttendue.current = cle
+  }
+  // À chaque rendu, sans dépendances : il ne lit que des faits du rendu et une référence.
+  useEffect(() => {
+    if (dialogueCourant !== null) halteAttendue.current = null
+    if (pleinEcranOccupe || halteAttendue.current === null || halteEnRoute.current !== null) return
+    const cle = halteAttendue.current
+    halteAttendue.current = null
+    ouvrirLaHalte(cle)
+  })
   // Il est entré seul : le plus souvent rien n'avait le focus, et `useDialogue` n'a rien à qui le
   // rendre. La portière refermée, un focus tombé au document revient au titre de la carte (hors des
   // enveloppes, jamais inerte) ; rendu par le dialogue à l'élément qui l'avait, il y reste.
@@ -717,7 +759,7 @@ export default function Carte() {
           <ul>
             {etat?.cases.map((c) => (
               <li key={c.annee}>
-                <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}${horaireLu(c)}${rattrape && c.annee === v.annee_en_cours ? ', tu le rattrapes bientôt' : ''}`}</Link>
+                <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}${horaireLu(c, anneeAvatar)}${rattrape && c.annee === v.annee_en_cours ? ', tu le rattrapes bientôt' : ''}`}</Link>
               </li>
             ))}
           </ul>

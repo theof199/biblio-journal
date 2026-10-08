@@ -43,7 +43,12 @@ export default function HalteDeLaCarte({ monde, halte, compte, premier, fermer }
       <div className={styles.indicateur}>
         <p className={styles.entete}>
           <span>{enteteDeLaHalte(compte.total)}</span>
-          <b aria-label={compteLu(compte)}>{compteDit(compte)}</b>
+          {/* Un `aria-label` sur un `<b>` sans rôle ne se lit pas : le compte se lit par un texte caché
+              à l'œil, et le chiffre visible est caché au lecteur d'écran. */}
+          <b>
+            <span className="sr-only">{compteLu(compte)}</span>
+            <span aria-hidden="true">{compteDit(compte)}</span>
+          </b>
         </p>
         <ol>
           {halte.films.map((film) => (

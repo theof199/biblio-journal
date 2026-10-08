@@ -91,7 +91,7 @@ interface Options {
   depuis?: string
   client?: QueryClient
   moteur?: ReturnType<typeof moteurFactice>
-  routes?: Record<string, () => Response>
+  routes?: Record<string, () => Response | Promise<Response>>
 }
 async function monter({ voyage = EN_1898, depuis = '/voyage', client = createQueryClient(), moteur: f = moteurFactice(), routes = {} }: Options = {}) {
   const requetes = servir({
@@ -307,6 +307,108 @@ describe('la halte sur la carte, une clé sans défaut', () => {
       expect(screen.getAllByRole('dialog')).toHaveLength(1)
     })
 
+    // L'ordre des dialogues (`ORDRE_DES_DIALOGUES`) : ce qui tient l'écran seul passe avant la halte,
+    // même quand c'est l'adresse qui la porte (l'historique avancé), et pas seulement sous le toucher.
+    // Le dessin prêté compte ses rendus : la halte ne se pose pas même le temps d'un rendu. Mutations,
+    // une par ligne : le prétendant mis à faux dans `dialogueCourant` (`affiche`, `ensemble`,
+    // `passage`, `apercu`) ; la halte rangée avant lui dans l'ordre.
+    const DATE = { an: 1895, x: 38, y: 112, court: '22 mars', lieu: 'Paris', titre: 'La première projection', jour: 'Vendredi 22 mars 1895', texte: 'Un texte.', image: null }
+    type R = ReturnType<Awaited<ReturnType<typeof monter>>['rappels']>
+    it.each<[string, (r: R) => void, (r: R) => void]>([
+      ['l’affiche d’une date', (r) => r.date(DATE), () => fireEvent.click(screen.getByRole('button', { name: 'Refermer' }))],
+      ['la vue d’ensemble', (r) => r.ensemble(true), (r) => r.ensemble(false)],
+      ['un passage que le moteur joue', (r) => r.passage!(true), (r) => r.passage!(false)],
+      ['l’aperçu d’une année', (r) => r.apercu(1896, { x: 100, y: 200 }), (r) => r.finApercu()],
+    ])('%s à l’écran : la halte que l’adresse reçoit attend, sans se poser un instant ; l’écran rendu, elle s’ouvre', async (_, prendre, rendre) => {
+      preter()
+      const banc = await monter()
+      act(() => prendre(banc.rappels()))
+      await act(async () => void adresse.aller!('/voyage?halte=baraque'))
+      expect(ou()).toBe('/voyage?halte=baraque')
+      expect(rendus).not.toHaveBeenCalled()
+      expect(inertes()).toBe(0)
+      act(() => rendre(banc.rappels()))
+      await halte()
+      expect(inertes()).toBe(2)
+    })
+
+    describe('le levier touché pendant que quelque chose passe', () => {
+      const passer = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)))
+      const simuler = () => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      afterEach(() => vi.useRealTimers())
+      const AUTRE: Halte = { ...BARAQUE, cle: 'autre', nom: 'Halte d’à côté', apres: 1896 }
+
+      // La phrase de la roulotte tient 3,1 s. Mutations : la demande jamais retenue (le refus sec
+      // d'avant : rien ne s'ouvre) ; l'effet qui l'ouvre retiré ; la halte ouverte sans attendre
+      // (`passager` ôté du geste : l'adresse la dirait pendant la phrase).
+      it('la phrase de la roulotte dite : le toucher n’ouvre rien sur le moment, et la halte s’ouvre quand la phrase s’efface', async () => {
+        preter()
+        const banc = await monter()
+        simuler()
+        act(() => banc.rappels().roulotte())
+        await toucher(banc)
+        await passer(3099)
+        expect(ou()).toBe('/voyage')
+        expect(rendus).not.toHaveBeenCalled()
+        await passer(1)
+        expect(ou()).toBe('/voyage?halte=baraque')
+        expect(screen.getByRole('dialog', { name: 'Halte de la baraque' })).toBeInTheDocument()
+        // Une seule entrée d'historique : un retour referme.
+        await reculer()
+        expect(ou()).toBe('/voyage')
+        aucunDialogue()
+      })
+
+      // Mutations : la première demande gardée (`??=`) ; les deux ouvertes l'une sur l'autre.
+      it('une seule demande est retenue, la dernière', async () => {
+        preter()
+        const banc = await monter({ voyage: en(1898, [AUTRE, BARAQUE]) })
+        simuler()
+        act(() => banc.rappels().roulotte())
+        await toucher(banc, 'autre')
+        await toucher(banc, 'baraque')
+        await passer(3100)
+        expect(ou()).toBe('/voyage?halte=baraque')
+        await reculer()
+        expect(ou()).toBe('/voyage')
+      })
+
+      // Entre-temps le membre a fait autre chose : la demande ne lui saute pas au visage plus tard.
+      // Mutation : la demande gardée sous un dialogue courant (la ligne qui l'abandonne retirée).
+      it('la vue d’ensemble ouverte puis refermée entre-temps : la demande est abandonnée', async () => {
+        preter()
+        const banc = await monter()
+        simuler()
+        act(() => banc.rappels().roulotte())
+        await toucher(banc)
+        act(() => banc.rappels().ensemble(true))
+        act(() => banc.rappels().ensemble(false))
+        await passer(3100)
+        // La phrase est effacée, l'écran est libre : un toucher neuf ouvre, la demande d'avant non.
+        expect(ou()).toBe('/voyage')
+        expect(rendus).not.toHaveBeenCalled()
+        await toucher(banc)
+        expect(ou()).toBe('/voyage?halte=baraque')
+      })
+
+      // Le refus sec reste pour ce qui tient l'écran seul. Mutation : la clé retenue sous tout ce qui
+      // occupe l'écran (`pleinEcranOccupe` à la place de `passager` : refermée, la vue d'ensemble
+      // ouvrirait une halte touchée sous elle).
+      it('sous la vue d’ensemble, le toucher est refusé net : refermée, rien ne s’ouvre', async () => {
+        preter()
+        const banc = await monter()
+        act(() => banc.rappels().ensemble(true))
+        await toucher(banc)
+        act(() => banc.rappels().ensemble(false))
+        await act(async () => undefined)
+        expect(ou()).toBe('/voyage')
+        expect(rendus).not.toHaveBeenCalled()
+        // Le témoin : l'écran est bien rendu, un toucher neuf ouvre.
+        await toucher(banc)
+        expect(ou()).toBe('/voyage?halte=baraque')
+      })
+    })
+
     // La halte ouverte tient l'écran : le contrôleur, qui entre seul, attend qu'elle se referme.
     // Mutation : `dialogueOuvert` rendu à `portiereOuverte` dans `pleinEcranOccupe`.
     it('la halte ouverte, le contrôleur qui attend n’entre pas ; refermée, il entre', async () => {
@@ -384,6 +486,39 @@ describe('la halte sur la carte de 1900', () => {
     expect(within(dialogue).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByRole('button', { name: 'Revenir sur la ligne' })).toHaveFocus()
     expect(banc.requetes).toEqual(avant)
+  })
+
+  // En gare de 1902, le parapluie et le levier sont sur le même écran : ramasser l'objet occupe
+  // l'écran le temps de l'écriture, puis de son message (trois secondes). Le levier touché entre-temps
+  // n'est pas jeté. Promesse retenue, minuteries simulées. Mutations : `ramasser.isPending` ou
+  // `message !== null` rangés avec ce qui refuse net ; la demande ouverte dès la réponse, sous le message.
+  it('en 1903, le levier touché pendant le ramassage du parapluie ouvre la halte quand son message s’efface', async () => {
+    const RAMASSER = 'POST /api/me/voyage/objets/parapluie/ramasser'
+    const reponse = retenue<Response>()
+    const banc = await monter({
+      voyage: jusqua(1903),
+      routes: { ...ROUTES, [LIRE]: () => json({ ...BASE, objets: [], controleur: { attend: false, billet: null } }), [RAMASSER]: () => reponse.promesse },
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const passer = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)))
+      act(() => banc.rappels().objet!('parapluie', { x: 100, y: 300 }))
+      await passer(0)
+      expect(banc.requetes).toContain(RAMASSER)
+      await toucher(banc, 'melies')
+      expect(ou()).toBe('/voyage')
+      await act(async () => reponse.lacher(json({ cle: 'parapluie', annee: 1902, ramasse_le: '2026-10-08T10:00:00.000Z' })))
+      await passer(1)
+      expect(screen.getByText('Objet trouvé 1 sur 10')).toBeInTheDocument()
+      await passer(2990)
+      expect(ou()).toBe('/voyage')
+      aucunDialogue()
+      await passer(20)
+      expect(ou()).toBe('/voyage?halte=melies')
+      expect(screen.getByRole('dialog', { name: 'Halte Méliès' })).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // 1900 est caché à qui est en 1899 : la halte que le serveur servirait quand même n'a pas de

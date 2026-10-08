@@ -36,7 +36,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
   `entree.ts` s'écrit en base, sans tempo, que le meneur seul applique. `src/voyage/tempo.test.ts` refuse l'inverse, et balaie tout le dossier : un `.tsx` ou une feuille qu'on y pose n'écrit aucune durée en dur (`src/voyage/habillage.test.ts` y refuse de même couleur et police hors jeton).
 - **Une plaque a deux gardes** (`aDevelopper`) : l'année fermée, et l'année où le membre n'est pas encore
   arrivé. Sans la seconde, la plaque paraît développée le temps du trajet, puis redevient négative. « Fermée »
-  n'a qu'une règle, `estFermee`, que la bande lit aussi : verrouillée, ou en attente du Voyage suivi (`CaseVue.attente`).
+  n'a qu'une règle, `estFermee`, que la bande lit aussi : verrouillée, ou en attente du Voyage suivi (`CaseVue.attente`). Elle vit hors du monde (`src/voyage/regles.ts` › `estFermee`, que `gares.ts` réexporte) : la liste des années de la page lit la même.
 - **L'heure est celle de la gare.** Le monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum` et n'appelle pas
   `v.feu`. Le voile de nuit du moteur, posé après ses plans, ne lui appartient pas.
 - **Les deux premiers points de `trace1900` sont ceux de `traceAVenir`** : le bas de 1890 en dépend, donc

@@ -7,7 +7,7 @@ import { exemple } from '../../../test/contrat'
 import { GARDE_DU_CHOIX } from '../../../voyage/celebrations/deroule'
 import { compteDeLaHalte } from '../../../voyage/halte/compte'
 import HalteDeLaCarte from './HalteDeLaCarte'
-import { compteDit, enteteDeLaHalte } from './halte'
+import { compteDit, compteLu, enteteDeLaHalte } from './halte'
 
 // La halte ouverte sur la carte de 1900 (plan des écrans des lots, brief 12) : ce qu'elle dit et ce
 // qu'elle offre, jamais son tracé. La page et le bloc lecteur sont tenus par `pages/Carte.halte.test.tsx`.
@@ -44,6 +44,20 @@ describe('la halte ouverte sur la carte de 1900', () => {
     expect(enteteDeLaHalte(0)).toBe('Halte · aucun film')
     expect(compteDit({ vus: 0, total: 3 })).toBe('0 sur 3')
     expect(compteDit({ vus: 3, total: 3 })).toBe('3 sur 3')
+  })
+
+  // Le compte se lit : « 1 vu sur 2 » pour qui ne voit pas l'indicateur, par un texte caché à l'œil
+  // (un `aria-label` sur un `<b>` sans rôle ne se lit pas), et le chiffre visible ne se lit pas deux
+  // fois. Mutations : le pluriel dit dès un film vu ; jamais dit ; le texte lu retiré (ou remis en
+  // `aria-label` du `<b>`) ; `aria-hidden` retiré du chiffre ; posé sur le texte lu.
+  it('le compte se lit « n vus sur N » dans un texte que le lecteur d’écran reçoit, et le chiffre visible lui est caché', () => {
+    expect([0, 1, 2, 3].map((vus) => compteLu({ vus, total: 3 }))).toEqual(['0 vu sur 3', '1 vu sur 3', '2 vus sur 3', '3 vus sur 3'])
+    const { dialogue } = monter(MELIES)
+    const lu = within(dialogue).getByText('1 vu sur 3')
+    expect(lu).toHaveClass('sr-only')
+    expect(lu.closest('[aria-hidden="true"]')).toBeNull()
+    expect(lu.closest('[aria-label]')).toBeNull()
+    expect(within(dialogue).getByText('1 sur 3')).toHaveAttribute('aria-hidden', 'true')
   })
 
   // Les cinq états du contrat, par les mots d'un film de salle ; la maquette n'en avait que deux.
@@ -89,6 +103,11 @@ describe('la halte ouverte sur la carte de 1900', () => {
     const { dialogue } = monter(MELIES)
     const liens = within(dialogue).getAllByRole('link')
     expect(liens.map((a) => [a.getAttribute('aria-label'), a.getAttribute('href')])).toEqual([['Voir sur le Plex : Le Mélomane', MELIES.films[1]!.plex_url]])
+    // Il quitte l'appli : un autre onglet, et le Plex n'apprend pas d'où l'on vient ni ne tient la
+    // fenêtre du Journal (`noreferrer` vaut `noopener`). Mutations : `target` retiré (le Journal
+    // serait remplacé par le Plex) ; `rel` retiré.
+    expect(liens[0]).toHaveAttribute('target', '_blank')
+    expect(liens[0]!.getAttribute('rel')?.split(' ')).toContain('noreferrer')
     // Un lien sans adresse n'a pas le rôle de lien : on compte les ancres.
     expect(dialogue.querySelectorAll('a')).toHaveLength(1)
     expect(within(dialogue).getAllByRole('button').map((b) => b.textContent)).toEqual(['Revenir sur la ligne'])

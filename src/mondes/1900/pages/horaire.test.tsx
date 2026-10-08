@@ -227,6 +227,33 @@ describe('l’horaire sur la fiche d’une année 1900', () => {
     expect(etat).toHaveTextContent('Horaire manqué. Il fallait arriver avant mercredi 14 octobre 2026. Rien ne se perd.')
   })
 
+  // Le focus n'est rendu à la région que s'il est tombé au document : parti ailleurs dans la page
+  // pendant la relecture, il y reste. Mutation : la condition `document.activeElement === document.body`
+  // retirée (la région le volerait).
+  it('un refus qui mène à « manqué » ne prend pas le focus parti ailleurs dans la page', async () => {
+    let refuse = false
+    let rendre!: (r: Response) => void
+    const relue = new Promise<Response>((ok) => (rendre = ok))
+    monterVoyage(
+      '/voyage/1904',
+      routes(PROPOSEE, {
+        [TENIR]: () => ((refuse = true), refus(409, 'Cette gare a déjà son horaire : un horaire manqué ne se reprend pas.')),
+        [ANNEE]: () => (refuse ? relue : json(PROPOSEE)),
+      }),
+    )
+    const bloc = await lHoraire()
+    talon('Tenir l’horaire').focus()
+    fireEvent.click(talon('Tenir l’horaire'))
+    await waitFor(() => expect(refuse).toBe(true))
+    const ailleurs = screen.getAllByRole('link')[0]!
+    ailleurs.focus()
+    await act(async () => rendre(json(MANQUEE)))
+    await waitFor(() => expect(bloc).toHaveTextContent('Il fallait arriver avant'))
+    expect(talons()).toEqual([])
+    expect(ailleurs).toHaveFocus()
+    expect(within(bloc).getByRole('status')).toHaveTextContent('Horaire manqué.')
+  })
+
   it('manqué dès l’arrivée : la ligne suffit, la région d’état ne dit rien et le focus n’est pas pris', async () => {
     monterVoyage('/voyage/1904', routes(MANQUEE))
     const bloc = await lHoraire()

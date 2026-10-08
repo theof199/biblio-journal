@@ -11,6 +11,7 @@ import { contexteFactice } from '../../test/contexteFactice'
 import { aDevelopper, developpement, ecranDeLaCase, estFermee, gareALEcran, milieuDeLaGare, objetsSurLeQuai, RAYON_D_OBJET } from './gares'
 import { OBJETS, phraseDeLObjet } from './objets'
 import { aiguillagesALEcran, filmsDuPoteau, RAYON_DU_LEVIER } from './aiguillage'
+import { trouverZone } from '../../carte/zones'
 import { CACHETTES } from './bobines'
 import { DATES, PLACES_DES_DEPECHES } from './depeches'
 import { vitreOuverte } from './passage'
@@ -567,6 +568,32 @@ describe('l’aiguillage d’une halte servie', () => {
     expect(aiguillages(enGare(1902, 3, { haltes: [MELIES] })).map((z) => z.data)).toEqual([0])
     expect(aiguillages(enGare(1902, 3, { haltes: [ZECCA, MELIES] })).map((z) => z.data)).toEqual([1])
     expect(aiguillages(enGare(1901, 3, { haltes: [ZECCA, MELIES] })).map((z) => z.data)).toEqual([0])
+  })
+
+  // Une règle de position, pas un tracé : où le doigt prend le levier, et devant quoi. Le levier se
+  // tient sur le quai, dans la zone `case` de sa gare (ici posée au centre de l'écran, grande comme
+  // lui) : sans priorité, la case, plus large, l'emporterait près de son centre. Mutations : le centre
+  // au pied du levier (`y` sans le `- 42` : la tête du levier, 80 px plus haut, ne répondrait plus) ;
+  // la priorité à 0, puis à 1 (la voiture du Voyage suivi garée là gagnerait) ; la zone inscrite par
+  // le dessin écrite à la main à côté de la règle (un autre centre, une autre priorité).
+  it('la zone du levier est centrée à mi-hauteur de sa vue, au rayon du levier, et passe devant la case et la voiture de sa gare', () => {
+    const f = enGare(1902, 3, { haltes: [MELIES] })
+    const [a] = aiguillagesALEcran(f.vue)
+    expect(a!.zone).toEqual({ x: a!.levier.x, y: f.vue.H * 0.705 - 42, r: RAYON_DU_LEVIER, priorite: 2 })
+    // La zone couvre le manche et la tête du levier (de 8 à 76 px au-dessus du pied) : ni le pied même, ni 10 px au-dessus de la vue.
+    const dans = (y: number) => Math.hypot(0, y - a!.zone.y) <= a!.zone.r
+    expect([a!.levier.y, a!.levier.y - 76, a!.levier.y - 86].map(dans)).toEqual([false, true, false])
+    const zone = (id: string, x: number, y: number, r: number, prio: number) => ({ id, x, y, r, data: 0, prio, section: 0 })
+    const levier = zone('aiguillage', a!.zone.x, a!.zone.y, a!.zone.r, a!.zone.priorite)
+    const rivales = [zone('case', a!.zone.x, a!.zone.y, 400, 0), zone('roulotte', a!.zone.x, a!.zone.y, 60, 1)]
+    expect(trouverZone([...rivales, levier], a!.zone.x, a!.zone.y + 20)?.id).toBe('aiguillage')
+    // Une bobine posée là l'emporte encore (priorité 3) : le levier ne passe pas devant tout.
+    expect(trouverZone([...rivales, levier, zone('bobine', a!.zone.x, a!.zone.y, 30, 3)], a!.zone.x, a!.zone.y + 20)?.id).toBe('bobine')
+    // Ce que le dessin inscrit est ce que dit la règle, au rang de la halte.
+    const inscrites: unknown[][] = []
+    f.vue.zone = (...args) => void inscrites.push(args)
+    creerMonde1900().dessinerMoyen(f.vue)
+    expect(inscrites.filter((z) => z[0] === 'aiguillage')).toEqual([['aiguillage', a!.zone.x, a!.zone.y, RAYON_DU_LEVIER, 0, 2]])
   })
 
   // La règle des plaques, des dépêches et des objets. Mutations : la garde `aDevelopper` ôtée ;
