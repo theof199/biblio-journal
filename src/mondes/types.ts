@@ -33,6 +33,7 @@ import type { PropsCatalogueDuGuichet } from '../voyage/recherche/Catalogue'
 import type { PropsTeteDuGuichet } from '../voyage/recherche/Tete'
 import type { PropsPageDuPasseport } from '../voyage/sacoche/Page'
 import type { PropsPasseportDeLaSacoche } from '../voyage/sacoche/Pages'
+import type { PropsMalleDeLaSacoche } from '../voyage/sacoche/Malle'
 import type { PropsCoulisses } from '../voyage/sacoche/Repli'
 import type { PropsTeteDeLaSacoche } from '../voyage/sacoche/Tete'
 import type { PropsPortefeuille } from '../voyage/sacoche/Tickets'
@@ -845,6 +846,13 @@ export interface GabaritsDesPages {
    */
   coulisses: ComponentType<PropsCoulisses>
   /**
+   * La malle aux étiquettes de la sacoche (plan des écrans des lots, brief 2) : sa ligne, et la malle
+   * ouverte. **Sans défaut** (`ClesSansDefaut`) : un monde qui ne la compose pas ne monte pas le bloc
+   * `voyage/sacoche/Malle.tsx`, qui ne lit alors ni la malle ni l'état du voyageur. Le bloc garde la
+   * région, les lectures, la marque « vue », ce qui est nouveau et le calque de l'adresse.
+   */
+  malleDeLaSacoche: ComponentType<PropsMalleDeLaSacoche>
+  /**
    * Le dessin de la salle bouclée (`voyage/celebrations/DessinDeLaSalle.tsx`) : le rideau, le carton.
    * Lu par `voyage/celebrations/SalleBouclee.tsx`, qui garde le cadre (le dialogue, le toucher,
    * Échap), le déroulé, le clap et la vibration. Il reçoit la salle telle que la fiche la montre.
@@ -864,6 +872,14 @@ export interface GabaritsDesPages {
    */
   feteDeLAnnee: ComponentType<PropsFeteDeLAnnee>
 }
+
+/**
+ * Les clés **sans défaut** (décision 1 du propriétaire, 8 octobre 2026 : les écrans des lots sont de
+ * 1900 seulement) : aucun composant de `src/voyage/` ne les dessine. Elles se lisent par
+ * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
+ * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
+ */
+export type ClesSansDefaut = 'malleDeLaSacoche'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

@@ -9,6 +9,7 @@ import { useRevenir } from '../ui/revenir'
 import { gabaritDe } from '../voyage/gabarit'
 import { decennieDe } from '../voyage/regles'
 import Coulisses from '../voyage/sacoche/Coulisses'
+import Malle from '../voyage/sacoche/Malle'
 import Passeport from '../voyage/sacoche/Passeport'
 import Portefeuille from '../voyage/sacoche/Portefeuille'
 import TeteParDefaut from '../voyage/sacoche/Tete'
@@ -27,7 +28,9 @@ const DEPART: Voyage['depart'] = 1895
  * année en cours ; chaque page du passeport, par celui de sa décennie. Chaque bloc lit ses données
  * et tombe seul en panne ; son dessin, et celui de la tête, sont des gabarits que le monde peut
  * composer (`teteDeLaSacoche`, `passeportDeLaSacoche`, `pageDuPasseport`, `portefeuille`,
- * `coulisses`). **Aucune fiche d'année n'est lue** : `GET /me/voyage/annees/*` enfilerait
+ * `coulisses`). Entre le passeport et le portefeuille, la malle aux étiquettes (`Malle`,
+ * `malleDeLaSacoche`) **n'a pas de défaut** : un monde qui ne la compose pas ne la monte ni ne la lit.
+ * **Aucune fiche d'année n'est lue** : `GET /me/voyage/annees/*` enfilerait
  * une ouverture chez le chroniqueur ; la carte, les tickets et, au dépli, les dépenses suffisent.
  *
  * **Tant que la carte n'a pas répondu, aucun monde n'habille rien** (la sacoche ouverte par un lien
@@ -71,6 +74,7 @@ export default function VoyageSacoche() {
         </p>
       )}
       <Passeport monde={monde} />
+      <Malle monde={monde} />
       <Portefeuille monde={monde} />
       <Coulisses monde={monde} />
     </section>

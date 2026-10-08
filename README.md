@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trente-quatre clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, cinq sur la sacoche et trois sur les célébrations (plus bas, « Les célébrations »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Trente-cinq clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, six sur la sacoche et trois sur les célébrations (plus bas, « Les célébrations »). L'une des six, `malleDeLaSacoche`, **n'a pas de défaut** : elle se lit par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et son bloc lecteur ne se monte ni ne lit rien dans un monde qui ne la compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -832,9 +832,17 @@ plus (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
   pour un seuil de un ; `fait` au seuil sans `collee_le` reste une trace. Cachée non gagnée (`cle` nul, et
   non `cachee` vrai) : un « ? », sans forme, et un nom lu qui ne dit rien d'elle. Une clé inconnue garde sa
   place : une forme neutre, le nom servi. **Aucune page ne le monte encore** : la malle est le lot suivant.
-- **Ces écrans seront de 1900 seulement** (décision du propriétaire, 8 octobre 2026) : des clés de
-  gabarit sans défaut, si bien que 1890 et le monde « à venir » ne monteront aucun de leurs blocs et
-  ne liront aucune de ces routes. `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
+- **Ces écrans sont de 1900 seulement** (décision du propriétaire, 8 octobre 2026) : des clés de
+  gabarit sans défaut (`ClesSansDefaut`, `mondes/types.ts`), lues par `gabaritSeul`
+  (`voyage/gabarit.ts`), si bien que 1890 et le monde « à venir » ne montent aucun de leurs blocs et
+  ne lisent aucune de ces routes. La première est `malleDeLaSacoche` : son bloc lecteur
+  (`voyage/sacoche/Malle.tsx`, entre le passeport et le portefeuille) lit la malle de la décennie de
+  mon année en cours et l'état du voyageur, ne rend rien pour une décennie sans malle, tombe seul en
+  panne et ouvre la malle dans l'adresse (`?malle=ouverte` : le retour la referme). **La rubrique
+  `etiquette` se marque vue une fois par visite**, la malle lue (`voyage/sacoche/visite.ts`,
+  `useVisiteDeRubrique`, qui servira aux objets trouvés et au courrier) : « nouvelle » se calcule sur
+  le `vue_le` lu à l'arrivée, figé pour la visite, et le cache n'apprend que la date du serveur
+  (`pages/VoyageSacoche.malle.test.tsx`, sur un 1890 auquel on prête un dessin). `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
   ne montre ni ne lit encore, un interdit par rubrique (`PAS_ENCORE`), que le lot de chacune lèvera.
 
 ## Le thème
