@@ -423,7 +423,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Quarante clés, deux sur la carte, treize sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Six d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` sur la fiche d'année, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Quarante et une clés, deux sur la carte, treize sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, huit sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Sept d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` sur la fiche d'année, `malleDeLaSacoche`, `courrierDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -906,7 +906,25 @@ court (lu « 1900 : une lanterne de chef de gare, dans la sacoche ») ; sinon sa
 sur 10 », se dit sur le catalogue : une clé servie qu'il ne connaît pas n'a pas de place et ne compte
 pas. En panne, la consigne le dit sous sa rubrique, et elle seule : la malle garde sa ligne. On ne
 ramasse rien ici : c'est le geste de la carte (« La carte du Voyage », les objets oubliés sur le quai).
-**Le courrier de l'écran 15 n'y est pas** : aucune rubrique vide ne l'annonce ; le point rouge de la
+**Le courrier** (brief 13 des écrans des lots) vient entre le portefeuille et les objets trouvés, par
+la clé sans défaut `courrierDeLaSacoche`, que `voyage/sacoche/Courrier.tsx` lit avec ma boîte
+(`GET /me/voyage/cartes-postales`, sous `cles.courrier`) et, par le crochet de la visite, l'état du
+voyageur. Le bloc passe la boîte **telle que servie** : les reçues de la plus récente à la plus
+ancienne (nouvelle tant que `lue_le` est nul), les envoyées par gare, **dont rien ne dit la lecture**
+(le serveur ne sert `lue_le` qu'au destinataire). Une carte s'ouvre **dans l'adresse**, par son
+identifiant (`?carte=<id>`, `voyage/calque.ts` : le retour du téléphone la referme, un rechargement la
+rouvre, un identifiant que la boîte ne connaît pas n'ouvre rien) ; **jamais son mot**, qui est privé et
+ne s'écrit ni dans une adresse, ni dans un titre, ni dans un journal de console. **Ouvrir une carte
+reçue pas encore lue la marque lue** (`POST …/cartes-postales/{id}/lue`) : une fois par carte (un
+verrou), jamais une carte envoyée (le serveur répondrait `404`), jamais pendant une relecture de la
+boîte ni après une relecture en panne ; « nouvelle » tient jusqu'à la réponse du serveur, le cache
+n'apprend que la carte rendue (une relecture en vol est annulée d'abord, `exact`), **rien n'est
+périmé**, et une panne rend le verrou : la carte reste nouvelle et sa prochaine ouverture la remarque.
+La rubrique `courrier` se marque vue une fois par visite (`useVisiteDeRubrique`) dès que j'ai reçu une
+carte, jamais pour une boîte vide ou des envoyées seules (le point rouge se date sur les reçues). En
+panne, le bloc le dit, et lui seul ; une carte ouverte quand la relecture tombe reste à l'écran, et la
+panne se dit une fois refermée. `pages/VoyageSacoche.courrier.test.tsx` le tient sur un 1890 auquel on
+prête un dessin. **Aucun monde ne remplit encore la clé** : le point rouge de la
 pastille est sur la carte (« La carte du Voyage ») (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
 le droit de lire, et la liste entière de ses rubriques).
 

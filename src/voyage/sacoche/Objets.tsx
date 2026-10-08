@@ -37,7 +37,7 @@ function ObjetsDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['objetsDeLaSaco
 }
 
 /**
- * Les objets trouvés de la sacoche, après le portefeuille (et le courrier à venir), avant les
+ * Les objets trouvés de la sacoche, après le portefeuille et le courrier, avant les
  * coulisses. **Sans défaut** : le bloc ne se monte que si le monde de mon année en cours compose
  * `objetsDeLaSacoche` (`gabaritSeul`), et ne lit rien sinon. Monté, il ne lit que l'état du voyageur,
  * marque la rubrique `objet` vue une fois par visite (`useVisiteDeRubrique`), et tombe seul en panne :

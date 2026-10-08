@@ -38,6 +38,7 @@ import type { PropsTeteDuGuichet } from '../voyage/recherche/Tete'
 import type { PropsPageDuPasseport } from '../voyage/sacoche/Page'
 import type { PropsPasseportDeLaSacoche } from '../voyage/sacoche/Pages'
 import type { PropsMalleDeLaSacoche } from '../voyage/sacoche/Malle'
+import type { PropsCourrierDeLaSacoche } from '../voyage/sacoche/Courrier'
 import type { PropsObjetsDeLaSacoche } from '../voyage/sacoche/Objets'
 import type { PropsCoulisses } from '../voyage/sacoche/Repli'
 import type { PropsTeteDeLaSacoche } from '../voyage/sacoche/Tete'
@@ -908,6 +909,14 @@ export interface GabaritsDesPages {
    */
   objetsDeLaSacoche: ComponentType<PropsObjetsDeLaSacoche>
   /**
+   * Le courrier de la sacoche (plan des écrans des lots, brief 13) : mes cartes postales reçues et
+   * envoyées, et la carte ouverte. **Sans défaut** (`ClesSansDefaut`) : un monde qui ne la compose pas
+   * ne monte pas le bloc `voyage/sacoche/Courrier.tsx`, qui ne lit alors ni ma boîte ni l'état du
+   * voyageur, et la carte ne lit pas la boîte pour le point rouge. Le bloc garde la région, la
+   * lecture, la rubrique marquée vue, la carte reçue marquée lue et le calque de l'adresse.
+   */
+  courrierDeLaSacoche: ComponentType<PropsCourrierDeLaSacoche>
+  /**
    * Le dessin de la salle bouclée (`voyage/celebrations/DessinDeLaSalle.tsx`) : le rideau, le carton.
    * Lu par `voyage/celebrations/SalleBouclee.tsx`, qui garde le cadre (le dialogue, le toucher,
    * Échap), le déroulé, le clap et la vibration. Il reçoit la salle telle que la fiche la montre.
@@ -967,7 +976,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'courrierDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>
