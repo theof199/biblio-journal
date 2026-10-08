@@ -40,6 +40,15 @@ describe('ce qui est nouveau depuis ma dernière visite', () => {
   it('une date nulle ou illisible n’est jamais nouvelle', () => {
     expect([estNouveau(null, null), estNouveau(null, MIDI), estNouveau('hier', null), estNouveau('hier', MIDI)]).toEqual([false, false, false, false])
   })
+
+  // Un `vue_le` que `Date.parse` ne lit pas ne date aucune visite : il vaut « jamais vue », comme un
+  // `vue_le` nul, et ne peut pas éteindre une rubrique. Mutation : la garde `Number.isNaN(visite)`
+  // retirée (`instant > NaN` est faux : tout serait ancien, le point rouge éteint à jamais).
+  it('un vue_le illisible vaut jamais vue : il n’éteint rien', () => {
+    expect([AVANT, MIDI, APRES].map((d) => estNouveau(d, 'hier'))).toEqual([true, true, true])
+    expect([estNouveau(null, 'hier'), estNouveau('hier', 'hier')]).toEqual([false, false])
+    expect(rubriquesAllumees([vue('objet', 'hier'), vue('etiquette', '')], { objet: [AVANT], etiquette: [null] })).toEqual(['objet'])
+  })
 })
 
 describe('les rubriques allumées', () => {

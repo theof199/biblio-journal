@@ -73,18 +73,22 @@ const rubriques = (page: HTMLElement) => within(page).getAllByRole('heading', { 
 
 /**
  * La sacoche de 1900 montée, ses tickets lus, ses coulisses dépliées et leurs dépenses arrivées : tout
- * ce qu'elle lit est parti. `ecrit` est ce qu'elle disait **avant le dépli** : les crédits des images
+ * ce qu'elle lit est parti et revenu (le cache ne lit ni n'écrit plus rien). `ecrit` est ce qu'elle disait **avant le dépli** : les crédits des images
  * nomment des cartes postales de gare, qui ne sont pas le courrier.
  */
 async function sacocheDepliee() {
-  const { requetes } = monterVoyage(SACOCHE, ROUTES)
+  const { requetes, client } = monterVoyage(SACOCHE, ROUTES)
   await sacoche()
   await tickets()
   const page = screen.getByRole('region', { name: 'La sacoche du voyageur' })
   const ecrit = page.textContent ?? ''
   await deplier()
   await region(M.coulisses.depenses)
-  await new Promise((r) => setTimeout(r, 50))
+  // Pas de pause : on attend le fait. Une requête part au montage de son bloc, donc avant que la région
+  // des dépenses paraisse ; une lecture qu'une autre déclenche est encore en vol, et le cache le sait.
+  // Une lecture refusée que le cache relance est déjà partie, donc déjà comptée : on ne l'attend pas.
+  const enVol = () => client.getQueryCache().getAll().filter((q) => q.state.fetchStatus === 'fetching' && q.state.fetchFailureCount === 0)
+  await waitFor(() => expect(enVol().length + client.isMutating()).toBe(0))
   return { page, ecrit, requetes }
 }
 

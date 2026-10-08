@@ -24,12 +24,14 @@ export type DatesDesRubriques = Partial<Record<Rubrique, readonly (string | null
  * Un élément daté est-il nouveau depuis ma dernière visite ? Oui s'il est **strictement** après
  * `vueLe`, et toujours si je n'ai jamais ouvert la rubrique. Deux **instants** se comparent, jamais
  * deux chaînes : le serveur écrit `…T09:00:00Z` comme `…T09:00:00.500Z`, et le texte range le second
- * avant le premier. Une date nulle ou illisible n'est jamais nouvelle.
+ * avant le premier. Une date nulle ou illisible n'est jamais nouvelle ; un `vueLe` illisible vaut jamais vue.
  */
 export function estNouveau(date: string | null, vueLe: string | null): boolean {
   const instant = date === null ? Number.NaN : Date.parse(date)
   if (Number.isNaN(instant)) return false
-  return vueLe === null || instant > Date.parse(vueLe)
+  // Un `vue_le` illisible vaut « jamais vue », comme un `vue_le` nul : on ne sait pas dater la visite, la rubrique reste allumée.
+  const visite = vueLe === null ? Number.NaN : Date.parse(vueLe)
+  return Number.isNaN(visite) || instant > visite
 }
 
 /**
