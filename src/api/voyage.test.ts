@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DELAI_CHRONIQUEUR_MS,
+  accepterHoraire,
   composerUneSeance,
   estPrete,
   ignorerLaSeance,
@@ -8,12 +9,18 @@ import {
   lireCarton,
   lireContexte,
   lireGenerique,
+  lireMalle,
+  lireVoyageur,
+  marquerRubriqueVue,
   ouvrirUneSalle,
   poserSurLePodium,
   prendreLaSeance,
+  ramasserObjet,
   refusVu,
   remplacerDansLaSeance,
   renouvelerLesPistes,
+  repondreAuControleur,
+  retirerHoraire,
   utiliserTicket,
   viderLaMarche,
   voirPlus,
@@ -146,5 +153,86 @@ describe('le client de la fiche d’une année', () => {
       return new Response('{}', { status: 200 })
     })
     await expect(lireCarton(15, appelant.signal)).rejects.toThrow()
+  })
+})
+
+// L'état du voyageur, la malle, le contrôleur et l'horaire (plan des écrans des lots, brief 0) : une
+// fonction par route des lots 1 à 6 de l'API. Rien pour les cartes postales ni les tables.
+describe('le client de l’état du voyageur', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 }))))
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Mutations : la décennie
+  // décalée d'une année dans le chemin (`decennie + 1` : l'API répondrait 400) ; `lireVoyageur` sur
+  // `/me/voyage` (la carte prise pour l'état).
+  it('lit l’état du voyageur et la malle d’une décennie par `GET`, sans corps', async () => {
+    await lireVoyageur()
+    await lireMalle(1900)
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({ url, methode: init?.method, corps: init?.body }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/voyageur', methode: 'GET', corps: undefined },
+      { url: '/api/me/voyage/decennies/1900/etiquettes', methode: 'GET', corps: undefined },
+    ])
+  })
+
+  // Mutation : le signal oublié de l'une des deux lectures : quitter la sacoche ne l'annulerait plus.
+  it('passe le signal de l’appelant aux deux lectures', async () => {
+    for (const lire of [(s: AbortSignal) => lireVoyageur(s), (s: AbortSignal) => lireMalle(1900, s)]) {
+      vi.mocked(fetch).mockClear()
+      const quitter = new AbortController()
+      await lire(quitter.signal)
+      const { signal } = vi.mocked(fetch).mock.calls[0]![1]!
+      expect(signal!.aborted).toBe(false)
+      quitter.abort()
+      expect(signal!.aborted).toBe(true)
+    }
+  })
+
+  // Mutations : `ramasserObjet` et `marquerRubriqueVue` échangés de chemin ; la clé posée dans un
+  // corps plutôt que dans le chemin ; un `PUT` pour la rubrique.
+  it('ramasse un objet et marque une rubrique vue par `POST`, la clé dans le chemin, sans corps', async () => {
+    await ramasserObjet('lanterne')
+    await marquerRubriqueVue('etiquette')
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({ url, methode: init?.method, corps: init?.body }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/objets/lanterne/ramasser', methode: 'POST', corps: undefined },
+      { url: '/api/me/voyage/rubriques/etiquette/vue', methode: 'POST', corps: undefined },
+    ])
+  })
+
+  // Une clé vient du serveur (une chaîne, pas une énumération) et entre dans un chemin. Mutation :
+  // `encodeURIComponent` retiré de l'une ou de l'autre (la requête viserait une autre route).
+  it('ne laisse pas une clé sortir de son segment de chemin', async () => {
+    await ramasserObjet('../voyageur?x')
+    await marquerRubriqueVue('a/b')
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
+      '/api/me/voyage/objets/..%2Fvoyageur%3Fx/ramasser',
+      '/api/me/voyage/rubriques/a%2Fb/vue',
+    ])
+  })
+
+  // Mutations : la réponse envoyée nue (`'presente'` au lieu de `{ reponse }`) ; `refuse` envoyé
+  // quoi qu'on réponde.
+  it('répond au contrôleur par `POST`, la réponse dans le corps', async () => {
+    await repondreAuControleur('presente')
+    await repondreAuControleur('refuse')
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({ url, methode: init?.method, corps: JSON.parse(String(init?.body)) }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/controleur/reponse', methode: 'POST', corps: { reponse: 'presente' } },
+      { url: '/api/me/voyage/controleur/reponse', methode: 'POST', corps: { reponse: 'refuse' } },
+    ])
+  })
+
+  // **Le serveur seul choisit l'échéance.** Mutations : une échéance envoyée dans le corps de
+  // l'acceptation (`{ echeance }`) ; le retrait par `POST` ; l'année suivante dans le chemin.
+  it('accepte un horaire par `POST` sans aucun corps, et le retire par `DELETE`', async () => {
+    await accepterHoraire(1903)
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }))
+    await expect(retirerHoraire(1903)).resolves.toBeUndefined()
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({ url, methode: init?.method, corps: init?.body, type: (init?.headers as Record<string, string>)['content-type'] }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/annees/1903/horaire', methode: 'POST', corps: undefined, type: undefined },
+      { url: '/api/me/voyage/annees/1903/horaire', methode: 'DELETE', corps: undefined, type: undefined },
+    ])
   })
 })

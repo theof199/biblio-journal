@@ -63,6 +63,30 @@ export type Carton =
   | Json<paths['/reference/chroniques/films/{tmdbId}']['get']['responses'][200]>
   | Json<paths['/reference/chroniques/films/{tmdbId}']['get']['responses'][202]>
 
+// L'état du voyageur, la malle, le contrôleur, l'horaire (les lots 1 à 6 de l'API ; plan des écrans
+// des lots, brief 0). Les cartes postales et les tables n'ont encore ni type ni fonction ici.
+
+/**
+ * Ce qui me suit d'un appareil à l'autre (`GET /me/voyage/voyageur`) : mes objets ramassés, mes
+ * rubriques vues, le contrôleur et mes poinçons. Hors de `GET /me/voyage` : la carte est en cache, pas lui.
+ */
+export type Voyageur = Json<paths['/me/voyage/voyageur']['get']['responses'][200]>
+export type ObjetRamasse = Voyageur['objets'][number]
+/** `rubrique` est une chaîne, pas une énumération : la liste peut s'allonger (`voyage/voyageur.ts › RUBRIQUES`). */
+export type RubriqueVue = Voyageur['rubriques'][number]
+export type Controleur = Voyageur['controleur']
+export type BilletDemande = NonNullable<Controleur['billet']>
+export type Poincon = Voyageur['poincons'][number]
+/** La malle d'une décennie : ses places par numéro, collées ou en trace de colle. Vide pour une décennie sans malle. */
+export type Malle = Json<paths['/me/voyage/decennies/{decennie}/etiquettes']['get']['responses'][200]>
+/** Une place de la malle. Cachée et non gagnée, elle n'a que son numéro : `cle === null`, jamais `cachee`, qui reste vrai une fois gagnée. */
+export type PlaceDeMalle = Malle['etiquettes'][number]
+export type CorpsReponseAuControleur = Corps<paths['/me/voyage/controleur/reponse']['post']>
+export type ReponseAuControleur = CorpsReponseAuControleur['reponse']
+export type PassageDuControleur = Json<paths['/me/voyage/controleur/reponse']['post']['responses'][200]>
+/** L'horaire accepté sur une gare : la même forme sur la carte, sur la fiche prête et au `201` de l'acceptation. */
+export type Horaire = Json<paths['/me/voyage/annees/{annee}/horaire']['post']['responses'][201]>
+
 /**
  * Les trois appels **synchrones** au chroniqueur (contexte d'une salle, pistes, générique) :
  * l'API ne borne pas le client Anthropic (`new Anthropic({ apiKey })`,
@@ -92,6 +116,43 @@ export const montrerLeTicket = (annee: number) => api.post<void>(`/me/voyage/tic
 
 export const regler = (rattrapeLaSource: boolean) =>
   api.patch<Reglages>('/me/voyage/reglages', { rattrape_la_source: rattrapeLaSource })
+
+/**
+ * L'état du voyageur. **Ce `GET` n'écrit rien** et n'enfile rien chez le chroniqueur. Une seule
+ * lecture pour la carte, la sacoche et le casier : toujours sous `cles.voyageur`.
+ */
+export const lireVoyageur = (signal?: AbortSignal) => api.get<Voyageur>('/me/voyage/voyageur', undefined, signal)
+
+/**
+ * La malle d'une décennie (sa première année, `1900`). **Ce `GET` n'écrit rien** : une étiquette se
+ * colle côté serveur après un geste (un billet composté ou corrigé, un ticket utilisé), et la malle
+ * se relit, elle ne se calcule pas. `400` si `decennie` n'est pas la première année d'une décennie.
+ */
+export const lireMalle = (decennie: number, signal?: AbortSignal) =>
+  api.get<Malle>(`/me/voyage/decennies/${decennie}/etiquettes`, undefined, signal)
+
+/** Rejouable : ramasser de nouveau rend la même ligne, à sa première date. `404` pour une clé inconnue ou une gare au-delà de mon année en cours. */
+export const ramasserObjet = (cle: string) => api.post<ObjetRamasse>(`/me/voyage/objets/${encodeURIComponent(cle)}/ramasser`)
+
+/** `vue_le` devient l'instant de l'appel, **celui du serveur**, et se réécrit à chaque visite. `404` hors des rubriques de la sacoche. */
+export const marquerRubriqueVue = (rubrique: string) =>
+  api.post<RubriqueVue>(`/me/voyage/rubriques/${encodeURIComponent(rubrique)}/vue`)
+
+/**
+ * Ma réponse au contrôleur de la semaine ; le billet poinçonné est choisi par le serveur.
+ * **`409` n'est pas une panne** : il n'attend plus. On referme et on relit l'état, sans rejouer.
+ */
+export const repondreAuControleur = (reponse: ReponseAuControleur) =>
+  api.post<PassageDuControleur>('/me/voyage/controleur/reponse', { reponse } satisfies CorpsReponseAuControleur)
+
+/**
+ * **Aucun corps** : l'échéance vient du serveur (celle que la fiche annonce dans `horaire_proposable`).
+ * `201`. **`409` n'est pas une panne** : la gare est bouclée, a changé ou porte déjà un horaire ; on relit la fiche.
+ */
+export const accepterHoraire = (annee: number) => api.post<Horaire>(`/me/voyage/annees/${annee}/horaire`)
+
+/** « Sans horaire » : `204` tant qu'il est `accepte`, `409` dès qu'il est `tenu` ou `manque`, `404` sans horaire. */
+export const retirerHoraire = (annee: number) => api.delete<void>(`/me/voyage/annees/${annee}/horaire`)
 
 /** `{ configure: false }` n'a pas de `statut` : la seule façon sûre de reconnaître une fiche prête. */
 export const estPrete = (f: FicheAnnee | undefined): f is FichePrete => !!f && 'statut' in f && f.statut === 'prete'

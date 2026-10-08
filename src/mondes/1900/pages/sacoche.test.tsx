@@ -13,7 +13,7 @@ import { MOTS_DE_LA_SACOCHE as M, compteDeLAnneau, etatDeLaPage, libelleDUtilise
  * La sacoche du voyageur des années 1900 (plan des pages 1900, brief 10 ; maquette, écran 15) : la
  * page montée dans l'app entière, le monde n'y arrive que par le registre. Les tests de
  * `pages/VoyageSacoche.test.tsx`, montés sur 1890, tiennent le défaut ; ceux-ci tiennent ce que 1900
- * en fait, et ce qu'il n'en fait pas encore (la malle, le courrier, les objets trouvés).
+ * en fait, et ce qu'il n'en fait pas encore (`PAS_ENCORE` : la malle, le courrier, les objets trouvés).
  */
 const SACOCHE = '/voyage/sacoche'
 const CARTE = 'GET /api/me/voyage'
@@ -53,6 +53,41 @@ const sacoche = () => screen.findByRole('heading', { level: 1, name: M.titre })
 const tickets = async () => within(await within(await region('Portefeuille')).findByRole('list')).getAllByRole('listitem')
 const deplier = async () => fireEvent.click(within(await region(M.coulisses.titre)).getByRole('button', { name: M.coulisses.titre }))
 
+/**
+ * Ce que la sacoche de 1900 ne montre ni ne lit **pas encore**, une ligne par rubrique à venir : les
+ * mots qui l'annonceraient, les routes qu'elle lirait. Le brief qui branche une rubrique retire sa
+ * ligne, et elle seule (la malle au brief 2, les objets trouvés au 3, le courrier au 13).
+ */
+const PAS_ENCORE: Record<string, { mots: RegExp; routes: RegExp }> = {
+  'la malle': { mots: /malle|étiquette/i, routes: /\/decennies\/\d+\/etiquettes/ },
+  'le courrier': { mots: /courrier|cartes? postales?/i, routes: /\/cartes-postales/ },
+  'les objets trouvés': { mots: /objets? trouvés?|à trouver/i, routes: /\/objets\// },
+}
+/** L'état du voyageur et la marque « vue » d'une rubrique : communs aux trois, interdits jusqu'au premier bloc qui les lit. */
+const ETAT_DU_VOYAGEUR = /\/voyageur|\/rubriques\//
+/** Ce que la sacoche de 1900 lit sous `/me/voyage` : un bloc neuf y ajoute ses routes en retirant son interdit. */
+const LECTURES = [CARTE, TICKETS, DEPENSES]
+const TROIS_RUBRIQUES = ['Le passeport une page par décennie', 'Le portefeuille les tickets', 'Les coulisses']
+// Le signe du pli, à côté du titre des coulisses, ne se lit pas : il n'est pas du titre.
+const rubriques = (page: HTMLElement) => within(page).getAllByRole('heading', { level: 2 }).map((h) => h.textContent?.replace(/[▸▾]$/, '') ?? '')
+
+/**
+ * La sacoche de 1900 montée, ses tickets lus, ses coulisses dépliées et leurs dépenses arrivées : tout
+ * ce qu'elle lit est parti. `ecrit` est ce qu'elle disait **avant le dépli** : les crédits des images
+ * nomment des cartes postales de gare, qui ne sont pas le courrier.
+ */
+async function sacocheDepliee() {
+  const { requetes } = monterVoyage(SACOCHE, ROUTES)
+  await sacoche()
+  await tickets()
+  const page = screen.getByRole('region', { name: 'La sacoche du voyageur' })
+  const ecrit = page.textContent ?? ''
+  await deplier()
+  await region(M.coulisses.depenses)
+  await new Promise((r) => setTimeout(r, 50))
+  return { page, ecrit, requetes }
+}
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn())
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -90,29 +125,42 @@ describe('la sacoche du voyageur en 1900', () => {
     expect(screen.getByRole('link', { name: 'Retour à la carte' })).toHaveAttribute('href', '/voyage')
   })
 
-  // Le brief 10 laisse de côté la malle (lot Étiquettes), le courrier (lot À deux) et les objets
-  // trouvés (lot Objets) : aucune rubrique vide ne les annonce, et rien ne lit leur état. Mutations :
-  // la section de la maquette portée telle quelle (une `Rubrique` « La malle » dans le cadre du
-  // passeport, « Le courrier » ou « Les objets trouvés » dans le portefeuille) ; une lecture de
-  // `GET /me/voyage/voyageur` ou d'une fiche d'année ajoutée à la page.
-  it('ne montre que trois rubriques, le passeport, le portefeuille et les coulisses : ni malle, ni courrier, ni objets trouvés, et ne lit que la carte, les tickets et, au dépli, les dépenses', async () => {
-    const { requetes } = monterVoyage(SACOCHE, ROUTES)
-    await sacoche()
-    await tickets()
-    const page = screen.getByRole('region', { name: 'La sacoche du voyageur' })
-    // Le signe du pli, à côté du titre des coulisses, ne se lit pas : il n'est pas du titre.
-    const rubriques = () => within(page).getAllByRole('heading', { level: 2 }).map((h) => h.textContent?.replace(/[▸▾]$/, ''))
-    expect(rubriques()).toEqual(['Le passeport une page par décennie', 'Le portefeuille les tickets', 'Les coulisses'])
-    expect(page).not.toHaveTextContent(/malle|étiquette|courrier|carte postale|objets? trouvés?|à trouver/i)
-
-    await deplier()
-    await region(M.coulisses.depenses)
-    await new Promise((r) => setTimeout(r, 50))
-    expect(rubriques()).toEqual(['Le passeport une page par décennie', 'Le portefeuille les tickets', 'Les coulisses'])
+  // La garde qui reste, quoi que la sacoche gagne (`CLAUDE.md` : lire une fiche d'année n'est pas
+  // anodin). Elle refuse aussi toute requête sous `/me/voyage` que ce fichier ne nomme pas : ni dans
+  // `LECTURES` (ce qui se lit), ni dans `PAS_ENCORE` ou `ETAT_DU_VOYAGEUR` (ce que leur test refuse).
+  // Mutations : une `useQuery` de `lireAnnee(1903)` ajoutée à `pages/VoyageSacoche.tsx` ; une lecture
+  // de `GET /me/voyage/tables` ajoutée à la même page.
+  it('ne lit aucune fiche d’année, coulisses dépliées comprises, ni rien que ce fichier ne nomme', async () => {
+    const { page, requetes } = await sacocheDepliee()
+    expect(rubriques(page).filter((r) => TROIS_RUBRIQUES.includes(r))).toEqual(TROIS_RUBRIQUES)
     expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([M.coulisses.depenses, M.coulisses.credits])
     const duVoyage = requetes.filter((r) => r.includes('/me/voyage'))
-    expect(new Set(duVoyage)).toEqual(new Set([CARTE, TICKETS, DEPENSES]))
-    expect(requetes.filter((r) => /\/annees|\/voyageur|\/etiquettes|\/objets|\/rubriques/.test(r))).toEqual([])
+    expect([CARTE, TICKETS, DEPENSES].filter((r) => !duVoyage.includes(r))).toEqual([])
+    expect(duVoyage.filter((r) => r.includes('/annees'))).toEqual([])
+    const nommees = [ETAT_DU_VOYAGEUR, ...Object.values(PAS_ENCORE).map((r) => r.routes)]
+    expect(duVoyage.filter((r) => !LECTURES.includes(r) && !nommees.some((n) => n.test(r)))).toEqual([])
+  })
+
+  // **Un interdit par rubrique pas encore faite** (plan des écrans des lots, brief 0) : chacune a sa
+  // ligne dans `PAS_ENCORE`, ses mots et ses routes. Le brief qui branche une rubrique retire sa ligne,
+  // et elle seule, pour écrire à la place ce que la rubrique montre. Mutations, vues rougir une à une
+  // et chacune sur sa seule ligne : la section de la maquette portée telle quelle dans un gabarit de
+  // 1900 (une `Rubrique` « La malle », « Le courrier » ou « Les objets trouvés ») ; une lecture de sa
+  // route ajoutée à `pages/VoyageSacoche.tsx`.
+  it.each(Object.entries(PAS_ENCORE))('ne montre ni ne lit encore %s', async (_, { mots, routes }) => {
+    const { page, ecrit, requetes } = await sacocheDepliee()
+    expect(ecrit).toContain(TROIS_RUBRIQUES[1])
+    expect(ecrit).not.toMatch(mots)
+    expect(rubriques(page).filter((r) => mots.test(r))).toEqual([])
+    expect(requetes.filter((r) => routes.test(r))).toEqual([])
+  })
+
+  // L'état du voyageur n'est lu, et aucune rubrique n'est marquée vue, tant qu'aucun bloc ne s'en
+  // sert : l'interdit se lève avec le premier (la malle, brief 2). Mutations : une lecture de
+  // `GET /me/voyage/voyageur` ajoutée à la page ; un `POST …/rubriques/objet/vue` à son montage.
+  it('ne lit pas l’état du voyageur et ne marque aucune rubrique vue', async () => {
+    const { requetes } = await sacocheDepliee()
+    expect(requetes.filter((r) => ETAT_DU_VOYAGEUR.test(r))).toEqual([])
   })
 
   // Chaque page du passeport est dessinée par le monde de **sa** décennie. Mutations : dans

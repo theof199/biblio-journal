@@ -132,6 +132,7 @@ absente de cette table.
 | `docs/cerveau/carte-et-moteur.md` | Avant d'ouvrir `src/carte/moteur.ts`, `src/carte/meneur.ts` ou leurs tests, d'ajouter un monde, de toucher à la caméra, aux zones, à la mémoire des images, à l'enveloppe de `pages/Carte.tsx` ou à une célébration. |
 | `docs/cerveau/monde-1900.md` | Avant d'ouvrir `src/mondes/1900/` : le tracé et les gares, les quatre toiles, le passage de la foire au train, l'habillage (l'heure, la lanterne), la météo, le tunnel, la ficelle d'affiches, ses images, ou la règle du déblocage. |
 | `docs/cerveau/pages-1900.md` | Avant d'ouvrir `src/mondes/1900/pages.ts` ou `src/mondes/1900/pages/`, d'ajouter une clé de gabarit, ou de changer un mot ou un jeton des pages 1900 : ce que 1900 compose déjà, ce qui reste par défaut, les gardes qui balaient ses feuilles. |
+| `docs/cerveau/jeu-1900.md` | Avant de brancher un écran des lots sur 1900 (la malle, les objets trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le wagon-restaurant), de lire `GET /me/voyage/voyageur` ou la malle d'une décennie, ou de toucher à `src/voyage/voyageur.ts` : les fonctions et les clés, la règle du point rouge, où en est chaque écran, comment on lève l'interdit d'une rubrique de la sacoche. |
 
 **La consigne de lecture** vaut pour toute session et tout sous-agent, sans que le brief la répète :
 chercher par `grep` avant de lire ; lire par plage (`offset`, `limit`) tout fichier de plus de 500

@@ -4,6 +4,17 @@ export const cles = {
   tickets: ['voyage', 'tickets'] as const,
   /** Mes dépenses au chroniqueur (les Coulisses de la sacoche) : sous le préfixe `voyage`, périmées avec lui. */
   depenses: ['voyage', 'depenses'] as const,
+  /**
+   * L'état du voyageur (`GET /me/voyage/voyageur` : objets ramassés, rubriques vues, contrôleur,
+   * poinçons) et la malle d'une décennie (`GET /me/voyage/decennies/{decennie}/etiquettes`) : **sous
+   * le préfixe `voyage`**, comme `tickets` et `depenses`. Une écriture au journal périme ce préfixe
+   * (`pages/Formulaire.tsx`, `pages/VoyageBillet.tsx`) : c'est elle qui colle une étiquette, change
+   * le billet que le contrôleur demande ou emporte un poinçon, et aucune page hors Voyage n'a à
+   * connaître ces clés. Une clé, une fonction, un cache : la carte, la sacoche et le casier lisent le
+   * même état.
+   */
+  voyageur: ['voyage', 'voyageur'] as const,
+  malle: (decennie: number) => ['voyage', 'malle', decennie] as const,
   annee: (annee: number) => ['voyage', 'annee', annee] as const,
   /**
    * Le carton d'un film (`GET /reference/chroniques/films/{tmdbId}`) : hors du préfixe `voyage`, un

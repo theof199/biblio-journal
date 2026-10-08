@@ -794,13 +794,41 @@ les coulisses tiennent dans un casier que leur titre ouvre (`CoulissesDeLaSacoch
 **La malle, le courrier et les objets trouvés de l'écran 15 n'y sont pas**, ni le point rouge de la
 pastille : aucune rubrique vide ne les annonce, et la sacoche n'appelle pas encore l'état du
 voyageur (`GET /me/voyage/voyageur`, `POST …/rubriques/{rubrique}/vue`, `GET
-…/decennies/{decennie}/etiquettes`, au contrat depuis `v1.42.0`) : ils viennent avec leurs lots.
+…/decennies/{decennie}/etiquettes`, au contrat depuis `v1.42.0`) : ils viennent avec leurs lots,
+plus bas, « Le jeu des années 1900 ».
 
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
 carte, et au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`) : **jamais une fiche
 d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties, et
 `mondes/1900/pages/sacoche.test.tsx` pour la sacoche de 1900). Pas de générique au toucher
 d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
+
+### Le jeu des années 1900 : le socle
+
+L'API sert huit choses que seul 1900 dessinera (la malle aux étiquettes, les objets trouvés, le point
+rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le wagon-restaurant) :
+**aucune n'a encore d'écran**. Le socle est posé, sans qu'aucune page change ni lise une route de
+plus (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
+
+- **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
+  (`GET /me/voyage/voyageur` : mes objets ramassés, mes rubriques vues, le contrôleur, mes poinçons),
+  `lireMalle` (`GET /me/voyage/decennies/{decennie}/etiquettes`), `ramasserObjet`,
+  `marquerRubriqueVue`, `repondreAuControleur`, `accepterHoraire` (sans corps : le serveur seul choisit
+  l'échéance) et `retirerHoraire`. Rien encore pour les cartes postales ni les tables.
+- **Les clés** (`api/cles.ts`) : `voyageur` et `malle(decennie)`, **sous le préfixe `voyage`** : une
+  écriture au journal, qui colle une étiquette ou change le billet que le contrôleur demande, les
+  périme sans qu'aucune page hors Voyage les connaisse (`api/cles.test.ts`,
+  `pages/VoyageBillet.test.tsx`). L'état du voyageur n'a qu'une clé et qu'une fonction, pour la
+  carte, la sacoche et le casier.
+- **Le point rouge** (`voyage/voyageur.ts`, sans rendu) : `rubriquesAllumees` dit, pour les rubriques
+  servies et les dates de leurs éléments, lesquelles sont allumées (un élément daté strictement après
+  `vue_le`, ou la rubrique jamais vue et non vide ; une rubrique inconnue s'ignore) ; `estNouveau` dit
+  ce qui est nouveau depuis une date. Deux instants s'y comparent, jamais deux chaînes. Le serveur ne
+  calcule ni l'un ni l'autre.
+- **Ces écrans seront de 1900 seulement** (décision du propriétaire, 8 octobre 2026) : des clés de
+  gabarit sans défaut, si bien que 1890 et le monde « à venir » ne monteront aucun de leurs blocs et
+  ne liront aucune de ces routes. `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
+  ne montre ni ne lit encore, un interdit par rubrique (`PAS_ENCORE`), que le lot de chacune lèvera.
 
 ## Le thème
 

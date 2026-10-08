@@ -76,8 +76,12 @@ const JOURNAL = 'POST /api/me/journal'
 const BOITE = 'GET /api/me/journal?limit=100&sortie_min=1890&sortie_max=1899'
 const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200)
 const PAGE = exemple<JournalPage>('/me/journal', 'get', 200)
-/** Une requête sous chaque préfixe que périme une écriture du journal, sans observateur (rien ne les relit). */
-const PERIMABLES = [cles.seances, cles.stats, cles.tickets, cles.realisateurs, cles.sagas]
+/**
+ * Une requête sous chaque préfixe que périme une écriture du journal, sans observateur (rien ne les relit).
+ * L'état du voyageur et la malle en sont : c'est un billet qui colle une étiquette ou change celui que
+ * le contrôleur demande. Mutation : l'une des deux clés sortie du préfixe `voyage` dans `api/cles.ts`.
+ */
+const PERIMABLES = [cles.seances, cles.stats, cles.tickets, cles.voyageur, cles.malle(1900), cles.realisateurs, cles.sagas]
 
 /** L'entrée que rend `POST /me/journal` : un film sorti en `annee` (l'année que l'API lit pour le jury). */
 function entreeRendue(annee: number | null = 2010): JournalItem {
