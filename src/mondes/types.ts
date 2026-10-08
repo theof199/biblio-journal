@@ -125,12 +125,14 @@ export interface HoraireVue {
 }
 
 /**
- * Une halte servie (`GET /me/voyage`, `haltes[]`) : sa clé, l'année après laquelle elle s'embranche
+ * Une halte servie (`GET /me/voyage`, `haltes[]`) : sa clé, son nom tel que servi (le poteau de
+ * l'embranchement l'écrit, brief 12 des écrans des lots), l'année après laquelle elle s'embranche
  * (le tronçon entre `apres` et `apres + 1`), et de quoi dire « 2 sur 3 » : les films vus, sur ceux
  * que le serveur sert. Aucun catalogue dans l'appli : une halte que le serveur ne sert pas n'existe pas.
  */
 export interface HalteVue {
   cle: string
+  nom: string
   apres: number
   vus: number
   total: number

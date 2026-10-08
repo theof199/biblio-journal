@@ -336,7 +336,7 @@ export default function Carte() {
       // sur ce qui est servi, jamais sur un catalogue de l'appli.
       haltes: v.haltes
         .filter((h) => montrees.some((c) => c.annee === h.apres))
-        .map((h) => ({ cle: h.cle, apres: h.apres, vus: h.films.filter((f) => f.etat === 'vu').length, total: h.films.length })),
+        .map((h) => ({ cle: h.cle, nom: h.nom, apres: h.apres, vus: h.films.filter((f) => f.etat === 'vu').length, total: h.films.length })),
     }
   }, [v, anneeAvatar, fiches, user.pseudo, ticketsEmis])
 

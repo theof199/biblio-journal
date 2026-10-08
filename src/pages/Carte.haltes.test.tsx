@@ -85,14 +85,15 @@ describe('la carte en sait plus : l’horaire et les haltes, de la page au moteu
   })
 
   // Le compte se fait sur ce qui est servi. Mutations : `total: 3` en dur ; un film « sur le Plex »
-  // compté comme vu ; la halte servie passée telle quelle (ses films iraient au moteur).
-  it('les haltes servies vont au moteur par leur clé, leur année d’embranchement et le compte de leurs films vus', async () => {
-    const deux = { ...MELIES, cle: 'zecca', apres: 1901, films: [MELIES.films[0]!, { ...MELIES.films[2]!, etat: 'vu' as const }] }
+  // compté comme vu ; la halte servie passée telle quelle (ses films iraient au moteur) ; le nom
+  // écrit dans la page (`nom: 'Halte Méliès'` : Zecca porterait le nom de Méliès).
+  it('les haltes servies vont au moteur par leur clé, leur nom, leur année d’embranchement et le compte de leurs films vus', async () => {
+    const deux = { ...MELIES, cle: 'zecca', nom: 'Halte Zecca', apres: 1901, films: [MELIES.films[0]!, { ...MELIES.films[2]!, etat: 'vu' as const }] }
     const banc = await monter(() => voyage(1903, { haltes: [deux, MELIES] }))
     expect(MELIES.films.map((f) => f.etat)).toEqual(['vu', 'sur_le_plex', 'a_demander'])
     expect(banc.dernier().haltes).toEqual([
-      { cle: 'zecca', apres: 1901, vus: 2, total: 2 },
-      { cle: 'melies', apres: 1902, vus: 1, total: 3 },
+      { cle: 'zecca', nom: 'Halte Zecca', apres: 1901, vus: 2, total: 2 },
+      { cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 1, total: 3 },
     ])
   })
 
@@ -104,7 +105,7 @@ describe('la carte en sait plus : l’horaire et les haltes, de la page au moteu
     expect(banc.dernier().haltes).toEqual([])
     // Le témoin : la même, 1900 atteint.
     const ouvert = await monter(() => voyage(1902, { haltes: [MELIES] }))
-    expect(ouvert.dernier().haltes).toEqual([{ cle: 'melies', apres: 1902, vus: 1, total: 3 }])
+    expect(ouvert.dernier().haltes).toEqual([{ cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 1, total: 3 }])
   })
 
   // Chaque `majEtat` vide les tuiles du sol : la carte relue sans changement ne refait pas son état,
@@ -126,7 +127,7 @@ describe('la carte en sait plus : l’horaire et les haltes, de la page au moteu
     servi = voyage(1903, { haltes: [{ ...MELIES, films: MELIES.films.map((f) => ({ ...f, etat: 'vu' as const })) }] })
     await relire()
     expect(banc.etats).toHaveLength(avant + 1)
-    expect(banc.dernier().haltes).toEqual([{ cle: 'melies', apres: 1902, vus: 3, total: 3 }])
+    expect(banc.dernier().haltes).toEqual([{ cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 3, total: 3 }])
     HORAIRES[1904] = ACCEPTE
     try {
       servi = voyage(1903, { haltes: servi.haltes })

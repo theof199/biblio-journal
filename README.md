@@ -947,7 +947,7 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   dans le même `useMemo` que les cases (relue à l'identique, la carte ne refait pas son état), et le
   moteur les passe au monde. Par année, `CaseVue.horaire` : l'état (`accepte`, `tenu`, `manque`) et
   l'échéance tels que servis, ou nul ; l'appli ne calcule ni l'un ni l'autre. Par monde,
-  `VueMonde.haltes` : la clé, `apres`, et de quoi dire « 2 sur 3 » (les films vus, sur ceux que le
+  `VueMonde.haltes` : la clé, le nom servi (depuis le brief 12, pour le poteau de l'embranchement), `apres`, et de quoi dire « 2 sur 3 » (les films vus, sur ceux que le
   serveur sert), pour les seules haltes qui s'embranchent après une année de sa section ; une halte
   d'une année que la carte ne montre pas (une décennie cachée) n'est pas passée. **Une septième zone
   est au moteur, `aiguillage`** (`halte` est déjà la gare au bout de la foire, et reste au monde) : le

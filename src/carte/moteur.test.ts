@@ -47,9 +47,9 @@ const OU_OBJET = { x: MANEGE.x + 12, y: MANEGE.y }
 const OU_OBJET_1900 = { x: 130, y: 60 }
 // Brief 9 des écrans des lots : trois haltes, une sur la foire et deux sur la ligne, que la page donne
 // dans cet ordre. Le rang d'un aiguillage se lit dans celles de sa section, pas dans la liste entière.
-const HALTE_DE_LA_FOIRE: HalteVue = { cle: 'la-baraque', apres: 1897, vus: 0, total: 1 }
-const HALTE_MELIES: HalteVue = { cle: 'melies', apres: 1902, vus: 2, total: 3 }
-const HALTE_ZECCA: HalteVue = { cle: 'zecca', apres: 1901, vus: 0, total: 2 }
+const HALTE_DE_LA_FOIRE: HalteVue = { cle: 'la-baraque', nom: 'Halte de la baraque', apres: 1897, vus: 0, total: 1 }
+const HALTE_MELIES: HalteVue = { cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 2, total: 3 }
+const HALTE_ZECCA: HalteVue = { cle: 'zecca', nom: 'Halte Zecca', apres: 1901, vus: 0, total: 2 }
 const HALTES = [HALTE_DE_LA_FOIRE, HALTE_MELIES, HALTE_ZECCA]
 /** Où le monde collant pose l'aiguillage de la halte de rang `i`, à l'écran. */
 const ouAiguillage1900 = (i: number) => ({ x: 80 + 130 * i, y: 60 })
