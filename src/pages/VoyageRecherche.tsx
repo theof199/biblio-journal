@@ -91,6 +91,16 @@ function GuichetDeLaDecennie({ decennie: d, entree }: { decennie: number; entree
   useEffect(() => {
     if (auClavier) fenetre.current?.scrollIntoView?.({ block: 'start', behavior: calme ? 'auto' : 'smooth' })
   }, [auClavier, calme])
+  // Toucher un résultat retire le doigt du champ **avant** le `click` : rendre la place à cet instant
+  // raccourcirait la page sous le doigt, la liste glisserait et le toucher ne tomberait sur rien (vu
+  // au navigateur : trois ou quatre résultats, on restait au guichet). Tant qu'un toucher commencé
+  // dans la page n'a pas donné son `click` (ou n'est pas devenu un défilement), la place reste ; elle
+  // se rend après lui, si le champ n'a plus le doigt.
+  const touche = useRef(false)
+  const finDuToucher = () => {
+    touche.current = false
+    if (document.activeElement !== champ.current) setAuClavier(false)
+  }
 
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
   const v = voyage.data
@@ -149,7 +159,16 @@ function GuichetDeLaDecennie({ decennie: d, entree }: { decennie: number; entree
   }
 
   return (
-    <section className={styles.page} style={style} aria-label={`${m.recherche.catalogue}, années ${d}`}>
+    <section
+      className={styles.page}
+      style={style}
+      aria-label={`${m.recherche.catalogue}, années ${d}`}
+      onPointerDownCapture={() => {
+        touche.current = true
+      }}
+      onPointerCancel={finDuToucher}
+      onClick={finDuToucher}
+    >
       <TeteDuGuichet
         monde={monde}
         decennie={d}
@@ -176,6 +195,7 @@ function GuichetDeLaDecennie({ decennie: d, entree }: { decennie: number; entree
           onSubmit: (e) => {
             // Rien ne part : « Rechercher » du clavier ne fait que le replier.
             e.preventDefault()
+            touche.current = false
             champ.current?.blur()
           },
         }}
@@ -190,7 +210,9 @@ function GuichetDeLaDecennie({ decennie: d, entree }: { decennie: number; entree
           onFocus: () => {
             if (auDoigt()) setAuClavier(true)
           },
-          onBlur: () => setAuClavier(false),
+          onBlur: () => {
+            if (!touche.current) setAuClavier(false)
+          },
           onChange: (e) => setSaisie(e.target.value),
         }}
       />

@@ -426,6 +426,87 @@ describe('le guichet, la recherche du Voyage', () => {
     }
   })
 
+  // Toucher un résultat, clavier ouvert : le champ perd le doigt entre l'appui et le `click`. La place
+  // rendue à cet instant raccourcissait la page sous le doigt, et le toucher d'une liste courte ne
+  // tombait sur rien (vu au navigateur, 390 × 760, trois et quatre résultats : on restait au guichet).
+  // jsdom ne met rien en page : le test tient que la place reste jusqu'au `click`, et se rend après.
+  // Mutations : la place rendue au départ du doigt, toucher en cours ou non ; jamais rendue après le
+  // `click` ; rendue après un `click` qui laisse le doigt au champ ; un défilement (`pointercancel`)
+  // qui ne clôt pas le toucher, ou qui rend la place sous le clavier ouvert.
+  describe('clavier ouvert, un toucher dans la page', () => {
+    const auDoigt = () =>
+      vi.stubGlobal('matchMedia', (q: string) => ({
+        matches: q === '(pointer: coarse)',
+        media: q,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }))
+    const place = () => screen.queryByTestId('place-du-clavier')
+    /** Le champ prend vraiment le doigt : la page relit qui l'a (`document.activeElement`). */
+    const ouvrirLeClavier = async () => {
+      auDoigt()
+      monter(PAGE)
+      await lu()
+      act(() => champ().focus())
+      taper('cendr')
+      expect(await titres()).toEqual(['Cendrillon'])
+      expect(place()).toBeInTheDocument()
+    }
+
+    it('garde la place du clavier jusqu’au `click` sur un résultat, qui ouvre sa fiche', async () => {
+      await ouvrirLeClavier()
+      const lien = (await lignes())[0]!
+      fireEvent.pointerDown(lien)
+      act(() => champ().blur())
+      expect(place()).toBeInTheDocument()
+      fireEvent.pointerUp(lien)
+      expect(place()).toBeInTheDocument()
+      fireEvent.click(lien)
+      await waitFor(() => expect(adresse()).toBe('/voyage/1897/films/f-cendr'))
+    })
+
+    it('rend la place après le `click` qui a pris le doigt au champ', async () => {
+      await ouvrirLeClavier()
+      fireEvent.pointerDown(annee(1897))
+      act(() => champ().blur())
+      expect(place()).toBeInTheDocument()
+      fireEvent.click(annee(1897))
+      expect(place()).not.toBeInTheDocument()
+    })
+
+    it('la garde après un `click` qui laisse le doigt au champ', async () => {
+      await ouvrirLeClavier()
+      fireEvent.pointerDown(champ())
+      fireEvent.click(champ())
+      expect(place()).toBeInTheDocument()
+      // Le toucher est clos : le clavier replié rend la place.
+      act(() => champ().blur())
+      expect(place()).not.toBeInTheDocument()
+    })
+
+    it('un toucher devenu défilement ne retient rien : la place reste sous le clavier, et se rend quand il se replie', async () => {
+      await ouvrirLeClavier()
+      const lien = (await lignes())[0]!
+      fireEvent.pointerDown(lien)
+      fireEvent.pointerCancel(lien)
+      expect(place()).toBeInTheDocument()
+      act(() => champ().blur())
+      expect(place()).not.toBeInTheDocument()
+    })
+
+    // « Rechercher » du clavier replie : le champ perd le doigt, et la place se rend même si un
+    // toucher d'avant n'a jamais donné son `click`. Mutations : l'envoi qui ne retire plus le doigt
+    // (`blur()` ôté, ou le champ sans sa `ref`) ; l'envoi qui ne clôt pas le toucher.
+    it('« Rechercher » du clavier retire le doigt du champ et rend la place, un toucher sans `click` derrière soi', async () => {
+      await ouvrirLeClavier()
+      fireEvent.pointerDown((await lignes())[0]!)
+      expect(champ()).toHaveFocus()
+      fireEvent.submit(screen.getByRole('search'))
+      expect(champ()).not.toHaveFocus()
+      expect(place()).not.toBeInTheDocument()
+    })
+  })
+
   // Rien ne part à la frappe : ni TMDB, ni le chroniqueur. Mutation : une recherche par saisie
   // (`GET /api/search?…`) branchée sur le champ.
   it('aucune requête ne part à la frappe', async () => {

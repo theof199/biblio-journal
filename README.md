@@ -738,7 +738,9 @@ filtré par années, dont les boutons ne viennent que des fiches prêtes. Rien n
 saisie, « les plus demandées » : les essentiels pas encore vus, six au plus. La saisie et les années
 cochées sont retenues sous l'entrée d'historique (`voyage/recherche/memoire.ts`, `sessionStorage`) :
 revenir d'une fiche de film les retrouve, une navigation nouvelle ouvre un guichet vide. Au doigt, la
-fenêtre monte au-dessus du clavier. « Chercher hors du Voyage » mène à la recherche du journal.
+fenêtre monte au-dessus du clavier, sur une place que la page ajoute en bas ; cette place ne se rend
+qu'après le `click` d'un toucher commencé dans la page, sans quoi la liste glisserait sous le doigt
+et le toucher d'un résultat serait perdu. « Chercher hors du Voyage » mène à la recherche du journal.
 
 Où vit quoi : les règles, sans rendu, dans `src/voyage/` (`decennie.ts` : l'adresse, les chevaux,
 le toucher, le registre, la palissade ; `passeport.ts` : le tampon et ce qui lui manque ;
