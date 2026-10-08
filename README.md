@@ -423,7 +423,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trente-huit clés, une sur la carte, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Quatre d'entre elles, `controleurDeLaCarte` sur la carte, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Trente-neuf clés, une sur la carte, treize sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Cinq d'entre elles, `controleurDeLaCarte` sur la carte, `horaireDeLAnnee` sur la fiche d'année, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -440,8 +440,8 @@ Où vit quoi :
   `voyage/salles.ts` : son rang, jamais sa place dans la réponse), si elle est dépliée, et les deux
   gestes qui la déplient et la replient. La dixième, `ordreDAnnee` (`voyage/annee/Ordre.tsx`), range
   les sections d'une fiche prête : elle les reçoit montées (la corde avec sa région d'état, le
-  boniment, le programme, la parade, la séance, les salles, la ligne du bas) et n'en compose ni n'en
-  omet aucune. Enfin `parade` (le podium, `voyage/parade/Marches.tsx`, que `voyage/parade/Parade.tsx`
+  boniment, le programme, l'horaire de la gare, nul dans un monde qui ne le compose pas, la parade, la
+  séance, les salles, la ligne du bas) et n'en compose ni n'en omet aucune. Enfin `parade` (le podium, `voyage/parade/Marches.tsx`, que `voyage/parade/Parade.tsx`
   lit : il garde le feuillet d'une marche, les écritures et leur garde, et passe les deux gestes,
   ouvrir le feuillet et vider) et `seance` (la séance du soir, `voyage/seance/Prospectus.tsx`, que
   `voyage/seance/Seance.tsx` lit : il garde composer, prendre, ignorer, leur verrou, le guet et le
@@ -955,6 +955,32 @@ billets passe sur la carte et son poinçon doré reste au casier ; les quatre au
   aussi (c'est une lecture), jamais à `reagir`. **Aucun monde ne l'inscrit encore et la page ne
   l'écoute pas** : la plaque d'une gare (brief 11) et la halte (brief 12) s'y brancheront.
   `carte/moteur.test.ts` et `pages/Carte.haltes.test.tsx` le tiennent.
+- **L'horaire d'une gare, sur la fiche de son année** (brief 10 des écrans des lots ;
+  `voyage/annee/Horaire.tsx`, la clé sans défaut `horaireDeLAnnee`). La page ne monte le bloc que si le
+  monde de l'année compose la clé, à la place `horaire` de l'ordre des sections (sous le programme par
+  défaut). **Il ne lit aucune route** : `horaire` et `horaire_proposable` viennent de la fiche prête
+  que la page tient ; ni l'un ni l'autre, le bloc n'existe pas. Il passe au dessin l'horaire tel que
+  servi (son état, son échéance), l'échéance que la gare propose, l'instant de l'arrivée d'un horaire
+  tenu (`ticket.emis_le` : le ticket de l'année suivante émis, la seule définition de « bouclée » côté
+  serveur) et les deux gestes quand ils s'offrent : « Tenir l'horaire » quand la fiche propose, « Sans
+  horaire » tant que l'horaire est `accepte`, jamais `tenu` ni `manque` (le serveur répondrait `409`).
+  **Le serveur décide de l'échéance** : le `POST` part sans corps, rien ne se calcule sur l'appareil.
+  Les deux écritures passent sous un verrou par référence. Une écriture ne change que l'horaire de
+  cette gare, sur sa fiche et sur sa case de la carte : accepté, le cache l'apprend de la réponse
+  (l'horaire rendu, plus de proposition ; la case de l'année sur la carte), puis la fiche et la carte
+  se relisent **en `exact`** ; retiré, la fiche se relit d'abord (la gare repropose une échéance que
+  seul le serveur connaît), les gestes attendent, et elle ne s'écrit à la main, sans horaire ni
+  proposition, que si cette relecture échoue. **Jamais le préfixe `voyage`** : la malle (que la fête
+  d'un retour attend), les tickets, l'état du voyageur et les autres fiches montées seraient relus
+  pour rien. Un `409` (la gare a changé ailleurs) ou le `404` d'un horaire déjà retiré : la fiche et
+  la carte se relisent, rien ne se dit. Tout autre refus et une panne du réseau se disent avec le
+  message reçu, l'horaire reste ce qu'il était et le geste se refait. Ce que le cache apprend est
+  dans `useMutation` : la page quittée pendant l'envoi, la carte le sait quand même. La tête et le
+  programme reçoivent de quoi dire un horaire tenu (`aLHeure`, `horaireTenu` : son échéance, son
+  arrivée), deux propriétés facultatives que les défauts ignorent et que la page ne passe que dans un
+  monde qui compose la clé. **Aucun monde ne la remplit encore** : `pages/VoyageAnnee.horaire.test.tsx`
+  tient le bloc sur un 1890 auquel on prête un dessin, et le vrai 1890, qui ne dit rien de l'horaire
+  et ne lit que la session, la carte et sa fiche (la liste entière de ses requêtes).
 - **Le contrôleur passe sur la carte** (`voyage/controleur/Controleur.tsx`, la clé sans défaut
   `controleurDeLaCarte`, la seule que lit `pages/Carte.tsx`, au monde de mon année en cours ; 1900 la
   remplit). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne

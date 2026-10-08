@@ -10,6 +10,7 @@ import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
 import type { PropsBoniment } from '../voyage/annee/Boniment'
 import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
+import type { PropsHoraireDeLAnnee } from '../voyage/annee/Horaire'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
@@ -939,6 +940,14 @@ export interface GabaritsDesPages {
    * verrou, Échap et le focus.
    */
   controleurDeLaCarte: ComponentType<PropsControleurDeLaCarte>
+  /**
+   * L'horaire d'une gare, sur la fiche de son année (plan des écrans des lots, brief 10) : ce que la
+   * gare propose, l'horaire accepté et ses deux gestes, tenu, manqué. **Sans défaut**
+   * (`ClesSansDefaut`) : un monde qui ne la compose pas ne monte pas `voyage/annee/Horaire.tsx`, qui
+   * garde les deux écritures et leur verrou, et la page ne dit alors rien de l'horaire à sa tête ni à
+   * son programme. Le bloc ne lit aucune route : tout vient de la fiche que la page tient.
+   */
+  horaireDeLAnnee: ComponentType<PropsHoraireDeLAnnee>
 }
 
 /**
@@ -947,7 +956,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

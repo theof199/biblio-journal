@@ -30,6 +30,7 @@ import Boniment from '../voyage/annee/Boniment'
 import Corde from '../voyage/annee/Corde'
 import { NOM_DE_RECOMPENSE } from '../voyage/annee/Embleme'
 import Fronton from '../voyage/annee/Fronton'
+import Horaire from '../voyage/annee/Horaire'
 import LigneDuBas from '../voyage/annee/LigneDuBas'
 import Manivelle from '../voyage/annee/Manivelle'
 import Ordre from '../voyage/annee/Ordre'
@@ -206,6 +207,9 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   const bouclee = !!v?.tampons.some((t) => t.decennie === monde.decennie)
   // La roulotte du Voyage suivi, dans tous les modes dès que le membre en suit un ; jamais au compte IA.
   const roulotte = v && !v.ia && v.source ? { pseudo: v.source.pseudo, annee: v.source.annee_en_cours } : null
+  // L'horaire tenu se dit aussi à la tête (plan des écrans des lots, brief 10), dans un monde qui
+  // compose l'horaire seulement : ailleurs la page n'en dit rien, quoi que serve la fiche.
+  const aLHeure = gabaritSeul(monde, 'horaireDeLAnnee') !== null && prete?.horaire?.etat === 'tenu'
 
   let corps: ReactNode
   if (!fiche || !v) {
@@ -299,7 +303,7 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
       {/* Autour de toute fiche : prête, fermée, en attente, en préparation, en panne. */}
       <Manivelle monde={monde} onRecharger={recharger}>
         <div className={styles.bandeau}>
-          <Tete monde={monde} calme={calme} mode={mode} annee={annee} recompense={recompense} cases={cases} bouclee={bouclee} roulotte={roulotte} anneeBouclee={anneeBouclee} />
+          <Tete monde={monde} calme={calme} mode={mode} annee={annee} recompense={recompense} cases={cases} bouclee={bouclee} roulotte={roulotte} anneeBouclee={anneeBouclee} aLHeure={aLHeure} />
           {/* Un lien vers la carte (ouvrir ailleurs, le nom lu), qui recule pourtant dans l'historique
               quand il y a de quoi : comme le geste du téléphone, sans empiler l'année derrière la carte. */}
           <Link
@@ -364,6 +368,10 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
   // L'ordre des sections est lui aussi au monde (`gabarits.ordreDAnnee`) : il les reçoit montées.
   const LOrdre = gabaritDe(monde, 'ordreDAnnee', Ordre)
   const arrivees = arriveesDeLAnnee(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket)
+  // L'horaire de la gare (plan des écrans des lots, brief 10) : une clé sans défaut. Sans dessin, le
+  // bloc ne se monte pas, et le programme ne reçoit rien de l'horaire que la fiche sert pourtant.
+  const DessinDeLHoraire = gabaritSeul(monde, 'horaireDeLAnnee')
+  const tenu = DessinDeLHoraire && fiche.horaire?.etat === 'tenu' ? { echeance: fiche.horaire.echeance, arriveeLe: fiche.ticket?.emis_le ?? null } : null
   const bouclee = estBouclee(statut, fiche.ticket)
 
   return (
@@ -405,8 +413,10 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
             bouclee={bouclee}
             recompense={fiche.recompense}
             ia={v.ia}
+            horaireTenu={tenu}
           />
         }
+        horaire={DessinDeLHoraire ? <Horaire monde={monde} annee={annee} fiche={fiche} Dessin={DessinDeLHoraire} /> : null}
         parade={<Parade monde={monde} annee={annee} podium={fiche.podium} salles={fiche.salles} />}
         // La séance n'appartient qu'au compte IA (l'API la refuse aux autres), et à l'année en cours.
         seance={enCours && v.ia ? <Seance monde={monde} annee={annee} fiche={fiche} /> : null}

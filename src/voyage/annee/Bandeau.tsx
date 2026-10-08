@@ -17,6 +17,11 @@ export interface PropsTeteDAnnee extends Pick<VueBandeau, 'mode' | 'annee' | 're
    * qui tamponne sa tête le lit, pour dire « bouclée » comme le reste de sa page.
    */
   anneeBouclee: boolean
+  /**
+   * L'horaire de cette gare a été tenu (plan des écrans des lots, brief 10). Facultative : la page ne
+   * la passe vraie que dans un monde qui compose `horaireDeLAnnee`, et le bandeau par défaut l'ignore.
+   */
+  aLHeure?: boolean
 }
 
 /**

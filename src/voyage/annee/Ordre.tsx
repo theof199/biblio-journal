@@ -11,19 +11,22 @@ export interface PropsOrdreDAnnee {
   corde: ReactNode
   boniment: ReactNode
   programme: ReactNode
+  /** L'horaire de la gare (`voyage/annee/Horaire.tsx`) : nul dans un monde qui ne le compose pas, ou sans horaire ni proposition. */
+  horaire: ReactNode
   parade: ReactNode
   seance: ReactNode
   salles: ReactNode
   ligneDuBas: ReactNode
 }
 
-/** L'ordre par défaut (maquette 1890 : `htmlAnnee`) : la corde, le boniment, le programme, la parade, la séance, les salles, la ligne du bas. */
-export default function Ordre({ corde, boniment, programme, parade, seance, salles, ligneDuBas }: PropsOrdreDAnnee) {
+/** L'ordre par défaut (maquette 1890 : `htmlAnnee`) : la corde, le boniment, le programme (et l'horaire, qu'aucun monde sans dessin ne reçoit), la parade, la séance, les salles, la ligne du bas. */
+export default function Ordre({ corde, boniment, programme, horaire, parade, seance, salles, ligneDuBas }: PropsOrdreDAnnee) {
   return (
     <>
       {corde}
       {boniment}
       {programme}
+      {horaire}
       {parade}
       {seance}
       {salles}

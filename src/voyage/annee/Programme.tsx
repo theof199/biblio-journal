@@ -38,6 +38,12 @@ export interface PropsProgramme {
   recompense: Recompense | null
   /** Le compte IA : le seul à qui le jury se promet. */
   ia: boolean
+  /**
+   * L'horaire tenu de cette gare (plan des écrans des lots, brief 10) : son échéance servie, et
+   * l'instant où la gare a été bouclée. Facultative : la page ne la passe que dans un monde qui
+   * compose `horaireDeLAnnee`, et le programme par défaut l'ignore.
+   */
+  horaireTenu?: { echeance: string; arriveeLe: string | null } | null
 }
 
 /**
