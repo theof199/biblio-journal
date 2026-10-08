@@ -15,6 +15,7 @@ import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
 import type { PropsBilletDeSeance } from '../voyage/billet/BilletDeSeance'
 import type { PropsBilletEnGrand } from '../voyage/boite/BilletEnGrand'
+import type { PropsControleurDeLaCarte } from '../voyage/controleur/Controleur'
 import type { PropsCasier } from '../voyage/boite/Casier'
 import type { PropsFeteDeLAnnee } from '../voyage/celebrations/DessinDeLAnnee'
 import type { PropsFeteDeLaRecompense } from '../voyage/celebrations/DessinDeLaRecompense'
@@ -894,6 +895,15 @@ export interface GabaritsDesPages {
    * reçoit les arrivées de l'année, calculées par la règle de la fiche.
    */
   feteDeLAnnee: ComponentType<PropsFeteDeLAnnee>
+  /**
+   * Le contrôleur des billets qui passe sur la carte (plan des écrans des lots, brief 7) : son
+   * dialogue entier, la demande, les deux réponses, la portière qu'on referme. **Sans défaut**
+   * (`ClesSansDefaut`), et la seule clé que lit `pages/Carte.tsx`, au monde de mon année en cours : un
+   * monde qui ne la compose pas ne lit pas l'état du voyageur pour lui et ne monte pas
+   * `voyage/controleur/Controleur.tsx`, qui garde la lecture du billet, l'écriture de la réponse, son
+   * verrou, Échap et le focus.
+   */
+  controleurDeLaCarte: ComponentType<PropsControleurDeLaCarte>
 }
 
 /**
@@ -902,7 +912,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

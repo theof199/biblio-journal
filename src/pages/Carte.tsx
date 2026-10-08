@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { estPrete, lireAnnee, lireMalle, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type FicheAnnee, type Voyageur } from '../api/voyage'
+import { estPrete, lireAnnee, lireMalle, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type BilletDemande, type FicheAnnee, type Voyageur } from '../api/voyage'
 import CarteCanvas, { type Moteur } from '../carte/CarteCanvas'
 import Apercu from '../carte/Apercu'
 import type { EtatCarte } from '../carte/moteur'
@@ -20,6 +20,8 @@ import { vibrer } from '../ui/haptique'
 import { useMouvementReduit } from '../ui/mouvement'
 import Celebrations from '../voyage/celebrations/Celebrations'
 import { sceneDuRattrapage, type Scene } from '../voyage/celebrations/scenes'
+import Controleur from '../voyage/controleur/Controleur'
+import { gabaritSeul } from '../voyage/gabarit'
 import { tamponDe } from '../voyage/passeport'
 import { nomDeLaSacoche, nouveautesDeLaSacoche, rubriquesDeLaPastille } from '../voyage/voyageur'
 import Tampon from '../voyage/passeport/Tampon'
@@ -338,11 +340,15 @@ export default function Carte() {
   // pose dans le rendu même où celui-ci la lirait encore nulle.
   const [fete, setFete] = useState<Extract<Scene, { type: 'annee' }> | null>(null)
   const ticketFete = useRef<number | null>(null)
+  // La fête lancée, avant même le rendu qui la montre : le contrôleur, dont l'effet suit celui-ci dans
+  // la même passe, la lirait encore nulle dans `fete`.
+  const enFete = useRef(false)
   useEffect(() => {
     if (!v || avancee || anneeAvatar !== v.annee_en_cours) return
     const scene = sceneDuRattrapage(v)
     if (!scene || ticketFete.current === scene.ticket) return
     ticketFete.current = scene.ticket
+    enFete.current = true
     setFete(scene)
   }, [v, avancee, anneeAvatar])
 
@@ -354,8 +360,11 @@ export default function Carte() {
   // cours monte le bloc. Aucune en 1890 ni dans le monde « à venir » : rien de plus ne part alors.
   const anneeEnCours = v?.annee_en_cours
   const rubriquesDuPoint = useMemo(() => (anneeEnCours === undefined ? [] : rubriquesDeLaPastille(mondes(decennieDe(anneeEnCours)))), [anneeEnCours])
-  // Une seule lecture de l'état du voyageur, pour les objets du quai comme pour le point.
-  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: objetsDeLaCarte.length > 0 || rubriquesDuPoint.length > 0 })
+  // Le contrôleur des billets (brief 7) : la seule clé de gabarit que la carte lit, sans défaut, au
+  // monde de mon année en cours. Sans elle (1890, le monde « à venir »), ni lecture ni portière.
+  const DessinDuControleur = anneeEnCours === undefined ? null : gabaritSeul(mondes(decennieDe(anneeEnCours)), 'controleurDeLaCarte')
+  // Une seule lecture de l'état du voyageur, pour les objets du quai, le point et le contrôleur.
+  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: objetsDeLaCarte.length > 0 || rubriquesDuPoint.length > 0 || DessinDuControleur !== null })
   // La malle de ma décennie, pour les `collee_le` : seulement si une rubrique montée s'y date. En
   // panne ou pas encore lue, elle se tait : sa rubrique reste éteinte, et la carte reste.
   const decennieDeLaMalle = anneeEnCours !== undefined && rubriquesDuPoint.some((r) => r.malle) ? decennieDe(anneeEnCours) : null
@@ -392,6 +401,25 @@ export default function Carte() {
     monte.current = true
     return () => void (monte.current = false)
   }, [])
+
+  // Le contrôleur entre seul quand le serveur dit qu'il attend (décision 5 du propriétaire), une fois
+  // par visite de la carte : la référence ne vit que le temps de la page, rien n'est retenu sur
+  // l'appareil, et la carte remontée le revoit entrer tant qu'il attend. Jamais pendant une avancée
+  // (l'avatar n'est rendu à mon année en cours qu'à sa fin : cette seule condition la couvre, passage
+  // d'entrée compris), une fête, un passage au geste ou la vue d'ensemble : il entre quand elles
+  // finissent. Le billet est celui que l'état annonçait alors.
+  const [controle, setControle] = useState<BilletDemande | null>(null)
+  const controleurPasse = useRef(false)
+  const [passage, setPassage] = useState(false)
+  const billetDemande = DessinDuControleur && voyageur.data?.controleur.attend ? voyageur.data.controleur.billet : null
+  useEffect(() => {
+    if (!v || !billetDemande || controleurPasse.current) return
+    if (anneeAvatar !== v.annee_en_cours || enFete.current || passage || ensemble) return
+    controleurPasse.current = true
+    setControle(billetDemande)
+    // `fete` : sa fin relance l'effet, qui lit `enFete`.
+  }, [v, billetDemande, anneeAvatar, fete, passage, ensemble])
+  const fermerLaPortiere = useCallback(() => setControle(null), [])
 
   if (voyage.isPending) return <p role="status">Chargement…</p>
   if (voyage.error || !v) return <Panne erreur={voyage.error} onReessayer={() => void voyage.refetch()} />
@@ -510,7 +538,7 @@ export default function Carte() {
           répond tant qu'elle joue, ni au doigt ni au clavier. Le moteur, lui, mène toujours la caméra.
           Deux enveloppes : la toile seule répond pendant le passage d'entrée (`bonjour`), où le moteur
           ne fait d'un toucher que poser le passage à sa fin ; le reste attend la fin de l'avancée. */}
-      <div className={styles.fond} {...(avancee && !bonjour ? INERTE : null)}>
+      <div className={styles.fond} {...((avancee && !bonjour) || controle ? INERTE : null)}>
         {etat ? (
           <CarteCanvas
             etat={etat}
@@ -540,7 +568,7 @@ export default function Carte() {
           />
         ) : null}
       </div>
-      <div className={styles.fond} {...(avancee ? INERTE : null)}>
+      <div className={styles.fond} {...(avancee || controle ? INERTE : null)}>
 
         <header className={styles.hud}>
           <div>
@@ -634,7 +662,17 @@ export default function Carte() {
             ne joue que le passage : ni porte ni adieu, qui n'appartiennent qu'à l'avancée. */}
         {proche !== null && !avancee && !ensemble && v.annee_en_cours >= proche ? (
           <div className={`${styles.trainOmbre}${ticket ? ` ${styles.auDessusDuTicket}` : ''}`}>
-            <button type="button" className={styles.train} onClick={() => void moteur?.direBonjour(proche, 'endroit')}>
+            <button
+              type="button"
+              className={styles.train}
+              onClick={() => {
+                if (!moteur) return
+                // Le temps de ce passage, le contrôleur n'entre pas ; fini ou en échec, la page le sait.
+                const fin = () => void (monte.current && setPassage(false))
+                setPassage(true)
+                void moteur.direBonjour(proche, 'endroit').then(fin, fin)
+              }}
+            >
               {`Prendre le train pour ${proche}`}
             </button>
           </div>
@@ -707,9 +745,14 @@ export default function Carte() {
           scenes={[fete]}
           // Le ticket ne s'utilise que s'il ouvre l'année qui suit mon année en cours (`ticketOffert`).
           onUtiliser={fete.ticket === v.annee_en_cours + 1 ? encaisser : undefined}
-          onFin={() => setFete(null)}
+          onFin={() => {
+            enFete.current = false
+            setFete(null)
+          }}
         />
       ) : null}
+      {/* Le contrôleur des billets, par-dessus la carte, que son dialogue rend inerte. */}
+      {controle && DessinDuControleur ? <Controleur monde={monde} Dessin={DessinDuControleur} billet={controle} depart={v.depart} onFermer={fermerLaPortiere} /> : null}
       {/* Un monde à passage n'a pas de carton : ses lignes sont dites, hors de vue. */}
       {annonce !== null ? (
         <p role="status" className="sr-only">

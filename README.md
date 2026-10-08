@@ -423,7 +423,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trente-sept clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Trois d'entre elles, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Trente-huit clés, une sur la carte, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Quatre d'entre elles, `controleurDeLaCarte` sur la carte, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -903,8 +903,8 @@ d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le P
 L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquettes, les objets
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
-ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; les cinq autres
-n'en ont pas encore**
+ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur a
+son bloc lecteur, qu'aucun monde ne dessine encore ; les quatre autres n'ont rien**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -923,6 +923,27 @@ n'en ont pas encore**
   ce qui est nouveau depuis une date. Deux instants s'y comparent, jamais deux chaînes. Le serveur ne
   calcule ni l'un ni l'autre. La carte le montre sur la pastille de la sacoche (`RUBRIQUES_DE_LA_PASTILLE`,
   `rubriquesDeLaPastille`, `nouveautesDeLaSacoche`, `nomDeLaSacoche` : « La carte du Voyage »).
+- **Le contrôleur passe sur la carte** (`voyage/controleur/Controleur.tsx`, la clé sans défaut
+  `controleurDeLaCarte`, la seule que lit `pages/Carte.tsx`, au monde de mon année en cours ; aucun monde
+  ne la remplit encore). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne
+  s'ouvre. Avec elle, **il entre seul quand `controleur.attend` est vrai, une fois par visite de la
+  carte** (une référence de la page : rien n'est retenu sur l'appareil, la carte remontée le revoit
+  entrer tant qu'il attend), jamais pendant une avancée (l'avatar pas encore rendu à mon année en
+  cours), la fête du rattrapage, un passage au geste ou la vue d'ensemble : il entre quand elles
+  finissent. Son dialogue rend la carte inerte dessous. Le bloc lecteur montre **le billet demandé tel
+  que mon journal le dit** (le contrat n'en donne que deux identifiants) : il lit la première page du
+  journal, sous la clé de l'accueil, y cherche l'entrée par son identifiant, jamais la page suivante,
+  et prend le numéro du billet à la boîte de sa décennie si elle est en cache ; sinon, ou en panne, la
+  portière reste sans carton, sans un mot. **Deux boutons écrivent, sous un verrou** ; refermer, par
+  son bouton ou par Échap, n'écrit rien et n'est pas un refus. Acceptée, la réponse apprend au cache de
+  l'état du voyageur qu'il n'attend plus, et le poinçon rendu, champ par champ, une lecture en vol
+  annulée d'abord, sans rien périmer d'autre (la route n'écrit que la réponse de la semaine, que seul
+  cet état sert). `409` (il n'attendait plus) : la portière se referme et l'état se relit, sans rien
+  dire. Toute autre panne se dit dans le dialogue, avec le message du serveur, et la réponse se
+  refait. **`controleur.attend` change avec l'horloge du serveur, sans écriture** : une carte restée
+  ouverte ne le voit entrer qu'à sa prochaine lecture de l'état (trente secondes de fraîcheur, aucune
+  relecture au retour de la fenêtre, aucun sondage) ; `pages/Carte.controleur.test.tsx` tient le tout
+  sur un 1890 auquel on prête un dessin.
 - **Le badge d'une place de la malle** (`mondes/1900/pages/BadgeDeMalle.tsx`, ses règles et sa table dans
   `mondes/1900/pages/malle.ts` ; maquette, écran 18) : les quinze étiquettes dessinées en SVG, **par `cle`
   du contrat**, dans leurs trois états. Collée (`collee_le` non nul) : la forme en papier, ses encres, son
