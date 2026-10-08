@@ -943,9 +943,18 @@ billets passe sur la carte et son poinçon doré reste au casier ; les quatre au
   remplit). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne
   s'ouvre. Avec elle, **il entre seul quand `controleur.attend` est vrai, une fois par visite de la
   carte** (une référence de la page : rien n'est retenu sur l'appareil, la carte remontée le revoit
-  entrer tant qu'il attend), jamais pendant une avancée (l'avatar pas encore rendu à mon année en
-  cours), la fête du rattrapage, un passage au geste ou la vue d'ensemble : il entre quand elles
-  finissent. Son dialogue rend la carte inerte dessous. Le bloc lecteur montre **le billet demandé tel
+  entrer tant qu'il attend), **jamais par-dessus autre chose** : la carte dérive un seul fait,
+  `pleinEcranOccupe`, vrai pendant une avancée **ou avant celle qui vient** (l'avatar pas encore rendu
+  à mon année en cours), la fête du rattrapage lancée ou sur le point de l'être, un passage au geste
+  (fini ou en échec, il rend la main), la vue d'ensemble, un ticket en cours d'encaissement
+  (« L'utiliser » à la fête comme « Utiliser le ticket »), puis la carte en relecture, qui peut poser
+  l'avancée, et tant que quelque chose est déjà ouvert (l'affiche d'une date, un aperçu, une bobine ou
+  un objet en vol, un message d'état comme « Objet trouvé », la phrase de la roulotte) ; il entre quand
+  ce fait retombe. **Tout dialogue de la carte qui entre de lui-même lit ce fait, et tout calque neuf
+  s'y ajoute** (l'horaire et la halte s'y brancheront). Son dialogue rend la carte inerte dessous, et
+  l'inertie comme le rendu se lisent sur un seul booléen, `portiereOuverte` (le billet retenu **et** le
+  dessin du monde) : portière ouverte, mon année en cours passée à un monde sans la clé ne laisse pas
+  une carte inerte sans dialogue. Le bloc lecteur montre **le billet demandé tel
   que mon journal le dit** (le contrat n'en donne que deux identifiants) : il lit la première page du
   journal, sous la clé de l'accueil, y cherche l'entrée par son identifiant, jamais la page suivante,
   et prend le numéro du billet à la boîte de sa décennie si elle est en cache ; sinon, ou en panne, la

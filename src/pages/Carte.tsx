@@ -339,18 +339,16 @@ export default function Carte() {
   // cours dit qu'aucune avancée n'attend : `avancee` seule ne le dit pas, l'effet de la frontière la
   // pose dans le rendu même où celui-ci la lirait encore nulle.
   const [fete, setFete] = useState<Extract<Scene, { type: 'annee' }> | null>(null)
-  const ticketFete = useRef<number | null>(null)
-  // La fête lancée, avant même le rendu qui la montre : le contrôleur, dont l'effet suit celui-ci dans
-  // la même passe, la lirait encore nulle dans `fete`.
-  const enFete = useRef(false)
+  const [ticketFete, setTicketFete] = useState<number | null>(null)
+  const rattrapage = useMemo(() => (v ? sceneDuRattrapage(v) : null), [v])
+  // La fête qui va se lancer, dite dès le rendu qui la décide : l'effet ci-dessous ne la pose dans
+  // `fete` qu'au rendu suivant, et `pleinEcranOccupe`, lu dans la même passe d'effets, la croirait absente.
+  const feteAVenir = !!v && !avancee && anneeAvatar === v.annee_en_cours && rattrapage !== null && ticketFete !== rattrapage.ticket
   useEffect(() => {
-    if (!v || avancee || anneeAvatar !== v.annee_en_cours) return
-    const scene = sceneDuRattrapage(v)
-    if (!scene || ticketFete.current === scene.ticket) return
-    ticketFete.current = scene.ticket
-    enFete.current = true
-    setFete(scene)
-  }, [v, avancee, anneeAvatar])
+    if (!feteAVenir || !rattrapage) return
+    setTicketFete(rattrapage.ticket)
+    setFete(rattrapage)
+  }, [feteAVenir, rattrapage])
 
   // Les objets oubliés dans le décor (lot d'écrans, brief 4) : ceux des mondes que la carte montre.
   // Aucun en 1890 ni devant le monde « à venir », et 1900 est caché à qui ne l'a pas atteint : la
@@ -404,21 +402,58 @@ export default function Carte() {
 
   // Le contrôleur entre seul quand le serveur dit qu'il attend (décision 5 du propriétaire), une fois
   // par visite de la carte : la référence ne vit que le temps de la page, rien n'est retenu sur
-  // l'appareil, et la carte remontée le revoit entrer tant qu'il attend. Jamais pendant une avancée
-  // (l'avatar n'est rendu à mon année en cours qu'à sa fin : cette seule condition la couvre, passage
-  // d'entrée compris), une fête, un passage au geste ou la vue d'ensemble : il entre quand elles
-  // finissent. Le billet est celui que l'état annonçait alors.
+  // l'appareil, et la carte remontée le revoit entrer tant qu'il attend. Jamais par-dessus autre
+  // chose : il entre quand `pleinEcranOccupe` retombe. Le billet est celui que l'état annonçait alors.
   const [controle, setControle] = useState<BilletDemande | null>(null)
   const controleurPasse = useRef(false)
   const [passage, setPassage] = useState(false)
+  // La portière ouverte : le billet retenu **et** le dessin du monde. Un seul fait pour l'inertie des
+  // deux enveloppes et pour le rendu du dialogue : mon année en cours passée, portière ouverte, à un
+  // monde sans la clé (la carte relue), les enveloppes inertes sans dialogue feraient une carte morte.
+  const portiereOuverte = controle !== null && DessinDuControleur !== null
+  /**
+   * **Le plein écran est occupé** : le seul fait que lit un dialogue de la carte qui entre de lui-même
+   * (le contrôleur ; l'horaire et la halte s'y brancheront), à la place de gardes dispersées. Vrai tant
+   * que quelque chose tient l'écran ou va le prendre, et calculé au rendu, sans référence : il vaut
+   * dans la passe d'effets du rendu même qui le décide.
+   *
+   * - une avancée en cours **ou à venir** : l'avatar pas encore rendu à mon année en cours (`avancee`
+   *   seule ne le dit pas, l'effet de la frontière la pose dans la passe où on la lirait encore nulle ;
+   *   son passage d'entrée, son tampon et son carton y sont compris) ;
+   * - la fête du rattrapage, lancée (`fete`) ou sur le point de l'être (`feteAVenir`) ;
+   * - un passage au geste, la vue d'ensemble ;
+   * - un ticket en cours d'encaissement (`utiliser.isPending`, vrai dès le rendu qui suit le geste :
+   *   celui qui ferme la fête), puis la carte en relecture (`voyage.isFetching` : `onSuccess` la périme
+   *   avant que la mutation ne se dise finie, et la relue peut poser une avancée) ;
+   * - ce qui est déjà ouvert : l'affiche d'une date, un aperçu, une bobine ou un objet en vol, un
+   *   objet en cours de ramassage, un message d'état, la phrase de la roulotte ;
+   * - un dialogue de la carte déjà entré (`portiereOuverte`).
+   *
+   * Qui ajoute à la carte un calque ou un dialogue l'ajoute ici (`docs/cerveau/carte-et-moteur.md`).
+   */
+  const pleinEcranOccupe =
+    !v ||
+    anneeAvatar !== v.annee_en_cours ||
+    feteAVenir ||
+    fete !== null ||
+    passage ||
+    ensemble ||
+    utiliser.isPending ||
+    voyage.isFetching ||
+    date !== null ||
+    apercu !== null ||
+    enVol !== null ||
+    vols.length > 0 ||
+    ramasser.isPending ||
+    message !== null ||
+    roulotteDite ||
+    portiereOuverte
   const billetDemande = DessinDuControleur && voyageur.data?.controleur.attend ? voyageur.data.controleur.billet : null
   useEffect(() => {
-    if (!v || !billetDemande || controleurPasse.current) return
-    if (anneeAvatar !== v.annee_en_cours || enFete.current || passage || ensemble) return
+    if (pleinEcranOccupe || !billetDemande || controleurPasse.current) return
     controleurPasse.current = true
     setControle(billetDemande)
-    // `fete` : sa fin relance l'effet, qui lit `enFete`.
-  }, [v, billetDemande, anneeAvatar, fete, passage, ensemble])
+  }, [pleinEcranOccupe, billetDemande])
   const fermerLaPortiere = useCallback(() => setControle(null), [])
 
   if (voyage.isPending) return <p role="status">Chargement…</p>
@@ -538,7 +573,7 @@ export default function Carte() {
           répond tant qu'elle joue, ni au doigt ni au clavier. Le moteur, lui, mène toujours la caméra.
           Deux enveloppes : la toile seule répond pendant le passage d'entrée (`bonjour`), où le moteur
           ne fait d'un toucher que poser le passage à sa fin ; le reste attend la fin de l'avancée. */}
-      <div className={styles.fond} {...((avancee && !bonjour) || controle ? INERTE : null)}>
+      <div className={styles.fond} {...((avancee && !bonjour) || portiereOuverte ? INERTE : null)}>
         {etat ? (
           <CarteCanvas
             etat={etat}
@@ -568,7 +603,7 @@ export default function Carte() {
           />
         ) : null}
       </div>
-      <div className={styles.fond} {...(avancee || controle ? INERTE : null)}>
+      <div className={styles.fond} {...(avancee || portiereOuverte ? INERTE : null)}>
 
         <header className={styles.hud}>
           <div>
@@ -745,14 +780,11 @@ export default function Carte() {
           scenes={[fete]}
           // Le ticket ne s'utilise que s'il ouvre l'année qui suit mon année en cours (`ticketOffert`).
           onUtiliser={fete.ticket === v.annee_en_cours + 1 ? encaisser : undefined}
-          onFin={() => {
-            enFete.current = false
-            setFete(null)
-          }}
+          onFin={() => setFete(null)}
         />
       ) : null}
       {/* Le contrôleur des billets, par-dessus la carte, que son dialogue rend inerte. */}
-      {controle && DessinDuControleur ? <Controleur monde={monde} Dessin={DessinDuControleur} billet={controle} depart={v.depart} onFermer={fermerLaPortiere} /> : null}
+      {portiereOuverte && controle && DessinDuControleur ? <Controleur monde={monde} Dessin={DessinDuControleur} billet={controle} depart={v.depart} onFermer={fermerLaPortiere} /> : null}
       {/* Un monde à passage n'a pas de carton : ses lignes sont dites, hors de vue. */}
       {annonce !== null ? (
         <p role="status" className="sr-only">

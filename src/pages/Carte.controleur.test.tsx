@@ -31,6 +31,8 @@ const LIRE = 'GET /api/me/voyage/voyageur'
 const JOURNAL = 'GET /api/me/journal?limit=20'
 const REPONDRE = 'POST /api/me/voyage/controleur/reponse'
 const MONTRE = 'POST /api/me/voyage/tickets/1899/montre'
+const UTILISER = 'POST /api/me/voyage/tickets/1899/utiliser'
+const RAMASSER_LE_MELON = 'POST /api/me/voyage/objets/melon/ramasser'
 
 const EN_1898 = voyage1890(1898, [
   { annee: 1895, statut: 'ouverte', visitee: true, recompense: 'palme', progression: null },
@@ -39,16 +41,24 @@ const EN_1898 = voyage1890(1898, [
   { annee: 1898, statut: 'en_cours', visitee: false, recompense: null, progression: null, profondeur: 0 },
   { annee: 1899, statut: 'verrouillee', visitee: false, recompense: null, progression: null },
 ])
-/** Un Voyage de 1895 à 1909, toutes les années ouvertes jusqu'à 1903 : la carte montre 1900. */
-const EN_1903 = voyage1890(
-  1903,
-  Array.from({ length: 15 }, (_, i) => {
-    const annee = 1895 + i
-    return annee < 1903
-      ? { annee, statut: 'ouverte' as const, visitee: true, recompense: null, progression: null }
-      : { annee, statut: annee === 1903 ? ('en_cours' as const) : ('verrouillee' as const), visitee: false, recompense: null, progression: null, profondeur: 0 }
-  }),
-)
+/** Un Voyage de 1895 à `fin`, toutes les années ouvertes jusqu'à `enCours`. */
+const jusqua = (enCours: number, fin = 1909) =>
+  voyage1890(
+    enCours,
+    Array.from({ length: fin - 1895 + 1 }, (_, i) => {
+      const annee = 1895 + i
+      return annee < enCours
+        ? { annee, statut: 'ouverte' as const, visitee: true, recompense: null, progression: null }
+        : { annee, statut: annee === enCours ? ('en_cours' as const) : ('verrouillee' as const), visitee: false, recompense: null, progression: null, profondeur: 0 }
+    }),
+  )
+/** La carte montre 1900. */
+const EN_1903 = jusqua(1903)
+/** Mon année en cours dans le monde « à venir », qui ne compose pas le contrôleur ; la carte montre 1900 et ses objets. */
+const EN_1910 = jusqua(1910, 1910)
+/** Le ticket de 1899 encaissé : la carte relue. */
+const EN_1899: Voyage = { ...EN_1898, annee_en_cours: 1899, annees: EN_1898.annees.map((a) => (a.annee === 1898 ? { ...a, statut: 'ouverte', visitee: true } : a.annee === 1899 ? { ...a, statut: 'en_cours', profondeur: 0 } : a)) }
+const TICKET_DE_1899 = { annee: 1899, motif: '1898 t’a bien occupé.', emis_le: '2026-09-28T10:00:00.000Z', montre_le: null, utilise_le: null }
 
 const BILLET = { log_entry_id: 'b0000000-0000-4000-8000-000000000002', media_id: 'd0000000-0000-4000-8000-000000000007' }
 const BASE = exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)
@@ -134,9 +144,13 @@ const corps = (init: RequestInit) => JSON.parse(String(init.body)) as unknown
 /** Une promesse que le test tient : rien n'attend une durée. */
 function retenue<T>() {
   let lacher!: (valeur: T) => void
-  const promesse = new Promise<T>((fin) => (lacher = fin))
+  let echouer!: (raison: unknown) => void
+  const promesse = new Promise<T>((fin, echec) => ((lacher = fin), (echouer = echec)))
+  echecs.set(promesse, echouer)
   return { promesse, lacher }
 }
+const echecs = new WeakMap<Promise<unknown>, (raison: unknown) => void>()
+const lacherEnEchec = (promesse: Promise<unknown>) => echecs.get(promesse)!(new Error('le passage a échoué'))
 
 describe('le contrôleur sur la carte, une clé sans défaut', () => {
   let remettre: Array<() => void> = []
@@ -465,8 +479,8 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
     })
 
     // Le ticket à montrer et le contrôleur, tous deux déjà en cache : le même rendu les décide.
-    // Mutations : la garde de la fête retirée ; la garde lue sur l'état `fete` au lieu de la référence
-    // `enFete` (l'effet du contrôleur suit celui de la fête dans la même passe, et lirait `fete` nul).
+    // Mutations : la fête retirée de `pleinEcranOccupe` ; `feteAVenir` seule retirée (l'effet du
+    // contrôleur suit celui de la fête dans la même passe, et lirait `fete` encore nul).
     it('pendant la fête du rattrapage il n’entre pas ; elle finie, il entre', async () => {
       preter()
       const aMontrer: Voyage = { ...EN_1898, ticket_a_montrer: { annee: 1899, motif: 'Tu as fait le tour de 1898.', emis_le: '2026-09-21T21:00:00.000Z' } }
@@ -520,6 +534,204 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
       pasDePortiere()
       await act(async () => bonjour.lacher())
       await portiere()
+    })
+
+    // Un passage qui échoue rend la main comme un passage fini. Mutation : `.then(fin)` sans le second
+    // rappel (il n'entrerait plus de la visite).
+    it('un passage au geste en échec ne le retient pas : il entre', async () => {
+      preter(PAGES_1900)
+      const f = moteurFactice()
+      const bonjour = retenue<void>()
+      vi.mocked(f.moteur.direBonjour).mockImplementationOnce(() => bonjour.promesse)
+      const banc = await monter(IL_ATTEND, { ...ROUTES_DU_JEU, [LIRE]: () => json(AU_REPOS) }, { voyage: EN_1903, moteur: f })
+      await banc.calme()
+      act(() => banc.rappels().entreeProche?.(1900))
+      fireEvent.click(bouton('Prendre le train pour 1900'))
+      act(() => banc.client.setQueryData(cles.voyageur, IL_ATTEND))
+      await act(async () => undefined)
+      expect(screen.queryByTestId('controle')).toBeNull()
+      await act(async () => {
+        lacherEnEchec(bonjour.promesse)
+        await Promise.resolve()
+      })
+      await portiere()
+    })
+
+    // Le blocage de la relecture du groupe B : « L’utiliser » ferme la fête dans le geste qui encaisse.
+    // Le ticket en vol, puis la carte en relecture, puis l'avancée que la carte relue pose : il n'entre
+    // à aucun de ces temps. Mutations, une par constat : `utiliser.isPending` retiré de
+    // `pleinEcranOccupe` (il entre sitôt la fête fermée) ; `voyage.isFetching` retiré (il entre à la
+    // réponse du ticket).
+    it('« L’utiliser » à la fête : il n’entre qu’après l’avancée', async () => {
+      preter()
+      const aMontrer: Voyage = { ...EN_1898, ticket_a_montrer: { annee: 1899, motif: 'Tu as fait le tour de 1898.', emis_le: '2026-09-21T21:00:00.000Z' } }
+      const client = createQueryClient()
+      client.setQueryData(cles.voyage, aMontrer)
+      client.setQueryData(cles.tickets, { tickets: [] })
+      client.setQueryData(cles.voyageur, IL_ATTEND)
+      const f = moteurFactice()
+      const marche = retenue<void>()
+      vi.mocked(f.moteur.marcher).mockImplementation(() => marche.promesse)
+      // Trois temps que le test tient : le ticket montré (sa réponse relit la carte, encore en 1898),
+      // le ticket encaissé, la carte relue en 1899. Chaque lecture rend une réponse neuve.
+      const montre = retenue<void>()
+      const encaisse = retenue<void>()
+      const relue = retenue<void>()
+      let cartes = 0
+      const banc = await monter(
+        IL_ATTEND,
+        {
+          [MONTRE]: () => montre.promesse.then(() => new Response(null, { status: 204 })),
+          [UTILISER]: () => encaisse.promesse.then(() => json({ annee: 1899 })),
+          [VOYAGE]: () => (cartes++ === 0 ? json(EN_1898) : relue.promesse.then(() => json(EN_1899))),
+        },
+        { voyage: aMontrer, client, moteur: f },
+      )
+      expect(await screen.findByRole('dialog', { name: '1898 est bouclée' })).toBeInTheDocument()
+      await banc.calme()
+      const sansLecture = () => waitFor(() => expect(banc.client.isFetching()).toBe(0))
+      fireEvent.click(bouton('L’utiliser'))
+      await waitFor(() => expect(banc.requetes).toContain(UTILISER))
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: '1898 est bouclée' })).toBeNull())
+      await act(async () => undefined)
+      pasDePortiere()
+      await act(async () => montre.lacher())
+      await waitFor(() => expect(banc.requetes.filter((r) => r === VOYAGE)).toHaveLength(1))
+      await sansLecture()
+      await act(async () => undefined)
+      pasDePortiere()
+      await act(async () => encaisse.lacher())
+      await waitFor(() => expect(banc.requetes.filter((r) => r === VOYAGE)).toHaveLength(2))
+      await act(async () => undefined)
+      pasDePortiere()
+      await act(async () => relue.lacher())
+      await waitFor(() => expect(f.moteur.marcher).toHaveBeenCalledWith(1899))
+      await banc.calme()
+      await act(async () => undefined)
+      pasDePortiere()
+      await act(async () => marche.lacher())
+      await portiere()
+    })
+
+    // La même fenêtre sans fête : le ticket touché avant que l'état du voyageur n'arrive. Mêmes mutations.
+    it('« Utiliser le ticket » touché avant l’état du voyageur : il n’entre qu’après l’avancée', async () => {
+      preter()
+      const f = moteurFactice()
+      const marche = retenue<void>()
+      vi.mocked(f.moteur.marcher).mockImplementation(() => marche.promesse)
+      const lecture = retenue<void>()
+      const encaisse = retenue<void>()
+      const relue = retenue<void>()
+      let cartes = 0
+      const banc = await monter(
+        IL_ATTEND,
+        {
+          [TICKETS]: () => json({ tickets: [TICKET_DE_1899] }),
+          [LIRE]: () => lecture.promesse.then(() => json(IL_ATTEND)),
+          [UTILISER]: () => encaisse.promesse.then(() => json({ annee: 1899 })),
+          [VOYAGE]: () => (cartes++ === 0 ? json(EN_1898) : relue.promesse.then(() => json(EN_1899))),
+        },
+        { moteur: f },
+      )
+      fireEvent.click(await screen.findByRole('button', { name: /Utiliser le ticket/ }))
+      await waitFor(() => expect(banc.requetes).toContain(UTILISER))
+      await act(async () => lecture.lacher())
+      await waitFor(() => expect(etatEnCache(banc.client)?.controleur.attend).toBe(true))
+      await act(async () => undefined)
+      pasDePortiere()
+      await act(async () => encaisse.lacher())
+      await waitFor(() => expect(banc.requetes.filter((r) => r === VOYAGE)).toHaveLength(2))
+      await act(async () => undefined)
+      pasDePortiere()
+      await act(async () => relue.lacher())
+      await waitFor(() => expect(f.moteur.marcher).toHaveBeenCalledWith(1899))
+      await banc.calme()
+      await act(async () => undefined)
+      pasDePortiere()
+      await act(async () => marche.lacher())
+      await portiere()
+    })
+
+    // Ce qui est déjà ouvert. Mutation : `date !== null` retiré de `pleinEcranOccupe`.
+    it('l’affiche d’une date ouverte : il n’entre qu’une fois refermée', async () => {
+      preter()
+      const lecture = retenue<Response>()
+      const banc = await monter(IL_ATTEND, { [LIRE]: () => lecture.promesse })
+      await waitFor(() => expect(banc.requetes).toContain(LIRE))
+      act(() => banc.rappels().date({ an: 1895, x: 38, y: 112, court: '22 mars', lieu: 'Paris', titre: 'La première projection', jour: 'Vendredi 22 mars 1895', texte: 'Un texte.', image: null }))
+      await act(async () => lecture.lacher(json(IL_ATTEND)))
+      await banc.calme()
+      await act(async () => undefined)
+      expect(screen.getByRole('dialog', { name: 'La première projection' })).toBeInTheDocument()
+      expect(screen.queryByTestId('controle')).toBeNull()
+      fireEvent.click(bouton('Refermer'))
+      await portiere()
+    })
+
+    // Le message d'un objet ramassé tient trois secondes (minuteries simulées : rien n'attend).
+    // Mutation : `message !== null` retiré de `pleinEcranOccupe`.
+    it('« Objet trouvé » à l’écran : il n’entre qu’après le message', async () => {
+      preter(PAGES_1900)
+      const banc = await monter(AU_REPOS, { ...ROUTES_DU_JEU, [LIRE]: () => json(AU_REPOS), [RAMASSER_LE_MELON]: () => json({ cle: 'melon', annee: 1901, ramasse_le: '2026-10-08T10:00:00.000Z' }) }, { voyage: EN_1903 })
+      await banc.calme()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        const passer = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)))
+        act(() => banc.rappels().objet?.('melon', { x: 60, y: 520 }))
+        await passer(1)
+        expect(screen.getByText(/^Objet trouvé/)).toBeInTheDocument()
+        act(() => banc.client.setQueryData(cles.voyageur, { ...IL_ATTEND, objets: etatEnCache(banc.client)!.objets }))
+        await passer(1)
+        expect(screen.queryByTestId('controle')).toBeNull()
+        await passer(2998)
+        expect(screen.queryByTestId('controle')).toBeNull()
+        await passer(10)
+        expect(screen.queryByText(/^Objet trouvé/)).toBeNull()
+        expect(screen.getByTestId('controle')).toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
+  describe('la portière ouverte : le billet retenu et le dessin du monde, un seul fait', () => {
+    const vivante = () => expect(screen.getByRole('heading', { level: 1 }).parentElement!.querySelectorAll(':scope > [inert]')).toHaveLength(0)
+
+    // Le monde « à venir » ne compose pas la clé, et la carte lit l'état du voyageur pour les objets de
+    // 1900 : un contrôleur qui attend n'y ouvre rien et ne rend rien inerte. La carte relue me ramène
+    // en 1903 sous la vue d'ensemble : il n'a rien retenu de 1910 et n'entre qu'une fois celle-ci
+    // refermée. Mutations : `DessinDuControleur &&` retiré de `billetDemande` (le billet retenu en 1910
+    // ouvre la portière sous la vue d'ensemble) ; avec elle, l'inertie lue sur `controle` seul (deux
+    // enveloppes inertes en 1910, sans dialogue).
+    it('un monde sans la clé qui montre 1900 : ni portière ni carte inerte, et rien n’est retenu pour le monde d’après', async () => {
+      preter(PAGES_1900)
+      const banc = await monter(IL_ATTEND, { ...ROUTES_DU_JEU, [LIRE]: () => json(IL_ATTEND) }, { voyage: EN_1910 })
+      await banc.calme()
+      await act(async () => undefined)
+      expect(etatEnCache(banc.client)?.controleur.attend).toBe(true)
+      pasDePortiere()
+      vivante()
+      act(() => banc.rappels().ensemble(true))
+      act(() => banc.client.setQueryData(cles.voyage, EN_1903))
+      await banc.calme()
+      await act(async () => undefined)
+      pasDePortiere()
+      act(() => banc.rappels().ensemble(false))
+      await portiere()
+    })
+
+    // La portière ouverte, la carte relue me pose dans un monde sans la clé : le dialogue part, la
+    // carte ne reste pas inerte. Mutation : l'inertie des enveloppes lue sur `controle` seul.
+    it('portière ouverte, mon année en cours passe à un monde sans la clé : la carte ne reste pas inerte', async () => {
+      preter(PAGES_1900)
+      const banc = await monter(IL_ATTEND, { ...ROUTES_DU_JEU, [LIRE]: () => json(IL_ATTEND) }, { voyage: EN_1903 })
+      await portiere()
+      await banc.calme()
+      act(() => banc.client.setQueryData(cles.voyage, jusqua(1899)))
+      await banc.calme()
+      await act(async () => undefined)
+      pasDePortiere()
+      vivante()
     })
   })
 })
