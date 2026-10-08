@@ -13,9 +13,9 @@ import { annee, fichePrete, filmDeSalle, salle, voyage1890 } from '../../../test
 import { confierLeRetour, oublierLeRetour } from '../../../voyage/annee/retour'
 import Celebrations from '../../../voyage/celebrations/Celebrations'
 import { ANNEE, GARDE_DU_CHOIX, PAS_DE_L_ANNEE, RECOMPENSE, SALLE } from '../../../voyage/celebrations/deroule'
-import type { Scene } from '../../../voyage/celebrations/scenes'
+import { cartonDeSalle, type Scene } from '../../../voyage/celebrations/scenes'
 import { TEMPO } from '../../../voyage/tempo'
-import { FENETRES, cartonDeLaVoiture, fenetresDeLaVoiture, trajetDuBon } from './fetes'
+import { FENETRES, MOTS_DES_FETES, cartonDeLaVoiture, fenetresDeLaVoiture, trajetDuBon } from './fetes'
 import FEUILLE_DES_FETES from './Fetes.module.css?raw'
 
 /**
@@ -74,6 +74,28 @@ describe('les règles des fêtes de 1900', () => {
     expect(cartonDeLaVoiture({ type: 'salle', noms: [], combien: 1 }, { sur: 'Salle complète', titre: 'Une salle' })).toEqual({ sur: 'Voiture complète', titre: 'Une voiture' })
     // Une salle qui s'appelle « La salle des machines » garde son nom.
     expect(cartonDeLaVoiture({ type: 'salle', noms: ['La salle des machines'], combien: 1 }, { sur: 'Salle complète', titre: 'La salle des machines' }).titre).toBe('La salle des machines')
+  })
+
+  // `cartonDeLaVoiture` réécrit le texte de `cartonDeSalle` (« salle » devient « voiture », « Salles »
+  // au début donne le pluriel) : il casserait en silence si ce texte changeait. Toutes les formes que
+  // la scène sait dire passent ici, par la vraie fonction. Mutations, dans `scenes.ts` : « Une Salle »,
+  // « ${n} Salles » ou « ${n} salons » (le titre garde « salle », ou ne dit plus « voiture ») ; « Les
+  // salles complètes » (le pluriel n'est plus reconnu : « Voiture complète » sur « 2 voitures »).
+  it('aucune forme du carton de la scène ne garde « salle » une fois réécrite, et le pluriel suit', () => {
+    const noms = [[], ['Méliès, toujours'], ['A', 'B'], ['A', 'B', 'C']]
+    for (const n of noms) {
+      for (const combien of [1, 2, 3, 12]) {
+        const scene = { type: 'salle' as const, noms: n, combien }
+        const dit = cartonDeLaVoiture(scene, cartonDeSalle(scene))
+        if (n.length === 1) {
+          expect(dit).toEqual({ sur: MOTS_DES_FETES.voiture, titre: n[0] })
+          continue
+        }
+        expect(`${dit.sur} | ${dit.titre}`).not.toMatch(/sall|salon/i)
+        expect(dit.titre).toMatch(/^(Une voiture|\d+ voitures)$/)
+        expect(dit.sur).toBe(/voitures$/.test(dit.titre) ? MOTS_DES_FETES.voitures : MOTS_DES_FETES.voiture)
+      }
+    }
   })
 
   // Mutation : le lieu de l'année bouclée à la place de celui où le ticket mène.

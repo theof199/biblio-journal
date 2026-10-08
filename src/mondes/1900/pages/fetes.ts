@@ -25,7 +25,9 @@ type SceneDeSalle = Extract<Scene, { type: 'salle' }>
 
 /**
  * Le carton de la voiture, d'après celui de la scène (`cartonDeSalle`), sans recompter : une salle
- * est une voiture, son nom reste le sien.
+ * est une voiture, son nom reste le sien. La réécriture tient au texte de `cartonDeSalle` (« salle »
+ * dans le titre, « Salles » en tête au pluriel) : `fetes.test.tsx` y fait passer toutes ses formes,
+ * et rougit si l'une garde « salle » ou perd son pluriel.
  */
 export function cartonDeLaVoiture(scene: SceneDeSalle, carton: { sur: string; titre: string }): { sur: string; titre: string } {
   if (scene.noms.length === 1) return { sur: MOTS_DES_FETES.voiture, titre: carton.titre }
