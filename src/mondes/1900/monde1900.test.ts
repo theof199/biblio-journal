@@ -8,7 +8,11 @@ import { placerCarte } from '../../carte/placement'
 import { construireRoute } from '../../carte/route'
 import { vueFactice } from '../../test/vueFactice'
 import { contexteFactice } from '../../test/contexteFactice'
-import { aDevelopper, developpement, ecranDeLaCase, estFermee, gareALEcran, milieuDeLaGare } from './gares'
+import { aDevelopper, developpement, ecranDeLaCase, estFermee, gareALEcran, milieuDeLaGare, objetsSurLeQuai, RAYON_D_OBJET } from './gares'
+import { OBJETS, phraseDeLObjet } from './objets'
+import { CACHETTES } from './bobines'
+import { DATES, PLACES_DES_DEPECHES } from './depeches'
+import { vitreOuverte } from './passage'
 import { aUnChef, forceDeLaLanterne, lanterneALEcran } from './habillage'
 import { decalages, fenetre, RAPPORTS } from './toiles'
 import { ANNEES, ARRETS, B1, E, HAUTEUR, PAS, S1, trace1900 } from './trace'
@@ -327,6 +331,93 @@ describe('où se tient une année à l’écran', () => {
     creerMonde1900().scene!.ecranDeLaCase(f.vue, 1903)
     expect(f.appels).toEqual([])
     expect(f.zones).toEqual([])
+  })
+})
+
+// Plan des écrans des lots, brief 4 : un objet oublié par gare, sur son quai. Les règles seulement
+// (lequel se propose, où, quand) : rien ici ne regarde son tracé.
+describe('les objets oubliés sur le quai', () => {
+  const aLEcran = (f: ReturnType<typeof enGare>) => objetsSurLeQuai(f.vue).filter((o) => o.x >= 0 && o.x <= 390).map((o) => o.rang)
+
+  // Mutations : `objets: []` au monde ; une clé hors du contrat ; la phrase sans son accord.
+  it('le monde cache les dix objets du catalogue, par clé du contrat, chacun avec sa phrase accordée', () => {
+    const m = creerMonde1900()
+    expect(m.objets.map((o) => o.cle)).toEqual(['lanterne', 'melon', 'parapluie', 'montre', 'programme', 'facteur', 'longuevue', 'eventail', 'sifflet', 'valise'])
+    expect(m.objets.map((o) => o.cle)).toEqual(OBJETS.map((o) => o.cle))
+    expect(m.objets[0]!.phrase).toBe('Une lanterne de chef de gare, oubliée en gare de 1900 : elle attend dans la sacoche.')
+    expect(m.objets[1]!.phrase).toBe('Un chapeau melon, oublié en gare de 1901 : il attend dans la sacoche.')
+    expect(m.objets.map((o) => o.phrase)).toEqual(OBJETS.map(phraseDeLObjet))
+  })
+
+  // Mutation : un objet déplacé d'une gare (`annee` lue ailleurs, ou `o.annee - 1899`).
+  it('chacun se tient dans la gare de son année, un par gare, de 1900 à 1909', () => {
+    expect(ANNEES.map((a) => aLEcran(enGare(a, 10)))).toEqual(ANNEES.map((_, i) => [i]))
+    expect(OBJETS.map((o) => o.annee)).toEqual([...ANNEES])
+  })
+
+  // La règle pure du brief. Mutation : la garde `aDevelopper` ôtée d'`objetsSurLeQuai`.
+  it('aucun ne se propose dans une gare à développer : fermée, en attente du Voyage suivi, ou pas encore atteinte', () => {
+    // La montre attend en 1903. Trois années ouvertes : la gare est fermée.
+    expect(aLEcran(enGare(1903, 3))).toEqual([])
+    expect(aLEcran(enGare(1903, 4))).toEqual([3])
+    // En attente du Voyage suivi : fermée partout, plaque comprise.
+    expect(aLEcran(enGare(1903, 4, { cases: cases(4).map((k) => (k.annee === 1903 ? { ...k, attente: true } : k)) }))).toEqual([])
+    // L'année vient de s'ouvrir, le train roule encore vers sa gare : `ouverte` n'y est pas.
+    expect(aLEcran(enGare(1903, 4, { ouverte: { annee: 1902, t0: -9 } }))).toEqual([])
+  })
+
+  // « Ce qui se touche » : rien tant que la vitre n'a pas rempli l'écran, ni hors de la part de l'écran
+  // où la section se voit. Mutation : `dansLaFenetre` remplacé par vrai dans `objetsSurLeQuai`.
+  it('aucun ne se propose tant que la vitre n’a pas rempli l’écran, ni là où la section ne se voit pas', () => {
+    let fermees = 0
+    for (let avance = -700; avance <= ARRETS[0]!; avance += 20) {
+      if (vitreOuverte(avance)) continue
+      fermees += 1
+      expect(objetsSurLeQuai(enGare(1900, 10, { avance }).vue), `avance ${avance}`).toEqual([])
+    }
+    // Le plancher : le balayage a bien traversé le passage, et la gare de 1900 offre sa lanterne.
+    expect(fermees).toBeGreaterThan(10)
+    expect(aLEcran(enGare(1900, 10))).toEqual([0])
+    expect(objetsSurLeQuai(enGare(1909, 10, { avance: HAUTEUR - 300 }).vue)).toEqual([])
+  })
+
+  // Le monde pose ce qui se propose, à son rang et à son rayon, et rien de ce qui est déjà ramassé :
+  // le moteur n'inscrit alors aucune zone. Mutations : `v.objet` appelé pour un objet ramassé (le
+  // monde le dessinerait encore) ; un autre rang que celui du catalogue ; `objetsSurLeQuai` non lu.
+  it('le monde pose l’objet de la gare tant qu’il n’est pas ramassé, et ne le pose plus ensuite', () => {
+    const poses = (ramasse: (i: number) => boolean) => {
+      const objet = vi.fn()
+      const f = enGare(1903, 10, { objet, objetRamasse: ramasse })
+      creerMonde1900().dessinerMoyen(f.vue)
+      return objet.mock.calls.filter((a) => a[1] >= 0 && a[1] <= 390)
+    }
+    const [ici] = objetsSurLeQuai(enGare(1903, 10).vue).filter((o) => o.x >= 0 && o.x <= 390)
+    expect(poses(() => false)).toEqual([[3, ici!.x, ici!.y, RAYON_D_OBJET]])
+    expect(poses((i) => i === 3)).toEqual([])
+    expect(poses((i) => i !== 3)).toHaveLength(1)
+  })
+
+  // Les places de la lanterne et du parapluie sont posées ici, hors maquette : aucune ne tombe sur la
+  // bobine ou la dépêche de sa gare, dont la zone la couvrirait (ou l'inverse). Les zones se
+  // comptent à leur rayon inscrit : 1,6 fois le rayon pour l'objet et la bobine, 26 px pour la dépêche.
+  // Mutation : la lanterne posée à la place de la bobine de 1900 (`dx: -122, bas: 33`).
+  it('aucun objet ne se pose sur la bobine ni sur la dépêche de sa gare', () => {
+    const heurts: string[] = []
+    for (const H of [640, 760, 900]) {
+      for (const o of OBJETS) {
+        const ici = { x: o.quai.dx, y: H * (1 - o.quai.bas / 100) - 12 }
+        CACHETTES.filter((b) => b.an === o.annee).forEach((b) => {
+          if (Math.hypot(ici.x - b.dx, ici.y - (H * (1 - b.bas / 100) - 12)) < (RAYON_D_OBJET + 8) * 1.6) heurts.push(`${o.cle} et la bobine, H ${H}`)
+        })
+        DATES.forEach((d, rang) => {
+          const place = PLACES_DES_DEPECHES[rang]!
+          if (d.an === o.annee && Math.hypot(ici.x - place.dx, ici.y - (H * (1 - place.bas / 100) - 10)) < RAYON_D_OBJET * 1.6 + 26) heurts.push(`${o.cle} et la dépêche, H ${H}`)
+        })
+      }
+    }
+    expect(heurts).toEqual([])
+    // Le plancher : la comparaison a bien des voisins à qui se mesurer.
+    expect(OBJETS.filter((o) => CACHETTES.some((b) => b.an === o.annee) || DATES.some((d) => d.an === o.annee)).map((o) => o.cle)).toEqual(['lanterne', 'melon', 'parapluie', 'montre', 'programme'])
   })
 })
 

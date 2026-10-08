@@ -9,6 +9,7 @@ import { dansLaFenetre, decalages, ouvrir } from './toiles'
 import { ANNEES, E } from './trace'
 import { DATES, PLACES_DES_DEPECHES } from './depeches'
 import { CACHETTES } from './bobines'
+import { OBJETS, type ObjetTrouve } from './objets'
 
 /** Le lieu de chaque photographie (maquette : `LIEU`, l. 2733) : celui de l'image, pas celui des événements de l'année. */
 export const LIEU: Readonly<Record<number, string>> = {
@@ -295,10 +296,61 @@ function depeche(v: VueMonde, rang: number, x: number, y: number): void {
   g.restore()
 }
 
+/** Le rayon d'un objet posé sur le quai : sa vue de 40 tient dans 28 px (maquette : `.objet svg`), sa zone dans 44 (`VueMonde.objet`, `r × 1,6`). */
+export const RAYON_D_OBJET = 14
+
+/**
+ * Les objets oubliés qui se proposent dans cette image, par rang au catalogue, et où (plan des écrans
+ * des lots, brief 4) : chacun sur le quai de sa gare, **développée seulement** (`aDevelopper` : ni
+ * fermée, ni pas encore atteinte), à l'écran, et dans la fenêtre de la section, donc jamais tant que
+ * la vitre n'a pas rempli l'écran (`dansLaFenetre`). Pure : ni dessin, ni zone. Ce qui est déjà
+ * ramassé n'est pas su d'ici : le moteur le dit (`VueMonde.objetRamasse`).
+ */
+export function objetsSurLeQuai(v: Pick<VueMonde, 'W' | 'H' | 'avance' | 'cases' | 'ouverte'>): Array<{ rang: number; x: number; y: number }> {
+  return OBJETS.flatMap((o, rang) => {
+    if (aDevelopper(v, o.annee)) return []
+    const x = milieuDeLaGare(v, o.annee - 1900) + o.quai.dx
+    const y = v.H * (1 - o.quai.bas / 100) - 12
+    return x > -30 && x < v.W + 30 && dansLaFenetre(v, y) ? [{ rang, x, y }] : []
+  })
+}
+
+/**
+ * Un objet posé sur le quai (maquette : `.objet`, l. 1190-1191) : les tracés du catalogue, les mêmes
+ * que dans la sacoche, penchés, sur leur ombre. Là où `Path2D` manque (jsdom), le trait se tait.
+ */
+function objetPose(g: CanvasRenderingContext2D, o: ObjetTrouve, x: number, y: number): void {
+  if (typeof Path2D === 'undefined') return
+  const k = RAYON_D_OBJET / 20
+  g.save()
+  g.translate(x, y)
+  g.fillStyle = c('#000000', 0.38)
+  g.beginPath()
+  g.ellipse(1, RAYON_D_OBJET * 0.86, RAYON_D_OBJET * 0.92, RAYON_D_OBJET * 0.2, 0, 0, Math.PI * 2)
+  g.fill()
+  g.rotate(((o.quai.penche + (o.tourne ?? 0)) * Math.PI) / 180)
+  g.scale(k, k)
+  for (const t of o.traits) {
+    const chemin = new Path2D(t.d)
+    if (t.fond) {
+      g.fillStyle = c(t.fond)
+      g.fill(chemin)
+    }
+    if (t.trait) {
+      g.strokeStyle = c(t.trait)
+      g.lineWidth = t.epais ?? 1
+      g.lineCap = t.rond ? 'round' : 'butt'
+      g.setLineDash(t.tirets ? [...t.tirets] : [])
+      g.stroke(chemin)
+    }
+  }
+  g.restore()
+}
+
 /**
  * La toile des gares (rapport 2/5 ; maquette : `.gares`, l. 105-122 et 3074) : une photographie
  * par année, posée dans le paysage (`POSE`), sa plaque émaillée et le nom du lieu ; une année fermée en plaque négative, qui se
- * développe à l'ouverture ; puis ce qu'une gare ouverte porte, ses dépêches et sa bobine perdue.
+ * développe à l'ouverture ; puis ce qu'une gare ouverte porte, ses dépêches, sa bobine perdue et son objet oublié.
  */
 export function dessinerMoyen(v: VueMonde): void {
   if (!ouvrir(v)) return
@@ -331,5 +383,11 @@ export function dessinerMoyen(v: VueMonde): void {
     const y = v.H * (1 - b.bas / 100) - 12
     if (aLEcran(x, 30) && dansLaFenetre(v, y)) v.bobine(rang, x, y, 8)
   })
+  // Un objet oublié : dessiné ici tant qu'il n'est pas ramassé, sa zone inscrite par le moteur.
+  for (const { rang, x, y } of objetsSurLeQuai(v)) {
+    if (v.objetRamasse(rang)) continue
+    objetPose(g, OBJETS[rang]!, x, y)
+    v.objet(rang, x, y, RAYON_D_OBJET)
+  }
   g.restore()
 }

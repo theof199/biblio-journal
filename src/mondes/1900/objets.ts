@@ -5,8 +5,8 @@
  * servirait sans qu'elle soit ici s'ignore. Sans rendu ni lecture.
  *
  * **Un seul dessin par objet**, dans une vue de 40 sur 40 centrée sur zéro : une suite de tracés, que
- * la sacoche pose en SVG (`pages/ObjetsDeLaSacoche.tsx`) et que le quai pourra poser sur une toile
- * (`new Path2D(d)`), sans le redessiner. Ses couleurs sont sa donnée, comme celles d'un badge de la
+ * la sacoche et l'envol posent en SVG (`pages/DessinDObjet.tsx`) et que le quai pose sur sa toile
+ * (`gares.ts`, par `Path2D`), sans le redessiner. Ses couleurs sont sa donnée, comme celles d'un badge de la
  * malle : elles ne passent pas par un jeton, et aucune feuille ne les porte.
  */
 
@@ -34,6 +34,14 @@ export type ObjetTrouve = {
   court: string
   /** L'angle dont tout le dessin tourne, en degrés ; rien pour un objet posé droit. */
   tourne?: number
+  /**
+   * Où il attend sur le quai de sa gare (maquette, `OBJETS`, l. 3907-3918 : `dx`, `bas`, `r`), comme
+   * une bobine (`bobines.ts › CACHETTES`) : en pixels du milieu de la gare, en pourcentage de la
+   * hauteur de l'écran depuis le bas, et l'angle dont il penche là, en degrés. **La lanterne et le
+   * parapluie n'ont pas de place dans la maquette** (elle les montre déjà ramassés) : les leurs sont
+   * posées ici, à droite du quai, à revoir à l'essai (décision 15 du plan des écrans des lots).
+   */
+  quai: { dx: number; bas: number; penche: number }
   traits: readonly TraitDObjet[]
 }
 
@@ -54,6 +62,7 @@ const CUIR_SOMBRE = '#2a1508'
 export const OBJETS: readonly ObjetTrouve[] = [
   {
     cle: 'lanterne',
+    quai: { dx: 118, bas: 27, penche: -6 },
     annee: 1900,
     nom: 'une lanterne de chef de gare',
     court: 'Lanterne',
@@ -68,6 +77,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'melon',
+    quai: { dx: -132, bas: 29.5, penche: -10 },
     annee: 1901,
     nom: 'un chapeau melon',
     court: 'Chapeau melon',
@@ -80,6 +90,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'parapluie',
+    quai: { dx: 124, bas: 26.5, penche: 4 },
     annee: 1902,
     nom: 'un parapluie',
     court: 'Parapluie',
@@ -94,6 +105,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'montre',
+    quai: { dx: -146, bas: 25, penche: 12 },
     annee: 1903,
     nom: 'une montre de gousset',
     court: 'Montre',
@@ -108,6 +120,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'programme',
+    quai: { dx: -138, bas: 26, penche: -14 },
     annee: 1904,
     nom: 'un programme de séance',
     court: 'Programme',
@@ -121,6 +134,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'facteur',
+    quai: { dx: -128, bas: 25.5, penche: 6 },
     annee: 1905,
     nom: 'une sacoche de facteur',
     court: 'Sacoche de facteur',
@@ -133,6 +147,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'longuevue',
+    quai: { dx: -130, bas: 26, penche: 0 },
     annee: 1906,
     nom: 'une longue-vue',
     court: 'Longue-vue',
@@ -147,6 +162,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'eventail',
+    quai: { dx: -130, bas: 26, penche: 8 },
     annee: 1907,
     nom: 'un éventail',
     court: 'Éventail',
@@ -159,6 +175,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'sifflet',
+    quai: { dx: -130, bas: 26, penche: -6 },
     annee: 1908,
     nom: 'un sifflet de chef de train',
     court: 'Sifflet',
@@ -171,6 +188,7 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'valise',
+    quai: { dx: -130, bas: 26, penche: 4 },
     annee: 1909,
     nom: 'une valise',
     court: 'Valise',
@@ -184,3 +202,13 @@ export const OBJETS: readonly ObjetTrouve[] = [
     ],
   },
 ]
+
+/**
+ * Ce que la carte dit d'un objet qu'on vient de ranger (maquette, `ramasserObjet`, l. 3940) : son nom
+ * en tête, sa gare, et où le retrouver. L'accord se lit sur l'article du nom ; la maquette écrivait
+ * « il attend » pour une lanterne.
+ */
+export function phraseDeLObjet(o: Pick<ObjetTrouve, 'nom' | 'annee'>): string {
+  const feminin = o.nom.startsWith('une ')
+  return `${o.nom[0]!.toUpperCase()}${o.nom.slice(1)}, oublié${feminin ? 'e' : ''} en gare de ${o.annee} : ${feminin ? 'elle' : 'il'} attend dans la sacoche.`
+}

@@ -1,31 +1,10 @@
 import Panne from '../../../ui/Panne'
 import type { PropsObjetsDeLaSacoche } from '../../../voyage/sacoche/Objets'
-import type { ObjetTrouve } from '../objets'
+import DessinDObjet from './DessinDObjet'
 import { MOTS_DE_LA_CONSIGNE as M, compteDeLaConsigne, nomLuDeLaConsigne, placesDeConsigne } from './consigne'
 import Rubrique from './Rubrique'
 import styles from './Consigne.module.css'
 import sacoche from './Sacoche.module.css'
-
-/** Le dessin d'un objet, tel que le catalogue le porte : ses tracés, dans sa vue de 40 sur 40. Muet : la place dit son nom. */
-function Objet({ objet }: { objet: ObjetTrouve }) {
-  return (
-    <svg viewBox="-20 -20 40 40" aria-hidden="true">
-      <g transform={objet.tourne ? `rotate(${objet.tourne})` : undefined}>
-        {objet.traits.map((t, k) => (
-          <path
-            key={k}
-            d={t.d}
-            fill={t.fond ?? 'none'}
-            stroke={t.trait}
-            strokeWidth={t.trait ? (t.epais ?? 1) : undefined}
-            strokeLinecap={t.rond ? 'round' : undefined}
-            strokeDasharray={t.tirets?.join(' ')}
-          />
-        ))}
-      </g>
-    </svg>
-  )
-}
 
 /**
  * Les objets trouvés dans la sacoche des années 1900 (maquette, écran 15 : `.trouves`) : dix places de
@@ -50,7 +29,7 @@ export default function ObjetsDeLaSacoche({ panne, objets }: PropsObjetsDeLaSaco
           {places.map((place) => (
             <li key={place.objet.cle} data-etat={place.ramasse ? 'la' : 'manque'}>
               <span className={styles.place} role="img" aria-label={nomLuDeLaConsigne(place)}>
-                <Objet objet={place.objet} />
+                <DessinDObjet objet={place.objet} />
                 <small>{place.objet.annee}</small>
                 <span>{place.ramasse ? place.objet.court : <i>{M.aTrouver}</i>}</span>
               </span>

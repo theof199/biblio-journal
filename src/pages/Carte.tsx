@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { estPrete, lireAnnee, lireTickets, lireVoyage, utiliserTicket, type FicheAnnee } from '../api/voyage'
+import { estPrete, lireAnnee, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type FicheAnnee, type Voyageur } from '../api/voyage'
 import CarteCanvas, { type Moteur } from '../carte/CarteCanvas'
 import Apercu from '../carte/Apercu'
 import type { EtatCarte } from '../carte/moteur'
@@ -13,7 +13,7 @@ import { ecrireAnneeVue, ecrireBobines, ecrireSon, lireAnneeVue, lireBobines, li
 import { ambianceDeLaPage } from '../carte/son'
 import { auTempo, STYLE_DU_TEMPO } from '../voyage/tempo'
 import { creerRegistre } from '../mondes'
-import type { BobinePerdue, DateVraie } from '../mondes/types'
+import type { BobinePerdue, DateVraie, ObjetCache } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
 import { vibrer } from '../ui/haptique'
@@ -71,8 +71,12 @@ const LIBELLE = { palme: 'Palme', lion: 'Lion', ours: 'Ours', encours: 'en cours
  * le pose tel quel, d'où la chaîne vide ; à React 19, il devient un booléen.
  */
 const INERTE = { inert: '' }
-/** Stable : une liste neuve à chaque rendu rappellerait `reglerObjets`, donc une image, à chaque rendu. */
-const AUCUN_OBJET: readonly string[] = []
+/**
+ * L'envol d'un objet ramassé, du quai à la pastille de la sacoche (maquette « Voyage immobile 1900 » :
+ * `.objet-vol`, 1300 ms), au tempo : la même durée que `.vol` dans `carte/Carte.module.css`. Au calme,
+ * rien ne vole et rien n'attend.
+ */
+const DUREE_DE_L_ENVOL = auTempo(1300)
 
 export default function Carte() {
   const { user } = useSession()
@@ -341,6 +345,37 @@ export default function Carte() {
     setFete(scene)
   }, [v, avancee, anneeAvatar])
 
+  // Les objets oubliés dans le décor (lot d'écrans, brief 4) : ceux des mondes que la carte montre.
+  // Aucun en 1890 ni devant le monde « à venir », et 1900 est caché à qui ne l'a pas atteint : la
+  // carte ne lit alors pas l'état du voyageur. `etat` est mémoïsé, la liste l'est avec lui.
+  const objetsDeLaCarte = useMemo<readonly ObjetCache[]>(() => [...new Set((etat?.cases ?? []).map((c) => decennieDe(c.annee)))].flatMap((d) => mondes(d).objets), [etat])
+  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: objetsDeLaCarte.length > 0 })
+  // Ce que le moteur ne propose pas. Tant que l'état n'est pas lu, ou en panne sans rien en cache, on
+  // ignore ce qui est ramassé : rien ne se propose, sans un mot, et la carte reste.
+  const ramasses = voyageur.data?.objets
+  const objetsRamasses = useMemo(() => (ramasses ?? objetsDeLaCarte).map((o) => o.cle), [ramasses, objetsDeLaCarte])
+  const ramasser = useMutation({
+    mutationFn: (cle: string) => ramasserObjet(cle),
+    // Le cache n'apprend que la ligne rendue, à sa place dans `objets` : périmer le préfixe `voyage`
+    // relirait la carte, les tickets, la malle et les fiches montées, et poser la réponse à la place
+    // de l'état effacerait les rubriques vues, le contrôleur et les poinçons. Ici et non dans le
+    // rappel du geste : la sacoche doit le voir même si la carte est quittée avant la réponse.
+    onSuccess: (ligne) => {
+      client.setQueryData<Voyageur>(cles.voyageur, (e) => e && { ...e, objets: [...e.objets.filter((o) => o.cle !== ligne.cle), ligne].sort((a, b) => a.annee - b.annee) })
+    },
+  })
+  // Le verrou du geste, par objet (une référence, comme `envoi`) : le rappel du moteur rejoué pour le
+  // même objet n'écrit pas deux fois. Deux objets différents se ramassent l'un pendant l'autre.
+  const objetsEnMain = useRef(new Set<string>())
+  const [vols, setVols] = useState<Array<{ objet: ObjetCache; de: { x: number; y: number }; vers: { x: number; y: number } }>>([])
+  const sacocheRef = useRef<HTMLAnchorElement>(null)
+  // La séquence d'un ramassage attend l'envol : elle relit ce drapeau avant de toucher à la page.
+  const monte = useRef(true)
+  useEffect(() => {
+    monte.current = true
+    return () => void (monte.current = false)
+  }, [])
+
   if (voyage.isPending) return <p role="status">Chargement…</p>
   if (voyage.error || !v) return <Panne erreur={voyage.error} onReessayer={() => void voyage.refetch()} />
 
@@ -413,6 +448,44 @@ export default function Carte() {
     return { x: (e?.width || 390) - 40, y: 40 }
   }
 
+  // Un objet oublié touché (le rappel `objet` du moteur, qui l'a déjà ôté du décor) : la page l'écrit.
+  // Accepté, il vole vers la pastille de la sacoche, puis la région d'état dit son compte dans son
+  // monde et sa phrase ; au calme, il arrive d'un coup. Refusé ou en panne, il est rendu au moteur
+  // et revient sur le quai, sans un mot : le toucher se refait.
+  const objetTouche = (cle: string, de: { x: number; y: number }) => {
+    const sien = decenniesDuVoyage.map((d) => mondes(d).objets).find((objets) => objets.some((o) => o.cle === cle))
+    const objet = sien?.find((o) => o.cle === cle)
+    if (!sien || !objet || objetsEnMain.current.has(cle)) return
+    objetsEnMain.current.add(cle)
+    let envol = Promise.resolve()
+    if (!calme) {
+      const e = ecranRef.current?.getBoundingClientRect()
+      const r = sacocheRef.current?.getBoundingClientRect()
+      const vers = e && r && r.width ? { x: r.left - e.left + r.width / 2, y: r.top - e.top + r.height / 2 } : { x: (e?.width || 390) - 34, y: (e?.height || 760) - 90 }
+      setVols((v) => [...v, { objet, de, vers }])
+      envol = attendre(DUREE_DE_L_ENVOL)
+    }
+    const lacher = () => {
+      objetsEnMain.current.delete(cle)
+      if (monte.current) setVols((v) => v.filter((x) => x.objet.cle !== cle))
+    }
+    // `mutateAsync` et non les rappels de `mutate` : TanStack ne garde que ceux du dernier appel, et
+    // deux objets peuvent être en main ensemble.
+    ramasser.mutateAsync(cle).then(
+      async () => {
+        await envol
+        lacher()
+        if (!monte.current) return
+        const ranges = client.getQueryData<Voyageur>(cles.voyageur)?.objets ?? []
+        setMessage({ titre: `Objet trouvé ${sien.filter((o) => ranges.some((r) => r.cle === o.cle)).length} sur ${sien.length}`, texte: objet.phrase })
+      },
+      () => {
+        lacher()
+        if (monte.current) moteur?.rendreObjet(cle)
+      },
+    )
+  }
+
   return (
     <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }}>
       <h1 className="sr-only">Le Voyage de {user.pseudo}</h1>
@@ -426,7 +499,7 @@ export default function Carte() {
             etat={etat}
             calme={calme}
             bobines={trouvees}
-            objets={AUCUN_OBJET}
+            objets={objetsRamasses}
             surMoteur={setMoteur}
             rappels={{
               toucherAnnee: (a) => navigate(`/voyage/${a}`),
@@ -445,6 +518,7 @@ export default function Carte() {
                 montrerDecennie(decennie)
               },
               entreeProche: setProche,
+              objet: objetTouche,
             }}
           />
         ) : null}
@@ -508,7 +582,7 @@ export default function Carte() {
             {sonEnMarche || sonVoulu ? <IconVolume size={20} aria-hidden="true" /> : <IconVolumeOff size={20} aria-hidden="true" />}
           </button>
           {/* La sacoche du voyageur : le passeport, le portefeuille et les coulisses, sur leur page. */}
-          <Link to="/voyage/sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur">
+          <Link ref={sacocheRef} to="/voyage/sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur">
             <IconBriefcase size={20} aria-hidden="true" />
           </Link>
           {!avatarVu && !ensemble ? (
@@ -573,6 +647,17 @@ export default function Carte() {
             </button>
           </div>
         ) : null}
+        {/* Un objet ramassé vole du quai à la pastille de la sacoche : un décor, que le calme ne monte pas. */}
+        {vols.map(({ objet, de, vers }) => (
+          <span
+            key={objet.cle}
+            className={styles.vol}
+            aria-hidden="true"
+            style={{ ['--x0' as string]: `${de.x}px`, ['--y0' as string]: `${de.y}px`, ['--xm' as string]: `${(de.x + vers.x) / 2}px`, ['--ym' as string]: `${Math.min(de.y, vers.y) - 70}px`, ['--x1' as string]: `${vers.x}px`, ['--y1' as string]: `${vers.y}px` }}
+          >
+            <objet.Dessin />
+          </span>
+        ))}
         {message ? (
           <p role="status" className={styles.message}>
             <b>{message.titre}</b>

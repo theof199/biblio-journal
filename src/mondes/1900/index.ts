@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import type { Monde } from '../types'
 import { PAGES_1900 } from './pages'
 import { dessinerCiel } from './ciel'
@@ -9,6 +10,8 @@ import { dessinerBande } from './bande'
 import { dessinerSurLaBrume } from './dessus'
 import { DATES } from './depeches'
 import { BOBINES } from './bobines'
+import { OBJETS, phraseDeLObjet } from './objets'
+import DessinDObjet from './pages/DessinDObjet'
 import { creerVitre } from './buee'
 import { ROULEMENT } from './roulement'
 import { ralentisDuTunnel } from './tunnel'
@@ -71,7 +74,8 @@ export function creerMonde1900(): Monde {
     pages: PAGES_1900,
     musique: ROULEMENT,
     bobines: BOBINES,
-    objets: [],
+    // Un objet oublié par gare, que `gares.ts` pose sur son quai : la page lit sa phrase et son dessin.
+    objets: OBJETS.map((objet) => ({ cle: objet.cle, phrase: phraseDeLObjet(objet), Dessin: () => createElement(DessinDObjet, { objet }) })),
     touchesAuCalme: [],
     // Un glissement horizontal essuie la buée, là où elle se voit ; ailleurs il est refusé, et le doigt défile.
     glisser: vitre.glisser,

@@ -10,7 +10,8 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
 - **Le monde** : `src/mondes/1900/index.ts` › `creerMonde1900` (la palette, la `scene`, ce qu'il ne fait pas : ni chantier, ni adieu, ni réaction) ; sa ligne au registre, `src/mondes/index.ts` › `FABRIQUES`.
 - **Le tracé** : `src/mondes/1900/trace.ts` › `trace1900`, `ARRETS`, `PAS`, `HAUTEUR` ; les positions du passage y sont aussi, `src/mondes/1900/trace.ts` › `U0`, `A1`, `S1` et `B1`.
 - **Les quatre toiles** : `src/mondes/1900/toiles.ts` › `RAPPORTS`, `decalages`, `fenetre`, `dansLaFenetre`.
-- **Les gares et leurs plaques** : `src/mondes/1900/gares.ts` › `ecranDeLaCase`, `gareALEcran`, `estFermee`, `aDevelopper`, `developpement`, `dessinerMoyen` ; les dépêches et les bobines s'y posent et s'y inscrivent.
+- **Les gares et leurs plaques** : `src/mondes/1900/gares.ts` › `ecranDeLaCase`, `gareALEcran`, `estFermee`, `aDevelopper`, `developpement`, `dessinerMoyen` ; les dépêches, les bobines et les objets oubliés s'y posent et s'y inscrivent.
+- **Les objets oubliés** (un par gare, le catalogue de la sacoche) : leur place sur le quai, `src/mondes/1900/objets.ts` › `OBJETS` (`quai`), `phraseDeLObjet` ; lesquels se proposent, `src/mondes/1900/gares.ts` › `objetsSurLeQuai`, `RAYON_D_OBJET` ; le dessin en SVG de l'envol et de la sacoche, `src/mondes/1900/pages/DessinDObjet.tsx`.
 - **Le passage** : ses temps, `src/mondes/1900/entree.ts` › `ENTREE` ; ses règles, `src/mondes/1900/passage.ts` › `montee`, `trajet`, `vitreALEcran`, `vitreOuverte` ; son trait, `src/mondes/1900/montee.ts` › `dessinerSousLaVitre`, `dessinerDevantLaVitre`.
 - **L'habillage** (l'heure, les chefs de gare, la lanterne) : les tables, `src/mondes/1900/donnees.ts` › `HEURES`, `LABO`, `AMBIANCE` ; les règles, `src/mondes/1900/habillage.ts` › `heureSurLaLigne`, `voileDuLaboratoire`, `partDeLHeure` ; le trait, `src/mondes/1900/dessus.ts` › `dessinerSurLaBrume`.
 - **La météo** (pluie, neige) : la table, `src/mondes/1900/donnees.ts` › `METEO` ; les règles, `src/mondes/1900/habillage.ts` › `forceEnGare` (la buée la lit aussi), `src/mondes/1900/meteo.ts` › `forceDuTemps`, `partsDuTemps`, `glissement`, `goutteALEcran` ; le trait, `src/mondes/1900/intemperies.ts` › `dessinerMeteo`.
@@ -42,13 +43,13 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
   `src/carte/reference1890.test.ts`. Le tracé prend tout début de la suite
   1900 à 1909 (1900 à 1902 suffisent) et lève dès qu'une année n'est pas à son rang, depuis 1900 et dans l'ordre.
 - **`siteDuChantier` rend nul**, exprès : une visée arrêterait le roulement vers la gare.
-- **Ce qui se touche** : les années, les dépêches, les bobines et la voiture du Voyage suivi, rien tant que la vitre n'a pas rempli l'écran (la buée ne les couvre pas : un glissement n'est pas un toucher). L'habillage et le trait du passage n'inscrivent aucune zone. **La clé d'une bobine est ce que l'appareil retient** ; son rang est celui de `CACHETTES`.
+- **Ce qui se touche** : les années, les dépêches, les bobines, les objets oubliés et la voiture du Voyage suivi, rien tant que la vitre n'a pas rempli l'écran (la buée ne les couvre pas : un glissement n'est pas un toucher ; le melon de Creil se devine sous elle). Un objet ne se propose que dans une gare développée ; ramassé ou non, le monde l'apprend du moteur (`VueMonde.objetRamasse`), jamais d'une mémoire à lui. L'habillage et le trait du passage n'inscrivent aucune zone. **La clé d'une bobine est ce que l'appareil retient** ; son rang est celui de `CACHETTES`.
 - **Une image entre avec son entrée au `CREDITS.md` du dossier et, posée à ses proportions, sa ligne
   dans `TAILLES`.** Aucun fondu n'est dans les fichiers : `cuire` le peint une fois, dans une mémoire bornée.
 - **Le rendu du décor n'a pas de test** : les tests gardent les règles (`habillage.ts`, `passage.ts`,
   `toiles.ts`). Ce qui doit être gardé s'écrit en règle pure, pas dans le trait.
 - **Le ralenti du tunnel se tire des bornes du dessin** (un palier, d'une bouche à l'autre), jamais d'un second jeu de nombres. Le moteur ne garde pas son contrat, `tunnel.test.ts` si : une allure dans `]0, 1[`, strictement entre deux arrêts (un arrêt dedans, et son rappel roule au pas). Le dessin n'en sait rien ; ni le doigt ni l'élan du défilement natif ne sont freinés.
-- **La maquette montre plus que le monde ne dessine** (vent, aiguillage, contrôleur, horaire, objets trouvés) : rien de cela n'est livré, et ne se dessine pas d'après elle.
+- **La maquette montre plus que le monde ne dessine** (vent, aiguillage, contrôleur, horaire, l'éclat qui trahit un objet) : rien de cela n'est livré, et ne se dessine pas d'après elle.
 
 ## Les commandes
 

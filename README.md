@@ -167,6 +167,27 @@ bobine en vol n'est comptée qu'à son arrivée. Le message compte alors dans la
 et le compteur y reste jusqu'à ce que le moteur dise une autre décennie : jamais de retour à l'image
 suivante. Le dernier message dit « les trois » pour un monde de trois bobines, « toutes » sinon.
 
+**Les objets oubliés sur le quai** (lot d'écrans, brief 4 ; maquette « Voyage immobile 1900 »,
+`OBJETS`). Un objet d'époque par gare de 1900 à 1909 (`Monde.objets`, `mondes/1900/objets.ts` : le
+catalogue de la sacoche, avec la place de chacun sur son quai ; celles de la lanterne et du parapluie,
+que la maquette ne place pas, sont posées à droite du quai). Le monde dit lesquels se proposent
+(`gares.ts`, `objetsSurLeQuai` : dans une gare **développée** seulement, à l'écran, et jamais tant
+que la vitre n'a pas rempli l'écran) et les dessine lui-même, des mêmes tracés que la sacoche, tant
+que le moteur ne les dit pas ramassés ; le moteur n'inscrit que leur zone, qui passe devant le décor
+comme celle d'une bobine. **Ils ne sont pas gardés sur l'appareil** : la carte lit l'état du voyageur
+(`GET /me/voyage/voyageur`, la clé de la sacoche), **seulement si elle montre un monde qui cache des
+objets** : 1890 n'en cache pas et 1900 est caché à qui ne l'a pas atteint, un membre de 1890 ne lit
+rien de neuf (`pages/Carte.objets.test.tsx`). Tant que cet état n'est pas lu, ou en panne, aucun objet
+ne se propose, sans un mot. Un toucher (au calme aussi) l'ôte du décor et la page l'écrit
+(`POST /me/voyage/objets/{cle}/ramasser`), une fois par objet (un verrou par clé). Accepté, **le cache
+ne gagne que la ligne rendue** : ni le préfixe `voyage` périmé, ni l'état relu, et la consigne de la
+sacoche le montre sans rien relire ; l'objet vole du quai à la pastille de la sacoche
+(`DUREE_DE_L_ENVOL` de la page, au tempo), puis la région d'état dit « Objet trouvé 2 sur 10 », compté
+sur le catalogue du monde, et la phrase de l'objet (`ObjetCache.phrase`). Au calme, rien ne vole ni
+n'attend. Refusé ou en panne, il est rendu au moteur (`rendreObjet`) et revient sur le quai, sans un
+mot. Le moteur tient deux listes : ce que la page dit ramassé (`reglerObjets`) et ce qu'un toucher
+vient de prendre, que la liste de la page n'efface pas.
+
 **La référence de 1890** (`carte/reference1890.test.ts`). Ce que le moteur dessine pour le vrai
 monde 1890 suivi du monde « à venir » est figé en empreintes : chaque appel au contexte et chaque
 écriture de propriété, les nombres arrondis à six décimales. C'est le garde-fou de « 1890 ne bouge
@@ -819,7 +840,7 @@ court (lu « 1900 : une lanterne de chef de gare, dans la sacoche ») ; sinon sa
 « à trouver » (lu « 1903 : un objet à trouver en gare »), **sans rien qui le nomme**. Le compte, « 2
 sur 10 », se dit sur le catalogue : une clé servie qu'il ne connaît pas n'a pas de place et ne compte
 pas. En panne, la consigne le dit sous sa rubrique, et elle seule : la malle garde sa ligne. On ne
-ramasse rien ici, c'est le geste de la carte, qui n'est pas encore fait : rien ne se ramasse encore.
+ramasse rien ici : c'est le geste de la carte (« La carte du Voyage », les objets oubliés sur le quai).
 **Le courrier de l'écran 15 n'y est pas**, ni le point rouge de la pastille : aucune rubrique vide ne
 les annonce (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
 le droit de lire, et la liste entière de ses rubriques).
@@ -835,8 +856,8 @@ d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le P
 
 L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquettes, les objets
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
-wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche (on ne ramasse
-pas encore sur la carte) ; les six autres n'en ont pas encore**
+wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
+ramassent sur le quai de la carte ; les six autres n'en ont pas encore**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`

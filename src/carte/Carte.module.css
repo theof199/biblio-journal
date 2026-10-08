@@ -112,7 +112,21 @@
 }
 .message b { color: var(--or); }
 @keyframes monte { from { opacity: 0; transform: translate(-50%, 8px); } }
+/* Un objet oublié ramassé vole du quai à la pastille de la sacoche (maquette « Voyage immobile 1900 » :
+   `.objet-vol`), au tempo : la durée de `DUREE_DE_L_ENVOL` (`pages/Carte.tsx`), qui le retire à l'arrivée.
+   La page ne le monte pas au calme. */
+.vol {
+  position: absolute; z-index: 5; left: -14px; top: -14px; width: 28px; height: 28px; pointer-events: none;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6)); animation: envol calc(1300ms * var(--tempo)) ease-in-out both;
+}
+.vol svg { display: block; width: 100%; height: 100%; overflow: visible; }
+@keyframes envol {
+  from { transform: translate(var(--x0), var(--y0)) scale(1); }
+  50% { transform: translate(var(--xm), var(--ym)) scale(1.7) rotate(-20deg); }
+  to { transform: translate(var(--x1), var(--y1)) scale(0.6); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .pulse, .message { animation: none; }
+  .vol { display: none; }
 }
