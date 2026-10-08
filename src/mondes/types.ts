@@ -34,6 +34,7 @@ import type { PropsTeteDuGuichet } from '../voyage/recherche/Tete'
 import type { PropsPageDuPasseport } from '../voyage/sacoche/Page'
 import type { PropsPasseportDeLaSacoche } from '../voyage/sacoche/Pages'
 import type { PropsMalleDeLaSacoche } from '../voyage/sacoche/Malle'
+import type { PropsObjetsDeLaSacoche } from '../voyage/sacoche/Objets'
 import type { PropsCoulisses } from '../voyage/sacoche/Repli'
 import type { PropsTeteDeLaSacoche } from '../voyage/sacoche/Tete'
 import type { PropsPortefeuille } from '../voyage/sacoche/Tickets'
@@ -853,6 +854,14 @@ export interface GabaritsDesPages {
    */
   malleDeLaSacoche: ComponentType<PropsMalleDeLaSacoche>
   /**
+   * Les objets trouvés de la sacoche (plan des écrans des lots, brief 3) : les places de consigne du
+   * monde, qui porte le catalogue (les clés, les noms, les dessins). **Sans défaut** : un monde qui ne
+   * la compose pas ne monte pas le bloc `voyage/sacoche/Objets.tsx`, qui ne lit alors pas l'état du
+   * voyageur. Le bloc garde la région, la lecture et la marque « vue » ; il passe ce que le serveur
+   * sert, tel quel.
+   */
+  objetsDeLaSacoche: ComponentType<PropsObjetsDeLaSacoche>
+  /**
    * Le dessin de la salle bouclée (`voyage/celebrations/DessinDeLaSalle.tsx`) : le rideau, le carton.
    * Lu par `voyage/celebrations/SalleBouclee.tsx`, qui garde le cadre (le dialogue, le toucher,
    * Échap), le déroulé, le clap et la vibration. Il reçoit la salle telle que la fiche la montre.
@@ -879,7 +888,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

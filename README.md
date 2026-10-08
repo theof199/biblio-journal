@@ -380,7 +380,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trente-cinq clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, six sur la sacoche et trois sur les célébrations (plus bas, « Les célébrations »). L'une des six, `malleDeLaSacoche`, **n'a pas de défaut** : elle se lit par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et son bloc lecteur ne se monte ni ne lit rien dans un monde qui ne la compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Trente-six clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et trois sur les célébrations (plus bas, « Les célébrations »). Deux des sept, `malleDeLaSacoche` et `objetsDeLaSacoche`, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -859,7 +859,13 @@ wagon-restaurant) : **la malle a son écran, dans la sacoche ; les sept autres n
   `etiquette` se marque vue une fois par visite**, la malle lue (`voyage/sacoche/visite.ts`,
   `useVisiteDeRubrique`, qui servira aux objets trouvés et au courrier) : « nouvelle » se calcule sur
   le `vue_le` lu à l'arrivée, figé pour la visite, et le cache n'apprend que la date du serveur
-  (`pages/VoyageSacoche.malle.test.tsx`, sur un 1890 auquel on prête un dessin). `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
+  (`pages/VoyageSacoche.malle.test.tsx`, sur un 1890 auquel on prête un dessin). La seconde est
+  `objetsDeLaSacoche`, qu'aucun monde ne remplit encore : son bloc lecteur (`voyage/sacoche/Objets.tsx`,
+  entre le portefeuille et les coulisses) ne lit que l'état du voyageur, passe au dessin ce que le
+  serveur sert, tel quel (le catalogue des objets est au monde, qui range, ignore une clé inconnue et
+  compte), ne paraît pas tant que l'état n'est pas lu, tombe seul en panne sans éteindre la malle, et
+  **marque la rubrique `objet` vue une fois par visite** par le même crochet : jamais en panne, jamais
+  pour une consigne vide, jamais pendant une relecture (`pages/VoyageSacoche.objets.test.tsx`). `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
   ne montre ni ne lit encore, un interdit par rubrique (`PAS_ENCORE`), que le lot de chacune lèvera.
 
 ## Le thème
