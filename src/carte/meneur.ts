@@ -66,6 +66,7 @@ export interface RappelsDuMeneur {
   /** Le moteur veut la caméra ailleurs : la page pose `scrollTop`, le défilement reste natif. */
   defilerVers: (y: number) => void
   entreeProche?: (decennie: number | null) => void
+  passage?: (enCours: boolean) => void
 }
 
 /** La caméra qui roule vers un arrêt. `fin` : la promesse de `marcher` ; nul quand personne n'attend (le rappel, « Tu es ici »). */
@@ -249,6 +250,8 @@ export class Meneur {
     const p = this.passage
     if (!p) return
     this.passage = null
+    // La page l'apprend ici : la fin jouée, le toucher qui le pose à sa fin et l'arrêt par un autre glissement passent tous par là.
+    this.rappels.passage?.(false)
     for (const fin of p.fins) fin()
   }
 
@@ -326,6 +329,8 @@ export class Meneur {
     })
     return new Promise((fin) => {
       this.passage = { decennie, t0: this.terrain.t(), cles, fins: [fin] }
+      // D'où qu'il vienne : le bouton de la page, un décor (`VueMonde.passer`), le repos d'un défilement.
+      this.rappels.passage?.(true)
       this.terrain.demander()
     })
   }

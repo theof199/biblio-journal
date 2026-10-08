@@ -166,7 +166,7 @@ describe('le pont entre le DOM et le moteur', () => {
   const monter = () => {
     const banc = moteurFactice()
     const ecoutes = vi.spyOn(HTMLElement.prototype, 'addEventListener')
-    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn() }
+    const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn(), passage: vi.fn() }
     const arbre = (objets: readonly string[]) =>
       createElement(FabriqueMoteurContexte.Provider, { value: banc.fabrique }, createElement(CarteCanvas, { etat: ETAT, calme: false, bobines: [], objets, rappels, surMoteur: () => undefined }))
     const { container, rerender } = render(arbre(OBJETS))
@@ -303,5 +303,13 @@ describe('le pont entre le DOM et le moteur', () => {
     banc.rappels().aiguillage?.('melies')
     expect(banc.page.aiguillage.mock.calls).toEqual([['melies']])
     expect(banc.page.objet).not.toHaveBeenCalled()
+  })
+
+  // Mutation : la ligne `passage` retirée du relais (un passage lancé par un décor resterait inconnu de la page).
+  it('relaie à la page le passage que le moteur dit commencer, puis cesser', () => {
+    const banc = monter()
+    banc.rappels().passage?.(true)
+    banc.rappels().passage?.(false)
+    expect(banc.page.passage.mock.calls).toEqual([[true], [false]])
   })
 })

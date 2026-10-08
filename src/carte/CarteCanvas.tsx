@@ -135,6 +135,7 @@ export default function CarteCanvas({ etat, calme, bobines, objets, rappels, sur
       entreeProche: (d) => rappelsRef.current.entreeProche?.(d),
       objet: (cle, ou) => rappelsRef.current.objet?.(cle, ou),
       aiguillage: (cle) => rappelsRef.current.aiguillage?.(cle),
+      passage: (enCours) => rappelsRef.current.passage?.(enCours),
       defilerVers: (y) => {
         vue.scrollTop = y
       },

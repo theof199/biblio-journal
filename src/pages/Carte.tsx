@@ -431,7 +431,8 @@ export default function Carte() {
    *   seule ne le dit pas, l'effet de la frontière la pose dans la passe où on la lirait encore nulle ;
    *   son passage d'entrée, son tampon et son carton y sont compris) ;
    * - la fête du rattrapage, lancée (`fete`) ou sur le point de l'être (`feteAVenir`) ;
-   * - un passage au geste, la vue d'ensemble ;
+   * - un passage, lancé par le bouton ou par le moteur sans lui (`Rappels.passage` : la halte au bout de
+   *   la foire, le repos d'un défilement dans l'entrée), la vue d'ensemble ;
    * - un ticket en cours d'encaissement (`utiliser.isPending`, vrai dès le rendu qui suit le geste :
    *   celui qui ferme la fête), puis la carte en relecture (`voyage.isFetching` : `onSuccess` la périme
    *   avant que la mutation ne se dise finie, et la relue peut poser une avancée) ;
@@ -620,6 +621,9 @@ export default function Carte() {
               },
               entreeProche: setProche,
               objet: objetTouche,
+              // Le passage que le moteur joue sans le bouton (la halte au bout de la foire, le repos d'un
+              // défilement dans l'entrée) : la page l'apprend ici, et aucun dialogue n'entre par-dessus.
+              passage: setPassage,
             }}
           />
         ) : null}

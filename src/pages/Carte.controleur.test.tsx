@@ -630,6 +630,23 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
       await portiere()
     })
 
+    // Le bouton n'est pas seul à lancer un passage : la halte au bout de la foire le lance depuis le
+    // moteur, le repos d'un défilement aussi, et la page ne l'apprend que du rappel `passage`.
+    // Mutations : `passage: setPassage` retiré des rappels de la page ; son relais retiré de `CarteCanvas`.
+    it('pendant un passage que le moteur joue sans le bouton il n’entre pas ; le moteur le dit fini, il entre', async () => {
+      preter(PAGES_1900)
+      const lecture = retenue<Response>()
+      const banc = await monter(IL_ATTEND, { ...ROUTES_DU_JEU, [LIRE]: () => lecture.promesse }, { voyage: EN_1903 })
+      await waitFor(() => expect(banc.requetes).toContain(LIRE))
+      act(() => banc.rappels().passage?.(true))
+      await act(async () => lecture.lacher(json(IL_ATTEND)))
+      await banc.calme()
+      await act(async () => undefined)
+      pasDePortiere()
+      act(() => banc.rappels().passage?.(false))
+      await portiere()
+    })
+
     // Le blocage de la relecture du groupe B : « L’utiliser » ferme la fête dans le geste qui encaisse.
     // Le ticket en vol, puis la carte en relecture, puis l'avancée que la carte relue pose : il n'entre
     // à aucun de ces temps. Mutations, une par constat : `utiliser.isPending` retiré de

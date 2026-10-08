@@ -251,7 +251,7 @@ function monter(
       }
     },
   }
-  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn() }
+  const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn(), passage: vi.fn() }
   const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(options.calme ?? false)
@@ -2119,6 +2119,66 @@ describe('le moteur de la carte', () => {
         const BASE = TEMPS[0]!.arret + TEMPS[1]!.duree + TEMPS[1]!.arret + TEMPS[2]!.duree + TEMPS[2]!.arret
         const auPassage = (options: Parameters<typeof enGare>[0] = {}) => enGare({ arrets: GARES, entree: TEMPS, ...options })
         const entreeDe = (annee: number) => vueDe(annee)!.entree
+
+        // La page ne voit un passage que si le moteur le lui dit : le bouton n'est pas seul à en lancer
+        // (relecture du groupe B des écrans des lots). Mutations : `passage(true)` retiré du meneur ;
+        // `passage(false)` retiré ; `passage(false)` dit à la fin jouée seulement (`finirLePassage`),
+        // pas à l'arrêt par un autre glissement.
+        describe('dit à la page qu’un passage commence et qu’il cesse, d’où qu’il vienne', () => {
+          const dits = (banc: ReturnType<typeof auPassage>) => vi.mocked(banc.rappels.passage!).mock.calls.map(([enCours]) => enCours)
+
+          it('par le bouton, jusqu’à sa fin jouée', () => {
+            const banc = auPassage()
+            expect(dits(banc)).toEqual([])
+            void banc.moteur.direBonjour(1900, 'endroit')
+            expect(dits(banc)).toEqual([true])
+            banc.filer(auTempo(BASE) - 40)
+            expect(dits(banc)).toEqual([true])
+            banc.filer(80)
+            expect(dits(banc)).toEqual([true, false])
+          })
+
+          it('par un décor (`VueMonde.passer`), jusqu’au toucher qui le pose à sa fin', () => {
+            const banc = auPassage()
+            vueDuManege(banc).passer!()
+            expect(dits(banc)).toEqual([true])
+            banc.filer(auTempo(TEMPS[0]!.arret) + 200)
+            toucher(banc.moteur, quai(1900)!.x, quai(1900)!.y)
+            expect(dits(banc)).toEqual([true, false])
+          })
+
+          it('par le repos d’un défilement arrêté dans l’entrée, jusqu’au glissement qui lui prend la caméra', () => {
+            const banc = auPassage()
+            banc.poserA(T[0]! - 200)
+            banc.moteur.doigtsPoses(1)
+            banc.moteur.pointeur('bas', 200, 300, false)
+            banc.moteur.defiler(T[0]! - 100)
+            banc.moteur.pointeur('annule', 200, 300, false)
+            banc.moteur.defiler(T[0]! + 150)
+            banc.filer(REPOS_DU_DEFILEMENT + 1000)
+            expect(dits(banc)).toEqual([])
+            banc.moteur.doigtsPoses(0)
+            banc.filer(80)
+            expect(dits(banc)).toEqual([true])
+            void banc.moteur.marcher(1901)
+            expect(dits(banc)).toEqual([true, false])
+          })
+
+          // Mutation : `passage(true)` dit à l'entrée de `Meneur.direBonjour`, avant ses gardes.
+          it('une seule fois pour deux demandes, et jamais au calme ni pour un monde sans temps, où rien n’est en cours', () => {
+            const banc = auPassage()
+            void banc.moteur.direBonjour(1900, 'endroit')
+            void banc.moteur.direBonjour(1900, 'endroit')
+            expect(dits(banc)).toEqual([true])
+            const calme = auPassage({ calme: true })
+            void calme.moteur.direBonjour(1900, 'endroit')
+            expect(calme.vers()).toEqual([T[2]])
+            expect(dits(calme)).toEqual([])
+            const sansTemps = enGare()
+            void sansTemps.moteur.direBonjour(1900, 'endroit')
+            expect(dits(sansTemps)).toEqual([])
+          })
+        })
 
         // Mutation : la garde `temps.length === 0` retirée de `direBonjour`.
         it('se résout aussitôt, sans bouger la caméra, pour un monde sans temps, sans scène, ou inconnu de la carte', async () => {

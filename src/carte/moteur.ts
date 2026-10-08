@@ -119,6 +119,14 @@ export interface Rappels {
    * qui n'ouvre pas de halte ne l'écoute pas.
    */
   aiguillage?: (cle: string) => void
+  /**
+   * Un passage d'entrée commence (vrai) ou cesse (faux), **d'où qu'il vienne** : le bouton de la page,
+   * un décor qui appelle `VueMonde.passer` depuis `reagir` (la halte au bout de la foire), ou le repos
+   * d'un défilement arrêté dans l'entrée. Fini, posé à sa fin d'un toucher ou arrêté par un autre
+   * glissement : faux dans les trois cas, avant que qui l'attendait ne reprenne. Jamais dit au calme,
+   * où le passage se pose d'un coup et n'est jamais en cours. Optionnel.
+   */
+  passage?: (enCours: boolean) => void
 }
 /** Sous cette hauteur d'écran, l'avatar est sous le bandeau du haut (le HUD de la page) : il n'est pas vu. */
 export const HAUT_MASQUE = 110

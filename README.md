@@ -963,7 +963,9 @@ billets passe sur la carte et son poinçon doré reste au casier ; les quatre au
   entrer tant qu'il attend), **jamais par-dessus autre chose** : la carte dérive un seul fait,
   `pleinEcranOccupe`, vrai pendant une avancée **ou avant celle qui vient** (l'avatar pas encore rendu
   à mon année en cours), la fête du rattrapage lancée ou sur le point de l'être, un passage au geste
-  (fini ou en échec, il rend la main), la vue d'ensemble, un ticket en cours d'encaissement
+  (fini ou en échec, il rend la main) **ou lancé sans le bouton** (la halte au bout de la foire, le
+  repos d'un défilement arrêté dans l'entrée : le moteur le dit par `Rappels.passage`, vrai puis faux,
+  jamais au calme où rien n'est en cours), la vue d'ensemble, un ticket en cours d'encaissement
   (« L'utiliser » à la fête comme « Utiliser le ticket »), puis la carte en relecture, qui peut poser
   l'avancée, et tant que quelque chose est déjà ouvert (l'affiche d'une date, un aperçu, une bobine ou
   un objet en vol, un message d'état comme « Objet trouvé », la phrase de la roulotte) ; il entre quand
