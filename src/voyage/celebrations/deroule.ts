@@ -13,6 +13,9 @@ export const SALLE = [auTempo(700)] as const
 /** La récompense : le balancier descend et frappe ; la presse s'efface, l'emblème sort ; son nom. */
 export const RECOMPENSE = [auTempo(550), auTempo(300), auTempo(900)] as const
 
+/** L'étiquette de la malle (un badge) : le pinceau passe la colle ; l'étiquette tombe et se colle ; son nom. */
+export const BADGE = [auTempo(550), auTempo(300), auTempo(900)] as const
+
 /**
  * L'année bouclée : un temps, les cinq ampoules une à une, la médaille sous les confettis, le
  * titre, le guichet qui tend le billet, puis le choix.

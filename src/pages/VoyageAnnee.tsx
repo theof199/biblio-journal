@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
 import { journalDesAnnees } from '../api/journal'
-import { estPrete, lireGenerique, lireVoyage, utiliserTicket, type FicheAnnee, type FichePrete, type Voyage } from '../api/voyage'
+import { estPrete, lireGenerique, lireMalle, lireVoyage, utiliserTicket, type FicheAnnee, type FichePrete, type Voyage } from '../api/voyage'
 import { creerRegistre } from '../mondes'
 import type { Monde, VueBandeau } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
@@ -21,7 +21,7 @@ import { useCalque } from '../voyage/calque'
 import Celebrations from '../voyage/celebrations/Celebrations'
 import { etatDeFete, scenesDuRetour, type EtatDeFete, type Scene } from '../voyage/celebrations/scenes'
 import Feuille from '../voyage/Feuille'
-import { gabaritDe } from '../voyage/gabarit'
+import { gabaritDe, gabaritSeul } from '../voyage/gabarit'
 import { decennieDe, etatDeCase, prochainPas } from '../voyage/regles'
 import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
 import AnneeFermee from '../voyage/annee/AnneeFermee'
@@ -136,15 +136,30 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
   const compare = useRef<EtatDeFete | null>(retour?.avant?.fete ?? null)
   const fetee = useRef(false)
   const anneeEnCours = v?.annee_en_cours
+  // Les étiquettes de la malle (plan des écrans des lots, brief 6) : la malle ne se relit ici que si
+  // le billet a confié celle d'avant, dans un monde qui fête ses étiquettes (une clé sans défaut) ;
+  // une année ouverte sans retour, ou rechargée, ne la lit pas. Elle se relit **toujours** (le billet
+  // l'a périmée, mais sa relecture a pu finir avant ce montage) et ne compte que relue avec succès
+  // après le montage : celle du cache, que la sacoche a pu rafraîchir, ne fête rien. Indéfinie, on
+  // l'attend, pour que ses scènes prennent leur rang avant l'année bouclée ; nulle (en panne, ou rien
+  // à relire), la fête se joue sans elle.
+  const attendLaMalle = gabaritSeul(monde, 'feteDuBadge') !== null && !!retour?.avant?.fete?.malle
+  const malle = useQuery({
+    queryKey: cles.malle(decennieDe(annee)),
+    queryFn: ({ signal }) => lireMalle(decennieDe(annee), signal),
+    enabled: attendLaMalle,
+    refetchOnMount: 'always',
+  })
+  const malleRelue = !attendLaMalle ? null : !malle.isFetchedAfterMount || malle.isFetching ? undefined : malle.isError || !malle.data ? null : malle.data.etiquettes
   useEffect(() => {
-    if (!compare.current || !relue || !prete || anneeEnCours === undefined) return
+    if (!compare.current || !relue || !prete || anneeEnCours === undefined || malleRelue === undefined) return
     if (fetee.current && guet === null) return
-    const apres = etatDeFete(prete, anneeEnCours)
+    const apres = etatDeFete(prete, anneeEnCours, malleRelue)
     const scenes = scenesDuRetour(annee, compare.current, apres).filter((s) => !fetee.current || s.type === 'annee')
     compare.current = apres
     fetee.current = true
     if (scenes.length > 0) setFete((f) => [...f, ...scenes])
-  }, [annee, relue, prete, anneeEnCours, guet])
+  }, [annee, relue, prete, anneeEnCours, guet, malleRelue])
   useGuet(annee, guet !== null && !!prete && !verdictAChange(guet.depuis, prete.maturite?.jugee_le ?? null, prete.ticket), RELECTURES.verdict)
 
   const feuille = useCalque('feuille')

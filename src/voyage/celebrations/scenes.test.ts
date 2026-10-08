@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { Voyage } from '../../api/voyage'
+import type { PlaceDeMalle, Voyage } from '../../api/voyage'
 import { fichePrete, filmDeSalle, salle, voyage1890 } from '../../test/voyage'
-import { cartonDeSalle, etatDeFete, sceneDuRattrapage, scenesDuRetour, type EtatDeFete } from './scenes'
+import { cartonDeSalle, etatDeFete, nomDuBadge, sceneDuRattrapage, scenesDuRetour, type EtatDeFete } from './scenes'
 
 const RIEN: EtatDeFete = { sallesCompletes: 0, salles: [], recompense: null, ticket: null }
 const LUMIERE = { id: 's-lumiere', nom: 'Les frères Lumière' }
@@ -93,5 +93,70 @@ describe('les scènes d’une célébration', () => {
     expect(cartonDeSalle({ type: 'salle', noms: ['Méliès'], combien: 1 })).toEqual({ sur: 'Salle complète', titre: 'Méliès' })
     expect(cartonDeSalle({ type: 'salle', noms: ['Méliès', 'Lumière'], combien: 2 })).toEqual({ sur: 'Salles complètes', titre: '2 salles' })
     expect(cartonDeSalle({ type: 'salle', noms: [], combien: 1 })).toEqual({ sur: 'Salle complète', titre: 'Une salle' })
+  })
+})
+
+describe('les étiquettes de la malle qui viennent de se coller', () => {
+  const RIEN: EtatDeFete = { sallesCompletes: 0, salles: [], recompense: null, ticket: null }
+  const place = (numero: number, s: Partial<PlaceDeMalle> = {}): PlaceDeMalle => ({
+    numero,
+    cachee: false,
+    cle: `cle-${numero}`,
+    nom: `La ${numero}`,
+    devise: `Devise ${numero}`,
+    regle: 'Une règle.',
+    quoi: 'choses',
+    collee_le: null,
+    progression: { fait: 0, seuil: 3 },
+    ...s,
+  })
+  const collee = (numero: number) => place(numero, { collee_le: '2026-10-08T20:00:00.000Z', progression: null })
+  const numeros = (scenes: ReturnType<typeof scenesDuRetour>) => scenes.map((s) => (s.type === 'badge' ? s.place.numero : s.type))
+
+  // Mutation : `avant ?? []` (toute la malle se fêterait au premier billet dont la lecture a manqué).
+  it('sans la malle d’avant, ou sans celle d’après, aucune étiquette ne se fête', () => {
+    const pleine = [collee(1), collee(7)]
+    expect(scenesDuRetour(1904, RIEN, { ...RIEN, malle: pleine })).toEqual([])
+    expect(scenesDuRetour(1904, { ...RIEN, malle: null }, { ...RIEN, malle: pleine })).toEqual([])
+    expect(scenesDuRetour(1904, { ...RIEN, malle: [] }, { ...RIEN, malle: null })).toEqual([])
+    // Le jumeau : une malle d'avant lue et vide n'est pas une malle absente.
+    expect(numeros(scenesDuRetour(1904, { ...RIEN, malle: [] }, { ...RIEN, malle: pleine }))).toEqual([1, 7])
+  })
+
+  // Mutations : la comparaison sur `progression` (au seuil, donc « gagnée ») ; sur `cle` (une place
+  // cachée qui se révèle sans être collée) ; une étiquette déjà collée avant, refêtée.
+  it('collée se lit sur sa date : ni une place au seuil, ni une déjà collée, ni une trace qui avance', () => {
+    const avant = [collee(1), place(7, { progression: { fait: 2, seuil: 3 } }), place(8), place(15, { cachee: true, cle: null, nom: null, devise: null, regle: null, quoi: null, progression: null })]
+    const auSeuil = [collee(1), place(7, { progression: { fait: 3, seuil: 3 } }), place(8, { progression: { fait: 1, seuil: 3 } }), place(15, { cachee: true })]
+    expect(scenesDuRetour(1904, { ...RIEN, malle: avant }, { ...RIEN, malle: auSeuil })).toEqual([])
+    expect(scenesDuRetour(1904, { ...RIEN, malle: avant }, { ...RIEN, malle: avant })).toEqual([])
+    expect(numeros(scenesDuRetour(1904, { ...RIEN, malle: avant }, { ...RIEN, malle: [collee(1), collee(7), place(8)] }))).toEqual([7])
+  })
+
+  // Mutations : les scènes de badge ajoutées en fin de liste (après l'année bouclée, dont le choix
+  // rend la page) ou avant la récompense ; le tri par numéro retiré ; `deja` sans les neuves d'avant,
+  // ou avec toute la malle.
+  it('une scène par étiquette, par numéro, après la récompense et avant l’année bouclée', () => {
+    const avant: EtatDeFete = { ...RIEN, malle: [place(12), collee(9), place(7), collee(2)] }
+    const apres: EtatDeFete = { sallesCompletes: 1, salles: [], recompense: 'lion', ticket: 1905, malle: [collee(12), collee(9), collee(7), collee(2), place(3)] }
+    const scenes = scenesDuRetour(1904, avant, apres)
+    expect(numeros(scenes)).toEqual(['salle', 'recompense', 7, 12, 'annee'])
+    const badges = scenes.flatMap((s) => (s.type === 'badge' ? [s] : []))
+    expect(badges.map((s) => s.deja.map((p) => p.numero))).toEqual([[2, 9], [2, 7, 9]])
+    expect(badges[0]!.place).toEqual(collee(7))
+  })
+
+  // Mutation : `malle` oubliée d'`etatDeFete` (le billet ne confierait rien, l'année ne comparerait rien).
+  it('l’état de fête porte la malle qu’on lui passe, et rien sans elle', () => {
+    const fiche = fichePrete({ annee: 1904, ticket: null })
+    expect(etatDeFete(fiche, 1904, [collee(7)]).malle).toEqual([collee(7)])
+    expect(etatDeFete(fiche, 1904, []).malle).toEqual([])
+    expect('malle' in etatDeFete(fiche, 1904)).toBe(false)
+  })
+
+  // Mutation : le nom du dialogue sans le nom de l'étiquette.
+  it('le dialogue se nomme « Étiquette collée » et le nom servi', () => {
+    expect(nomDuBadge({ type: 'badge', place: collee(7), deja: [] })).toBe('Étiquette collée : La 7')
+    expect(nomDuBadge({ type: 'badge', place: { ...collee(7), nom: null }, deja: [] })).toBe('Étiquette collée')
   })
 })

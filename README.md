@@ -419,7 +419,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Trente-six clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et trois sur les célébrations (plus bas, « Les célébrations »). Deux des sept, `malleDeLaSacoche` et `objetsDeLaSacoche`, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Trente-sept clés, douze sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, sept sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Trois d'entre elles, `malleDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -601,6 +601,21 @@ nulle à plusieurs), les récompenses des années d'avant de la décennie, lues 
 recomptées). La fiche est celle que la page de l'année tient (`fiche`) ; la carte, qui rattrape, n'en
 passe pas, et le dessin reçoit alors des manques. `salve` dit au dessin de l'année que le pas de la
 médaille s'est joué : rien n'éclate au calme ni d'un toucher impatient.
+
+**Une étiquette de la malle qui vient de se coller a sa scène** (`BadgeColle.tsx`, le type `badge` :
+« étiquette » seul désigne la récompense), entre la récompense et l'année bouclée, une par étiquette,
+par numéro. Son dessin est la clé **sans défaut** `feteDuBadge` : dans un monde qui ne la compose
+pas, rien ne se lit et rien ne se joue. Ce qui vient de se coller est la différence entre deux
+malles (`scenes.ts`, `badgesColles` : collée se lit sur `collee_le`, jamais sur la progression).
+Celle **d'avant** est lue par le billet en s'ouvrant (`pages/VoyageBillet.tsx`, un `GET` qui n'écrit
+rien, sans attente, panne muette), prise dans le cache juste avant l'écriture et confiée avec le
+retour (`Avant.fete.malle`). Celle **d'après** est relue par l'année (`pages/VoyageAnnee.tsx`),
+seulement si un retour lui confie une malle d'avant, toujours (`refetchOnMount: 'always'`), et ne
+compte que relue avec succès après le montage : la fête l'attend pour ranger ses scènes, et se joue
+sans elle si elle tombe en panne. Sans avant (le billet n'a pas pu la lire), aucune étiquette ne se
+fête : la sacoche et son point rouge le diront. Ni un rechargement ni une année ouverte sans retour
+ne lisent la malle. `src/pages/VoyageBillet.badge.test.tsx` tient les deux lectures sur un 1890
+auquel on prête un dessin.
 
 **En 1900, les fêtes se jouent dans le train** (maquette, écran 13 ; `mondes/1900/pages/`, une seule
 feuille, `Fetes.module.css`, mots et règles dans `fetes.ts`). La salle bouclée est une **voiture

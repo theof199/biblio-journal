@@ -19,6 +19,7 @@ import type { PropsCasier } from '../voyage/boite/Casier'
 import type { PropsFeteDeLAnnee } from '../voyage/celebrations/DessinDeLAnnee'
 import type { PropsFeteDeLaRecompense } from '../voyage/celebrations/DessinDeLaRecompense'
 import type { PropsFeteDeLaSalle } from '../voyage/celebrations/DessinDeLaSalle'
+import type { PropsFeteDuBadge } from '../voyage/celebrations/BadgeColle'
 import type { PropsFrontonDeDecennie } from '../voyage/decennie/FrontonDeDecennie'
 import type { PropsLiens } from '../voyage/decennie/Liens'
 import type { PropsLivret } from '../voyage/decennie/Livret'
@@ -879,6 +880,14 @@ export interface GabaritsDesPages {
    */
   feteDeLaRecompense: ComponentType<PropsFeteDeLaRecompense>
   /**
+   * Le dessin d'une étiquette de la malle qui vient de se coller (plan des écrans des lots, brief 6 ;
+   * un badge : « étiquette » seul est la récompense). Lu par `voyage/celebrations/BadgeColle.tsx`,
+   * qui garde le cadre, le déroulé et ce qui s'entend. **Sans défaut** (`ClesSansDefaut`) : un monde
+   * qui ne la compose pas ne lit la malle ni sur le billet (`pages/VoyageBillet.tsx`) ni au retour
+   * (`pages/VoyageAnnee.tsx`), et le séquenceur ne joue aucune scène de badge.
+   */
+  feteDuBadge: ComponentType<PropsFeteDuBadge>
+  /**
    * Le dessin de l'année bouclée (`voyage/celebrations/DessinDeLAnnee.tsx`) : le fronton, la médaille,
    * les confettis, le billet tendu. Lu par `voyage/celebrations/AnneeBouclee.tsx`, qui garde le cadre,
    * le déroulé, le choix (« Le garder », « L’utiliser »), sa garde et le ticket montré une fois. Il
@@ -893,7 +902,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'feteDuBadge'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

@@ -1,4 +1,4 @@
-import type { FichePrete, Progression, Recompense, Voyage } from '../../api/voyage'
+import type { FichePrete, PlaceDeMalle, Progression, Recompense, Voyage } from '../../api/voyage'
 import { ligneDuBas } from '../annee'
 import { salleComplete } from '../salles'
 
@@ -16,12 +16,24 @@ export interface EtatDeFete {
   recompense: Recompense | null
   /** L'année qu'ouvre le ticket qui attend d'être utilisé ; nul sans ticket, utilisé, ou vers une année déjà ouverte. */
   ticket: number | null
+  /**
+   * Les places de la malle de la décennie, telles que le serveur les sert : avant l'écriture, celles
+   * que le billet a lues en s'ouvrant ; après, celles de la relecture réussie. Absentes ou nulles (la
+   * malle n'a pas été lue, ou le monde n'en fête pas) : **aucune étiquette ne se fête**, la sacoche le
+   * dira. Une liste vide est une malle lue où rien n'est collé : ce n'est pas la même chose.
+   */
+  malle?: readonly PlaceDeMalle[] | null
 }
 
 export type Scene =
   /** Une salle bouclée : son nom quand la fiche le dit, sinon leur compte. */
   | { type: 'salle'; noms: readonly string[]; combien: number }
   | { type: 'recompense'; annee: number; recompense: Recompense }
+  /**
+   * Une étiquette de la malle vient de se coller (un badge : « étiquette » seul est la récompense) :
+   * sa place, telle que la relecture la sert, et celles qui étaient collées avant elle, par numéro.
+   */
+  | { type: 'badge'; place: PlaceDeMalle; deja: readonly PlaceDeMalle[] }
   /** L'année bouclée : le ticket qui ouvre `ticket` est gagné. */
   | { type: 'annee'; annee: number; recompense: Recompense | null; ticket: number }
 
@@ -32,9 +44,15 @@ const rang = (r: Recompense | null): number => (r ? RANG[r] : 0)
  * L'état d'une fiche prête. Le ticket suit `ligneDuBas` : celui que la fiche offre d'utiliser, lui
  * seul (un ticket vers une année que le rattrapage a déjà ouverte n'ouvre plus rien).
  */
-export function etatDeFete(f: Pick<FichePrete, 'recompense' | 'ticket' | 'salles'> & { progression: Progression | null }, anneeEnCours: number): EtatDeFete {
+export function etatDeFete(
+  f: Pick<FichePrete, 'recompense' | 'ticket' | 'salles'> & { progression: Progression | null },
+  anneeEnCours: number,
+  malle: readonly PlaceDeMalle[] | null = null,
+): EtatDeFete {
   const ligne = ligneDuBas(f.ticket, null, anneeEnCours)
   return {
+    // Posée seulement quand elle a été lue : l'état d'une fiche sans malle reste celui d'avant.
+    ...(malle ? { malle } : {}),
     sallesCompletes: f.progression?.salles_completes ?? null,
     salles: f.salles.filter((s) => s.cle !== 'essentiels' && salleComplete(s)).map((s) => ({ id: s.id, nom: s.nom })),
     recompense: f.recompense,
@@ -43,9 +61,10 @@ export function etatDeFete(f: Pick<FichePrete, 'recompense' | 'ticket' | 'salles
 }
 
 /**
- * Les scènes à jouer au retour d'un billet, dans l'ordre (la salle, la récompense, puis l'année) : ce qui a été gagné entre l'avant et
- * l'après, jamais ce qui était déjà là ni un recul. Une progression inconnue d'un côté ne boucle
- * aucune salle.
+ * Les scènes à jouer au retour d'un billet, dans l'ordre (la salle, la récompense, les étiquettes de
+ * la malle, puis l'année) : ce qui a été gagné entre l'avant et l'après, jamais ce qui était déjà là
+ * ni un recul. Une progression inconnue d'un côté ne boucle aucune salle ; une malle inconnue d'un
+ * côté ne colle aucune étiquette.
  */
 export function scenesDuRetour(annee: number, avant: EtatDeFete, apres: EtatDeFete): Scene[] {
   const scenes: Scene[] = []
@@ -54,8 +73,26 @@ export function scenesDuRetour(annee: number, avant: EtatDeFete, apres: EtatDeFe
     scenes.push({ type: 'salle', noms: apres.salles.filter((s) => !deja.has(s.id)).map((s) => s.nom), combien: apres.sallesCompletes - avant.sallesCompletes })
   }
   if (apres.recompense && rang(apres.recompense) > rang(avant.recompense)) scenes.push({ type: 'recompense', annee, recompense: apres.recompense })
+  scenes.push(...badgesColles(avant.malle ?? null, apres.malle ?? null))
   if (apres.ticket !== null && avant.ticket === null) scenes.push({ type: 'annee', annee, recompense: apres.recompense, ticket: apres.ticket })
   return scenes
+}
+
+const collee = (p: PlaceDeMalle): boolean => p.collee_le !== null
+
+/**
+ * Les étiquettes de la malle qui viennent de se coller : collées après, et pas avant. **Collée se lit
+ * sur `collee_le`, jamais sur la progression** (au seuil sans date, c'est une trace de colle pleine :
+ * le serveur ne l'a pas encore constatée). Une scène par étiquette, par numéro ; chacune montre
+ * celles d'avant elle, les neuves de plus petit numéro comprises. Sans l'une des deux malles, rien.
+ */
+export function badgesColles(avant: readonly PlaceDeMalle[] | null, apres: readonly PlaceDeMalle[] | null): Extract<Scene, { type: 'badge' }>[] {
+  if (avant === null || apres === null) return []
+  const deja = new Set(avant.filter(collee).map((p) => p.numero))
+  const collees = apres.filter(collee).sort((a, b) => a.numero - b.numero)
+  const anciennes = collees.filter((p) => deja.has(p.numero))
+  const neuves = collees.filter((p) => !deja.has(p.numero))
+  return neuves.map((place, i) => ({ type: 'badge', place, deja: [...anciennes, ...neuves.slice(0, i)].sort((a, b) => a.numero - b.numero) }))
 }
 
 /**
@@ -69,6 +106,10 @@ export function sceneDuRattrapage(v: Pick<Voyage, 'ticket_a_montrer' | 'annees'>
   const annee = t.annee - 1
   return { type: 'annee', annee, recompense: v.annees.find((a) => a.annee === annee)?.recompense ?? null, ticket: t.annee }
 }
+
+/** Ce que la fête d'une étiquette de la malle dit en tête, et le nom de son dialogue. */
+export const MOT_DU_BADGE = 'Étiquette collée'
+export const nomDuBadge = (scene: Extract<Scene, { type: 'badge' }>): string => (scene.place.nom ? `${MOT_DU_BADGE} : ${scene.place.nom}` : MOT_DU_BADGE)
 
 /** Ce que la récompense couronne, sous son nom (les règles de `calculerCarte`, côté API). */
 export function motifDeRecompense(recompense: Recompense, annee: number): string {

@@ -155,7 +155,7 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
   it('chaque pas des célébrations et leur vibration sont au tempo', () => {
     const code = sansCommentaires(source(DEROULE))
     const blocs = [...code.matchAll(/export const (\w+) = \[([^\]]*)\]/g)].map(([, nom, corps]) => [nom!, corps!] as const)
-    expect(blocs.map(([nom]) => nom)).toEqual(['SALLE', 'RECOMPENSE', 'ANNEE', 'VIBRATION_DE_FETE'])
+    expect(blocs.map(([nom]) => nom)).toEqual(['SALLE', 'RECOMPENSE', 'BADGE', 'ANNEE', 'VIBRATION_DE_FETE'])
     for (const [, corps] of blocs) {
       const valeurs = corps.split(',').map((v) => v.trim()).filter(Boolean)
       expect(valeurs.length).toBeGreaterThan(0)

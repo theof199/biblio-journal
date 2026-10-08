@@ -5,7 +5,7 @@ import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
 import { corrigerVisionnage, creerVisionnage, journalDesAnnees, supprimerVisionnage, type JournalItem } from '../api/journal'
 import { lireReactions } from '../api/reactions'
-import { anneeSansSalles, estPrete, lireVoyage, type FicheAnnee, type Voyage } from '../api/voyage'
+import { anneeSansSalles, estPrete, lireMalle, lireVoyage, type FicheAnnee, type Malle, type Voyage } from '../api/voyage'
 import type { CandidatFilm } from '../formulaire/candidat'
 import { brouillonInitial, construirePatch, type FormulaireBrouillon } from '../formulaire/patch'
 import { creerRegistre } from '../mondes'
@@ -25,7 +25,7 @@ import BilletDeSeance, { type Etape } from '../voyage/billet/BilletDeSeance'
 import { rangerLeBillet } from '../voyage/billet/range'
 import { billetsDeLaDecennie, numeroDe } from '../voyage/billets'
 import { bobineDuFilm, candidatDuBillet, filmDeLaFiche } from '../voyage/film'
-import { gabaritDe } from '../voyage/gabarit'
+import { gabaritDe, gabaritSeul } from '../voyage/gabarit'
 import { decennieDe } from '../voyage/regles'
 import styles from './VoyageBillet.module.css'
 
@@ -212,6 +212,12 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
   }, [confirmer])
 
   const reactions = useQuery({ queryKey: cles.reactions, queryFn: ({ signal }) => lireReactions(signal) })
+  // La malle d'avant l'écriture (plan des écrans des lots, brief 6, décision 4) : le billet la lit en
+  // s'ouvrant, un `GET` qui n'écrit rien, seulement si le monde de son année fête ses étiquettes (une
+  // clé sans défaut : 1890 et « à venir » ne lisent rien). Il ne l'attend pas, et sa panne se tait :
+  // sans elle, aucune étiquette ne se fêtera au retour, et la sacoche le dira.
+  const feteLaMalle = gabaritSeul(monde, 'feteDuBadge') !== null
+  useQuery({ queryKey: cles.malle(decennie), queryFn: ({ signal }) => lireMalle(decennie, signal), enabled: feteLaMalle })
 
   const perimer = () => {
     for (const cle of PERIMES) void client.invalidateQueries({ queryKey: cle })
@@ -223,7 +229,9 @@ function Billet({ monde, annee, filmId, voyage: v, cible, depuisLAnnee }: PropsB
     mutationFn: async (b: FormulaireBrouillon): Promise<{ retour: Retour; entree: JournalItem }> => {
       // L'avant : la fiche en cache avant l'écriture, que l'année compare à sa relecture.
       const f = client.getQueryData<FicheAnnee>(cles.annee(annee))
-      const avant = estPrete(f) ? { profondeur: f.profondeur, progression: f.progression, fete: etatDeFete(f, v.annee_en_cours) } : null
+      // La malle se prend ici, **avant** l'écriture, jamais après : périmée par ce billet, elle se relit.
+      const malle = feteLaMalle ? (client.getQueryData<Malle>(cles.malle(decennie))?.etiquettes ?? null) : null
+      const avant = estPrete(f) ? { profondeur: f.profondeur, progression: f.progression, fete: etatDeFete(f, v.annee_en_cours, malle) } : null
       const depuis = estPrete(f) ? (f.maturite?.jugee_le ?? null) : null
       const entree = item
         ? await corrigerVisionnage(item.entry.id, construirePatch(item, b))

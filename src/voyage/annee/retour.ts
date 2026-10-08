@@ -15,6 +15,8 @@ export interface Avant {
   /**
    * Ce que la fiche portait de quoi fêter (ses salles complètes, sa récompense, son ticket) : l'année
    * relue le compare au sien et joue les célébrations (`celebrations/scenes.ts`). Absent : rien à fêter.
+   * Il porte aussi la malle **d'avant l'écriture** (`fete.malle`), quand le monde du billet fête ses
+   * étiquettes et que le billet l'avait lue : l'année relit alors la malle et fête ce qui s'y est collé.
    */
   fete?: EtatDeFete
 }

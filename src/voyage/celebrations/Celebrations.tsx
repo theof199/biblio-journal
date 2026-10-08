@@ -6,7 +6,9 @@ import type { Ambiance } from '../../carte/son'
 import type { Monde } from '../../mondes/types'
 import { useMouvementReduit } from '../../ui/mouvement'
 import { STYLE_DU_TEMPO } from '../tempo'
+import { gabaritSeul } from '../gabarit'
 import AnneeBouclee from './AnneeBouclee'
+import BadgeColle from './BadgeColle'
 import PresseAMedailles from './PresseAMedailles'
 import SalleBouclee from './SalleBouclee'
 import { arriveesFetees, recompensesDAvant, salleFetee } from './lues'
@@ -88,12 +90,16 @@ export default function Celebrations({ monde, membre, scenes, onUtiliser, onFin,
     }
   }, [son, horsCarte])
 
-  const scene = scenes[rang]
+  // Une étiquette de la malle ne se fête que dans un monde qui la dessine (une clé sans défaut) : sans
+  // dessin, sa scène n'est pas de la fête, et rien ne s'ouvre à vide.
+  const avecBadge = gabaritSeul(monde, 'feteDuBadge') !== null
+  const jouees = avecBadge ? scenes : scenes.filter((s) => s.type !== 'badge')
+  const scene = jouees[rang]
   if (!scene) return null
   // Deux touchers dans le même instant ne sautent pas la scène suivante sans qu'elle ait été vue.
   const suite = () => {
     setRang((r) => (r === rang ? r + 1 : r))
-    if (rang + 1 >= scenes.length) onFin()
+    if (rang + 1 >= jouees.length) onFin()
   }
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof monde.pages.jetons = { ...monde.pages.jetons, ...STYLE_DU_TEMPO }
@@ -106,6 +112,8 @@ export default function Celebrations({ monde, membre, scenes, onUtiliser, onFin,
       ) : scene.type === 'recompense' ? (
         // La carte se lit dans le cache, sans requête : la page qui fête l'a déjà.
         <PresseAMedailles key={rang} scene={scene} {...commun} passees={recompensesDAvant(client.getQueryData<Voyage>(cles.voyage), scene.annee)} />
+      ) : scene.type === 'badge' ? (
+        <BadgeColle key={rang} scene={scene} {...commun} />
       ) : (
         <AnneeBouclee key={rang} scene={scene} {...commun} onMontre={montrer} onUtiliser={onUtiliser} arrivees={arriveesFetees(fiche, scene.annee)} />
       )}

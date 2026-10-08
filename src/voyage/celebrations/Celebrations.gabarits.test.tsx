@@ -9,11 +9,12 @@ import type { GabaritsDesPages, Monde } from '../../mondes/types'
 import { json, servir } from '../../test/serveur'
 import { annee, fichePrete, filmDeSalle, salle, voyage1890 } from '../../test/voyage'
 import { arriveesDeLAnnee } from '../annee'
+import type { PropsFeteDuBadge } from './BadgeColle'
 import Celebrations from './Celebrations'
 import type { PropsFeteDeLAnnee } from './DessinDeLAnnee'
 import type { PropsFeteDeLaRecompense } from './DessinDeLaRecompense'
 import type { PropsFeteDeLaSalle } from './DessinDeLaSalle'
-import { ANNEE, PAS_DE_L_ANNEE, RECOMPENSE, SALLE } from './deroule'
+import { ANNEE, BADGE, PAS_DE_L_ANNEE, RECOMPENSE, SALLE } from './deroule'
 import { arriveesFetees, recompensesDAvant, salleFetee } from './lues'
 import type { Scene } from './scenes'
 
@@ -216,5 +217,80 @@ describe('les dessins des fêtes qu’un monde compose', () => {
     expect(screen.getByText('Le Lion')).toHaveClass('celebration')
     fireEvent.click(screen.getByRole('dialog'))
     expect(screen.getByLabelText('Bon pour 1897')).toBeInTheDocument()
+  })
+
+  // La fête d'une étiquette de la malle (plan des écrans des lots, brief 6) : une clé **sans défaut**.
+  describe('la scène d’une étiquette de la malle', () => {
+    const place = (numero: number, nom: string) => ({ numero, cachee: false, cle: `cle-${numero}`, nom, devise: `Devise ${numero}`, regle: 'Une règle.', quoi: 'choses', collee_le: '2026-10-08T20:00:00.000Z', progression: null })
+    const LA_7: Scene = { type: 'badge', place: place(7, 'La Correspondance'), deja: [place(2, 'Le Képi')] }
+    const LA_12: Scene = { type: 'badge', place: place(12, 'La Pionnière'), deja: [place(2, 'Le Képi'), place(7, 'La Correspondance')] }
+    const BadgeDuMonde = (p: PropsFeteDuBadge) => (
+      <p data-testid="badge">{`${p.monde.decennie} | ${p.sur} : ${p.scene.place.nom} | pas ${p.pas} | ${p.fini ? 'fini' : 'en cours'} | avant : ${p.scene.deja.map((d) => d.numero).join(' ') || 'rien'}`}</p>
+    )
+    const AVEC = { ...DU_MONDE, feteDuBadge: BadgeDuMonde }
+    afterEach(() => {
+      delete (navigator as { vibrate?: unknown }).vibrate
+    })
+    const vibreur = () => {
+      const vibrate = vi.fn(() => true)
+      Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true })
+      return vibrate
+    }
+
+    // Mutations : la vibration retirée, ou rejouée à chaque pas.
+    it('monte le dessin du monde dans son cadre, pas à pas, et le téléphone vibre une fois quand l’étiquette tombe', async () => {
+      const vibrate = vibreur()
+      const { onFin } = monter([LA_7], { gabarits: AVEC })
+      expect(screen.getByRole('dialog', { name: 'Étiquette collée : La Correspondance' })).toBeInTheDocument()
+      expect(dit('badge')).toBe('1890 | Étiquette collée : La Correspondance | pas 0 | en cours | avant : 2')
+      await passer(BADGE[0] - 1)
+      expect(dit('badge')).toContain('pas 0')
+      expect(vibrate).not.toHaveBeenCalled()
+      await passer(1)
+      expect(dit('badge')).toContain('pas 1 | en cours')
+      expect(vibrate).toHaveBeenCalledTimes(1)
+      await passer(BADGE[1] + BADGE[2])
+      expect(dit('badge')).toContain(`pas ${BADGE.length} | fini`)
+      expect(vibrate).toHaveBeenCalledTimes(1)
+      fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(onFin).toHaveBeenCalledTimes(1)
+    })
+
+    // Mutations : `calme` non passé au déroulé de la scène (le pas 0, puis des minuteries) ; la
+    // vibration jouée au montage.
+    it('au calme, l’état final est posé d’emblée : ni attente, ni vibration', async () => {
+      calme()
+      const vibrate = vibreur()
+      monter([LA_7], { gabarits: AVEC })
+      expect(dit('badge')).toBe(`1890 | Étiquette collée : La Correspondance | pas ${BADGE.length} | fini | avant : 2`)
+      await passer(somme(BADGE))
+      expect(vibrate).not.toHaveBeenCalled()
+    })
+
+    // Mutation : la garde du séquenceur retirée (`setRang((r) => r + 1)`) : le toucher redoublé
+    // passerait la seconde étiquette sans qu'elle ait été vue.
+    it('un toucher redoublé ne passe qu’une scène : la seconde étiquette se voit', () => {
+      calme()
+      const { onFin } = monter([LA_7, LA_12, ANNEE_BOUCLEE], { gabarits: AVEC })
+      const bouton = screen.getByRole('button', { name: 'Continuer' })
+      act(() => {
+        bouton.click()
+        bouton.click()
+      })
+      expect(screen.getByRole('dialog', { name: 'Étiquette collée : La Pionnière' })).toBeInTheDocument()
+      expect(dit('badge')).toContain('avant : 2 7')
+      expect(onFin).not.toHaveBeenCalled()
+    })
+
+    // Mutations : le filtre du séquenceur retiré (la scène sans dessin ne rendrait rien, et la fête
+    // resterait ouverte à vide) ; un dessin de repli à la place de `gabaritSeul`.
+    it('un monde qui ne la dessine pas ne la joue pas : la fête passe aux scènes qu’il connaît', () => {
+      calme()
+      monter([LA_7, ANNEE_BOUCLEE], { gabarits: DU_MONDE, fiche: FICHE })
+      expect(screen.getByRole('dialog', { name: '1896 est bouclée' })).toBeInTheDocument()
+      expect(screen.queryByTestId('badge')).toBeNull()
+      expect(screen.queryByText(/Étiquette collée/)).toBeNull()
+    })
   })
 })
