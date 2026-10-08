@@ -49,7 +49,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
 - **Le rendu du décor n'a pas de test** : les tests gardent les règles (`habillage.ts`, `passage.ts`,
   `toiles.ts`). Ce qui doit être gardé s'écrit en règle pure, pas dans le trait.
 - **Le ralenti du tunnel se tire des bornes du dessin** (un palier, d'une bouche à l'autre), jamais d'un second jeu de nombres. Le moteur ne garde pas son contrat, `tunnel.test.ts` si : une allure dans `]0, 1[`, strictement entre deux arrêts (un arrêt dedans, et son rappel roule au pas). Le dessin n'en sait rien ; ni le doigt ni l'élan du défilement natif ne sont freinés.
-- **La maquette montre plus que le monde ne dessine** (vent, aiguillage, contrôleur, horaire, l'éclat qui trahit un objet) : rien de cela n'est livré, et ne se dessine pas d'après elle.
+- **La maquette montre plus que le monde ne dessine** (vent, aiguillage, horaire, l'éclat qui trahit un objet) : rien de cela n'est livré, et ne se dessine pas d'après elle. Le contrôleur, lui, est un dialogue de page, pas un décor du monde (`docs/cerveau/jeu-1900.md`).
 
 ## Les commandes
 

@@ -903,8 +903,8 @@ d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le P
 L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquettes, les objets
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
-ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur a
-son bloc lecteur, qu'aucun monde ne dessine encore ; les quatre autres n'ont rien**
+ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
+billets passe sur la carte ; les quatre autres n'ont rien**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -924,8 +924,8 @@ son bloc lecteur, qu'aucun monde ne dessine encore ; les quatre autres n'ont rie
   calcule ni l'un ni l'autre. La carte le montre sur la pastille de la sacoche (`RUBRIQUES_DE_LA_PASTILLE`,
   `rubriquesDeLaPastille`, `nouveautesDeLaSacoche`, `nomDeLaSacoche` : « La carte du Voyage »).
 - **Le contrôleur passe sur la carte** (`voyage/controleur/Controleur.tsx`, la clé sans défaut
-  `controleurDeLaCarte`, la seule que lit `pages/Carte.tsx`, au monde de mon année en cours ; aucun monde
-  ne la remplit encore). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne
+  `controleurDeLaCarte`, la seule que lit `pages/Carte.tsx`, au monde de mon année en cours ; 1900 la
+  remplit). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne
   s'ouvre. Avec elle, **il entre seul quand `controleur.attend` est vrai, une fois par visite de la
   carte** (une référence de la page : rien n'est retenu sur l'appareil, la carte remontée le revoit
   entrer tant qu'il attend), jamais pendant une avancée (l'avatar pas encore rendu à mon année en
@@ -943,7 +943,18 @@ son bloc lecteur, qu'aucun monde ne dessine encore ; les quatre autres n'ont rie
   refait. **`controleur.attend` change avec l'horloge du serveur, sans écriture** : une carte restée
   ouverte ne le voit entrer qu'à sa prochaine lecture de l'état (trente secondes de fraîcheur, aucune
   relecture au retour de la fenêtre, aucun sondage) ; `pages/Carte.controleur.test.tsx` tient le tout
-  sur un 1890 auquel on prête un dessin.
+  sur un 1890 auquel on prête un dessin. **En 1900** (`mondes/1900/pages/ControleurDeLaCarte.tsx`, sa
+  feuille `Controleur.module.css`, ses mots et ses règles dans `controleur.ts` ; maquette, `#controle`) :
+  un dialogue par-dessus la carte assombrie, sans photographie ; le contrôleur dessiné
+  (`DessinDuControleur.tsx`, les tracés de la maquette) entre par la droite, sa bulle dit « Contrôle des
+  billets, s’il vous plaît. », le billet demandé est le carton Edmondson (sa ligne ne dit « gare de »
+  que d'une année de 1900 à 1909, son numéro seulement si la boîte l'a donné), puis « Présenter le
+  billet » et « Pas ce soir ». Présenté : « En règle. Bon voyage ! », le poinçon doré se perce sur le
+  carton (posé par-dessus : `Carton` ne le porte pas avant le lot du casier) ; refusé : « Bonne
+  soirée. » ; puis « Refermer la portière », qui reprend le focus. La panne s'y dit en alerte. Il pose
+  lui-même les jetons du monde, que la carte ne pose pas ; ses durées sont au tempo et rien n'y bouge
+  au calme. La note « sans titre de transport » de la maquette n'est pas portée
+  (`mondes/1900/pages/controleur.test.tsx`).
 - **Le badge d'une place de la malle** (`mondes/1900/pages/BadgeDeMalle.tsx`, ses règles et sa table dans
   `mondes/1900/pages/malle.ts` ; maquette, écran 18) : les quinze étiquettes dessinées en SVG, **par `cle`
   du contrat**, dans leurs trois états. Collée (`collee_le` non nul) : la forme en papier, ses encres, son

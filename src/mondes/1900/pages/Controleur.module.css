@@ -1,0 +1,209 @@
+/* Le contrôleur des billets sur la carte de 1900 (maquette « Voyage immobile 1900 » : `.controle`) : un
+   dialogue par-dessus la carte, qui reste derrière, assombrie sous la lueur d'une lampe (la maquette y
+   posait la photographie d'un compartiment : ici, rien qu'un voile). Le personnage entre par la
+   droite, sa bulle monte, le billet demandé attend au milieu, les réponses au pied. Toute durée est au
+   tempo, et rien ne bouge hors de `data-vivante='oui'`. */
+.controle {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-calque);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 70px 16px 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 58% 30% at 66% 3%, color-mix(in srgb, var(--m-or2) 34%, transparent), transparent 72%),
+    linear-gradient(color-mix(in srgb, var(--m-fond) 58%, transparent), color-mix(in srgb, var(--m-fond) 94%, transparent) 62%);
+  color: var(--m-papier);
+}
+
+.personnage {
+  position: absolute;
+  top: 30px;
+  right: -30px;
+  width: 226px;
+  height: 320px;
+  pointer-events: none;
+}
+
+.personnage svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: sepia(0.3) saturate(0.86) drop-shadow(-8px 10px 14px var(--m-ombre));
+}
+
+.bulle {
+  position: absolute;
+  top: 66px;
+  left: 14px;
+  width: 136px;
+  margin: 0;
+  padding: 9px 11px 10px;
+  border-radius: 2px;
+  outline: 1px solid color-mix(in srgb, var(--m-encre) 22%, transparent);
+  outline-offset: -4px;
+  background: linear-gradient(172deg, var(--m-papier), var(--m-papier2));
+  color: var(--m-encre);
+  font: italic 15.5px/1.3 var(--m-f-texte);
+  filter: drop-shadow(0 6px 8px var(--m-ombre));
+  transform: rotate(-2deg);
+}
+
+.bulle::after {
+  content: '';
+  position: absolute;
+  top: 56%;
+  left: calc(100% - 1px);
+  width: 17px;
+  height: 15px;
+  background: var(--m-papier2);
+  clip-path: polygon(0 0, 100% 78%, 0 100%);
+}
+
+.bulle b {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--m-rouge);
+  font: normal 600 10px var(--m-f-capitales);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.billet {
+  position: relative;
+  width: 62%;
+  margin: 0 auto 4px;
+  transform: rotate(-3deg);
+}
+
+/* Le poinçon doré, posé sur le carton (maquette : `.edm .poincon-or`, à 45 % et 56 %, 14 % de sa largeur). */
+.poincon {
+  position: absolute;
+  top: 56%;
+  left: 45%;
+  width: 14%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--m-or) 85%, transparent)) drop-shadow(0 1px 1px var(--m-ombre));
+}
+
+.poincon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.etat {
+  position: relative;
+  margin: 0;
+  color: var(--m-papier);
+  font: italic 14px/1.4 var(--m-f-texte);
+  text-align: center;
+}
+
+.panne {
+  position: relative;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--m-rouge) 70%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-fond) 80%, transparent);
+  color: var(--m-papier);
+  font: 13px/1.4 var(--m-f-corps);
+  text-align: center;
+}
+
+.choix {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.choix button {
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid var(--m-or);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-fond) 80%, transparent);
+  color: var(--m-papier);
+  font: 700 13.5px var(--m-f-capitales);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.choix button.plein {
+  border: 0;
+  background: var(--corail);
+  color: var(--m-encre);
+}
+
+.choix button.seul {
+  grid-column: 1 / -1;
+}
+
+.choix button:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+.controle[data-vivante='oui'] .personnage {
+  animation: entre calc(900ms * var(--tempo)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.controle[data-vivante='oui'] .bulle {
+  animation: monte calc(350ms * var(--tempo)) ease-out calc(700ms * var(--tempo)) backwards;
+}
+
+.controle[data-vivante='oui'][data-etat='presente'] .billet {
+  animation: pince calc(320ms * var(--tempo)) ease-out;
+}
+
+.controle[data-vivante='oui'] .poincon {
+  animation: perce calc(340ms * var(--tempo)) cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+@keyframes entre {
+  from {
+    transform: translate3d(115%, 0, 0);
+  }
+  70% {
+    transform: translate3d(-2%, 0, 0);
+  }
+}
+
+@keyframes monte {
+  from {
+    opacity: 0;
+    transform: rotate(-2deg) translateY(8px);
+  }
+}
+
+@keyframes pince {
+  22% {
+    transform: rotate(-3deg) translateY(1.5px);
+  }
+  58% {
+    transform: rotate(-3deg) translateY(-0.5px);
+  }
+}
+
+@keyframes perce {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  75% {
+    transform: scale(0.94);
+  }
+}
