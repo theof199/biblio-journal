@@ -90,6 +90,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/mondes/1900/pages/Tete.module.css',
         '/src/mondes/1900/pages/VoieFermee.module.css',
         '/src/mondes/1900/pages/Indicateur.module.css',
+        '/src/mondes/1900/pages/Horaire.module.css',
         '/src/mondes/1900/pages/Guide.module.css',
         '/src/mondes/1900/pages/Courroie.module.css',
         '/src/mondes/1900/pages/Rubrique.module.css',

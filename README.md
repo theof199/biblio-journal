@@ -479,7 +479,7 @@ Où vit quoi :
 - **Les années 1900 ont leurs pages** (`src/mondes/1900/pages.ts`, `PAGES_1900` ; les composants dans
   `src/mondes/1900/pages/`) : les jetons et les mots de la maquette « Voyage immobile 1900 », et ces
   sections, que la gare range à sa façon (`Gare`, pour `ordreDAnnee` : l'indicateur passe au-dessus du
-  guide, pour que la ligne pointée au retour d'un billet se voie sans défiler). La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
+  guide, pour que la ligne pointée au retour d'un billet se voie sans défiler, et l'horaire de la gare vient sous l'indicateur : « Le jeu des années 1900 »). La tête est la gare de l'année : sa photographie, sa plaque émaillée, qui porte
   le titre de la page et le rang de la gare, et selon le mode l'horloge (l'année est l'heure :
   19 h 03 en 1903, `heureDeLaGare`) avec le tampon d'une ligne bouclée (la page lui passe
   `anneeBouclee`, la règle d'`estBouclee` : la tête tamponne dès le ticket émis, comme l'indicateur, et
@@ -921,8 +921,9 @@ L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquet
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
 ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
-billets passe sur la carte et son poinçon doré reste au casier ; les quatre autres n'ont rien à l'écran
-(l'horaire et les haltes vont déjà jusqu'au monde, plus bas)**
+billets passe sur la carte et son poinçon doré reste au casier ; l'horaire se prend, se retire et se dit
+sur la fiche de son année ; sur la carte il n'a rien à l'écran, comme les trois autres (l'horaire et les
+haltes y vont déjà jusqu'au monde, plus bas)**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -978,9 +979,27 @@ billets passe sur la carte et son poinçon doré reste au casier ; les quatre au
   dans `useMutation` : la page quittée pendant l'envoi, la carte le sait quand même. La tête et le
   programme reçoivent de quoi dire un horaire tenu (`aLHeure`, `horaireTenu` : son échéance, son
   arrivée), deux propriétés facultatives que les défauts ignorent et que la page ne passe que dans un
-  monde qui compose la clé. **Aucun monde ne la remplit encore** : `pages/VoyageAnnee.horaire.test.tsx`
-  tient le bloc sur un 1890 auquel on prête un dessin, et le vrai 1890, qui ne dit rien de l'horaire
-  et ne lit que la session, la carte et sa fiche (la liste entière de ses requêtes).
+  monde qui compose la clé. `pages/VoyageAnnee.horaire.test.tsx` tient le bloc sur un 1890 auquel on
+  prête un dessin, et le vrai 1890, qui ne dit rien de l'horaire et ne lit que la session, la carte et
+  sa fiche (la liste entière de ses requêtes). **1900 la remplit** (maquette, écrans 2 et 14 ;
+  `mondes/1900/pages/HoraireDeLaGare.tsx`, sa feuille `Horaire.module.css`, ses mots `horaire.ts`), et
+  `Gare` range le bloc sous l'indicateur, avant le guide : une affichette de papier, « Proposé en gare
+  de 1904 » ou « Accepté en gare de 1904 », le titre « Arriver avant dimanche 11 octobre 2026 », et deux
+  talons, « Tenir l'horaire » et « Sans horaire ». Celui qui dit l'état présent est enfoncé
+  (`aria-pressed`) et ne porte aucun geste ; l'autre écrit, et se dit en attente tant que l'écriture
+  est partie. Dessous, une région d'état dit ce que le geste vient de faire (« Horaire accepté :
+  arriver avant… », « Sans horaire : la gare de 1904 se boucle quand tu veux, rien ne se perd. » ; la
+  maquette y ajoute « la plaque le dit sur la carte », que la carte ne fait pas encore), puis l'alerte
+  d'un refus. **Tenu, le bloc ne dessine rien** : la plaque de la tête porte un filet doré et « à
+  l'heure » (`Tete`, `aLHeure`), et l'indicateur dit en tête de ses lignes « Horaire tenu », l'échéance
+  et le jour de l'arrivée (`Indicateur`, `horaireTenu` : « Avant dimanche 11 octobre 2026 : arrivé le
+  samedi 10 octobre 2026. »). **Manqué, une ligne**, sans talon : « Il fallait arriver avant… Rien ne se
+  perd. » (décision 7). **Le jour se lit dans la date servie** (`voyage/horaire.ts`, que la carte
+  reprendra) : `jourDeLEcheance` dit une échéance sans heure sans passer par le fuseau de l'appareil
+  (la maquette écrit « dimanche » en dur ; la base ne tient pas « un dimanche »), `jourDArrivee` dit
+  l'instant du ticket émis à Paris, comme le serveur le compte. Rien n'y bouge ;
+  `mondes/1900/pages/horaire.test.tsx` tient les mots et ce qui s'offre, `voyage/horaire.test.ts` les
+  jours.
 - **Le contrôleur passe sur la carte** (`voyage/controleur/Controleur.tsx`, la clé sans défaut
   `controleurDeLaCarte`, la seule que lit `pages/Carte.tsx`, au monde de mon année en cours ; 1900 la
   remplit). Sans elle, la carte ne lit pas l'état du voyageur pour lui et aucune portière ne

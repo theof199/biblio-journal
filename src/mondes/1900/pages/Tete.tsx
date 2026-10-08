@@ -2,6 +2,7 @@ import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
 import type { PropsTeteDAnnee } from '../../../voyage/annee/Bandeau'
 import { imageDu1900 } from '../images'
 import { heureDeLaGare, libelleDeLaPhoto, mentionDeLaPlaque } from './gare'
+import { MOTS_DE_L_HORAIRE } from './horaire'
 import styles from './Tete.module.css'
 
 const CHIFFRES = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
@@ -11,11 +12,12 @@ const CHIFFRES = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
  * gare de l'année, sa plaque émaillée, qui porte le titre de la page, et selon le mode l'horloge
  * (l'année est l'heure de la gare), le tampon d'une ligne bouclée (`anneeBouclee` : la règle de la
  * fiche, dès le ticket émis), la lanterne rouge sur le négatif d'une année fermée, ou le sémaphore à
- * l'arrêt d'une voie qui attend.
+ * l'arrêt d'une voie qui attend. Un horaire tenu (`aLHeure`) cercle la plaque d'un filet doré et y
+ * écrit « à l'heure ».
  *
  * Au calme, rien ne bouge : `data-vivante` porte seul les animations de la feuille.
  */
-export default function Tete({ monde, annee, mode, calme, anneeBouclee }: PropsTeteDAnnee) {
+export default function Tete({ monde, annee, mode, calme, anneeBouclee, aLHeure }: PropsTeteDAnnee) {
   const m = monde.pages.mots
   const photo = imageDu1900(`g${annee}`)
   const heure = heureDeLaGare(annee)
@@ -26,9 +28,11 @@ export default function Tete({ monde, annee, mode, calme, anneeBouclee }: PropsT
         <div className={styles.photo} role="img" aria-label={libelleDeLaPhoto(mode, annee)} style={photo ? { backgroundImage: `url(${photo})` } : undefined} />
         {mode === 'fermee' ? <div className={styles.lanterne} role="img" aria-label="La lanterne rouge du laboratoire" /> : null}
       </div>
-      <div className={styles.plaque}>
+      {/* L'horaire tenu : un filet doré autour de la plaque, et sa mention sous l'année. */}
+      <div className={`${styles.plaque} ${aLHeure ? styles.aLHeure : ''}`}>
         <small>{mentionDeLaPlaque(mode, annee, m)}</small>
         <h1>{annee}</h1>
+        {aLHeure ? <em>{MOTS_DE_L_HORAIRE.aLHeure}</em> : null}
       </div>
       {anneeBouclee ? <p className={styles.tampon}>{m.annonce.bouclee}</p> : null}
       {ouverte ? (

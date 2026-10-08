@@ -16,6 +16,7 @@ import Gare from './pages/Gare'
 import Grille from './pages/Grille'
 import GuichetDuFilm from './pages/GuichetDuFilm'
 import Guide from './pages/Guide'
+import HoraireDeLaGare from './pages/HoraireDeLaGare'
 import Hale from './pages/Hale'
 import Indicateur from './pages/Indicateur'
 import IndicateurDeLaLigne from './pages/IndicateurDeLaLigne'
@@ -134,6 +135,7 @@ export const PAGES_1900: HabillagePages = {
     salles: Correspondances,
     salle: Voie,
     ordreDAnnee: Gare,
+    horaireDeLAnnee: HoraireDeLaGare,
     parade: Classes,
     seance: TrainDuSoir,
     projection: Hale,

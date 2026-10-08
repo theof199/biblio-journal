@@ -2,6 +2,7 @@ import { useMouvementReduit } from '../../../ui/mouvement'
 import { NOM_DE_RECOMPENSE } from '../../../voyage/annee/Embleme'
 import type { PropsProgramme } from '../../../voyage/annee/Programme'
 import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
+import { MOTS_DE_L_HORAIRE, phraseDeLHoraireTenu } from './horaire'
 import { gainDe, ligneDeLIndicateur, lignesDeLAnnee } from './lignes'
 import Rubrique from './Rubrique'
 import styles from './Indicateur.module.css'
@@ -11,9 +12,10 @@ import styles from './Indicateur.module.css'
  * par arrivée que la fiche compte, arrivée ou attendue, sur toute année prête (`lignesDeLAnnee` : une
  * année derrière soi sans ticket ne le promet plus). Une année bouclée porte le tampon rouge, avec sa
  * récompense quand elle en a une. Au retour d'un billet, la ligne gagnée se pointe en
- * rouge (le « +1 » monte au compteur, sous la tête) ; au calme, elle est pointée d'un coup.
+ * rouge (le « +1 » monte au compteur, sous la tête) ; au calme, elle est pointée d'un coup. Un horaire
+ * tenu (`horaireTenu`) se dit en tête des lignes : son échéance, le jour de l'arrivée.
  */
-export default function Indicateur({ monde, annee, arrivees, gains, bouclee, recompense, ia }: PropsProgramme) {
+export default function Indicateur({ monde, annee, arrivees, gains, bouclee, recompense, ia, horaireTenu }: PropsProgramme) {
   const m = monde.pages.mots
   const calme = useMouvementReduit()
   const lignes = lignesDeLAnnee(arrivees, bouclee)
@@ -29,6 +31,12 @@ export default function Indicateur({ monde, annee, arrivees, gains, bouclee, rec
           <span>{`Ligne ${annee}`}</span>
           {m.programme.titre}
         </p>
+        {horaireTenu ? (
+          <p className={styles.tenu}>
+            <b>{MOTS_DE_L_HORAIRE.tenu}</b>
+            {phraseDeLHoraireTenu(horaireTenu.echeance, horaireTenu.arriveeLe)}
+          </p>
+        ) : null}
         <table>
           <tbody>
             {lignes.map((a) => {

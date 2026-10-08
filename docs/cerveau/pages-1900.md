@@ -24,7 +24,7 @@ du lot : `../biblio-back/docs/superpowers/plans/2026-10-07-journal-web-voyage-le
 | La tête (quatre modes, et pendant le chargement) | 1900 : `Tete` |
 | Le fronton (fiche prête, en préparation) | 1900 : `SousLaTete` |
 | Le corps d'une année fermée ou en attente | 1900 : `VoieFermee` |
-| La corde, le boniment, le programme, le dessin de la manivelle | 1900 : `Compteur`, `Guide`, `Indicateur`, `Courroie` |
+| La corde, le boniment, le programme, le dessin de la manivelle, l'horaire | 1900 : `Compteur`, `Guide`, `Indicateur`, `Courroie`, `HoraireDeLaGare` (sans défaut : `docs/cerveau/jeu-1900.md`) |
 | Les salles (les voies ; une salle ouverte est une voiture, en calque) | 1900 : `Correspondances`, `Voie`, `Voiture` |
 | La parade, la séance | 1900 : `Classes`, `TrainDuSoir` |
 | La nouvelle salle (sa tente), la ligne du bas, les feuillets, la feuille du chroniqueur | Défaut de `src/voyage/`, aux jetons et aux mots de 1900 |

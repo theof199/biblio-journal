@@ -172,3 +172,20 @@
   text-transform: uppercase;
   transform: rotate(-5deg);
 }
+
+/* L'horaire tenu, en tête des lignes : une marge dorée (maquette : `.chaix .tenu`). */
+.tenu {
+  margin: 0;
+  padding: 5px 4px 5px 8px;
+  border-bottom: 1px dotted color-mix(in srgb, var(--m-encre) 45%, transparent);
+  font: italic 13px/1.35 var(--m-f-texte);
+  box-shadow: inset 3px 0 0 var(--m-or);
+}
+
+.tenu b {
+  margin-right: 6px;
+  font: normal 700 10px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-or3);
+}

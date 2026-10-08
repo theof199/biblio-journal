@@ -1,0 +1,106 @@
+/* L'horaire de la gare (maquette « Voyage immobile 1900 » : `.horaire-prop`, `.talons`, `.r-etat`).
+   Les couleurs et les polices viennent des jetons du monde. Rien n'y bouge : aucune durée. */
+.affichette {
+  margin: 0 14px;
+  padding: 10px 12px 12px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  box-shadow: 0 4px 12px var(--m-ombre);
+}
+
+.affichette p {
+  margin: 0;
+  font: 14px/1.4 var(--m-f-texte);
+}
+
+.affichette p b {
+  display: block;
+  margin-bottom: 3px;
+  font: 700 19px/1.1 var(--m-f-capitales);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.affichette p small {
+  display: block;
+  margin-bottom: 3px;
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-rouge);
+}
+
+/* Deux talons sous le pointillé : celui qui dit l'état présent est plein. */
+.talons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 2px dashed color-mix(in srgb, var(--m-encre) 60%, transparent);
+}
+
+.talon {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--m-encre);
+  border-radius: 2px;
+  background: none;
+  color: var(--m-encre);
+  font: 700 13.5px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plein {
+  background: var(--m-encre);
+  color: var(--m-papier);
+}
+
+.talon[aria-disabled='true'] {
+  opacity: 0.5;
+}
+
+.talon:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* Vide, la région d'état reste dans la page (elle ne se lit qu'à son changement) sans y prendre de place. */
+.etat:empty {
+  margin: 0;
+}
+
+.etat {
+  margin: 10px 16px 0;
+  font: italic 14px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.erreur {
+  margin: 8px 14px 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--m-rouge) 70%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-fond) 80%, transparent);
+  color: var(--m-papier);
+  font: 13px/1.4 var(--m-f-corps);
+}
+
+/* Manqué : une ligne de papier, sans affichette ni talon. */
+.manque {
+  margin: 0 14px;
+  padding: 8px 12px;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  font: italic 14px/1.4 var(--m-f-texte);
+  box-shadow: 0 4px 12px var(--m-ombre);
+}
+
+.manque b {
+  margin-right: 8px;
+  font: normal 700 10px var(--m-f-capitales);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--m-encre2);
+}
