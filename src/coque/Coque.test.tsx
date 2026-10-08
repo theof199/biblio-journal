@@ -10,6 +10,11 @@ import { json, servir } from '../test/serveur'
 import { ROUTES_ACCUEIL } from '../test/routesAccueil'
 import { voyage1890 } from '../test/voyage'
 
+// La carte se charge à la demande dans l'app (`paresseux`) : sans ce chargement préalable, le premier
+// test qui ouvre `/voyage` paierait sa compilation dans le délai d'un `findByRole` (le remède de
+// `test/pageVoyage.tsx`).
+await import('../pages/Carte')
+
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 /** La carte, l'onglet Voyage, lit son Voyage et ses tickets. */
 const CARTE = {
