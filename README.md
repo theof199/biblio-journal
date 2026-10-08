@@ -188,6 +188,24 @@ n'attend. Refusé ou en panne, il est rendu au moteur (`rendreObjet`) et revient
 mot. Le moteur tient deux listes : ce que la page dit ramassé (`reglerObjets`) et ce qu'un toucher
 vient de prendre, que la liste de la page n'efface pas.
 
+**Le point rouge de la pastille de la sacoche** (lot d'écrans, brief 5 ; maquette « Voyage immobile
+1900 », `.pastilles .point`) dit qu'il y a du neuf, et le nom du lien dit pourquoi : « Sacoche du
+voyageur : une étiquette vient d'être collée sur la malle et un objet trouvé en gare ». Éteint, le
+lien se nomme exactement « Sacoche du voyageur ». La liste des rubriques qui l'allument s'écrit en un
+point (`voyage/voyageur.ts`, `RUBRIQUES_DE_LA_PASTILLE` : `etiquette` par les `collee_le` de la malle,
+`objet` par les `ramasse_le` ; `bobine` jamais, `courrier` avec son bloc), et **la carte ne regarde
+que celles dont la sacoche du monde de mon année en cours monte le bloc** (`rubriquesDeLaPastille`) :
+elle lit alors l'état du voyageur (la même clé que pour les objets du quai, une seule lecture) et, pour
+`etiquette`, la malle de ma décennie. Un membre de 1890 ne lit rien de plus ; un membre du monde « à
+venir » n'a pas de point, même devant les quais de 1900, car sa sacoche ne marquerait rien vu. La carte
+n'attend aucune de ces deux lectures, et leur panne se tait : pas de point pour la rubrique qu'elle
+prive de ses dates, et la carte reste. **Le point se lit sur le cache, que deux écritures tiennent
+champ par champ** : la sacoche y pose le `vue_le` rendu par le serveur (`useVisiteDeRubrique`), si bien
+qu'au retour le point est éteint sans rien relire ; ramasser y ajoute sa ligne, datée par le serveur
+après ma visite, et le rallume. Il bat en boucle (hors tempo, déclaré dans `voyage/tempo.test.ts`, qui
+garde depuis toute la feuille `carte/Carte.module.css`) ; au calme, un point fixe
+(`pages/Carte.point.test.tsx`).
+
 **La référence de 1890** (`carte/reference1890.test.ts`). Ce que le moteur dessine pour le vrai
 monde 1890 suivi du monde « à venir » est figé en empreintes : chaque appel au contexte et chaque
 écriture de propriété, les nombres arrondis à six décimales. C'est le garde-fou de « 1890 ne bouge
@@ -841,8 +859,8 @@ court (lu « 1900 : une lanterne de chef de gare, dans la sacoche ») ; sinon sa
 sur 10 », se dit sur le catalogue : une clé servie qu'il ne connaît pas n'a pas de place et ne compte
 pas. En panne, la consigne le dit sous sa rubrique, et elle seule : la malle garde sa ligne. On ne
 ramasse rien ici : c'est le geste de la carte (« La carte du Voyage », les objets oubliés sur le quai).
-**Le courrier de l'écran 15 n'y est pas**, ni le point rouge de la pastille : aucune rubrique vide ne
-les annonce (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
+**Le courrier de l'écran 15 n'y est pas** : aucune rubrique vide ne l'annonce ; le point rouge de la
+pastille est sur la carte (« La carte du Voyage ») (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
 le droit de lire, et la liste entière de ses rubriques).
 
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
@@ -857,7 +875,8 @@ d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le P
 L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquettes, les objets
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
-ramassent sur le quai de la carte ; les six autres n'en ont pas encore**
+ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; les cinq autres
+n'en ont pas encore**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -874,7 +893,8 @@ ramassent sur le quai de la carte ; les six autres n'en ont pas encore**
   servies et les dates de leurs éléments, lesquelles sont allumées (un élément daté strictement après
   `vue_le`, ou la rubrique jamais vue et non vide ; une rubrique inconnue s'ignore) ; `estNouveau` dit
   ce qui est nouveau depuis une date. Deux instants s'y comparent, jamais deux chaînes. Le serveur ne
-  calcule ni l'un ni l'autre.
+  calcule ni l'un ni l'autre. La carte le montre sur la pastille de la sacoche (`RUBRIQUES_DE_LA_PASTILLE`,
+  `rubriquesDeLaPastille`, `nouveautesDeLaSacoche`, `nomDeLaSacoche` : « La carte du Voyage »).
 - **Le badge d'une place de la malle** (`mondes/1900/pages/BadgeDeMalle.tsx`, ses règles et sa table dans
   `mondes/1900/pages/malle.ts` ; maquette, écran 18) : les quinze étiquettes dessinées en SVG, **par `cle`
   du contrat**, dans leurs trois états. Collée (`collee_le` non nul) : la forme en papier, ses encres, son

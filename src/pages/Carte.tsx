@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { estPrete, lireAnnee, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type FicheAnnee, type Voyageur } from '../api/voyage'
+import { estPrete, lireAnnee, lireMalle, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type FicheAnnee, type Voyageur } from '../api/voyage'
 import CarteCanvas, { type Moteur } from '../carte/CarteCanvas'
 import Apercu from '../carte/Apercu'
 import type { EtatCarte } from '../carte/moteur'
@@ -21,6 +21,7 @@ import { useMouvementReduit } from '../ui/mouvement'
 import Celebrations from '../voyage/celebrations/Celebrations'
 import { sceneDuRattrapage, type Scene } from '../voyage/celebrations/scenes'
 import { tamponDe } from '../voyage/passeport'
+import { nomDeLaSacoche, nouveautesDeLaSacoche, rubriquesDeLaPastille } from '../voyage/voyageur'
 import Tampon from '../voyage/passeport/Tampon'
 import {
   affichesDeColonne,
@@ -349,7 +350,20 @@ export default function Carte() {
   // Aucun en 1890 ni devant le monde « à venir », et 1900 est caché à qui ne l'a pas atteint : la
   // carte ne lit alors pas l'état du voyageur. `etat` est mémoïsé, la liste l'est avec lui.
   const objetsDeLaCarte = useMemo<readonly ObjetCache[]>(() => [...new Set((etat?.cases ?? []).map((c) => decennieDe(c.annee)))].flatMap((d) => mondes(d).objets), [etat])
-  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: objetsDeLaCarte.length > 0 })
+  // Le point rouge de la pastille (brief 5) : les rubriques dont la sacoche du monde de mon année en
+  // cours monte le bloc. Aucune en 1890 ni dans le monde « à venir » : rien de plus ne part alors.
+  const anneeEnCours = v?.annee_en_cours
+  const rubriquesDuPoint = useMemo(() => (anneeEnCours === undefined ? [] : rubriquesDeLaPastille(mondes(decennieDe(anneeEnCours)))), [anneeEnCours])
+  // Une seule lecture de l'état du voyageur, pour les objets du quai comme pour le point.
+  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: objetsDeLaCarte.length > 0 || rubriquesDuPoint.length > 0 })
+  // La malle de ma décennie, pour les `collee_le` : seulement si une rubrique montée s'y date. En
+  // panne ou pas encore lue, elle se tait : sa rubrique reste éteinte, et la carte reste.
+  const decennieDeLaMalle = anneeEnCours !== undefined && rubriquesDuPoint.some((r) => r.malle) ? decennieDe(anneeEnCours) : null
+  const malle = useQuery({ queryKey: cles.malle(decennieDeLaMalle ?? 0), queryFn: ({ signal }) => lireMalle(decennieDeLaMalle!, signal), enabled: decennieDeLaMalle !== null })
+  // Le point se lit sur le cache, que la sacoche (une rubrique vue) et le quai (un objet ramassé)
+  // écrivent champ par champ : il s'éteint et se rallume sans rien relire.
+  const nouveautes = nouveautesDeLaSacoche(rubriquesDuPoint, { voyageur: voyageur.data, malle: malle.data })
+  const nomDuLien = nomDeLaSacoche(nouveautes)
   // Ce que le moteur ne propose pas. Tant que l'état n'est pas lu, ou en panne sans rien en cache, on
   // ignore ce qui est ramassé : rien ne se propose, sans un mot, et la carte reste.
   const ramasses = voyageur.data?.objets
@@ -582,8 +596,10 @@ export default function Carte() {
             {sonEnMarche || sonVoulu ? <IconVolume size={20} aria-hidden="true" /> : <IconVolumeOff size={20} aria-hidden="true" />}
           </button>
           {/* La sacoche du voyageur : le passeport, le portefeuille et les coulisses, sur leur page. */}
-          <Link ref={sacocheRef} to="/voyage/sacoche" aria-label="Sacoche du voyageur" title="Sacoche du voyageur">
+          {/* Son point rouge dit qu'il y a du neuf, et son nom pourquoi ; éteint, le nom ne change pas. */}
+          <Link ref={sacocheRef} to="/voyage/sacoche" aria-label={nomDuLien} title={nomDuLien}>
             <IconBriefcase size={20} aria-hidden="true" />
+            {nouveautes.length > 0 ? <span className={styles.point} aria-hidden="true" /> : null}
           </Link>
           {!avatarVu && !ensemble ? (
             <button type="button" aria-label="Tu es ici" title="Tu es ici" onClick={() => moteur?.allerIci()}>

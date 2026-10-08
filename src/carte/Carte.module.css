@@ -32,6 +32,16 @@
   border: 1px solid rgba(230, 185, 74, 0.28); background: rgba(10, 7, 5, 0.42); color: var(--papier);
 }
 .boutons button[aria-pressed='true'] { border-color: var(--or); color: var(--or); }
+/* Le point rouge de la sacoche (maquette « Voyage immobile 1900 » : `.pastilles .point`) : du neuf dans
+   une rubrique qu'elle montre. Il bat en boucle, hors tempo (déclaré dans `voyage/tempo.test.ts`) ; au
+   calme, un point fixe. */
+.boutons a { position: relative; }
+.boutons .point {
+  position: absolute; right: -2px; top: -2px; width: 12px; height: 12px; border-radius: 50%; pointer-events: none;
+  background: #d9422e; box-shadow: 0 0 0 2px #15110d, 0 0 8px rgba(217, 66, 46, 0.8);
+  animation: lanterne 1.1s ease-in-out infinite alternate;
+}
+@keyframes lanterne { from { opacity: 0.5; } to { opacity: 1; } }
 
 .ticketOmbre { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 4; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55)); }
 .ticket {
@@ -127,6 +137,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pulse, .message { animation: none; }
+  .pulse, .message, .boutons .point { animation: none; }
   .vol { display: none; }
 }

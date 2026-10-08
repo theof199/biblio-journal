@@ -11,7 +11,7 @@ import stylesDeLaCarte from '../carte/Carte.module.css'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
-import { voyage1890 } from '../test/voyage'
+import { malleVide, voyage1890 } from '../test/voyage'
 import { auTempo } from '../voyage/tempo'
 
 /**
@@ -71,6 +71,8 @@ async function monter(routes: Routes = {}, { enCours = 1903, lu = true }: { enCo
     'GET /api/me/voyage': () => json(voyage(enCours)),
     'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
     [LIRE]: () => json(ETAT),
+    // Depuis le brief 5, la carte d'un membre de 1900 lit aussi la malle de sa décennie, pour le point rouge.
+    'GET /api/me/voyage/decennies/1900/etiquettes': () => json(malleVide(1900)),
     ...routes,
   })
   render(
@@ -255,7 +257,8 @@ describe('les objets sur le quai, côté page', () => {
     })
     banc.toucher('melon')
     await screen.findByText('Objet trouvé 2 sur 10')
-    fireEvent.click(screen.getByRole('link', { name: 'Sacoche du voyageur' }))
+    // Le point rouge est allumé (brief 5) : le nom du lien dit pourquoi, à la suite.
+    fireEvent.click(screen.getByRole('link', { name: 'Sacoche du voyageur : un objet trouvé en gare' }))
     const consigne = await screen.findByRole('region', { name: 'Objets trouvés' })
     expect(within(consigne).getByRole('img', { name: '1901 : un chapeau melon, dans la sacoche' })).toBeInTheDocument()
     expect(within(consigne).getByRole('img', { name: '1903 : un objet à trouver en gare' })).toBeInTheDocument()

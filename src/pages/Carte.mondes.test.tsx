@@ -10,7 +10,7 @@ import { FabriqueMoteurContexte } from '../carte/CarteCanvas'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
-import { fichePrete, voyage1890 } from '../test/voyage'
+import { fichePrete, voyage1890, ROUTES_DU_JEU } from '../test/voyage'
 
 /**
  * Le registre de la page est une constante de module : ce fichier le double pour avoir deux mondes à
@@ -78,6 +78,7 @@ async function monter(enCours: number) {
     'GET /api/auth/me': () => json(SESSION),
     'GET /api/me/voyage': () => json(voyage(enCours)),
     'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+    ...ROUTES_DU_JEU,
   })
   render(
     <QueryClientProvider client={createQueryClient()}>
@@ -255,6 +256,7 @@ async function ouvrir(v: Voyage, { tickets = [] as Ticket[], enCache = [] as Ret
     'GET /api/auth/me': () => json(SESSION),
     'GET /api/me/voyage': () => json(v),
     'GET /api/me/voyage/tickets': () => json({ tickets }),
+    ...ROUTES_DU_JEU,
   })
   render(
     <QueryClientProvider client={client}>

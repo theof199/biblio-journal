@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Malle, RubriqueVue, Voyageur } from '../api/voyage'
 import { exemple } from '../test/contrat'
-import { estNouveau, rubriquesAllumees, type DatesDesRubriques } from './voyageur'
+import { creerRegistre } from '../mondes'
+import type { Monde } from '../mondes/types'
+import { estNouveau, nomDeLaSacoche, nouveautesDeLaSacoche, rubriquesAllumees, rubriquesDeLaPastille, RUBRIQUES_DE_LA_PASTILLE, type DatesDesRubriques } from './voyageur'
 
 /**
  * Le point rouge de la sacoche (plan des écrans des lots, brief 0) : la règle seule, sans rendu.
@@ -111,3 +113,56 @@ describe('les rubriques allumées', () => {
     expect(rubriquesAllumees(revues, dates)).toEqual([])
   })
 })
+
+/**
+ * La pastille de la sacoche (brief 5) : quelles rubriques la regardent pour un monde, pourquoi elle
+ * s'allume, et le nom du lien. La page (`pages/Carte.point.test.tsx`) tient ce qui se lit et se montre.
+ */
+describe('la pastille de la sacoche', () => {
+  const mondes = creerRegistre()
+  const ETIQUETTE = 'une étiquette vient d’être collée sur la malle'
+  const OBJET = 'un objet trouvé en gare'
+  const malle = exemple<Malle>('/me/voyage/decennies/{decennie}/etiquettes', 'get', 200)
+  const base = exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)
+  /** Jamais rien ouvert, un objet ramassé, et une rubrique que l'appli ne connaît pas. */
+  const jamais: Voyageur = { ...base, rubriques: [vue('etiquette', null), vue('objet', null), vue('bobine', null), vue('courrier', null), vue('wagon', null)] }
+
+  // Mutations : le filtre retiré (toute la liste pour tout monde) ; `gabaritSeul` lu sur une seule clé
+  // pour toutes les rubriques (`malleDeLaSacoche` : un monde qui ne compose que la consigne n'aurait rien).
+  it('ne regarde que les rubriques dont le monde compose le bloc : aucune en 1890 ni « à venir », les deux en 1900', () => {
+    expect(rubriquesDeLaPastille(mondes(1890))).toEqual([])
+    expect(rubriquesDeLaPastille(mondes(1910))).toEqual([])
+    expect(rubriquesDeLaPastille(mondes(1900)).map((r) => r.rubrique)).toEqual(['etiquette', 'objet'])
+    const m = mondes(1900)
+    const consigneSeule: Monde = { ...m, pages: { ...m.pages, gabarits: { ...m.pages.gabarits, malleDeLaSacoche: undefined } } }
+    expect(rubriquesDeLaPastille(consigneSeule).map((r) => r.rubrique)).toEqual(['objet'])
+  })
+
+  // Mutations : toutes les rubriques servies sans `vue_le` allumées (`bobine`, `courrier`, « wagon ») ;
+  // les rubriques de toute la liste et non les rubriques montées ; l'ordre des phrases pris au serveur.
+  it('dit pourquoi, une phrase par rubrique montée et allumée, jamais pour « bobine », « courrier » ni une inconnue', () => {
+    const lu = { voyageur: jamais, malle }
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, lu)).toEqual([ETIQUETTE, OBJET])
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { ...lu, voyageur: { ...jamais, rubriques: [...jamais.rubriques].reverse() } })).toEqual([ETIQUETTE, OBJET])
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE.filter((r) => r.rubrique === 'objet'), lu)).toEqual([OBJET])
+    expect(nouveautesDeLaSacoche([], lu)).toEqual([])
+    // Tout vu, `bobine`, `courrier` et « wagon » restant jamais ouvertes : plus rien.
+    const vu = { ...jamais, rubriques: jamais.rubriques.map((r) => (r.rubrique === 'etiquette' || r.rubrique === 'objet' ? { ...r, vue_le: '2026-10-08T12:00:00.000Z' } : r)) }
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: vu, malle })).toEqual([])
+  })
+
+  // Mutations : la garde `!lu.voyageur` retirée (la carte tomberait avant la réponse) ; les dates de
+  // la malle lues sans garde (`malle.etiquettes` d'une malle pas lue).
+  it('sans l’état du voyageur, rien ; sans la malle, sa rubrique seule reste éteinte', () => {
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: undefined, malle })).toEqual([])
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: jamais, malle: undefined })).toEqual([OBJET])
+  })
+
+  // Mutation : le suffixe toujours posé.
+  it('le nom du lien reste « Sacoche du voyageur » point éteint, et dit pourquoi allumé', () => {
+    expect(nomDeLaSacoche([])).toBe('Sacoche du voyageur')
+    expect(nomDeLaSacoche([OBJET])).toBe('Sacoche du voyageur : un objet trouvé en gare')
+    expect(nomDeLaSacoche([ETIQUETTE, OBJET])).toBe('Sacoche du voyageur : une étiquette vient d’être collée sur la malle et un objet trouvé en gare')
+  })
+})
+

@@ -19,6 +19,8 @@ const ANIMATIONS: Record<string, string[]> = {
   '/src/voyage/billet/Tampon.module.css': ['eclat', 'descend', 'remonte'],
   '/src/pages/VoyageBillet.module.css': ['choc', 'part'],
   '/src/voyage/annee/Corde.module.css': ['rouler'],
+  // La carte : la pulsation du compteur de bobines, le message qui monte, l'envol d'un objet ramassé.
+  '/src/carte/Carte.module.css': ['pulse', 'monte', 'envol'],
   '/src/voyage/celebrations/Celebrations.module.css': ['leve', 'parait', 'fermeGauche', 'fermeDroite', 'efface', 'lance', 'frappe', 'eclair', 'sort', 'allume', 'tombe', 'tend'],
 }
 
@@ -62,6 +64,9 @@ const DUREE = /(?<![\w.#-])-?\d*\.?\d+m?s\b/g
  */
 const AMBIANCE: Record<string, (selecteur: string) => boolean> = {
   '/src/voyage/annee/Corde.module.css': (s) => /^\.billet\b/.test(s),
+  // La carte : le point rouge de la sacoche bat en boucle (lot d'écrans, brief 5). L'aperçu d'une année
+  // et le carton d'un monde paraissent sans suivre le geste « vu » : leurs durées d'avant, hors tempo.
+  '/src/carte/Carte.module.css': (s) => s === '.boutons .point' || s === '.apercu' || s === '.carton',
   // La tête de la gare 1900 : la trotteuse de l'horloge, la lanterne du laboratoire et le feu du sémaphore, en boucle.
   '/src/mondes/1900/pages/Tete.module.css': (s) => /^\.tete\[data-vivante='oui'\] \.(trotteuse|lanterne|feu)$/.test(s),
   // La courroie 1900 : l'anneau qui tourne tant que l'indicateur se relit, en boucle.
@@ -205,5 +210,17 @@ describe('le tempo de ce qui suit le geste « vu »', () => {
     // Chaque durée et chaque pause est un nombre écrit : ni appel, ni calcul, ni constante venue d'ailleurs.
     const valeurs = [...code.matchAll(/\b(?:duree|arret):\s*([^,}]+)/g)].map(([, valeur]) => valeur!.trim())
     expect(valeurs.filter((valeur) => !/^\d+$/.test(valeur))).toEqual([])
+  })
+
+  // Le point rouge de la sacoche (lot d'écrans, brief 5) : une boucle, et au calme un point fixe. Les
+  // autres règles de la feuille ne bouclent pas. Mutations : `.boutons .point` retiré du bloc
+  // « réduire les animations » ; `infinite` posé sur une autre règle de la feuille.
+  it('sur la carte, seul le point rouge bat en boucle, et il se fige au calme', () => {
+    const css = sansCommentaires(FEUILLES['/src/carte/Carte.module.css'] ?? '')
+    const boucles = [...css.matchAll(/\binfinite\b/g)].map((m) => selecteur(css, m.index))
+    expect(boucles).toEqual(['.boutons .point'])
+    const calme = [...css.matchAll(/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?\})\s*\}/g)].map(([, bloc]) => bloc!).join('\n')
+    const figes = [...calme.matchAll(/([^{}]+)\{\s*animation:\s*none;?\s*\}/g)].flatMap(([, s]) => s!.split(',').map((x) => x.trim()))
+    expect(figes).toContain('.boutons .point')
   })
 })

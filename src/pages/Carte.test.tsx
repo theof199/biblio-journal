@@ -7,7 +7,7 @@ import { createQueryClient } from '../api/queryClient'
 import { FabriqueMoteurContexte } from '../carte/CarteCanvas'
 import { json, servir } from '../test/serveur'
 import { moteurFactice } from '../test/moteurFactice'
-import { fichePrete, voyage1890 } from '../test/voyage'
+import { fichePrete, ROUTES_DU_JEU, voyage1890 } from '../test/voyage'
 import { exemple } from '../test/contrat'
 import { cles } from '../api/cles'
 import stylesDuTampon from '../voyage/passeport/Tampon.module.css'
@@ -35,6 +35,8 @@ function monter(voyage = VOYAGE, routes: Record<string, (init: RequestInit) => R
     'GET /api/auth/me': () => json(SESSION),
     'GET /api/me/voyage': () => json(voyage),
     'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+    // Ce que la carte d'un membre de 1900 lit en plus (les objets du quai, le point rouge) : rien de ramassé, rien de collé.
+    ...ROUTES_DU_JEU,
     ...routes,
   })
   render(

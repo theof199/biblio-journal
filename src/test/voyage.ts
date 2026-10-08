@@ -5,9 +5,11 @@ import type {
   FicheVerrouillee,
   FilmDeSalle,
   FilmSeance,
+  Malle,
   Salle,
   Seance,
   Voyage,
+  Voyageur,
 } from '../api/voyage'
 import { exemple } from './contrat'
 
@@ -83,3 +85,21 @@ export function seance(s: Partial<Seance> & { id: string; rang: number; long: Fi
   const modele = exemple<FichePrete>('/me/voyage/annees/{annee}', 'get', 200).seances[0]!
   return { ...modele, statut: 'proposee', court: null, ...s }
 }
+
+/**
+ * Ce que la carte de 1900 lit en plus de la carte et des tickets (lot d'écrans, briefs 4 et 5) : l'état
+ * d'un voyageur qui n'a rien ramassé ni rien ouvert, et une malle de 1900 où rien n'est collé. Un test
+ * de la carte qui ne regarde ni les objets ni le point rouge les sert tels quels : rien ne s'allume.
+ */
+export const VOYAGEUR_VIDE: Voyageur = {
+  objets: [],
+  rubriques: ['etiquette', 'objet', 'bobine', 'courrier'].map((rubrique) => ({ rubrique, vue_le: null })),
+  controleur: { attend: false, billet: null },
+  poincons: [],
+}
+export const malleVide = (decennie: number): Malle => ({ decennie, total: 0, collees: 0, etiquettes: [] })
+export const ROUTES_DU_JEU: Record<string, () => Response> = {
+  'GET /api/me/voyage/voyageur': () => new Response(JSON.stringify(VOYAGEUR_VIDE)),
+  'GET /api/me/voyage/decennies/1900/etiquettes': () => new Response(JSON.stringify(malleVide(1900))),
+}
+
