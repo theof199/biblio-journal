@@ -7,7 +7,7 @@ import { ApiError } from '../api/client'
 import { estPrete, lireAnnee, lireMalle, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type BilletDemande, type FicheAnnee, type Voyageur } from '../api/voyage'
 import CarteCanvas, { type Moteur } from '../carte/CarteCanvas'
 import Apercu from '../carte/Apercu'
-import type { EtatCarte } from '../carte/moteur'
+import type { CaseCarte, EtatCarte } from '../carte/moteur'
 import { jouerAvancee } from '../carte/avancee'
 import { ecrireAnneeVue, ecrireBobines, ecrireSon, lireAnneeVue, lireBobines, lireSon } from '../carte/memoire'
 import { ambianceDeLaPage } from '../carte/son'
@@ -22,6 +22,7 @@ import Celebrations from '../voyage/celebrations/Celebrations'
 import { sceneDuRattrapage, type Scene } from '../voyage/celebrations/scenes'
 import Controleur from '../voyage/controleur/Controleur'
 import { gabaritSeul } from '../voyage/gabarit'
+import { horaireDePlaque } from '../voyage/horaire'
 import { tamponDe } from '../voyage/passeport'
 import { nomDeLaSacoche, nouveautesDeLaSacoche, rubriquesDeLaPastille } from '../voyage/voyageur'
 import Tampon from '../voyage/passeport/Tampon'
@@ -47,6 +48,18 @@ import styles from '../carte/Carte.module.css'
 const mondes = creerRegistre()
 /** Le déblocage (plan 3b) : seul un monde à scène collante se ferme à qui ne l'a pas atteint. */
 const aUneScene = (decennie: number) => mondes(decennie).scene !== null
+/**
+ * Ce que la liste des années dit de l'horaire d'une gare à qui ne voit pas sa plaque (plan des écrans
+ * des lots, brief 11) : la règle de la plaque (`horaireDePlaque` : « à l'heure », « avant dimanche »,
+ * rien pour un horaire manqué ni pour une année fermée), et seulement dans un monde qui compose
+ * l'horaire (`horaireDeLAnnee`, la présence que regarde aussi la fiche d'année) : en 1890 la liste se tait.
+ */
+function horaireLu(c: Pick<CaseCarte, 'annee' | 'etat' | 'attente' | 'horaire'>): string {
+  if (gabaritSeul(mondes(decennieDe(c.annee)), 'horaireDeLAnnee') === null) return ''
+  const dit = horaireDePlaque(c.horaire, c.etat === 'verrou' || c.attente)
+  return dit ? `, ${dit.mention}` : ''
+}
+
 /** Le passage d'entrée (plan 3b) : un monde à scène dont `entree` porte au moins un temps. */
 const aUnPassage = (decennie: number) => (mondes(decennie).scene?.entree.length ?? 0) > 0
 /**
@@ -294,7 +307,8 @@ export default function Carte() {
         etat,
         attente,
         // L'horaire tel que servi : son état et son échéance, que le serveur décide (brief 9 des écrans
-        // des lots). Rien ne se dessine encore : le monde le reçoit par `CaseVue.horaire`.
+        // des lots). Le monde le reçoit par `CaseVue.horaire`, 1900 le dit sur sa plaque (brief 11), et
+        // la liste des années le lit ici (`horaireLu`).
         horaire: a.horaire ? { etat: a.horaire.etat, echeance: a.horaire.echeance } : null,
         profondeur: a.profondeur,
         jauge: jauge(a.progression, a.recompense),
@@ -670,7 +684,7 @@ export default function Carte() {
           <ul>
             {etat?.cases.map((c) => (
               <li key={c.annee}>
-                <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}${rattrape && c.annee === v.annee_en_cours ? ', tu le rattrapes bientôt' : ''}`}</Link>
+                <Link to={`/voyage/${c.annee}`}>{`${c.annee}, ${c.attente && lent ? lent : LIBELLE[c.etat]}${horaireLu(c)}${rattrape && c.annee === v.annee_en_cours ? ', tu le rattrapes bientôt' : ''}`}</Link>
               </li>
             ))}
           </ul>

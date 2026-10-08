@@ -1,6 +1,7 @@
 import type { CaseVue, VueMonde } from '../types'
 import { clamp } from '../../carte/outils'
-import { c, F_PRESSE, F_RAIL } from './couleur'
+import { horaireDePlaque, type HoraireDePlaque } from '../../voyage/horaire'
+import { c, F_CORPS, F_PRESSE, F_RAIL } from './couleur'
 import { cuire, fondre } from './cuisson'
 import { POSE } from './donnees'
 import { DEVELOPPEMENT } from './durees'
@@ -178,14 +179,44 @@ function poserLaGare(g: CanvasRenderingContext2D, annee: number, photo: CanvasIm
   g.restore()
 }
 
-/** La plaque émaillée : le millésime et le nom du lieu ; grise tant que la plaque est à développer. */
-function plaque(g: CanvasRenderingContext2D, x: number, y: number, annee: number, sombre: boolean): void {
+/**
+ * Ce que la plaque émaillée d'une gare dit de l'horaire de son année (plan des écrans des lots,
+ * brief 11 ; maquette : `poserHoraires`, l. 3958-3968) : la règle commune (`horaireDePlaque`), sur
+ * l'horaire que la case reçoit. **Une plaque à développer ne dit rien** (`aDevelopper`, ses deux
+ * gardes : l'année fermée, et celle où le membre n'est pas encore arrivé). Rien n'y bouge.
+ */
+export function horaireSurLaPlaque(v: Pick<VueMonde, 'cases' | 'ouverte'>, annee: number): HoraireDePlaque | null {
+  return horaireDePlaque(v.cases.find((k) => k.annee === annee)?.horaire, aDevelopper(v, annee))
+}
+
+/** Ce que la mention d'un horaire ajoute à la hauteur de la plaque (maquette : `.emaillee em`, une ligne). */
+const HAUTEUR_DE_MENTION = 13
+
+/**
+ * La plaque émaillée : le millésime et le nom du lieu ; grise tant que la plaque est à développer.
+ * `bas` est le haut d'une plaque sans mention. `horaire` (`horaireSurLaPlaque`) y ajoute une ligne, et pour un horaire tenu un filet doré autour
+ * (maquette : `.emaillee.a-l-heure`, `.emaillee em`, `em.promis`). Rien n'y bouge.
+ */
+function plaque(g: CanvasRenderingContext2D, x: number, bas: number, annee: number, sombre: boolean, horaire: HoraireDePlaque | null): void {
+  // La plaque grandit vers le haut : son bas ne bouge pas, le corail de l'année en cours passe juste dessous.
+  const y = bas - (horaire ? HAUTEUR_DE_MENTION : 0)
   const sous = (sombre ? 'plaque à développer' : LIEU[annee]!).toUpperCase()
+  const policeDeMention = horaire?.tenu ? `600 9.5px ${F_RAIL}` : `italic 11px ${F_CORPS}`
+  const mention = horaire ? (horaire.tenu ? horaire.mention.toUpperCase() : horaire.mention) : ''
+  g.font = policeDeMention
+  const largeurDeMention = horaire ? g.measureText(mention).width + 24 : 0
   g.font = `10.5px ${F_RAIL}`
-  const w = Math.max(84, g.measureText(sous).width + 28)
-  const h = HAUTEUR_DE_PLAQUE
+  const w = Math.max(84, g.measureText(sous).width + 28, largeurDeMention)
+  const h = HAUTEUR_DE_PLAQUE + (horaire ? HAUTEUR_DE_MENTION : 0)
   g.fillStyle = c('#000000', 0.5)
   g.fillRect(x - w / 2 + 2, y + 5, w, h)
+  if (horaire?.tenu) {
+    // Le filet doré, hors de la plaque : deux traits, l'or puis son ombre.
+    g.fillStyle = c('#7a5a16')
+    g.fillRect(x - w / 2 - 3.5, y - 3.5, w + 7, h + 7)
+    g.fillStyle = c('#e2b23c')
+    g.fillRect(x - w / 2 - 2, y - 2, w + 4, h + 4)
+  }
   g.fillStyle = sombre ? c('#3e3a35') : c('#1d3767')
   g.fillRect(x - w / 2, y, w, h)
   g.strokeStyle = sombre ? c('#bdb3a0') : c('#f4efe2')
@@ -198,6 +229,13 @@ function plaque(g: CanvasRenderingContext2D, x: number, y: number, annee: number
   g.fillText(String(annee), x, y + 32)
   g.font = `10.5px ${F_RAIL}`
   g.fillText(sous, x, y + 45)
+  if (!horaire) return
+  g.font = policeDeMention
+  g.fillStyle = horaire.tenu ? c('#f0d27a') : c('#f4efe2', 0.86)
+  // « à l'heure » s'écrit espacé (maquette : `letter-spacing: .2em`) ; un navigateur qui l'ignore l'écrit serré.
+  if (horaire.tenu) g.letterSpacing = '1.9px'
+  g.fillText(mention, x + (horaire.tenu ? 1 : 0), y + 45 + HAUTEUR_DE_MENTION)
+  if (horaire.tenu) g.letterSpacing = '0px'
 }
 
 /**
@@ -366,7 +404,7 @@ export function dessinerMoyen(v: VueMonde): void {
     const photo = url ? v.image(url) : null
     if (photo) poserLaGare(g, annee, photo, p, revele)
     const pl = plaqueDeLaGare(v, i)
-    plaque(g, pl.x, pl.y, annee, sombre)
+    plaque(g, pl.x, pl.y, annee, sombre, horaireSurLaPlaque(v, annee))
   })
   // Une dépêche et une bobine ne se montrent que dans une gare développée, et ne se touchent que
   // dans la fenêtre de la section : hors d'elle, leur zone resterait, invisible, sur le monde voisin.

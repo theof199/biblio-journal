@@ -1,4 +1,4 @@
-import { jourDArrivee, jourDeLEcheance } from '../../../voyage/horaire'
+import { A_L_HEURE, jourDArrivee, jourDeLEcheance } from '../../../voyage/horaire'
 
 /**
  * Les mots de l'horaire d'une gare (maquette « Voyage immobile 1900 », écrans 2 et 14 : `.horaire-prop`,
@@ -11,8 +11,8 @@ export const MOTS_DE_L_HORAIRE = {
   facultatif: 'facultatif',
   tenir: 'Tenir l’horaire',
   sans: 'Sans horaire',
-  /** Sur la plaque de la tête, sous l'année. */
-  aLHeure: 'à l’heure',
+  /** Sur la plaque de la tête, sous l'année : le mot de la plaque de la carte (`horaireDePlaque`). */
+  aLHeure: A_L_HEURE,
   /** En tête de l'indicateur. */
   tenu: 'Horaire tenu',
   manque: 'Horaire manqué',
@@ -30,7 +30,8 @@ export const promesseDeLHoraire = (annee: number): string =>
 
 /**
  * Ce que mon geste vient de faire, pour la région d'état. La maquette ajoute « la plaque de 1904 le dit
- * sur la carte » : la carte ne le dit pas encore (brief 11), la phrase ne le promet pas.
+ * sur la carte » : écrite avant que la carte le dise, la phrase ne le promet pas ; la plaque le dit
+ * depuis le brief 11 (`gares.ts` › `horaireSurLaPlaque`), qui n'a pas demandé de la rallonger.
  */
 export function ceQueLeGesteAFait(vient: 'accepte' | 'retire' | null, annee: number, echeance: string | null): string {
   if (vient === 'accepte' && echeance !== null) return `Horaire accepté : arriver avant ${jourDeLEcheance(echeance)}.`

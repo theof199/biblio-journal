@@ -922,8 +922,8 @@ trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, l
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
 ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
 billets passe sur la carte et son poinçon doré reste au casier ; l'horaire se prend, se retire et se dit
-sur la fiche de son année ; sur la carte il n'a rien à l'écran, comme les trois autres (l'horaire et les
-haltes y vont déjà jusqu'au monde, plus bas)**
+sur la fiche de son année, et la plaque de sa gare le dit sur la carte ; les trois autres n'ont rien à
+l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -954,7 +954,20 @@ haltes y vont déjà jusqu'au monde, plus bas)**
   monde qui dessinera un embranchement l'inscrit, `data` au rang de la halte dans sa vue, et son
   toucher dit la clé de la halte à la page (`Rappels.aiguillage`, relayé par `CarteCanvas`), au calme
   aussi (c'est une lecture), jamais à `reagir`. **Aucun monde ne l'inscrit encore et la page ne
-  l'écoute pas** : la plaque d'une gare (brief 11) et la halte (brief 12) s'y brancheront.
+  l'écoute pas** : la halte (brief 12) s'y branchera.
+  **La plaque d'une gare dit son horaire** (brief 11 ; `voyage/horaire.ts`, `horaireDePlaque`, une
+  règle pure tirée de `CaseVue.horaire`) : tenu, « à l'heure » et `tenu` pour le filet doré ; accepté,
+  « avant » et le jour de la semaine de l'échéance servie (`semaineDeLEcheance` : un mercredi se dit
+  « avant mercredi », jamais « dimanche » écrit d'avance) ; **manqué, rien** (décision 7), comme sans
+  horaire ; et rien sur une plaque fermée. 1900 la lit pour sa plaque émaillée
+  (`mondes/1900/gares.ts`, `horaireSurLaPlaque` : une plaque à développer ne dit rien, ses deux gardes
+  comprises), qui gagne une ligne en grandissant vers le haut, son bas restant au-dessus du corail de
+  l'année en cours ; rien n'y bouge, et le trait n'a pas de test. La liste des années pour lecteur
+  d'écran (`pages/Carte.tsx`, `horaireLu`) dit les mêmes mots après l'état de l'année (« 1902, passée,
+  à l'heure »), dans un monde qui compose `horaireDeLAnnee` seulement : en 1890 elle se tait, quoi que
+  serve l'API. Ni la bande de la vue d'ensemble ni l'aperçu d'une année ne le disent. Aucune requête
+  de plus : tout vient de `GET /me/voyage`. `voyage/horaire.test.ts`, `mondes/1900/habillage.test.ts`
+  et `pages/Carte.haltes.test.tsx` le tiennent.
   `carte/moteur.test.ts` et `pages/Carte.haltes.test.tsx` le tiennent.
 - **L'horaire d'une gare, sur la fiche de son année** (brief 10 des écrans des lots ;
   `voyage/annee/Horaire.tsx`, la clé sans défaut `horaireDeLAnnee`). La page ne monte le bloc que si le
@@ -992,7 +1005,8 @@ haltes y vont déjà jusqu'au monde, plus bas)**
   (`aria-pressed`) et ne porte aucun geste ; l'autre écrit, et se dit en attente tant que l'écriture
   est partie. Dessous, une région d'état dit ce que le geste vient de faire (« Horaire accepté :
   arriver avant… », « Sans horaire : la gare de 1904 se boucle quand tu veux, rien ne se perd. » ; la
-  maquette y ajoute « la plaque le dit sur la carte », que la carte ne fait pas encore), puis l'alerte
+  maquette y ajoute « la plaque le dit sur la carte » : la phrase n'a pas été rallongée quand la carte
+  s'est mise à le dire, au brief 11), puis l'alerte
   d'un refus. **Tenu, le bloc ne dessine rien** : la plaque de la tête porte un filet doré et « à
   l'heure » (`Tete`, `aLHeure`), et l'indicateur dit en tête de ses lignes « Horaire tenu », l'échéance
   et le jour de l'arrivée (`Indicateur`, `horaireTenu` : « Avant dimanche 11 octobre 2026 : arrivé le
@@ -1002,7 +1016,7 @@ haltes y vont déjà jusqu'au monde, plus bas)**
   yeux (un refus qui mène à « manqué », un retrait dont la fiche ne se relit pas), la région reprend le
   focus tombé au document, et sa région d'état, la même d'un état à l'autre, dit « Horaire manqué. Il
   fallait arriver avant… ». **Le jour se lit dans la date servie** (`voyage/horaire.ts`, que la carte
-  reprendra) : `jourDeLEcheance` dit une échéance sans heure sans passer par le fuseau de l'appareil
+  reprend) : `jourDeLEcheance` dit une échéance sans heure sans passer par le fuseau de l'appareil
   (la maquette écrit « dimanche » en dur ; la base ne tient pas « un dimanche »), `jourDArrivee` dit
   l'instant du ticket émis à Paris, comme le serveur le compte. Rien n'y bouge ;
   `mondes/1900/pages/horaire.test.tsx` tient les mots et ce qui s'offre, `voyage/horaire.test.ts` les

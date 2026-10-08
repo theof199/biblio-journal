@@ -14,8 +14,40 @@ import { jourDeParis } from './passeport'
  * chiffres se disent découpés (`formatDateVisionnage`).
  */
 export function jourDeLEcheance(echeance: string): string {
-  const semaine = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${echeance}T00:00:00Z`))
-  return `${semaine} ${formatDateVisionnage(echeance)}`
+  return `${semaineDeLEcheance(echeance)} ${formatDateVisionnage(echeance)}`
+}
+
+/**
+ * « dimanche » : le jour de la semaine d'une échéance, seul, lu dans la date servie comme le fait
+ * `jourDeLEcheance` (un jour du calendrier sans heure, le même à Paris et partout). Rien d'autre ne
+ * se calcule : ni « demain », ni un nombre de jours. Le format se crée à chaque appel, comme les
+ * autres : les tests changent le fuseau de Node.
+ */
+export function semaineDeLEcheance(echeance: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${echeance}T00:00:00Z`))
+}
+
+/** La mention d'un horaire tenu, sur la plaque d'une gare (maquette « Voyage immobile 1900 », `.emaillee em`). */
+export const A_L_HEURE = 'à l’heure'
+
+/** Ce que la plaque d'une gare dit de son horaire : sa mention, et `tenu` pour le filet doré. */
+export interface HoraireDePlaque {
+  mention: string
+  tenu: boolean
+}
+
+/**
+ * Ce que la plaque d'une gare dit de l'horaire de son année, sur la carte (plan des écrans des lots,
+ * brief 11) : tenu, « à l'heure » et le filet doré ; accepté, « avant » et le jour de l'échéance
+ * servie, jamais « dimanche » écrit d'avance ; **manqué, rien** (décision 7 du propriétaire), comme
+ * sans horaire. Une plaque `fermee` ne dit rien : l'année n'est pas ouverte. Une seule règle pour le
+ * dessin d'un monde et pour la liste des années que lit un lecteur d'écran (`pages/Carte.tsx`).
+ */
+export function horaireDePlaque(horaire: { etat: 'accepte' | 'tenu' | 'manque'; echeance: string } | null | undefined, fermee: boolean): HoraireDePlaque | null {
+  if (!horaire || fermee) return null
+  if (horaire.etat === 'tenu') return { mention: A_L_HEURE, tenu: true }
+  if (horaire.etat === 'accepte') return { mention: `avant ${semaineDeLEcheance(horaire.echeance)}`, tenu: false }
+  return null
 }
 
 /**

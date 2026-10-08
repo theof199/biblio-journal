@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
@@ -136,5 +136,56 @@ describe('la carte en sait plus : l’horaire et les haltes, de la page au moteu
     } finally {
       delete HORAIRES[1904]
     }
+  })
+})
+
+// La plaque d'une gare dit son horaire (brief 11) ; la liste des années le dit à qui ne la voit pas,
+// par la même règle, et seulement dans un monde qui compose l'horaire.
+describe('la liste des années dit l’horaire d’une gare, comme sa plaque', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    localStorage.clear()
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const lues = () => within(screen.getByRole('navigation', { name: 'Les années du Voyage' })).getAllByRole('link').map((l) => l.textContent)
+  /** En 1904 : 1899 manqué, 1902 tenu, 1903 accepté (un mercredi) ; en plus, 1897 tenu (la foire) et 1905, fermée, qui porte un horaire. */
+  const servi = () => {
+    const v = voyage(1904)
+    return { ...v, annees: v.annees.map((a) => (a.annee === 1897 ? { ...a, horaire: TENU } : a.annee === 1905 ? { ...a, horaire: ACCEPTE } : a)) }
+  }
+
+  // Mutations : la règle non appelée dans la page (la liste se tait) ; « avant dimanche » écrit dans
+  // la page ; la garde du monde retirée (1897 dirait « à l'heure » : rien de neuf en 1890) ; la garde
+  // de l'année fermée retirée (1905 dirait « avant mercredi ») ; une mention pour l'horaire manqué.
+  it('tenu et accepté se disent en 1900, jamais en 1890, ni manqué, ni sur une année fermée', async () => {
+    await monter(servi)
+    expect(lues()).toEqual([
+      '1895, passée',
+      '1896, passée',
+      '1897, passée',
+      '1898, passée',
+      '1899, passée',
+      '1900, passée',
+      '1901, passée',
+      '1902, passée, à l’heure',
+      '1903, passée, avant mercredi',
+      '1904, en cours',
+      '1905, à tourner',
+      '1906, à tourner',
+      '1907, à tourner',
+      '1908, à tourner',
+      '1909, à tourner',
+    ])
+  })
+
+  // Une année en attente du Voyage suivi se montre fermée partout, plaque comprise (`estFermee`).
+  // Mutation : `|| c.attente` retiré de la garde de la page.
+  it('une année en attente du Voyage suivi ne dit pas son horaire', async () => {
+    await monter(() => {
+      const v = servi()
+      return { ...v, ia: false, source: null, annees: v.annees.map((a) => (a.annee === 1903 ? { ...a, visitee: false } : a)) }
+    })
+    expect(lues().slice(7, 9)).toEqual(['1902, passée, à l’heure', '1903, passée'])
   })
 })

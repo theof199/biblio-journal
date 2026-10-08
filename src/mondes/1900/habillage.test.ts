@@ -4,7 +4,7 @@ import type { CaseVue, VueMonde } from '../types'
 import { vueFactice } from '../../test/vueFactice'
 import { AMBIANCE, CADRE_LOIN, FENETRES, HEURES, LABO, LUNE, POSE, SUITE_LOIN } from './donnees'
 import { DEVELOPPEMENT, SOUFFLE_DE_LA_LAMPE } from './durees'
-import { gareALEcran } from './gares'
+import { gareALEcran, horaireSurLaPlaque } from './gares'
 import {
   ambiances, aUnChef, chefALEcran, fenetresALEcran, forceDeLaLanterne, GUIDON, heureSurLaLigne, lanterneALEcran, leveeDuGuidon, luneALEcran,
   motsDeLEtiquette, partDeLHeure, partsDeLHeure, souffleDeLaLampe, voileDuLaboratoire,
@@ -298,6 +298,37 @@ describe('le chef de gare', () => {
     expect(p.x + p.w / 2).toBeCloseTo(195 - 58, 6)
     expect(p.y + p.h).toBeCloseTo(gare.y + gare.h * 0.915, 6)
     expect(chefALEcran(vue, 3).x - p.x).toBeCloseTo(900, 6)
+  })
+})
+
+// Plan des écrans des lots, brief 11. Le trait de la plaque n'a pas de test : ce qu'elle dit, si.
+describe('l’horaire sur la plaque émaillée', () => {
+  const MERCREDI = '2026-10-14'
+  /** Quatre années ouvertes (le membre en 1903) : 1901 tenu, 1902 manqué, 1903 accepté, et un horaire servi sur 1905, fermée. */
+  const avec = (ouverte = 1903) => ({
+    cases: cases(4).map((k) => ({
+      ...k,
+      horaire: ({ 1901: { etat: 'tenu', echeance: '2026-10-04' }, 1902: { etat: 'manque', echeance: '2026-10-04' }, 1903: { etat: 'accepte', echeance: MERCREDI }, 1905: { etat: 'tenu', echeance: MERCREDI } } as const)[k.annee] ?? null,
+    })),
+    ouverte: { annee: ouverte, t0: -9 },
+  })
+
+  // Mutations : la règle commune non appelée (rien sur aucune plaque) ; « avant dimanche » écrit ici
+  // pour un horaire accepté ; une mention pour un horaire manqué (décision 7).
+  it('tenu, « à l’heure » et son filet ; accepté, « avant » et le jour servi ; manqué ou sans horaire, rien', () => {
+    expect(horaireSurLaPlaque(avec(), 1901)).toEqual({ mention: 'à l’heure', tenu: true })
+    expect(horaireSurLaPlaque(avec(), 1903)).toEqual({ mention: 'avant mercredi', tenu: false })
+    expect(horaireSurLaPlaque(avec(), 1902)).toBeNull()
+    expect(horaireSurLaPlaque(avec(), 1900)).toBeNull()
+  })
+
+  // Les deux gardes d'`aDevelopper`. Mutations : la garde retirée (`false` passé à la règle) ;
+  // `estFermee` à sa place (la plaque parlerait le temps du trajet vers l'année qu'on vient d'ouvrir).
+  it('une plaque à développer ne dit rien : ni l’année fermée, ni celle où le membre n’est pas encore arrivé', () => {
+    expect(horaireSurLaPlaque(avec(), 1905)).toBeNull()
+    expect(horaireSurLaPlaque(avec(1902), 1903)).toBeNull()
+    // Le témoin : arrivé, la même plaque le dit.
+    expect(horaireSurLaPlaque(avec(1903), 1903)).not.toBeNull()
   })
 })
 
