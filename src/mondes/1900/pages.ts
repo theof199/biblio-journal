@@ -1,5 +1,6 @@
 import type { HabillagePages, JetonDePage } from '../types'
 import Affiche from './pages/Affiche'
+import BadgeColleSurLaMalle from './pages/BadgeColleSurLaMalle'
 import BilletDuCasier from './pages/BilletDuCasier'
 import CasierDuControleur from './pages/CasierDuControleur'
 import Classes from './pages/Classes'
@@ -157,6 +158,7 @@ export const PAGES_1900: HabillagePages = {
     objetsDeLaSacoche: ObjetsDeLaSacoche,
     feteDeLaSalle: VoitureComplete,
     feteDeLaRecompense: EtiquetteDeMalle,
+    feteDuBadge: BadgeColleSurLaMalle,
     feteDeLAnnee: LigneBouclee,
   },
   // `guichet` : ce qui tient au-dessus de la tablette (le retour, le fronton, la grille), la place que la

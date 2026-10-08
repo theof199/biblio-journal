@@ -5,8 +5,8 @@ import { LIEU } from '../gares'
 
 /**
  * Les mots et les règles des fêtes des années 1900 (maquette « Voyage immobile 1900 », écran 13),
- * sans rendu : la voiture complète, l'étiquette de malle, la ligne bouclée et son « Bon pour ». La
- * scène « Étiquette collée » d'un badge, le tampon du douanier et l'adieu n'en sont pas.
+ * sans rendu : la voiture complète, l'étiquette de malle, le badge collé sur la même malle (« Étiquette
+ * collée »), la ligne bouclée et son « Bon pour ». Le tampon du douanier et l'adieu n'en sont pas.
  */
 export const MOTS_DES_FETES = {
   voiture: 'Voiture complète',
@@ -72,6 +72,29 @@ const PLACES: readonly { left: number; top: number; angle: number }[] = [
   { left: 140, top: 96, angle: 10 },
 ]
 export const placeDeLEtiquette = (rang: number): { left: number; top: number; angle: number } => PLACES[rang % PLACES.length]!
+
+/**
+ * Où un badge déjà collé tient sur la malle des fêtes, et de combien il penche : quatorze places
+ * autour de celle du milieu, que le neuf prend (une malle en a quinze ; au-delà, on recommence). Les
+ * coins d'abord, puis les bords. Un décor : la place ne dit rien du numéro.
+ */
+const PLACES_DES_BADGES: readonly { left: number; top: number; angle: number }[] = [
+  { left: 6, top: 5, angle: -8 },
+  { left: 196, top: 7, angle: 10 },
+  { left: 8, top: 137, angle: 7 },
+  { left: 194, top: 135, angle: -11 },
+  { left: 101, top: 1, angle: 4 },
+  { left: 101, top: 141, angle: -5 },
+  { left: 2, top: 71, angle: 12 },
+  { left: 200, top: 71, angle: -7 },
+  { left: 54, top: 3, angle: 9 },
+  { left: 148, top: 3, angle: -6 },
+  { left: 54, top: 139, angle: -9 },
+  { left: 148, top: 139, angle: 6 },
+  { left: 34, top: 104, angle: -4 },
+  { left: 170, top: 38, angle: 8 },
+]
+export const placeDuBadge = (rang: number): { left: number; top: number; angle: number } => PLACES_DES_BADGES[rang % PLACES_DES_BADGES.length]!
 
 /** La ligne du « Bon pour » : d'où l'on vient, et la gare où le ticket mène quand elle a un lieu. */
 export const trajetDuBon = (annee: number, ticket: number): string => `de ${annee} à ${LIEU[ticket] ?? ticket}`

@@ -625,15 +625,21 @@ de ses quatre derniers films aux fenêtres (la fenêtre et la plaque du comparti
 guidon qui se lève, puis le carton « Voiture complète » ; à plusieurs salles, ou sans fiche, une
 voiture sans voie ni film nommé. La récompense est une **étiquette de malle** (`EtiquetteDeMalle.tsx`) :
 la malle porte celles des années d'avant de la décennie, le pinceau passe, l'étiquette de l'année se
-colle au pas de la frappe. L'année bouclée est une **ligne bouclée** (`LigneBouclee.tsx`) : la plaque
+colle au pas de la frappe. Un **badge collé** (`BadgeColleSurLaMalle.tsx`, la clé sans défaut
+`feteDuBadge` ; maquette, « Étiquette collée ») se fête sur la même malle (`MalleDeFete.tsx`, que les
+deux dessins montent) : les badges collés avant lui autour (`BadgeDeMalle`, celui de la sacoche ;
+`placeDuBadge`, quatorze places), le pinceau, la colle, puis le sien au milieu au premier pas, et à la
+fin « Étiquette collée », son nom et **la devise servie** (la maquette y écrit une phrase que le
+contrat ne sert pas). L'année bouclée est une **ligne bouclée** (`LigneBouclee.tsx`) : la plaque
 de la gare, les lignes de l'indicateur (`lignesDeLAnnee`, `ligneDeLIndicateur` : celles de la fiche
 d'année) qui se pointent une à une, jamais une ligne encore attendue, le tampon rouge au pas de la
 médaille sous les confettis du poinçon, puis le guichet tend le carton Edmondson du « Bon pour »
 (`Carton.tsx`, sans note ni trous ; `trajetDuBon` dit la gare où le ticket mène) ; « Le garder » et
 « L’utiliser » restent les boutons de la scène. Au rattrapage de la carte, sans fiche, la ligne
-bouclée n'a pas d'indicateur. Les durées de la feuille suivent les pas de `deroule.ts`, qui n'a pas
-changé. Le nom du dialogue reste celui de la scène (« Salle complète : … »). **N'en sont pas** : la
-scène « Étiquette collée » d'un badge (lot Étiquettes), le tampon du douanier et l'adieu par la vitre
+bouclée n'a pas d'indicateur. Les durées de la feuille suivent les pas de `deroule.ts` : le pinceau
+et la colle servent deux scènes, et `fetes.test.tsx` les lie à `RECOMPENSE` comme à `BADGE`. Le nom
+du dialogue reste celui de la scène (« Salle complète : … », « Étiquette collée : … »). **N'en sont
+pas** : le tampon du douanier et l'adieu par la vitre
 arrière, qui se joueront sur la carte avec les années 1910 ; le vert du guidon et de la Palme, sans
 jeton, est le bleu de l'émail.
 
@@ -660,7 +666,7 @@ tamponne pas (l'année revient aussitôt), la manivelle ne tourne pas, le guiche
 manège se fige à un angle où aucun cheval n'est derrière le pilier (`ANGLE_AU_CALME`,
 `mondes/1890/monument.ts`), et aucun tampon du passeport ne frappe. Une célébration pose son état
 final d'un coup : le carton et son bouton, sans minuterie, sans confettis ni vibration ; en 1900,
-la voiture est complète, l'étiquette collée et les lignes pointées d'emblée, sans pinceau.
+la voiture est complète, l'étiquette ou le badge collés et les lignes pointées d'emblée, sans pinceau.
 
 **La manivelle** (`voyage/annee/Manivelle.tsx`, règles dans `voyage/manivelle.ts`) enveloppe la
 fiche de toute année, quelle que soit sa forme. Tout en haut de la page (le `<main>` de la coque à
@@ -809,11 +815,13 @@ recherche ; `manivelle.ts` ; `billet/range.ts` : le billet rangé) ; les morceau
 **La sacoche** (`/voyage/sacoche`, `pages/VoyageSacoche.tsx`) regroupe ce que j'ai accompli dans le
 Voyage, repris du profil de l'appli Android, au costume du Voyage : habillée par le monde de mon
 année en cours, sous l'onglet Voyage. On l'ouvre par la pastille « Sacoche du voyageur » de la
-carte (l'icône de la mallette, à côté du son) ; le retour ramène à la carte. Trois blocs, chacun
-lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans rendu dans
-`voyage/sacoche.ts`). **Tant que la carte n'a pas répondu, aucun monde n'habille la page** (ouverte
+carte (l'icône de la mallette, à côté du son) ; le retour ramène à la carte. Trois blocs fixes (le
+passeport, le portefeuille, les coulisses), et deux de plus dans un monde qui les compose (la malle
+entre le passeport et le portefeuille, les objets trouvés entre le portefeuille et les coulisses :
+plus bas, « La malle aux étiquettes » et « Les objets trouvés »), chacun lisant ses données et
+tombant seul en panne (`voyage/sacoche/`, règles sans rendu dans `voyage/sacoche.ts`). **Tant que la carte n'a pas répondu, aucun monde n'habille la page** (ouverte
 par un lien direct, elle ne montre pas la sacoche de la foire à un voyageur de 1900) : elle attend
-comme la carte attend, sans jetons, les trois blocs déjà montés, cachés et sans dessin, leurs lectures
+comme la carte attend, sans jetons, les trois blocs fixes déjà montés, cachés et sans dessin, leurs lectures
 parties ; la carte en panne, elle prend le monde du départ et chaque bloc dit ce qu'il a. Chaque bloc
 garde sa région (elle ne se remonte ni quand la carte répond ni quand le monde change : le pli des
 coulisses y survit), ses lectures, ses écritures et sa navigation, et passe ce qu'il a lu à un dessin qu'un monde peut composer (`GabaritsDesPages`) : `teteDeLaSacoche`

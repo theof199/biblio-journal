@@ -1,6 +1,6 @@
 /* Les fêtes des années 1900 (maquette « Voyage immobile 1900 », écran 13 : `.s-voiture`,
-   `.s-recompense`, `.s-annee`) : la voiture complète, l'étiquette de malle, la ligne bouclée. Trois
-   dessins, une racine (`.fete`) que chacun pose, dans le cadre de la scène (`voyage/celebrations/`),
+   `.s-recompense`, `.s-etiquette`, `.s-annee`) : la voiture complète, l'étiquette de malle, le badge
+   collé sur la même malle, la ligne bouclée. Quatre dessins, une racine (`.fete`) que chacun pose, dans le cadre de la scène (`voyage/celebrations/`),
    qui garde le dialogue, le déroulé et le choix. Les couleurs et les polices viennent des jetons du
    monde : le vert du guidon et de la Palme de la maquette, qui n'a pas de jeton, est le bleu de
    l'émail. Rien ne bouge hors d'une racine vivante, et tout y est au tempo (`--tempo`, posé par la
@@ -360,6 +360,23 @@
   top: 56px;
   left: 86px;
   transform: rotate(-7deg);
+}
+
+/* Un badge de la malle aux étiquettes (`BadgeDeMalle`, un SVG qui prend sa boîte) : ceux d'avant
+   autour, le neuf au milieu, à la place et dans la chute de l'étiquette neuve (`.neuve`). */
+.badge {
+  position: absolute;
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(1px 2px 2px var(--m-ombre));
+}
+
+.badge.neuve {
+  top: 51px;
+  left: 81px;
+  width: 88px;
+  height: 88px;
 }
 
 .fete[data-vivante='oui'] .neuve {

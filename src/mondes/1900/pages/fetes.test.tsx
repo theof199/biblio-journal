@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { QueryClientProvider } from '@tanstack/react-query'
 import { cles } from '../../../api/cles'
 import { createQueryClient } from '../../../api/queryClient'
-import type { FichePrete, Voyage } from '../../../api/voyage'
+import type { FichePrete, Malle, PlaceDeMalle, Voyage } from '../../../api/voyage'
 import type { JournalPage } from '../../../api/journal'
 import { creerRegistre } from '../..'
 import { exemple } from '../../../test/contrat'
@@ -12,7 +12,7 @@ import { json, servir } from '../../../test/serveur'
 import { annee, fichePrete, filmDeSalle, salle, voyage1890 } from '../../../test/voyage'
 import { confierLeRetour, oublierLeRetour } from '../../../voyage/annee/retour'
 import Celebrations from '../../../voyage/celebrations/Celebrations'
-import { ANNEE, GARDE_DU_CHOIX, PAS_DE_L_ANNEE, RECOMPENSE, SALLE } from '../../../voyage/celebrations/deroule'
+import { ANNEE, BADGE, GARDE_DU_CHOIX, PAS_DE_L_ANNEE, RECOMPENSE, SALLE } from '../../../voyage/celebrations/deroule'
 import { cartonDeSalle, type Scene } from '../../../voyage/celebrations/scenes'
 import { TEMPO } from '../../../voyage/tempo'
 import { FENETRES, MOTS_DES_FETES, cartonDeLaVoiture, fenetresDeLaVoiture, trajetDuBon } from './fetes'
@@ -56,6 +56,13 @@ const VOITURE: Scene = { type: 'salle', noms: ['Méliès, toujours'], combien: 1
 const LION: Scene = { type: 'recompense', annee: 1904, recompense: 'lion' }
 const LIGNE: Scene = { type: 'annee', annee: 1904, recompense: 'lion', ticket: 1905 }
 const MONTRE = 'POST /api/me/voyage/tickets/1905/montre'
+/** L'exemple du contrat : la 7, « La Correspondance », collée le 29 septembre 2026 ; la 8 et la 12 en trace ; la 15 cachée. */
+const MALLE: Malle = exemple<Malle>('/me/voyage/decennies/{decennie}/etiquettes', 'get', 200)
+const LA_7 = MALLE.etiquettes.find((p) => p.numero === 7)!
+const LA_8: PlaceDeMalle = { ...MALLE.etiquettes.find((p) => p.numero === 8)!, collee_le: '2026-09-30T23:10:00.000Z', progression: null }
+/** La 7 vient de se coller ; la 8 l'était déjà. */
+const BADGE_COLLE: Scene = { type: 'badge', place: LA_7, deja: [LA_8] }
+const LIRE_LA_MALLE = 'GET /api/me/voyage/decennies/1900/etiquettes'
 
 describe('les règles des fêtes de 1900', () => {
   // Mutations : `slice(-FENETRES)` retiré (cinq fenêtres) ou pris au début (la dernière fenêtre ne
@@ -130,6 +137,15 @@ describe('les durées des fêtes de 1900', () => {
     expect(jouee('pinceau').fin).toBe(RECOMPENSE[0])
     expect(jouee('eclaire-colle').fin).toBe(RECOMPENSE[0])
     expect(jouee('colle').fin).toBe(RECOMPENSE[1])
+  })
+
+  // Le badge collé reprend la malle, le pinceau et la colle de la récompense, donc leurs durées : son
+  // déroulé (`BADGE`) doit les suivre lui aussi. Mutations : un pas de `BADGE` changé dans `deroule.ts`
+  // sans la feuille ; `pinceau` ou `colle` changés dans la feuille sans `BADGE`.
+  it('le badge collé joue ses propres pas sur la même malle : le pinceau passe, la colle luit, puis il se colle', () => {
+    expect(jouee('pinceau').fin).toBe(BADGE[0])
+    expect(jouee('eclaire-colle').fin).toBe(BADGE[0])
+    expect(jouee('colle').fin).toBe(BADGE[1])
   })
 
   it('la ligne bouclée joue les pas de l’année : une ligne pointée par pas, le tampon frappé avant le titre, chaque mot monté avant le suivant', () => {
@@ -329,6 +345,7 @@ describe('les fêtes de 1900, dans le séquenceur', () => {
   it.each([
     ['la voiture complète', VOITURE, 'Voiture complète', 'Continuer'],
     ['l’étiquette de malle', LION, 'Le Lion', 'Continuer'],
+    ['le badge collé', BADGE_COLLE, 'Étiquette collée', 'Continuer'],
     ['la ligne bouclée', LIGNE, 'Bon pour 1905', 'Le garder'],
   ] as const)('au calme, %s pose son état final et rien ne bouge', async (_nom, scene, mot, bouton) => {
     calme()
@@ -351,25 +368,66 @@ describe('les fêtes de 1900, dans le séquenceur', () => {
     expect(pointees()).toEqual(['Ours:oui', 'Lion:oui', 'Palme:non', 'Ticket:oui'])
   })
   // Le jumeau : hors du calme, la racine vit et le pinceau passe. Sans lui, le calme ne prouverait rien.
-  it('hors du calme, la racine de chaque fête vit', () => {
-    const { container } = monter([LION])
+  it.each([
+    ['l’étiquette de malle', LION],
+    ['le badge collé', BADGE_COLLE],
+  ] as const)('hors du calme, la racine de la fête vit et le pinceau passe : %s', (_nom, scene) => {
+    const { container } = monter([scene])
     expect(racine(container)).toHaveAttribute('data-vivante', 'oui')
     expect(container.querySelector('[class*="pinceau"]')).not.toBeNull()
   })
 
-  // Les mêmes scènes, dans le même ordre, et aucune autre : la scène « Étiquette collée » d'un badge
-  // (maquette, écran 13) n'est pas de ce lot. Mutation : une scène de plus glissée dans le séquenceur
-  // après la récompense.
-  it('trois scènes, dans l’ordre, et aucune scène de badge', () => {
+  // Écran 13, « Étiquette collée » : la malle de la récompense, les badges de la sacoche. Mutations :
+  // le badge neuf monté avant le premier pas ; ses mots dits avant la fin ; la phrase de la maquette
+  // ou la règle à la place de la devise servie (constat 9 du plan) ; les badges d'avant non montrés,
+  // ou muets ; le badge neuf muet.
+  it('un badge se colle sur la malle, à côté de ceux d’avant, puis dit « Étiquette collée », son nom et la devise servie', async () => {
+    const { container, onFin } = monter([BADGE_COLLE])
+    expect(screen.getByRole('dialog', { name: 'Étiquette collée : La Correspondance' })).toHaveFocus()
+    const noms = () => etiquettes().map((e) => within(e).getByRole('img').getAttribute('aria-label'))
+    expect(noms()).toEqual(['Le Train de nuit, étiquette collée le 1er octobre 2026. Composter cinq séances après minuit.'])
+    expect(container.querySelector('[data-neuve]')).toBeNull()
+    await passer(BADGE[0] - 1)
+    expect(container.querySelector('[data-neuve]')).toBeNull()
+    await passer(1)
+    expect(noms()).toEqual([
+      'Le Train de nuit, étiquette collée le 1er octobre 2026. Composter cinq séances après minuit.',
+      'La Correspondance, étiquette collée le 29 septembre 2026. Voir le même soir deux films de deux gares différentes.',
+    ])
+    expect(etiquettes()[1]).toHaveAttribute('data-neuve', 'oui')
+    expect(vibrate).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('Étiquette collée')).toBeNull()
+    await passer(BADGE[1] + BADGE[2] - 1)
+    expect(screen.queryByText('Étiquette collée')).toBeNull()
+    await passer(1)
+    const dit = [...container.querySelectorAll('p')].map((p) => p.textContent)
+    expect(dit).toEqual(['Étiquette collée', 'La Correspondance', 'Deux gares · un soir'])
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    expect(onFin).toHaveBeenCalledTimes(1)
+  })
+
+  // Le premier badge de la décennie : la malle est nue, rien ne s'invente.
+  it('au calme, le badge neuf est collé d’emblée, seul sur une malle nue quand rien ne l’était', () => {
     calme()
-    const { onFin } = monter([VOITURE, LION, LIGNE])
+    const { container } = monter([{ type: 'badge', place: LA_7, deja: [] }])
+    expect(etiquettes()).toHaveLength(1)
+    expect(container.querySelector('[data-neuve]')).not.toBeNull()
+    expect(screen.getByText('Deux gares · un soir')).toBeInTheDocument()
+  })
+
+  // Les scènes de 1900, dans l'ordre de la maquette (`ORDRE`, écran 13) : la voiture, la récompense,
+  // l'étiquette collée d'un badge (plan des écrans des lots, brief 6), la ligne ; le tampon du douanier
+  // et l'adieu n'en sont pas. Mutations : `feteDuBadge` retiré des gabarits de 1900 (la scène ne se
+  // jouerait pas) ; une scène de plus glissée dans le séquenceur.
+  it('quatre scènes, dans l’ordre : l’étiquette collée d’un badge se joue entre la récompense et la ligne bouclée', () => {
+    calme()
+    const { onFin } = monter([VOITURE, LION, BADGE_COLLE, LIGNE])
     const noms: string[] = []
     for (let i = 0; i < 6 && screen.queryByRole('dialog'); i += 1) {
       noms.push(screen.getByRole('dialog').getAttribute('aria-label')!)
-      expect(screen.queryByText(/Étiquette collée/)).toBeNull()
       fireEvent.click(screen.queryByRole('button', { name: 'Continuer' }) ?? screen.getByRole('button', { name: 'Le garder' }))
     }
-    expect(noms).toEqual(['Salle complète : Méliès, toujours', 'Le Lion : les essentiels de 1904', '1904 est bouclée'])
+    expect(noms).toEqual(['Salle complète : Méliès, toujours', 'Le Lion : les essentiels de 1904', 'Étiquette collée : La Correspondance', '1904 est bouclée'])
     expect(onFin).toHaveBeenCalledTimes(1)
   })
 })
@@ -422,5 +480,55 @@ describe('les fêtes de 1900, sur la fiche de l’année', () => {
     await waitFor(() => expect(requetes).toContain(MONTRE))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(requetes.filter((r) => /voyageur|etiquettes|objets|annees\/(?!1904)/.test(r))).toEqual([])
+  })
+
+  // L'étiquette d'un badge, de bout en bout dans le monde 1900 (plan des écrans des lots, brief 6) :
+  // l'année relit la malle parce que le retour lui en confie une, et la fête entre le Lion et la ligne.
+  // Le test du dessus tient le jumeau : sans malle confiée, aucune lecture. Mutation : `feteDuBadge`
+  // retiré des gabarits de 1900 (ni lecture, ni scène).
+  it('au retour d’un billet qui a collé une étiquette, l’année relit la malle de 1900 et la fête sur la malle, entre la récompense et la ligne', async () => {
+    calmeIci()
+    const avant = MALLE.etiquettes.map((p) => (p.numero === 7 ? { ...p, collee_le: null, progression: { fait: 0, seuil: 1 } } : p))
+    confierLeRetour(1904, SESSION.user.id, { avant: { ...AVANT, fete: { ...AVANT.fete, sallesCompletes: 1, malle: avant } }, guet: null })
+    const { requetes } = monterVoyage(
+      '/voyage/1904',
+      {
+        'GET /api/me/voyage': () => json(CARTE),
+        'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+        'GET /api/me/voyage/annees/1904': () => json(FICHE),
+        [LIRE_LA_MALLE]: () => json(MALLE),
+        [MONTRE]: () => new Response(null, { status: 204 }),
+      },
+      (c) => {
+        c.setQueryData(cles.voyage, CARTE)
+        c.setQueryData(cles.annee(1904), { ...FICHE, profondeur: 3, progression: AVANT.progression, recompense: 'ours', ticket: null })
+      },
+    )
+    expect(await screen.findByRole('dialog', { name: 'Le Lion : les essentiels de 1904' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    const scene = within(screen.getByRole('dialog', { name: 'Étiquette collée : La Correspondance' }))
+    expect(within(scene.getByRole('list', { name: 'Les étiquettes de la malle' })).getAllByRole('listitem')).toHaveLength(1)
+    expect(scene.getByText('Deux gares · un soir')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    expect(screen.getByRole('dialog', { name: '1904 est bouclée' })).toBeInTheDocument()
+    expect(requetes.filter((r) => r.includes('/etiquettes'))).toEqual([LIRE_LA_MALLE])
+    expect(requetes.filter((r) => /voyageur|objets|rubriques|annees\/(?!1904)/.test(r))).toEqual([])
+  })
+
+  // Décision 4 : en 1900, le billet lit la malle en s'ouvrant, un `GET` qui n'écrit rien. Le jumeau de
+  // 1890 (aucune lecture) est tenu par `src/pages/VoyageBillet.badge.test.tsx`. Mutation : `feteDuBadge`
+  // retiré des gabarits de 1900.
+  it('le billet d’une année 1900 lit la malle de la décennie en s’ouvrant, une fois, sans rien écrire', async () => {
+    calmeIci()
+    const { requetes } = monterVoyage('/voyage/1904/films/f1/billet', {
+      'GET /api/me/voyage': () => json(CARTE),
+      'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
+      'GET /api/me/voyage/annees/1904': () => json({ ...FICHE, salles: [salle({ id: 's-a-voir', rang: 3, nom: 'À voir', films: [filmDeSalle({ id: 'f1', tmdb_id: 1, title: 'Film 1', etat: 'a_demander' })] })] }),
+      'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
+      [LIRE_LA_MALLE]: () => json(MALLE),
+    })
+    expect(await screen.findByRole('button', { name: /^Composter le billet/ })).toBeInTheDocument()
+    await waitFor(() => expect(requetes.filter((r) => r.includes('/etiquettes'))).toEqual([LIRE_LA_MALLE]))
+    expect(requetes.filter((r) => !r.startsWith('GET '))).toEqual([])
   })
 })
