@@ -825,6 +825,13 @@ plus (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
   `vue_le`, ou la rubrique jamais vue et non vide ; une rubrique inconnue s'ignore) ; `estNouveau` dit
   ce qui est nouveau depuis une date. Deux instants s'y comparent, jamais deux chaînes. Le serveur ne
   calcule ni l'un ni l'autre.
+- **Le badge d'une place de la malle** (`mondes/1900/pages/BadgeDeMalle.tsx`, ses règles et sa table dans
+  `mondes/1900/pages/malle.ts` ; maquette, écran 18) : les quinze étiquettes dessinées en SVG, **par `cle`
+  du contrat**, dans leurs trois états. Collée (`collee_le` non nul) : la forme en papier, ses encres, son
+  dessin, son nom court et la devise servie. En trace de colle : la forme pâle et « 3 sur 4 », « à gagner »
+  pour un seuil de un ; `fait` au seuil sans `collee_le` reste une trace. Cachée non gagnée (`cle` nul, et
+  non `cachee` vrai) : un « ? », sans forme, et un nom lu qui ne dit rien d'elle. Une clé inconnue garde sa
+  place : une forme neutre, le nom servi. **Aucune page ne le monte encore** : la malle est le lot suivant.
 - **Ces écrans seront de 1900 seulement** (décision du propriétaire, 8 octobre 2026) : des clés de
   gabarit sans défaut, si bien que 1890 et le monde « à venir » ne monteront aucun de leurs blocs et
   ne liront aucune de ces routes. `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
