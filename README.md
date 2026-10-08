@@ -766,7 +766,14 @@ en grand aussi (`?billet=`) : il dit la date, la note, les réactions et ma rema
 focus, se ferme à Échap ou par le geste « retour ». « Corriger le billet » ne s'offre que si la fiche
 de l'année du film est déjà en cache (`voyage/boite/correction.ts`) : la boîte ne la lit jamais. Le
 billet que la séance vient de ranger (`voyage/billet/range.ts`, en mémoire, par membre) y est mis en
-avant une fois, son casier ouvert, d'un liseré or.
+avant une fois, son casier ouvert, d'un liseré or. **Si le monde de la décennie compose le contrôleur**
+(`controleurDeLaCarte`, la clé sans défaut de la carte : la boîte n'en regarde que la présence), la
+page lit aussi l'état du voyageur, sous la clé de la carte, et passe au casier (`poinconnes`) et au
+billet sorti (`poinconne`) les billets que le contrôleur a poinçonnés, **par leur entrée de journal,
+jamais par leur film** (`voyage/voyageur.ts`, `entreesPoinconnees`) : deux séances du même film n'en
+portent qu'un. Elle n'attend pas cette lecture et sa panne se tait : le casier se montre entier, sans
+poinçon. La boîte par défaut ignore les deux champs, et la boîte d'un monde sans contrôleur ne lit
+rien de plus (`pages/VoyageBoite.poincon.test.tsx`, sur un 1890 auquel on prête des dessins).
 
 Dans les années 1900, la boîte est **le casier du contrôleur** (maquette, écran 8 ;
 `mondes/1900/pages/CasierDuControleur.tsx`, pour la clé `casier`) : un meuble à une case par année du

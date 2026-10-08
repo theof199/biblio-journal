@@ -3,7 +3,7 @@ import type { Malle, RubriqueVue, Voyageur } from '../api/voyage'
 import { exemple } from '../test/contrat'
 import { creerRegistre } from '../mondes'
 import type { Monde } from '../mondes/types'
-import { estNouveau, nomDeLaSacoche, nouveautesDeLaSacoche, rubriquesAllumees, rubriquesDeLaPastille, RUBRIQUES_DE_LA_PASTILLE, type DatesDesRubriques } from './voyageur'
+import { entreesPoinconnees, estNouveau, nomDeLaSacoche, nouveautesDeLaSacoche, rubriquesAllumees, rubriquesDeLaPastille, RUBRIQUES_DE_LA_PASTILLE, type DatesDesRubriques } from './voyageur'
 
 /**
  * Le point rouge de la sacoche (plan des écrans des lots, brief 0) : la règle seule, sans rendu.
@@ -166,3 +166,13 @@ describe('la pastille de la sacoche', () => {
   })
 })
 
+
+describe('les billets poinçonnés', () => {
+  // Mutations : la table tenue par `media_id` ; un état pas encore lu qui lèverait.
+  it('se tiennent par l’entrée de journal, jamais par le film, et il n’y en a aucun tant que l’état n’est pas lu', () => {
+    const lu: Voyageur = { ...exemple<Voyageur>('/me/voyage/voyageur', 'get', 200), poincons: [{ log_entry_id: 'e-seconde', media_id: 'm-manoir', poinconne_le: '2026-10-08T18:00:00.000Z' }] }
+    expect([...entreesPoinconnees(lu)]).toEqual(['e-seconde'])
+    expect(entreesPoinconnees(lu).has('m-manoir')).toBe(false)
+    expect(entreesPoinconnees(undefined).size).toBe(0)
+  })
+})

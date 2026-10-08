@@ -7,7 +7,7 @@ import { exemple } from '../../../test/contrat'
 import { visionnage } from '../../../test/journal'
 import { SESSION, monterVoyage } from '../../../test/pageVoyage'
 import { json } from '../../../test/serveur'
-import { fichePrete, filmDeSalle, salle, voyage1890 } from '../../../test/voyage'
+import { VOYAGEUR_VIDE, fichePrete, filmDeSalle, salle, voyage1890 } from '../../../test/voyage'
 import { oublierLeBillet, rangerLeBillet } from '../../../voyage/billet/range'
 import { billetsDeLaDecennie, numeroDe, numeroLisible } from '../../../voyage/billets'
 import { PAGES_1890 } from '../../1890/pages'
@@ -38,6 +38,8 @@ const CATALOGUE = exemple<ReactionsCatalogue>('/reference/reactions', 'get', 200
 const CARTE = 'GET /api/me/voyage'
 const JOURNAL = 'GET /api/me/journal?limit=100&sortie_min=1900&sortie_max=1909'
 const REACTIONS = 'GET /api/reference/reactions'
+/** L'état du voyageur, que la boîte de 1900 lit pour ses poinçons (lot d'écrans, brief 8). */
+const VOYAGEUR = 'GET /api/me/voyage/voyageur'
 const BOITE = '/voyage/decennies/1900/billets'
 
 const vu = (id: string, an: number, date: string, o: { titre: string; note?: number | null; tmdb?: number; realisateur?: string | null; remarque?: string; reactions?: string[] }) => {
@@ -63,7 +65,7 @@ const VOL = vu('e3', 1903, '2026-09-01', { titre: 'Le Vol du grand rapide', note
 const TOUS = [VOL, SWALLOW, ROVER, FIREMAN]
 
 const journal = (items: JournalItem[]) => () => json({ ...PAGE, items, next_cursor: null })
-const ROUTES = { [CARTE]: () => json(VOYAGE), [JOURNAL]: journal(TOUS), [REACTIONS]: () => json(CATALOGUE) }
+const ROUTES = { [CARTE]: () => json(VOYAGE), [JOURNAL]: journal(TOUS), [REACTIONS]: () => json(CATALOGUE), [VOYAGEUR]: () => json(VOYAGEUR_VIDE) }
 
 const cases = async () => within(await screen.findByRole('group', { name: M.cases }))
 /** Les cartons de la liasse sortie, dans l'ordre de la page. */
@@ -130,18 +132,21 @@ describe('le casier du contrôleur', () => {
   })
 
   // Mutations : une fiche d'année lue par le casier ou par le billet sorti (`useQuery` sur
-  // `cles.annee`) ; le catalogue des réactions lu dès l'ouverture du casier.
-  it('ne lit que la carte et mes films de la décennie, puis les réactions du seul billet sorti : jamais une fiche d’année', async () => {
-    const { requetes } = monterVoyage(BOITE, ROUTES)
+  // `cles.annee`) ; le catalogue des réactions lu dès l'ouverture du casier. La liste gagne l'état du
+  // voyageur au brief 8 du lot d'écrans, parce que la règle change : 1900 compose le contrôleur, sa
+  // boîte lit ses poinçons. Elle reste entière : une lecture de plus doit y passer.
+  it('ne lit que la carte, mes films de la décennie et l’état du voyageur, puis les réactions du seul billet sorti : jamais une fiche d’année', async () => {
+    const { requetes, client } = monterVoyage(BOITE, ROUTES)
     await liasse(M.toute)
-    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL].sort())
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL, VOYAGEUR].sort())
     fireEvent.click(carton(/Life of an American Fireman/))
     await screen.findByRole('dialog', { name: 'Life of an American Fireman' })
     fireEvent.keyDown(document, { key: 'Escape' })
     fireEvent.click(carton(/Le Vol du grand rapide/))
     const dialogue = await screen.findByRole('dialog', { name: 'Le Vol du grand rapide' })
     expect(await within(dialogue).findByText('❤️ J’ai adoré')).toBeInTheDocument()
-    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL, REACTIONS].sort())
+    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL, REACTIONS, VOYAGEUR].sort())
   })
 
   // Le numéro est celui du billet de séance : la même liste, la même règle (`billetsDeLaDecennie`,

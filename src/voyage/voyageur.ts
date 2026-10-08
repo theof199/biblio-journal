@@ -109,3 +109,15 @@ export function nouveautesDeLaSacoche(montees: readonly RubriqueDeLaPastille[], 
 export function nomDeLaSacoche(nouveautes: readonly string[]): string {
   return nouveautes.length === 0 ? NOM_DE_LA_SACOCHE : `${NOM_DE_LA_SACOCHE} : ${nouveautes.join(' et ')}`
 }
+
+/** Aucun billet poinçonné : la même référence tant que l'état du voyageur n'est pas lu, ou en panne. */
+const AUCUN_POINCON: ReadonlySet<string> = new Set()
+
+/**
+ * Les billets que le contrôleur a poinçonnés, par l'identifiant de leur **entrée de journal**
+ * (`log_entry_id`), jamais par celui du film : deux séances du même film n'en portent qu'un, celle que
+ * j'ai présentée. Tant que l'état du voyageur n'est pas lu, ou en panne : aucun.
+ */
+export function entreesPoinconnees(voyageur: Voyageur | undefined): ReadonlySet<string> {
+  return voyageur ? new Set(voyageur.poincons.map((p) => p.log_entry_id)) : AUCUN_POINCON
+}

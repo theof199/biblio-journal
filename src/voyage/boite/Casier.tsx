@@ -15,6 +15,12 @@ export interface PropsCasier {
   /** Le billet que la séance vient de ranger : son liseré. */
   nouveau: string | null
   onOuvrir: (entree: string) => void
+  /**
+   * Les billets que le contrôleur a poinçonnés, par l'identifiant de leur entrée de journal
+   * (`entreesPoinconnees`). La page ne le garnit que pour un monde qui compose le contrôleur ; la boîte
+   * par défaut l'ignore.
+   */
+  poinconnes?: ReadonlySet<string>
 }
 
 /**

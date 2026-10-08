@@ -21,6 +21,8 @@ export interface PropsBilletEnGrand {
   /** Le billet de correction, quand la fiche de l'année du film est déjà lue ; nul sinon. */
   corriger: string | null
   onFermer: () => void
+  /** Le contrôleur a poinçonné ce billet, cette séance et non son film. Le billet par défaut l'ignore. */
+  poinconne?: boolean
 }
 
 /**

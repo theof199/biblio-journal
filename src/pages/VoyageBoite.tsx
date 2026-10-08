@@ -3,7 +3,7 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { journalDesAnnees } from '../api/journal'
-import { lireVoyage, type FicheAnnee } from '../api/voyage'
+import { lireVoyage, lireVoyageur, type FicheAnnee } from '../api/voyage'
 import { creerRegistre } from '../mondes'
 import { useSession } from '../session/SessionContext'
 import { formatDateVisionnage } from '../ui/format'
@@ -15,8 +15,9 @@ import Casier from '../voyage/boite/Casier'
 import { filmDuVisionnage } from '../voyage/boite/correction'
 import Visionneuse from '../voyage/boite/Visionneuse'
 import { useCalque } from '../voyage/calque'
-import { gabaritDe } from '../voyage/gabarit'
+import { gabaritDe, gabaritSeul } from '../voyage/gabarit'
 import { anneeCivile, decennieDeLAdresse } from '../voyage/decennie'
+import { entreesPoinconnees } from '../voyage/voyageur'
 import styles from './VoyageBoite.module.css'
 
 /** Un registre pour la page, comme la carte et la page d'une décennie ont le leur. */
@@ -40,6 +41,12 @@ export default function VoyageBoite() {
  * la carte (pour le départ du Voyage) et mes films de la décennie : jamais une fiche d'année, qui
  * enfilerait une ouverture chez le chroniqueur. L'intercalaire choisi vit dans l'adresse
  * (`?annee=1897`), le billet ouvert en grand aussi (`?billet=<id>`) : le geste « retour » le ferme.
+ *
+ * **Le poinçon doré** (plan des écrans des lots, brief 8) : si le monde de la décennie compose le
+ * contrôleur (`controleurDeLaCarte`, la clé sans défaut de la carte), la page lit aussi l'état du
+ * voyageur, sous la clé de la carte, et passe au casier et au billet sorti les billets poinçonnés, par
+ * leur entrée de journal. Elle ne l'attend pas et sa panne se tait : le casier se montre sans poinçon.
+ * Tout autre monde ne lit rien de plus.
  */
 function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   const monde = mondes(d)
@@ -57,6 +64,9 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
   const journal = useQuery({ queryKey: cles.journalDesAnnees(d, d + 9), queryFn: ({ signal }) => journalDesAnnees(d, d + 9, signal) })
   const v = voyage.data
+  // Jamais dans les gardes du corps plus bas : ni son attente ni sa panne ne retiennent le casier.
+  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: gabaritSeul(monde, 'controleurDeLaCarte') !== null })
+  const poinconnes = entreesPoinconnees(voyageur.data)
 
   // Le billet que la séance vient de ranger, lu une fois à l'ouverture : le liseré tient tant que la
   // page reste montée, même une fois la boîte l'ayant oublié.
@@ -155,6 +165,7 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
           billets={casier(billets, choisi)}
           nouveau={nouveau?.item.entry.id ?? null}
           onOuvrir={(id) => vue.ouvrir(id)}
+          poinconnes={poinconnes}
         />
         {premier && dernier ? (
           <p className={styles.pied}>
@@ -176,7 +187,7 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
     <section className={styles.page} style={style} aria-label={`${m.boite.titre}, années ${d}`}>
       {entete}
       {corps}
-      {ouvert ? <Visionneuse monde={monde} billet={ouvert} corriger={film !== null ? `/voyage/${annee}/films/${film}/billet/corriger` : null} onFermer={vue.fermer} /> : null}
+      {ouvert ? <Visionneuse monde={monde} billet={ouvert} corriger={film !== null ? `/voyage/${annee}/films/${film}/billet/corriger` : null} onFermer={vue.fermer} poinconne={poinconnes.has(ouvert.item.entry.id)} /> : null}
     </section>
   )
 }
