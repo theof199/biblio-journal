@@ -13,7 +13,9 @@ import type { Rubrique } from '../voyageur'
  *
  * **La rubrique se marque vue une fois par visite**, quand le bloc la montre (`montree` : ses données
  * lues, non vides) et que l'état est lu : jamais en panne, jamais deux fois (un verrou, pas
- * `isPending`). La date est celle du serveur ; le cache n'apprend que ce champ (les autres écritures
+ * `isPending`). **Jamais non plus pendant une relecture de l'état, ni après une relecture en panne**,
+ * quelle que soit la rubrique : l'état d'une visite d'avant reste en cache, et le `setQueryData` de la
+ * marque le reposerait en `success`, effaçant la panne que le bloc des objets doit dire. La date est celle du serveur ; le cache n'apprend que ce champ (les autres écritures
  * de l'état rendent chacune leur morceau), pour le point rouge de la carte. Un échec se tait : la
  * visite suivante remarquera.
  */
@@ -30,7 +32,7 @@ export function useVisiteDeRubrique(rubrique: Rubrique, montree: boolean): { vue
       client.setQueryData<Voyageur>(cles.voyageur, (v) => (v ? { ...v, rubriques: v.rubriques.map((r) => (r.rubrique === vue.rubrique ? vue : r)) } : v)),
   })
   const partie = useRef(false)
-  const aMarquer = montree && arrivee !== null
+  const aMarquer = montree && arrivee !== null && !voyageur.isFetching && !voyageur.error
   useEffect(() => {
     if (!aMarquer || partie.current) return
     partie.current = true

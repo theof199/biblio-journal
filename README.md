@@ -943,7 +943,9 @@ n'en ont pas encore**
   serveur sert, tel quel (le catalogue des objets est au monde, qui range, ignore une clé inconnue et
   compte), ne paraît pas tant que l'état n'est pas lu, tombe seul en panne sans éteindre la malle, et
   **marque la rubrique `objet` vue une fois par visite** par le même crochet : jamais en panne, jamais
-  pour une consigne vide, jamais pendant une relecture (`pages/VoyageSacoche.objets.test.tsx`). `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
+  pour une consigne vide. **Le crochet ne marque aucune rubrique pendant une relecture de l'état du
+  voyageur, ni après une relecture en panne** (la malle comprise : sa marque, partie sur l'état en
+  cache, effacerait la panne que les objets trouvés doivent dire ; `pages/VoyageSacoche.objets.test.tsx`). `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
   ne montre ni ne lit encore, un interdit par rubrique (`PAS_ENCORE`), que le lot de chacune lèvera.
 
 ## Le thème

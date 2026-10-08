@@ -146,8 +146,8 @@ describe('les objets trouvés de la sacoche, une clé sans défaut', () => {
   // La marque ne part ni en panne, ni pour une consigne vide (rien à dater), ni quand l'état d'une
   // visite d'avant, encore en cache, est relu en panne. Mutations : le `POST` au montage du bloc, sans
   // condition (`useVisiteDeRubrique('objet', true)`) ; la condition « non vide » retirée ; la marque
-  // partie pendant la relecture (`!voyageur.isFetching` retiré : elle part sur l'état en cache, et son
-  // `POST` réussi efface la panne de la relecture).
+  // partie pendant la relecture (dans `visite.ts`, `!voyageur.isFetching` retiré : elle part sur l'état
+  // en cache, et son `POST` réussi efface la panne de la relecture).
   it.each([
     ['l’état du voyageur en panne', { [VOYAGEUR]: panne('L’état est en panne.') }, 'panne | rien', false],
     ['l’état en panne, celui d’une visite d’avant encore en cache', { [VOYAGEUR]: panne('L’état est en panne.') }, 'panne | rien', true],
@@ -176,6 +176,33 @@ describe('les objets trouvés de la sacoche, une clé sans défaut', () => {
     expect(regions()).toEqual(['La sacoche du voyageur', 'Passeport', 'Malle', 'Portefeuille', 'Objets trouvés'])
     await auCalme(client)
     expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
+  })
+
+  // La garde est au crochet, pour toute rubrique : la malle, lue et en cache, ne marque pas la sienne
+  // sur un état du voyageur d'une visite d'avant dont la relecture tombe en panne. Son `POST` réussi
+  // reposerait l'état en cache, la panne disparaîtrait, et la marque des objets partirait à son tour.
+  // Mutations : dans `visite.ts`, `!voyageur.isFetching` retiré de `aMarquer` (les deux `POST` partent,
+  // la consigne dit « sans panne ») ; `!voyageur.error` retiré (relue en panne sans que rien soit
+  // marqué, puis la malle relue : sa marque part sur l'état en panne et l'efface).
+  it('l’état d’une visite d’avant relu en panne : ni la malle ni les objets ne marquent rien, et la panne reste dite, même la malle relue ensuite', async () => {
+    preter({ objetsDeLaSacoche: ObjetsDuMonde, malleDeLaSacoche: MalleDuMonde })
+    const { client, requetes } = monterVoyage(SACOCHE, { ...AVEC_LA_MALLE, [VOYAGEUR]: panne('L’état est en panne.') }, (c) => {
+      c.setQueryData(cles.voyageur, ETAT, { updatedAt: 0 })
+      c.setQueryData(cles.malle(1890), LA_MALLE)
+    })
+    await waitFor(() => expect(dit()).toBe('panne | rien'))
+    await auCalme(client)
+    expect(screen.getByTestId('malle')).toHaveTextContent('sans panne | 1 sur 15')
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
+    expect(dit()).toBe('panne | rien')
+    // La malle relue (une écriture d'ailleurs l'a périmée) rejoue l'effet du crochet : l'état est
+    // toujours en panne, et ne se relit pas tout seul.
+    await act(async () => {
+      await client.refetchQueries({ queryKey: cles.malle(1890), exact: true })
+    })
+    await auCalme(client)
+    expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
+    expect(dit()).toBe('panne | rien')
   })
 
   // Les deux rubriques montées ensemble : une seule lecture de l'état, chacune sa marque, et chaque

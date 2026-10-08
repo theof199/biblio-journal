@@ -25,9 +25,8 @@ function ObjetsDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['objetsDeLaSaco
   const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal) })
   const lus = voyageur.error ? null : (voyageur.data?.objets ?? null)
   // Une consigne vide n'a rien à dater : la rubrique ne se marque vue que si j'y ai ramassé quelque chose.
-  // Et jamais pendant une relecture : l'état d'une visite d'avant, encore en cache, peut revenir en
-  // panne, et la marque posée en cache par son `POST` effacerait cette panne.
-  useVisiteDeRubrique('objet', lus !== null && lus.length > 0 && !voyageur.isFetching)
+  // La relecture de l'état et sa panne sont gardées par le crochet, pour toutes les rubriques.
+  useVisiteDeRubrique('objet', lus !== null && lus.length > 0)
   // Rien avant la réponse, comme la malle : la région arrive avec ses places, pas avec une attente.
   if (!voyageur.error && !voyageur.data) return null
   return (
