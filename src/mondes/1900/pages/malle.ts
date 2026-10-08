@@ -1,10 +1,11 @@
-import type { PlaceDeMalle } from '../../../api/voyage'
+import type { Malle, PlaceDeMalle } from '../../../api/voyage'
 import { jourDeParis } from '../../../voyage/passeport'
 
 /**
  * La malle aux étiquettes des années 1900 (maquette, écran 18 ; plan des écrans des lots, brief 1) :
- * ce qu'une place de la malle est, ce qu'elle dit, et de quoi son badge est fait. Sans rendu ni
- * lecture : le dessin est `BadgeDeMalle.tsx`, l'écran de la malle vient au brief suivant.
+ * ce qu'une place de la malle est, ce qu'elle dit, et de quoi son badge est fait ; puis ce que disent
+ * la ligne de la malle dans la sacoche et la fiche d'une place (brief 2). Sans rendu ni lecture : les
+ * dessins sont `BadgeDeMalle.tsx` et `MalleDeLaSacoche.tsx`.
  *
  * « Étiquette » seul est déjà pris (la récompense collée à la fête, `EtiquetteDeMalle.tsx`) : le dessin
  * d'une place de la malle s'appelle ici un **badge**.
@@ -102,6 +103,22 @@ export const MOTS_DE_LA_MALLE = {
   aGagner: 'à gagner',
   sur: 'sur',
   signeDeLaCachee: '?',
+  titre: 'La malle',
+  sous: 'les étiquettes de la décennie',
+  etiquette: 'étiquette',
+  nouvelle: 'nouvelle',
+  collee: 'collée le',
+  ouverte: {
+    titre: 'La malle aux étiquettes',
+    refermer: 'Refermer la malle',
+    compagnie: 'Ch. de fer du Voyage',
+    numero: 'Étiquette nº',
+    trace: 'trace de colle',
+    cachee: 'cachée',
+    nomDeLaCachee: 'Une étiquette cachée',
+    regleDeLaCachee: 'Sa règle ne se dit pas. Elle ne se montre qu’une fois gagnée ; d’ici là, cette place reste vide.',
+    collee: 'Collée le',
+  },
 } as const
 
 /** Le compte d'une trace de colle : « 3 sur 4 », et « à gagner » pour un seuil de un (jamais « 0 sur 1 »). */
@@ -133,3 +150,50 @@ export function nomLuDeLaPlace(place: PlaceDeMalle): string {
   const compte = p !== null && p.seuil > 1 ? `, ${compteDeLaTrace(p)}` : ''
   return `${place.nom}, pas encore gagnée${compte}.${regle}`
 }
+
+const pluriel = (n: number) => (n > 1 ? 's' : '')
+
+/** « 5 étiquettes sur 15 », sur la ligne de la sacoche : **le total est celui que le serveur sert**, jamais quinze en dur. */
+export const compteDeLaLigne = ({ collees, total }: Pick<Malle, 'collees' | 'total'>): string =>
+  `${collees} ${MOTS_DE_LA_MALLE.etiquette}${pluriel(collees)} ${MOTS_DE_LA_MALLE.sur} ${total}`
+
+/** « 5 sur 15 », à côté du titre de la malle ouverte. */
+export const compteDeLaMalle = ({ collees, total }: Pick<Malle, 'collees' | 'total'>): string => `${collees} ${MOTS_DE_LA_MALLE.sur} ${total}`
+
+/** « 1 nouvelle », « 2 nouvelles » : les étiquettes collées depuis ma dernière visite. */
+export const nouvellesDites = (n: number): string => `${n} ${MOTS_DE_LA_MALLE.nouvelle}${pluriel(n)}`
+
+/**
+ * L'étiquette collée en dernier, nulle tant qu'aucune ne l'est. **Deux instants se comparent, jamais
+ * deux chaînes** (`…T09:00:00Z` est avant `…T09:00:00.500Z`, et après lui dans l'ordre du texte) ; à
+ * instants égaux, la première servie reste.
+ */
+export function derniereCollee(places: readonly PlaceDeMalle[]): PlaceDeMalle | null {
+  let derniere: PlaceDeMalle | null = null
+  for (const p of places) {
+    if (etatDeLaPlace(p) !== 'collee') continue
+    if (derniere === null || Date.parse(p.collee_le!) > Date.parse(derniere.collee_le!)) derniere = p
+  }
+  return derniere
+}
+
+/** « La Correspondance, collée le 29 septembre 2026 » : le jour se dit à Paris. Pour une place collée. */
+export const derniereDite = (place: PlaceDeMalle): string => `${place.nom}, ${MOTS_DE_LA_MALLE.collee} ${jourDeParis(place.collee_le!)}`
+
+/** La place que la malle montre en s'ouvrant : la dernière collée, sinon la première servie. */
+export const placeAuDepart = (places: readonly PlaceDeMalle[]): PlaceDeMalle | null => derniereCollee(places) ?? places[0] ?? null
+
+/** « Étiquette nº 7 · nouvelle », « … · trace de colle », « … · cachée » : la tête de la fiche d'une place (maquette, l. 3865-3869). */
+export function teteDeLaFiche(place: PlaceDeMalle, nouvelle: boolean): string {
+  const o = MOTS_DE_LA_MALLE.ouverte
+  const etat = etatDeLaPlace(place)
+  const precision = etat === 'cachee' ? o.cachee : etat === 'trace' ? o.trace : nouvelle ? MOTS_DE_LA_MALLE.nouvelle : null
+  return `${o.numero} ${place.numero}${precision === null ? '' : ` · ${precision}`}`
+}
+
+/** « 1900–1909 », sur la plaque de la malle : la décennie que le serveur sert. */
+export const plaqueDeLaMalle = (decennie: number): string => `${decennie}–${decennie + 9}`
+
+/** Le travers d'une place : chaque étiquette est collée un peu de travers, toujours du même (maquette, `ROT`, l. 3842-3851). */
+const TRAVERS = [-6, 4, -3, 7, 5, -8, 3, -4, 6, -5, 8, -2, 4, -7, 0] as const
+export const traversDeLaPlace = (rang: number): { r: number; x: number; y: number } => ({ r: TRAVERS[rang % TRAVERS.length]!, x: ((rang * 7) % 5) - 2, y: ((rang * 5) % 7) - 3 })

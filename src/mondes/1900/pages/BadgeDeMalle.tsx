@@ -336,13 +336,17 @@ function Cachee() {
   )
 }
 
-export default function BadgeDeMalle({ place }: { place: PlaceDeMalle }) {
+/**
+ * `muet` : le badge est posé dans un bouton, ou à côté d'un texte, qui dit déjà son nom (la malle, sa
+ * ligne dans la sacoche, la fiche d'une place) : il se tait, pour qu'une place n'ait qu'un nom lu.
+ */
+export default function BadgeDeMalle({ place, muet = false }: { place: PlaceDeMalle; muet?: boolean }) {
   // Deux badges sur une page ne partagent ni leur découpe ni leurs arcs ; `useId` rend des « : » qu'une `url(#…)` n'aime pas.
   const id = `badge${useId().replace(/[^\w-]/g, '')}`
   const etat = etatDeLaPlace(place)
   const badge = place.cle === null ? null : badgeDe(place.cle, place.nom)
   return (
-    <svg viewBox="0 0 100 100" role="img" aria-label={nomLuDeLaPlace(place)} data-etat={etat} style={BOITE}>
+    <svg viewBox="0 0 100 100" {...(muet ? { 'aria-hidden': true } : { role: 'img', 'aria-label': nomLuDeLaPlace(place) })} data-etat={etat} style={BOITE}>
       {badge === null ? (
         <Cachee />
       ) : etat === 'collee' ? (

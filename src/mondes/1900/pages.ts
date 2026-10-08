@@ -21,6 +21,7 @@ import LiensDeLaLigne from './pages/LiensDeLaLigne'
 import LigneBouclee from './pages/LigneBouclee'
 import LigneDesAnnees from './pages/LigneDesAnnees'
 import NoticeDuFilm from './pages/NoticeDuFilm'
+import MalleDeLaSacoche from './pages/MalleDeLaSacoche'
 import PageDeLaSacoche from './pages/PageDeLaSacoche'
 import PasseportDeLaSacoche from './pages/PasseportDeLaSacoche'
 import PortefeuilleDeLaSacoche from './pages/PortefeuilleDeLaSacoche'
@@ -114,7 +115,8 @@ export const PAGES_1900: HabillagePages = {
   // l'affiche à la place du monument, l'indicateur de la ligne à celle du registre, le passeport en
   // page à tampons de frontière, sans palissade (écrans 1 et 9). Le guichet est une grille de laiton,
   // sa réponse un tableau des départs (écran 11). La sacoche est de cuir, à fermoir de laiton : ses
-  // pages de passeport en papier, ses tickets en carton, ses coulisses dans un casier (écran 15).
+  // pages de passeport en papier, ses tickets en carton, ses coulisses dans un casier (écran 15), et la malle aux étiquettes, seule
+  // clé sans défaut : sa ligne de cuir, et la malle ouverte par-dessus (écran 18).
   // Les fêtes se jouent dans le train : la voiture complète, l'étiquette de malle, la ligne bouclée
   // et son « Bon pour » en carton (écran 13).
   gabarits: {
@@ -149,6 +151,7 @@ export const PAGES_1900: HabillagePages = {
     pageDuPasseport: PageDeLaSacoche,
     portefeuille: PortefeuilleDeLaSacoche,
     coulisses: CoulissesDeLaSacoche,
+    malleDeLaSacoche: MalleDeLaSacoche,
     feteDeLaSalle: VoitureComplete,
     feteDeLaRecompense: EtiquetteDeMalle,
     feteDeLAnnee: LigneBouclee,

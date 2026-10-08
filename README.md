@@ -791,24 +791,39 @@ son compte au cœur, « En cours », ou le tampon de la décennie et « Tampon p
 quelle, comme celle de 1900 montre la page de la foire sur son velours) ; les tickets sont des
 cartons à bande rouge, « Utiliser » au corail sur le seul ticket offert (`PortefeuilleDeLaSacoche`) ;
 les coulisses tiennent dans un casier que leur titre ouvre (`CoulissesDeLaSacoche`). Rien n'y bouge.
-**La malle, le courrier et les objets trouvés de l'écran 15 n'y sont pas**, ni le point rouge de la
-pastille : aucune rubrique vide ne les annonce, et la sacoche n'appelle pas encore l'état du
-voyageur (`GET /me/voyage/voyageur`, `POST …/rubriques/{rubrique}/vue`, `GET
-…/decennies/{decennie}/etiquettes`, au contrat depuis `v1.42.0`) : ils viennent avec leurs lots,
-plus bas, « Le jeu des années 1900 ».
+
+**La malle aux étiquettes** (maquette, écrans 15 et 18 ; `MalleDeLaSacoche`, sa feuille
+`Malle.module.css`, mots et règles dans `malle.ts`) tient entre le passeport et le portefeuille, en
+1900 seulement : c'est la clé sans défaut `malleDeLaSacoche`, que `voyage/sacoche/Malle.tsx` lit avec
+la malle de la décennie de mon année en cours et l'état du voyageur (plus bas, « Le jeu des années
+1900 »). Sa ligne de cuir montre l'étiquette collée en dernier (par l'instant, jamais par le texte de
+sa date), « 5 étiquettes sur 15 » **avec le total que le serveur sert**, « La Correspondance, collée le
+29 septembre 2026 » au jour de Paris, et « 1 nouvelle » pour ce qui s'est collé depuis ma dernière
+visite. La toucher ouvre la malle par-dessus la sacoche, **dans l'adresse** (`?malle=ouverte` : le
+retour du téléphone, « Refermer » et Échap la referment, un rechargement la rouvre) : la valise, ses
+places telles que le serveur les range, par numéro, chacune son badge (`BadgeDeMalle`, muet : le
+bouton de la place porte le seul nom lu), « Nouvelle » sous celles qui le sont, la plaque de la
+décennie ; au pied, la fiche de la place touchée (la dernière collée en s'ouvrant, sinon la
+première) : son numéro, son nom, sa règle, « Collée le … » ou ce qui manque avec sa jauge, « à
+gagner » pour un seuil de un, et rien d'elle pour une cachée. Une décennie sans malle ne montre rien ;
+en panne, la malle le dit sous sa rubrique, et elle seule. **Le courrier et les objets trouvés de
+l'écran 15 n'y sont pas**, ni le point rouge de la pastille : aucune rubrique vide ne les annonce
+(`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a le droit de
+lire, et la liste entière de ses rubriques).
 
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
-carte, et au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`) : **jamais une fiche
+carte, au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`), et en 1900 seulement la malle
+de ma décennie et l'état du voyageur, dont elle marque la rubrique `etiquette` vue : **jamais une fiche
 d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties, et
 `mondes/1900/pages/sacoche.test.tsx` pour la sacoche de 1900). Pas de générique au toucher
 d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
 
 ### Le jeu des années 1900 : le socle
 
-L'API sert huit choses que seul 1900 dessinera (la malle aux étiquettes, les objets trouvés, le point
-rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le wagon-restaurant) :
-**aucune n'a encore d'écran**. Le socle est posé, sans qu'aucune page change ni lise une route de
-plus (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
+L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquettes, les objets
+trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
+wagon-restaurant) : **la malle a son écran, dans la sacoche ; les sept autres n'en ont pas encore**
+(`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
   (`GET /me/voyage/voyageur` : mes objets ramassés, mes rubriques vues, le contrôleur, mes poinçons),
@@ -831,11 +846,13 @@ plus (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
   dessin, son nom court et la devise servie. En trace de colle : la forme pâle et « 3 sur 4 », « à gagner »
   pour un seuil de un ; `fait` au seuil sans `collee_le` reste une trace. Cachée non gagnée (`cle` nul, et
   non `cachee` vrai) : un « ? », sans forme, et un nom lu qui ne dit rien d'elle. Une clé inconnue garde sa
-  place : une forme neutre, le nom servi. **Aucune page ne le monte encore** : la malle est le lot suivant.
+  place : une forme neutre, le nom servi. `muet`, il se tait : la malle le pose dans un bouton ou à côté
+  d'un texte qui dit déjà son nom.
 - **Ces écrans sont de 1900 seulement** (décision du propriétaire, 8 octobre 2026) : des clés de
   gabarit sans défaut (`ClesSansDefaut`, `mondes/types.ts`), lues par `gabaritSeul`
   (`voyage/gabarit.ts`), si bien que 1890 et le monde « à venir » ne montent aucun de leurs blocs et
-  ne lisent aucune de ces routes. La première est `malleDeLaSacoche` : son bloc lecteur
+  ne lisent aucune de ces routes. La première est `malleDeLaSacoche`, que 1900 remplit (plus haut, « La
+  sacoche du voyageur ») : son bloc lecteur
   (`voyage/sacoche/Malle.tsx`, entre le passeport et le portefeuille) lit la malle de la décennie de
   mon année en cours et l'état du voyageur, ne rend rien pour une décennie sans malle, tombe seul en
   panne et ouvre la malle dans l'adresse (`?malle=ouverte` : le retour la referme). **La rubrique
