@@ -67,7 +67,7 @@ export type Carton =
   | Json<paths['/reference/chroniques/films/{tmdbId}']['get']['responses'][202]>
 
 // L'état du voyageur, la malle, le contrôleur, l'horaire (les lots 1 à 6 de l'API ; plan des écrans
-// des lots, brief 0). Les cartes postales et les tables n'ont encore ni type ni fonction ici.
+// des lots, brief 0), puis les cartes postales (brief 13). Les tables n'ont encore ni type ni fonction ici.
 
 /**
  * Ce qui me suit d'un appareil à l'autre (`GET /me/voyage/voyageur`) : mes objets ramassés, mes
@@ -89,6 +89,19 @@ export type ReponseAuControleur = CorpsReponseAuControleur['reponse']
 export type PassageDuControleur = Json<paths['/me/voyage/controleur/reponse']['post']['responses'][200]>
 /** L'horaire accepté sur une gare : la même forme sur la carte, sur la fiche prête et au `201` de l'acceptation. */
 export type Horaire = Json<paths['/me/voyage/annees/{annee}/horaire']['post']['responses'][201]>
+
+/**
+ * Mon courrier du Voyage (`GET /me/voyage/cartes-postales`) : les cartes reçues (de la plus récente à
+ * la plus ancienne), les envoyées (par gare, de la plus récente à la plus ancienne) et mes gares
+ * bouclées qui attendent la leur. **Le mot d'une carte est privé** : seuls son expéditeur et son
+ * destinataire le lisent. Il ne s'écrit ni dans un journal de console, ni dans une adresse, ni dans un titre.
+ */
+export type Courrier = Json<paths['/me/voyage/cartes-postales']['get']['responses'][200]>
+/** Une carte reçue : `lue_le` n'est servi qu'ici, au seul destinataire ; nul, elle est nouvelle. */
+export type CartePostaleRecue = Courrier['recues'][number]
+/** Une carte envoyée : rien n'y dit si elle a été lue. La même forme au `201` de l'envoi. */
+export type CartePostaleEnvoyee = Courrier['envoyees'][number]
+export type CorpsCartePostale = Corps<paths['/me/voyage/cartes-postales']['post']>
 
 /**
  * Les trois appels **synchrones** au chroniqueur (contexte d'une salle, pistes, générique) :
@@ -156,6 +169,24 @@ export const accepterHoraire = (annee: number) => api.post<Horaire>(`/me/voyage/
 
 /** « Sans horaire » : `204` tant qu'il est `accepte`, `409` dès qu'il est `tenu` ou `manque`, `404` sans horaire. */
 export const retirerHoraire = (annee: number) => api.delete<void>(`/me/voyage/annees/${annee}/horaire`)
+
+/** Ma boîte entière. **Ce `GET` n'écrit rien** : lire la boîte ne marque aucune carte lue. Toujours sous `cles.courrier`. */
+export const lireCourrier = (signal?: AbortSignal) => api.get<Courrier>('/me/voyage/cartes-postales', undefined, signal)
+
+/**
+ * Marquer lue une carte **que j'ai reçue** ; rend la carte, avec son `lue_le`, celui du serveur.
+ * Rejouable : la première lecture fait foi, la marquer de nouveau ne la redate pas. `404` pour toute
+ * carte hors de ma boîte de réception, une carte que j'ai envoyée comprise.
+ */
+export const marquerCarteLue = (id: string) => api.post<CartePostaleRecue>(`/me/voyage/cartes-postales/${encodeURIComponent(id)}/lue`)
+
+/**
+ * Poster la carte d'une gare bouclée (`201`) : le corps est strict côté serveur, `annee`,
+ * `destinataire_id` et `mot`, rien d'autre. Une carte postée ne se corrige ni ne se retire. `409` si
+ * la gare n'est pas bouclée, si le destinataire n'est pas un membre que je suis, ou si la carte de
+ * cette gare est déjà partie ; `400` pour un mot refusé. Aucun écran ne l'appelle encore (brief 14).
+ */
+export const posterCartePostale = (corps: CorpsCartePostale) => api.post<CartePostaleEnvoyee>('/me/voyage/cartes-postales', corps)
 
 /** `{ configure: false }` n'a pas de `statut` : la seule façon sûre de reconnaître une fiche prête. */
 export const estPrete = (f: FicheAnnee | undefined): f is FichePrete => !!f && 'statut' in f && f.statut === 'prete'

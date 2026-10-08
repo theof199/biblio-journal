@@ -15,6 +15,15 @@ export const cles = {
    */
   voyageur: ['voyage', 'voyageur'] as const,
   malle: (decennie: number) => ['voyage', 'malle', decennie] as const,
+  /**
+   * Mon courrier du Voyage (`GET /me/voyage/cartes-postales`) : **sous le préfixe `voyage`**, parce
+   * qu'une écriture au journal le change. `en_attente` liste mes gares bouclées sans carte, et une
+   * gare se boucle quand le ticket de l'année suivante est émis : c'est un billet composté qui l'émet.
+   * Les cartes elles-mêmes ne changent pas avec le journal ; marquer une carte lue ne périme donc
+   * rien, elle pose sa réponse sur cette clé, en `exact` (`voyage/sacoche/Courrier.tsx`). La clé ne
+   * porte ni identifiant ni mot : le mot d'une carte est privé.
+   */
+  courrier: ['voyage', 'courrier'] as const,
   annee: (annee: number) => ['voyage', 'annee', annee] as const,
   /**
    * Le carton d'un film (`GET /reference/chroniques/films/{tmdbId}`) : hors du préfixe `voyage`, un

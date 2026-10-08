@@ -932,9 +932,15 @@ l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
   (`GET /me/voyage/voyageur` : mes objets ramassés, mes rubriques vues, le contrôleur, mes poinçons),
   `lireMalle` (`GET /me/voyage/decennies/{decennie}/etiquettes`), `ramasserObjet`,
   `marquerRubriqueVue`, `repondreAuControleur`, `accepterHoraire` (sans corps : le serveur seul choisit
-  l'échéance) et `retirerHoraire`. Rien encore pour les cartes postales ni les tables.
-- **Les clés** (`api/cles.ts`) : `voyageur` et `malle(decennie)`, **sous le préfixe `voyage`** : une
-  écriture au journal, qui colle une étiquette ou change le billet que le contrôleur demande, les
+  l'échéance) et `retirerHoraire`. **Les cartes postales** (brief 13) : `lireCourrier`
+  (`GET /me/voyage/cartes-postales` : mes cartes reçues, envoyées, et mes gares bouclées qui attendent
+  la leur ; il n'écrit rien), `marquerCarteLue` (rejouable, `404` pour une carte que j'ai envoyée) et
+  `posterCartePostale` (le corps tel quel, strict côté serveur ; aucun écran ne l'appelle encore). **Le
+  mot d'une carte est privé** : il ne s'écrit ni dans un journal de console, ni dans une adresse, ni
+  dans un titre. Rien encore pour les tables.
+- **Les clés** (`api/cles.ts`) : `voyageur`, `malle(decennie)` et `courrier`, **sous le préfixe
+  `voyage`** : une écriture au journal, qui colle une étiquette, change le billet que le contrôleur
+  demande ou boucle une gare (qui attend alors sa carte : `en_attente`), les
   périme sans qu'aucune page hors Voyage les connaisse (`api/cles.test.ts`,
   `pages/VoyageBillet.test.tsx`). L'état du voyageur n'a qu'une clé et qu'une fonction, pour la
   carte, la sacoche et le casier.

@@ -8,12 +8,15 @@ import {
   lireAnnee,
   lireCarton,
   lireContexte,
+  lireCourrier,
   lireGenerique,
   lireMalle,
   lireVoyageur,
+  marquerCarteLue,
   marquerRubriqueVue,
   ouvrirUneSalle,
   poserSurLePodium,
+  posterCartePostale,
   prendreLaSeance,
   ramasserObjet,
   refusVu,
@@ -157,7 +160,7 @@ describe('le client de la fiche d’une année', () => {
 })
 
 // L'état du voyageur, la malle, le contrôleur et l'horaire (plan des écrans des lots, brief 0) : une
-// fonction par route des lots 1 à 6 de l'API. Rien pour les cartes postales ni les tables.
+// fonction par route des lots 1 à 6 de l'API. Les cartes postales suivent (brief 13) ; rien pour les tables.
 describe('le client de l’état du voyageur', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 }))))
   afterEach(() => vi.unstubAllGlobals())
@@ -234,5 +237,45 @@ describe('le client de l’état du voyageur', () => {
       { url: '/api/me/voyage/annees/1903/horaire', methode: 'POST', corps: undefined, type: undefined },
       { url: '/api/me/voyage/annees/1903/horaire', methode: 'DELETE', corps: undefined, type: undefined },
     ])
+  })
+})
+
+// Les cartes postales (plan des écrans des lots, brief 13) : lire ma boîte, marquer lue une carte
+// reçue, poster la carte d'une gare. Le mot d'une carte est privé : il ne voyage que dans un corps.
+describe('le client du courrier', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 }))))
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Mutations : la boîte lue sur `/me/voyage/voyageur` ; le signal oublié (quitter la sacoche
+  // n'annulerait plus la lecture).
+  it('lit ma boîte par `GET`, sans corps, sous le signal de l’appelant', async () => {
+    const quitter = new AbortController()
+    await lireCourrier(quitter.signal)
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!
+    expect({ url, methode: init?.method, corps: init?.body }).toEqual({ url: '/api/me/voyage/cartes-postales', methode: 'GET', corps: undefined })
+    expect(init!.signal!.aborted).toBe(false)
+    quitter.abort()
+    expect(init!.signal!.aborted).toBe(true)
+  })
+
+  // Mutations : l'identifiant posé dans un corps ; `encodeURIComponent` retiré (un identifiant qui
+  // n'en est pas un viserait une autre route) ; un `PUT`.
+  it('marque une carte lue par `POST`, l’identifiant dans le chemin et lui seul, sans corps', async () => {
+    await marquerCarteLue('3f0e6c1a-0000-4000-8000-000000000001')
+    await marquerCarteLue('../cartes-postales?x')
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({ url, methode: init?.method, corps: init?.body }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/cartes-postales/3f0e6c1a-0000-4000-8000-000000000001/lue', methode: 'POST', corps: undefined },
+      { url: '/api/me/voyage/cartes-postales/..%2Fcartes-postales%3Fx/lue', methode: 'POST', corps: undefined },
+    ])
+  })
+
+  // Le corps est strict côté serveur : un champ de plus vaut `400`. Mutations : le mot posé dans
+  // l'adresse (`?mot=`) ; un champ ajouté au corps (`postee_le`) ; le corps réécrit (`mot` rogné).
+  it('poste une carte par `POST`, le corps tel quel, et rien du mot dans l’adresse', async () => {
+    const corps = { annee: 1903, destinataire_id: '3f0e6c1a-0000-4000-8000-000000000002', mot: '  Bien arrivé à Longueville.  ' }
+    await posterCartePostale(corps)
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!
+    expect({ url, methode: init?.method, corps: JSON.parse(String(init?.body)) }).toEqual({ url: '/api/me/voyage/cartes-postales', methode: 'POST', corps })
   })
 })
