@@ -42,6 +42,8 @@ const ROUTES = {
   // Ma dernière visite de la malle, avant le collage : la Correspondance est nouvelle.
   [VOYAGEUR]: () => json(vuLe('2026-09-20T08:00:00.000Z')),
   [VUE]: () => json({ rubrique: 'etiquette', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
+  // Depuis le brief 3, la sacoche de 1900 montre aussi les objets trouvés de l'exemple, et marque leur rubrique.
+  'POST /api/me/voyage/rubriques/objet/vue': () => json({ rubrique: 'objet', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
 }
 // `retryable: false` : une panne relancée par TanStack attendrait trois secondes avant de se dire.
 const panne = (message: string) => () => json({ code: 'VALIDATION_ERROR', message, retryable: false }, 400)

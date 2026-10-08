@@ -105,6 +105,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/mondes/1900/pages/Guichet.module.css',
         '/src/mondes/1900/pages/Sacoche.module.css',
         '/src/mondes/1900/pages/Malle.module.css',
+        '/src/mondes/1900/pages/Consigne.module.css',
         '/src/mondes/1900/pages/Fetes.module.css',
       ]),
     )

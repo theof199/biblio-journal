@@ -806,15 +806,28 @@ bouton de la place porte le seul nom lu), « Nouvelle » sous celles qui le sont
 décennie ; au pied, la fiche de la place touchée (la dernière collée en s'ouvrant, sinon la
 première) : son numéro, son nom, sa règle, « Collée le … » ou ce qui manque avec sa jauge, « à
 gagner » pour un seuil de un, et rien d'elle pour une cachée. Une décennie sans malle ne montre rien ;
-en panne, la malle le dit sous sa rubrique, et elle seule. **Le courrier et les objets trouvés de
-l'écran 15 n'y sont pas**, ni le point rouge de la pastille : aucune rubrique vide ne les annonce
-(`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a le droit de
-lire, et la liste entière de ses rubriques).
+en panne, la malle le dit sous sa rubrique, et elle seule.
+
+**Les objets trouvés** (maquette, écran 15 ; `ObjetsDeLaSacoche`, sa feuille `Consigne.module.css`,
+mots et règles dans `consigne.ts`) tiennent entre le portefeuille et les coulisses, en 1900 seulement :
+c'est la clé sans défaut `objetsDeLaSacoche`, que `voyage/sacoche/Objets.tsx` lit avec le seul état du
+voyageur. **Le catalogue est au monde** (`mondes/1900/objets.ts` : dix objets, un par gare de 1900 à
+1909, par `cle` du contrat, chacun son nom, son nom court et **un seul dessin**, une suite de tracés
+que le quai reprendra) : le serveur ne sert que les objets ramassés. Dix places de consigne dans
+l'ordre des années : ramassé, l'objet pend à son étiquette de papier, datée de sa gare, sous son nom
+court (lu « 1900 : une lanterne de chef de gare, dans la sacoche ») ; sinon sa silhouette, l'année et
+« à trouver » (lu « 1903 : un objet à trouver en gare »), **sans rien qui le nomme**. Le compte, « 2
+sur 10 », se dit sur le catalogue : une clé servie qu'il ne connaît pas n'a pas de place et ne compte
+pas. En panne, la consigne le dit sous sa rubrique, et elle seule : la malle garde sa ligne. On ne
+ramasse rien ici, c'est le geste de la carte, qui n'est pas encore fait : rien ne se ramasse encore.
+**Le courrier de l'écran 15 n'y est pas**, ni le point rouge de la pastille : aucune rubrique vide ne
+les annonce (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
+le droit de lire, et la liste entière de ses rubriques).
 
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
 carte, au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`), et en 1900 seulement la malle
-de ma décennie et l'état du voyageur, dont elle marque la rubrique `etiquette` vue : **jamais une fiche
-d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties, et
+de ma décennie et l'état du voyageur, dont elle marque les rubriques `etiquette` et `objet` vues :
+**jamais une fiche d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties, et
 `mondes/1900/pages/sacoche.test.tsx` pour la sacoche de 1900). Pas de générique au toucher
 d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
 
@@ -822,7 +835,8 @@ d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le P
 
 L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquettes, les objets
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
-wagon-restaurant) : **la malle a son écran, dans la sacoche ; les sept autres n'en ont pas encore**
+wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche (on ne ramasse
+pas encore sur la carte) ; les six autres n'en ont pas encore**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -860,7 +874,7 @@ wagon-restaurant) : **la malle a son écran, dans la sacoche ; les sept autres n
   `useVisiteDeRubrique`, qui servira aux objets trouvés et au courrier) : « nouvelle » se calcule sur
   le `vue_le` lu à l'arrivée, figé pour la visite, et le cache n'apprend que la date du serveur
   (`pages/VoyageSacoche.malle.test.tsx`, sur un 1890 auquel on prête un dessin). La seconde est
-  `objetsDeLaSacoche`, qu'aucun monde ne remplit encore : son bloc lecteur (`voyage/sacoche/Objets.tsx`,
+  `objetsDeLaSacoche`, que 1900 remplit aussi (plus haut, « La sacoche du voyageur ») : son bloc lecteur (`voyage/sacoche/Objets.tsx`,
   entre le portefeuille et les coulisses) ne lit que l'état du voyageur, passe au dessin ce que le
   serveur sert, tel quel (le catalogue des objets est au monde, qui range, ignore une clé inconnue et
   compte), ne paraît pas tant que l'état n'est pas lu, tombe seul en panne sans éteindre la malle, et

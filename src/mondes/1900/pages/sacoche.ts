@@ -3,8 +3,8 @@ import type { Tampon } from '../../../voyage/passeport'
 /**
  * Les mots et les règles de la sacoche des années 1900 (maquette, écran 15), sans rendu. Les régions
  * « Passeport » et « Portefeuille » gardent le nom que la page leur donne ; celle des coulisses prend
- * le titre d'ici. Les mots de la malle sont dans `malle.ts` ; le courrier et les objets trouvés de
- * l'écran 15 n'en ont pas encore : ils viennent avec leurs lots.
+ * le titre d'ici. Les mots de la malle sont dans `malle.ts`, ceux des objets trouvés dans
+ * `consigne.ts` ; le courrier de l'écran 15 n'en a pas encore : il vient avec son lot.
  */
 export const MOTS_DE_LA_SACOCHE = {
   compagnie: 'Chemins de fer du Voyage',

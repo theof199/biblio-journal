@@ -13,8 +13,9 @@ import { MOTS_DE_LA_SACOCHE as M, compteDeLAnneau, etatDeLaPage, libelleDUtilise
  * La sacoche du voyageur des années 1900 (plan des pages 1900, brief 10 ; maquette, écran 15) : la
  * page montée dans l'app entière, le monde n'y arrive que par le registre. Les tests de
  * `pages/VoyageSacoche.test.tsx`, montés sur 1890, tiennent le défaut ; ceux-ci tiennent ce que 1900
- * en fait, et ce qu'il n'en fait pas encore (`PAS_ENCORE` : le courrier, les objets trouvés). La malle
- * est branchée (plan des écrans des lots, brief 2) : `malleDeLaSacoche.test.tsx` tient ce qu'elle montre.
+ * en fait, et ce qu'il n'en fait pas encore (`PAS_ENCORE` : le courrier). La malle est branchée (plan
+ * des écrans des lots, brief 2), les objets trouvés aussi (brief 3) : `malleDeLaSacoche.test.tsx` et
+ * `objetsDeLaSacoche.test.tsx` tiennent ce qu'ils montrent.
  */
 const SACOCHE = '/voyage/sacoche'
 const CARTE = 'GET /api/me/voyage'
@@ -24,6 +25,9 @@ const UTILISER = 'POST /api/me/voyage/tickets/1904/utiliser'
 const MALLE = 'GET /api/me/voyage/decennies/1900/etiquettes'
 const VOYAGEUR = 'GET /api/me/voyage/voyageur'
 const VUE = 'POST /api/me/voyage/rubriques/etiquette/vue'
+const VUE_DES_OBJETS = 'POST /api/me/voyage/rubriques/objet/vue'
+/** Les marques « vue » des rubriques : des `POST` qui ne sont pas des gestes du membre. */
+const MARQUES = [VUE, VUE_DES_OBJETS]
 
 /** Les années 1890 bouclées et tamponnées, trois gares de 1900 récompensées, la quatrième en cours. */
 const VOYAGE: Voyage = voyage1890(
@@ -55,6 +59,7 @@ const ROUTES = {
   [MALLE]: () => json(exemple<Malle>('/me/voyage/decennies/{decennie}/etiquettes', 'get', 200)),
   [VOYAGEUR]: () => json(exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)),
   [VUE]: () => json({ rubrique: 'etiquette', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
+  [VUE_DES_OBJETS]: () => json({ rubrique: 'objet', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
 }
 // `retryable: false` : une panne relancée par TanStack attendrait trois secondes avant de se dire.
 const panne = (message: string) => () => json({ code: 'VALIDATION_ERROR', message, retryable: false }, 400)
@@ -67,23 +72,24 @@ const deplier = async () => fireEvent.click(within(await region(M.coulisses.titr
 /**
  * Ce que la sacoche de 1900 ne montre ni ne lit **pas encore**, une ligne par rubrique à venir : les
  * mots qui l'annonceraient, les routes qu'elle lirait. Le brief qui branche une rubrique retire sa
- * ligne, et elle seule (les objets trouvés au brief 3, le courrier au 13 ; la malle a retiré la sienne
- * au brief 2).
+ * ligne, et elle seule (le courrier au brief 13 ; la malle a retiré la sienne au brief 2, les objets
+ * trouvés au brief 3).
  */
 const PAS_ENCORE: Record<string, { mots: RegExp; routes: RegExp }> = {
   'le courrier': { mots: /courrier|cartes? postales?/i, routes: /\/cartes-postales/ },
-  'les objets trouvés': { mots: /objets? trouvés?|à trouver/i, routes: /\/objets\// },
 }
 /**
  * Ce que la sacoche de 1900 lit et écrit sous `/me/voyage`, **route par route** : un bloc neuf y ajoute
  * les siennes en retirant son interdit. La malle a le droit de lire la malle de ma décennie et l'état
  * du voyageur, et de marquer vue la rubrique `etiquette`, elle seule : la marque d'une autre rubrique
- * (`…/rubriques/objet/vue`) n'est pas nommée ici, la garde la refuse.
+ * (`…/rubriques/courrier/vue`) n'est pas nommée ici, la garde la refuse. Les objets trouvés (brief 3)
+ * ne lisent que le même état du voyageur et n'écrivent que la marque de la rubrique `objet` :
+ * **ramasser (`…/objets/{cle}/ramasser`) reste hors de la sacoche**, c'est le geste de la carte.
  */
-const LECTURES = [CARTE, TICKETS, DEPENSES, MALLE, VOYAGEUR, VUE]
+const LECTURES = [CARTE, TICKETS, DEPENSES, MALLE, VOYAGEUR, VUE, VUE_DES_OBJETS]
 /** Les rubriques que la sacoche de 1900 montre, dans l'ordre, et aucune autre : qui en ajoute une la nomme. */
 const PORTEFEUILLE = 'Le portefeuille les tickets'
-const RUBRIQUES = ['Le passeport une page par décennie', 'La malle les étiquettes de la décennie', PORTEFEUILLE, 'Les coulisses']
+const RUBRIQUES = ['Le passeport une page par décennie', 'La malle les étiquettes de la décennie', PORTEFEUILLE, 'Les objets trouvés 2 sur 10', 'Les coulisses']
 // Le signe du pli, à côté du titre des coulisses, ne se lit pas : il n'est pas du titre.
 const rubriques = (page: HTMLElement) => within(page).getAllByRole('heading', { level: 2 }).map((h) => h.textContent?.replace(/[▸▾]$/, '') ?? '')
 
@@ -151,16 +157,20 @@ describe('la sacoche du voyageur en 1900', () => {
   // refuse). **La règle a changé au brief 2 des écrans des lots** : la malle est branchée, si bien que
   // la liste des rubriques est exigée entière (elle était filtrée : une rubrique hors des mots de
   // `PAS_ENCORE` passait) et que l'interdit commun de `/voyageur` et `/rubriques/` devient trois routes
-  // nommées. Mutations : une `useQuery` de `lireAnnee(1903)` ajoutée à `pages/VoyageSacoche.tsx` ; une
-  // lecture de `GET /me/voyage/tables` ajoutée à la même page ; un `POST …/rubriques/objet/vue` à son
-  // montage ; une `Rubrique` « Le wagon-restaurant » ajoutée au dessin de la malle.
-  it('ne lit aucune fiche d’année, coulisses dépliées comprises, ni rien que ce fichier ne nomme, et ne montre que ses quatre rubriques', async () => {
+  // nommées. **Elle a changé encore au brief 3** : les objets trouvés sont branchés, une rubrique et une
+  // marque de plus, et l'interdit de `/objets/` que portait leur ligne de `PAS_ENCORE` se dit ici, en
+  // clair (on ne ramasse pas depuis la sacoche). Mutations : une `useQuery` de `lireAnnee(1903)` ajoutée
+  // à `pages/VoyageSacoche.tsx` ; une lecture de `GET /me/voyage/tables` ajoutée à la même page ; un
+  // `POST …/rubriques/courrier/vue` à son montage ; `ramasserObjet('melon')` au montage du bloc des
+  // objets trouvés ; une `Rubrique` « Le wagon-restaurant » ajoutée au dessin de la malle.
+  it('ne lit aucune fiche d’année, coulisses dépliées comprises, ni rien que ce fichier ne nomme, ne ramasse rien, et ne montre que ses cinq rubriques', async () => {
     const { page, requetes } = await sacocheDepliee()
     expect(rubriques(page)).toEqual(RUBRIQUES)
     expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([M.coulisses.depenses, M.coulisses.credits])
     const duVoyage = requetes.filter((r) => r.includes('/me/voyage'))
     expect(LECTURES.filter((r) => !duVoyage.includes(r))).toEqual([])
     expect(duVoyage.filter((r) => r.includes('/annees'))).toEqual([])
+    expect(duVoyage.filter((r) => r.includes('/objets/'))).toEqual([])
     const nommees = Object.values(PAS_ENCORE).map((r) => r.routes)
     expect(duVoyage.filter((r) => !LECTURES.includes(r) && !nommees.some((n) => n.test(r)))).toEqual([])
   })
@@ -169,9 +179,10 @@ describe('la sacoche du voyageur en 1900', () => {
   // ligne dans `PAS_ENCORE`, ses mots et ses routes. Le brief qui branche une rubrique retire sa ligne,
   // et elle seule, pour écrire à la place ce que la rubrique montre. Mutations, vues rougir une à une
   // et chacune sur sa seule ligne : la section de la maquette portée telle quelle dans un gabarit de
-  // 1900 (une `Rubrique` « Le courrier » ou « Les objets trouvés ») ; une lecture de sa route ajoutée à
+  // 1900 (une `Rubrique` « Le courrier ») ; une lecture de sa route ajoutée à
   // `pages/VoyageSacoche.tsx`. La ligne de la malle, retirée au brief 2, a rougi d'elle-même le jour où
-  // son dessin est entré au registre, avec l'interdit commun de l'état du voyageur.
+  // son dessin est entré au registre, avec l'interdit commun de l'état du voyageur ; celle des objets
+  // trouvés de même au brief 3.
   it.each(Object.entries(PAS_ENCORE))('ne montre ni ne lit encore %s', async (_, { mots, routes }) => {
     const { page, ecrit, requetes } = await sacocheDepliee()
     expect(ecrit).toContain(PORTEFEUILLE)
@@ -249,19 +260,19 @@ describe('la sacoche du voyageur en 1900', () => {
     expect(utilise).not.toHaveTextContent('1902 est bouclée')
     expect([offert, attend, utilise].map((li) => li.getAttribute('data-utilise'))).toEqual(['non', 'non', 'oui'])
 
-    // La règle a changé au brief 2 des écrans des lots : la sacoche marque vue la rubrique de la malle,
-    // un `POST` de plus, qui n'est pas un encaissement.
+    // La règle a changé au brief 2 des écrans des lots, puis au brief 3 : la sacoche marque vues la
+    // rubrique de la malle et celle des objets trouvés, deux `POST` qui ne sont pas des encaissements.
     const bouton = within(offert).getByRole('button', { name: 'Utiliser le ticket pour 1904' })
     expect(bouton).toHaveTextContent(/^Utiliser$/)
     fireEvent.click(bouton)
     await waitFor(() => expect(bouton).toBeDisabled())
     fireEvent.click(bouton)
     await waitFor(() => expect(typeof liberer).toBe('function'))
-    expect(requetes.filter((r) => r.startsWith('POST') && r !== VUE)).toEqual([UTILISER])
+    expect(requetes.filter((r) => r.startsWith('POST') && !MARQUES.includes(r))).toEqual([UTILISER])
     // Encaissé, il mène à la carte : la sacoche n'est plus là.
     act(() => liberer(json(exemple<TicketUtilise>('/me/voyage/tickets/{annee}/utiliser', 'post', 200))))
     await waitFor(() => expect(screen.queryByRole('region', { name: 'La sacoche du voyageur' })).toBeNull())
-    expect(requetes.filter((r) => r.startsWith('POST') && r !== VUE)).toEqual([UTILISER])
+    expect(requetes.filter((r) => r.startsWith('POST') && !MARQUES.includes(r))).toEqual([UTILISER])
   })
 
   // Mutation : le paragraphe `role="alert"` du refus retiré du dessin de 1900.
