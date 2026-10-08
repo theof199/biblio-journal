@@ -15,23 +15,26 @@ import commun from './Sacoche.module.css'
  * sacoche ; rien ne s'en dit avant la réponse, ni pour une liste vide (tout membre hors du compte
  * IA) : la ligne ne paraît pas pour disparaître aussitôt. Une panne, elle, se dit. Le dessin est celui
  * du monde de mon année en cours (`coulisses`), que la page lui passe, dans une région que son titre
- * nomme (`ids.titre`) et qui reste la même d'un monde à l'autre.
+ * nomme (`ids.titre`) et qui reste la même d'un monde à l'autre : le pli survit au changement de
+ * monde, et à l'attente de la carte, où la région est là, cachée et sans dessin (`monde` nul).
  */
-export default function Coulisses({ monde }: { monde: Monde }) {
+export default function Coulisses({ monde }: { monde: Monde | null }) {
   const [depliees, setDepliees] = useState(false)
   const depenses = useQuery({ queryKey: cles.depenses, queryFn: ({ signal }) => lireDepenses(signal), enabled: depliees })
   const id = useId()
-  const Repli = gabaritDe(monde, 'coulisses', RepliParDefaut)
+  const Repli = monde ? gabaritDe(monde, 'coulisses', RepliParDefaut) : null
   return (
-    <section className={commun.bloc} aria-labelledby={`${id}-titre`}>
-      <Repli
-        ids={{ titre: `${id}-titre`, contenu: `${id}-contenu` }}
-        depliees={depliees}
-        basculer={() => setDepliees((d) => !d)}
-        panneDesDepenses={depenses.error ? { erreur: depenses.error, reessayer: () => void depenses.refetch() } : null}
-        depenses={depenses.data ? lignesDesDepenses(depenses.data.mois, moisEnUTC()) : null}
-        credits={CREDITS}
-      />
+    <section className={commun.bloc} aria-labelledby={`${id}-titre`} hidden={!Repli}>
+      {Repli ? (
+        <Repli
+          ids={{ titre: `${id}-titre`, contenu: `${id}-contenu` }}
+          depliees={depliees}
+          basculer={() => setDepliees((d) => !d)}
+          panneDesDepenses={depenses.error ? { erreur: depenses.error, reessayer: () => void depenses.refetch() } : null}
+          depenses={depenses.data ? lignesDesDepenses(depenses.data.mois, moisEnUTC()) : null}
+          credits={CREDITS}
+        />
+      ) : null}
     </section>
   )
 }

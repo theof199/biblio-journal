@@ -7,6 +7,8 @@ import App from '../App'
 import { cles } from '../api/cles'
 import { createQueryClient } from '../api/queryClient'
 import type { Depenses, TicketUtilise, Tickets, Voyage } from '../api/voyage'
+import { PAGES_1900 } from '../mondes/1900/pages'
+import { MOTS_DE_LA_SACOCHE } from '../mondes/1900/pages/sacoche'
 import { FICHIERS_DE_CREDITS } from '../voyage/sacoche'
 import { exemple } from '../test/contrat'
 import { json, servir } from '../test/serveur'
@@ -35,6 +37,13 @@ const EN_1897 = voyage1890(
   ],
   { source: null, ia: true },
 )
+/** Les années 1890 bouclées et tamponnées, deux années de 1900 : la sacoche est à 1900. */
+const EN_1901: Voyage = {
+  ...EN_1897,
+  annee_en_cours: 1901,
+  annees: [...EN_1897.annees, annee({ annee: 1900, statut: 'ouverte', recompense: 'ours' }), annee({ annee: 1901, statut: 'en_cours', recompense: null })],
+  tampons: [{ decennie: 1890, boucle_le: '2026-03-14T12:00:00.000Z' }],
+}
 const ticket = (a: number, utiliseLe: string | null = null): Tickets['tickets'][number] => ({
   annee: a,
   motif: `${a - 1} t’a bien occupé, ${a} t’attend.`,
@@ -187,8 +196,12 @@ describe('la sacoche du voyageur', () => {
     expect(within(await ticketDe(1897)).getByText('31 août 2026')).toBeInTheDocument()
   })
 
-  // Mutation : « Aucun tampon encore » / « Aucun ticket » dits sans réponse.
-  it('« … » tant que la carte et les tickets n’ont pas répondu ; « Aucun tampon encore » et « Aucun ticket » après une réponse vide', async () => {
+  // La règle a changé (la relecture des pages 1900) : avant la réponse de la carte, la page n'habille
+  // plus rien du monde du départ, le passeport ne dit donc plus « … » ; le portefeuille le dit
+  // toujours, la carte arrivée, tant que les tickets manquent.
+  // Mutations : « Aucun tampon encore » / « Aucun ticket » dits sans réponse ; l'attente du
+  // portefeuille retirée.
+  it('rien avant la carte ; « … » au portefeuille tant que les tickets n’ont pas répondu ; « Aucun tampon encore » et « Aucun ticket » après une réponse vide', async () => {
     let carte!: (r: Response) => void
     let tickets!: (r: Response) => void
     routes({
@@ -197,18 +210,101 @@ describe('la sacoche du voyageur', () => {
     })
     monter()
 
-    const passeport = await region('Passeport')
-    const portefeuille = await region('Portefeuille')
+    const page = await region('La sacoche du voyageur')
     await waitFor(() => expect([typeof carte, typeof tickets]).toEqual(['function', 'function']))
-    expect(within(passeport).getByText('…')).toBeInTheDocument()
-    expect(within(portefeuille).getByText('…')).toBeInTheDocument()
-    expect(passeport).not.toHaveTextContent(/Aucun|0/)
-    expect(portefeuille).not.toHaveTextContent(/Aucun|0/)
+    expect(page).not.toHaveTextContent(/Aucun|0|…./)
 
     act(() => carte(json(VOYAGE_NEUF)))
-    act(() => tickets(json({ tickets: [] })))
+    const passeport = await region('Passeport')
+    const portefeuille = await region('Portefeuille')
     expect(await within(passeport).findByText('Aucun tampon encore')).toBeInTheDocument()
+    expect(within(portefeuille).getByText('…')).toBeInTheDocument()
+    expect(portefeuille).not.toHaveTextContent(/Aucun|0/)
+
+    act(() => tickets(json({ tickets: [] })))
     expect(await within(portefeuille).findByText('Aucun ticket')).toBeInTheDocument()
+  })
+
+  // La sacoche ouverte par un lien direct : tant que la carte n'a pas répondu, aucun monde ne
+  // l'habille (un voyageur de 1900 voyait celle de la foire, puis toute la composition basculer).
+  // Les trois blocs sont déjà là, cachés et sans dessin : les tickets se lisent avec la carte, et
+  // les régions sont les mêmes nœuds quand elle arrive.
+  // Mutations : le monde du départ pris en attendant (`?? DEPART`) ; l'attente rendue sans les blocs
+  // (un `return` anticipé : les tickets ne partent qu'après la carte, les régions naissent à son
+  // arrivée) ; `key={monde?.nom}` sur un bloc (la région se remonte).
+  it('ouverte par un lien direct, n’habille rien tant que la carte n’a pas répondu, puis prend le monde de mon année sans remonter ses trois régions', async () => {
+    let carte!: (r: Response) => void
+    const requetes = routes({ [VOYAGE]: () => new Promise<Response>((r) => (carte = r)) })
+    monter()
+
+    const page = await region('La sacoche du voyageur')
+    await waitFor(() => expect(typeof carte).toBe('function'))
+    await waitFor(() => expect(requetes).toContain(TICKETS))
+    expect(within(page).getByRole('status')).toHaveTextContent('Chargement…')
+    // Ni jeton d'un monde sur la racine, ni titre, ni rubrique : le retour seul.
+    expect(page.getAttribute('style') ?? '').toBe('')
+    expect(screen.queryByRole('heading')).toBeNull()
+    expect(within(page).getByRole('link', { name: 'Retour à la carte' })).toBeInTheDocument()
+    const blocs = [...page.querySelectorAll(':scope > section')]
+    expect(blocs).toHaveLength(3)
+    for (const bloc of blocs) {
+      expect(bloc).not.toBeVisible()
+      expect(bloc).toBeEmptyDOMElement()
+    }
+
+    act(() => carte(json(EN_1901)))
+    expect(await screen.findByRole('heading', { level: 1, name: MOTS_DE_LA_SACOCHE.titre })).toBeInTheDocument()
+    expect(within(page).queryByRole('status')).toBeNull()
+    expect(page.style.getPropertyValue('--m-tel')).toBe(PAGES_1900.jetons['--m-tel'])
+    const apres = [...page.querySelectorAll(':scope > section')]
+    expect(apres).toHaveLength(3)
+    for (const [i, bloc] of apres.entries()) {
+      expect(bloc).toBe(blocs[i])
+      expect(bloc).toBeVisible()
+      expect(bloc).not.toBeEmptyDOMElement()
+    }
+    expect(apres[0]).toBe(screen.getByRole('region', { name: 'Passeport' }))
+    expect(apres[1]).toBe(screen.getByRole('region', { name: 'Portefeuille' }))
+  })
+
+  // La carte en panne, la page prend le monde du départ et chaque bloc dit ce qu'il a ; « Réessayer »
+  // relit la carte, la page attend de nouveau sans monde, puis prend celui de mon année : les
+  // Coulisses dépliées pendant la panne le sont toujours, dans la même région, et leurs dépenses
+  // n'ont été lues qu'une fois.
+  // Mutations : `<Coulisses key={monde?.nom} …>` (le pli se perd au changement de monde) ; les blocs
+  // démontés pendant l'attente (`{monde ? <Coulisses … /> : null}`) ; l'attente qui garde le monde du
+  // départ pendant la relecture.
+  it('le pli des Coulisses survit à l’attente et au changement de monde : dépliées carte en panne, elles le restent quand elle répond en 1901', async () => {
+    let carte!: (r: Response) => void
+    let lectures = 0
+    const requetes = routes({
+      [VOYAGE]: () => {
+        lectures += 1
+        return lectures === 1 ? erreurApi('La carte est en panne.', 500) : new Promise<Response>((r) => (carte = r))
+      },
+    })
+    monter()
+
+    const page = await region('La sacoche du voyageur')
+    const passeport = await region('Passeport')
+    expect(await within(passeport).findByRole('alert')).toHaveTextContent('La carte est en panne.')
+    await deplier()
+    const coulisses = await region('Coulisses')
+    expect(await within(coulisses).findByRole('region', { name: 'Dépenses' })).toBeInTheDocument()
+
+    fireEvent.click(within(passeport).getByRole('button', { name: 'Réessayer' }))
+    await waitFor(() => expect(typeof carte).toBe('function'))
+    expect(await within(page).findByRole('status')).toHaveTextContent('Chargement…')
+    expect(page.getAttribute('style') ?? '').toBe('')
+    expect(coulisses).not.toBeVisible()
+
+    act(() => carte(json(EN_1901)))
+    expect(await screen.findByRole('heading', { level: 1, name: MOTS_DE_LA_SACOCHE.titre })).toBeInTheDocument()
+    expect(page.querySelectorAll(':scope > section')[2]).toBe(coulisses)
+    expect(coulisses).toBeVisible()
+    expect(within(coulisses).getByRole('button', { expanded: true })).toBeInTheDocument()
+    expect(within(coulisses).queryByRole('button', { expanded: false })).toBeNull()
+    expect(requetes.filter((r) => r === DEPENSES)).toHaveLength(1)
   })
 
   // L'API range les dépenses par mois dans le fuseau du serveur, UTC (`to_char(appele_le, 'YYYY-MM')`).

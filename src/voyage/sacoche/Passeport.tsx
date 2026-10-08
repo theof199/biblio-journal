@@ -28,19 +28,22 @@ function PageDuPasseport({ v, decennie: d }: { v: Voyage; decennie: number }) {
  * (`GET /me/voyage`, la clé de la carte), jamais une fiche d'année ; son cadre est celui du monde de
  * mon année en cours (`passeportDeLaSacoche`), que la page lui passe, posé dans une région qui ne
  * change pas : la carte répond, le monde change, et la région reste la même. Pas de générique au toucher
- * d'un tampon : il viendra avec les célébrations.
+ * d'un tampon : il viendra avec les célébrations. Sans monde (la page attend la carte), la région est
+ * là, cachée et sans dessin.
  */
-export default function Passeport({ monde }: { monde: Monde }) {
+export default function Passeport({ monde }: { monde: Monde | null }) {
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
   const v = voyage.data
-  const Pages = gabaritDe(monde, 'passeportDeLaSacoche', PagesParDefaut)
+  const Pages = monde ? gabaritDe(monde, 'passeportDeLaSacoche', PagesParDefaut) : null
   return (
-    <section className={commun.bloc} aria-label="Passeport">
-      <Pages
-        panne={voyage.error ? { erreur: voyage.error, reessayer: () => void voyage.refetch() } : null}
-        pages={v ? decenniesDuPasseport(v).map((d) => ({ decennie: d, page: <PageDuPasseport v={v} decennie={d} /> })) : null}
-        sansTampon={v ? v.tampons.length === 0 : false}
-      />
+    <section className={commun.bloc} aria-label="Passeport" hidden={!Pages}>
+      {Pages ? (
+        <Pages
+          panne={voyage.error ? { erreur: voyage.error, reessayer: () => void voyage.refetch() } : null}
+          pages={v ? decenniesDuPasseport(v).map((d) => ({ decennie: d, page: <PageDuPasseport v={v} decennie={d} /> })) : null}
+          sansTampon={v ? v.tampons.length === 0 : false}
+        />
+      ) : null}
     </section>
   )
 }

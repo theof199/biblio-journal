@@ -757,8 +757,12 @@ Voyage, repris du profil de l'appli Android, au costume du Voyage : habillée pa
 année en cours, sous l'onglet Voyage. On l'ouvre par la pastille « Sacoche du voyageur » de la
 carte (l'icône de la mallette, à côté du son) ; le retour ramène à la carte. Trois blocs, chacun
 lisant ses données et tombant seul en panne (`voyage/sacoche/`, règles sans rendu dans
-`voyage/sacoche.ts`). Chaque bloc garde sa région (elle ne se remonte pas quand la carte répond et
-que le monde change), ses lectures, ses écritures et sa navigation, et passe ce qu'il a lu à un dessin qu'un monde peut composer (`GabaritsDesPages`) : `teteDeLaSacoche`
+`voyage/sacoche.ts`). **Tant que la carte n'a pas répondu, aucun monde n'habille la page** (ouverte
+par un lien direct, elle ne montre pas la sacoche de la foire à un voyageur de 1900) : elle attend
+comme la carte attend, sans jetons, les trois blocs déjà montés, cachés et sans dessin, leurs lectures
+parties ; la carte en panne, elle prend le monde du départ et chaque bloc dit ce qu'il a. Chaque bloc
+garde sa région (elle ne se remonte ni quand la carte répond ni quand le monde change : le pli des
+coulisses y survit), ses lectures, ses écritures et sa navigation, et passe ce qu'il a lu à un dessin qu'un monde peut composer (`GabaritsDesPages`) : `teteDeLaSacoche`
 (`Tete.tsx`, le titre de la page), `passeportDeLaSacoche` (`Pages.tsx`, le cadre du passeport),
 `portefeuille` (`Tickets.tsx`) et `coulisses` (`Repli.tsx`) se lisent au monde de mon année en
 cours ; `pageDuPasseport` (`Page.tsx`) se lit **au monde de la décennie de la page**, si bien que la

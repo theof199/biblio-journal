@@ -38,6 +38,14 @@
   text-align: center;
 }
 
+/* L'attente de la carte : aucun monde n'est encore connu, la page n'a pas de jetons. Rien ici ne
+   vient d'un monde : le mot prend la couleur et la police du corps, sous la place du retour. */
+.etat {
+  margin: 0;
+  padding: 76px 16px 0;
+  text-align: center;
+}
+
 .sur {
   font: 13px var(--m-f-capitales);
   letter-spacing: 0.2em;

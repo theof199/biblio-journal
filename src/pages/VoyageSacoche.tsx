@@ -17,7 +17,7 @@ import styles from './VoyageSacoche.module.css'
 /** Un registre pour la page, comme la carte et la page d'une décennie ont le leur. */
 const mondes = creerRegistre()
 
-/** Le départ du Voyage, tel que le contrat le fige : la décennie qui habille la page avant la carte. */
+/** Le départ du Voyage, tel que le contrat le fige : la décennie qui habille la page quand la carte est en panne. */
 const DEPART: Voyage['depart'] = 1895
 
 /**
@@ -29,16 +29,23 @@ const DEPART: Voyage['depart'] = 1895
  * composer (`teteDeLaSacoche`, `passeportDeLaSacoche`, `pageDuPasseport`, `portefeuille`,
  * `coulisses`). **Aucune fiche d'année n'est lue** : `GET /me/voyage/annees/*` enfilerait
  * une ouverture chez le chroniqueur ; la carte, les tickets et, au dépli, les dépenses suffisent.
+ *
+ * **Tant que la carte n'a pas répondu, aucun monde n'habille rien** (la sacoche ouverte par un lien
+ * direct : un voyageur de 1900 verrait celle de la foire, puis toute la composition basculer) : la
+ * page attend, sans jetons, comme les autres pages attendent la carte. Les trois blocs sont déjà
+ * montés, sans dessin : leurs lectures partent avec celle de la carte, et leur région est la même
+ * quand elle arrive. La carte en panne, la page prend le monde du départ : chaque bloc dit alors ce
+ * qu'il a, le passeport sa panne.
  */
 export default function VoyageSacoche() {
   const { user } = useSession()
   const voyage = useQuery({ queryKey: cles.voyage, queryFn: ({ signal }) => lireVoyage(signal) })
-  const monde = mondes(decennieDe(voyage.data?.annee_en_cours ?? DEPART))
-  const { jetons } = monde.pages
+  const enCours = voyage.data?.annee_en_cours ?? (voyage.error ? DEPART : null)
+  const monde = enCours === null ? null : mondes(decennieDe(enCours))
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
-  const style: CSSProperties & typeof jetons = { ...jetons }
+  const style: (CSSProperties & Record<string, string>) | undefined = monde ? { ...monde.pages.jetons } : undefined
   const revenir = useRevenir('/voyage')
-  const Tete = gabaritDe(monde, 'teteDeLaSacoche', TeteParDefaut)
+  const Tete = monde ? gabaritDe(monde, 'teteDeLaSacoche', TeteParDefaut) : null
 
   return (
     <section className={styles.page} style={style} aria-label="La sacoche du voyageur">
@@ -56,7 +63,13 @@ export default function VoyageSacoche() {
       >
         <span aria-hidden="true">‹</span>
       </Link>
-      <Tete pseudo={user.pseudo} />
+      {Tete ? (
+        <Tete pseudo={user.pseudo} />
+      ) : (
+        <p role="status" className={styles.etat}>
+          Chargement…
+        </p>
+      )}
       <Passeport monde={monde} />
       <Portefeuille monde={monde} />
       <Coulisses monde={monde} />

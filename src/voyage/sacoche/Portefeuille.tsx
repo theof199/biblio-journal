@@ -16,9 +16,10 @@ import TicketsParDefaut from './Tickets'
  * s'offre que sur le ticket que la carte offre (`ticketOffert`) ; le geste suit la carte : encaisser,
  * puis la carte, qui joue l'avancée. Lit les tickets et la carte sous leurs clés de la carte, jamais
  * une fiche. Le dessin est celui du monde de mon année en cours (`portefeuille`), que la page lui
- * passe : il ne lit ni n'écrit rien.
+ * passe : il ne lit ni n'écrit rien. Sans monde (la page attend la carte), la région est là, cachée
+ * et sans dessin : les tickets se lisent déjà.
  */
-export default function Portefeuille({ monde }: { monde: Monde }) {
+export default function Portefeuille({ monde }: { monde: Monde | null }) {
   const client = useQueryClient()
   const naviguer = useNavigate()
   const { key } = useLocation()
@@ -48,15 +49,17 @@ export default function Portefeuille({ monde }: { monde: Monde }) {
   // Les tickets à utiliser d'abord, les utilisés dessous : le dessin les reçoit rangés.
   const ranges = liste ? [...liste.filter((t) => t.utilise_le === null), ...liste.filter((t) => t.utilise_le !== null)] : null
 
-  const Tickets = gabaritDe(monde, 'portefeuille', TicketsParDefaut)
+  const Tickets = monde ? gabaritDe(monde, 'portefeuille', TicketsParDefaut) : null
   return (
-    <section className={commun.bloc} aria-label="Portefeuille">
-      <Tickets
-        panne={tickets.error ? { erreur: tickets.error, reessayer: () => void tickets.refetch() } : null}
-        tickets={ranges ? ranges.map((t) => ({ ticket: t, utiliser: offert && t.annee === offert.annee ? () => encaisser(t.annee) : null })) : null}
-        enCours={utiliser.isPending}
-        refus={utiliser.error ? (utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.') : null}
-      />
+    <section className={commun.bloc} aria-label="Portefeuille" hidden={!Tickets}>
+      {Tickets ? (
+        <Tickets
+          panne={tickets.error ? { erreur: tickets.error, reessayer: () => void tickets.refetch() } : null}
+          tickets={ranges ? ranges.map((t) => ({ ticket: t, utiliser: offert && t.annee === offert.annee ? () => encaisser(t.annee) : null })) : null}
+          enCours={utiliser.isPending}
+          refus={utiliser.error ? (utiliser.error instanceof ApiError ? utiliser.error.message : 'Le ticket n’a pas pu être utilisé. Réessaie.') : null}
+        />
+      ) : null}
     </section>
   )
 }

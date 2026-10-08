@@ -108,19 +108,25 @@ describe('le dessin du monde dans la sacoche', () => {
     expect(screen.getByRole('link', { name: 'Retour à la carte' })).toHaveAttribute('href', '/voyage')
   })
 
-  // Mutations : `Pages` monté sans passer par `gabaritDe` ; `sansTampon` vrai avant la réponse de la
-  // carte ; `pages` vide (et non nul) avant elle ; la panne de la carte tue.
-  it('le cadre du monde reçoit l’attente, puis une page par décennie et « sans tampon », ou la panne', async () => {
+  // La règle a changé (la relecture des pages 1900) : avant la réponse de la carte, aucun monde
+  // n'habille la sacoche, et le cadre prêté à 1890 n'est donc pas encore monté (il recevait
+  // « attente »). La région, elle, est déjà là, cachée.
+  // Mutations : `Pages` monté sans passer par `gabaritDe` ; le cadre du monde du départ monté avant
+  // la réponse de la carte ; la panne de la carte tue.
+  it('le cadre du monde n’est pas monté avant la carte, puis reçoit une page par décennie et « sans tampon », ou la panne', async () => {
     preter({ passeportDeLaSacoche: CadreDuMonde })
     let carte!: (r: Response) => void
     const { unmount } = monterVoyage('/voyage/sacoche', { ...ROUTES, [VOYAGE]: () => new Promise<Response>((r) => (carte = r)) })
     await waitFor(() => expect(typeof carte).toBe('function'))
-    expect(dit('cadre')).toBe('sans panne | attente | tamponné')
-    // La région reste celle de la page, d'un monde à l'autre ; son titre par défaut n'y est plus.
-    const region = screen.getByRole('region', { name: 'Passeport' })
-    expect(within(region).queryByRole('heading', { name: /Passeport/ })).toBeNull()
+    expect(screen.queryByTestId('cadre')).toBeNull()
+    // La région reste celle de la page, avant la carte comme d'un monde à l'autre ; son titre par défaut n'y est plus.
+    // Cachée, une région n'a pas de nom calculé : on la prend par son attribut.
+    const region = document.querySelector<HTMLElement>('section[aria-label="Passeport"]')!
+    expect(region).not.toBeVisible()
     act(() => carte(json(EN_1897)))
     await waitFor(() => expect(dit('cadre')).toBe('sans panne | 1890 | sans tampon'))
+    expect(screen.getByRole('region', { name: 'Passeport' })).toBe(region)
+    expect(within(region).queryByRole('heading', { name: /Passeport/ })).toBeNull()
     // La page, elle, reste celle du défaut : son anneau et son lien.
     expect(region).toContainElement(screen.getByTestId('le-cadre'))
     const page = within(screen.getByTestId('le-cadre')).getByRole('link')
