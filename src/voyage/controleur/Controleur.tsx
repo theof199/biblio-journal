@@ -70,14 +70,15 @@ interface Props {
  *
  * **Le billet** : la première page de mon journal (la clé de l'accueil et de la fiche d'un film), où
  * le dernier billet de film se trouve presque toujours ; jamais la page suivante. Sa panne se tait :
- * la portière reste, sans carton.
+ * la portière reste, sans carton. Un journal en cache n'est pas relu (`staleTime` de cet observateur).
  *
  * **La réponse** : un verrou (une référence, `isPending` ne se voit qu'au rendu suivant), un seul
  * `POST`. Acceptée, le cache de l'état du voyageur apprend qu'il n'attend plus et le poinçon rendu,
  * champ par champ, une lecture en vol annulée d'abord : la route n'écrit que `voyage_controles`, que
  * seul cet état sert, donc rien d'autre n'est périmé. `409` (il n'attendait plus : déjà répondu
  * ailleurs, le billet supprimé) : la portière se referme et l'état se relit, sans un mot. Toute autre
- * panne se dit dans le dialogue, et la réponse se refait.
+ * panne se dit dans le dialogue, et la réponse se refait. Le serveur décide du billet poinçonné : s'il
+ * n'est pas celui du carton montré, ce carton ne se perce pas (le bon se montre s'il est en cache).
  *
  * **Refermer n'est pas refuser** (décision 5) : ni le bouton ni Échap n'écrivent. Rien n'est retenu
  * sur l'appareil.
@@ -97,8 +98,16 @@ export default function Controleur({ monde, Dessin, billet, depart, onFermer }: 
     queryFn: ({ pageParam, signal }) => lireJournal({ limit: LIMITE, cursor: pageParam }, signal),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => curseurSuivant(page),
+    // Pour cet observateur seulement (l'accueil et la fiche d'un film gardent leurs options) : un
+    // journal déjà en cache, même vieilli, suffit à un carton, et le relire relirait toutes ses pages.
+    // Absent du cache, il se lit une fois, sa première page ; périmé par une écriture, il se relit.
+    staleTime: Infinity,
   })
-  const item = itemAuJournal(journal.data?.pages ?? [], billet.log_entry_id) ?? null
+  // Le billet que le serveur a poinçonné, s'il n'est pas celui qu'il annonçait (supprimé ou redaté
+  // avant la réponse, il en a pris un autre) : le carton montré ne se perce pas à sa place. Le bon se
+  // montre s'il est sur les pages en cache ; sinon la portière reste sans carton.
+  const [perce, setPerce] = useState<string | null>(null)
+  const item = itemAuJournal(journal.data?.pages ?? [], perce ?? billet.log_entry_id) ?? null
   // Le numéro se recalcule sur la boîte de la décennie du film, seulement si elle est déjà lue.
   const decennie = item && item.media.year !== null ? decennieDe(item.media.year) : null
   const boite = decennie === null ? undefined : client.getQueryData<JournalItem[]>(cles.journalDesAnnees(decennie, decennie + 9))
@@ -128,7 +137,10 @@ export default function Controleur({ monde, Dessin, billet, depart, onFermer }: 
     envoi.current = true
     setPanne(null)
     repondre.mutate(reponse, {
-      onSuccess: (passage) => setEtat(passage.reponse),
+      onSuccess: (passage) => {
+        setPerce(passage.poincon?.log_entry_id ?? null)
+        setEtat(passage.reponse)
+      },
       onError: (erreur) => {
         if (erreur instanceof ApiError && erreur.status === 409) onFermer()
         else setPanne(erreur instanceof ApiError ? erreur.message : PANNE_DU_CONTROLE)

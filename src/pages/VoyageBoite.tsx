@@ -65,8 +65,10 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   const journal = useQuery({ queryKey: cles.journalDesAnnees(d, d + 9), queryFn: ({ signal }) => journalDesAnnees(d, d + 9, signal) })
   const v = voyage.data
   // Jamais dans les gardes du corps plus bas : ni son attente ni sa panne ne retiennent le casier.
-  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: gabaritSeul(monde, 'controleurDeLaCarte') !== null })
-  const poinconnes = entreesPoinconnees(voyageur.data)
+  // `enabled` ne retient que la lecture : l'état déjà en cache (la carte l'a lu) se rendrait quand même.
+  const avecControleur = gabaritSeul(monde, 'controleurDeLaCarte') !== null
+  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: avecControleur })
+  const poinconnes = entreesPoinconnees(avecControleur ? voyageur.data : undefined)
 
   // Le billet que la séance vient de ranger, lu une fois à l'ouverture : le liseré tient tant que la
   // page reste montée, même une fois la boîte l'ayant oublié.

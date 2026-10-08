@@ -776,7 +776,9 @@ billet sorti (`poinconne`) les billets que le contrôleur a poinçonnés, **par 
 jamais par leur film** (`voyage/voyageur.ts`, `entreesPoinconnees`) : deux séances du même film n'en
 portent qu'un. Elle n'attend pas cette lecture et sa panne se tait : le casier se montre entier, sans
 poinçon. La boîte par défaut ignore les deux champs, et la boîte d'un monde sans contrôleur ne lit
-rien de plus (`pages/VoyageBoite.poincon.test.tsx`, sur un 1890 auquel on prête des dessins). **En
+rien de plus **ni ne montre aucun poinçon, même si la carte a déjà mis l'état du voyageur en cache**
+(retenir la lecture ne retient pas ce que le cache rend : la page ne regarde l'état que si le monde
+compose la clé) (`pages/VoyageBoite.poincon.test.tsx`, sur un 1890 auquel on prête des dessins). **En
 1900, un billet présenté garde son poinçon doré au casier**, sur son carton de la liasse (le bouton du
 carton le dit : « Poinçon doré du contrôleur ») comme sorti en grand, posé sans bruit : rien ne s'y
 perce ni n'y luit, la percée est à la portière. Présenté sur la carte, il se voit au casier sans
@@ -958,11 +960,20 @@ billets passe sur la carte et son poinçon doré reste au casier ; les quatre au
   que mon journal le dit** (le contrat n'en donne que deux identifiants) : il lit la première page du
   journal, sous la clé de l'accueil, y cherche l'entrée par son identifiant, jamais la page suivante,
   et prend le numéro du billet à la boîte de sa décennie si elle est en cache ; sinon, ou en panne, la
-  portière reste sans carton, sans un mot. **Deux boutons écrivent, sous un verrou** ; refermer, par
+  portière reste sans carton, sans un mot. **Un journal déjà en cache n'est pas relu**, même vieilli
+  (`staleTime: Infinity` sur cet observateur seulement : le relire relirait toutes ses pages pour un
+  seul carton ; périmé par une écriture, il se relit quand même, et absent du cache il se lit une
+  fois, sa première page). Le numéro suit la règle du casier : un film d'avant le départ du Voyage
+  n'en a pas et ne décale rien. **Deux boutons écrivent, sous un verrou** ; refermer, par
   son bouton ou par Échap, n'écrit rien et n'est pas un refus. Acceptée, la réponse apprend au cache de
   l'état du voyageur qu'il n'attend plus, et le poinçon rendu, champ par champ, une lecture en vol
   annulée d'abord, sans rien périmer d'autre (la route n'écrit que la réponse de la semaine, que seul
-  cet état sert). `409` (il n'attendait plus) : la portière se referme et l'état se relit, sans rien
+  cet état sert). **Le serveur décide du billet poinçonné** : si ce n'est pas celui que la portière
+  montrait (supprimé ou redaté avant la réponse, il en a pris un autre), le carton montré ne se perce
+  pas à sa place ; la portière montre le bon s'il est sur les pages du journal en cache, aucun carton
+  sinon. La portière refermée, **le focus revient à l'élément qui l'avait, et sinon au titre de la
+  carte** (il est entré seul : le plus souvent rien ne l'avait, et il tomberait au document).
+  `409` (il n'attendait plus) : la portière se referme et l'état se relit, sans rien
   dire. Toute autre panne se dit dans le dialogue, avec le message du serveur, et la réponse se
   refait. **`controleur.attend` change avec l'horloge du serveur, sans écriture** : une carte restée
   ouverte ne le voit entrer qu'à sa prochaine lecture de l'état (trente secondes de fraîcheur, aucune
@@ -975,7 +986,10 @@ billets passe sur la carte et son poinçon doré reste au casier ; les quatre au
   que d'une année de 1900 à 1909, son numéro seulement si la boîte l'a donné), puis « Présenter le
   billet » et « Pas ce soir ». Présenté : « En règle. Bon voyage ! », le poinçon doré se perce sur le
   carton (`Carton` le porte, le même qu'au casier, ici `frais` : il luit et se perce) ; refusé : « Bonne
-  soirée. » ; puis « Refermer la portière », qui reprend le focus. La panne s'y dit en alerte. Il pose
+  soirée. » ; puis « Refermer la portière », qui reprend le focus et, hors du calme, **reste inerte un
+  instant** (`GARDE_DU_CHOIX`, la garde du choix de l'année bouclée, `aria-disabled`) : il prend la
+  place exacte des deux réponses, et un second toucher ne referme pas avant qu'on ait lu ; Échap
+  referme toujours. La panne s'y dit en alerte. Il pose
   lui-même les jetons du monde, que la carte ne pose pas ; ses durées sont au tempo et rien n'y bouge
   au calme. La note « sans titre de transport » de la maquette n'est pas portée
   (`mondes/1900/pages/controleur.test.tsx`).

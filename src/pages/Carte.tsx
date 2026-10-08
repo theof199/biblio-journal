@@ -455,6 +455,15 @@ export default function Carte() {
     setControle(billetDemande)
   }, [pleinEcranOccupe, billetDemande])
   const fermerLaPortiere = useCallback(() => setControle(null), [])
+  // Il est entré seul : le plus souvent rien n'avait le focus, et `useDialogue` n'a rien à qui le
+  // rendre. La portière refermée, un focus tombé au document revient au titre de la carte (hors des
+  // enveloppes, jamais inerte) ; rendu par le dialogue à l'élément qui l'avait, il y reste.
+  const titreRef = useRef<HTMLHeadingElement>(null)
+  const portiereVue = useRef(false)
+  useEffect(() => {
+    if (portiereVue.current && !portiereOuverte && (document.activeElement === null || document.activeElement === document.body)) titreRef.current?.focus()
+    portiereVue.current = portiereOuverte
+  }, [portiereOuverte])
 
   if (voyage.isPending) return <p role="status">Chargement…</p>
   if (voyage.error || !v) return <Panne erreur={voyage.error} onReessayer={() => void voyage.refetch()} />
@@ -568,7 +577,9 @@ export default function Carte() {
 
   return (
     <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }}>
-      <h1 className="sr-only">Le Voyage de {user.pseudo}</h1>
+      <h1 ref={titreRef} tabIndex={-1} className="sr-only">
+        Le Voyage de {user.pseudo}
+      </h1>
       {/* Ce qui est derrière l'avancée (la porte, l'adieu, le tampon, la marche, le carton) : rien n'y
           répond tant qu'elle joue, ni au doigt ni au clavier. Le moteur, lui, mène toujours la caméra.
           Deux enveloppes : la toile seule répond pendant le passage d'entrée (`bonjour`), où le moteur

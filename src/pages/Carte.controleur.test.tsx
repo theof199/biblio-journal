@@ -223,12 +223,16 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
   describe('le billet qu’il montre (décision 6)', () => {
     // Mutations : le billet cherché par `media_id` (la première séance du 1er septembre sortirait, si on
     // l'ordonne devant) ; la boîte lue au lieu d'être consultée en cache (une requête `sortie_min`
-    // partirait) ; le numéro pris au rang dans le journal.
+    // partirait) ; le numéro pris au rang dans le journal ; le départ du Voyage non passé à la règle du
+    // casier (`0` à la place de `depart` : le film de 1892, vu le premier, décalerait le numéro à 3).
     it('le carton se remplit de la première page de mon journal, par l’entrée et non par le film ; le numéro vient de la boîte si elle est en cache', async () => {
       preter()
       const client = createQueryClient()
       // La boîte des années 1890, déjà lue : trois billets, celui qu'il demande est le deuxième vu.
-      client.setQueryData(cles.journalDesAnnees(1890, 1899), [UN_AUTRE, LE_BILLET, LA_PREMIERE_SEANCE])
+      // Un film d'avant le départ (1895) y est aussi, vu avant tous les autres : il n'a ni billet ni numéro.
+      const AVANT_LE_DEPART = visionnage({ id: 'b0000000-0000-4000-8000-000000000004', titre: 'Pauvre Pierrot', annee: 1892, date: '2026-01-01' })
+      expect(EN_1898.depart).toBe(1895)
+      client.setQueryData(cles.journalDesAnnees(1890, 1899), [UN_AUTRE, LE_BILLET, LA_PREMIERE_SEANCE, AVANT_LE_DEPART])
       const banc = await monter(IL_ATTEND, { [JOURNAL]: () => json(journal([LA_PREMIERE_SEANCE, UN_AUTRE, LE_BILLET])) }, { client })
       await portiere()
       await banc.calme()
@@ -252,7 +256,46 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
     })
   })
 
+  // Mon journal déjà en cache, trois pages, vieilli d'une heure : il suffit au carton (le billet est
+  // sur la deuxième page) et rien n'en est relu. Absent du cache, il se lit une fois, sa première page
+  // seule : les tests du carton, plus haut, le tiennent. Mutation : `staleTime: Infinity` retiré de
+  // l'observateur du contrôleur (les trois pages seraient relues).
+  it('mon journal déjà en cache n’est pas relu, même vieilli', async () => {
+    preter()
+    const client = createQueryClient()
+    client.setQueryData(
+      cles.journal,
+      { pages: [journal([UN_AUTRE], 'c1'), journal([LE_BILLET], 'c2'), journal([LA_PREMIERE_SEANCE])], pageParams: [undefined, 'c1', 'c2'] },
+      { updatedAt: Date.now() - 3_600_000 },
+    )
+    const banc = await monter(IL_ATTEND, {}, { client })
+    await portiere()
+    await banc.calme()
+    expect(dit()).toBe('demande | Le Manoir du diable, le 2026-10-06, sans numéro | sans panne')
+    expect(banc.requetes.filter((r) => r.includes('/me/journal'))).toEqual([])
+  })
+
   describe('répondre', () => {
+    // Le billet supprimé ou redaté avant la réponse : le serveur en poinçonne un autre, et le dit. Le
+    // carton montré ne se perce pas à sa place : la portière montre celui qui l'est s'il est sur les
+    // pages en cache, aucun sinon. Mutations : le carton laissé à celui qu'il annonçait (`perce` non
+    // retenu) ; le carton d'avant gardé quand le bon manque (`?? billet.log_entry_id` en repli de la recherche).
+    it.each([
+      ['un autre billet de mon journal', UN_AUTRE.entry.id, 'presente | L’Arroseur arrosé, le 2026-10-07, sans numéro | sans panne'],
+      ['un billet que mon journal en cache n’a pas', 'b0000000-0000-4000-8000-0000000000ff', 'presente | sans carton | sans panne'],
+    ])('le serveur a poinçonné %s : le carton annoncé ne se montre pas percé', async (_cas, id, attendu) => {
+      preter()
+      const banc = await monter(IL_ATTEND, { [REPONDRE]: () => json({ reponse: 'presente', poincon: { ...POINCON, log_entry_id: id } } satisfies PassageDuControleur) })
+      await portiere()
+      await banc.calme()
+      expect(dit()).toBe('demande | Le Manoir du diable, le 2026-10-06, sans numéro | sans panne')
+      fireEvent.click(bouton('Présenter'))
+      await waitFor(() => expect(dit()).toBe(attendu))
+      await banc.calme()
+      expect(etatEnCache(banc.client)?.poincons.map((p) => p.log_entry_id)).toContain(id)
+      expect(banc.requetes.filter((r) => r.includes('/me/journal'))).toEqual([JOURNAL])
+    })
+
     // Mutations : le cache laissé tel quel (`setQueryData` retiré) ; la réponse posée à la place de
     // l'état (les objets et les rubriques s'effacent) ; le préfixe `voyage` périmé (la carte et les
     // tickets seraient relus) ; le poinçon non ajouté ; le focus laissé au bouton disparu (l'effet sur
@@ -413,6 +456,36 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
       await portiere()
       await seconde.calme()
       expect(bouton('Présenter')).toHaveFocus()
+    })
+  })
+
+  describe('le focus, la portière refermée', () => {
+    // Il entre seul : rien n'avait le focus, `useDialogue` n'a rien à qui le rendre. Mutation : l'effet
+    // qui rend le focus au titre retiré (il tombe au document).
+    it('rien n’avait le focus : il revient au titre de la carte, pas au document', async () => {
+      preter()
+      const banc = await monter(IL_ATTEND)
+      await portiere()
+      await banc.calme()
+      fireEvent.click(bouton('Laisser'))
+      pasDePortiere()
+      expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+    })
+
+    // Mutation : le titre prend le focus sans regarder s'il est tombé au document.
+    it('un bouton de la carte l’avait : il lui revient, le titre ne le prend pas', async () => {
+      preter()
+      const lecture = retenue<Response>()
+      const banc = await monter(IL_ATTEND, { [LIRE]: () => lecture.promesse })
+      await waitFor(() => expect(banc.requetes).toContain(LIRE))
+      act(() => bouton('Vue d’ensemble').focus())
+      await act(async () => lecture.lacher(json(IL_ATTEND)))
+      await portiere()
+      await banc.calme()
+      expect(bouton('Présenter')).toHaveFocus()
+      fireEvent.click(bouton('Laisser'))
+      pasDePortiere()
+      expect(bouton('Vue d’ensemble')).toHaveFocus()
     })
   })
 

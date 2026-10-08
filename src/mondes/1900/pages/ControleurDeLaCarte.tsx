@@ -1,7 +1,8 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { formatDateVisionnage } from '../../../ui/format'
 import { useMouvementReduit } from '../../../ui/mouvement'
 import { numeroLisible } from '../../../voyage/billets'
+import { GARDE_DU_CHOIX } from '../../../voyage/celebrations/deroule'
 import type { PropsControleurDeLaCarte } from '../../../voyage/controleur/Controleur'
 import Carton from './Carton'
 import { MOTS_DU_COMPOSTEUR as C, datePressee } from './carton'
@@ -19,6 +20,10 @@ import styles from './Controleur.module.css'
  * Un dialogue, par-dessus la carte qui reste derrière, assombrie : ni photographie ni autre décor.
  * La carte ne pose pas les jetons des pages : il les pose lui-même (le tempo, lui, vient de l'écran de
  * la carte). Il ne lit ni n'écrit rien, et rien n'y bouge au calme (`data-vivante`).
+ *
+ * « Refermer la portière » prend la place exacte des deux réponses : hors du calme, il reste inerte
+ * un instant après la réponse (`GARDE_DU_CHOIX`, la garde du choix de l'année bouclée), pour qu'un
+ * second toucher arrivé au même endroit ne referme pas avant qu'on ait lu. Échap, lui, referme toujours.
  */
 export default function ControleurDeLaCarte({ monde, billet, etat, panne, premier, presenter, refuser, fermer }: PropsControleurDeLaCarte) {
   const calme = useMouvementReduit()
@@ -26,6 +31,13 @@ export default function ControleurDeLaCarte({ monde, billet, etat, panne, premie
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof jetons = { ...jetons }
   const date = billet ? formatDateVisionnage(billet.item.entry.finished_at) : null
+  const repondu = etat !== 'demande'
+  const [arme, setArme] = useState(calme)
+  useEffect(() => {
+    if (!repondu || arme) return
+    const j = setTimeout(() => setArme(true), GARDE_DU_CHOIX)
+    return () => clearTimeout(j)
+  }, [repondu, arme])
   return (
     <div className={styles.controle} style={style} role="dialog" aria-modal="true" aria-label={M.nom} data-vivante={calme ? 'non' : 'oui'} data-etat={etat}>
       <div className={styles.personnage}>
@@ -69,7 +81,7 @@ export default function ControleurDeLaCarte({ monde, billet, etat, panne, premie
         </div>
       ) : (
         <div key="fin" className={styles.choix}>
-          <button ref={premier} type="button" className={styles.seul} onClick={fermer}>
+          <button ref={premier} type="button" className={styles.seul} aria-disabled={!arme} onClick={() => void (arme && fermer())}>
             {M.refermer}
           </button>
         </div>

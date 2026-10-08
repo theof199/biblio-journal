@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { cles } from '../api/cles'
 import type { JournalItem, JournalPage } from '../api/journal'
 import type { Voyageur } from '../api/voyage'
 import { PAGES_1890 } from '../mondes/1890/pages'
@@ -126,6 +127,19 @@ describe('le poinçon doré à la boîte à billets', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sortir e-seconde' }))
     await waitFor(() => expect(dit('grand')).toBe('e-seconde'))
     await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(sansSession(requetes)).toEqual([CARTE, JOURNAL].sort())
+  })
+
+  // La carte a déjà lu l'état du voyageur : il est en cache, et `enabled: false` ne l'empêche pas de se
+  // rendre. Mutation : `entreesPoinconnees(voyageur.data)` sans regarder la clé.
+  it('un monde qui ne compose pas le contrôleur ne montre aucun poinçon, même avec l’état du voyageur en cache', async () => {
+    preter(DESSINS)
+    const { requetes, client } = monterVoyage('/voyage/decennies/1890/billets', ROUTES, (c) => c.setQueryData(cles.voyageur, POINCONNE))
+    await waitFor(() => expect(dit('billets')).toBe('e-autre | e-seconde | e-premiere'))
+    fireEvent.click(screen.getByRole('button', { name: 'Sortir e-seconde' }))
+    await waitFor(() => expect(dit('grand')).toBe('e-seconde'))
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(dit('billets')).toBe('e-autre | e-seconde | e-premiere')
     expect(sansSession(requetes)).toEqual([CARTE, JOURNAL].sort())
   })
 

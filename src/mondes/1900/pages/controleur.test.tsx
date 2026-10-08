@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import App from '../../../App'
@@ -14,6 +14,7 @@ import { moteurFactice } from '../../../test/moteurFactice'
 import { SESSION } from '../../../test/pageVoyage'
 import { json, servir } from '../../../test/serveur'
 import { ROUTES_DU_JEU, voyage1890 } from '../../../test/voyage'
+import { GARDE_DU_CHOIX } from '../../../voyage/celebrations/deroule'
 import { MOTS_DU_CONTROLEUR as M, bulleDuControleur, ceQuiSePasse, ligneDuBilletDemande } from './controleur'
 import { MOTS_DU_COMPOSTEUR as C } from './carton'
 
@@ -163,7 +164,10 @@ describe('le contrôleur sur la carte de 1903', () => {
 
   // Mutations : la phrase du refus au présenté ; le poinçon jamais posé ; les deux réponses laissées
   // sous « Refermer la portière » ; le numéro de la maquette en dur ; le bouton branché sur le refus.
+  // Au calme, « Refermer la portière » répond d'emblée. Mutation : la garde armée à faux même au calme
+  // (`useState(false)`) : le toucher de la fin ne referme plus.
   it('présenté : « En règle. Bon voyage ! », le poinçon doré sur le carton, puis « Refermer la portière »', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
     const envoyes: unknown[] = []
     const { portiere } = await monter({ [REPONDRE]: (init) => (envoyes.push(corps(init)), json(PRESENTE)) }, avecLaBoite())
     fireEvent.click(within(portiere).getByRole('button', { name: 'Présenter le billet' }))
@@ -178,6 +182,33 @@ describe('le contrôleur sur la carte de 1903', () => {
     expect(within(portiere).getByRole('button', { name: 'Refermer la portière' })).toHaveFocus()
     fireEvent.click(within(portiere).getByRole('button', { name: 'Refermer la portière' }))
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  // « Refermer la portière » prend la place exacte des deux réponses : hors du calme, un second
+  // toucher arrivé au même endroit ne referme pas avant qu'on ait lu (`GARDE_DU_CHOIX`, minuteries
+  // simulées). Mutations : le bouton armé d'emblée (`useState(true)`) ; `aria-disabled` posé sans que
+  // le toucher soit retenu ; la garde jamais levée (la minuterie retirée).
+  it('hors du calme, « Refermer la portière » reste inerte un instant après la réponse, puis répond', async () => {
+    const { portiere } = await monter({ [REPONDRE]: () => json(PRESENTE) })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const passer = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)))
+      fireEvent.click(within(portiere).getByRole('button', { name: 'Présenter le billet' }))
+      await passer(1)
+      const refermer = within(portiere).getByRole('button', { name: 'Refermer la portière' })
+      expect(refermer).toHaveAttribute('aria-disabled', 'true')
+      expect(refermer).toHaveFocus()
+      fireEvent.click(refermer)
+      await passer(GARDE_DU_CHOIX - 2)
+      fireEvent.click(refermer)
+      expect(screen.getByRole('dialog', { name: M.nom })).toBeInTheDocument()
+      await passer(2)
+      expect(refermer).toHaveAttribute('aria-disabled', 'false')
+      fireEvent.click(refermer)
+      expect(screen.queryByRole('dialog')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // De la carte au casier, sans rechargement (lot d'écrans, brief 8) : le serveur du banc ne rend
