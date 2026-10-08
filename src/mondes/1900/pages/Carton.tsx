@@ -29,6 +29,12 @@ interface Props {
   geste?: GesteDuCarton | null
   /** Ce qui vient de changer sous le doigt : les trous percés à partir de `depuis`, la date. `tour` le rejoue. */
   frais?: { trous?: { depuis: number; tour: number }; presse?: number }
+  /**
+   * Le poinçon doré du contrôleur : ce qu'il dit à qui ne le voit pas ; `frais`, il vient d'être percé
+   * (il luit, et se perce sous la racine vivante). Absent ou nul, aucun poinçon : le carton ne le
+   * porte que si on le lui passe, et le composteur ne le passe jamais.
+   */
+  poincon?: { dit: string; frais?: boolean } | null
 }
 
 /**
@@ -38,10 +44,13 @@ interface Props {
  * composant pour le billet de séance, la liasse du casier et le « Bon pour » d'une année bouclée :
  * tout ce qu'il montre lui est passé, il ne lit rien.
  *
- * Il ne porte jamais la mention de classe (décision 6) ni le poinçon doré du contrôleur (son lot).
+ * Il ne porte jamais la mention de classe (décision 6). Le poinçon doré du contrôleur (maquette :
+ * `.poincon-or`, un cercle perlé et une étoile percée, dont les couleurs sont la donnée) n'y est que
+ * si on le lui passe : le casier et le billet sorti pour un billet présenté, la portière du contrôleur
+ * au moment du coup, jamais le composteur.
  * Rien n'y bouge au calme : `data-vivante` porte seul les animations de la feuille.
  */
-export default function Carton({ tete, titre, titreDePage = false, sous, numero, numeroQuiRoule = false, note, presse, tampon, geste, frais }: Props) {
+export default function Carton({ tete, titre, titreDePage = false, sous, numero, numeroQuiRoule = false, note, presse, tampon, geste, frais, poincon }: Props) {
   const calme = useMouvementReduit()
   const Titre = titreDePage ? 'h1' : 'div'
   const perces = frais?.trous
@@ -76,6 +85,15 @@ export default function Carton({ tete, titre, titreDePage = false, sous, numero,
       {tampon ? (
         <span className={styles.vu} role="img" aria-label={tampon.dit}>
           {tampon.mot}
+        </span>
+      ) : null}
+      {poincon ? (
+        <span className={styles.poincon} role="img" aria-label={poincon.dit} data-frais={poincon.frais ? 'oui' : undefined}>
+          <svg viewBox="-10 -10 20 20" aria-hidden="true" focusable="false">
+            <circle r="8.6" fill="none" stroke="#e2b23c" strokeWidth="1.5" />
+            <circle r="6.6" fill="none" stroke="#f0d27a" strokeWidth=".6" strokeDasharray="1 1.2" />
+            <path d="M0 -5.4 l1.5 3.4 3.7 .4 -2.8 2.5 .8 3.7 -3.2 -1.9 -3.2 1.9 .8 -3.7 -2.8 -2.5 3.7 -.4 Z" fill="#0e0a07" stroke="#e2b23c" strokeWidth=".9" strokeLinejoin="round" />
+          </svg>
         </span>
       ) : null}
     </div>

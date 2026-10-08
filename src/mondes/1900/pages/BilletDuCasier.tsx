@@ -14,12 +14,13 @@ import styles from './Casier.module.css'
  * Un billet du casier sorti en grand (maquette, écran 7 : le billet Edmondson) : le carton, qui dit le
  * titre, la ligne du film, le numéro et la note ; dessous, la date de la séance en toutes lettres (la
  * tranche ne la porte que pressée), les réactions en coupons, et ma remarque sur le carnet, que la
- * page tient de mon seul journal. « Corriger le billet » ne s'offre que si la page le passe.
+ * page tient de mon seul journal. « Corriger le billet » ne s'offre que si la page le passe. Présenté
+ * au contrôleur (`poinconne`), le carton garde son poinçon doré.
  *
  * Un dialogue : « Ranger au casier » prend le focus et le rend, Échap et le voile ferment. Il ne lit
  * rien : `Visionneuse` lui passe les réactions lues. Rien n'y bouge au calme.
  */
-export default function BilletDuCasier({ monde, billet, reactions, corriger, onFermer }: PropsBilletEnGrand) {
+export default function BilletDuCasier({ monde, billet, reactions, corriger, onFermer, poinconne = false }: PropsBilletEnGrand) {
   const m = monde.pages.mots
   const calme = useMouvementReduit()
   const ranger = useDialogue<HTMLButtonElement>(onFermer)
@@ -38,6 +39,7 @@ export default function BilletDuCasier({ monde, billet, reactions, corriger, onF
             note={entry.rating}
             presse={datePressee(entry.finished_at)}
             tampon={{ mot: m.billet.tampon, dit: `${m.billet.tampon} : ${m.billet.tamponAutour} ${date}` }}
+            poincon={poinconne ? { dit: C.poincon } : null}
           />
         </div>
         <p className={styles.seance}>{`${m.billet.titre} ${date}`}</p>

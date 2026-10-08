@@ -9,23 +9,12 @@ import { MOTS_DU_CONTROLEUR as M, bulleDuControleur, ceQuiSePasse, ligneDuBillet
 import DessinDuControleur from './DessinDuControleur'
 import styles from './Controleur.module.css'
 
-/** Le poinçon doré (maquette : `.poincon-or`) : un cercle perlé et une étoile percée. Ses couleurs sont sa donnée. */
-function PoinconDore() {
-  return (
-    <svg viewBox="-10 -10 20 20" aria-hidden="true" focusable="false">
-      <circle r="8.6" fill="none" stroke="#e2b23c" strokeWidth="1.5" />
-      <circle r="6.6" fill="none" stroke="#f0d27a" strokeWidth=".6" strokeDasharray="1 1.2" />
-      <path d="M0 -5.4 l1.5 3.4 3.7 .4 -2.8 2.5 .8 3.7 -3.2 -1.9 -3.2 1.9 .8 -3.7 -2.8 -2.5 3.7 -.4 Z" fill="#0e0a07" stroke="#e2b23c" strokeWidth=".9" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 /**
  * Le contrôleur des billets sur la carte de 1900 (maquette « Voyage immobile 1900 », `#controle`) : il
  * entre par la droite, la main tendue ; sa bulle dit ce qu'il dit, le billet demandé est le carton
  * Edmondson de mon dernier film quand le journal l'a montré, et dessous ce qui se passe, puis les
  * deux réponses, ou « Refermer la portière » une fois qu'il a répondu. Présenté, le poinçon doré se
- * perce sur le carton : posé par-dessus, `Carton` ne le porte pas (le casier le lui donnera, brief 8).
+ * perce sur le carton : `Carton` le porte, le même qu'au casier, ici frais (il luit et se perce).
  *
  * Un dialogue, par-dessus la carte qui reste derrière, assombrie : ni photographie ni autre décor.
  * La carte ne pose pas les jetons des pages : il les pose lui-même (le tempo, lui, vient de l'écran de
@@ -55,12 +44,8 @@ export default function ControleurDeLaCarte({ monde, billet, etat, panne, premie
             note={billet.item.entry.rating}
             presse={datePressee(billet.item.entry.finished_at)}
             tampon={{ mot: mots.billet.tampon, dit: `${mots.billet.tampon} : ${mots.billet.tamponAutour} ${date}` }}
+            poincon={etat === 'presente' ? { dit: C.poincon, frais: true } : null}
           />
-          {etat === 'presente' ? (
-            <span className={styles.poincon}>
-              <PoinconDore />
-            </span>
-          ) : null}
         </div>
       ) : null}
       <p className={styles.etat} role="status">

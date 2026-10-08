@@ -22,6 +22,8 @@ export const MOTS_DU_COMPOSTEUR = {
   remarque: 'Remarque',
   remarqueSous: 'le carnet : toi seul le lis',
   remarqueVide: 'Ce que tu en retiens, pour toi…',
+  /** Ce que le poinçon doré dit à qui ne le voit pas : le carton ne le porte que si on le lui passe. */
+  poincon: 'Poinçon doré du contrôleur',
   corriger: 'Corriger le billet',
   corrigerSous: 'il garde son numéro',
   modele: 'Le modèle',

@@ -534,7 +534,10 @@ Où vit quoi :
   tempo ; au calme, rien ne se joue. En correction, le carton est déjà tamponné, son numéro se lit en
   tête, « Corriger le billet » ne composte rien et « Supprimer » reste celui de la page. Dessous, « Le
   modèle » : les billets du Métropolitain de 1900 (`billets-metro`). La mention de classe de la
-  maquette n'y est pas (décision 6), ni le poinçon doré du contrôleur, qui attend son lot ; leurs mots
+  maquette n'y est pas (décision 6). **Le poinçon doré du contrôleur** (un cercle perlé, une étoile
+  percée : un dessin, dont les couleurs sont la donnée) est au carton, qui ne le porte que si on le
+  lui passe (`poincon` : ce qu'il dit à qui ne le voit pas, et `frais` quand il vient d'être percé) :
+  le composteur ne le passe jamais, billet en correction compris (décision 11) ; leurs mots
   et leurs règles : `mondes/1900/pages/carton.ts`. **La nouvelle salle, la ligne du bas, les
   feuillets, la feuille du chroniqueur, le programme d'un film et ses bobines gardent encore les
   composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
@@ -773,7 +776,12 @@ billet sorti (`poinconne`) les billets que le contrôleur a poinçonnés, **par 
 jamais par leur film** (`voyage/voyageur.ts`, `entreesPoinconnees`) : deux séances du même film n'en
 portent qu'un. Elle n'attend pas cette lecture et sa panne se tait : le casier se montre entier, sans
 poinçon. La boîte par défaut ignore les deux champs, et la boîte d'un monde sans contrôleur ne lit
-rien de plus (`pages/VoyageBoite.poincon.test.tsx`, sur un 1890 auquel on prête des dessins).
+rien de plus (`pages/VoyageBoite.poincon.test.tsx`, sur un 1890 auquel on prête des dessins). **En
+1900, un billet présenté garde son poinçon doré au casier**, sur son carton de la liasse (le bouton du
+carton le dit : « Poinçon doré du contrôleur ») comme sorti en grand, posé sans bruit : rien ne s'y
+perce ni n'y luit, la percée est à la portière. Présenté sur la carte, il se voit au casier sans
+rechargement : la réponse a garni le cache que la boîte lit (`mondes/1900/pages/casier.test.tsx`,
+`controleur.test.tsx`).
 
 Dans les années 1900, la boîte est **le casier du contrôleur** (maquette, écran 8 ;
 `mondes/1900/pages/CasierDuControleur.tsx`, pour la clé `casier`) : un meuble à une case par année du
@@ -911,7 +919,7 @@ L'API sert huit choses que seul 1900 dessine ou dessinera (la malle aux étiquet
 trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, la carte postale, le
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
 ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
-billets passe sur la carte ; les quatre autres n'ont rien**
+billets passe sur la carte et son poinçon doré reste au casier ; les quatre autres n'ont rien**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -957,7 +965,7 @@ billets passe sur la carte ; les quatre autres n'ont rien**
   billets, s’il vous plaît. », le billet demandé est le carton Edmondson (sa ligne ne dit « gare de »
   que d'une année de 1900 à 1909, son numéro seulement si la boîte l'a donné), puis « Présenter le
   billet » et « Pas ce soir ». Présenté : « En règle. Bon voyage ! », le poinçon doré se perce sur le
-  carton (posé par-dessus : `Carton` ne le porte pas avant le lot du casier) ; refusé : « Bonne
+  carton (`Carton` le porte, le même qu'au casier, ici `frais` : il luit et se perce) ; refusé : « Bonne
   soirée. » ; puis « Refermer la portière », qui reprend le focus. La panne s'y dit en alerte. Il pose
   lui-même les jetons du monde, que la carte ne pose pas ; ses durées sont au tempo et rien n'y bouge
   au calme. La note « sans titre de transport » de la maquette n'est pas portée

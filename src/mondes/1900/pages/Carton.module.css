@@ -119,6 +119,28 @@
   color: color-mix(in srgb, var(--m-violet) 90%, transparent);
 }
 
+/* Le poinçon doré du contrôleur (maquette : `.edm .poincon-or`, à 45 % et 56 %, 14 % de la largeur du
+   carton). Frais, celui de la portière : il luit, et se perce sous la racine vivante. */
+.poincon {
+  position: absolute;
+  top: 56%;
+  left: 45%;
+  width: 14cqi;
+  height: 14cqi;
+  pointer-events: none;
+}
+
+.poincon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.poincon[data-frais='oui'] {
+  filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--m-or) 85%, transparent)) drop-shadow(0 1px 1px var(--m-ombre));
+}
+
 /* Les gestes du composteur, posés d'un coup : le carton avalé reste enfoncé, le carton parti ne se
    voit plus. Leur mouvement n'existe que sous la racine vivante. */
 .carton[data-geste='avale'],
@@ -158,6 +180,24 @@
 .carton[data-vivante='oui'][data-geste='frappe'] .vu,
 .carton[data-vivante='oui'][data-geste='rendu'] .vu {
   animation: frappe calc(420ms * var(--tempo)) linear;
+}
+
+.carton[data-vivante='oui'] .poincon[data-frais='oui'] {
+  animation: poinconne calc(340ms * var(--tempo)) cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+@keyframes poinconne {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  75% {
+    transform: scale(0.94);
+  }
 }
 
 @keyframes perce {

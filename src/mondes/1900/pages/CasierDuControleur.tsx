@@ -16,9 +16,11 @@ import styles from './Casier.module.css'
  * billet sur son carton Edmondson. Toucher un carton l'ouvre en grand.
  *
  * Il ne lit rien et ne numérote rien : la case choisie et le billet ouvert vivent dans l'adresse, que
- * la page tient ; le numéro est celui du billet de séance. Rien n'y bouge au calme.
+ * la page tient ; le numéro est celui du billet de séance. Un billet que le contrôleur a poinçonné
+ * (`poinconnes`, que la page tient de l'état du voyageur, par entrée de journal) garde son poinçon
+ * doré, et le bouton du carton le dit. Rien n'y bouge au calme.
  */
-export default function CasierDuControleur({ monde, intercalaires, choisi, onChoisir, billets, nouveau, onOuvrir }: PropsCasier) {
+export default function CasierDuControleur({ monde, intercalaires, choisi, onChoisir, billets, nouveau, onOuvrir, poinconnes }: PropsCasier) {
   const m = monde.pages.mots
   const calme = useMouvementReduit()
   const liasse = liasseDe(billets)
@@ -68,6 +70,7 @@ export default function CasierDuControleur({ monde, intercalaires, choisi, onCho
                     note={entry.rating}
                     presse={datePressee(entry.finished_at)}
                     tampon={{ mot: m.billet.tampon, dit: `${m.billet.tampon} : ${m.billet.tamponAutour} ${formatDateVisionnage(entry.finished_at)}` }}
+                    poincon={poinconnes?.has(entry.id) ? { dit: MOTS_DU_COMPOSTEUR.poincon } : null}
                   />
                   {neuf ? <span className={styles.lecteur}>{`, ${M.range}`}</span> : null}
                 </button>

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { JournalItem, JournalPage } from '../../../api/journal'
 import type { ReactionsCatalogue } from '../../../api/reactions'
 import { exemple } from '../../../test/contrat'
@@ -13,6 +13,7 @@ import { oublierLeBillet } from '../../../voyage/billet/range'
 import { oublierLeRetour } from '../../../voyage/annee/retour'
 import { TEMPO } from '../../../voyage/tempo'
 import { PAGES_1900 } from '../pages'
+import Carton from './Carton'
 import { MOTS_DU_COMPOSTEUR as M, compteDesCoupons, datePressee, ligneDuFilm, molettesDeLaPresse, noteDuCarton, trousDuCarton } from './carton'
 import { libelleDeLaVoiture } from './hale'
 import FEUILLE_DU_CARTON from './Carton.module.css?raw'
@@ -451,15 +452,15 @@ describe('le billet Edmondson, en correction', () => {
     expect(effacements).toBe(1)
   })
 
-  // Le poinçon doré du contrôleur attend son lot (plan des pages 1900, brief 6, « laisse de côté »).
-  // Mutation : l'élément de la maquette porté tel quel dans le carton
-  // (`<span class="poincon-or" aria-hidden="true"><svg viewBox="-10 -10 20 20">…</svg></span>`).
-  it('ne porte aucun poinçon doré, composté ou non', async () => {
+  // Le poinçon doré du contrôleur (lot d'écrans, brief 8) : le carton ne le porte que si on le lui
+  // passe, et le composteur ne le passe jamais. Mutations : la propriété garnie par défaut dans
+  // `Carton` (`poincon = { dit: … }`) ; le composteur qui la passe à son carton, composté ou non.
+  it('le composteur ne passe jamais le poinçon doré à son carton, composté ou non', async () => {
     const { routes } = serveur({ boite: [feesVu()] })
     const vue = corriger(routes)
     const sansPoincon = (c: HTMLElement) => {
+      expect(within(c).queryByRole('img', { name: M.poincon })).toBeNull()
       expect(c.querySelector('svg')).toBeNull()
-      expect([...c.querySelectorAll('*')].filter((e) => /poincon|dor/i.test(e.getAttribute('class') ?? ''))).toEqual([])
       // Tout ce que le carton cache au lecteur d'écran : la date pressée et les dix places.
       expect([...c.querySelectorAll('[aria-hidden="true"]')].map((e) => e.textContent)).toEqual([datePressee('2026-09-01'), ''])
     }
@@ -471,8 +472,40 @@ describe('le billet Edmondson, en correction', () => {
     const neuf = await carton(FEES.title)
     fireEvent.click(screen.getByRole('button', { name: 'Hier' }))
     fireEvent.click(screen.getByRole('button', { name: 'Jour précédent' }))
+    expect(within(neuf).queryByRole('img', { name: M.poincon })).toBeNull()
     expect(neuf.querySelector('svg')).toBeNull()
     expect([...neuf.querySelectorAll('[aria-hidden="true"]')]).toHaveLength(2)
+  })
+
+  // Le carton seul, sans page : ce que la propriété change. Le dessin du poinçon est caché au lecteur
+  // d'écran, qui en lit le nom passé ; `frais` (la portière du contrôleur) ne se pose que demandé.
+  // Mutations : le poinçon rendu sans la propriété, ou pour une propriété nulle ; son nom écrit en dur
+  // ou tu (`role="img"` retiré, le dessin sans nom) ; le dessin lu au lecteur d'écran (`aria-hidden`
+  // retiré du `svg`) ; `data-frais` posé d'office.
+  it('le carton ne porte le poinçon doré que si on le lui passe, avec ce qu’il dit à qui ne le voit pas', () => {
+    const poser = (poincon?: { dit: string; frais?: boolean } | null) =>
+      render(<Carton tete={M.compagnie} titre="Le Royaume des fées" note={9} presse={datePressee('2026-09-01')} tampon={{ mot: 'VU', dit: 'VU : vu le 1er septembre 2026' }} poincon={poincon} />)
+    const caches = (c: HTMLElement) => [...c.querySelectorAll('[aria-hidden="true"]')].map((e) => e.tagName.toLowerCase())
+
+    for (const sans of [undefined, null]) {
+      const vue = poser(sans)
+      expect(vue.queryAllByRole('img').map((i) => i.getAttribute('aria-label'))).toEqual(['VU : vu le 1er septembre 2026'])
+      expect(vue.container.querySelector('svg')).toBeNull()
+      expect(caches(vue.container)).toEqual(['span', 'div'])
+      vue.unmount()
+    }
+
+    const avec = poser({ dit: 'Poinçonné, dit le test' })
+    const poincon = avec.getByRole('img', { name: 'Poinçonné, dit le test' })
+    expect(avec.queryAllByRole('img')).toHaveLength(2)
+    expect(avec.container.querySelectorAll('svg')).toHaveLength(1)
+    expect(poincon.querySelector('svg')).not.toBeNull()
+    // La date pressée, les dix places, et le dessin du poinçon : son nom, lui, se lit.
+    expect(caches(avec.container)).toEqual(['span', 'div', 'svg'])
+    expect(poincon).not.toHaveAttribute('data-frais')
+    avec.unmount()
+
+    expect(poser({ dit: M.poincon, frais: true }).getByRole('img', { name: M.poincon })).toHaveAttribute('data-frais', 'oui')
   })
 })
 

@@ -3,6 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { cles } from '../../../api/cles'
 import type { JournalItem, JournalPage } from '../../../api/journal'
 import type { ReactionsCatalogue } from '../../../api/reactions'
+import type { Voyageur } from '../../../api/voyage'
 import { exemple } from '../../../test/contrat'
 import { visionnage } from '../../../test/journal'
 import { SESSION, monterVoyage } from '../../../test/pageVoyage'
@@ -293,5 +294,55 @@ describe('un billet du casier sorti en grand', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Le Vol du grand rapide' })).toBeInTheDocument()
     expect(screen.queryByText('Ce visionnage n’est plus disponible.')).toBeNull()
     expect(await screen.findByText('N° 0004')).toBeInTheDocument()
+  })
+})
+
+describe('le poinçon doré au casier', () => {
+  /** Une seconde séance du « Vol du grand rapide » : le même film (`media_id`), une autre entrée, la seule présentée au contrôleur. */
+  const SECONDE = vu('e4', 1903, '2026-09-20', { titre: 'Le Vol du grand rapide', note: 9, realisateur: 'Edwin S. Porter', tmdb: 776 })
+  SECONDE.media.id = VOL.media.id
+  SECONDE.entry.media_id = VOL.entry.media_id
+  const POINCONNE: Voyageur = { ...VOYAGEUR_VIDE, poincons: [{ log_entry_id: SECONDE.entry.id, media_id: SECONDE.media.id, poinconne_le: '2026-10-08T18:00:00.000Z' }] }
+  const AVEC = { ...ROUTES, [JOURNAL]: journal([...TOUS, SECONDE]), [VOYAGEUR]: () => json(POINCONNE) }
+  const poincons = (ou: HTMLElement) => within(ou).queryAllByRole('img', { name: C.poincon })
+
+  // Mutations : `poinconnes` ignoré par le casier ; le poinçon posé sur tout carton dès qu'un billet
+  // l'est ; cherché par le film (`media.id`, sur une table de films : la première séance le porterait) ;
+  // `poinconne` ignoré par le billet sorti, ou vrai pour tous ; le nom du poinçon tu dans le bouton du
+  // carton ; le poinçon du casier dit « frais » (il se percerait à chaque sortie de la liasse).
+  it('un billet présenté au contrôleur garde son poinçon, en liasse et sorti en grand ; l’autre séance du même film n’en porte pas', async () => {
+    monterVoyage(`${BOITE}?annee=1903`, AVEC)
+    const cartons = await liasse('La liasse de 1903')
+    expect(cartons.map((x) => within(x).getByText(/^N° /).textContent)).toEqual(['N° 0002', 'N° 0004', 'N° 0005'])
+    await waitFor(() => expect(cartons.map((x) => poincons(x).length)).toEqual([0, 0, 1]))
+    expect(cartons[2]).toHaveAccessibleName(new RegExp(C.poincon))
+    expect(cartons[1]).not.toHaveAccessibleName(new RegExp(C.poincon))
+    expect(poincons(cartons[2]!)[0]).not.toHaveAttribute('data-frais')
+
+    fireEvent.click(cartons[2]!)
+    const sorti = await screen.findByRole('dialog', { name: 'Le Vol du grand rapide' })
+    expect(within(sorti).getByText('N° 0005')).toBeInTheDocument()
+    expect(poincons(sorti)).toHaveLength(1)
+    expect(poincons(sorti)[0]).not.toHaveAttribute('data-frais')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    fireEvent.click(cartons[1]!)
+    const autre = await screen.findByRole('dialog', { name: 'Le Vol du grand rapide' })
+    expect(within(autre).getByText('N° 0004')).toBeInTheDocument()
+    expect(poincons(autre)).toHaveLength(0)
+  })
+
+  // La garde de la page est tenue sur un dessin prêté (`pages/VoyageBoite.poincon.test.tsx`) ; ici,
+  // le casier de 1900 lui-même. Mutation : l'erreur de l'état du voyageur jointe aux pannes de la page.
+  it('l’état du voyageur en panne : toute la liasse, aucun poinçon, pas un mot', async () => {
+    const { client, requetes } = monterVoyage(BOITE, { ...AVEC, [VOYAGEUR]: () => json({ code: 'INTERNAL', message: 'Le contrôleur est souffrant.', retryable: false }, 500) })
+    const cartons = await liasse(M.toute)
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(requetes).toContain(VOYAGEUR)
+    expect(cartons).toHaveLength(5)
+    expect(cartons.map((x) => poincons(x).length)).toEqual([0, 0, 0, 0, 0])
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByText(/souffrant/)).toBeNull()
   })
 })

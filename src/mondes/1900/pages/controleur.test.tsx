@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import App from '../../../App'
 import { cles } from '../../../api/cles'
@@ -15,7 +15,7 @@ import { SESSION } from '../../../test/pageVoyage'
 import { json, servir } from '../../../test/serveur'
 import { ROUTES_DU_JEU, voyage1890 } from '../../../test/voyage'
 import { MOTS_DU_CONTROLEUR as M, bulleDuControleur, ceQuiSePasse, ligneDuBilletDemande } from './controleur'
-import feuille from './Controleur.module.css'
+import { MOTS_DU_COMPOSTEUR as C } from './carton'
 
 /**
  * Le contrôleur des billets sur la carte des années 1900 (plan des écrans des lots, brief 7 ;
@@ -51,6 +51,16 @@ const journal = (items = [LE_BILLET, UN_PLUS_ANCIEN]): JournalPage => ({ ...PAGE
 
 type Routes = Record<string, (init: RequestInit) => Response | Promise<Response>>
 
+/** Un geste du banc : passer de la carte au casier dans la même app, sans recharger, le cache intact. */
+function AuCasier() {
+  const naviguer = useNavigate()
+  return (
+    <button type="button" onClick={() => naviguer('/voyage/decennies/1900/billets')}>
+      Banc : au casier
+    </button>
+  )
+}
+
 /** La carte d'un membre en 1903, où le contrôleur attend ; `client` porte ce qui est déjà en cache. */
 async function monter(routes: Routes = {}, client: QueryClient = createQueryClient()) {
   const f = moteurFactice()
@@ -68,6 +78,7 @@ async function monter(routes: Routes = {}, client: QueryClient = createQueryClie
       <FabriqueMoteurContexte.Provider value={f.fabrique}>
         <MemoryRouter initialEntries={['/voyage']}>
           <App />
+          <AuCasier />
         </MemoryRouter>
       </FabriqueMoteurContexte.Provider>
     </QueryClientProvider>,
@@ -85,7 +96,8 @@ const avecLaBoite = () => {
 }
 const etat = (portiere: HTMLElement) => within(portiere).getByRole('status').textContent
 const boutons = (portiere: HTMLElement) => within(portiere).getAllByRole('button').map((b) => b.textContent)
-const poincons = (portiere: HTMLElement) => portiere.querySelectorAll(`.${feuille.poincon}`).length
+/** Les poinçons dorés de la portière : celui du carton, le même qu'au casier (`Carton`), lu par son nom. */
+const poincons = (portiere: HTMLElement) => within(portiere).queryAllByRole('img', { name: C.poincon }).length
 const corps = (init: RequestInit) => JSON.parse(String(init.body)) as unknown
 
 describe('les mots et les règles du contrôleur', () => {
@@ -159,11 +171,39 @@ describe('le contrôleur sur la carte de 1903', () => {
     expect(envoyes).toEqual([{ reponse: 'presente' }])
     expect(etat(portiere)).toBe('Un coup de poinçon doré sur le billet N° 0002. Le contrôleur ne repassera pas de la semaine.')
     expect(poincons(portiere)).toBe(1)
+    // Celui de la portière vient d'être percé : il luit et se perce. Mutation : `frais` non passé.
+    expect(within(portiere).getByRole('img', { name: C.poincon })).toHaveAttribute('data-frais', 'oui')
     expect(within(portiere).getByText('The Great Train Robbery')).toBeInTheDocument()
     expect(boutons(portiere)).toEqual(['Refermer la portière'])
     expect(within(portiere).getByRole('button', { name: 'Refermer la portière' })).toHaveFocus()
     fireEvent.click(within(portiere).getByRole('button', { name: 'Refermer la portière' }))
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  // De la carte au casier, sans rechargement (lot d'écrans, brief 8) : le serveur du banc ne rend
+  // jamais de poinçon à `GET …/voyageur`, celui du casier ne peut venir que du cache que la réponse a
+  // garni. La séance d'avant du même film n'en porte pas. Mutations : la boîte qui lit l'état du
+  // voyageur sous une autre clé que la carte, ou sans fraîcheur (`staleTime: 0`) ; la réponse qui ne
+  // range plus son poinçon dans le cache.
+  it('un billet présenté sur la carte se voit poinçonné au casier sans rien relire', async () => {
+    const BOITE = 'GET /api/me/journal?limit=100&sortie_min=1900&sortie_max=1909'
+    const LA_SEANCE_D_AVANT = visionnage({ id: 'b0000000-0000-4000-8000-000000000009', media: BILLET.media_id, titre: 'The Great Train Robbery', annee: 1903, date: '2026-09-02' })
+    const { portiere, requetes, client } = await monter({
+      [LIRE]: () => json({ ...IL_ATTEND, poincons: [] }),
+      [REPONDRE]: () => json(PRESENTE),
+      [BOITE]: () => json(journal([LE_BILLET, UN_PLUS_ANCIEN, LA_SEANCE_D_AVANT])),
+    })
+    fireEvent.click(within(portiere).getByRole('button', { name: 'Présenter le billet' }))
+    expect(await within(portiere).findByText('« En règle. Bon voyage ! »')).toBeInTheDocument()
+    fireEvent.click(within(portiere).getByRole('button', { name: 'Refermer la portière' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Banc : au casier' }))
+    const cartons = within(await screen.findByRole('list', { name: 'Toute la liasse' })).getAllByRole('button')
+    // Du plus ancien au plus récent : la séance d'avant, « Le Voyage dans la Lune », le billet présenté.
+    expect(cartons.map((x) => within(x).queryAllByRole('img', { name: C.poincon }).length)).toEqual([0, 0, 1])
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(cartons.map((x) => within(x).queryAllByRole('img', { name: C.poincon }).length)).toEqual([0, 0, 1])
+    expect(requetes.filter((r) => r === LIRE)).toHaveLength(1)
   })
 
   // Mutations : un poinçon posé au refus ; « En règle » dit au refus ; le bouton branché sur « présenter ».
