@@ -9,6 +9,7 @@ import type { PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
 import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
 import type { PropsBoniment } from '../voyage/annee/Boniment'
 import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
+import type { PropsAnneeEnPreparation } from '../voyage/annee/EnPreparation'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsLigneDuBas } from '../voyage/annee/LigneDuBas'
 import type { PropsHoraireDeLAnnee } from '../voyage/annee/Horaire'
@@ -793,6 +794,11 @@ export interface VueGuichet {
 export interface GabaritsDesPages {
   /** Le corps d'une année fermée ou en attente, son fronton compris (`voyage/annee/AnneeFermee.tsx`). */
   anneeFermee: ComponentType<PropsAnneeFermee>
+  /**
+   * Le corps d'une année que le chroniqueur écrit encore, sous son fronton (`voyage/annee/EnPreparation.tsx`) :
+   * l'estrade, l'attente, l'abandon et « Réessayer ». La relecture de la fiche reste à la page (`useFiche`).
+   */
+  anneeEnPreparation: ComponentType<PropsAnneeEnPreparation>
   /**
    * La tête d'une fiche d'année, dans ses quatre modes et dès le chargement (`voyage/annee/Bandeau.tsx`).
    * Le lien de retour et la plaque du chapitre restent à la page, posés par-dessus.

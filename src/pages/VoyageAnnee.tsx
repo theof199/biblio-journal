@@ -23,11 +23,11 @@ import { etatDeFete, scenesDuRetour, type EtatDeFete, type Scene } from '../voya
 import Feuille from '../voyage/Feuille'
 import { gabaritDe, gabaritSeul } from '../voyage/gabarit'
 import { decennieDe, etatDeCase, prochainPas } from '../voyage/regles'
-import Toile, { LARGEUR_LOGIQUE } from '../voyage/Toile'
 import AnneeFermee from '../voyage/annee/AnneeFermee'
 import Bandeau from '../voyage/annee/Bandeau'
 import Boniment from '../voyage/annee/Boniment'
 import Corde from '../voyage/annee/Corde'
+import EnPreparation from '../voyage/annee/EnPreparation'
 import { NOM_DE_RECOMPENSE } from '../voyage/annee/Embleme'
 import Fronton from '../voyage/annee/Fronton'
 import Horaire from '../voyage/annee/Horaire'
@@ -44,8 +44,6 @@ import styles from './VoyageAnnee.module.css'
 
 /** Un registre pour la page, comme la carte a le sien : rien de ce qu'un monde tient ne passe de l'une à l'autre. */
 const mondes = creerRegistre()
-
-const ECRIT = 'Le chroniqueur écrit…'
 
 /**
  * La fiche d'une année du Voyage (plan 2b, tâche 7), habillée par le monde de sa décennie : ses
@@ -79,7 +77,7 @@ function modeDuBandeau(annee: number, fiche: FicheAnnee | undefined, v: Voyage |
 
 function FicheDeLAnnee({ annee }: { annee: number }) {
   const monde = mondes(decennieDe(annee))
-  const { jetons, mots: m, hauteurs } = monde.pages
+  const { jetons, mots: m } = monde.pages
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof jetons = { ...jetons }
   const calme = useMouvementReduit()
@@ -235,26 +233,12 @@ function FicheDeLAnnee({ annee }: { annee: number }) {
     corps = <p className={styles.etat}>Le chroniqueur n’est pas configuré sur ce serveur : cette année ne peut pas encore s’ouvrir.</p>
   } else if (forme === 'en_preparation') {
     const enCours = statutDeLAnnee(annee, v.annee_en_cours) !== 'ouverte'
+    // Sous le fronton, le corps est une section que le monde peut composer (`gabarits.anneeEnPreparation`).
+    const Preparation = gabaritDe(monde, 'anneeEnPreparation', EnPreparation)
     corps = (
       <>
         <Titre annee={annee} annonce={enCours ? m.annonce.enCours : m.annonce.bouclee} millesime={enCours ? 'encours' : 'bouclee'} monde={monde} />
-        <Toile
-          hauteur={hauteurs.estrade}
-          libelle="Le chroniqueur sur son estrade."
-          dessiner={(ctx, t, vivant) => monde.pages.dessinerEstrade({ ctx, W: LARGEUR_LOGIQUE, H: hauteurs.estrade, t, vivant, parle: abandon ? 'non' : 'tape' })}
-        />
-        {abandon ? (
-          <div role="alert" className={styles.etat}>
-            <p>Le chroniqueur n’a pas répondu, reviens plus tard.</p>
-            <button type="button" className={styles.bouton} onClick={reessayer}>
-              Réessayer
-            </button>
-          </div>
-        ) : (
-          <p role="status" aria-label={ECRIT} className={styles.etat}>
-            {ECRIT}
-          </p>
-        )}
+        <Preparation monde={monde} abandon={abandon} onReessayer={reessayer} />
       </>
     )
   } else if (fermee) {

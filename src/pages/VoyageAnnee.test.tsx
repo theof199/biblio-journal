@@ -12,6 +12,7 @@ import { INSECABLE, type PropsAnneeFermee } from '../voyage/annee/AnneeFermee'
 import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
 import type { PropsBoniment } from '../voyage/annee/Boniment'
 import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
+import type { PropsAnneeEnPreparation } from '../voyage/annee/EnPreparation'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
@@ -1108,6 +1109,28 @@ describe('la fiche d’une année', () => {
       expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
       // La tête, elle, garde son défaut : une clé ne décide pas de l'autre.
       expect(screen.getByRole('img', { name: 'Le décor de 1897.' })).toBeInTheDocument()
+    })
+
+    // Le corps d'une année en préparation est une section de plus (`anneeEnPreparation`). Mutations : dans
+    // la page, `EnPreparation` monté en dur (le gabarit du monde ne paraîtrait pas) ; dans le défaut,
+    // l'estrade ou l'attente retirées, « Réessayer » offert sans l'abandon.
+    it('sans gabarit, une année en préparation garde l’estrade et l’attente ; le monde peut composer ce corps', async () => {
+      const routes = { ...ROUTES, 'GET /api/me/voyage/annees/1897': () => json(EN_PREPARATION, 202) }
+      const defaut = monterVoyage('/voyage/1897', routes)
+      expect(await screen.findByRole('status', { name: 'Le chroniqueur écrit…' })).toHaveTextContent('Le chroniqueur écrit…')
+      expect(screen.getByRole('img', { name: 'Le chroniqueur sur son estrade.' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull()
+      defaut.unmount()
+
+      const avant = PAGES_1890.gabarits
+      PAGES_1890.gabarits = { anneeEnPreparation: (p: PropsAnneeEnPreparation) => <p>{`Le corps du monde, ${p.monde.decennie}, ${p.abandon ? 'abandonné' : 'attendu'}`}</p> }
+      remettre = () => void (PAGES_1890.gabarits = avant)
+      monterVoyage('/voyage/1897', routes)
+      expect(await screen.findByText('Le corps du monde, 1890, attendu')).toBeInTheDocument()
+      expect(screen.queryByRole('img', { name: 'Le chroniqueur sur son estrade.' })).toBeNull()
+      expect(screen.queryByRole('status', { name: 'Le chroniqueur écrit…' })).toBeNull()
+      // Le fronton, lui, garde son défaut : une clé ne décide pas de l'autre.
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('1897')
     })
 
     // Plan des pages 1900, brief 2 : la corde, le boniment, le programme et la tirette de la manivelle
