@@ -113,6 +113,104 @@
   }
 }
 
+/* La mise en lumière, à l'entrée de la page (maquette : `.joue .wr-noir`, `.wr-lueur`, `.wr-menu`,
+   `.wr-carte`, l. 1347-1355) : le noir se lève en clignant pendant que les lueurs de la lampe prennent,
+   puis le menu se pose, puis les deux cartons paraissent, celui de l'hôte d'abord. La scène ne porte
+   `data-entree` que le temps de cette entrée, et jamais au calme. Le tracé de la table est engendré
+   et ne porte aucune classe pour ses lueurs : elles se visent par leur remplissage, le halo et la
+   flaque de la lampe (`wagonRestaurant.test.tsx` tient qu'il les a toujours). */
+.noir {
+  position: absolute;
+  inset: 0;
+  background: var(--m-fond);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scene[data-vivante='oui'][data-entree='oui'] .noir {
+  animation: allume calc(1500ms * var(--tempo)) linear backwards;
+}
+
+.scene[data-vivante='oui'][data-entree='oui'] > svg [fill='url(#wr-halo)'],
+.scene[data-vivante='oui'][data-entree='oui'] > svg [fill='url(#wr-flaque)'] {
+  animation: lueur calc(1500ms * var(--tempo)) linear backwards;
+}
+
+.scene[data-vivante='oui'][data-entree='oui'] .menu {
+  animation: pose calc(750ms * var(--tempo)) cubic-bezier(0.2, 0.8, 0.3, 1.05) calc(1250ms * var(--tempo)) backwards;
+}
+
+.scene[data-vivante='oui'][data-entree='oui'] .carton {
+  animation: parait calc(500ms * var(--tempo)) cubic-bezier(0.3, 1.4, 0.5, 1) calc(1900ms * var(--tempo)) backwards;
+}
+
+.scene[data-vivante='oui'][data-entree='oui'] .carton[data-qui='invite'] {
+  animation-delay: calc(2100ms * var(--tempo));
+}
+
+@keyframes allume {
+  0%,
+  20% {
+    opacity: 0.74;
+  }
+  23% {
+    opacity: 0.3;
+  }
+  29% {
+    opacity: 0.66;
+  }
+  38% {
+    opacity: 0.2;
+  }
+  45% {
+    opacity: 0.42;
+  }
+  70% {
+    opacity: 0;
+  }
+}
+
+@keyframes lueur {
+  0%,
+  20% {
+    opacity: 0;
+  }
+  23% {
+    opacity: 0.7;
+  }
+  29% {
+    opacity: 0.1;
+  }
+  38% {
+    opacity: 0.85;
+  }
+  45% {
+    opacity: 0.5;
+  }
+  70% {
+    opacity: 1;
+  }
+}
+
+@keyframes pose {
+  from {
+    transform: translate3d(14px, -110px, 0) rotate(10deg) scale(1.14);
+    opacity: 0;
+    box-shadow: 0 40px 40px var(--m-grain);
+  }
+  78% {
+    transform: translate3d(0, 0, 0) rotate(-2.6deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes parait {
+  from {
+    opacity: 0;
+    scale: 0.7;
+  }
+}
+
 .carton {
   position: absolute;
   top: 358px;

@@ -1102,9 +1102,19 @@ guichet d'un film**
   `wagon.ts`, `monBilletTamponne`, mon `mon_billet` sur son carton sous le tampon vert, ce soir comme un
   soir passé, sans numéro, que le contrat ne dit pas ; le billet de l'autre n'est pas servi),
   « Composter à deux » et « la proposition retourne au train du soir » de la maquette ne sont pas
-  repris (faux au contrat). Seuls les lointains de la vitre bougent, en boucle (`AMBIANCE`), jamais au
-  calme ; la mise en lumière de la maquette (la lampe qui s'allume, le menu qui se pose) n'est pas
-  portée. Une place prise se dit en vert, au jeton `--m-vert` (décision 12).
+  repris (faux au contrat). Les lointains de la vitre bougent en boucle (`AMBIANCE`), jamais au
+  calme. **La mise en lumière de la maquette se joue une fois, à l'entrée de la page** (l. 1347-1355 :
+  le noir qui se lève en clignant et les lueurs de la lampe qui prennent, 1,5 s de base ; le menu qui
+  se pose, 0,75 s après 1,25 s ; les deux cartons qui paraissent, 0,5 s après 1,9 et 2,1 s ; au
+  tempo) : `WagonRestaurant` fixe au premier rendu de ses tables celles de ce soir à éclairer
+  (`aEclairer`), **toutes ensemble** (une scène tient l'écran : une cascade ferait attendre dans le
+  noir des tables qu'on ne voit pas), la scène porte `data-entree` et un voile au jeton `--m-fond`, et
+  la fin de l'animation du carton de l'invité, le dernier entré, l'en retire. Ni un rendu, ni un
+  geste, ni une table venue ensuite, ni une relecture ne rallument rien ; au calme la liste est vide
+  d'emblée. Le tracé, engendré, n'a pas de classe pour ses lueurs : la feuille les vise par leur
+  remplissage (`url(#wr-halo)`, `url(#wr-flaque)`), et `wagonRestaurant.test.tsx` tient que le tracé
+  les a. Les gestes et la phrase d'état n'attendent pas la lumière (la maquette les faisait monter
+  après 2,3 s). Une place prise se dit en vert, au jeton `--m-vert` (décision 12).
   `mondes/1900/pages/wagonRestaurant.test.tsx` tient ce qu'il dit et offre, et la page entière en 1901.
 - **La porte du wagon-restaurant** (brief 16 des écrans des lots, décision 10 : rien ne signale une
   table ailleurs, ni point rouge ni rubrique) est une place de plus dans l'ordre des sections d'une

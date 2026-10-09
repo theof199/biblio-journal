@@ -239,6 +239,66 @@ describe('le wagon-restaurant de 1900', () => {
     expect(scene(duSoir()[0]!)).toHaveAttribute('data-vivante', vivante)
   })
 
+  // La mise en lumière (maquette, l. 1347-1355) : la feuille ne la joue que sous `data-entree='oui'`,
+  // que la scène porte une fois, à l'entrée de la page, pour toutes les tables de ce soir ensemble.
+  // Mutations, dans `WagonRestaurant.tsx` : `entree` vrai pour toute table hors du calme (une table
+  // venue ensuite s'allumerait, et une table éclairée se rallumerait remontée) ; `eclairee` sans effet
+  // (la scène garde `data-entree` : remontée, elle rejouerait) ; la garde `e.target === carton`
+  // retirée (la fin d'une animation d'un mot du carton éteindrait l'entrée en cours) ; la liste
+  // fixée au montage plutôt qu'au premier rendu des tables (rien ne s'allume après un chargement).
+  it('la mise en lumière se joue à l’entrée de la page, pour toutes les tables de ce soir ensemble, et ne rejoue ni à un rendu, ni à un geste, ni pour une table venue ensuite', () => {
+    calmer(false)
+    const enLumiere = () => duSoir().map((t) => scene(t).getAttribute('data-entree'))
+    const voile = (t: HTMLElement) => scene(t).querySelectorAll(':scope > span[aria-hidden]').length
+    const cartonDe = (t: HTMLElement) => t.querySelector<HTMLElement>("[data-qui='invite']")!
+    // La page arrive pendant la lecture, puis montre ses tables : c'est là qu'elle entre.
+    const { rerender } = monter(null)
+    const page = (tables: TableDuWagon[] | null) => rerender(<WagonRestaurant monde={monde} moi="alice" panne={null} tables={tables} prendre={() => undefined} decliner={() => undefined} />)
+    page([invite(CHEZ_BOB), invite(CHEZ_CAROL)])
+    expect(enLumiere()).toEqual(['oui', 'oui'])
+    expect(duSoir().map(voile)).toEqual([1, 1])
+    const premiere = scene(duSoir()[0]!)
+    // Un rendu de plus, puis un geste (ma place prise) : la même scène, que rien ne remonte.
+    page([invite(CHEZ_BOB), invite(CHEZ_CAROL)])
+    page([invite(etat(CHEZ_BOB, 'a_pris_sa_place')), invite(CHEZ_CAROL)])
+    expect(scene(duSoir()[0]!)).toBe(premiere)
+    // La fin d'une animation d'un mot du carton n'est pas celle de l'entrée.
+    fireEvent.animationEnd(cartonDe(duSoir()[0]!).querySelector('b')!)
+    expect(enLumiere()).toEqual(['oui', 'oui'])
+    // Le carton de l'invité entre le dernier : sa fin clôt l'entrée de sa table, et d'elle seule.
+    fireEvent.animationEnd(cartonDe(duSoir()[0]!))
+    expect(enLumiere()).toEqual([null, 'oui'])
+    expect(duSoir().map(voile)).toEqual([0, 1])
+    fireEvent.animationEnd(cartonDe(duSoir()[1]!))
+    expect(enLumiere()).toEqual([null, null])
+    // Un geste, une table venue ensuite, des tables perdues puis relues : plus rien ne s'allume.
+    page([invite(etat(CHEZ_BOB, 'a_decline')), invite(CHEZ_CAROL), hote(LA_MIENNE)])
+    expect(enLumiere()).toEqual([null, null, null])
+    page(null)
+    page([invite(CHEZ_BOB), invite(CHEZ_CAROL)])
+    expect(scene(duSoir()[0]!)).not.toBe(premiere)
+    expect(enLumiere()).toEqual([null, null])
+    expect(duSoir().map(voile)).toEqual([0, 0])
+  })
+
+  // Au calme : l'état final, tout de suite. Mutation : `calme` ignoré dans la liste des tables à éclairer.
+  it('au calme, aucune table n’entre : elle est éclairée, son menu posé', () => {
+    calmer(true)
+    monter([invite(CHEZ_BOB), invite(CHEZ_CAROL)])
+    expect(duSoir().map((t) => scene(t).getAttribute('data-entree'))).toEqual([null, null])
+    expect(duSoir().map((t) => scene(t).querySelectorAll(':scope > span[aria-hidden]').length)).toEqual([0, 0])
+  })
+
+  // La feuille vise les lueurs de la lampe par leur remplissage : le tracé, engendré, ne leur donne
+  // aucune classe. S'il les perdait, la lampe ne s'allumerait plus, sans rien dire. Mutation : le
+  // sélecteur de la feuille n'est pas en cause ici ; un halo retiré du tracé, oui.
+  it('le tracé de la table a toujours les lueurs que la mise en lumière vise : le halo deux fois, la flaque', () => {
+    monter([invite(CHEZ_BOB)])
+    const s = scene(duSoir()[0]!)
+    expect(s.querySelectorAll(":scope > svg [fill='url(#wr-halo)']")).toHaveLength(2)
+    expect(s.querySelectorAll(":scope > svg [fill='url(#wr-flaque)']")).toHaveLength(1)
+  })
+
   // Un geste parti : les deux boutons le disent, sans disparaître. Mutation : `aria-disabled` retiré.
   it('pendant l’envoi, les gestes de la table sont dits inactifs', () => {
     monter([invite(CHEZ_BOB, { enCours: true }), invite(CHEZ_CAROL)])
