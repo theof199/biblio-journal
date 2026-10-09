@@ -368,6 +368,7 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
   const LeProgramme = gabaritDe(monde, 'programme', Programme)
   // L'ordre des sections est lui aussi au monde (`gabarits.ordreDAnnee`) : il les reçoit montées.
   const LOrdre = gabaritDe(monde, 'ordreDAnnee', Ordre)
+  const LeBas = gabaritDe(monde, 'ligneDuBas', LigneDuBas)
   const arrivees = arriveesDeLAnnee(fiche.profondeur, fiche.progression, fiche.recompense, fiche.ticket)
   // L'horaire de la gare (plan des écrans des lots, brief 10) : une clé sans défaut. Sans dessin, le
   // bloc ne se monte pas, et le programme ne reçoit rien de l'horaire que la fiche sert pourtant.
@@ -428,7 +429,7 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
         porte={DessinDeLaPorte ? <Porte monde={monde} Dessin={DessinDeLaPorte} /> : null}
         salles={<Salles monde={monde} annee={annee} fiche={fiche} ia={v.ia} />}
         // Le jury n'appartient qu'au compte IA : jamais promis à un autre membre, quoi que porte la fiche.
-        ligneDuBas={<LigneDuBas monde={monde} annee={annee} ligne={ligneDuBas(fiche.ticket, v.ia ? fiche.maturite : null, v.annee_en_cours)} onUtiliser={onUtiliser} occupe={occupe} erreur={erreur} />}
+        ligneDuBas={<LeBas monde={monde} annee={annee} ligne={ligneDuBas(fiche.ticket, v.ia ? fiche.maturite : null, v.annee_en_cours)} onUtiliser={onUtiliser} occupe={occupe} erreur={erreur} />}
       />
 
       {feuille.valeur === 'ouverture' ? (

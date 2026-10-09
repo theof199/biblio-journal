@@ -10,6 +10,7 @@ import type { PropsTeteDAnnee } from '../voyage/annee/Bandeau'
 import type { PropsBoniment } from '../voyage/annee/Boniment'
 import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
+import type { PropsLigneDuBas } from '../voyage/annee/LigneDuBas'
 import type { PropsHoraireDeLAnnee } from '../voyage/annee/Horaire'
 import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
 import type { PropsPorteDuWagon, PropsWagonRestaurant } from '../voyage/wagon/tables'
@@ -829,6 +830,14 @@ export interface GabaritsDesPages {
    * rien : l'adresse du billet d'une bobine reste `…/films/<ligne>/billet?bobine=<tmdb_id>`.
    */
   programmeDuFilm: ComponentType<PropsProgrammeDuFilm>
+  /**
+   * La ligne du bas d'une fiche prête (`voyage/annee/LigneDuBas.tsx`) : le ticket qui attend et
+   * « Utiliser », le billet utilisé qui se retourne, ou le mot du jury. Lue par `pages/VoyageAnnee.tsx`,
+   * qui garde la règle (`ligneDuBas`, `voyage/annee.ts` : le jury n'y entre qu'au compte IA),
+   * l'encaissement, son verrou (`occupe`) et le refus de l'API (`erreur`). Le dessin ne lit ni n'écrit
+   * rien, et ne montre que l'état que la page lui passe.
+   */
+  ligneDuBas: ComponentType<PropsLigneDuBas>
   /**
    * Le cadre d'un feuillet (`voyage/Feuillet.tsx`, `Cadre`) : le papier, le titre, « Fermer », autour
    * des choix. Lue par `Feuillet` lui-même, au monde que son site lui passe : ses cinq sites (la salle

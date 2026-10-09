@@ -4,7 +4,8 @@ import { formatDateVisionnage, jourLocal } from '../../ui/format'
 import type { LigneDuBas as Ligne } from '../annee'
 import styles from './LigneDuBas.module.css'
 
-interface Props {
+/** Ce que la page passe à la ligne du bas, que le monde peut composer (`GabaritsDesPages.ligneDuBas`). */
+export interface PropsLigneDuBas {
   monde: Monde
   annee: number
   ligne: Ligne
@@ -20,7 +21,7 @@ interface Props {
  * utilisé, qui se retourne (maquette 1890 : `.grand-billet`, lignes 235 à 247) ; ou le verdict du
  * jury qui juge l'année pas encore mûre (maquette : `.jury`, lignes 201 à 203).
  */
-export default function LigneDuBas({ monde, annee, ligne, onUtiliser, occupe, erreur }: Props) {
+export default function LigneDuBas({ monde, annee, ligne, onUtiliser, occupe, erreur }: PropsLigneDuBas) {
   const [retourne, setRetourne] = useState(false)
   if (!ligne) return null
 
