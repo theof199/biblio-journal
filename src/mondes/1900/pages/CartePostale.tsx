@@ -1,6 +1,8 @@
 import { useId, type ReactNode } from 'react'
 import type { CartePostaleEnvoyee, CartePostaleRecue } from '../../../api/voyage'
+import { useMouvementReduit } from '../../../ui/mouvement'
 import { useDialogue } from '../../../voyage/dialogue'
+import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
 import { MOTS_DU_COURRIER as M, gareDe, rectoDe, tamponADate } from './courrier'
 import Rubrique from './Rubrique'
 import styles from './Courrier.module.css'
@@ -20,12 +22,16 @@ function Timbre() {
   )
 }
 
-/** Le tampon à date (maquette, l. 2328) : deux cercles, la gare sur l'arc, le jour de l'envoi au cœur, les flammes à droite. */
-function Cachet({ carte }: { carte: CartePostaleRecue | CartePostaleEnvoyee }) {
+/**
+ * Le tampon à date (maquette, l. 2328) : deux cercles, la gare sur l'arc, le jour de l'envoi au cœur,
+ * les flammes à droite. `frais`, il tombe sur la carte (`data-frais`, que la feuille n'anime que sous
+ * `data-vivante='oui'`) ; sinon il y est déjà.
+ */
+function Cachet({ carte, frais }: { carte: CartePostaleRecue | CartePostaleEnvoyee; frais: boolean }) {
   const arc = useId()
   const tampon = tamponADate(carte)
   return (
-    <svg className={styles.cachet} viewBox="-32 -32 96 64" role="img" aria-label={tampon.libelle}>
+    <svg className={styles.cachet} viewBox="-32 -32 96 64" role="img" aria-label={tampon.libelle} data-frais={frais ? 'oui' : undefined}>
       <g fill="none" stroke="var(--m-encre)">
         <circle r="29" strokeWidth="2.4" />
         <circle r="19" strokeWidth="1.2" />
@@ -56,6 +62,8 @@ interface Props {
   signe: string
   /** La carte servie, dont on frappe le tampon à date ; nulle tant qu'elle n'est pas postée : **un dos sans tampon**. */
   postee: CartePostaleRecue | CartePostaleEnvoyee | null
+  /** La carte vient d'être postée (le `201`, que la page seule connaît) : son tampon à date se frappe, une fois. Jamais pour une carte qu'on rouvre, envoyée ou reçue. */
+  frappe?: boolean
   /** Les lignes de l'adresse, dans l'ordre. */
   adresse: readonly string[]
   onFermer: () => void
@@ -70,13 +78,17 @@ interface Props {
  * dialogue par-dessus la sacoche : « Refermer la carte » prend le focus et le rend, défile avec la
  * carte (jamais sur la photographie), Échap ferme. **Le
  * mot est un texte** (celui d'un autre membre, ou mon brouillon) : rendu en texte, jamais en HTML ; ni
- * le nom du dialogue ni aucun attribut ne le portent. Rien n'y bouge.
+ * le nom du dialogue ni aucun attribut ne le portent. **Un seul mouvement** : le tampon à date qui
+ * tombe sur la carte qu'on vient de poster (maquette, `.cp.postee .cachet.frappe`, l. 1292 : la frappe
+ * du composteur, `tampon-frappe` et `tampon-encre`, l. 496-498), au tempo, jamais au calme
+ * (`data-vivante`) : le tampon y est posé d'emblée.
  */
-export default function CartePostale({ titre, annee, mot, signe, postee, adresse, onFermer, children }: Props) {
+export default function CartePostale({ titre, annee, mot, signe, postee, frappe = false, adresse, onFermer, children }: Props) {
+  const calme = useMouvementReduit()
   const refermer = useDialogue<HTMLButtonElement>(onFermer)
   const recto = rectoDe(annee)
   return (
-    <div className={styles.calque} role="dialog" aria-modal="true" aria-label={titre}>
+    <div className={styles.calque} style={STYLE_DU_TEMPO} role="dialog" aria-modal="true" aria-label={titre} data-vivante={calme ? 'non' : 'oui'}>
       <div className={styles.defil}>
         <button ref={refermer} type="button" className={styles.retour} aria-label={M.ouverte.refermer} onClick={onFermer}>
           <span aria-hidden="true">‹</span>
@@ -103,7 +115,7 @@ export default function CartePostale({ titre, annee, mot, signe, postee, adresse
             <div className={styles.adr}>
               <small>{M.ouverte.adresse}</small>
               <Timbre />
-              {postee ? <Cachet carte={postee} /> : null}
+              {postee ? <Cachet carte={postee} frais={frappe} /> : null}
               <p>
                 {adresse.map((ligne) => (
                   <span key={ligne}>{ligne}</span>

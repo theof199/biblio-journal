@@ -997,7 +997,12 @@ ligne), son compte (« 20 sur 140 signes »), mes abonnements en boutons radio, 
 dit que le pseudo**. « Poster la carte » ne poste rien : il demande (« Une carte postée ne se corrige
 ni ne se retire. ») ; « La poster pour de bon » l'envoie, « Pas encore » non, et retoucher le mot ou
 le destinataire redemande. Postée, la même carte s'ouvre lue : son tampon, l'adresse servie, « Le
-tampon à date est frappé : la carte part pour la gare de 1904, chez camille. » Sans abonnement, elle
+tampon à date est frappé : la carte part pour la gare de 1904, chez camille. » **Le tampon y tombe
+sous les yeux, une fois** (maquette, `.cp.postee .cachet.frappe` : la frappe et l'encre du composteur,
+420 ms et 160 ms de base, au tempo) : `CartePostale` reçoit `frappe` pour la seule carte que la page
+dit « vient de partir » (le `201`, tant que son calque n'est pas quitté) et pose `data-frais` sur le
+tampon ; rouverte, envoyée ou reçue, elle est tamponnée sans rien rejouer, et au calme le tampon est
+posé (`data-vivante`). Sans abonnement, elle
 le dit et n'offre ni champ ni envoi ; pendant leur lecture, « Chargement… » (`role="status"`). « Poster
 la carte » ne se désactive pas (`aria-disabled`) ; à la demande, le focus va au groupe de la
 confirmation, que l'avertissement nomme, et « Pas encore » ou un refus le rend à « Poster la carte » ;

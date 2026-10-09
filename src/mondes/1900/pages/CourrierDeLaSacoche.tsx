@@ -12,12 +12,13 @@ import sacoche from './Sacoche.module.css'
 /**
  * Une carte ouverte (maquette, écran 19), reçue ou envoyée : le dessin commun (`CartePostale.tsx`), son
  * mot signé de son expéditeur, son tampon à date, l'adresse **telle que servie**, et sous elle d'où et
- * quand elle est partie. Celle qu'on vient de poster dit que son tampon est frappé, et où elle part.
+ * quand elle est partie. Celle qu'on vient de poster dit que son tampon est frappé, et où elle part :
+ * il tombe sous les yeux, une fois (`frappe`), jamais sur une carte rouverte.
  */
 function Ouverte({ ouverte, vientDePartir, onFermer }: { ouverte: CarteOuverte; vientDePartir: boolean; onFermer: () => void }) {
   const { carte } = ouverte
   return (
-    <CartePostale titre={M.ouverte.titre} annee={carte.annee} mot={carte.mot} signe={carte.expediteur.pseudo} postee={carte} adresse={adresseDe(carte)} onFermer={onFermer}>
+    <CartePostale titre={M.ouverte.titre} annee={carte.annee} mot={carte.mot} signe={carte.expediteur.pseudo} postee={carte} frappe={vientDePartir} adresse={adresseDe(carte)} onFermer={onFermer}>
       {vientDePartir ? (
         <p className={styles.etat} role="status">
           {ceQueDitLaPostee(carte)}
@@ -55,7 +56,7 @@ function Pli({ entete, carte, nouvelle, ouvrir }: { entete: string; carte: Carte
  * `409` à l'envoi se dit ici, la carte refermée, quand sa gare n'attend plus de carte (sinon sur la
  * carte, restée ouverte). Le dessin ne lit ni n'écrit rien :
  * `voyage/sacoche/Courrier.tsx` lui passe la boîte, la carte que l'adresse ouvre et les calques. Rien
- * n'y bouge.
+ * n'y bouge, hors le tampon à date de la carte qu'on vient de poster (`CartePostale.tsx`).
  *
  * **Le focus d'une carte refermée ne se perd pas** : le dialogue le rend au bouton qui l'a ouverte
  * (`useDialogue`), mais l'entrée « À écrire » d'une carte postée n'existe plus. Le focus resté sans

@@ -274,6 +274,36 @@
   transform: rotate(-14deg);
 }
 
+/* Le tampon à date tombe sur la carte qu'on vient de poster (maquette : `.cp.postee .cachet.frappe`,
+   l. 1292, sur `tampon-frappe` et `tampon-encre`, l. 496-498) : il arrive en accélérant, s'écrase, se
+   relève d'un rien, et son encre ne paraît qu'au contact. Une fois, à son arrivée dans la page
+   (`data-frais`), jamais au calme : sans `data-vivante='oui'` il est posé d'emblée. Comme au
+   composteur (`Carton.module.css`), les étapes vont d'un pas égal : la maquette donnait une courbe à
+   chacune, que la garde du calme lirait comme une animation hors de sa racine. */
+.calque[data-vivante='oui'] .cachet[data-frais='oui'] {
+  animation:
+    frappe calc(420ms * var(--tempo)) linear backwards,
+    encre calc(160ms * var(--tempo)) ease-in backwards;
+}
+
+@keyframes frappe {
+  0% {
+    scale: 1.9;
+  }
+  40% {
+    scale: 0.93;
+  }
+  68% {
+    scale: 1.025;
+  }
+}
+
+@keyframes encre {
+  from {
+    opacity: 0;
+  }
+}
+
 .arc {
   font: 700 7.4px var(--m-f-capitales);
   letter-spacing: 1px;

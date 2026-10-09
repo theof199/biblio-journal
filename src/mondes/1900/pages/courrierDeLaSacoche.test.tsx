@@ -413,6 +413,49 @@ describe('écrire une carte postale en 1900', () => {
     expect(requetes.filter((r) => r === BOITE)).toHaveLength(1)
   })
 
+  // Le tampon à date se frappe au `201`, une fois (maquette, `.cp.postee .cachet.frappe`) : la feuille
+  // n'anime que `.cachet[data-frais='oui']` sous une racine vivante (le balayage de
+  // `pages1900.test.tsx` tient la racine). Mutations : `frappe` passé vrai à toute carte ouverte
+  // (`CourrierDeLaSacoche.tsx` : une carte reçue ou rouverte se retamponnerait) ; `frappe` jamais
+  // passé (la carte postée s'ouvre déjà tamponnée) ; `data-frais` posé sans regarder `frais`
+  // (`CartePostale.tsx`) ; `calme` ignoré à la racine du dialogue.
+  it('le tampon à date ne se frappe qu’au `201` et une seule fois : ni sur une carte reçue, ni sur une envoyée, ni sur la carte postée qu’on rouvre', async () => {
+    const cachet = (carte: HTMLElement) => within(carte).getByRole('img', { name: /^Tampon à date/ })
+    const fermer = async () => {
+      fireEvent.keyDown(document, { key: 'Escape' })
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    }
+    const { carte, courrier } = await ecrire()
+    // Avant l'envoi : aucun tampon, donc rien à frapper.
+    expect(within(carte).queryByRole('img', { name: /^Tampon à date/ })).toBeNull()
+    await remplir(carte)
+    fireEvent.click(poster(carte))
+    fireEvent.click(within(carte).getByRole('button', { name: M.ecrire.confirmer }))
+    const postee = await screen.findByRole('dialog', { name: M.ouverte.titre })
+    expect(postee).toHaveAttribute('data-vivante', 'oui')
+    expect(cachet(postee)).toHaveAttribute('data-frais', 'oui')
+    await fermer()
+    // La même carte, rouverte depuis les envoyées : tamponnée, plus frappée.
+    const rouverte = await ouvrir(courrier, /À camille/)
+    expect(cachet(rouverte)).toHaveAccessibleName('Tampon à date : gare de 1900, 9 octobre 2026')
+    expect(cachet(rouverte)).not.toHaveAttribute('data-frais')
+    await fermer()
+    expect(cachet(await ouvrir(courrier, /À bob/))).not.toHaveAttribute('data-frais')
+    await fermer()
+    expect(cachet(await ouvrir(courrier, /Longueville/))).not.toHaveAttribute('data-frais')
+  })
+
+  it('au calme, la carte postée n’est pas vivante : son tampon est posé, il ne tombe pas', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    const { carte } = await ecrire()
+    await remplir(carte)
+    fireEvent.click(poster(carte))
+    fireEvent.click(within(carte).getByRole('button', { name: M.ecrire.confirmer }))
+    const postee = await screen.findByRole('dialog', { name: M.ouverte.titre })
+    expect(postee).toHaveAttribute('data-vivante', 'non')
+    expect(within(postee).getByRole('img', { name: /^Tampon à date/ })).toBeInTheDocument()
+  })
+
   // Règle commune 4 : un `400` (un mot que le serveur refuse) montre son message tel quel, et la carte
   // reste à écrire, son brouillon et son destinataire intacts. Mutations : un message de repli
   // (« Réessaie. ») ; la carte fermée sur un refus ; le brouillon vidé à l'envoi ; le refus rendu hors
