@@ -45,6 +45,8 @@ export function vueFactice(surcharge: Partial<VueMonde> = {}) {
     ticketDApres: false,
     // Aucune halte servie : le membre n'est pas à l'année d'un embranchement.
     haltes: [],
+    // Aucune halte ouverte ni refermée : tout levier est au repos.
+    levier: null,
     ...surcharge,
   }
   return { vue, appels, zones }

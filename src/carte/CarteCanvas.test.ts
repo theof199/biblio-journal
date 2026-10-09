@@ -167,10 +167,10 @@ describe('le pont entre le DOM et le moteur', () => {
     const banc = moteurFactice()
     const ecoutes = vi.spyOn(HTMLElement.prototype, 'addEventListener')
     const rappels = { toucherAnnee() {}, apercu() {}, finApercu() {}, ensemble() {}, date() {}, roulotte() {}, avatarVisible() {}, bobine() {}, bobineArrivee() {}, cibleBobines: () => ({ x: 0, y: 0 }), clap() {}, presences() {}, entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn(), passage: vi.fn() }
-    const arbre = (objets: readonly string[]) =>
-      createElement(FabriqueMoteurContexte.Provider, { value: banc.fabrique }, createElement(CarteCanvas, { etat: ETAT, calme: false, bobines: [], objets, rappels, surMoteur: () => undefined }))
+    const arbre = (objets: readonly string[], halteOuverte: string | null = null) =>
+      createElement(FabriqueMoteurContexte.Provider, { value: banc.fabrique }, createElement(CarteCanvas, { etat: ETAT, calme: false, bobines: [], objets, halteOuverte, rappels, surMoteur: () => undefined }))
     const { container, rerender } = render(arbre(OBJETS))
-    return { ...banc, vue: container.firstElementChild as HTMLElement, ecoutes, page: rappels, rendre: (objets: readonly string[]) => rerender(arbre(objets)) }
+    return { ...banc, vue: container.firstElementChild as HTMLElement, ecoutes, page: rappels, rendre: (objets: readonly string[], halteOuverte: string | null = null) => rerender(arbre(objets, halteOuverte)) }
   }
 
   // Plan 3a : le navigateur relève le pointeur (`pointercancel`) dès qu'il prend le geste pour
@@ -287,6 +287,21 @@ describe('le pont entre le DOM et le moteur', () => {
     expect(banc.moteur.reglerObjets).toHaveBeenCalledTimes(1)
     banc.rendre(['melon', 'montre'])
     expect(vi.mocked(banc.moteur.reglerObjets).mock.calls).toEqual([[['melon']], [['melon', 'montre']]])
+  })
+
+  // Le levier bascule (correction du 9 octobre 2026) : la halte que la page tient ouverte va au moteur
+  // hors de `majEtat`, au montage puis à chaque changement. Mutations : l'effet `reglerHalte` retiré ;
+  // sans sa dépendance (le levier ne reviendrait jamais) ; la halte glissée dans l'état (`majEtat`
+  // rappelé : les tuiles du sol vidées à chaque halte).
+  it('donne au moteur la halte ouverte, au montage et à chaque changement seulement, sans refaire l’état', () => {
+    const banc = monter()
+    expect(vi.mocked(banc.moteur.reglerHalte).mock.calls).toEqual([[null]])
+    banc.rendre(OBJETS, 'melies')
+    banc.rendre(OBJETS, 'melies')
+    expect(vi.mocked(banc.moteur.reglerHalte).mock.calls).toEqual([[null], ['melies']])
+    banc.rendre(OBJETS, null)
+    expect(vi.mocked(banc.moteur.reglerHalte).mock.calls).toEqual([[null], ['melies'], [null]])
+    expect(banc.moteur.majEtat).toHaveBeenCalledTimes(1)
   })
 
   // Mutation : la ligne `objet` retirée du relais (la page n'apprendrait jamais qu'on a touché un objet).

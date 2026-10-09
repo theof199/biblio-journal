@@ -10,7 +10,7 @@ import { vueFactice } from '../../test/vueFactice'
 import { contexteFactice } from '../../test/contexteFactice'
 import { aDevelopper, developpement, ecranDeLaCase, estFermee, gareALEcran, milieuDeLaGare, objetsSurLeQuai, RAYON_D_OBJET } from './gares'
 import { OBJETS, phraseDeLObjet } from './objets'
-import { aiguillagesALEcran, filmsDuPoteau, RAYON_DU_LEVIER } from './aiguillage'
+import { aiguillagesALEcran, filmsDuPoteau, levierTire, PENTE_DU_LEVIER, penteDuLevier, RAYON_DU_LEVIER } from './aiguillage'
 import { trouverZone } from '../../carte/zones'
 import { CACHETTES } from './bobines'
 import { DATES, PLACES_DES_DEPECHES } from './depeches'
@@ -19,7 +19,7 @@ import { aUnChef, forceDeLaLanterne, lanterneALEcran } from './habillage'
 import { decalages, fenetre, RAPPORTS } from './toiles'
 import { ANNEES, ARRETS, B1, E, HAUTEUR, PAS, S1, trace1900 } from './trace'
 import { ENTREE } from './entree'
-import { DEVELOPPEMENT } from './durees'
+import { BASCULE_DU_LEVIER, DEVELOPPEMENT } from './durees'
 import { lectureDeLaBande, vignette } from './bande'
 import { voitureALEcran } from './suivi'
 
@@ -605,6 +605,46 @@ describe('l’aiguillage d’une halte servie', () => {
     expect(aiguillagesALEcran(enGare(1900, 10, { haltes: [{ ...MELIES, apres: 1900 }], avance: S1 }).vue)).toEqual([])
     expect(aiguillagesALEcran(enGare(1900, 10, { haltes: [{ ...MELIES, apres: 1900 }] }).vue)).toHaveLength(1)
     expect(aiguillagesALEcran(enGare(1902, 10, { haltes: [{ ...MELIES, apres: 1912 }] }).vue)).toEqual([])
+  })
+
+  // Le levier bascule (correction du 9 octobre 2026). Le fait d'état, pas le trait : quel levier est
+  // tiré. Mutations : `levierTire` toujours faux (le levier jamais basculé) ; la clé non comparée
+  // (`v.levier.tire` seul : le levier d'une autre halte basculé avec celui de la halte ouverte) ;
+  // `tire` non lu (le levier resté basculé une fois la halte refermée).
+  it('le levier d’une halte est tiré tant que cette halte est ouverte, jamais celui d’une autre, plus une fois refermée', () => {
+    expect(levierTire(MELIES, { levier: null })).toBe(false)
+    expect(levierTire(MELIES, { levier: { cle: 'melies', tire: true, t0: -9 } })).toBe(true)
+    expect(levierTire(ZECCA, { levier: { cle: 'melies', tire: true, t0: -9 } })).toBe(false)
+    expect(levierTire(MELIES, { levier: { cle: 'melies', tire: false, t0: -9 } })).toBe(false)
+  })
+
+  // Sa pente suit ce fait, au tempo, à l'aller comme au retour, et d'un coup au calme. Mutations : la
+  // garde `vivant` retirée (au calme, un levier daté resterait à mi-course) ; `t0` ignoré ; la clé non
+  // comparée dans la pente (le levier d'à côté suivrait) ; le retour posé d'un coup (`-vers` oublié).
+  it('sa pente va du repos au tiré en une bascule, revient de même, se pose d’un coup au calme, et ne bouge pas pour une autre halte', () => {
+    const v = (t: number, tire: boolean, vivant = true) => ({ t, vivant, levier: { cle: 'melies', tire, t0: 10 } })
+    const fin = 10 + BASCULE_DU_LEVIER / 1000
+    expect(penteDuLevier(MELIES, { t: 10, vivant: true, levier: null })).toBe(-PENTE_DU_LEVIER)
+    expect(penteDuLevier(MELIES, v(10, true))).toBe(-PENTE_DU_LEVIER)
+    expect(penteDuLevier(MELIES, v(fin + 1, true))).toBe(PENTE_DU_LEVIER)
+    expect(penteDuLevier(MELIES, v(10, false))).toBe(PENTE_DU_LEVIER)
+    expect(penteDuLevier(MELIES, v(fin + 1, false))).toBe(-PENTE_DU_LEVIER)
+    for (const tire of [true, false]) {
+      const milieu = penteDuLevier(MELIES, v((10 + fin) / 2, tire))
+      expect(Math.abs(milieu)).toBeLessThan(PENTE_DU_LEVIER)
+      expect(penteDuLevier(MELIES, v(10, tire, false))).toBe(tire ? PENTE_DU_LEVIER : -PENTE_DU_LEVIER)
+      expect(penteDuLevier(ZECCA, v((10 + fin) / 2, tire))).toBe(-PENTE_DU_LEVIER)
+    }
+    expect(penteDuLevier(MELIES, { t: 500, vivant: true, levier: { cle: 'melies', tire: true, t0: -9 } })).toBe(PENTE_DU_LEVIER)
+  })
+
+  // Le levier tiré se touche au même endroit : ni la règle de place ni la zone ne le lisent.
+  // Mutation : la zone déplacée avec le manche (`zone.x` décalé quand `levierTire`).
+  it('tiré ou non, l’aiguillage est au même endroit et sa zone aussi', () => {
+    const repos = enGare(1902, 3, { haltes: [MELIES] })
+    const tire = enGare(1902, 3, { haltes: [MELIES], levier: { cle: 'melies', tire: true, t0: -9 } })
+    expect(aiguillagesALEcran(tire.vue)).toEqual(aiguillagesALEcran(repos.vue))
+    expect(aiguillages(tire)).toEqual(aiguillages(repos))
   })
 
   // Mutation : « 3 FILMS » écrit dans le trait.

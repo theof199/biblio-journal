@@ -3307,6 +3307,57 @@ describe('le moteur de la carte', () => {
             expect(derniereVueDe(1902).haltes).toEqual([])
           })
 
+          // Le levier bascule (correction du 9 octobre 2026) : la halte que la page dit ouverte arrive
+          // au monde, datée de l'horloge du décor, et y reste refermée, redatée, pour que le levier
+          // revienne. Mutations : le champ oublié dans `vueMonde` (`levier: null`) ; la garde de la
+          // redite retirée (la même halte redite redate : le levier rebasculerait) ; `tire` laissé
+          // vrai à la fermeture ; la fermeture qui oublie la clé (`this.levier = null` : le levier
+          // sauterait à sa place au lieu d'y revenir).
+          it('la halte ouverte arrive au monde datée de l’horloge, redite elle ne se redate pas, refermée elle reste nommée et se redate', () => {
+            const banc = aLaFrontiere()
+            expect(derniereVueDe(1902).levier).toBeNull()
+            expect(derniereVueDe(1897).levier).toBeNull()
+            banc.moteur.image(1400)
+            banc.moteur.reglerHalte('melies')
+            banc.moteur.image(1800)
+            // L'horloge du moteur, avant la cadence du monde (elle peut devancer d'une fraction celle du décor).
+            const ouverte = derniereVueDe(1902).levier!
+            expect(ouverte).toEqual({ cle: 'melies', tire: true, t0: expect.any(Number) })
+            expect(ouverte.t0).toBeGreaterThan(0)
+            expect(derniereVueDe(1897).levier).toEqual(ouverte)
+            banc.moteur.reglerHalte('melies')
+            banc.moteur.image(2200)
+            expect(derniereVueDe(1902).levier).toEqual(ouverte)
+            banc.moteur.reglerHalte(null)
+            banc.moteur.image(2600)
+            const refermee = derniereVueDe(1902).levier!
+            expect(refermee).toEqual({ cle: 'melies', tire: false, t0: expect.any(Number) })
+            expect(refermee.t0).toBeGreaterThan(ouverte.t0)
+            // Refermée et redite fermée : rien ne se redate non plus.
+            banc.moteur.reglerHalte(null)
+            banc.moteur.image(3000)
+            expect(derniereVueDe(1902).levier).toEqual(refermee)
+          })
+
+          // Rien ne bouge au calme : le levier est dans sa position. Mutations : `this.t` à la place
+          // d'`instant()` dans `reglerHalte` ; la ligne du levier retirée d'`achever` (un levier parti
+          // avant le calme resterait figé à mi-course, l'horloge arrêtée).
+          it('au calme, la halte ouverte est datée de -9, et le calme demandé pendant la bascule la pose d’un coup', () => {
+            const calme = aLaFrontiere({ calme: true })
+            calme.moteur.reglerHalte('melies')
+            calme.moteur.image(1800)
+            expect(derniereVueDe(1902).levier).toEqual({ cle: 'melies', tire: true, t0: -9 })
+            calme.moteur.reglerHalte(null)
+            calme.moteur.image(2200)
+            expect(derniereVueDe(1902).levier).toEqual({ cle: 'melies', tire: false, t0: -9 })
+            const banc = aLaFrontiere()
+            banc.moteur.image(1400)
+            banc.moteur.reglerHalte('melies')
+            banc.moteur.reglerCalme(true)
+            banc.moteur.image(1800)
+            expect(derniereVueDe(1902).levier).toEqual({ cle: 'melies', tire: true, t0: -9 })
+          })
+
           // Mutations : `aiguillage` retiré des identifiants du moteur (le toucher irait à `reagir`) ;
           // sa branche placée après la garde du calme ; le rang lu dans la liste entière (le rang 0 de
           // la ligne dirait la halte de la foire).

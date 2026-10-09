@@ -141,6 +141,19 @@ export interface HalteVue {
   total: number
 }
 
+/**
+ * Le levier d'une halte, tel que la page le dit (correction du 9 octobre 2026 : le levier bascule) :
+ * `cle` est la dernière halte ouverte, `tire` dit si elle l'est encore, `t0` l'instant de l'horloge du
+ * décor où elle s'est ouverte ou refermée (-9 : au calme, ou déjà fini). Un fait d'état, jamais une
+ * mémoire du monde : le levier de cette halte est basculé tant qu'elle est ouverte, et revient quand
+ * elle se referme ; celui d'une autre halte ne bouge pas.
+ */
+export interface LevierVue {
+  cle: string
+  tire: boolean
+  t0: number
+}
+
 /** Une case telle que le monde la voit pour y poser ses figurants. */
 export interface CaseVue {
   annee: number
@@ -268,6 +281,11 @@ export interface VueMonde {
    * (`Rappels.aiguillage`), au calme aussi.
    */
   haltes: readonly HalteVue[]
+  /**
+   * Le levier qui a bougé en dernier : la halte que la page dit ouverte, ou celle qu'elle vient de
+   * refermer ; nul tant qu'aucune ne s'est ouverte. Le même pour tous les mondes : sa clé dit lequel.
+   */
+  levier: LevierVue | null
 }
 
 /**

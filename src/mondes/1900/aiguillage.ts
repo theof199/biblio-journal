@@ -1,5 +1,7 @@
 import type { HalteVue, VueMonde } from '../types'
+import { clamp } from '../../carte/outils'
 import { c, F_RAIL, VERT } from './couleur'
+import { BASCULE_DU_LEVIER } from './durees'
 import { aDevelopper, milieuDeLaGare } from './gares'
 import { dansLaFenetre } from './toiles'
 import { ANNEES } from './trace'
@@ -45,11 +47,33 @@ export function aiguillagesALEcran(v: Pick<VueMonde, 'W' | 'H' | 'avance' | 'cas
   })
 }
 
+/**
+ * Le levier de cette halte est-il basculé ? Seulement tant que **cette** halte est ouverte
+ * (`VueMonde.levier`, que la page dit au moteur) : jamais pour une autre, jamais une fois refermée.
+ */
+export const levierTire = (halte: Pick<HalteVue, 'cle'>, v: Pick<VueMonde, 'levier'>): boolean => v.levier !== null && v.levier.tire && v.levier.cle === halte.cle
+
+/** Le manche penche de 26° d'un côté au repos, d'autant de l'autre une fois tiré (maquette : `.levier .manche`). */
+export const PENTE_DU_LEVIER = 26
+
+/**
+ * La pente du manche à cette image, en degrés : `-PENTE_DU_LEVIER` au repos, `+PENTE_DU_LEVIER` tiré.
+ * Entre les deux il bascule en `BASCULE_DU_LEVIER`, à l'aller comme au retour, depuis l'instant où sa
+ * halte s'est ouverte ou refermée ; au calme (`vivant` faux, ou daté de -9) il est dans sa position.
+ */
+export function penteDuLevier(halte: Pick<HalteVue, 'cle'>, v: Pick<VueMonde, 'levier' | 't' | 'vivant'>): number {
+  const vers = levierTire(halte, v) ? PENTE_DU_LEVIER : -PENTE_DU_LEVIER
+  if (v.levier === null || v.levier.cle !== halte.cle || !v.vivant) return vers
+  const u = clamp(((v.t - v.levier.t0) * 1000) / BASCULE_DU_LEVIER, 0, 1)
+  // Il part vite et se pose doucement, sans le rebond de la maquette.
+  return -vers + 2 * vers * (1 - (1 - u) ** 3)
+}
+
 /** Ce que le poteau écrit sous le nom : le compte de ce qui est servi, jamais « trois ». */
 export const filmsDuPoteau = (total: number): string => `EMBRANCHEMENT · ${total} FILM${total > 1 ? 'S' : ''}`
 
 /** Le levier à contrepoids (maquette : `LEVIER_SVG`, 56 sur 84, son pied en bas au milieu) et l'étiquette au nom de la halte, au vert de la halte (`VERT`, la source du jeton `--m-vert`). */
-function levier(g: CanvasRenderingContext2D, x: number, y: number, nom: string): void {
+function levier(g: CanvasRenderingContext2D, x: number, y: number, nom: string, pente: number): void {
   g.save()
   g.translate(x - 28, y - 84)
   g.fillStyle = c('#000000', 0.3)
@@ -67,7 +91,7 @@ function levier(g: CanvasRenderingContext2D, x: number, y: number, nom: string):
   // Le manche penché, son contrepoids mi-parti et sa poignée de laiton.
   g.save()
   g.translate(28, 68)
-  g.rotate((-26 * Math.PI) / 180)
+  g.rotate((pente * Math.PI) / 180)
   g.fillStyle = c('#1d150e')
   g.fillRect(-2, -54, 4, 56)
   g.fillStyle = c('#f4efe2')
@@ -164,13 +188,14 @@ function poteau(g: CanvasRenderingContext2D, x: number, y: number, halte: HalteV
 /**
  * Les aiguillages sur la toile des gares, dans le repère de l'écran : le poteau, puis le levier, dont
  * la zone `aiguillage` porte le rang de la halte dans la vue (le moteur dit sa clé à la page, au calme
- * aussi). Rien n'y bouge. La zone est celle que dit la règle pure (`AiguillageALEcran.zone`), telle quelle.
+ * aussi). Seul le manche du levier y bouge, quand sa halte s'ouvre ou se referme (`penteDuLevier`) ; la
+ * zone ne bouge pas avec lui : celle que dit la règle pure (`AiguillageALEcran.zone`), telle quelle.
  */
 export function dessinerAiguillages(v: VueMonde): void {
   for (const a of aiguillagesALEcran(v)) {
     if (a.poteau.x > -90 && a.poteau.x < v.W + 90) poteau(v.ctx, a.poteau.x, a.poteau.y, a.halte)
     if (a.levier.x < -40 || a.levier.x > v.W + 40) continue
-    levier(v.ctx, a.levier.x, a.levier.y, a.halte.nom)
+    levier(v.ctx, a.levier.x, a.levier.y, a.halte.nom, penteDuLevier(a.halte, v))
     v.zone('aiguillage', a.zone.x, a.zone.y, a.zone.r, a.rang, a.zone.priorite)
   }
 }

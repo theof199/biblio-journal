@@ -20,3 +20,5 @@ export const FLOCONS_PROCHES = auTempo(1900)
 export const RUISSELLEMENT_VIF = auTempo(1700)
 export const RUISSELLEMENT_LENT = auTempo(3900)
 export const DECALAGE_DES_GOUTTES = auTempo(3000)
+/** La bascule du levier d'une halte, d'une position à l'autre (maquette : `.levier .manche`, 0,5 s à l'écran, l. 1200). */
+export const BASCULE_DU_LEVIER = auTempo(250)

@@ -197,6 +197,41 @@ describe('la halte sur la carte, une clé sans défaut', () => {
     expect(inertes()).toBe(0)
   })
 
+  // Le levier bascule (correction du 9 octobre 2026) : la page dit au moteur quelle halte le dialogue
+  // courant montre, par sa clé, et nulle dès qu'elle se referme. C'est le fait d'état que le dessin
+  // lit ; le trait n'est pas regardé. Mutations : `halteOuverte={null}` passé au canvas (le levier
+  // jamais basculé) ; la première halte servie au lieu de celle ouverte (`etat.haltes[0].cle` : le
+  // levier d'une autre halte) ; la clé de l'adresse passée sans regarder le dialogue courant (une
+  // halte qui attend derrière la vue d'ensemble basculerait son levier).
+  describe('le levier de la halte ouverte', () => {
+    const dits = (banc: Awaited<ReturnType<typeof monter>>) => vi.mocked(banc.moteur.reglerHalte).mock.calls.map((a) => a[0])
+    it('fermée, aucune halte n’est dite au moteur ; ouverte, la sienne et pas une autre ; refermée, plus aucune', async () => {
+      preter()
+      const banc = await monter({ voyage: en(1898, [{ ...MELIES, apres: 1896 }, BARAQUE]) })
+      expect(dits(banc)).toEqual([null])
+      await toucher(banc)
+      await halte()
+      expect(dits(banc)).toEqual([null, 'baraque'])
+      fireEvent.click(screen.getByRole('button', { name: 'Revenir' }))
+      await waitFor(aucunDialogue)
+      expect(dits(banc)).toEqual([null, 'baraque', null])
+      await toucher(banc, 'melies')
+      await screen.findByRole('dialog', { name: 'Halte Méliès' })
+      expect(dits(banc)).toEqual([null, 'baraque', null, 'melies'])
+    })
+    it('une halte que l’adresse porte derrière la vue d’ensemble n’est pas dite : son levier attend comme elle', async () => {
+      preter()
+      const banc = await monter()
+      await act(async () => banc.rappels().ensemble(true))
+      await act(async () => void adresse.aller!('/voyage?halte=baraque'))
+      aucunDialogue()
+      expect(dits(banc)).toEqual([null])
+      await act(async () => banc.rappels().ensemble(false))
+      await halte()
+      expect(dits(banc)).toEqual([null, 'baraque'])
+    })
+  })
+
   describe('le dialogue est dans l’adresse', () => {
     // Mutation : l'état gardé hors de l'adresse (`useState` à la place de `useCalque` : rien n'est
     // empilé, le retour quitte la carte ou ne fait rien, et le dialogue reste).

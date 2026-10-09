@@ -716,6 +716,9 @@ export default function Carte() {
             calme={calme}
             bobines={trouvees}
             objets={objetsRamasses}
+            // Le levier de la halte ouverte bascule, et revient quand elle se referme : un fait d'état,
+            // la halte que le dialogue courant montre, jamais celle que l'adresse porte en attendant.
+            halteOuverte={halteOuverte && halteDemandee ? halteDemandee.cle : null}
             surMoteur={setMoteur}
             rappels={{
               toucherAnnee: (a) => navigate(`/voyage/${a}`),

@@ -7,7 +7,7 @@ import styles from './CarteCanvas.module.css'
 /** Ce que la page attend d'un moteur : `MoteurCarte`, ou sa doublure dans un test. */
 export type Moteur = Pick<
   MoteurCarte,
-  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'glissePris' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'direBonjour' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'reglerObjets' | 'rendreObjet' | 'detruire'
+  'mesurer' | 'hauteur' | 'defiler' | 'majEtat' | 'reglerCalme' | 'reglerVisible' | 'pointeur' | 'pincer' | 'glissePris' | 'doigtsPoses' | 'allerIci' | 'basculerEnsemble' | 'marcher' | 'passerLaPorte' | 'direAdieu' | 'direBonjour' | 'claquer' | 'ouvrirSousLesYeux' | 'ecranDeLAnnee' | 'reglerBobines' | 'reglerObjets' | 'rendreObjet' | 'reglerHalte' | 'detruire'
 >
 export type FabriqueMoteur = (canvas: HTMLCanvasElement, rappels: Rappels) => Moteur
 
@@ -93,6 +93,8 @@ interface Props {
   bobines: readonly string[]
   /** Les objets cachés déjà ramassés, d'après la page (l'état du voyageur) : le moteur garde en plus ce qu'un toucher vient de prendre. */
   objets: readonly string[]
+  /** La halte que la page tient ouverte, par sa clé, ou nulle : le monde en bascule le levier (`MoteurCarte.reglerHalte`). */
+  halteOuverte: string | null
   rappels: Omit<Rappels, 'defilerVers'>
   /** Le moteur monté, pour que la page le commande (ticket, « Tu es ici ») ; nul au démontage. */
   surMoteur: (m: Moteur | null) => void
@@ -104,7 +106,7 @@ interface Props {
  * et chaque événement relayé. Le canvas est décoratif pour les lecteurs d'écran : la page porte
  * la liste des années.
  */
-export default function CarteCanvas({ etat, calme, bobines, objets, rappels, surMoteur }: Props) {
+export default function CarteCanvas({ etat, calme, bobines, objets, halteOuverte, rappels, surMoteur }: Props) {
   const fabrique = useContext(FabriqueMoteurContexte)
   const vueRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -251,6 +253,8 @@ export default function CarteCanvas({ etat, calme, bobines, objets, rappels, sur
   useEffect(() => moteurRef.current?.reglerBobines(bobines), [bobines])
 
   useEffect(() => moteurRef.current?.reglerObjets(objets), [objets])
+
+  useEffect(() => moteurRef.current?.reglerHalte(halteOuverte), [halteOuverte])
 
   return (
     <div ref={vueRef} className={styles.vue}>

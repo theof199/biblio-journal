@@ -9,7 +9,7 @@ import { ambianceDeLHeure } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, tremblement } from './traitement'
 import { Geste, lirePincement } from './geste'
-import type { DateVraie, Glissement, HalteVue, HoraireVue, Monde, MusiqueDuMonde, SceneCollante, VueMonde } from '../mondes/types'
+import type { DateVraie, Glissement, HalteVue, HoraireVue, LevierVue, Monde, MusiqueDuMonde, SceneCollante, VueMonde } from '../mondes/types'
 import type { EtatCase } from '../voyage/regles'
 import { dessinerCase, dessinerCorail } from './dessin/cases'
 import { dessinerAvatar } from './dessin/avatar'
@@ -212,6 +212,8 @@ export class MoteurCarte {
    * (`reglerObjets`, qui les confirme), ni rendus (`rendreObjet`). Leur zone ne s'inscrit pas non plus.
    */
   private enMain = new Set<string>()
+  /** Le levier de la halte que la page dit ouverte, ou qu'elle vient de refermer (`reglerHalte`) ; nul tant qu'aucune ne s'est ouverte. */
+  private levier: LevierVue | null = null
   /** La bobine qui vole vers le compteur, d'où elle part et depuis quand ; nulle sinon. */
   private envol: { cle: string; x0: number; y0: number; t0: number } | null = null
   /**
@@ -374,6 +376,20 @@ export class MoteurCarte {
    */
   rendreObjet(cle: string): void {
     this.enMain.delete(cle)
+    this.demander()
+  }
+
+  /**
+   * La halte que la page tient ouverte, par sa clé, ou nulle : son levier bascule, et revient quand
+   * elle se referme. Hors de `majEtat`, comme les bobines et les objets : l'état de la carte ne change
+   * pas (chaque `majEtat` vide les tuiles du sol). Daté par `instant` : au calme le levier est dans
+   * sa position, sans mouvement. La même halte redite ne redate rien.
+   */
+  reglerHalte(cle: string | null): void {
+    const ouverte = this.levier?.tire ? this.levier.cle : null
+    if (cle === ouverte) return
+    if (cle !== null) this.levier = { cle, tire: true, t0: this.instant() }
+    else if (this.levier) this.levier = { cle: this.levier.cle, tire: false, t0: this.instant() }
     this.demander()
   }
 
@@ -676,6 +692,8 @@ export class MoteurCarte {
     }
     // La bobine en vol arrive d'un coup : l'horloge figée la laisserait en l'air.
     this.atterrir()
+    // Le levier d'une halte aussi : il est dans sa position.
+    if (this.levier) this.levier = { ...this.levier, t0: -9 }
   }
 
   /**
@@ -1080,6 +1098,7 @@ export class MoteurCarte {
       ticketDApres: this.etat.tickets.some((annee) => annee >= s.decennie + 10),
       passer: suivante && this.tempsDe(section + 1).length > 0 ? () => void this.direBonjour(suivante.decennie, 'endroit') : null,
       haltes: this.haltesDe(section),
+      levier: this.levier,
     }
   }
 

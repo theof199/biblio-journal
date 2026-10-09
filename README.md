@@ -1177,7 +1177,17 @@ guichet d'un film**
   levier est à l'écran quand le train est arrêté en gare d'`apres`), et elle dit aussi la zone du
   levier (son centre à mi-hauteur de sa vue, son rayon, sa priorité 2, devant la case et la voiture
   de sa gare, derrière une bobine), que le monde inscrit telle quelle, `aiguillage`, au rang de la
-  halte dans sa vue. Rien n'y bouge, le trait n'a pas de test. Le dialogue
+  halte dans sa vue. **Le levier bascule** (correction du 9 octobre 2026) : la page dit au moteur la
+  halte que le dialogue courant montre (`CarteCanvas`, `halteOuverte` ; `MoteurCarte.reglerHalte`, hors
+  de `majEtat` comme les bobines et les objets, pour ne pas vider les tuiles du sol), le moteur la
+  date de son horloge (`instant` : -9 au calme) et la donne à chaque monde (`VueMonde.levier`,
+  `LevierVue` : la clé, `tire`, `t0` ; refermée, la clé reste et `tire` tombe, pour que le levier
+  revienne) ; 1900 en tire un fait, `levierTire` (ce levier-là, tant que sa halte est ouverte, jamais
+  celui d'une autre), et une pente, `penteDuLevier` (de -26° à +26° en `BASCULE_DU_LEVIER`, au tempo,
+  à l'aller comme au retour ; au calme il est dans sa position). Ni la règle de place ni la zone ne le
+  lisent : tiré, il se touche au même endroit. Une halte que l'adresse porte en attendant son tour ne
+  bascule rien. Le fait se teste (`pages/Carte.halte.test.tsx`, `carte/CarteCanvas.test.ts`,
+  `carte/moteur.test.ts`, `mondes/1900/monde1900.test.ts`), le trait n'a pas de test. Le dialogue
   (`mondes/1900/pages/HalteDeLaCarte.tsx`, `Halte.module.css`, les mots dans `halte.ts`) : la petite
   gare dessinée (`DessinDeLaHalte.tsx`, les tracés de la maquette, aucune photographie), la plaque au
   nom servi et « hors ligne · embranchement », l'indicateur (« Halte · n films », « v sur n », puis par
@@ -1190,7 +1200,7 @@ guichet d'un film**
   l'étiquette et le contrepoids du levier par `mondes/1900/couleur.ts`, `VERT`, **la seule écriture
   du vert de 1900**, d'où le jeton tire sa valeur (un dessin au canvas ne lit pas une variable de
   feuille) ; le lien Plex et le contour du focus, que la maquette n'a pas, restent au bleu de l'émail.
-  Le HUD réécrit pour la halte et le levier qui bascule ne sont pas faits. `mondes/1900/monde1900.test.ts` et `mondes/1900/pages/halte.test.tsx` le tiennent.
+  Le HUD réécrit pour la halte n'est pas fait. `mondes/1900/monde1900.test.ts` et `mondes/1900/pages/halte.test.tsx` le tiennent.
   **La plaque d'une gare dit son horaire** (brief 11 ; `voyage/horaire.ts`, `horaireDePlaque`, une
   règle pure tirée de `CaseVue.horaire`) : tenu, « à l'heure » et `tenu` pour le filet doré ; accepté,
   « avant » et le jour de la semaine de l'échéance servie (`semaineDeLEcheance` : un mercredi se dit

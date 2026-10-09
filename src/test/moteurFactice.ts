@@ -30,6 +30,7 @@ export function moteurFactice() {
     reglerBobines: vi.fn(),
     reglerObjets: vi.fn(),
     rendreObjet: vi.fn(),
+    reglerHalte: vi.fn(),
     detruire: vi.fn(),
   }
   const fabrique: FabriqueMoteur = (_canvas, r) => {

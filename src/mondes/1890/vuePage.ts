@@ -56,5 +56,6 @@ export function vuePage(o: { ctx: CanvasRenderingContext2D; W: number; H: number
     passer: null,
     ticketDApres: false,
     haltes: [],
+    levier: null,
   }
 }
