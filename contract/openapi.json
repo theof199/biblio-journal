@@ -49340,11 +49340,11 @@
     },
     "/me/voyage/voyageur": {
       "get": {
-        "summary": "Mon état de voyageur : objets ramassés, rubriques vues, contrôleur et poinçons",
+        "summary": "Mon état de voyageur : objets et bobines ramassés, rubriques vues, contrôleur et poinçons",
         "tags": [
           "voyage"
         ],
-        "description": "Ce qui me suit d’un appareil à l’autre : les objets d’époque que j’ai ramassés sur la carte, avec l’instant du ramassage, et pour chaque rubrique de la sacoche l’instant de ma dernière visite (`vue_le`, nul si je ne l’ai jamais ouverte).\n\n**Le point rouge se calcule dans l’appli** : une rubrique est allumée si l’un de ses éléments est daté après son `vue_le`, ou si `vue_le` est nul et qu’elle n’est pas vide. Pour `objet`, l’élément est `ramasse_le` ; pour `etiquette`, `collee_le` de la malle.\n\n`objets` ne porte que les objets ramassés : les places vides de la sacoche se déduisent du catalogue de l’appli. `rubriques` les porte toutes, toujours. La liste des rubriques et celle des objets peuvent s’allonger sans que le contrat change : lire `cle` et `rubrique` comme des chaînes, ignorer une valeur inconnue.\n\n`controleur.attend` dit si le contrôleur des billets est là : il passe deux semaines sur trois, à un instant de la semaine propre à mon compte (le même à chaque rechargement), et n’attend que si je ne lui ai pas encore répondu cette semaine et que mon dernier billet de film a moins de quatorze jours. `controleur.billet` est ce billet. `poincons` liste mes billets déjà poinçonnés, par entrée de journal : le poinçon ne figure dans aucune réponse du journal.\n\n**Ce `GET` n’écrit rien**, et n’est pas dans `GET /me/voyage` : la carte est en cache, pas cet état. Il n’existe aucune route pour lire l’état d’un autre membre, poinçons compris.",
+        "description": "Ce qui me suit d’un appareil à l’autre : les objets d’époque et les bobines perdues que j’ai ramassés sur la carte, avec l’instant du ramassage, et pour chaque rubrique de la sacoche l’instant de ma dernière visite (`vue_le`, nul si je ne l’ai jamais ouverte).\n\n**Le point rouge se calcule dans l’appli** : une rubrique est allumée si l’un de ses éléments est daté après son `vue_le`, ou si `vue_le` est nul et qu’elle n’est pas vide. Pour `objet`, l’élément est `ramasse_le` d’un objet ; pour `bobine`, `ramasse_le` d’une bobine ; pour `etiquette`, `collee_le` de la malle.\n\n`objets` ne porte que les objets ramassés, `bobines` que les bobines ramassées (une liste vide tant qu’il n’y en a aucune) : les places vides de la sacoche se déduisent du catalogue de l’appli. Une bobine n’a pas d’année : `{ cle, ramasse_le }`, rangées par monde puis au rang du catalogue. `rubriques` les porte toutes, toujours. La liste des rubriques, celle des objets et celle des bobines peuvent s’allonger sans que le contrat change : lire `cle` et `rubrique` comme des chaînes, ignorer une valeur inconnue.\n\n`controleur.attend` dit si le contrôleur des billets est là : il passe deux semaines sur trois, à un instant de la semaine propre à mon compte (le même à chaque rechargement), et n’attend que si je ne lui ai pas encore répondu cette semaine et que mon dernier billet de film a moins de quatorze jours. `controleur.billet` est ce billet. `poincons` liste mes billets déjà poinçonnés, par entrée de journal : le poinçon ne figure dans aucune réponse du journal.\n\n**Ce `GET` n’écrit rien**, et n’est pas dans `GET /me/voyage` : la carte est en cache, pas cet état. Il n’existe aucune route pour lire l’état d’un autre membre, poinçons compris.",
         "responses": {
           "200": {
             "description": "L’état du voyageur : ce que j’ai ramassé, ce que j’ai déjà regardé et mes billets poinçonnés, le même sur tous mes appareils",
@@ -49385,6 +49385,32 @@
                         "description": "Un objet d’époque que j’ai ramassé sur la carte"
                       },
                       "description": "Les objets que j’ai ramassés, par année de gare. Ceux qui manquent n’y sont pas"
+                    },
+                    "bobines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cle": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9_]{1,40}$",
+                            "description": "La clé d’une bobine perdue, `les_quatre_diables`. Minuscules, chiffres et tirets bas : jamais de tiret"
+                          },
+                          "ramasse_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "L’instant du premier ramassage. Ramasser de nouveau ne le change pas"
+                          }
+                        },
+                        "required": [
+                          "cle",
+                          "ramasse_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une bobine perdue que j’ai ramassée sur la carte"
+                      },
+                      "description": "Les bobines perdues que j’ai ramassées, par monde puis au rang du catalogue. Liste vide tant que je n’en ai aucune"
                     },
                     "rubriques": {
                       "type": "array",
@@ -49502,6 +49528,7 @@
                   },
                   "required": [
                     "objets",
+                    "bobines",
                     "rubriques",
                     "controleur",
                     "poincons"
@@ -49522,6 +49549,16 @@
                           "cle": "parapluie",
                           "annee": 1902,
                           "ramasse_le": "2026-10-06T18:03:27.000Z"
+                        }
+                      ],
+                      "bobines": [
+                        {
+                          "cle": "les_quatre_diables",
+                          "ramasse_le": "2026-10-04T20:41:09.000Z"
+                        },
+                        {
+                          "cle": "hamlet",
+                          "ramasse_le": "2026-10-07T21:15:40.000Z"
                         }
                       ],
                       "rubriques": [
@@ -49771,6 +49808,96 @@
                       "cle": "lanterne",
                       "annee": 1900,
                       "ramasse_le": "2026-10-03T19:12:44.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/voyage/bobines/{cle}/ramasser": {
+      "post": {
+        "summary": "Ramasser une bobine perdue",
+        "tags": [
+          "voyage"
+        ],
+        "description": "Range dans ma sacoche la bobine perdue trouvée sur la carte : elle me suit alors d’un appareil à l’autre. **Rejouable** : ramasser de nouveau la même bobine répond `200` avec la même ligne, et `ramasse_le` reste l’instant du premier ramassage.\n\n**La clé s’écrit avec des tirets bas**, jamais de tiret : `les_quatre_diables`, `la_tete_de_janus`, `londres_apres_minuit` pour le monde 1890, `soldiers`, `hamlet`, `fairylogue` pour le monde 1900.\n\n`404` si la clé ne désigne aucune bobine du catalogue : la clé d’un objet trouvé n’en est pas une. **Aucune borne d’année** : une bobine connue se ramasse où que j’en sois, et c’est ce qui permet de verser en une fois, clé par clé, les bobines déjà ramassées sur un appareil. `400` si la clé n’a pas la forme d’une clé (un tiret, une majuscule).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]{1,40}$"
+            },
+            "in": "path",
+            "name": "cle",
+            "required": true,
+            "description": "La clé d’une bobine perdue, `les_quatre_diables`. Minuscules, chiffres et tirets bas : jamais de tiret"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Une bobine perdue que j’ai ramassée sur la carte",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cle": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9_]{1,40}$",
+                      "description": "La clé d’une bobine perdue, `les_quatre_diables`. Minuscules, chiffres et tirets bas : jamais de tiret"
+                    },
+                    "ramasse_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant du premier ramassage. Ramasser de nouveau ne le change pas"
+                    }
+                  },
+                  "required": [
+                    "cle",
+                    "ramasse_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une bobine perdue que j’ai ramassée sur la carte"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "cle": "les_quatre_diables",
+                      "ramasse_le": "2026-10-04T20:41:09.000Z"
                     }
                   }
                 }

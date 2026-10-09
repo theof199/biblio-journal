@@ -23,6 +23,7 @@ import {
   posterCartePostale,
   prendreLaSeance,
   ramasserObjet,
+  ramasserUneBobine,
   refusVu,
   remplacerDansLaSeance,
   renouvelerLesPistes,
@@ -215,6 +216,20 @@ describe('le client de l’état du voyageur', () => {
     expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
       '/api/me/voyage/objets/..%2Fvoyageur%3Fx/ramasser',
       '/api/me/voyage/rubriques/a%2Fb/vue',
+    ])
+  })
+
+  // Le serveur ne connaît que les tirets bas et répond `400` à une clé à tirets. Mutations : la clé du
+  // monde envoyée telle quelle ; la route des objets ; la clé dans un corps ; `encodeURIComponent` retiré.
+  it('ramasse une bobine par `POST`, sa clé traduite en tirets bas dans le chemin, sans corps', async () => {
+    await ramasserUneBobine('les-quatre-diables')
+    await ramasserUneBobine('hamlet')
+    await ramasserUneBobine('../voyageur?x')
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({ url, methode: init?.method, corps: init?.body }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/bobines/les_quatre_diables/ramasser', methode: 'POST', corps: undefined },
+      { url: '/api/me/voyage/bobines/hamlet/ramasser', methode: 'POST', corps: undefined },
+      { url: '/api/me/voyage/bobines/..%2Fvoyageur%3Fx/ramasser', methode: 'POST', corps: undefined },
     ])
   })
 

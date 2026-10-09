@@ -10607,12 +10607,12 @@ export interface paths {
   };
   "/me/voyage/voyageur": {
     /**
-     * Mon état de voyageur : objets ramassés, rubriques vues, contrôleur et poinçons
-     * @description Ce qui me suit d’un appareil à l’autre : les objets d’époque que j’ai ramassés sur la carte, avec l’instant du ramassage, et pour chaque rubrique de la sacoche l’instant de ma dernière visite (`vue_le`, nul si je ne l’ai jamais ouverte).
+     * Mon état de voyageur : objets et bobines ramassés, rubriques vues, contrôleur et poinçons
+     * @description Ce qui me suit d’un appareil à l’autre : les objets d’époque et les bobines perdues que j’ai ramassés sur la carte, avec l’instant du ramassage, et pour chaque rubrique de la sacoche l’instant de ma dernière visite (`vue_le`, nul si je ne l’ai jamais ouverte).
      *
-     * **Le point rouge se calcule dans l’appli** : une rubrique est allumée si l’un de ses éléments est daté après son `vue_le`, ou si `vue_le` est nul et qu’elle n’est pas vide. Pour `objet`, l’élément est `ramasse_le` ; pour `etiquette`, `collee_le` de la malle.
+     * **Le point rouge se calcule dans l’appli** : une rubrique est allumée si l’un de ses éléments est daté après son `vue_le`, ou si `vue_le` est nul et qu’elle n’est pas vide. Pour `objet`, l’élément est `ramasse_le` d’un objet ; pour `bobine`, `ramasse_le` d’une bobine ; pour `etiquette`, `collee_le` de la malle.
      *
-     * `objets` ne porte que les objets ramassés : les places vides de la sacoche se déduisent du catalogue de l’appli. `rubriques` les porte toutes, toujours. La liste des rubriques et celle des objets peuvent s’allonger sans que le contrat change : lire `cle` et `rubrique` comme des chaînes, ignorer une valeur inconnue.
+     * `objets` ne porte que les objets ramassés, `bobines` que les bobines ramassées (une liste vide tant qu’il n’y en a aucune) : les places vides de la sacoche se déduisent du catalogue de l’appli. Une bobine n’a pas d’année : `{ cle, ramasse_le }`, rangées par monde puis au rang du catalogue. `rubriques` les porte toutes, toujours. La liste des rubriques, celle des objets et celle des bobines peuvent s’allonger sans que le contrat change : lire `cle` et `rubrique` comme des chaînes, ignorer une valeur inconnue.
      *
      * `controleur.attend` dit si le contrôleur des billets est là : il passe deux semaines sur trois, à un instant de la semaine propre à mon compte (le même à chaque rechargement), et n’attend que si je ne lui ai pas encore répondu cette semaine et que mon dernier billet de film a moins de quatorze jours. `controleur.billet` est ce billet. `poincons` liste mes billets déjà poinçonnés, par entrée de journal : le poinçon ne figure dans aucune réponse du journal.
      *
@@ -10630,6 +10630,16 @@ export interface paths {
                   cle: string;
                   /** @description L’année de la gare où il a été oublié */
                   annee: number;
+                  /**
+                   * Format: date-time
+                   * @description L’instant du premier ramassage. Ramasser de nouveau ne le change pas
+                   */
+                  ramasse_le: string;
+                }[];
+              /** @description Les bobines perdues que j’ai ramassées, par monde puis au rang du catalogue. Liste vide tant que je n’en ai aucune */
+              bobines: {
+                  /** @description La clé d’une bobine perdue, `les_quatre_diables`. Minuscules, chiffres et tirets bas : jamais de tiret */
+                  cle: string;
                   /**
                    * Format: date-time
                    * @description L’instant du premier ramassage. Ramasser de nouveau ne le change pas
@@ -10785,6 +10795,58 @@ export interface paths {
               cle: string;
               /** @description L’année de la gare où il a été oublié */
               annee: number;
+              /**
+               * Format: date-time
+               * @description L’instant du premier ramassage. Ramasser de nouveau ne le change pas
+               */
+              ramasse_le: string;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/voyage/bobines/{cle}/ramasser": {
+    /**
+     * Ramasser une bobine perdue
+     * @description Range dans ma sacoche la bobine perdue trouvée sur la carte : elle me suit alors d’un appareil à l’autre. **Rejouable** : ramasser de nouveau la même bobine répond `200` avec la même ligne, et `ramasse_le` reste l’instant du premier ramassage.
+     *
+     * **La clé s’écrit avec des tirets bas**, jamais de tiret : `les_quatre_diables`, `la_tete_de_janus`, `londres_apres_minuit` pour le monde 1890, `soldiers`, `hamlet`, `fairylogue` pour le monde 1900.
+     *
+     * `404` si la clé ne désigne aucune bobine du catalogue : la clé d’un objet trouvé n’en est pas une. **Aucune borne d’année** : une bobine connue se ramasse où que j’en sois, et c’est ce qui permet de verser en une fois, clé par clé, les bobines déjà ramassées sur un appareil. `400` si la clé n’a pas la forme d’une clé (un tiret, une majuscule).
+     */
+    post: {
+      parameters: {
+        path: {
+          /** @description La clé d’une bobine perdue, `les_quatre_diables`. Minuscules, chiffres et tirets bas : jamais de tiret */
+          cle: string;
+        };
+      };
+      responses: {
+        /** @description Une bobine perdue que j’ai ramassée sur la carte */
+        200: {
+          content: {
+            "application/json": {
+              /** @description La clé d’une bobine perdue, `les_quatre_diables`. Minuscules, chiffres et tirets bas : jamais de tiret */
+              cle: string;
               /**
                * Format: date-time
                * @description L’instant du premier ramassage. Ramasser de nouveau ne le change pas

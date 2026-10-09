@@ -95,6 +95,7 @@ export function seance(s: Partial<Seance> & { id: string; rang: number; long: Fi
  */
 export const VOYAGEUR_VIDE: Voyageur = {
   objets: [],
+  bobines: [],
   rubriques: ['etiquette', 'objet', 'bobine', 'courrier'].map((rubrique) => ({ rubrique, vue_le: null })),
   controleur: { attend: false, billet: null },
   poincons: [],

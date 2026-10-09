@@ -75,6 +75,8 @@ export type Carton =
  */
 export type Voyageur = Json<paths['/me/voyage/voyageur']['get']['responses'][200]>
 export type ObjetRamasse = Voyageur['objets'][number]
+/** Une bobine perdue ramassée, telle que servie : sa clé est celle **du serveur** (`cleDeBobineServie`), sans année. */
+export type BobineRamassee = Voyageur['bobines'][number]
 /** `rubrique` est une chaîne, pas une énumération : la liste peut s'allonger (`voyage/voyageur.ts › RUBRIQUES`). */
 export type RubriqueVue = Voyageur['rubriques'][number]
 export type Controleur = Voyageur['controleur']
@@ -161,6 +163,24 @@ export const lireMalle = (decennie: number, signal?: AbortSignal) =>
 
 /** Rejouable : ramasser de nouveau rend la même ligne, à sa première date. `404` pour une clé inconnue ou une gare au-delà de mon année en cours. */
 export const ramasserObjet = (cle: string) => api.post<ObjetRamasse>(`/me/voyage/objets/${encodeURIComponent(cle)}/ramasser`)
+
+/**
+ * **La traduction des clés de bobine, écrite ici et nulle part ailleurs.** Un monde nomme ses bobines
+ * avec des tirets (`les-quatre-diables`), le serveur avec des tirets bas (`les_quatre_diables`) et
+ * refuse l'autre forme (`400`). `cleDeBobineServie` : du monde au serveur ; `cleDeBobineDuMonde` : du
+ * serveur au monde. L'aller et retour ne rend la clé d'un monde que si elle ne porte aucun tiret bas :
+ * `src/voyage/bobines.test.ts` le tient sur toutes les bobines du registre.
+ */
+export const cleDeBobineServie = (cleDuMonde: string) => cleDuMonde.replaceAll('-', '_')
+export const cleDeBobineDuMonde = (cleServie: string) => cleServie.replaceAll('_', '-')
+
+/**
+ * Range une bobine perdue au compte, **par sa clé du monde** : la traduction se fait ici, à l'envoi.
+ * La ligne rendue porte la clé du serveur. Rejouable : la même ligne, à sa première date. Aucune
+ * borne d'année. `404` hors du catalogue du serveur, `400` pour une clé mal formée.
+ */
+export const ramasserUneBobine = (cleDuMonde: string) =>
+  api.post<BobineRamassee>(`/me/voyage/bobines/${encodeURIComponent(cleDeBobineServie(cleDuMonde))}/ramasser`)
 
 /** `vue_le` devient l'instant de l'appel, **celui du serveur**, et se réécrit à chaque visite. `404` hors des rubriques de la sacoche. */
 export const marquerRubriqueVue = (rubrique: string) =>
