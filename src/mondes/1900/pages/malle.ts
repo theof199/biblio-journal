@@ -1,5 +1,6 @@
 import type { Malle, PlaceDeMalle } from '../../../api/voyage'
 import { jourDeParis } from '../../../voyage/passeport'
+import { VERT } from '../couleur'
 
 /**
  * La malle aux étiquettes des années 1900 (maquette, écran 18 ; plan des écrans des lots, brief 1) :
@@ -47,16 +48,16 @@ export type Badge = {
 export const BADGES: Readonly<Record<string, Badge>> = {
   'chef-de-gare': { court: ['Le chef', 'de gare'], forme: 'ecusson', papier: '#efe6d0', encres: ['#1d3767', '#a8352a', '#c9a257'], dessin: 'kepi' },
   'operateur-lumiere': { court: ['L’opérateur Lumière'], forme: 'rond', papier: '#f1dfae', encres: ['#221910', '#a8352a', '#1d3767'], dessin: 'camera' },
-  coloriste: { court: ['Le coloriste'], forme: 'ovale', papier: '#efe6d0', encres: ['#a8352a', '#2f6b47', '#e0a52c'], dessin: 'pochoir' },
+  coloriste: { court: ['Le coloriste'], forme: 'ovale', papier: '#efe6d0', encres: ['#a8352a', VERT, '#e0a52c'], dessin: 'pochoir' },
   'tete-en-caoutchouc': { court: ['La tête', 'en caoutchouc'], forme: 'pans', papier: '#e9d9b4', encres: ['#5d3f8c', '#a8352a', '#c9a257'], dessin: 'tete' },
   bonimenteur: { court: ['Le bonimenteur'], forme: 'losange', papier: '#efe6d0', encres: ['#a8352a', '#221910', '#c9a257'], dessin: 'portevoix' },
   'passager-clandestin': { court: ['Passager', 'clandestin'], forme: 'pans', papier: '#d9cdb2', encres: ['#221910', '#5a3a1c', '#a8352a'], dessin: 'clandestin' },
-  correspondance: { court: ['La correspondance'], forme: 'rond', papier: '#dfe8e2', encres: ['#2f6b47', '#a8352a', '#1d3767'], dessin: 'aiguillage' },
+  correspondance: { court: ['La correspondance'], forme: 'rond', papier: '#dfe8e2', encres: [VERT, '#a8352a', '#1d3767'], dessin: 'aiguillage' },
   'train-de-nuit': { court: ['Train de nuit'], forme: 'ovale', papier: '#1d2a4a', encres: ['#efe6d0', '#c9a257', '#f0d27a'], dessin: 'lune' },
   express: { court: ['L’Express'], forme: 'ecusson', papier: '#efe6d0', encres: ['#a8352a', '#221910', '#c9a257'], dessin: 'roue' },
-  omnibus: { court: ['L’Omnibus'], forme: 'pans', papier: '#f1dfae', encres: ['#2f6b47', '#a8352a', '#221910'], dessin: 'omnibus' },
+  omnibus: { court: ['L’Omnibus'], forme: 'pans', papier: '#f1dfae', encres: [VERT, '#a8352a', '#221910'], dessin: 'omnibus' },
   'tour-du-monde': { court: ['Le tour du monde'], forme: 'rond', papier: '#efe6d0', encres: ['#1d3767', '#a8352a', '#c9a257'], dessin: 'globe' },
-  pionniere: { court: ['La pionnière'], forme: 'ovale', papier: '#f3dcd2', encres: ['#2f6b47', '#a8352a', '#c9a257'], dessin: 'chou' },
+  pionniere: { court: ['La pionnière'], forme: 'ovale', papier: '#f3dcd2', encres: [VERT, '#a8352a', '#c9a257'], dessin: 'chou' },
   'hold-up': { court: ['Le hold-up'], forme: 'losange', papier: '#f1dfae', encres: ['#221910', '#a8352a', '#a8352a'], dessin: 'masque' },
   'voie-parallele': { court: ['Voie', 'parallèle'], forme: 'ecusson', papier: '#dfe8e2', encres: ['#1d3767', '#5d3f8c', '#a8352a'], dessin: 'rails' },
   'billet-de-faveur': { court: ['Billet de faveur'], forme: 'rond', papier: '#a8352a', encres: ['#efe6d0', '#f0d27a', '#f0d27a'], dessin: 'billet' },

@@ -1,7 +1,7 @@
 import type { VueMonde } from '../types'
 import type { Vitre } from './buee'
 import { dessinerDevantLaVitre } from './montee'
-import { c, F_CORPS } from './couleur'
+import { c, F_CORPS, VERT } from './couleur'
 import { cuire, fondre } from './cuisson'
 import { FENETRES } from './donnees'
 import { alea, aUnChef, chefALEcran, fenetresALEcran, forceDeLaLanterne, heureSurLaLigne, lanterneALEcran, leveeDuGuidon, luneALEcran, motsDeLEtiquette, partsDeLHeure, souffleDeLaLampe } from './habillage'
@@ -81,7 +81,7 @@ function chef(g: CanvasRenderingContext2D, p: { x: number; y: number; w: number;
   disque(g, 26.5, 42.6, 2.3, c('#efe6d0'))
   trace(g, 'M25.65 43 h1.7 V57 h-1.7 Z', c('#6b4324'))
   disque(g, 26.5, 62, 7.45, c('#f4efe2'))
-  disque(g, 26.5, 62, 5.75, c('#2f6b47'))
+  disque(g, 26.5, 62, 5.75, c(VERT))
   disque(g, 26.5, 62, 2.2, c('#f4efe2'))
   g.restore()
 }

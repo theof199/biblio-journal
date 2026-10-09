@@ -1115,7 +1115,8 @@ guichet d'un film**
   dessin reçoit les tables de ce soir dans l'ordre servi, mon rôle à chacune, et l'adresse du wagon
   (`PropsPorteDuWagon`). `pages/VoyageAnnee.porte.test.tsx` le tient sur un 1890 auquel on prête un
   dessin ; `VoyageAnnee.test.tsx` n'est pas retouché. **En 1900** (maquette, écran 17 : `.lien-wr`) :
-  `mondes/1900/pages/PorteDuWagon.tsx`, un lien sous sa petite lampe, rangé par `Gare` sous le train du
+  `mondes/1900/pages/PorteDuWagon.tsx`, un lien sous sa petite lampe (ses cinq couleurs nommées une
+  fois, `mondes/1900/couleur.ts`, `LAMPE` ; son pied au jeton `--m-or`), rangé par `Gare` sous le train du
   soir, qui dit en une ligne l'état de ma table (`wagon.ts`, `ceQueDitLaPorte` : à l'hôte ou à
   l'invité, ou le compte de mes tables de ce soir) ; `mondes/1900/pages/classes.test.tsx` le tient,
   son « aucun wagon-restaurant » inversé.
@@ -1224,7 +1225,8 @@ guichet d'un film**
   9 octobre 2026) : la plaque et l'en-tête de l'indicateur par le jeton `--m-vert`, le poteau fléché,
   l'étiquette et le contrepoids du levier par `mondes/1900/couleur.ts`, `VERT`, **la seule écriture
   du vert de 1900**, d'où le jeton tire sa valeur (un dessin au canvas ne lit pas une variable de
-  feuille) ; le lien Plex et le contour du focus, que la maquette n'a pas, restent au bleu de l'émail.
+  feuille), et d'où le prennent aussi le guidon du chef de gare (`dessus.ts`) et les encres vertes des
+  badges de la malle (`pages/malle.ts`) : la maquette n'a qu'un vert ; le lien Plex et le contour du focus, que la maquette n'a pas, restent au bleu de l'émail.
   Le HUD réécrit pour la halte n'est pas fait. `mondes/1900/monde1900.test.ts` et `mondes/1900/pages/halte.test.tsx` le tiennent.
   **La plaque d'une gare dit son horaire** (brief 11 ; `voyage/horaire.ts`, `horaireDePlaque`, une
   règle pure tirée de `CaseVue.horaire`) : tenu, « à l'heure » et `tenu` pour le filet doré ; accepté,
