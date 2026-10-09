@@ -293,12 +293,21 @@ describe('le composteur', () => {
     expect(prendLeFocus(remarque)).toBe(false)
     fireEvent.click(screen.getByRole('button', { name: '2 sur 10' }))
     expect(perces(c).filter(Boolean)).toHaveLength(7)
-    await vi.advanceTimersByTimeAsync(FRAPPE.descend + 10)
-    expect(c).toHaveAttribute('data-geste', 'frappe')
-    expect(tampon()).toHaveAccessibleName(`VU : ${PAGES_1900.mots.billet.tamponAutour} ${formatDateVisionnage(jourLocal())}`)
-    expect(vibrate).toHaveBeenCalledWith(VIBRATION)
-    expect(within(c).getByText('N° ····')).toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(FRAPPE.pause)
+    // La frappe ne dure que `FRAPPE.pause`, et l'horloge du test avance aussi avec le temps réel
+    // (`shouldAdvanceTime`) : sur un poste chargé, la regarder à un instant visé la manquait. Ce que le
+    // carton montre frappé se relève donc au changement lui-même, et se lit une fois la frappe passée.
+    const gestes: Array<string | null> = []
+    let frappe: { tampon: string | null; vibre: boolean; attente: boolean } | null = null
+    const guet = new MutationObserver(() => {
+      const geste = c.getAttribute('data-geste')
+      gestes.push(geste)
+      if (geste === 'frappe') frappe = { tampon: tampon()?.getAttribute('aria-label') ?? null, vibre: vibrate.mock.calls.some((appel: readonly unknown[]) => appel[0] === VIBRATION), attente: within(c).queryByText('N° ····') !== null }
+    })
+    guet.observe(c, { attributes: true, attributeFilter: ['data-geste'] })
+    await vi.advanceTimersByTimeAsync(FRAPPE.descend + FRAPPE.pause + 10)
+    guet.disconnect()
+    expect(gestes).toEqual(['frappe', 'rendu'])
+    expect(frappe).toEqual({ tampon: `VU : ${PAGES_1900.mots.billet.tamponAutour} ${formatDateVisionnage(jourLocal())}`, vibre: true, attente: true })
     expect(c).toHaveAttribute('data-geste', 'rendu')
     await vi.advanceTimersByTimeAsync(FRAPPE.remonte + FRAPPE.tirage * 3)
     // Le numéro roule : ni l'attente, ni le numéro ; le carton est rendu, tamponné.

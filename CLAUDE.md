@@ -160,3 +160,8 @@ Vitest et Testing Library, `fetch` toujours doublé : aucun test n'appelle l'API
 dépense de jeton Anthropic. **Un test interdit, il ne décrit pas** : chaque assertion se prouve en
 cassant ce qu'elle garde et en la voyant échouer — c'est la preuve qui compte, pas le compte de
 tests.
+
+**Un `findBy…` attend cinq secondes, un test vingt** (`src/test/setup.ts`, `vite.config.ts` ; mesuré le
+9 octobre 2026 : à la seconde par défaut, la suite tombait dix fois sur dix sur un poste chargé, puis
+repassait seule). Ce délai couvre la lenteur, pas une course : un test sous `shouldAdvanceTime` ne vise
+pas un état bref à un instant, il le relève à son changement (`composteur.test.tsx`, la frappe).
