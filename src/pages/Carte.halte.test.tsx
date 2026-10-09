@@ -8,6 +8,7 @@ import { createQueryClient } from '../api/queryClient'
 import type { Halte, Voyage, Voyageur } from '../api/voyage'
 import { FabriqueMoteurContexte } from '../carte/CarteCanvas'
 import { PAGES_1890 } from '../mondes/1890/pages'
+import { BASCULE_DU_LEVIER } from '../mondes/1900/durees'
 import type { HabillagePages } from '../mondes/types'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
@@ -55,8 +56,8 @@ const IL_ATTEND: Voyageur = { ...BASE, controleur: { attend: true, billet: { log
 /** Chaque rendu du dessin prêté : un dialogue posé le temps d'un seul rendu ne se voit pas autrement. */
 const rendus = vi.fn()
 /** Le dessin prêté : ce qu'il reçoit, ligne par ligne, et son seul geste. */
-const Dessin = ({ halte, compte, premier, fermer }: PropsHalteDeLaCarte) => (
-  <div role="dialog" aria-modal="true" aria-label={halte.nom}>
+const Dessin = ({ halte, compte, premier, fermer, apresLeLevier }: PropsHalteDeLaCarte) => (
+  <div role="dialog" aria-modal="true" aria-label={halte.nom} data-apres-le-levier={String(apresLeLevier)}>
     {void rendus()}
     <p data-testid="compte">{`${compte.vus} sur ${compte.total}`}</p>
     <ul>
@@ -292,6 +293,20 @@ describe('la halte sur la carte, une clé sans défaut', () => {
       await monter({ depuis: '/voyage?halte=baraque' })
       await halte()
       expect(inertes()).toBe(2)
+    })
+
+    // Le monde laisse son levier basculer avant d'entrer, pour une halte ouverte par le geste
+    // seulement : la page lui dit laquelle des deux. Mutations : `apresLeLevier` toujours vrai (un
+    // rechargement attendrait un levier que personne n'a touché) ; toujours faux (la halte glisserait
+    // sur le levier qui bascule).
+    it('dit au dessin qu’elle vient du levier quand on l’a touché, et pas quand l’adresse la portait', async () => {
+      preter()
+      const banc = await monter({ depuis: '/voyage?halte=baraque' })
+      expect(await halte()).toHaveAttribute('data-apres-le-levier', 'false')
+      fireEvent.click(screen.getByRole('button', { name: 'Revenir' }))
+      await waitFor(aucunDialogue)
+      await toucher(banc)
+      expect(await halte()).toHaveAttribute('data-apres-le-levier', 'true')
     })
   })
 
@@ -574,6 +589,38 @@ describe('la halte sur la carte de 1900', () => {
     expect(within(dialogue).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByRole('button', { name: 'Revenir sur la ligne' })).toHaveFocus()
     expect(banc.requetes).toEqual(avant)
+  })
+
+  // Le levier bascule d'abord, la halte entre ensuite (hors du calme, à l'horloge simulée). Au toucher,
+  // l'adresse est écrite, le levier est dit au moteur et la carte est inerte : seul le dessin attend la
+  // fin de la bascule. Un second toucher dans l'intervalle n'empile rien : un seul retour referme.
+  // Mutations : `apresLeLevier` jamais dit par la page (la halte est là aussitôt) ; la garde de
+  // `prendreLAiguillage` retirée (deux entrées d'historique : un retour laisse la halte dans l'adresse).
+  it('en 1903, hors du calme, le levier touché : l’adresse et le levier aussitôt, la halte après la bascule seulement, et un second toucher pendant l’attente n’empile rien', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
+    const banc = await monter({ voyage: jusqua(1903), routes: ROUTES })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const passer = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)))
+      await toucher(banc, 'melies')
+      expect(ou()).toBe('/voyage?halte=melies')
+      expect(vi.mocked(banc.moteur.reglerHalte).mock.calls.map((a) => a[0]).pop()).toBe('melies')
+      expect(inertes()).toBe(2)
+      aucunDialogue()
+      await passer(BASCULE_DU_LEVIER / 2)
+      aucunDialogue()
+      await toucher(banc, 'melies')
+      await passer(BASCULE_DU_LEVIER / 2 - 1)
+      aucunDialogue()
+      await passer(1)
+      expect(screen.getByRole('dialog', { name: 'Halte Méliès' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Revenir sur la ligne' })).toHaveFocus()
+      await reculer()
+      aucunDialogue()
+      expect(ou()).toBe('/voyage')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // En gare de 1902, le parapluie et le levier sont sur le même écran : ramasser l'objet occupe

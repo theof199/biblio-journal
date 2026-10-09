@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { BASCULE_DU_LEVIER } from '../durees'
 import { useMouvementReduit } from '../../../ui/mouvement'
 import { GARDE_DU_CHOIX } from '../../../voyage/celebrations/deroule'
 import type { PropsHalteDeLaCarte } from '../../../voyage/halte/Halte'
@@ -25,8 +26,10 @@ import styles from './Halte.module.css'
  * sur la ligne » reste inerte un instant (`GARDE_DU_CHOIX`), pour qu'un toucher redoublé ne le referme
  * pas avant qu'on l'ait vu. Échap et le retour, eux, referment toujours.
  */
-export default function HalteDeLaCarte({ monde, halte, compte, premier, fermer }: PropsHalteDeLaCarte) {
+function HalteEntree({ monde, halte, compte, premier, fermer }: Omit<PropsHalteDeLaCarte, 'apresLeLevier'>) {
   const calme = useMouvementReduit()
+  // Entrée après la bascule, elle se monte après que le bloc lecteur a cherché son bouton : il prend le focus ici.
+  useEffect(() => premier.current?.focus(), [premier])
   const { jetons, mots } = monde.pages
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof jetons = { ...jetons }
@@ -79,4 +82,23 @@ export default function HalteDeLaCarte({ monde, halte, compte, premier, fermer }
       </button>
     </div>
   )
+}
+
+/**
+ * **Le levier bascule d'abord, la halte entre ensuite.** Ouverte sous le doigt qui vient de toucher le
+ * levier (`apresLeLevier`), elle n'est pas à l'écran tant qu'il bascule (`BASCULE_DU_LEVIER`, au
+ * tempo : sinon elle glisse par-dessus lui et l'aller ne se voit pas). L'adresse la porte déjà, et la
+ * carte est inerte dessous : rien d'autre ne s'ouvre dans l'intervalle, Échap et le retour referment.
+ * Au calme rien n'attend (le levier y est posé d'un coup), ni pour une halte que l'adresse portait en
+ * arrivant : il n'y a pas eu de geste.
+ */
+export default function HalteDeLaCarte({ apresLeLevier, ...halte }: PropsHalteDeLaCarte) {
+  const calme = useMouvementReduit()
+  const [entree, setEntree] = useState(calme || !apresLeLevier)
+  useEffect(() => {
+    if (entree) return
+    const j = setTimeout(() => setEntree(true), BASCULE_DU_LEVIER)
+    return () => clearTimeout(j)
+  }, [entree])
+  return entree ? <HalteEntree {...halte} /> : null
 }

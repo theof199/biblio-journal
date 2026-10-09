@@ -937,8 +937,11 @@ export default function Carte() {
       ) : null}
       {/* Le contrôleur des billets, par-dessus la carte, que son dialogue rend inerte. */}
       {portiereOuverte && controle && DessinDuControleur ? <Controleur monde={monde} Dessin={DessinDuControleur} billet={controle} depart={v.depart} onFermer={fermerLaPortiere} /> : null}
-      {/* Une halte ouverte, par-dessus la carte inerte : le dessin du monde de sa décennie. */}
-      {halteOuverte && halteDemandee && DessinDeLaHalte ? <Halte monde={mondes(decennieDe(halteDemandee.apres))} Dessin={DessinDeLaHalte} halte={halteDemandee} onFermer={calqueDeLaHalte.fermer} /> : null}
+      {/* Une halte ouverte, par-dessus la carte inerte : le dessin du monde de sa décennie. `halteEnRoute`
+          dit qu'un toucher du levier l'a mise dans l'adresse (nulle pour une halte que l'adresse portait
+          en arrivant) : le monde laisse alors son levier basculer avant d'entrer. L'adresse, elle, est
+          écrite au toucher : le dialogue courant tient l'écran pendant l'attente. */}
+      {halteOuverte && halteDemandee && DessinDeLaHalte ? <Halte monde={mondes(decennieDe(halteDemandee.apres))} Dessin={DessinDeLaHalte} halte={halteDemandee} apresLeLevier={halteEnRoute.current === halteDemandee.cle} onFermer={calqueDeLaHalte.fermer} /> : null}
       {/* Un monde à passage n'a pas de carton : ses lignes sont dites, hors de vue. */}
       {annonce !== null ? (
         <p role="status" className="sr-only">

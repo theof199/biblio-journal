@@ -19,12 +19,20 @@ export interface PropsHalteDeLaCarte {
   premier: RefObject<HTMLButtonElement>
   /** Revenir sur la ligne : ferme le dialogue, n'écrit rien. */
   fermer: () => void
+  /**
+   * Vrai quand la halte s'ouvre sous le doigt qui vient de toucher son levier ; faux quand l'adresse la
+   * portait déjà (un lien, un rechargement) : il n'y a pas eu de geste. Le monde, qui seul sait ce que
+   * dure la bascule de son levier, peut la laisser se voir avant d'entrer ; le bloc, lui, n'attend rien.
+   */
+  apresLeLevier: boolean
 }
 
 interface Props {
   monde: Monde
   Dessin: GabaritsDesPages['halteDeLaCarte']
   halte: HalteServie
+  /** La halte vient d'être ouverte par son levier (`PropsHalteDeLaCarte.apresLeLevier`). */
+  apresLeLevier: boolean
   /** Le dialogue se ferme : par son bouton ou par Échap. Le retour du téléphone le ferme par l'adresse, sans passer ici. */
   onFermer: () => void
 }
@@ -36,7 +44,7 @@ interface Props {
  * carte que la page tient, et une halte n'a pas d'écriture (un film vu passe par le journal). Il
  * garde Échap, le focus et le compte.
  */
-export default function Halte({ monde, Dessin, halte, onFermer }: Props) {
+export default function Halte({ monde, Dessin, halte, apresLeLevier, onFermer }: Props) {
   const premier = useDialogue<HTMLButtonElement>(onFermer)
-  return <Dessin monde={monde} halte={halte} compte={compteDeLaHalte(halte.films)} premier={premier} fermer={onFermer} />
+  return <Dessin monde={monde} halte={halte} compte={compteDeLaHalte(halte.films)} premier={premier} fermer={onFermer} apresLeLevier={apresLeLevier} />
 }

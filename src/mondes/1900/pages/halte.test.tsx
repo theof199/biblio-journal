@@ -5,6 +5,7 @@ import type { Halte, Voyage } from '../../../api/voyage'
 import { creerRegistre } from '../..'
 import { exemple } from '../../../test/contrat'
 import { GARDE_DU_CHOIX } from '../../../voyage/celebrations/deroule'
+import { BASCULE_DU_LEVIER } from '../durees'
 import { compteDeLaHalte } from '../../../voyage/halte/compte'
 import HalteDeLaCarte from './HalteDeLaCarte'
 import { compteDit, compteLu, enteteDeLaHalte } from './halte'
@@ -16,8 +17,8 @@ const MELIES = exemple<Voyage>('/me/voyage', 'get', 200).haltes[0]!
 const film = (n: number, surcharge: Partial<Halte['films'][number]>) => ({ ...MELIES.films[0]!, tmdb_id: n, cover_url: null, plex_url: null, ...surcharge })
 
 const calmer = (calme: boolean) => vi.stubGlobal('matchMedia', (q: string) => ({ matches: calme, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
-function monter(halte: Halte, fermer = vi.fn()) {
-  render(<HalteDeLaCarte monde={monde} halte={halte} compte={compteDeLaHalte(halte.films)} premier={createRef()} fermer={fermer} />)
+function monter(halte: Halte, fermer = vi.fn(), apresLeLevier = false) {
+  render(<HalteDeLaCarte monde={monde} halte={halte} compte={compteDeLaHalte(halte.films)} premier={createRef()} fermer={fermer} apresLeLevier={apresLeLevier} />)
   const dialogue = screen.getByRole('dialog', { name: halte.nom })
   return { dialogue, fermer, lignes: () => within(dialogue).getAllByRole('listitem') }
 }
@@ -138,5 +139,47 @@ describe('la halte ouverte sur la carte de 1900', () => {
     expect(posee.dialogue).toHaveAttribute('data-vivante', 'non')
     fireEvent.click(within(posee.dialogue).getByRole('button', { name: 'Revenir sur la ligne' }))
     expect(posee.fermer).toHaveBeenCalledTimes(1)
+  })
+
+  // Le levier bascule d'abord, la halte entre ensuite : ouverte sous le doigt, elle n'est pas à l'écran
+  // tant que le levier bascule, à l'horloge simulée. Entrée, son bouton prend le focus (le bloc lecteur
+  // l'a cherché trop tôt) et sa garde commence alors seulement. Mutations : l'attente retirée
+  // (`useState(true)`) ; le focus non repris à l'entrée ; la durée d'un autre geste (`GARDE_DU_CHOIX`).
+  describe('ouverte par son levier', () => {
+    const premier = createRef<HTMLButtonElement>()
+    const ouvrir = (apresLeLevier: boolean) =>
+      render(<HalteDeLaCarte monde={monde} halte={MELIES} compte={compteDeLaHalte(MELIES.films)} premier={premier} fermer={vi.fn()} apresLeLevier={apresLeLevier} />)
+    const dialogue = () => screen.queryByRole('dialog', { name: MELIES.nom })
+
+    it('hors du calme, elle n’est pas à l’écran avant la fin de la bascule et y est après, le focus sur son bouton, qui reste inerte un instant de plus', () => {
+      vi.useFakeTimers()
+      calmer(false)
+      ouvrir(true)
+      expect(dialogue()).toBeNull()
+      act(() => void vi.advanceTimersByTime(BASCULE_DU_LEVIER - 1))
+      expect(dialogue()).toBeNull()
+      act(() => void vi.advanceTimersByTime(1))
+      expect(dialogue()).toBeInTheDocument()
+      const revenir = screen.getByRole('button', { name: 'Revenir sur la ligne' })
+      expect(revenir).toHaveFocus()
+      expect(revenir).toHaveAttribute('aria-disabled', 'true')
+      act(() => void vi.advanceTimersByTime(GARDE_DU_CHOIX))
+      expect(revenir).toHaveAttribute('aria-disabled', 'false')
+    })
+
+    // Mutation : l'attente gardée au calme (`useState(!apresLeLevier)`).
+    it('au calme, rien n’attend : elle est là aussitôt', () => {
+      vi.useFakeTimers()
+      ouvrir(true)
+      expect(dialogue()).toBeInTheDocument()
+    })
+
+    // Mutation : l'attente pour toute ouverture (`useState(calme)`).
+    it('portée par l’adresse, elle n’attend pas non plus, hors du calme : il n’y a pas eu de geste', () => {
+      vi.useFakeTimers()
+      calmer(false)
+      ouvrir(false)
+      expect(dialogue()).toBeInTheDocument()
+    })
   })
 })

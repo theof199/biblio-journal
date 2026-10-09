@@ -1206,7 +1206,13 @@ guichet d'un film**
   les cinq du contrat, et « Voir sur le Plex » s'il en a un) et « Revenir sur la ligne », le seul
   bouton : **aucun geste n'y marque un film vu et aucun film ne s'y ouvre** (décision 9). Il entre en
   glissant au tempo, jamais au calme, et son bouton reste inerte un instant hors du calme
-  (`GARDE_DU_CHOIX`). **La halte est au vert de la maquette** (`--halte` ; décision 12 du propriétaire,
+  (`GARDE_DU_CHOIX`). **Le levier bascule d'abord, la halte entre ensuite** (correction du 9 octobre
+  2026 : elle glissait par-dessus le levier, dont l'aller ne se voyait pas) : au toucher, l'adresse est
+  écrite et le levier dit au moteur aussitôt, le dialogue courant tient l'écran, et la page dit au
+  dessin que la halte vient du levier (`PropsHalteDeLaCarte.apresLeLevier`, lu sur `halteEnRoute` : faux
+  pour une halte que l'adresse portait en arrivant, un lien ou un rechargement) ; 1900 ne monte alors
+  son dialogue qu'après `BASCULE_DU_LEVIER`, où son bouton prend le focus et où sa garde commence. Au
+  calme, ou sans geste, rien n'attend. **La halte est au vert de la maquette** (`--halte` ; décision 12 du propriétaire,
   9 octobre 2026) : la plaque et l'en-tête de l'indicateur par le jeton `--m-vert`, le poteau fléché,
   l'étiquette et le contrepoids du levier par `mondes/1900/couleur.ts`, `VERT`, **la seule écriture
   du vert de 1900**, d'où le jeton tire sa valeur (un dessin au canvas ne lit pas une variable de
