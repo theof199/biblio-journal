@@ -15,12 +15,14 @@ export interface PropsOrdreDAnnee {
   horaire: ReactNode
   parade: ReactNode
   seance: ReactNode
+  /** La porte du wagon-restaurant (`voyage/wagon/Porte.tsx`), hors de la séance, que la page ne monte qu'au compte IA : nulle hors de mon année en cours, ou dans un monde qui ne la compose pas. */
+  porte: ReactNode
   salles: ReactNode
   ligneDuBas: ReactNode
 }
 
-/** L'ordre par défaut (maquette 1890 : `htmlAnnee`) : la corde, le boniment, le programme (et l'horaire, qu'aucun monde sans dessin ne reçoit), la parade, la séance, les salles, la ligne du bas. */
-export default function Ordre({ corde, boniment, programme, horaire, parade, seance, salles, ligneDuBas }: PropsOrdreDAnnee) {
+/** L'ordre par défaut (maquette 1890 : `htmlAnnee`) : la corde, le boniment, le programme (et l'horaire, qu'aucun monde sans dessin ne reçoit), la parade, la séance (et la porte du wagon-restaurant, de même), les salles, la ligne du bas. */
+export default function Ordre({ corde, boniment, programme, horaire, parade, seance, porte, salles, ligneDuBas }: PropsOrdreDAnnee) {
   return (
     <>
       {corde}
@@ -29,6 +31,7 @@ export default function Ordre({ corde, boniment, programme, horaire, parade, sea
       {horaire}
       {parade}
       {seance}
+      {porte}
       {salles}
       {ligneDuBas}
     </>

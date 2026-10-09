@@ -31,6 +31,7 @@ import Corde from '../voyage/annee/Corde'
 import { NOM_DE_RECOMPENSE } from '../voyage/annee/Embleme'
 import Fronton from '../voyage/annee/Fronton'
 import Horaire from '../voyage/annee/Horaire'
+import Porte from '../voyage/wagon/Porte'
 import LigneDuBas from '../voyage/annee/LigneDuBas'
 import Manivelle from '../voyage/annee/Manivelle'
 import Ordre from '../voyage/annee/Ordre'
@@ -373,6 +374,9 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
   const DessinDeLHoraire = gabaritSeul(monde, 'horaireDeLAnnee')
   const tenu = DessinDeLHoraire && fiche.horaire?.etat === 'tenu' ? { echeance: fiche.horaire.echeance, arriveeLe: fiche.ticket?.emis_le ?? null } : null
   const bouclee = estBouclee(statut, fiche.ticket)
+  // La porte du wagon-restaurant (brief 16) : une clé sans défaut, et sur **mon année en cours**
+  // seulement. Sans dessin, ou sur une autre année, le bloc ne se monte pas et aucune table n'est lue.
+  const DessinDeLaPorte = annee === v.annee_en_cours ? gabaritSeul(monde, 'porteDuWagon') : null
 
   return (
     <>
@@ -420,6 +424,8 @@ function FichePreteDeLAnnee({ monde, annee, fiche, voyage: v, feuille, generique
         parade={<Parade monde={monde} annee={annee} podium={fiche.podium} salles={fiche.salles} />}
         // La séance n'appartient qu'au compte IA (l'API la refuse aux autres), et à l'année en cours.
         seance={enCours && v.ia ? <Seance monde={monde} annee={annee} fiche={fiche} /> : null}
+        // Hors de la séance : la porte est à tout membre, compte IA ou non.
+        porte={DessinDeLaPorte ? <Porte monde={monde} Dessin={DessinDeLaPorte} /> : null}
         salles={<Salles monde={monde} annee={annee} fiche={fiche} ia={v.ia} />}
         // Le jury n'appartient qu'au compte IA : jamais promis à un autre membre, quoi que porte la fiche.
         ligneDuBas={<LigneDuBas monde={monde} annee={annee} ligne={ligneDuBas(fiche.ticket, v.ia ? fiche.maturite : null, v.annee_en_cours)} onUtiliser={onUtiliser} occupe={occupe} erreur={erreur} />}

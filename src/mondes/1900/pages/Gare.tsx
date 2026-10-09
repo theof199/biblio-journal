@@ -4,9 +4,9 @@ import type { PropsOrdreDAnnee } from '../../../voyage/annee/Ordre'
  * L'ordre d'une gare ouverte (maquette, écrans 2 et 14) : le compteur, puis l'indicateur **avant** le
  * guide du voyageur. Au retour d'un billet, la ligne qui se pointe est ainsi sous le compteur, à
  * l'écran sans défiler, et le « +1 » monte à côté d'elle. L'horaire de la gare vient sous l'indicateur
- * (écran 14). Le reste suit l'ordre par défaut ; chaque section arrive montée par la page.
+ * (écran 14), la porte du wagon-restaurant sous le train du soir (écran 17). Le reste suit l'ordre par défaut ; chaque section arrive montée par la page.
  */
-export default function Gare({ corde, boniment, programme, horaire, parade, seance, salles, ligneDuBas }: PropsOrdreDAnnee) {
+export default function Gare({ corde, boniment, programme, horaire, parade, seance, porte, salles, ligneDuBas }: PropsOrdreDAnnee) {
   return (
     <>
       {corde}
@@ -15,6 +15,7 @@ export default function Gare({ corde, boniment, programme, horaire, parade, sean
       {boniment}
       {parade}
       {seance}
+      {porte}
       {salles}
       {ligneDuBas}
     </>

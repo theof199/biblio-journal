@@ -12,7 +12,7 @@ import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsHoraireDeLAnnee } from '../voyage/annee/Horaire'
 import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
-import type { PropsWagonRestaurant } from '../voyage/wagon/tables'
+import type { PropsPorteDuWagon, PropsWagonRestaurant } from '../voyage/wagon/tables'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
@@ -978,6 +978,13 @@ export interface GabaritsDesPages {
    * dans un monde qui ne la compose pas, la page renvoie à la carte et ne lit aucune table.
    */
   wagonRestaurant: ComponentType<PropsWagonRestaurant>
+  /**
+   * La porte du wagon-restaurant sur la fiche de mon année en cours (plan des écrans des lots, brief
+   * 16, décision 10) : mes tables de ce soir, que je n'ai pas déclinées, et l'adresse du wagon. **Sans
+   * défaut** (`ClesSansDefaut`), lue par `pages/VoyageAnnee.tsx` au monde de l'année, **pour mon année
+   * en cours seulement** : ailleurs, ou dans un monde qui ne la compose pas, la fiche ne lit aucune table.
+   */
+  porteDuWagon: ComponentType<PropsPorteDuWagon>
 }
 
 /**
@@ -986,7 +993,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'courrierDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte' | 'wagonRestaurant'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'courrierDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte' | 'wagonRestaurant' | 'porteDuWagon'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>
