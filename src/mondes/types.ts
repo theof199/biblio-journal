@@ -31,6 +31,7 @@ import type { PropsMonument } from '../voyage/decennie/Monument'
 import type { PropsOrdreDeDecennie } from '../voyage/decennie/Ordre'
 import type { PropsRegistre } from '../voyage/decennie/Registre'
 import type { PropsComptoir } from '../voyage/film/Comptoir'
+import type { PropsCadreDuFeuillet } from '../voyage/Feuillet'
 import type { PropsNotice } from '../voyage/film/Notice'
 import type { PropsProgrammeDuFilm } from '../voyage/film/Programme'
 import type { PropsProjection } from '../voyage/film/Projection'
@@ -827,6 +828,14 @@ export interface GabaritsDesPages {
    * rien : l'adresse du billet d'une bobine reste `…/films/<ligne>/billet?bobine=<tmdb_id>`.
    */
   programmeDuFilm: ComponentType<PropsProgrammeDuFilm>
+  /**
+   * Le cadre d'un feuillet (`voyage/Feuillet.tsx`, `Cadre`) : le papier, le titre, « Fermer », autour
+   * des choix. Lue par `Feuillet` lui-même, au monde que son site lui passe : ses cinq sites (la salle
+   * nouvelle, une marche, un remplacement de la séance, le podium et la table d'un film) ne changent
+   * pas. `Feuillet` garde le dialogue et son nom, le focus, Échap, le voile et la fermeture : le cadre
+   * pose `idDuTitre` sur son titre et `fermer` sur son bouton, et rend les enfants tels quels.
+   */
+  feuillet: ComponentType<PropsCadreDuFeuillet>
   /**
    * Le dessin du billet de séance (`voyage/billet/BilletDeSeance.tsx`) : la tête, la date, la note, les
    * réactions, la remarque, le tampon, le numéro, le bouton. Lu par `pages/VoyageBillet.tsx`, qui garde

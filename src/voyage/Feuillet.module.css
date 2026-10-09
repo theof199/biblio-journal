@@ -20,12 +20,20 @@
   background: color-mix(in srgb, var(--m-fond) 82%, transparent);
 }
 
-.feuillet {
+/* Le dialogue : sa place et sa hauteur, que tout cadre de monde garde ; le papier est au cadre. */
+.dialogue {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 480px;
   max-height: 80%;
   margin: 0 auto;
+}
+
+.feuillet {
+  position: relative;
+  min-height: 0;
   padding: 16px 18px 18px;
   overflow-y: auto;
   overscroll-behavior: contain;
