@@ -984,7 +984,9 @@ export interface GabaritsDesPages {
   /**
    * Une halte ouverte sur la carte (plan des écrans des lots, brief 12) : son dialogue entier, le nom
    * servi, le compte, ses films, « Revenir sur la ligne ». **Sans défaut** (`ClesSansDefaut`), lue par
-   * `pages/Carte.tsx` au monde **de la décennie de la halte** (son `apres`) : un monde qui ne la
+   * `pages/Carte.tsx` au monde **de la décennie de la halte** (son `apres`), qui est aussi celle de
+   * mon année en cours : sorti de sa décennie, je ne l'ouvre plus (`voyage/regles.ts`,
+   * `halteEnService`, décision du 9 octobre 2026). Un monde qui ne la
    * compose pas n'ouvre rien, même si un aiguillage dit sa clé, et ne monte pas
    * `voyage/halte/Halte.tsx`, qui garde Échap, le focus et le compte. Rien n'y lit ni n'y écrit.
    */

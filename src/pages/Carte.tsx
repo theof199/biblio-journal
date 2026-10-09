@@ -38,6 +38,7 @@ import {
   estFermee,
   estMontree,
   etatDeCase,
+  halteEnService,
   jauge,
   premiereDecennieCachee,
   prochainPas,
@@ -351,10 +352,12 @@ export default function Carte() {
       // La liste pour lecteur d'écran se lit sur ces cases : elle ne nomme pas plus une année cachée.
       cases: montrees,
       // Les haltes servies, pour le monde qui en dessinera l'embranchement : jamais celle d'une année
-      // que la carte ne montre pas (une décennie cachée, `premiereDecennieCachee`). Le compte se fait
-      // sur ce qui est servi, jamais sur un catalogue de l'appli.
+      // que la carte ne montre pas (une décennie cachée, `premiereDecennieCachee`), ni celle d'une
+      // décennie que j'ai quittée (`halteEnService` : rendu en 1910, la ligne de 1900 n'a plus ni
+      // levier ni poteau, et ni le toucher ni l'adresse n'ouvrent sa halte, qui se lisent ici). Le
+      // compte se fait sur ce qui est servi, jamais sur un catalogue de l'appli.
       haltes: v.haltes
-        .filter((h) => montrees.some((c) => c.annee === h.apres))
+        .filter((h) => halteEnService(h.apres, v.annee_en_cours) && montrees.some((c) => c.annee === h.apres))
         .map((h) => ({ cle: h.cle, nom: h.nom, apres: h.apres, ...compteDeLaHalte(h.films) })),
     }
   }, [v, anneeAvatar, fiches, user.pseudo, ticketsEmis])
@@ -473,7 +476,8 @@ export default function Carte() {
   const [passage, setPassage] = useState(false)
   // Une halte ouverte (brief 12) : **l'adresse le dit** (`?halte=<clé>` : le retour du téléphone la
   // ferme, un rechargement la rouvre), et rien d'autre. Elle n'existe que servie, montrée par la
-  // carte (`etat.haltes` : jamais celle d'une décennie cachée) et dessinée par le monde de sa
+  // carte (`etat.haltes` : jamais celle d'une décennie cachée, ni celle d'une décennie que j'ai
+  // quittée, `halteEnService` : le toucher et l'adresse y lisent la même garde) et dessinée par le monde de sa
   // décennie (`halteDeLaCarte`, sans défaut) : une clé inconnue dans l'adresse n'ouvre rien. Portée
   // par l'adresse avant que l'écran soit libre (un rechargement, l'historique avancé), elle attend
   // son tour dans l'ordre des dialogues : jamais deux dialogues, jamais par-dessus une avancée.

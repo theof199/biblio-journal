@@ -17,7 +17,8 @@ import type { PropsControleurDeLaCarte } from '../voyage/controleur/Controleur'
 import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
 
 // Une halte s'ouvre sur la carte (plan des écrans des lots, brief 12) par une clé de gabarit **sans
-// défaut**, `halteDeLaCarte`, lue au monde de la décennie de la halte. Aucun monde ne la remplit dans
+// défaut**, `halteDeLaCarte`, lue au monde de la décennie de la halte, qui est aussi la mienne : sorti
+// de sa décennie, je ne l'ouvre plus (`voyage/regles.ts`, `halteEnService`). Aucun monde ne la remplit dans
 // ce fichier : il tient le bloc lecteur et les gardes de la page sur un 1890 auquel on prête un
 // dessin qui dit ce qu'il reçoit, et une halte que le test sert sur la foire (l'API n'en sert
 // aucune avant 1902). Le moteur est factice : le test joue le rappel `aiguillage` lui-même.
@@ -500,12 +501,40 @@ describe('la halte sur la carte de 1900', () => {
     )
   const ROUTES = { [LIRE]: () => json({ ...BASE, controleur: { attend: false, billet: null } }), 'GET /api/me/voyage/decennies/1900/etiquettes': () => json(malleVide(1900)), 'GET /api/me/voyage/cartes-postales': () => json(COURRIER_VIDE) }
 
-  // La clé se lit au monde de la halte, pas à celui de mon année en cours : rendu en 1910 (le monde
-  // « à venir », qui ne compose rien), la ligne de 1900 est toujours à l'écran, et sa halte s'ouvre.
-  // Mutation : le gabarit lu au monde de `v.annee_en_cours`, dans le rendu puis dans le geste.
-  it('rendu en 1910, dans un monde qui ne compose pas la clé, la halte de la ligne de 1900 s’ouvre encore', async () => {
+  // Un membre sorti de la décennie n'ouvre plus la halte (décision du propriétaire, 9 octobre 2026 ;
+  // ce test tenait l'inverse, « rendu en 1910 elle s'ouvre encore » : la règle a changé). La ligne de
+  // 1900 est toujours à l'écran, mais sa halte n'est plus passée au moteur (ni levier ni poteau, donc
+  // rien à toucher), et ni un rappel `aiguillage` qui dirait encore sa clé ni l'adresse ne l'ouvrent.
+  // Mutations : `halteEnService` retirée du filtre de `etat.haltes` (les trois tombent) ; la garde du
+  // toucher seule (`ouvrirLaHalte` lisant `v.haltes` : l'adresse est écrite) ; la garde de l'adresse
+  // seule (`halteDemandee` lisant `v.haltes` : le dialogue s'ouvre) ; la borne décalée d'un an
+  // (`decennieDe(anneeEnCours - 1)`).
+  it('rendu en 1910, la halte de la ligne de 1900 ne s’ouvre plus, ni par le toucher ni par l’adresse, et le moteur ne la reçoit plus', async () => {
     const banc = await monter({ voyage: jusqua(1910, 1910), routes: ROUTES })
+    expect(banc.etats[banc.etats.length - 1]!.haltes).toEqual([])
     await toucher(banc, 'melies')
+    aucunDialogue()
+    expect(ou()).toBe('/voyage')
+    await act(async () => void adresse.aller!('/voyage?halte=melies'))
+    aucunDialogue()
+    expect(inertes()).toBe(0)
+  })
+  it('arrivé en 1910 avec la halte dans l’adresse, rien ne s’ouvre non plus', async () => {
+    await monter({ voyage: jusqua(1910, 1910), routes: ROUTES, depuis: '/voyage?halte=melies' })
+    aucunDialogue()
+    expect(inertes()).toBe(0)
+  })
+
+  // La dernière année de la décennie en est encore. Mutation : la borne décalée d'un an dans l'autre
+  // sens (`decennieDe(anneeEnCours + 1)` : fermée dès 1909).
+  it('en 1909, la halte s’ouvre toujours, par le toucher comme par l’adresse, et le moteur la reçoit', async () => {
+    const banc = await monter({ voyage: jusqua(1909), routes: ROUTES })
+    expect(banc.etats[banc.etats.length - 1]!.haltes).toEqual([{ cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 1, total: 3 }])
+    await toucher(banc, 'melies')
+    expect(await screen.findByRole('dialog', { name: 'Halte Méliès' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Revenir sur la ligne' }))
+    await waitFor(aucunDialogue)
+    await act(async () => void adresse.aller!('/voyage?halte=melies'))
     expect(await screen.findByRole('dialog', { name: 'Halte Méliès' })).toBeInTheDocument()
   })
 

@@ -169,6 +169,14 @@ export function premiereDecennieCachee(annees: readonly { annee: number }[], ann
 }
 
 /**
+ * Une halte est-elle encore à prendre ? Seulement tant que mon année en cours est dans sa décennie,
+ * celle de l'année après laquelle elle s'embranche (décision du propriétaire, 9 octobre 2026 : un
+ * membre sorti de la décennie n'ouvre plus la halte). Avant comme après, la carte ne la passe pas au
+ * monde (ni levier ni poteau), et ni le toucher ni l'adresse ne l'ouvrent.
+ */
+export const halteEnService = (apres: number, anneeEnCours: number): boolean => decennieDe(apres) === decennieDe(anneeEnCours)
+
+/**
  * Une année se montre-t-elle ? `cachee` vient de `premiereDecennieCachee`. Tout ce qui suit une
  * décennie fermée l'est aussi, monde « à venir » compris : la carte s'arrête au bas de la décennie
  * d'avant, elle ne reprend pas au-delà d'un trou. Vaut pour une case comme pour l'année où est

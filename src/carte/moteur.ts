@@ -65,7 +65,8 @@ export interface EtatCarte {
    */
   roulotte: { pseudo: string; annee: number | null } | null
   /**
-   * Les haltes servies, celles d'une décennie cachée ôtées par la page ; absente : aucune. Le moteur
+   * Les haltes servies, celles d'une décennie cachée et celles d'une décennie que j'ai quittée
+   * ôtées par la page (`voyage/regles.ts`, `halteEnService`) ; absente : aucune. Le moteur
    * donne à chaque monde celles de sa section (`VueMonde.haltes`) et y lit la zone `aiguillage`.
    */
   haltes?: readonly HalteVue[]

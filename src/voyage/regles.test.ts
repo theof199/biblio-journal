@@ -7,6 +7,7 @@ import {
   etatDeCase,
   compterRecompenses,
   estMontree,
+  halteEnService,
   jauge,
   premiereDecennieCachee,
   prochainPas,
@@ -202,5 +203,17 @@ describe('le déblocage d’un monde à scène', () => {
   it('juge chaque ligne sur son année, sans rien supposer de l’ordre, et rend les lignes telles quelles', () => {
     const lignes = [{ annee: 1901, x: 'a' }, { annee: 1897, x: 'b' }, { annee: 1910, x: 'c' }, { annee: 1895, x: 'd' }]
     expect(anneesMontrees(lignes, 1899, sceneEn1900)).toEqual([{ annee: 1897, x: 'b' }, { annee: 1895, x: 'd' }])
+  })
+})
+
+// Un membre sorti de la décennie n'ouvre plus la halte (décision du propriétaire, 9 octobre 2026).
+// Mutations : la borne décalée d'un an, dans un sens (`decennieDe(anneeEnCours - 1)` : ouverte en
+// 1910, fermée en 1900) puis dans l'autre (`+ 1` : fermée en 1909, ouverte en 1899) ; la règle
+// toujours vraie ; la décennie de mon année comparée à l'année de la halte (`apres` nu).
+describe('une halte est à prendre tant que mon année en cours est dans sa décennie', () => {
+  it('de la première à la dernière année de la décennie, jamais avant, jamais après', () => {
+    expect([1899, 1900, 1902, 1903, 1909, 1910, 1915].map((annee) => halteEnService(1902, annee))).toEqual([false, true, true, true, true, false, false])
+    // La décennie est celle de l'année d'embranchement, pas celle de 1900 en dur.
+    expect([1909, 1910, 1919, 1920].map((annee) => halteEnService(1914, annee))).toEqual([false, true, true, false])
   })
 })

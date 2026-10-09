@@ -1148,7 +1148,12 @@ guichet d'un film**
   retour du téléphone la ferme, Échap et son bouton aussi, un rechargement la rouvre), par une clé de
   gabarit sans défaut, `halteDeLaCarte`, lue au monde **de la décennie de la halte** (son `apres`) :
   sans elle ni le toucher ni l'adresse n'ouvrent rien. Elle n'existe que servie et montrée par la
-  carte : une clé inconnue n'ouvre rien, aucun catalogue n'est dans l'appli. Le bloc lecteur
+  carte : une clé inconnue n'ouvre rien, aucun catalogue n'est dans l'appli. **Un membre sorti de la
+  décennie n'ouvre plus la halte** (décision du propriétaire, 9 octobre 2026 ; `voyage/regles.ts`,
+  `halteEnService` : mon année en cours est dans la décennie de son `apres`) : la page ne la met plus
+  dans l'état de la carte, donc le monde ne la reçoit plus (rendu en 1910, la ligne de 1900 n'a plus
+  ni levier ni poteau fléché, rien à toucher), et ni un rappel `aiguillage` ni `?halte=<clé>` ne
+  l'ouvrent : le toucher et l'adresse lisent tous deux `etat.haltes`. Le bloc lecteur
   (`voyage/halte/Halte.tsx`) ne lit ni n'écrit aucune route (une halte n'a pas d'écriture : un film vu
   passe par le journal) ; il garde Échap, le focus et le compte (`voyage/halte/compte.ts`,
   `compteDeLaHalte` : les films à l'état `vu` sur ceux que le serveur sert, la même règle que pour le
