@@ -13,7 +13,7 @@ import { ecrireAnneeVue, ecrireSon, lireAnneeVue, lireSon } from '../carte/memoi
 import { ambianceDeLaPage } from '../carte/son'
 import { auTempo, STYLE_DU_TEMPO } from '../voyage/tempo'
 import { useBobinesPerdues } from '../voyage/bobines'
-import { creerRegistre } from '../mondes'
+import { DECENNIES_DU_REGISTRE, creerRegistre } from '../mondes'
 import type { BobinePerdue, DateVraie, ObjetCache } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
 import Panne from '../ui/Panne'
@@ -52,6 +52,8 @@ import {
 import styles from '../carte/Carte.module.css'
 
 const mondes = creerRegistre()
+/** Une bobine qu'un monde du registre cache, quel que soit le Voyage servi : le versement ne l'abandonne jamais (`voyage/bobines.ts`). */
+const bobineDUnMonde = (cle: string) => DECENNIES_DU_REGISTRE.some((d) => mondes(d).bobines.some((b) => b.cle === cle))
 /** Le déblocage (plan 3b) : seul un monde à scène collante se ferme à qui ne l'a pas atteint. */
 const aUneScene = (decennie: number) => mondes(decennie).scene !== null
 /**
@@ -424,7 +426,7 @@ export default function Carte() {
   // Les bobines perdues : **le compte fait foi là où cette lecture part**, l'appareil là où elle ne part
   // pas (1890, qui ne lit jamais l'état du voyageur et écrit seulement, au geste). `voyage/bobines.ts`
   // tient la règle, le versement de l'appareil au compte compris.
-  const bobines = useBobinesPerdues(user.id, leCompteFaitFoi, voyageur.data)
+  const bobines = useBobinesPerdues(user.id, leCompteFaitFoi, voyageur.data, bobineDUnMonde)
   // Ce que le moteur ne propose pas. Là où le compte fait foi, tant qu'il n'est pas lu (ou en panne
   // sans rien en cache), on ignore ce qu'il tient : aucune bobine ne se propose, comme aucun objet.
   const bobinesDuVoyage = useMemo(() => decenniesDuVoyage.flatMap((d) => mondes(d).bobines.map((b) => b.cle)), [decenniesDuVoyage])

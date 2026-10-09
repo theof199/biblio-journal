@@ -248,7 +248,7 @@ export interface VueMonde {
   /**
    * Cache la bobine perdue `i` (`Monde.bobines`) dans le repère courant, centrée en `lx`, `ly`, de
    * rayon `r` : le moteur la dessine et inscrit sa zone. Rien, ni dessin ni zone, pour une bobine
-   * déjà trouvée sur cet appareil (plan 2d).
+   * déjà trouvée (plan 2d ; d'après la page, `Moteur.reglerBobines`).
    */
   bobine: (i: number, lx: number, ly: number, r: number) => void
   /** Vrai pour une bobine déjà trouvée (ou inconnue) : ce qui la trahit (une lueur dans la brume) se tait. */

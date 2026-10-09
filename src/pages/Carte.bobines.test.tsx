@@ -11,6 +11,7 @@ import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
 import { COURRIER_VIDE, malleVide, voyage1890 } from '../test/voyage'
+import { ouvrirLaSession } from '../session/SessionContext'
 import { NOM_DE_LA_SACOCHE } from '../voyage/voyageur'
 
 /**
@@ -57,10 +58,14 @@ const repos = () =>
     for (let i = 0; i < 50; i++) await Promise.resolve()
   })
 
-/** La carte d'un membre, montée et donnée au moteur. En 1903 (le défaut), l'état du voyageur est lu, sauf `lu: false`. */
-async function monter(compte: Voyageur, routes: Routes = {}, { enCours = 1903, lu = true }: { enCours?: number; lu?: boolean } = {}) {
+/**
+ * La carte d'un membre, montée et donnée au moteur. En 1903 (le défaut), l'état du voyageur est lu,
+ * sauf `lu: false`. `enCache` : un état resté au cache avant que la carte s'ouvre.
+ */
+async function monter(compte: Voyageur, routes: Routes = {}, { enCours = 1903, lu = true, enCache }: { enCours?: number; lu?: boolean; enCache?: Voyageur } = {}) {
   const f = moteurFactice()
   const client = createQueryClient()
+  if (enCache) client.setQueryData(cles.voyageur, enCache)
   const requetes = servir({
     'GET /api/auth/me': () => json(SESSION),
     'GET /api/me/voyage': () => json(voyage(enCours)),
@@ -274,14 +279,38 @@ describe('le versement de l’appareil au compte', () => {
     expect(suivante.tues()).toEqual(['les-quatre-diables', 'hamlet'])
   })
 
-  // Une clé que le serveur refuse pour elle-même (`404` hors de son catalogue, `400` mal formée) est
-  // abandonnée : elle quitte l'appareil, les suivantes sont versées, et la visite suivante ne la
-  // rejoue pas. Mutations : `cleRefusee` toujours fausse (le versement s'arrête, et boucle à chaque
-  // visite) ; la clé refusée gardée sur l'appareil.
+  // Le statut d'un refus ne dit pas sa cause : un `404` de route inconnue (une API plus ancienne, un
+  // mandataire) vaut celui d'une clé hors catalogue. **Une clé qu'un monde du registre connaît n'est
+  // donc jamais abandonnée** : elle reste sur l'appareil, reste trouvée, le versement passe à la
+  // suivante sans la rejouer dans la visite, et la visite suivante la réessaie. Mutations : la clé
+  // connue abandonnée sur `404` ; sur `400` ; le versement relancé à chaque changement de l'état (la
+  // clé refusée repart dans la même visite).
   it.each([
     ['404', 404],
     ['400', 400],
-  ])('une clé refusée (%s) est abandonnée sans boucle : les suivantes sont versées, la visite suivante ne la rejoue pas', async (_cas, statut) => {
+  ])('une clé connue refusée (%s) reste sur l’appareil : la suivante est versée, elle ne repart pas dans la visite, la visite suivante la réessaie', async (_cas, statut) => {
+    appareil(['hamlet', 'soldiers'])
+    const banc = await monter(etatDuCompte([]), { [ranger('hamlet')]: () => json({ ...REFUS, code: statut === 400 ? 'VALIDATION' : 'NOT_FOUND' }, statut), [ranger('soldiers')]: () => json(ligne('soldiers')) })
+    await waitFor(() => expect(banc.auCache()?.bobines).toEqual([ligne('soldiers')]))
+    await repos()
+    expect(banc.rangees()).toEqual([ranger('hamlet'), ranger('soldiers')])
+    expect(appareil()).toEqual(['hamlet'])
+    expect([...banc.tues()!].sort()).toEqual(['hamlet', 'soldiers'])
+    expect(etat()).not.toBeInTheDocument()
+    cleanup()
+    const suivante = await monter(etatDuCompte([ligne('soldiers')]), { [ranger('hamlet')]: () => json(ligne('hamlet')) })
+    await waitFor(() => expect(appareil()).toEqual([]))
+    expect(suivante.rangees()).toEqual([ranger('hamlet')])
+  })
+
+  // Seule une clé qu'aucun monde ne connaît est abandonnée sur un refus : rien ne la ferait accepter
+  // un jour. Elle quitte l'appareil, les suivantes sont versées, et la visite suivante ne la rejoue
+  // pas. Mutations : `cleRefusee` toujours fausse (le versement s'arrête, et boucle à chaque visite) ;
+  // la clé inconnue gardée sur l'appareil.
+  it.each([
+    ['404', 404],
+    ['400', 400],
+  ])('une clé qu’aucun monde ne connaît, refusée (%s), est abandonnée sans boucle : les suivantes sont versées, la visite suivante ne la rejoue pas', async (_cas, statut) => {
     appareil(['perdue-pour-de-bon', 'soldiers'])
     const refuser = { [ranger('perdue_pour_de_bon')]: () => json({ ...REFUS, code: statut === 400 ? 'VALIDATION' : 'NOT_FOUND' }, statut) }
     const banc = await monter(etatDuCompte([]), { ...refuser, [ranger('soldiers')]: () => json(ligne('soldiers')) })
@@ -310,6 +339,75 @@ describe('le versement de l’appareil au compte', () => {
     const suivante = await monter(etatDuCompte([]), { [ranger('les_quatre_diables')]: () => json(ligne('les_quatre_diables')), [ranger('soldiers')]: () => json(ligne('soldiers')) })
     await waitFor(() => expect(appareil()).toEqual([]))
     expect(suivante.rangees()).toEqual([ranger('les_quatre_diables'), ranger('soldiers')])
+  })
+})
+
+describe('le versement tient à la visite et au membre, et l’état sans `bobines` n’est pas lu', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    localStorage.clear()
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Une API d'avant les bobines au compte, ou un cache d'avant. Mutation : `voyageur?.bobines.map`
+  // (la carte casse au rendu).
+  it('l’état arrive sans `bobines` : la carte reste, aucune bobine ne se propose, rien n’est versé, rien ne quitte l’appareil', async () => {
+    appareil(['soldiers'])
+    const sansLeChamp = { ...etatDuCompte([]), bobines: undefined } as unknown as Voyageur
+    const banc = await monter(sansLeChamp)
+    expect(banc.tues()).toEqual(LES_SIX)
+    expect(banc.rangees()).toEqual([])
+    expect(appareil()).toEqual(['soldiers'])
+    expect(etat()).not.toBeInTheDocument()
+  })
+
+  // La carte quittée pendant qu'un `POST` pend : la clé partie se règle (le compte l'a, le cache du
+  // même membre l'apprend), la suivante attend la visite suivante. Mutation : `encore` jamais relu.
+  it('la carte démontée pendant un versement, la clé suivante ne part pas ; celle qui était partie est réglée et rangée', async () => {
+    appareil(['les-quatre-diables', 'soldiers'])
+    let repondre: (r: Response) => void = () => undefined
+    const banc = await monter(etatDuCompte([]), { [ranger('les_quatre_diables')]: () => new Promise<Response>((fin) => (repondre = fin)), [ranger('soldiers')]: () => json(ligne('soldiers')) })
+    expect(banc.rangees()).toEqual([ranger('les_quatre_diables')])
+    cleanup()
+    await act(async () => repondre(json(ligne('les_quatre_diables'))))
+    await repos()
+    expect(banc.rangees()).toEqual([ranger('les_quatre_diables')])
+    expect(appareil()).toEqual(['soldiers'])
+    expect(banc.auCache()?.bobines).toEqual([ligne('les_quatre_diables')])
+  })
+
+  // Un `POST` pend, le membre se déconnecte, un autre se connecte sur le même onglet : la clé suivante
+  // du premier partirait sous le cookie du second, et sa ligne s'écrirait dans son cache. Mutations :
+  // `encore` jamais relu (la clé suivante part) ; la garde de session retirée de `rangerAuCompte` (la
+  // ligne du premier dans l'état du second).
+  it('la session changée pendant un versement : la clé suivante ne part pas, et le cache du membre arrivé n’apprend rien', async () => {
+    appareil(['les-quatre-diables', 'soldiers'])
+    let repondre: (r: Response) => void = () => undefined
+    const banc = await monter(etatDuCompte([]), { [ranger('les_quatre_diables')]: () => new Promise<Response>((fin) => (repondre = fin)), [ranger('soldiers')]: () => json(ligne('soldiers')) })
+    const duSecond = etatDuCompte([HAMLET])
+    await act(async () => void banc.client.setQueryData(cles.session, null))
+    await waitFor(() => expect(screen.queryByRole('link', { name: new RegExp(`^${NOM_DE_LA_SACOCHE}`) })).not.toBeInTheDocument())
+    await act(async () => {
+      ouvrirLaSession(banc.client, { ...SESSION, user: { ...SESSION.user, id: 'un-autre-membre', pseudo: 'un-autre' } } as never)
+      banc.client.setQueryData(cles.voyageur, duSecond)
+    })
+    await act(async () => repondre(json(ligne('les_quatre_diables'))))
+    await repos()
+    expect(banc.rangees()).toEqual([ranger('les_quatre_diables')])
+    expect(banc.auCache()?.bobines).toEqual([HAMLET])
+    expect(appareil()).toEqual(['soldiers'])
+  })
+
+  // Le moteur ne propose pas une bobine que l'appareil tient encore (un versement en panne), mais son
+  // rappel peut être rejoué. Mutation : `connues()` sans l'appareil.
+  it('une bobine restée sur l’appareil après un versement en panne ne se range pas une seconde fois au toucher', async () => {
+    appareil(['soldiers'])
+    const banc = await monter(etatDuCompte([]), { [ranger('soldiers')]: () => json(PANNE, 500) })
+    expect(banc.rangees()).toEqual([ranger('soldiers')])
+    banc.toucher('soldiers')
+    await repos()
+    expect(banc.rangees()).toEqual([ranger('soldiers')])
+    expect(etat()).not.toBeInTheDocument()
   })
 })
 
@@ -358,5 +456,43 @@ describe('en 1890, l’appareil fait foi et la carte ne lit rien de plus', () =>
     expect(etat()?.textContent).toBe('Bobine retrouvée 1/3« Londres après minuit », Tod Browning, 1927 : un film perdu.')
     expect(banc.tues()).toEqual(['londres-apres-minuit'])
     expect(appareil()).toEqual(['londres-apres-minuit'])
+  })
+
+  // Un état du voyageur peut rester au cache sans que la carte le lise (revenu d'une page qui le lit,
+  // ou d'un Voyage rendu à 1890). Le compte ne fait pas foi : rien n'est versé, l'appareil garde tout.
+  // Mutation : `!faitFoi` retiré de la garde du versement (l'appareil serait vidé clé par clé).
+  it('un état resté au cache ne lance aucun versement et ne vide pas l’appareil', async () => {
+    appareil(['les-quatre-diables', 'la-tete-de-janus'])
+    const banc = await monter(etatDuCompte([DIABLES]), { [ranger('la_tete_de_janus')]: () => json(ligne('la_tete_de_janus')) }, { enCours: 1899, enCache: etatDuCompte([DIABLES]) })
+    await repos()
+    expect([...banc.requetes].sort()).toEqual(OUVERTURE_DE_1890)
+    expect(appareil()).toEqual(['les-quatre-diables', 'la-tete-de-janus'])
+    expect(banc.tues()).toEqual(['les-quatre-diables', 'la-tete-de-janus'])
+  })
+
+  // L'appareil fait foi : une bobine que le cache dit au compte et que l'appareil n'a pas se ramasse
+  // comme une autre. Mutation : `connues()` qui lit le cache en 1890 (le toucher ne ferait rien).
+  it('une bobine que seul un état resté au cache connaît se ramasse : elle s’écrit sur l’appareil et part au compte', async () => {
+    const banc = await monter(etatDuCompte([DIABLES]), { [ranger('les_quatre_diables')]: () => json(DIABLES) }, { enCours: 1899, enCache: etatDuCompte([DIABLES]) })
+    expect(banc.tues()).toEqual([])
+    banc.toucher('les-quatre-diables')
+    banc.arriver('les-quatre-diables')
+    await repos()
+    expect(appareil()).toEqual(['les-quatre-diables'])
+    expect(banc.rangees()).toEqual([ranger('les_quatre_diables')])
+    expect(etat()).toHaveTextContent('Bobine retrouvée 1/3')
+  })
+
+  // Deux onglets ouverts sur la carte : chacun tient sa liste en mémoire. Mutation : `retenir` qui
+  // écrit sa liste sans relire le stockage (la bobine de l'autre onglet effacée).
+  it('une bobine écrite par un autre onglet depuis l’ouverture n’est pas écrasée par le ramassage suivant', async () => {
+    appareil(['londres-apres-minuit'])
+    const banc = await monter(etatDuCompte([]), { [ranger('la_tete_de_janus')]: () => json(ligne('la_tete_de_janus')) }, { enCours: 1899 })
+    appareil(['londres-apres-minuit', 'les-quatre-diables'])
+    banc.toucher('la-tete-de-janus')
+    banc.arriver('la-tete-de-janus')
+    await repos()
+    expect(appareil()).toEqual(['londres-apres-minuit', 'les-quatre-diables', 'la-tete-de-janus'])
+    expect(banc.tues()).toEqual(['londres-apres-minuit', 'les-quatre-diables', 'la-tete-de-janus'])
   })
 })

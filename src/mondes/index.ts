@@ -13,6 +13,9 @@ const FABRIQUES: Record<number, () => Monde> = {
   1900: creerMonde1900,
 }
 
+/** Les décennies qui ont leur ligne : ce que le registre connaît, sans rien fabriquer. */
+export const DECENNIES_DU_REGISTRE: readonly number[] = Object.keys(FABRIQUES).map(Number)
+
 export function creerRegistre(): (decennie: number) => Monde {
   const cache = new Map<number, Monde>()
   return (decennie) => {

@@ -204,7 +204,7 @@ export class MoteurCarte {
   private adieu: { decennie: number; t0: number; fin: () => void } | null = null
   /** L'année ouverte au monde et le moment où l'avatar y est arrivé (idée 8) ; -9 : déjà fini. */
   private ouverte = { annee: 0, t0: -9 }
-  /** Les bobines perdues trouvées sur cet appareil (plan 2d), par clé : ni dessinées, ni touchables. */
+  /** Les bobines perdues que la page dit trouvées (plan 2d ; au compte ou sur l'appareil, `voyage/bobines.ts`), par clé : ni dessinées, ni touchables. */
   private trouvees = new Set<string>()
   /** Les objets cachés que la page dit ramassés, par clé, une seule table pour toute la carte : leur zone ne s'inscrit plus. */
   private ramasses = new Set<string>()
@@ -352,7 +352,7 @@ export class MoteurCarte {
     this.demander()
   }
 
-  /** Les bobines perdues que l'appareil a déjà trouvées (plan 2d) : elles ne se dessinent plus, leur zone non plus. */
+  /** Les bobines perdues déjà trouvées, d'après la page (plan 2d ; le compte ou l'appareil, selon qui fait foi) : elles ne se dessinent plus, leur zone non plus. */
   reglerBobines(cles: readonly string[]): void {
     this.trouvees = new Set(cles)
     if (this.envol) this.trouvees.add(this.envol.cle)

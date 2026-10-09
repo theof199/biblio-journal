@@ -46,6 +46,15 @@ describe('les bobines entre l’appareil et le compte, sans rendu', () => {
     expect(bobinesAuCompte(undefined)).toBeUndefined()
   })
 
+  // Une API d'avant les bobines au compte, ou un cache d'avant, sert l'état sans le champ : le contrat
+  // ne le prévoit pas, la carte ne doit pas en tomber. Mutations : `?.bobines.map` (la carte casse) ;
+  // la ligne posée sur un état sans le champ (il passerait pour lu, et tout l'appareil serait versé).
+  it('un état servi sans `bobines` vaut « pas lu » : rien n’en est tiré, rien n’y est rangé', () => {
+    const sansLeChamp = { ...ETAT, bobines: undefined } as unknown as Voyageur
+    expect(bobinesAuCompte(sansLeChamp)).toBeUndefined()
+    expect(rangerLaBobine(sansLeChamp, { cle: 'soldiers', ramasse_le: '2026-10-09T09:00:00.000Z' })).toBe(sansLeChamp)
+  })
+
   // Rejouable côté serveur : la même ligne rendue une seconde fois ne fait pas deux bobines. Sans
   // état en cache (1890), rien n'est posé. Mutations : la ligne toujours ajoutée ; la ligne posée seule.
   it('range la ligne dans `bobines` et ne touche à rien d’autre ; rejouée, elle ne se double pas ; sans état, rien', () => {
@@ -67,16 +76,36 @@ describe('les bobines entre l’appareil et le compte, sans rendu', () => {
     expect(cleRefusee(new Error('autre chose'))).toBe(false)
   })
 
-  // Mutations : le versement poursuivi après une panne ; arrêté par un refus ; la clé en panne réglée.
-  it('verse dans l’ordre, règle la clé acceptée comme la clé refusée, et s’arrête à la première panne sans la régler', async () => {
+  // Le statut d'un refus ne dit pas sa cause (une route inconnue d'une API plus ancienne répond `404`
+  // elle aussi) : une clé qu'un monde connaît n'est jamais réglée sur un refus. Mutations : le
+  // versement poursuivi après une panne ; arrêté par un refus ; la clé en panne réglée ; la clé connue
+  // refusée réglée (`404`, `400`) ; la clé inconnue refusée gardée ; une clé rejouée dans la visite.
+  it('verse dans l’ordre, chaque clé une fois : acceptée, elle est réglée ; refusée, seulement si aucun monde ne la connaît ; à la première panne il s’arrête', async () => {
     const partis: string[] = []
     const reglees: string[] = []
     const ramasser = (cle: string) => {
       partis.push(cle)
-      return cle === 'refusee' ? Promise.reject(refus(404)) : cle === 'panne' ? Promise.reject(refus(500)) : Promise.resolve()
+      const statut = { inconnue: 404, 'inconnue-mal-formee': 400, hamlet: 404, soldiers: 400, panne: 500 }[cle]
+      return statut ? Promise.reject(refus(statut)) : Promise.resolve()
     }
-    await verser(['a', 'refusee', 'b', 'panne', 'c'], ramasser, (cle) => void reglees.push(cle))
-    expect(partis).toEqual(['a', 'refusee', 'b', 'panne'])
-    expect(reglees).toEqual(['a', 'refusee', 'b'])
+    const connue = (cle: string) => DES_MONDES.includes(cle)
+    await verser(['fairylogue', 'inconnue', 'hamlet', 'inconnue-mal-formee', 'soldiers', 'la-tete-de-janus', 'panne', 'c'], ramasser, (cle) => void reglees.push(cle), connue)
+    expect(partis).toEqual(['fairylogue', 'inconnue', 'hamlet', 'inconnue-mal-formee', 'soldiers', 'la-tete-de-janus', 'panne'])
+    expect(reglees).toEqual(['fairylogue', 'inconnue', 'inconnue-mal-formee', 'la-tete-de-janus'])
+  })
+
+  // Mutation : `encore` lu une fois au départ, ou jamais.
+  it('relit avant chaque clé que la visite tient encore : sinon la suivante ne part pas, celle qui est partie se règle', async () => {
+    const partis: string[] = []
+    const reglees: string[] = []
+    let vivante = true
+    const ramasser = (cle: string) => {
+      partis.push(cle)
+      if (cle === 'b') vivante = false
+      return Promise.resolve()
+    }
+    await verser(['a', 'b', 'c'], ramasser, (cle) => void reglees.push(cle), () => true, () => vivante)
+    expect(partis).toEqual(['a', 'b'])
+    expect(reglees).toEqual(['a', 'b'])
   })
 })

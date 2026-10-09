@@ -176,9 +176,19 @@ monde. Deux régimes, selon que la carte lit ou non l'état du voyageur :
   arrivée si elle volait encore : le moteur garde hors du décor celle qui vole).
 - **Le versement**, à la première lecture de l'état, une fois par visite de la carte, sans rien
   montrer : ce que le compte tient déjà quitte l'appareil, puis chaque clé restante est rangée au
-  compte, une à une (`verser`). Acceptée, ou refusée pour elle-même (`404`, `400` : `cleRefusee`), la
-  clé est réglée et quitte l'appareil ; toute autre panne arrête le versement sans rien régler, les
-  bobines restent trouvées, et la visite suivante reprend. **Après un versement complet le stockage
+  compte, une à une, chacune une fois par visite (`verser`). Acceptée, la clé est réglée et quitte
+  l'appareil. **Refusée (`404`, `400` : `cleRefusee`), une clé qu'un monde du registre connaît n'est
+  jamais abandonnée** : le statut ne dit pas sa cause (une route inconnue d'une API plus ancienne ou
+  d'un mandataire répond `404` elle aussi), elle reste donc sur l'appareil, reste trouvée, le versement
+  passe à la suivante et la visite suivante la réessaie ; seule une clé qu'aucun monde ne connaît
+  (`pages/Carte.tsx`, `bobineDUnMonde`, sur `DECENNIES_DU_REGISTRE`) quitte l'appareil sur un refus.
+  Toute autre panne arrête le versement sans rien régler, les bobines restent trouvées, et la visite
+  suivante reprend. **Il tient à la visite et au membre** : avant chaque clé il relit que la carte est
+  encore montée pour ce membre (une clé ne part pas sous le cookie d'un autre), et la ligne d'un
+  `POST` revenu après un changement de session n'entre pas au cache. **Un état servi sans `bobines`**
+  (une API d'avant, un cache d'avant) vaut « pas lu » : rien ne se propose, rien n'est versé, rien ne
+  quitte l'appareil. **L'appareil se change, il ne se réécrit pas** : chaque écriture relit le
+  stockage d'abord, et garde ce qu'un autre onglet y a mis. **Après un versement complet le stockage
   de l'appareil est vide et n'est plus écrit** : il n'est pas gardé en repli hors ligne, la carte ne
   s'ouvrant pas hors ligne (rien de `/api/` n'est au précache).
 - **La rubrique `bobine` n'allume pas le point rouge** : aucun écran de la sacoche ne montre les

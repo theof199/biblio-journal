@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
+import type { Session } from '../api/schema'
 import { cleDeBobineDuMonde, ramasserUneBobine, type BobineRamassee, type Voyageur } from '../api/voyage'
 import { ecrireBobines, lireBobines } from '../carte/memoire'
 
@@ -12,34 +13,61 @@ import { ecrireBobines, lireBobines } from '../carte/memoire'
  * (à tirets) : la traduction est dans `api/voyage.ts`.
  */
 
-/** Les bobines que le compte tient, par clé du monde. Absent : l'état n'est pas lu, ou en panne sans rien en cache. */
-export const bobinesAuCompte = (voyageur: Voyageur | undefined): readonly string[] | undefined => voyageur?.bobines.map((b) => cleDeBobineDuMonde(b.cle))
+/**
+ * Les bobines que le compte tient, par clé du monde. Absent : l'état n'est pas lu, ou en panne sans
+ * rien en cache, **ou servi sans le champ** (une API d'avant les bobines au compte, un cache d'avant) :
+ * le contrat le dit toujours là, la course d'une livraison non. Sans lui, rien ne se propose, rien
+ * n'est versé, rien ne quitte l'appareil.
+ */
+export const bobinesAuCompte = (voyageur: Voyageur | undefined): readonly string[] | undefined =>
+  (voyageur as Partial<Voyageur> | undefined)?.bobines?.map((b) => cleDeBobineDuMonde(b.cle))
 
 /**
  * Ce que le cache apprend d'un ramassage : **son champ, `bobines`, et rien d'autre**. La réponse est
  * une ligne, pas l'état : la poser à sa place effacerait les objets, les rubriques vues, le contrôleur
  * et les poinçons. Rejouée, la ligne déjà rangée reste telle quelle (le serveur garde la première date).
  */
-export const rangerLaBobine = (etat: Voyageur | undefined, ligne: BobineRamassee): Voyageur | undefined =>
-  etat && (etat.bobines.some((b) => b.cle === ligne.cle) ? etat : { ...etat, bobines: [...etat.bobines, ligne] })
+export const rangerLaBobine = (etat: Voyageur | undefined, ligne: BobineRamassee): Voyageur | undefined => {
+  const tenues = (etat as Partial<Voyageur> | undefined)?.bobines
+  // Un état sans le champ n'est pas lu (`bobinesAuCompte`) : rien n'y est posé, il se relira.
+  return etat && tenues && !tenues.some((b) => b.cle === ligne.cle) ? { ...etat, bobines: [...tenues, ligne] } : etat
+}
 
 /** Ce que l'appareil tient et que le compte n'a pas : ce qui reste à verser, dans l'ordre de l'appareil. */
 export const resteAVerser = (appareil: readonly string[], compte: readonly string[]): string[] => appareil.filter((cle) => !compte.includes(cle))
 
-/** Le serveur refuse **la clé** (`404` hors de son catalogue, `400` mal formée) : la rejouer ne changerait rien. */
+/**
+ * Le serveur refuse **la demande** (`404`, `400`). Le statut ne dit pas pourquoi : une clé hors de son
+ * catalogue, mais aussi une route qu'une API plus ancienne ou un mandataire ne connaît pas. Il ne
+ * suffit donc pas à abandonner une bobine : `verser` y ajoute ce que les mondes en savent.
+ */
 export const cleRefusee = (erreur: unknown): boolean => erreur instanceof ApiError && (erreur.status === 404 || erreur.status === 400)
 
 /**
- * Le versement : une clé après l'autre, jamais deux ensemble. Acceptée ou refusée pour elle-même
- * (`cleRefusee`), la clé est **réglée** et quitte l'appareil ; toute autre panne (l'API injoignable, un
- * `500`) arrête là, sans rien régler : ce qui reste se reprend à la visite suivante.
+ * Le versement : une clé après l'autre, jamais deux ensemble, chacune une fois par visite.
+ *
+ * - Acceptée, la clé est **réglée** et quitte l'appareil.
+ * - Refusée (`cleRefusee`) : **une clé qu'un monde connaît (`connue`) n'est jamais abandonnée**, elle
+ *   reste sur l'appareil et le versement passe à la suivante ; la visite suivante la réessaie. Seule
+ *   une clé qu'aucun monde ne connaît est réglée sur un refus : rien ne la ferait accepter un jour.
+ * - Toute autre panne (l'API injoignable, un `500`) arrête là, sans rien régler.
+ * - `encore` se relit **avant chaque clé** : la carte démontée ou le membre changé, la suivante ne
+ *   part pas (elle partirait sous le cookie d'un autre).
  */
-export async function verser(restantes: readonly string[], ramasser: (cle: string) => Promise<unknown>, reglee: (cle: string) => void): Promise<void> {
+export async function verser(
+  restantes: readonly string[],
+  ramasser: (cle: string) => Promise<unknown>,
+  reglee: (cle: string) => void,
+  connue: (cle: string) => boolean,
+  encore: () => boolean = () => true,
+): Promise<void> {
   for (const cle of restantes) {
+    if (!encore()) return
     try {
       await ramasser(cle)
     } catch (erreur) {
       if (!cleRefusee(erreur)) return
+      if (connue(cle)) continue
     }
     reglee(cle)
   }
@@ -57,8 +85,10 @@ const sansDoublon = (cles: readonly string[]) => [...new Set(cles)]
  *   est en main. À la première lecture de l'état, ce que le compte tient déjà quitte l'appareil et le
  *   reste est versé (`verser`), sans rien montrer. Ramasser n'écrit plus qu'au compte : la promesse
  *   rendue échoue avec le refus du serveur, et la bobine reste en main jusqu'à `rendre`.
+ *
+ * `connue` dit si un monde du registre cache cette bobine : le versement n'abandonne que les autres.
  */
-export function useBobinesPerdues(membre: string, faitFoi: boolean, etat: Voyageur | undefined) {
+export function useBobinesPerdues(membre: string, faitFoi: boolean, etat: Voyageur | undefined, connue: (cle: string) => boolean) {
   const client = useQueryClient()
   const [appareil, setAppareil] = useState(() => lireBobines(membre))
   const appareilRef = useRef(appareil)
@@ -67,8 +97,11 @@ export function useBobinesPerdues(membre: string, faitFoi: boolean, etat: Voyage
   const faitFoiRef = useRef(faitFoi)
   faitFoiRef.current = faitFoi
 
+  // L'appareil se change, il ne se réécrit pas : le stockage est relu d'abord, et ce qu'un autre
+  // onglet vient d'y écrire est gardé (deux cartes ouvertes en 1890 s'effaceraient l'une l'autre).
   const retenir = useCallback(
-    (clesDeLAppareil: string[]) => {
+    (changer: (cles: readonly string[]) => readonly string[]) => {
+      const clesDeLAppareil = [...changer(sansDoublon([...lireBobines(membre), ...appareilRef.current]))]
       appareilRef.current = clesDeLAppareil
       setAppareil(clesDeLAppareil)
       ecrireBobines(membre, clesDeLAppareil)
@@ -84,22 +117,44 @@ export function useBobinesPerdues(membre: string, faitFoi: boolean, etat: Voyage
   const rangerAuCompte = useCallback(
     async (cle: string) => {
       const ligne = await ramasserUneBobine(cle)
+      // Partie sous la session de ce membre, revenue après son départ : le cache est celui d'un autre.
+      if (client.getQueryData<Session | null>(cles.session)?.user.id !== membre) return
       await client.cancelQueries({ queryKey: cles.voyageur, exact: true })
       client.setQueryData<Voyageur>(cles.voyageur, (e) => rangerLaBobine(e, ligne))
     },
-    [client],
+    [client, membre],
   )
 
-  // Le versement, une fois par visite de la carte, à la première lecture de l'état.
+  // La visite : celle de ce membre, tant que la carte est montée (la garde de session démonte la
+  // carte entre deux membres : `membre` ne change pas sous un crochet monté). Le versement la relit avant chaque
+  // clé (`verser`, `encore`) : un `POST` qui pend pendant une déconnexion puis une reconnexion ne
+  // laisse pas partir la clé suivante sous le cookie du membre arrivé.
   const verse = useRef(false)
+  const visite = useRef({ vivante: true })
+  useEffect(() => {
+    const laVisite = { vivante: true }
+    visite.current = laVisite
+    return () => {
+      laVisite.vivante = false
+      verse.current = false
+    }
+  }, [membre])
+
+  // Le versement, une fois par visite de la carte, à la première lecture de l'état.
   useEffect(() => {
     const auCompte = bobinesAuCompte(etat)
     if (!faitFoi || !auCompte || verse.current) return
     verse.current = true
-    const reste = resteAVerser(appareilRef.current, auCompte)
-    if (reste.length !== appareilRef.current.length) retenir(reste)
-    void verser(reste, rangerAuCompte, (cle) => retenir(appareilRef.current.filter((c) => c !== cle)))
-  }, [faitFoi, etat, retenir, rangerAuCompte])
+    if (appareilRef.current.some((cle) => auCompte.includes(cle))) retenir((cles) => resteAVerser(cles, auCompte))
+    const laVisite = visite.current
+    void verser(
+      resteAVerser(appareilRef.current, auCompte),
+      rangerAuCompte,
+      (cle) => retenir((cles) => cles.filter((c) => c !== cle)),
+      connue,
+      () => laVisite.vivante,
+    )
+  }, [faitFoi, etat, retenir, rangerAuCompte, connue])
 
   const auCompte = useMemo(() => bobinesAuCompte(etat), [etat])
   const trouvees = useMemo(() => (faitFoi ? sansDoublon([...(auCompte ?? []), ...appareil, ...enMain]) : appareil), [faitFoi, auCompte, appareil, enMain])
@@ -119,7 +174,7 @@ export function useBobinesPerdues(membre: string, faitFoi: boolean, etat: Voyage
     (cle: string): Promise<void> | null => {
       if (connues().includes(cle)) return null
       if (!faitFoiRef.current) {
-        retenir([...appareilRef.current, cle])
+        retenir((cles) => [...cles, cle])
         return rangerAuCompte(cle).catch(() => undefined)
       }
       tenir([...enMainRef.current, cle])
