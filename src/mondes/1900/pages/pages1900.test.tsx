@@ -174,14 +174,47 @@ describe('la tête de la gare', () => {
     expect(screen.queryByText(/^Bouclée/)).toBeNull()
   })
 
-  // La tête est là avant la fiche, et sur une année qui s'écrit : même titre, même horloge.
-  // Mutation : `SousLaTete` retiré des gabarits (le fronton par défaut répéterait l'année en titre).
-  it('une année en préparation garde sa tête, un seul titre, et l’estrade du chroniqueur', async () => {
+  // La tête est là avant la fiche, et sur une année qui s'écrit : même titre, même horloge. Le corps est
+  // celui du Guide, qui est sous presse : ni estrade ni chroniqueur qui écrit (décision du 9 octobre 2026).
+  // Mutations : `SousLaTete` retiré des gabarits (le fronton par défaut répéterait l'année en titre) ;
+  // `anneeEnPreparation` retiré de `PAGES_1900` (l'estrade et « Le chroniqueur écrit… » remonteraient) ;
+  // une `Toile` d'estrade remontée dans `GuideSousPresse` ; la rubrique ou la phrase du monde remplacées
+  // par celles du défaut.
+  it('une année en préparation garde sa tête, un seul titre, et dit que le Guide est sous presse, sans estrade', async () => {
     monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(EN_PREPARATION, 202) })
-    expect(await screen.findByRole('status', { name: 'Le chroniqueur écrit…' })).toBeInTheDocument()
+    const attente = await screen.findByRole('status', { name: PAGES_1900.mots.chroniqueur.ecrit })
+    expect(attente).toHaveTextContent('Le Guide est sous presse…')
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['1903'])
     expect(montrees()).toEqual(['horloge'])
-    expect(screen.getByRole('img', { name: 'Le chroniqueur sur son estrade.' })).toBeInTheDocument()
+    const page = screen.getByRole('region', { name: 'L’année 1903' })
+    expect(within(page).getByRole('heading', { level: 2, name: 'Guide du voyageur' })).toBeInTheDocument()
+    // Ni la toile de l'estrade, ni son libellé, ni l'attente du défaut ; aucune toile du tout dans ce corps.
+    expect(within(page).queryByRole('img', { name: /estrade/i })).toBeNull()
+    expect(page).not.toHaveTextContent(/estrade/i)
+    expect(within(page).queryByRole('status', { name: 'Le chroniqueur écrit…' })).toBeNull()
+    expect(page.querySelector('canvas')).toBeNull()
+  })
+
+  // Le jumeau : la page a cessé de relire. L'avis du Guide, sa plaque, « Réessayer » qui relit, toujours sans
+  // estrade. Mutations : `abandon` ignoré dans `GuideSousPresse` (l'attente resterait) ; `onReessayer` non branché.
+  it('une année en préparation abandonnée pose l’avis du Guide et « Réessayer », sans estrade', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const { requetes } = monterVoyage('/voyage/1903', { ...ROUTES, [FICHE(1903)]: () => json(EN_PREPARATION, 202) })
+      await screen.findByRole('status', { name: 'Le Guide est sous presse…' })
+      for (let i = 0; i < 40; i += 1) await vi.advanceTimersByTimeAsync(5_000)
+      const avis = await screen.findByRole('alert')
+      expect(avis).toHaveTextContent('Service interrompu')
+      expect(avis).toHaveTextContent('Le chroniqueur n’a pas répondu, reviens plus tard.')
+      expect(screen.queryByRole('status', { name: 'Le Guide est sous presse…' })).toBeNull()
+      expect(screen.queryByRole('img', { name: /estrade/i })).toBeNull()
+      const avant = requetes.filter((r) => r === FICHE(1903)).length
+      fireEvent.click(within(avis).getByRole('button', { name: 'Réessayer' }))
+      expect(await screen.findByRole('status', { name: 'Le Guide est sous presse…' })).toBeInTheDocument()
+      await waitFor(() => expect(requetes.filter((r) => r === FICHE(1903)).length).toBe(avant + 1))
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // Au calme, rien ne bouge : la feuille n'anime que sous `data-vivante='oui'`. Mutations : `calme`

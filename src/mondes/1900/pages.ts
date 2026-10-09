@@ -47,6 +47,7 @@ import TrainDuSoir from './pages/TrainDuSoir'
 import Voie from './pages/Voie'
 import VoieAOuvrir from './pages/VoieAOuvrir'
 import VoieFermee from './pages/VoieFermee'
+import GuideSousPresse from './pages/GuideSousPresse'
 import VoitureComplete from './pages/VoitureComplete'
 import PorteDuWagon from './pages/PorteDuWagon'
 import WagonRestaurant from './pages/WagonRestaurant'
@@ -144,6 +145,7 @@ export const PAGES_1900: HabillagePages = {
     teteDAnnee: Tete,
     fronton: SousLaTete,
     anneeFermee: VoieFermee,
+    anneeEnPreparation: GuideSousPresse,
     corde: Compteur,
     boniment: Guide,
     programme: Indicateur,
@@ -198,8 +200,8 @@ export const PAGES_1900: HabillagePages = {
   dessinerBandeau: unie,
   // La projection de la fiche d'un film aussi (`Hale`).
   dessinerScene: unie,
-  // L'estrade du chroniqueur, que la maquette ne dessine pas : un fond uni (plan des pages 1900, décision 9).
-  // La feuille du chroniqueur ne la monte plus (`PageDuGuide`) : seule une année en préparation la peint encore.
+  // L'estrade du chroniqueur : plus aucune page de 1900 ne la peint (la feuille est `PageDuGuide`, une année
+  // en préparation `GuideSousPresse`). L'interface des mondes la demande encore, comme sa hauteur.
   dessinerEstrade: unie,
   // Le monument de la décennie est un gabarit (`Affiche`) : cette toile ne se peint plus sur sa page.
   dessinerMonument: unie,

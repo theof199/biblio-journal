@@ -42,18 +42,9 @@ export default function PageDuGuide({ monde, quoi, esp, titre, sous, idDeLEsp, i
 
         <div className={styles.colonne} aria-live="polite">
           {corps.type === 'erreur' ? (
-            <div className={styles.avis}>
-              <span className={styles.plaque} aria-hidden="true">
-                {m.chroniqueur.relache}
-              </span>
-              <p>{corps.message}</p>
-              <Action onClick={onReessayer}>Réessayer</Action>
-            </div>
+            <AvisDuGuide plaque={m.chroniqueur.relache} message={corps.message} onReessayer={onReessayer} />
           ) : corps.type === 'attente' ? (
-            <p role="status" aria-label={corps.phrase} className={styles.attente}>
-              <span aria-hidden="true">{corps.tapee}</span>
-              <span className={styles.curseur} aria-hidden="true" />
-            </p>
+            <SousPresse phrase={corps.phrase} tapee={corps.tapee} />
           ) : corps.type === 'texte' ? (
             <>
               <p>
@@ -93,6 +84,29 @@ export default function PageDuGuide({ monde, quoi, esp, titre, sous, idDeLEsp, i
           </p>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** L'attente du Guide : la phrase à la presse (ce qui en est déjà frappé), le tiret où tombera la suite. La feuille et une année en préparation la montrent. */
+export function SousPresse({ phrase, tapee }: { phrase: string; tapee: string }) {
+  return (
+    <p role="status" aria-label={phrase} className={styles.attente}>
+      <span aria-hidden="true">{tapee}</span>
+      <span className={styles.curseur} aria-hidden="true" />
+    </p>
+  )
+}
+
+/** L'avis de gare du Guide : sa plaque rouge, ce qui est arrivé, « Réessayer ». Commun à la feuille et à une année en préparation. */
+export function AvisDuGuide({ plaque, message, onReessayer }: { plaque: string; message: string; onReessayer: () => void }) {
+  return (
+    <div className={styles.avis}>
+      <span className={styles.plaque} aria-hidden="true">
+        {plaque}
+      </span>
+      <p>{message}</p>
+      <Action onClick={onReessayer}>Réessayer</Action>
     </div>
   )
 }
