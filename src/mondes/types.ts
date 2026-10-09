@@ -32,6 +32,7 @@ import type { PropsMonument } from '../voyage/decennie/Monument'
 import type { PropsOrdreDeDecennie } from '../voyage/decennie/Ordre'
 import type { PropsRegistre } from '../voyage/decennie/Registre'
 import type { PropsComptoir } from '../voyage/film/Comptoir'
+import type { PropsFeuilleDuChroniqueur } from '../voyage/Feuille'
 import type { PropsCadreDuFeuillet } from '../voyage/Feuillet'
 import type { PropsNotice } from '../voyage/film/Notice'
 import type { PropsProgrammeDuFilm } from '../voyage/film/Programme'
@@ -627,7 +628,14 @@ export interface MotsDesPages {
   fermee: { pancarte: string; dejaVus: string; enAvance: string }
   /** La phrase d'ambiance de l'intertitre d'une année fermée, avant le titre du passeport. */
   intertitre: string
+  /** La tête et le pied de la feuille du chroniqueur : cinq mots, tous montrés quel que soit son état. */
   feuille: { tete: string; titre: string; sous: string; pied: string; imprimeur: string }
+  /**
+   * Ce que la feuille dit du chroniqueur : `ecrit`, la phrase tapée lettre à lettre pendant que le texte
+   * s'écrit ; `relache`, la bande de l'erreur (« RELÂCHE ») ; `numero`, le numéro de la feuille
+   * (« Feuille n° 1 »).
+   */
+  chroniqueur: { ecrit: string; relache: string; numero: (n: number) => string }
   /**
    * Le billet de séance ; `tampon` est le mot que le tampon frappe (« VU »), `tamponAutour` ce qui
    * court autour de lui avant la date (maquette 1890 : `encreVu`). `ouvrir` et `ouvrirSous` nomment,
@@ -857,6 +865,15 @@ export interface GabaritsDesPages {
    * pose `idDuTitre` sur son titre et `fermer` sur son bouton, et rend les enfants tels quels.
    */
   feuillet: ComponentType<PropsCadreDuFeuillet>
+  /**
+   * Le dessin de la feuille du chroniqueur (`voyage/Feuille.tsx`, `Prospectus`) : l'estrade, la tête, le
+   * titre, le texte qui se compose, l'attente, l'erreur, « Fermer ». Lue par `Feuille` lui-même, au
+   * monde que son site lui passe : ses quatre sites (l'ouverture d'une année, son générique, le contexte
+   * d'une salle, le carton d'un film) ne changent pas. `Feuille` garde le dialogue et son nom, le focus,
+   * Échap, les cadences et le calme : le dessin pose `idDeLEsp` et `idDuTitre`, `fermer` sur son bouton,
+   * et ne montre que ce que `corps` dit vu ou tapé, sans horloge.
+   */
+  feuilleDuChroniqueur: ComponentType<PropsFeuilleDuChroniqueur>
   /**
    * Le dessin du billet de séance (`voyage/billet/BilletDeSeance.tsx`) : la tête, la date, la note, les
    * réactions, la remarque, le tampon, le numéro, le bouton. Lu par `pages/VoyageBillet.tsx`, qui garde

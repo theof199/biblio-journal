@@ -53,6 +53,7 @@ export const PAGES_A_VENIR: HabillagePages = {
     fermee: { pancarte: 'Fermée jusqu’au ticket', dejaVus: 'Déjà vus', enAvance: 'en avance' },
     intertitre: 'Un monde à venir.',
     feuille: { tete: 'La feuille', titre: 'Le chroniqueur', sous: 'écrit pour toi', pied: 'Le chroniqueur', imprimeur: 'Le Voyage' },
+    chroniqueur: { ecrit: 'Le chroniqueur écrit…', relache: 'RELÂCHE', numero: (n) => `Feuille n° ${n}` },
     billet: { tete: 'Le visionnage', titre: 'Vu le', valider: 'Je l’ai vu', validerSous: 'enregistrer', tampon: 'VU', tamponAutour: 'Le Voyage · vu le', ouvrir: 'Je l’ai vu', ouvrirSous: 'poinçonner mon billet' },
     decennie: { annonce: 'La décennie', toucher: null, passeport: 'Passeport', palissade: { titre: 'Les affiches', sous: 'par année' }, registre: 'Les années', prochainement: 'À venir' },
     boite: { sur: 'Collection', titre: 'Les billets', etiquette: 'LE VOYAGE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger le billet' },

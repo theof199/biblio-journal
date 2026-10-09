@@ -113,6 +113,7 @@ export const PAGES_1900: HabillagePages = {
     fermee: { pancarte: 'Une plaque de verre', dejaVus: 'Déjà vus', enAvance: 'en avance' },
     intertitre: 'Quatre toiles défilent derrière la vitre d’un train qui ne bouge pas.',
     feuille: { tete: 'Guide du voyageur', titre: 'Le Guide', sous: 'du chroniqueur', pied: 'Le chroniqueur', imprimeur: 'Le Voyage' },
+    chroniqueur: { ecrit: 'Le chroniqueur écrit…', relache: 'RELÂCHE', numero: (n) => `Feuille n° ${n}` },
     billet: { tete: 'Le composteur', titre: 'Séance du', valider: 'Composter le billet', validerSous: 'il part au casier', tampon: 'VU', tamponAutour: 'Le voyage immobile · vu le', ouvrir: 'Composter une séance', ouvrirSous: 'ouvre le composteur' },
     decennie: { annonce: 'La ligne des années', toucher: null, passeport: 'Passeport du Voyage', palissade: { titre: 'Les affiches', sous: 'par année' }, registre: 'L’indicateur de la ligne', prochainement: 'Plaque à développer' },
     boite: { sur: 'Collection', titre: 'Le casier du contrôleur', etiquette: 'LE VOYAGE IMMOBILE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger au casier' },
