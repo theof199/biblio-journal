@@ -430,7 +430,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Quarante-six clés, deux sur la carte, quinze sur la fiche d'année, quatre sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, huit sur la sacoche, une sur le wagon-restaurant, une sur les feuillets (`feuillet` : le cadre, `Cadre` de `voyage/Feuillet.tsx`, qui la lit lui-même et garde le dialogue, le focus, Échap, le voile et la fermeture ; ses cinq sites ne changent pas) et quatre sur les célébrations (plus bas, « Les célébrations »). Neuf d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` et `porteDuWagon` sur la fiche d'année, `malleDeLaSacoche`, `courrierDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `wagonRestaurant` sur le wagon-restaurant, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Quarante-sept clés, deux sur la carte, seize sur la fiche d'année, quatre sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, huit sur la sacoche, une sur le wagon-restaurant, une sur les feuillets (`feuillet` : le cadre, `Cadre` de `voyage/Feuillet.tsx`, qui la lit lui-même et garde le dialogue, le focus, Échap, le voile et la fermeture ; ses cinq sites ne changent pas) et quatre sur les célébrations (plus bas, « Les célébrations »). Neuf d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` et `porteDuWagon` sur la fiche d'année, `malleDeLaSacoche`, `courrierDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `wagonRestaurant` sur le wagon-restaurant, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -443,7 +443,9 @@ Où vit quoi :
   que pour l'année en cours. Enfin `salles` (le cadre des salles, `voyage/salles/Rayons.tsx`) et
   `salle` (une salle, `voyage/salles/Salle.tsx`), que `voyage/salles/Salles.tsx` lit : il garde
   « En voir plus » et son guet (`useFournee`, une fois par salle), la requête du contexte, la nouvelle
-  salle et le calque `voiture`, et passe à chaque salle son numéro (`numeroDeLaSalle`,
+  salle (dont le dessin de la zone est la clé `nouvelleSalle`, `voyage/salles/TenteALouer.tsx`, que
+  `voyage/salles/NouvelleSalle.tsx` lit : il garde le calque, le guet, le refus marqué vu, le feuillet
+  et son formulaire) et le calque `voiture`, et passe à chaque salle son numéro (`numeroDeLaSalle`,
   `voyage/salles.ts` : son rang, jamais sa place dans la réponse), si elle est dépliée, et les deux
   gestes qui la déplient et la replient. La dixième, `ordreDAnnee` (`voyage/annee/Ordre.tsx`), range
   les sections d'une fiche prête : elle les reçoit montées (la corde avec sa région d'état, le

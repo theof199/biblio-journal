@@ -49,6 +49,7 @@ import type { PropsTeteDeLaSacoche } from '../voyage/sacoche/Tete'
 import type { PropsPortefeuille } from '../voyage/sacoche/Tickets'
 import type { PropsRayons } from '../voyage/salles/Rayons'
 import type { PropsSalle } from '../voyage/salles/Salle'
+import type { PropsNouvelleSalle } from '../voyage/salles/TenteALouer'
 import type { PropsProspectus } from '../voyage/seance/Prospectus'
 
 /**
@@ -838,6 +839,14 @@ export interface GabaritsDesPages {
    * rien, et ne montre que l'état que la page lui passe.
    */
   ligneDuBas: ComponentType<PropsLigneDuBas>
+  /**
+   * Le dessin de la zone « Ouvrir une nouvelle salle » (`voyage/salles/TenteALouer.tsx`) : le repos et
+   * son bouton, la salle qui s'écrit, le refus et son motif. Lue par `voyage/salles/NouvelleSalle.tsx`,
+   * que `Salles` ne monte qu'au compte IA, et qui garde le calque du feuillet, le guet, le refus marqué
+   * vu, le feuillet « Quelle salle ? » et ses deux écritures. Le dessin ne lit ni n'écrit rien : il
+   * n'offre d'ouvrir que hors de la salle qui s'écrit, et de réessayer qu'après un abandon du guet.
+   */
+  nouvelleSalle: ComponentType<PropsNouvelleSalle>
   /**
    * Le cadre d'un feuillet (`voyage/Feuillet.tsx`, `Cadre`) : le papier, le titre, « Fermer », autour
    * des choix. Lue par `Feuillet` lui-même, au monde que son site lui passe : ses cinq sites (la salle

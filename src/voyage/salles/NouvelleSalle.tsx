@@ -6,8 +6,10 @@ import { ouvrirUneSalle, refusVu, renouvelerLesPistes, type DemandeSalle, type F
 import type { Monde } from '../../mondes/types'
 import { useCalque } from '../calque'
 import Feuillet from '../Feuillet'
+import { gabaritDe } from '../gabarit'
 import { RELECTURES } from '../relecture'
 import { autresPistes, brouillonSuivant, pistesApresUsage, zoneNouvelleSalle, type Brouillon } from '../salles'
+import TenteALouer from './TenteALouer'
 import { useGuet } from './useFournee'
 import styles from './NouvelleSalle.module.css'
 
@@ -27,17 +29,6 @@ function majFiche(client: ReturnType<typeof useQueryClient>, annee: number, maj:
   client.setQueryData<FicheAnnee>(cles.annee(annee), (f) => (f && 'statut' in f && f.statut === 'prete' ? maj(f) : f))
 }
 
-/** La tente à louer de la maquette (`TENTE`). */
-function Tente() {
-  return (
-    <svg className={styles.tente} viewBox="0 0 90 54" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3">
-      <path d="M8 50V22L45 4l37 18v28" />
-      <path d="M8 22h74M36 50V32h18v18" />
-      <path d="M45 4V0" strokeDasharray="none" />
-    </svg>
-  )
-}
-
 interface Props {
   monde: Monde
   annee: number
@@ -46,10 +37,13 @@ interface Props {
 }
 
 /**
- * « Ouvrir une nouvelle salle » (maquette 1890 : `.nouvelle`, ligne 199 ; portée de
- * `BlocNouvelleSalle`, `AnneeScreen.kt`), au compte IA seulement : le bouton, la salle qui s'écrit
- * (l'étagère fantôme, la fiche relue toutes les cinq secondes), ou le refus (son motif, marqué vu
- * une fois par demande, et le bouton pour en demander une autre).
+ * « Ouvrir une nouvelle salle » (portée de `BlocNouvelleSalle`, `AnneeScreen.kt`), au compte IA
+ * seulement : la zone (le bouton, la salle qui s'écrit ou le refus), puis le feuillet « Quelle salle ? ».
+ *
+ * Le dessin de la zone est une section que le monde peut composer (`gabarits.nouvelleSalle`, par défaut
+ * `TenteALouer`). Ce qui lit ou écrit reste ici : le calque `nouvelle-salle` de l'adresse, le guet de la
+ * salle qui s'écrit (la fiche relue toutes les cinq secondes), le refus marqué vu une fois par demande,
+ * et le feuillet avec son formulaire et ses deux écritures.
  */
 export default function NouvelleSalle({ monde, annee, pistes, demande }: Props) {
   const client = useQueryClient()
@@ -66,46 +60,11 @@ export default function NouvelleSalle({ monde, annee, pistes, demande }: Props) 
     void refusVu(refusee).catch(() => undefined)
   }, [refusee])
 
-  const ouvrir = (
-    <button type="button" className={styles.bouton} onClick={() => feuillet.ouvrir('ouverte')}>
-      Ouvrir une nouvelle salle
-    </button>
-  )
+  const Zone = gabaritDe(monde, 'nouvelleSalle', TenteALouer)
 
   return (
     <>
-      {zone === 'fantome' ? (
-        <section className={styles.fantome} aria-label="La salle qui s’écrit">
-          <p className={styles.demande}>{demande?.demande}</p>
-          {guet.abandon ? (
-            <div role="alert">
-              <p>Le chroniqueur n’a pas répondu, reviens plus tard.</p>
-              <button type="button" className={styles.bouton} onClick={guet.reessayer}>
-                Réessayer
-              </button>
-            </div>
-          ) : (
-            <p role="status">La salle s’écrit…</p>
-          )}
-          <div className={styles.cadres} aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </div>
-        </section>
-      ) : (
-        <div className={styles.nouvelle}>
-          <Tente />
-          {zone === 'refus' ? (
-            <p role="alert" className={styles.motif}>
-              {demande?.motif ?? 'Le chroniqueur n’a pas trouvé de quoi ouvrir cette salle.'}
-            </p>
-          ) : (
-            <p>{monde.pages.mots.nouvelleSalle}</p>
-          )}
-          {ouvrir}
-        </div>
-      )}
+      <Zone monde={monde} annee={annee} zone={zone} demande={demande} abandon={guet.abandon} onOuvrir={() => feuillet.ouvrir('ouverte')} onReessayer={guet.reessayer} />
 
       {feuillet.valeur !== null && zone !== 'fantome' ? (
         <Feuillet monde={monde} titre="Quelle salle ?" onFermer={feuillet.fermer}>
