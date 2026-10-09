@@ -426,7 +426,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Quarante et une clés, deux sur la carte, treize sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, huit sur la sacoche et quatre sur les célébrations (plus bas, « Les célébrations »). Sept d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` sur la fiche d'année, `malleDeLaSacoche`, `courrierDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Quarante-deux clés, deux sur la carte, treize sur la fiche d'année, trois sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, huit sur la sacoche, une sur le wagon-restaurant et quatre sur les célébrations (plus bas, « Les célébrations »). Huit d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` sur la fiche d'année, `malleDeLaSacoche`, `courrierDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `wagonRestaurant` sur le wagon-restaurant, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -993,8 +993,8 @@ wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la s
 ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
 billets passe sur la carte et son poinçon doré reste au casier ; l'horaire se prend, se retire et se dit
 sur la fiche de son année, et la plaque de sa gare le dit sur la carte ; la halte s'ouvre sur la carte ;
-les cartes postales se lisent et s'écrivent dans la sacoche ; le wagon-restaurant n'a rien à
-l'écran**
+les cartes postales se lisent et s'écrivent dans la sacoche ; le wagon-restaurant a sa page, où l'on
+prend sa place ou décline (dresser une table et la porte sur la fiche d'année restent à faire, brief 16)**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -1028,6 +1028,26 @@ l'écran**
   ce qui est nouveau depuis une date. Deux instants s'y comparent, jamais deux chaînes. Le serveur ne
   calcule ni l'un ni l'autre. La carte le montre sur la pastille de la sacoche (`RUBRIQUES_DE_LA_PASTILLE`,
   `rubriquesDeLaPastille`, `nouveautesDeLaSacoche`, `nomDeLaSacoche` : « La carte du Voyage »).
+- **Le wagon-restaurant** (brief 15 des écrans des lots) est une page, `pages/VoyageWagonRestaurant.tsx`,
+  à `/voyage/wagon-restaurant` : un segment fixe, que React Router préfère à `voyage/:annee` quel que
+  soit l'ordre des lignes d'`App.tsx` (décision 2 du propriétaire ; la page se charge à la demande,
+  comme les autres pages du Voyage). Son dessin est la clé sans défaut `wagonRestaurant`, lue au monde
+  de mon année en cours : **dans un monde qui ne la compose pas (1890, « à venir », la carte en panne),
+  la page renvoie à la carte et ne lit aucune table** ; la lecture vit dans un composant monté après la
+  clé. Elle lit la carte (pour mon année) et mes tables (`cles.tables`), aucune fiche d'année. Les
+  règles, sans rendu, sont dans `voyage/wagon/tables.ts` : `roleA` (je suis l'hôte quand `hote.id` est
+  le mien), `soirPasse` (le soir d'une table est un jour de Paris : à 23 h 30 de Greenwich il est
+  passé ; deux jours se comparent en instants ; l'horloge de l'appareil ne sert qu'à cacher un geste
+  que le serveur refuserait) et `gestesOfferts` (à l'invité seulement, tant que le soir tient : les
+  deux gestes s'il attend, « Décliner » seul une fois la place prise, **plus rien une fois déclinée** ;
+  l'hôte n'a aucun geste). Le dessin reçoit mes tables **dans l'ordre servi** (plusieurs invitations
+  peuvent attendre le même soir : une liste), chacune avec son rôle, ses gestes, son envoi en cours et
+  son refus (`PropsWagonRestaurant`, `TableDuWagon`). **Deux écritures, un verrou** par référence :
+  acceptée, la table rendue se pose à sa place sur `cles.tables` en `exact`, une relecture en vol
+  annulée d'abord, sans rien périmer ni relire ; **un `409` relit les tables et ne dit rien** ; tout
+  autre refus se dit sur sa table, par le message du serveur, et se refait.
+  `pages/VoyageWagonRestaurant.test.tsx` tient la page sur un 1890 auquel on prête un dessin,
+  `voyage/wagon/tables.test.ts` les règles.
 - **La carte en sait plus, sans rien dessiner** (brief 9 des écrans des lots). `GET /me/voyage` sert
   déjà l'horaire de chaque année et les haltes : `pages/Carte.tsx` les met dans l'état de la carte,
   dans le même `useMemo` que les cases (relue à l'identique, la carte ne refait pas son état), et le

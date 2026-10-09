@@ -30,6 +30,7 @@ const VoyageRecherche = paresseux(() => import('./pages/VoyageRecherche'))
 const VoyageFilm = paresseux(() => import('./pages/VoyageFilm'))
 const VoyageBillet = paresseux(() => import('./pages/VoyageBillet'))
 const VoyageSacoche = paresseux(() => import('./pages/VoyageSacoche'))
+const VoyageWagonRestaurant = paresseux(() => import('./pages/VoyageWagonRestaurant'))
 
 export default function App() {
   return (
@@ -52,6 +53,8 @@ export default function App() {
             {/* La sacoche du voyageur (passeport, portefeuille, coulisses) : on y entre par une pastille
                 de la carte. Un segment fixe : React Router le préfère à `voyage/:annee`, et un test le garde. */}
             <Route path="voyage/sacoche" element={<VoyageSacoche />} />
+            {/* Le wagon-restaurant (mes tables) : un segment fixe lui aussi, gardé par un test. */}
+            <Route path="voyage/wagon-restaurant" element={<VoyageWagonRestaurant />} />
             <Route path="voyage/:annee" element={<VoyageAnnee />} />
             {/* La page d'une décennie (plan 2c, décision D5) : on y entre par la plaque du chapitre. */}
             <Route path="voyage/decennies/:decennie" element={<VoyageDecennie />} />

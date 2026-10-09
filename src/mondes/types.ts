@@ -12,6 +12,7 @@ import type { PropsCordeDAnnee } from '../voyage/annee/Corde'
 import type { PropsFronton } from '../voyage/annee/Fronton'
 import type { PropsHoraireDeLAnnee } from '../voyage/annee/Horaire'
 import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
+import type { PropsWagonRestaurant } from '../voyage/wagon/tables'
 import type { PropsTirette } from '../voyage/annee/Manivelle'
 import type { PropsProgramme } from '../voyage/annee/Programme'
 import type { PropsOrdreDAnnee } from '../voyage/annee/Ordre'
@@ -968,6 +969,13 @@ export interface GabaritsDesPages {
    * `voyage/halte/Halte.tsx`, qui garde Échap, le focus et le compte. Rien n'y lit ni n'y écrit.
    */
   halteDeLaCarte: ComponentType<PropsHalteDeLaCarte>
+  /**
+   * Le wagon-restaurant (plan des écrans des lots, brief 15) : mes tables, dans l'ordre servi, ce que
+   * chacune dit de ses deux convives, et les deux gestes de l'invité. **Sans défaut**
+   * (`ClesSansDefaut`), lue par `pages/VoyageWagonRestaurant.tsx` au monde **de mon année en cours** :
+   * dans un monde qui ne la compose pas, la page renvoie à la carte et ne lit aucune table.
+   */
+  wagonRestaurant: ComponentType<PropsWagonRestaurant>
 }
 
 /**
@@ -976,7 +984,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'courrierDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'courrierDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte' | 'wagonRestaurant'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

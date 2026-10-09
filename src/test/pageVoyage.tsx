@@ -18,6 +18,7 @@ await Promise.all([
   import('../pages/VoyageFilm'),
   import('../pages/VoyageBillet'),
   import('../pages/VoyageSacoche'),
+  import('../pages/VoyageWagonRestaurant'),
 ])
 
 export const SESSION = exemple<{ user: { id: string; pseudo: string } }>('/auth/me', 'get', 200)

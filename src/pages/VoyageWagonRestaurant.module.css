@@ -1,0 +1,41 @@
+/* Le wagon-restaurant : le cadre de la sacoche (son fond, son retour), au monde de l'année en cours.
+   Les couleurs et les polices viennent des jetons du monde, posés sur la racine par la page. */
+.page {
+  position: relative;
+  min-height: 100%;
+  padding-bottom: 30px;
+  background: var(--m-tel);
+  color: var(--m-papier);
+  font: 15px/1.55 var(--m-f-corps);
+}
+
+/* Le retour de la sacoche, son jumeau. */
+.retour {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding-bottom: 3px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 60%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--m-fond) 78%, transparent);
+  color: var(--m-or2);
+  font: 400 24px/1 var(--m-f-affiche);
+  text-decoration: none;
+}
+
+.retour:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* L'attente : de la carte (aucun monde n'est encore connu, la page n'a pas de jetons) ou des tables. */
+.etat {
+  margin: 0;
+  padding: 76px 16px 0;
+  text-align: center;
+}

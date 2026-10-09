@@ -82,6 +82,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/pages/VoyageRecherche.module.css',
         '/src/voyage/passeport/Anneau.module.css',
         '/src/pages/VoyageSacoche.module.css',
+        '/src/pages/VoyageWagonRestaurant.module.css',
         '/src/voyage/sacoche/Sacoche.module.css',
         '/src/voyage/sacoche/Passeport.module.css',
         '/src/voyage/sacoche/Portefeuille.module.css',

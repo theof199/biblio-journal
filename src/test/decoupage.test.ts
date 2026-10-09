@@ -22,6 +22,6 @@ describe('le découpage du Voyage', () => {
   it('App.tsx charge bien ces pages à la demande', () => {
     const [texte] = Object.values(sources)
     const paresseuses = [...texte!.matchAll(/paresseux\(\(\) => import\('\.\/pages\/(Carte|Voyage\w*)'\)\)/g)].map((trouve) => trouve[1])
-    expect(paresseuses).toHaveLength(8)
+    expect(paresseuses).toHaveLength(9)
   })
 })
