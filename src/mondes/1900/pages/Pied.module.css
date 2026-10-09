@@ -1,0 +1,130 @@
+/* Le bas d'une gare des années 1900 (les derniers écrans de 1900, brief 3 ; par analogie avec la
+   maquette « Voyage immobile 1900 » : `.edm` et `.bout-action` pour le ticket qui attend, `.tk.utilise`
+   pour le billet utilisé, `.depeche` pour le mot du jury). Les couleurs et les polices viennent des
+   jetons du monde. Seul le billet bouge, quand il se retourne, sous sa racine vivante et au tempo. */
+.bon {
+  width: min(100% - 32px, 270px);
+  margin: 4px auto 16px;
+}
+
+.refus {
+  margin: 12px 16px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--m-rouge);
+  background: color-mix(in srgb, var(--m-fond) 55%, transparent);
+  font: 15px/1.45 var(--m-f-texte);
+  color: var(--m-papier);
+}
+
+/* Le billet utilisé : deux faces l'une sur l'autre, qu'un toucher retourne. */
+.billet {
+  display: grid;
+  width: calc(100% - 32px);
+  margin: 0 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--m-encre);
+  text-align: left;
+  perspective: 800px;
+  cursor: pointer;
+}
+
+.billet:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 3px;
+}
+
+.face {
+  grid-area: 1 / 1;
+  display: grid;
+  backface-visibility: hidden;
+}
+
+.dos {
+  align-content: center;
+  padding: 10px 14px 10px 18px;
+  border-radius: 2px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--m-rouge) 60%, transparent) 0 6px, transparent 6px),
+    color-mix(in srgb, var(--m-carton) 78%, var(--m-tel));
+  font: italic 13.5px/1.4 var(--m-f-texte);
+  transform: rotateY(180deg);
+}
+
+.billet[data-retourne='oui'] .recto {
+  transform: rotateY(-180deg);
+}
+
+.billet[data-retourne='oui'] .dos {
+  transform: rotateY(0);
+}
+
+.billet[data-vivante='oui'] .face {
+  transition: transform calc(450ms * var(--tempo)) ease;
+}
+
+/* Le tampon de l'entrée, à l'encre rouge, de travers. */
+.tampon {
+  margin-right: 6px;
+  padding: 3px 8px;
+  border: 3px double var(--m-rouge);
+  font: 700 13px/1 var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-rouge);
+  transform: rotate(-9deg);
+}
+
+.retourner {
+  margin: 8px 16px 0;
+  font: italic 13px var(--m-f-texte);
+  text-align: center;
+  color: var(--m-pale);
+}
+
+/* La dépêche du jury, épinglée de travers : le papier bleuté et l'encre de l'émail. */
+.depeche {
+  position: relative;
+  margin: 30px 22px 0;
+  padding: 16px 16px 14px;
+  background: color-mix(in srgb, var(--m-email) 13%, var(--m-papier));
+  color: color-mix(in srgb, var(--m-email) 70%, var(--m-encre));
+  box-shadow: 0 10px 22px var(--m-ombre);
+  transform: rotate(-0.8deg);
+}
+
+.epingle {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--m-or2), var(--m-or3) 60%, var(--m-bois));
+  box-shadow: 0 3px 4px var(--m-ombre);
+}
+
+.depeche small {
+  display: block;
+  padding-bottom: 5px;
+  border-bottom: 1px solid currentColor;
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.depeche em {
+  display: block;
+  margin-top: 8px;
+  font: 700 20px/1.1 var(--m-f-capitales);
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.depeche p {
+  margin: 8px 0 0;
+  font: 700 13.5px/1.5 var(--m-f-presse);
+}

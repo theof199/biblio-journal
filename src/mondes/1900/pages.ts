@@ -34,6 +34,7 @@ import MalleDeLaSacoche from './pages/MalleDeLaSacoche'
 import ObjetsDeLaSacoche from './pages/ObjetsDeLaSacoche'
 import PageDeLaSacoche from './pages/PageDeLaSacoche'
 import PasseportDeLaSacoche from './pages/PasseportDeLaSacoche'
+import PiedDeLaGare from './pages/PiedDeLaGare'
 import PortefeuilleDeLaSacoche from './pages/PortefeuilleDeLaSacoche'
 import Rabat from './pages/Rabat'
 import SousLaTete from './pages/SousLaTete'
@@ -150,6 +151,7 @@ export const PAGES_1900: HabillagePages = {
     projection: Hale,
     noticeDuFilm: NoticeDuFilm,
     programmeDuFilm: ProgrammeDuFilm,
+    ligneDuBas: PiedDeLaGare,
     feuillet: CadreDuFeuillet,
     guichetDuFilm: GuichetDuFilm,
     billetDeSeance: Composteur,

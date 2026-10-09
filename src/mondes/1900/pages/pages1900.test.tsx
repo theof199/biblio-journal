@@ -445,8 +445,8 @@ describe('le corps d’une année 1900 ouverte', () => {
     expect(await screen.findByText('Ligne bouclée · Lion')).toBeInTheDocument()
     // La Palme reste attendue : la ligne est bouclée par le ticket, pas par le compte.
     expect(compteur()).toHaveTextContent('3arrivées sur 4 : la ligne est bouclée.')
-    // Le ticket qui attend reste offert au bas de la page.
-    expect(screen.getByRole('button', { name: 'Utiliser' })).toBeInTheDocument()
+    // Le ticket qui attend reste offert au bas de la page, sous son nom de 1900 (`libelleDuTicket`).
+    expect(screen.getByRole('button', { name: 'Utiliser le ticket de 1904' })).toBeInTheDocument()
   })
 
   // Une année derrière soi sans ticket : fiche de 1901, mon année est 1903. Sous le tampon, aucune

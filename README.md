@@ -561,7 +561,14 @@ Où vit quoi :
   la tête, et la feuille ne se détache (son entrée, au tempo) que hors du calme. Leurs contenus sont
   ceux des sites, inchangés. La maquette ne dessine aucun feuillet : le cadre est fait par analogie avec
   ses talons, ses choix et son carnet (validée le 9 octobre 2026 ; `mondes/1900/pages/feuillet.test.tsx`).
-  **La nouvelle salle, la ligne du bas, les
+  **Le bas d'une gare** (`PiedDeLaGare`, pour `ligneDuBas`) : sous la rubrique « Au guichet », le ticket
+  qui attend est le « Bon pour » d'une ligne bouclée (`Carton`) et son bouton corail « Utiliser le ticket
+  de 1904 » (`Action`), le refus de l'API en alerte dessous ; le billet utilisé est le ticket pâli du
+  portefeuille (`Ticket`, le dessin commun aux deux), tamponné « Entrée », qu'un toucher retourne (en
+  glissant hors du calme seulement) sur un dos qui parle de gare, de correspondances et de train du
+  soir ; le mot du jury est une dépêche télégraphique épinglée. La maquette ne dessine pas cet écran :
+  il est fait par analogie avec ses écrans 12, 13 et 15 et ses dépêches (validée le 9 octobre 2026 ;
+  `mondes/1900/pages/pied.ts`, `pied.test.tsx`). **La nouvelle salle et la
   feuille du chroniqueur gardent encore les
   composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
   uni. **Le guichet** (écran 11, `Grille` et `TableauDesDeparts`) : sous le fronton « Billets · 1900 à
