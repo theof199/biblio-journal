@@ -57,6 +57,8 @@ const LAITON_SOMBRE = '#6e5222'
 const ROUGE = '#a8352a'
 const CUIR = '#6b4324'
 const CUIR_SOMBRE = '#2a1508'
+/** Le liseré d'un objet sombre, pour qu'il se détache d'un décor sombre (le chapeau melon devant Creil). */
+const LISERE = '#d9c9a3'
 
 /** Dans l'ordre des années : une gare, un objet. */
 export const OBJETS: readonly ObjetTrouve[] = [
@@ -77,15 +79,17 @@ export const OBJETS: readonly ObjetTrouve[] = [
   },
   {
     cle: 'melon',
-    quai: { dx: -132, bas: 29.5, penche: -10 },
+    // La maquette le posait à 29,5 % : devant les haies sombres de Creil, où un feutre noir ne se lit
+    // pas. Il attend plus bas, sur le sol clair du quai, et son feutre porte un liseré clair.
+    quai: { dx: -132, bas: 24, penche: -10 },
     annee: 1901,
     nom: 'un chapeau melon',
     court: 'Chapeau melon',
     traits: [
-      { d: 'M-10 4 C-10 -12 10 -12 10 4 Z', fond: NOIR },
-      { d: rect(-10, 1, 20, 3.4), fond: '#5a3a1c' },
-      { d: 'M-17 5 C-10 9 10 9 17 5 C14 3 -14 3 -17 5 Z', fond: NOIR },
-      { d: 'M-6 -5 C-4 -9 2 -9 4 -8', trait: '#8a8073', epais: 1.2, rond: true },
+      { d: 'M-10 4 C-10 -12 10 -12 10 4 Z', fond: NOIR, trait: LISERE, epais: 1.3 },
+      { d: rect(-10, 1, 20, 3.4), fond: '#7a4f26' },
+      { d: 'M-17 5 C-10 9 10 9 17 5 C14 3 -14 3 -17 5 Z', fond: NOIR, trait: LISERE, epais: 1.3 },
+      { d: 'M-6 -5 C-4 -9 2 -9 4 -8', trait: '#a89c8a', epais: 1.4, rond: true },
     ],
   },
   {
