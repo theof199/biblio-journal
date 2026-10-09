@@ -1,5 +1,5 @@
 import type { HalteVue, VueMonde } from '../types'
-import { c, F_RAIL } from './couleur'
+import { c, F_RAIL, VERT } from './couleur'
 import { aDevelopper, milieuDeLaGare } from './gares'
 import { dansLaFenetre } from './toiles'
 import { ANNEES } from './trace'
@@ -48,7 +48,7 @@ export function aiguillagesALEcran(v: Pick<VueMonde, 'W' | 'H' | 'avance' | 'cas
 /** Ce que le poteau écrit sous le nom : le compte de ce qui est servi, jamais « trois ». */
 export const filmsDuPoteau = (total: number): string => `EMBRANCHEMENT · ${total} FILM${total > 1 ? 'S' : ''}`
 
-/** Le levier à contrepoids (maquette : `LEVIER_SVG`, 56 sur 84, son pied en bas au milieu) et l'étiquette au nom de la halte. */
+/** Le levier à contrepoids (maquette : `LEVIER_SVG`, 56 sur 84, son pied en bas au milieu) et l'étiquette au nom de la halte, au vert de la halte (`VERT`, la source du jeton `--m-vert`). */
 function levier(g: CanvasRenderingContext2D, x: number, y: number, nom: string): void {
   g.save()
   g.translate(x - 28, y - 84)
@@ -77,7 +77,7 @@ function levier(g: CanvasRenderingContext2D, x: number, y: number, nom: string):
   g.arc(0, -24, 9.5, 0, Math.PI * 2)
   g.fill()
   g.stroke()
-  g.fillStyle = c('#1d3767')
+  g.fillStyle = c(VERT)
   g.beginPath()
   g.arc(0, -24, 9.5, -Math.PI / 2, Math.PI / 2)
   g.closePath()
@@ -104,7 +104,7 @@ function levier(g: CanvasRenderingContext2D, x: number, y: number, nom: string):
   const w = g.measureText(texte).width + 16
   g.fillStyle = c('#000000', 0.45)
   g.fillRect(-w / 2 + 1, -7, w, 17)
-  g.fillStyle = c('#1d3767')
+  g.fillStyle = c(VERT)
   g.fillRect(-w / 2, -9, w, 17)
   g.strokeStyle = c('#f4efe2')
   g.lineWidth = 1
@@ -137,7 +137,7 @@ function poteau(g: CanvasRenderingContext2D, x: number, y: number, halte: HalteV
   g.rotate((-4 * Math.PI) / 180)
   g.fillStyle = c('#000000', 0.35)
   g.fillRect(-70, -19, 126, 44)
-  g.fillStyle = c('#1d3767')
+  g.fillStyle = c(VERT)
   g.strokeStyle = c('#f4efe2')
   g.lineWidth = 2.5
   g.lineJoin = 'round'

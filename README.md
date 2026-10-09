@@ -1185,9 +1185,12 @@ guichet d'un film**
   les cinq du contrat, et « Voir sur le Plex » s'il en a un) et « Revenir sur la ligne », le seul
   bouton : **aucun geste n'y marque un film vu et aucun film ne s'y ouvre** (décision 9). Il entre en
   glissant au tempo, jamais au calme, et son bouton reste inerte un instant hors du calme
-  (`GARDE_DU_CHOIX`). Le vert de la maquette n'est pas porté : le bleu de l'émail, en attendant le
-  choix du propriétaire (décision 12). Le HUD réécrit pour la halte et le levier qui bascule ne sont
-  pas faits. `mondes/1900/monde1900.test.ts` et `mondes/1900/pages/halte.test.tsx` le tiennent.
+  (`GARDE_DU_CHOIX`). **La halte est au vert de la maquette** (`--halte` ; décision 12 du propriétaire,
+  9 octobre 2026) : la plaque et l'en-tête de l'indicateur par le jeton `--m-vert`, le poteau fléché,
+  l'étiquette et le contrepoids du levier par `mondes/1900/couleur.ts`, `VERT`, **la seule écriture
+  du vert de 1900**, d'où le jeton tire sa valeur (un dessin au canvas ne lit pas une variable de
+  feuille) ; le lien Plex et le contour du focus, que la maquette n'a pas, restent au bleu de l'émail.
+  Le HUD réécrit pour la halte et le levier qui bascule ne sont pas faits. `mondes/1900/monde1900.test.ts` et `mondes/1900/pages/halte.test.tsx` le tiennent.
   **La plaque d'une gare dit son horaire** (brief 11 ; `voyage/horaire.ts`, `horaireDePlaque`, une
   règle pure tirée de `CaseVue.horaire`) : tenu, « à l'heure » et `tenu` pour le filet doré ; accepté,
   « avant » et le jour de la semaine de l'échéance servie (`semaineDeLEcheance` : un mercredi se dit
