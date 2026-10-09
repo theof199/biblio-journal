@@ -57,16 +57,36 @@ export const levierTire = (halte: Pick<HalteVue, 'cle'>, v: Pick<VueMonde, 'levi
 export const PENTE_DU_LEVIER = 26
 
 /**
+ * La course du manche, de 0 (parti) à 1 (posé), pour une part `u` de la bascule : la courbe de la
+ * maquette (`.levier .manche`, `cubic-bezier(.3, 1.4, .5, 1)`, l. 1200), qui **dépasse** sa position
+ * (1,053 au plus, vers 55 % de la durée : 2,8° sur les 52 de la course) puis y revient, comme un
+ * contrepoids qui retombe. Exacte à ses deux bornes ; `x` croît avec `s`, d'où la dichotomie.
+ */
+export function courseDuLevier(u: number): number {
+  if (u <= 0) return 0
+  if (u >= 1) return 1
+  const courbe = (s: number, p1: number, p2: number): number => 3 * (1 - s) ** 2 * s * p1 + 3 * (1 - s) * s ** 2 * p2 + s ** 3
+  let bas = 0
+  let haut = 1
+  for (let i = 0; i < 40; i++) {
+    const s = (bas + haut) / 2
+    if (courbe(s, 0.3, 0.5) < u) bas = s
+    else haut = s
+  }
+  return courbe((bas + haut) / 2, 1.4, 1)
+}
+
+/**
  * La pente du manche à cette image, en degrés : `-PENTE_DU_LEVIER` au repos, `+PENTE_DU_LEVIER` tiré.
  * Entre les deux il bascule en `BASCULE_DU_LEVIER`, à l'aller comme au retour, depuis l'instant où sa
- * halte s'est ouverte ou refermée ; au calme (`vivant` faux, ou daté de -9) il est dans sa position.
+ * halte s'est ouverte ou refermée, et rebondit en fin de course (`courseDuLevier`) ; au calme
+ * (`vivant` faux, ou daté de -9) il est dans sa position.
  */
 export function penteDuLevier(halte: Pick<HalteVue, 'cle'>, v: Pick<VueMonde, 'levier' | 't' | 'vivant'>): number {
   const vers = levierTire(halte, v) ? PENTE_DU_LEVIER : -PENTE_DU_LEVIER
   if (v.levier === null || v.levier.cle !== halte.cle || !v.vivant) return vers
   const u = clamp(((v.t - v.levier.t0) * 1000) / BASCULE_DU_LEVIER, 0, 1)
-  // Il part vite et se pose doucement, sans le rebond de la maquette.
-  return -vers + 2 * vers * (1 - (1 - u) ** 3)
+  return -vers + 2 * vers * courseDuLevier(u)
 }
 
 /** Ce que le poteau écrit sous le nom : le compte de ce qui est servi, jamais « trois ». */

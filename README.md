@@ -1198,7 +1198,9 @@ guichet d'un film**
   `LevierVue` : la clé, `tire`, `t0` ; refermée, la clé reste et `tire` tombe, pour que le levier
   revienne) ; 1900 en tire un fait, `levierTire` (ce levier-là, tant que sa halte est ouverte, jamais
   celui d'une autre), et une pente, `penteDuLevier` (de -26° à +26° en `BASCULE_DU_LEVIER`, au tempo,
-  à l'aller comme au retour ; au calme il est dans sa position). Ni la règle de place ni la zone ne le
+  à l'aller comme au retour, sur la courbe de la maquette, `courseDuLevier` : le manche dépasse sa
+  position de 2,8° vers 55 % de la bascule puis s'y pose, dans la même durée ; au calme il est dans sa
+  position). Ni la règle de place ni la zone ne le
   lisent : tiré, il se touche au même endroit. Une halte que l'adresse porte en attendant son tour ne
   bascule rien. Le fait se teste (`pages/Carte.halte.test.tsx`, `carte/CarteCanvas.test.ts`,
   `carte/moteur.test.ts`, `mondes/1900/monde1900.test.ts`), le trait n'a pas de test. Le dialogue

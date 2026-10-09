@@ -10,7 +10,7 @@ import { vueFactice } from '../../test/vueFactice'
 import { contexteFactice } from '../../test/contexteFactice'
 import { aDevelopper, developpement, ecranDeLaCase, estFermee, gareALEcran, milieuDeLaGare, objetsSurLeQuai, RAYON_D_OBJET } from './gares'
 import { OBJETS, phraseDeLObjet } from './objets'
-import { aiguillagesALEcran, filmsDuPoteau, levierTire, PENTE_DU_LEVIER, penteDuLevier, RAYON_DU_LEVIER } from './aiguillage'
+import { aiguillagesALEcran, courseDuLevier, filmsDuPoteau, levierTire, PENTE_DU_LEVIER, penteDuLevier, RAYON_DU_LEVIER } from './aiguillage'
 import { trouverZone } from '../../carte/zones'
 import { CACHETTES } from './bobines'
 import { DATES, PLACES_DES_DEPECHES } from './depeches'
@@ -630,12 +630,41 @@ describe('l’aiguillage d’une halte servie', () => {
     expect(penteDuLevier(MELIES, v(10, false))).toBe(PENTE_DU_LEVIER)
     expect(penteDuLevier(MELIES, v(fin + 1, false))).toBe(-PENTE_DU_LEVIER)
     for (const tire of [true, false]) {
-      const milieu = penteDuLevier(MELIES, v((10 + fin) / 2, tire))
-      expect(Math.abs(milieu)).toBeLessThan(PENTE_DU_LEVIER)
+      const quart = penteDuLevier(MELIES, v(10 + (fin - 10) / 8, tire))
+      expect(Math.abs(quart)).toBeLessThan(PENTE_DU_LEVIER)
       expect(penteDuLevier(MELIES, v(10, tire, false))).toBe(tire ? PENTE_DU_LEVIER : -PENTE_DU_LEVIER)
       expect(penteDuLevier(ZECCA, v((10 + fin) / 2, tire))).toBe(-PENTE_DU_LEVIER)
     }
     expect(penteDuLevier(MELIES, { t: 500, vivant: true, levier: { cle: 'melies', tire: true, t0: -9 } })).toBe(PENTE_DU_LEVIER)
+  })
+
+  // Le rebond de la maquette (`cubic-bezier(.3, 1.4, .5, 1)`) : le manche passe sa position, d'un
+  // rien, puis y revient, dans la durée de la bascule. Mutations : l'ancienne courbe sans rebond
+  // (`1 - (1 - u) ** 3` : rien ne dépasse) ; les deux ordonnées de la courbe échangées (`1, 1.4` : le
+  // sommet plus haut et plus tard que celui de la maquette) ; un rebond de ressort (`1.4` devenu `3`).
+  it('le manche dépasse sa position en fin de course puis y revient, sans sortir de la durée de la bascule', () => {
+    expect(courseDuLevier(0)).toBe(0)
+    expect(courseDuLevier(1)).toBe(1)
+    expect(courseDuLevier(-1)).toBe(0)
+    expect(courseDuLevier(2)).toBe(1)
+    const pas = Array.from({ length: 101 }, (_, i) => courseDuLevier(i / 100))
+    const sommet = Math.max(...pas)
+    const rang = pas.indexOf(sommet)
+    // Le sommet de la maquette : 1,053 de la course, vers 55 % de la durée.
+    expect(sommet).toBeGreaterThan(1.04)
+    expect(sommet).toBeLessThan(1.07)
+    expect(rang).toBeGreaterThan(50)
+    expect(rang).toBeLessThan(60)
+    // Il monte jusqu'au sommet, puis redescend jusqu'à se poser : un seul rebond, pas une oscillation.
+    for (let i = 1; i <= rang; i++) expect(pas[i]!).toBeGreaterThan(pas[i - 1]!)
+    for (let i = rang + 1; i <= 100; i++) expect(pas[i]!).toBeLessThan(pas[i - 1]!)
+    // La pente le suit dans les deux sens, et se pose exactement à la fin de la bascule, pas après.
+    const v = (t: number, tire: boolean) => ({ t, vivant: true, levier: { cle: 'melies', tire, t0: 10 } })
+    const duree = BASCULE_DU_LEVIER / 1000
+    expect(penteDuLevier(MELIES, v(10 + (duree * rang) / 100, true))).toBeGreaterThan(PENTE_DU_LEVIER)
+    expect(penteDuLevier(MELIES, v(10 + (duree * rang) / 100, false))).toBeLessThan(-PENTE_DU_LEVIER)
+    expect(penteDuLevier(MELIES, v(10 + duree, true))).toBe(PENTE_DU_LEVIER)
+    expect(penteDuLevier(MELIES, v(10 + duree, false))).toBe(-PENTE_DU_LEVIER)
   })
 
   // Le levier tiré se touche au même endroit : ni la règle de place ni la zone ne le lisent.
