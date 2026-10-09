@@ -480,6 +480,105 @@ describe('le moteur de la carte', () => {
     expect([...new Set(tuiles)]).toEqual([`${W * attendue}x${512 * attendue}`])
   })
 
+  // Le banc mesure à 2 : un 2 écrit en dur là où le moteur lit sa densité y passe inaperçu. Ici le
+  // même fait se lit à 1, 2 et 3, en pixels CSS : ce que le doigt touche et ce que l'œil voit ne
+  // dépendent pas de la densité de la toile.
+  describe('à toute densité, en pixels CSS', () => {
+    /** Une zone large (40, au-dessus du rayon minimal) et un feu, posés par 1890 dans le repère de base, devant le décor. */
+    const PHARE = { x: 200, y: 400, r: 40 }
+    const FEU = { x: 120, y: 300, r: 30 }
+    const monterA = (densite: number, options: Parameters<typeof monter>[0] = {}) => {
+      const banc = monter({ calme: true, auCalme: { 1890: ['phare'] }, ...options })
+      const mondeDe = banc.deps.mondeDe
+      banc.deps.mondeDe = (d) => {
+        const m = mondeDe(d)
+        if (d !== 1890) return m
+        return {
+          ...m,
+          dessinerProche: (v) => {
+            m.dessinerProche(v)
+            v.zone('phare', PHARE.x, PHARE.y, PHARE.r, undefined, 3)
+            v.feu(FEU.x, FEU.y, FEU.r, 'or', 1)
+          },
+        }
+      }
+      banc.moteur.mesurer(W, H, densite)
+      banc.moteur.defiler(MARGE_HAUT)
+      banc.appels.length = 0
+      banc.moteur.image(1000)
+      return banc
+    }
+    const toucher = (moteur: MoteurCarte, x: number, y: number) => {
+      moteur.pointeur('bas', x, y, false)
+      moteur.pointeur('haut', x, y, false)
+    }
+    const DENSITES = [1, 2, 3]
+
+    // Mutations (`vueMonde`, `zone`) : `ecranDe(m, 2, lx, ly)`, la zone d'un téléphone à 3 partirait
+    // une fois et demie trop loin ; `rayonEcran(m, 2, lr)`, elle serait une fois et demie trop large.
+    it.each(DENSITES)('une zone se touche au même endroit et à la même taille : densité %d', (densite) => {
+      const dedans = [[PHARE.x, PHARE.y], [PHARE.x, PHARE.y + PHARE.r - 1], [PHARE.x - PHARE.r + 1, PHARE.y]] as const
+      const dehors = [[PHARE.x, PHARE.y + PHARE.r + 2], [PHARE.x - PHARE.r - 2, PHARE.y], [PHARE.x * 1.5, PHARE.y * 1.5]] as const
+      for (const [x, y] of dedans) {
+        const banc = monterA(densite)
+        toucher(banc.moteur, x, y)
+        expect(reactions).toEqual(['phare'])
+      }
+      for (const [x, y] of dehors) {
+        const banc = monterA(densite)
+        toucher(banc.moteur, x, y)
+        expect(reactions).toEqual([])
+      }
+    })
+
+    // Les mêmes mutations, sur ce que le moteur inscrit lui-même : l'objet dit à la page où il a été
+    // pris (l'envol part de là), la bobine se ramasse où le monde l'a posée.
+    it.each(DENSITES)('un objet et une bobine sont où le monde les a posés : densité %d', (densite) => {
+      const banc = monterA(densite, { objets: true })
+      toucher(banc.moteur, OU_OBJET.x, OU_OBJET.y)
+      const [cle, ou] = vi.mocked(banc.rappels.objet!).mock.calls[0]!
+      expect(cle).toBe(OBJET.cle)
+      expect(ou.x).toBeCloseTo(OU_OBJET.x, 6)
+      expect(ou.y).toBeCloseTo(OU_OBJET.y, 6)
+      toucher(banc.moteur, OU_BOBINE.x + 10, OU_BOBINE.y)
+      expect(banc.rappels.bobine).toHaveBeenCalledWith(BOBINE.cle)
+    })
+
+    // Mutations (`vueMonde`, `feu`) : `ecranDe(m, 2, x, y)`, le halo d'un téléphone à 3 quitterait sa
+    // lampe ; le rayon divisé par 2 en dur, il serait une fois et demie trop large.
+    it.each(DENSITES)('un feu fait son halo au même endroit et à la même taille : densité %d', (densite) => {
+      const banc = monterA(densite, { heure: 23 })
+      const halos = banc.appels.filter((a) => a.nom === 'createRadialGradient').map((a) => (a.args as number[]).map((n) => Math.round(n * 1e6) / 1e6))
+      expect(halos).toContainEqual([FEU.x, FEU.y, 0, FEU.x, FEU.y, FEU.r])
+    })
+
+    // Mutation (`dessiner`) : `setTransform(2, 0, 0, 2, 0, 0)`, une toile de 1170 px peinte sur ses
+    // deux tiers.
+    it.each([[1, 1], [2, 2], [3, 3], [4, 3]])('le repère de l’image est celui de la toile : %d à l’appareil, %d au repère', (appareil, attendue) => {
+      const banc = monterA(appareil)
+      const reperes = banc.appels.filter((a) => a.nom === 'setTransform').map((a) => a.args)
+      expect(reperes.length).toBeGreaterThan(0)
+      expect([...new Set(reperes.map((r) => r.join()))]).toEqual([[attendue, 0, 0, attendue, 0, 0].join()])
+    })
+
+    // Une tuile du sol a sa densité à elle (2 au plus) : son contexte se met à son échelle, pas à celle
+    // de la toile, et elle se pose en pixels CSS. Mutations (`tuile`) : `x.scale(this.dpr, this.dpr)`,
+    // le sol d'un téléphone à 3 serait peint à 3 dans une tuile à 2, rogné d'un tiers ; (`scene`) la
+    // tuile posée sans sa largeur ni sa hauteur, donc à sa taille en pixels.
+    it.each([[1, 1], [2, 2], [3, 2], [4, 2]])('une tuile du sol est peinte à son échelle et posée en pixels CSS : %d à l’appareil, %d à la tuile', (appareil, attendue) => {
+      const banc = monterA(appareil)
+      const tuiles = banc.tailles.map((t, i) => ({ t, i })).filter(({ t }) => t === `${W * attendue}x${TUILE * attendue}`).map(({ i }) => i)
+      // Celles de cette mesure : le montage en a cuit d'autres, à 2.
+      const posees = banc.appels.filter((a) => a.nom === 'drawImage' && tuiles.includes((a.args[0] as { numero: number }).numero))
+      expect(posees.length).toBeGreaterThan(0)
+      for (const a of posees) {
+        expect(a.args.slice(3)).toEqual([W, TUILE])
+        const echelles = banc.toiles[(a.args[0] as { numero: number }).numero]!.filter((x) => x.nom === 'scale').map((x) => x.args)
+        expect(echelles[0]).toEqual([attendue, attendue])
+      }
+    })
+  })
+
   // Mutation : `nuit: 0` dans `vueMonde`, ou l'heure du visiteur ignorée : la foire resterait de jour à minuit.
   it('donne au monde la nuit de l’heure du visiteur', () => {
     monter({ heure: 23 }).moteur.image(1000)
