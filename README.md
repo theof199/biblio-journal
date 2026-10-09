@@ -1189,7 +1189,10 @@ guichet d'un film**
   bascule rien. Le fait se teste (`pages/Carte.halte.test.tsx`, `carte/CarteCanvas.test.ts`,
   `carte/moteur.test.ts`, `mondes/1900/monde1900.test.ts`), le trait n'a pas de test. Le dialogue
   (`mondes/1900/pages/HalteDeLaCarte.tsx`, `Halte.module.css`, les mots dans `halte.ts`) : la petite
-  gare dessinée (`DessinDeLaHalte.tsx`, les tracés de la maquette, aucune photographie), la plaque au
+  gare dessinée (`DessinDeLaHalte.tsx`, les tracés de la maquette) devant le lointain en photographie
+  (correction du 9 octobre 2026 ; maquette : `.halte::before`, `--i-loin1` ; `imageDu1900('loin1')`, le
+  premier lointain de la ligne, déjà dans `assets/` avec son crédit et au précache : aucun poids de
+  plus ; à la place, sous le virage et le fondu de la maquette, muette ; sans elle le ciel reste), la plaque au
   nom servi et « hors ligne · embranchement », l'indicateur (« Halte · n films », « v sur n », puis par
   film son affiche ou « sans affiche », son titre, son année, son état par les mots d'un film de salle,
   les cinq du contrat, et « Voir sur le Plex » s'il en a un) et « Revenir sur la ligne », le seul

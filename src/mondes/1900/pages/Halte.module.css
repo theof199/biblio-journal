@@ -2,9 +2,10 @@
    un dialogue par-dessus la carte, le ciel pâle d'une campagne, la petite gare dessinée au pied, sa
    plaque émaillée et son indicateur de papier. La plaque et l'en-tête de l'indicateur sont au vert de
    la halte (maquette : `--halte`, le jeton `--m-vert` ; décision 12 du propriétaire, 9 octobre 2026) ;
-   le lien Plex et le contour du focus, que la maquette n'a pas, restent au bleu de l'émail. La
-   maquette y posait aussi une photographie du lointain : ici non. Toute durée est au tempo, et rien
-   ne bouge hors de `data-vivante='oui'`. */
+   le lien Plex et le contour du focus, que la maquette n'a pas, restent au bleu de l'émail. Derrière
+   la petite gare, le lointain en photographie (`.lointain`, posée par le composant ; maquette :
+   `.halte::before`, `--i-loin1`). Toute durée est au tempo, et rien ne bouge hors de
+   `data-vivante='oui'`. */
 .halte {
   position: absolute;
   inset: 0;
@@ -19,6 +20,24 @@
     radial-gradient(ellipse 92% 62% at 50% 58%, transparent 45%, color-mix(in srgb, var(--m-velours) 34%, transparent)),
     linear-gradient(color-mix(in srgb, var(--m-papier2) 82%, var(--m-email)), var(--m-papier) 34%, var(--m-papier2) 62%);
   color: var(--m-encre);
+}
+
+/* Le lointain : la plaine du premier lointain de la ligne, à la place et sous le virage que la
+   maquette lui donne (de 36 % à 76 % de la hauteur, débordant de 6 % de chaque côté, cadrée à 12 % 0,
+   fondue vers le ciel par un masque dont seule l'opacité compte). Sans image, le ciel reste. */
+.lointain {
+  position: absolute;
+  top: 36%;
+  right: -6%;
+  left: -6%;
+  height: 40%;
+  background-position: 12% 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: sepia(0.5) saturate(0.8) contrast(0.84) brightness(1.16);
+  -webkit-mask-image: linear-gradient(transparent 6%, var(--m-fond) 36%);
+  mask-image: linear-gradient(transparent 6%, var(--m-fond) 36%);
+  pointer-events: none;
 }
 
 .decor {

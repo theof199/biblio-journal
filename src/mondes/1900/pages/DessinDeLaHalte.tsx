@@ -1,8 +1,8 @@
 /**
  * La petite gare de campagne au bout de l'embranchement, et l'atelier vitré à côté (maquette « Voyage
  * immobile 1900 », `#halte`, l. 1548-1616) : les tracés de la maquette, recopiés tels quels, sans son
- * filtre de matière. Un dessin, aucune photographie ; ses couleurs sont sa donnée. Muet : le dialogue
- * dit le nom de la halte.
+ * filtre de matière. Un dessin, posé devant la photographie du lointain que le dialogue porte
+ * (`HalteDeLaCarte.tsx`) ; ses couleurs sont sa donnée. Muet : le dialogue dit le nom de la halte.
  */
 export default function DessinDeLaHalte() {
   return (

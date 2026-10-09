@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { useMouvementReduit } from '../../../ui/mouvement'
 import { GARDE_DU_CHOIX } from '../../../voyage/celebrations/deroule'
 import type { PropsHalteDeLaCarte } from '../../../voyage/halte/Halte'
+import { imageDu1900 } from '../images'
 import DessinDeLaHalte from './DessinDeLaHalte'
 import { MOTS_DE_LA_HALTE as M, compteDit, compteLu, enteteDeLaHalte, etatDit, plexDe } from './halte'
 import styles from './Halte.module.css'
@@ -14,6 +15,10 @@ import styles from './Halte.module.css'
  * marque un film vu et aucun film ne s'y ouvre** (décision 9 du propriétaire : un film de halte se
  * cherche et se composte comme tout film) : le seul bouton est « Revenir sur la ligne ».
  *
+ * Derrière la petite gare dessinée, le lointain en photographie (maquette : `.halte::before`,
+ * `--i-loin1` ; ici `loin1` de `assets/`, le premier lointain que la carte montre déjà par la vitre :
+ * aucun poids de plus), décorative, donc muette ; sans elle le ciel reste.
+ *
  * Un dialogue par-dessus la carte ; il pose lui-même les jetons du monde (la carte ne les pose pas),
  * le tempo vient de l'écran de la carte. Il entre en glissant de la droite, jamais au calme
  * (`data-vivante`). Il s'ouvre sous le doigt qui vient de toucher le levier : hors du calme, « Revenir
@@ -25,6 +30,7 @@ export default function HalteDeLaCarte({ monde, halte, compte, premier, fermer }
   const { jetons, mots } = monde.pages
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof jetons = { ...jetons }
+  const lointain = imageDu1900('loin1')
   const [arme, setArme] = useState(calme)
   useEffect(() => {
     if (arme) return
@@ -33,6 +39,7 @@ export default function HalteDeLaCarte({ monde, halte, compte, premier, fermer }
   }, [arme])
   return (
     <div className={styles.halte} style={style} role="dialog" aria-modal="true" aria-labelledby="halte-nom" data-vivante={calme ? 'non' : 'oui'}>
+      {lointain ? <div className={styles.lointain} style={{ backgroundImage: `url(${lointain})` }} aria-hidden="true" /> : null}
       <div className={styles.decor}>
         <DessinDeLaHalte />
       </div>
