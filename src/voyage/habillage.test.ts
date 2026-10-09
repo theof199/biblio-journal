@@ -112,6 +112,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/mondes/1900/pages/Fetes.module.css',
         '/src/mondes/1900/pages/Controleur.module.css',
         '/src/mondes/1900/pages/Halte.module.css',
+        '/src/mondes/1900/pages/Wagon.module.css',
       ]),
     )
   })

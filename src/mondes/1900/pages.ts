@@ -40,6 +40,7 @@ import TrainDuSoir from './pages/TrainDuSoir'
 import Voie from './pages/Voie'
 import VoieFermee from './pages/VoieFermee'
 import VoitureComplete from './pages/VoitureComplete'
+import WagonRestaurant from './pages/WagonRestaurant'
 
 /** Le teck des panneaux : le fond de toute page du monde (maquette : `.ecr`, `--bois`). */
 const TECK = '#2b1d13'
@@ -168,6 +169,7 @@ export const PAGES_1900: HabillagePages = {
     feteDeLAnnee: LigneBouclee,
     controleurDeLaCarte: ControleurDeLaCarte,
     halteDeLaCarte: HalteDeLaCarte,
+    wagonRestaurant: WagonRestaurant,
   },
   // `guichet` : ce qui tient au-dessus de la tablette (le retour, le fronton, la grille), la place que la
   // page ajoute en bas pour que la tablette monte au-dessus du clavier.

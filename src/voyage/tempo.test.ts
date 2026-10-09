@@ -72,6 +72,8 @@ const AMBIANCE: Record<string, (selecteur: string) => boolean> = {
   '/src/mondes/1900/pages/Courroie.module.css': (s) => s === ".courroie[data-vivante='oui'] .anneau",
   // La fausse voiture d'un Hale's Tours : l'écran et les banquettes qui tanguent, le faisceau et l'écran qui scintillent, en boucle.
   '/src/mondes/1900/pages/Hale.module.css': (s) => /^\.hale\[data-vivante='oui'\] \.(ecran|ecran::after|faisceau|banquettes)$/.test(s),
+  // Le wagon-restaurant 1900 : la campagne qui file derrière la vitre, trois plans, en boucle.
+  '/src/mondes/1900/pages/Wagon.module.css': (s) => /^\.scene\[data-vivante='oui'\] \.(l1|l2|l3)$/.test(s),
 }
 
 /**

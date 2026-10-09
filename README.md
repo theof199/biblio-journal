@@ -1047,7 +1047,23 @@ prend sa place ou décline (dresser une table et la porte sur la fiche d'année 
   annulée d'abord, sans rien périmer ni relire ; **un `409` relit les tables et ne dit rien** ; tout
   autre refus se dit sur sa table, par le message du serveur, et se refait.
   `pages/VoyageWagonRestaurant.test.tsx` tient la page sur un 1890 auquel on prête un dessin,
-  `voyage/wagon/tables.test.ts` les règles.
+  `voyage/wagon/tables.test.ts` les règles. **1900 la remplit** (maquette, écran 20 ;
+  `mondes/1900/pages/WagonRestaurant.tsx`, `Wagon.module.css`, les mots dans `wagon.ts`) : sous « Ce
+  soir », **une scène par table** dans l'ordre servi, puis « Les soirs passés » en lignes, sans scène ni
+  geste. La scène est le tracé de la maquette (`DessinDeLaTable.tsx`, engendré de ses lignes 2342 à
+  2460 : des tracés, aucune image, décision 14 ; ses réserves, dégradés et couverts, ne se posent
+  qu'une fois par page, `ReservesDuWagon`, et ce qu'elle définit elle-même prend un identifiant par
+  scène) : le couvert de l'hôte, à gauche, toujours servi ; celui de l'invité, à droite, selon `etat`
+  (`data-etat` : son vin et sa serviette dépliée une fois la place prise, la serviette pliée sinon, son
+  carton tourné et rouge une fois la place rendue). Deux cartons (« Toi » pour moi) et le menu, qui ne
+  dit que `film.titre`, « Ce soir » et « servi pour deux » : ni réalisateur, ni année, ni durée, ni
+  heure (constat 17). Les gestes sont ceux que la page offre, et eux seuls. **« Vu ensemble » se lit sur
+  `vu_ensemble`, jamais sur l'état** ; rien de `mon_billet` n'est dessiné (le mien et son tampon : brief
+  16), « Composter à deux » et « la proposition retourne au train du soir » de la maquette ne sont pas
+  repris (faux au contrat). Seuls les lointains de la vitre bougent, en boucle (`AMBIANCE`), jamais au
+  calme ; la mise en lumière de la maquette (la lampe qui s'allume, le menu qui se pose) n'est pas
+  portée. Le vert de « a pris sa place » attend son jeton (décision 12) : l'encre en tient lieu.
+  `mondes/1900/pages/wagonRestaurant.test.tsx` tient ce qu'il dit et offre, et la page entière en 1901.
 - **La carte en sait plus, sans rien dessiner** (brief 9 des écrans des lots). `GET /me/voyage` sert
   déjà l'horaire de chaque année et les haltes : `pages/Carte.tsx` les met dans l'état de la carte,
   dans le même `useMemo` que les cases (relue à l'identique, la carte ne refait pas son état), et le
