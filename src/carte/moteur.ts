@@ -5,7 +5,7 @@ import { cibleCamera, poidsSections, presencesSections, sectionALEcran } from '.
 import type { RalentiDeCarte } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { genreDeBande, geoEnsemble } from './ensemble'
-import { ambianceDeLHeure } from './heure'
+import { ambianceDeLHeure, partDuVoileDeNuit } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, tremblement } from './traitement'
 import { Geste, lirePincement } from './geste'
@@ -1243,7 +1243,8 @@ export class MoteurCarte {
     // L'adieu d'un monde, par-dessus tout son décor.
     for (const i of actifs) monde(i).dessinerAdieu(vue(i))
     // 6. Les voiles : la nuit et ses feux, le virage de chaque monde, la palpitation, la vignette, le grain.
-    this.effets.nuit(g, this.feux, ambiance)
+    // Un monde qui porte sa propre heure ne reçoit pas le voile : il se fond d'un monde à l'autre, comme le ciel.
+    this.effets.nuit(g, this.feux, ambiance, partDuVoileDeNuit(poids, this.plan.sections.map((s) => this.deps.mondeDe(s.decennie).porteSonHeure === true)))
     for (const i of actifs) {
       const v = monde(i).traitement.virage
       if (!v) continue

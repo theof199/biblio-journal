@@ -309,8 +309,10 @@ le membre n'est pas encore arrivé, se montre en plaque négative (`gares.ts`, `
 lanterne rouge de 1901 à 1909 ; la plaque se développe sous les yeux à l'arrivée du membre
 (`durees.ts`, `DEVELOPPEMENT`). L'heure est celle de la gare, de l'aube de 1900 à la nuit de 1909
 (`donnees.ts`, `HEURES` ; les règles, pures, dans `habillage.ts`), jamais celle du visiteur : le
-monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum`. Le voile de nuit que le moteur pose sur tout
-l'écran d'après l'heure du visiteur, lui, reste. Il pleut à Couville et à Brest, il neige à Allaman
+monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum`. Il le dit au moteur (`Monde.porteSonHeure`), qui
+ne pose pas sur lui le voile de nuit de l'heure du visiteur : entre la foire et le train, le voile se
+fond comme le ciel, à la part de l'écran que la foire tient encore (`carte/heure.ts`,
+`partDuVoileDeNuit`). Les halos des feux et le voile clair du jour, eux, restent au moteur. Il pleut à Couville et à Brest, il neige à Allaman
 et à Bassersdorf (`donnees.ts`, `METEO` ; les règles dans `meteo.ts`, le trait dans
 `intemperies.ts`) : des motifs répétés qui glissent et onze gouttes, posés immobiles quand le
 visiteur demande moins d'animations, absents du passage. À Creil, la vitre est embuée (`donnees.ts`,

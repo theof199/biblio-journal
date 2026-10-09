@@ -3,6 +3,7 @@ import { A_L_ARRET, CORAIL, DUREE_DE_L_ENVOL, DUREE_DU_ROULEMENT, MAX_TUILES, Mo
 import { contexteFactice, type Appel } from '../test/contexteFactice'
 import { cibleCamera } from './camera'
 import { APPUI_LONG_MS } from './geste'
+import { Effets } from './dessin/effets'
 import { TUILE } from './dessin/sol'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
@@ -173,6 +174,8 @@ function monter(
     arrets?: readonly number[]
     /** Plan 3a : les temps du passage d'entrée de la section collante, en `y` de la section. */
     entree?: readonly TempsDEntree[]
+    /** Les décennies dont le monde dit porter sa propre heure (`Monde.porteSonHeure`) ; les autres n'en disent rien. */
+    heurePropre?: readonly number[]
     /** Les durées du retour que le monde collant déclare (`SceneCollante.retour`) ; sans elles, il n'en déclare pas. */
     retour?: readonly TempsDeRetour[]
     /** Plan 3b : le monde collant porte une date, une bobine et un sémaphore (`DEPECHE`, `BOBINE_1900`). */
@@ -224,6 +227,7 @@ function monter(
       const { chantier1898, particules } = options
       return {
         ...m,
+        ...(options.heurePropre?.includes(d) ? { porteSonHeure: true } : {}),
         scene: m.scene && options.retour ? { ...m.scene, retour: options.retour } : m.scene,
         palette: options.sansColonne ? { ...m.palette, colonne: null } : m.palette,
         dessinerCiel: options.cielSage ? (v) => (v.vivant ? m.dessinerCiel(v) : void vus.push(v)) : m.dessinerCiel,
@@ -1252,6 +1256,46 @@ describe('le moteur de la carte', () => {
       expect(decennie(HAUT_1900 - (3 * H) / 4)).toBe(1890)
       expect(decennie(HAUT_1900 - H / 4)).toBe(1900)
       expect(decennie(ENTREE.fin)).toBe(1900)
+    })
+
+    // Le voile de nuit du moteur ne se pose pas sur un monde qui porte sa propre heure : ce que le
+    // moteur demande aux effets, pas le trait. Mutations : le mot ignoré (`1` passé aux effets) ; lu
+    // à l'envers (`porteSonHeure !== true`) ; lu sur le monde de l'avatar, ou sur le plus fort poids
+    // seul (un saut à mi-écran) ; le voile retiré à tous les mondes (1890 le perdrait).
+    describe('le voile de nuit et le monde qui porte sa propre heure', () => {
+      afterEach(() => vi.restoreAllMocks())
+      /** La part du voile demandée aux effets, la caméra posée à `camY`, à 23 heures. */
+      const voileA = (camY: number, heurePropre?: readonly number[]) => {
+        const nuit = vi.spyOn(Effets.prototype, 'nuit')
+        const banc = monter({ calme: true, collant: true, heure: 23, heurePropre })
+        banc.moteur.defiler(camY)
+        banc.moteur.image(1000)
+        const dernier = nuit.mock.lastCall!
+        nuit.mockRestore()
+        return dernier[3]
+      }
+
+      it('dans le train de 1900, aucun voile ; sur la foire de 1890, le voile entier', () => {
+        expect(voileA(ENTREE.fin, [1900])).toBe(0)
+        expect(voileA(ENTREE.debut, [1900])).toBe(1)
+        expect(voileA(MARGE_HAUT, [1900])).toBe(1)
+      })
+
+      it('un monde qui n’en dit rien garde le voile, collant ou non', () => {
+        expect(voileA(ENTREE.fin)).toBe(1)
+        expect(voileA(ENTREE.fin, [])).toBe(1)
+        expect(voileA(ENTREE.debut)).toBe(1)
+      })
+
+      it('à l’entrée du train, le voile se lève avec la part de l’écran que le train a prise', () => {
+        expect(voileA(HAUT_1900 - (3 * H) / 4, [1900])).toBeCloseTo(0.75, 6)
+        expect(voileA(HAUT_1900 - H / 4, [1900])).toBeCloseTo(0.25, 6)
+      })
+
+      it('la foire qui porterait son heure perdrait le voile, pas le train', () => {
+        expect(voileA(ENTREE.debut, [1890])).toBe(0)
+        expect(voileA(ENTREE.fin, [1890])).toBe(1)
+      })
     })
 
     // Mutations : `dessinerSuivi` jamais appelé ; la roulotte commune, sa plaque ou sa zone gardées

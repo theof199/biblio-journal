@@ -38,7 +38,7 @@ caméra, dans `docs/cerveau/carte-et-moteur.md`. Les tables recopiées de la maq
   arrivé. Sans la seconde, la plaque paraît développée le temps du trajet, puis redevient négative. « Fermée »
   n'a qu'une règle, `estFermee`, que la bande lit aussi : verrouillée, ou en attente du Voyage suivi (`CaseVue.attente`). Elle vit hors du monde (`src/voyage/regles.ts` › `estFermee`, que `gares.ts` réexporte) : la liste des années de la page lit la même.
 - **L'heure est celle de la gare.** Le monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum` et n'appelle pas
-  `v.feu`. Le voile de nuit du moteur, posé après ses plans, ne lui appartient pas.
+  `v.feu`. Il le dit au moteur (`src/mondes/types.ts` › `Monde`, `porteSonHeure`), qui ne pose plus sur lui son voile de nuit ; le voile clair du jour, lui, reste posé (`docs/cerveau/carte-et-moteur.md`).
 - **Les deux premiers points de `trace1900` sont ceux de `traceAVenir`** : le bas de 1890 en dépend, donc
   `src/carte/reference1890.test.ts`. Le tracé prend tout début de la suite
   1900 à 1909 (1900 à 1902 suffisent) et lève dès qu'une année n'est pas à son rang, depuis 1900 et dans l'ordre.

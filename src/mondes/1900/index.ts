@@ -25,7 +25,8 @@ import { ENTREE, RETOUR } from './entree'
  * 62). La section est collante : rien n'y glisse, tout se tire de `VueMonde.avance`.
  *
  * Le monde ne lit ni `VueMonde.nuit` ni `VueMonde.lum` et n'appelle pas `v.feu` : son heure est
- * celle de la gare (`habillage.ts`, `dessus.ts`), jamais celle du visiteur.
+ * celle de la gare (`habillage.ts`, `dessus.ts`), jamais celle du visiteur, et il le dit au moteur
+ * (`porteSonHeure`), qui ne pose plus sur lui son voile de nuit.
  */
 export function creerMonde1900(): Monde {
   // La vitre embuée de Creil : ce que le doigt y a essuyé, la seule mémoire du monde hors d'`avance` (`buee.ts`).
@@ -79,6 +80,8 @@ export function creerMonde1900(): Monde {
     touchesAuCalme: [],
     // Un glissement horizontal essuie la buée, là où elle se voit ; ailleurs il est refusé, et le doigt défile.
     glisser: vitre.glisser,
+    // L'heure est celle de la gare : le moteur ne pose pas par-dessus le voile de nuit de l'heure du visiteur.
+    porteSonHeure: true,
     scene: {
       ecranDeLaCase,
       dessinerSuivi,

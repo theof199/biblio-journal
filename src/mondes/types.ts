@@ -585,6 +585,15 @@ export interface Monde {
    * route, les cases et l'avatar (1890, le monde « à venir »).
    */
   scene: SceneCollante | null
+  /**
+   * Vrai pour un monde qui porte sa propre heure (1900 : chaque gare a la sienne, son ciel, ses
+   * fenêtres allumées, sa lune) : le moteur ne pose pas sur lui son voile de nuit, celui de l'heure
+   * du visiteur. Absent, le monde garde le voile (1890, le monde « à venir »). Le moteur ne retire
+   * que le voile : les halos des feux que le monde allumerait (`VueMonde.feu`) et le voile clair du
+   * jour restent. Entre deux mondes, le voile se fond comme le ciel : sa force est le poids de
+   * mélange des mondes qui le gardent.
+   */
+  porteSonHeure?: boolean
 }
 
 /**

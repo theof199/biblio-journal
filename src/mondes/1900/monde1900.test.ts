@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { creerMonde1900 } from '.'
+import { creerRegistre } from '..'
 import { mondeAVenir } from '../avenir'
 import { PAGES_1900 } from './pages'
 import { trace1890, traceAVenir, HAUTEUR_MIN_SECTION, type Trace } from '../trace'
@@ -63,6 +64,15 @@ const PHOTO = {} as CanvasImageSource
 const lus = (appels: unknown): unknown => JSON.parse(JSON.stringify(appels))
 
 describe('le monde des années 1900', () => {
+  // Mutations : `porteSonHeure` retiré de 1900 (le voile de nuit du moteur reviendrait sur ses
+  // gares) ; posé sur le monde « à venir » ou sur 1890 (ils perdraient le leur).
+  it('dit au moteur qu’il porte sa propre heure, et il est le seul', () => {
+    const mondes = creerRegistre()
+    expect(mondes(1900).porteSonHeure).toBe(true)
+    expect(mondes(1890).porteSonHeure).toBeUndefined()
+    expect(mondes(1910).porteSonHeure).toBeUndefined()
+  })
+
   // Mutations : `pages: PAGES_A_VENIR` (les pages du monde « à venir ») ; `siteDuChantier` qui rend un `y` ; `entree` vidée (le passage : `passage.test.ts`).
   it('porte les champs du voyage immobile, ses propres pages, aucun chantier, et son passage', () => {
     const m = creerMonde1900()

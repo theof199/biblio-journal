@@ -172,10 +172,14 @@ export class Effets {
       g.restore()
     }
   }
-  /** La nuit : le voile bleu, puis les halos des feux ; le jour, un voile clair (maquette : `nuitPasse`). */
-  nuit(g: CanvasRenderingContext2D, feux: readonly Feu[], ambiance: { nuitF: number; jourF: number; crep: number }): void {
-    if (ambiance.nuitF > 0.01) {
-      g.fillStyle = `rgba(4,5,14,${0.46 * ambiance.nuitF})`
+  /**
+   * La nuit : le voile bleu, puis les halos des feux ; le jour, un voile clair (maquette : `nuitPasse`).
+   * `voile`, de 0 à 1, est la part du voile bleu à poser (`partDuVoileDeNuit`) : nulle sur un monde
+   * qui porte sa propre heure. Elle ne touche ni aux halos ni au voile du jour.
+   */
+  nuit(g: CanvasRenderingContext2D, feux: readonly Feu[], ambiance: { nuitF: number; jourF: number; crep: number }, voile: number): void {
+    if (ambiance.nuitF * voile > 0.01) {
+      g.fillStyle = `rgba(4,5,14,${0.46 * ambiance.nuitF * voile})`
       g.fillRect(0, 0, this.W, this.H)
     }
     const force = ambiance.nuitF * 1.05 + ambiance.crep * 0.35 * (1 - ambiance.nuitF)

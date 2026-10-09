@@ -11,6 +11,8 @@ import { bandesDuSol, dessinerSol } from './sol'
 import { dessinerRoulotte } from './roulotte'
 import { Particules } from './particules'
 import { dessinerEnsemble } from './ensemble'
+import { Effets } from './effets'
+import { ambianceDeLHeure } from '../heure'
 import { genreDeBande, geoEnsemble } from '../ensemble'
 import { rgba } from '../outils'
 
@@ -272,5 +274,27 @@ describe('le dessin commun', () => {
       p.dessiner(ctx, false)
       expect(appels.filter((a) => a.nom === 'fill' || a.nom === 'fillRect').length).toBe(240)
     }
+  })
+})
+
+describe('le voile de nuit des effets', () => {
+  const FEU = { x: 100, y: 100, r: 40, c: 'or', w: 1 }
+  /** Les aplats de plein écran que `nuit` pose, et le nombre de halos, pour une part de voile à une heure. */
+  const nuit = (heure: number, voile: number) => {
+    const { ctx, appels } = contexteFactice()
+    const effets = new Effets((w, h) => ({ width: w, height: h, getContext: () => null }))
+    effets.nuit(ctx, [FEU], ambianceDeLHeure(heure), voile)
+    const pleins = appels.filter((a) => a.nom === 'fillRect' && a.args.join() === '0,0,390,700').map((a) => String(a.fillStyle))
+    return { pleins, halos: appels.filter((a) => a.nom === 'fillRect' && a.args.join() !== '0,0,390,700').length }
+  }
+
+  // Mutations : `voile` ignoré (le bleu posé quoi que dise le moteur) ; les halos ou le voile du
+  // jour coupés avec lui (le moteur ne retire que le voile de nuit).
+  it('pose le bleu de la nuit à la part demandée, et rien à zéro ; les halos et le voile du jour n’en dépendent pas', () => {
+    expect(nuit(23, 1)).toEqual({ pleins: ['rgba(4,5,14,0.46)'], halos: 1 })
+    expect(nuit(23, 0.5)).toEqual({ pleins: ['rgba(4,5,14,0.23)'], halos: 1 })
+    expect(nuit(23, 0)).toEqual({ pleins: [], halos: 1 })
+    expect(nuit(12, 0)).toEqual(nuit(12, 1))
+    expect(nuit(12, 0).pleins).toHaveLength(1)
   })
 })

@@ -4,7 +4,7 @@ import { MARGE_HAUT, placerCarte } from './placement'
 import { cibleCamera, coutDe, poidsSections, presencesSections, trajetRalenti, yDuCout } from './camera'
 import { ecranDe, rayonEcran, trouverZone, type Zone } from './zones'
 import { genreDeBande, geoEnsemble, POIDS_REPLIEE } from './ensemble'
-import { ambianceDeLHeure } from './heure'
+import { ambianceDeLHeure, partDuVoileDeNuit } from './heure'
 import { Lru } from './lru'
 import { horlogeDuMonde, scintillement, SCINTILLEMENT_MAX, tremblement } from './traitement'
 import { HAUTEUR_MIN_SECTION, trace1890, traceAVenir } from '../mondes/trace'
@@ -389,6 +389,19 @@ describe('la bande d’un monde à scène dans la vue d’ensemble (plan 3a)', (
 })
 
 describe('l’heure', () => {
+  // Mutations : le mot ignoré (`somme + p` pour tous : 1 partout) ; lu à l'envers (le voile sur le
+  // seul monde qui porte son heure) ; tout ou rien d'après le plus fort poids (un saut à mi-écran).
+  it('pose le voile de nuit à la part des mondes qui ne portent pas leur heure', () => {
+    expect(partDuVoileDeNuit([1, 0, 0], [false, true, false])).toBe(1)
+    expect(partDuVoileDeNuit([0, 1, 0], [false, true, false])).toBe(0)
+    expect(partDuVoileDeNuit([0.75, 0.25, 0], [false, true, false])).toBe(0.75)
+    expect(partDuVoileDeNuit([0.25, 0.75, 0], [false, true, false])).toBe(0.25)
+    expect(partDuVoileDeNuit([0, 0.4, 0.6], [false, true, false])).toBe(0.6)
+    // Aucun monde ne porte son heure : le voile entier, où que soit la caméra.
+    expect(partDuVoileDeNuit([0.3, 0.7], [false, false])).toBe(1)
+    expect(partDuVoileDeNuit([0.3, 0.7], [])).toBe(1)
+  })
+
   it('fait le jour à midi et la nuit à minuit', () => {
     expect(ambianceDeLHeure(12)).toMatchObject({ nuit: 0, lum: 0.45 })
     expect(ambianceDeLHeure(0)).toMatchObject({ nuit: 1, lum: 1.3 })

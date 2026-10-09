@@ -56,6 +56,9 @@ Les composants et les feuilles d'un monde vivent dans son dossier, où `habillag
 `src/voyage/tempo.test.ts` les balaient tous : aucune durée en dur dans une feuille de monde, sauf
 déclarée dans `AMBIANCE` du second.
 
+**Un monde qui porte sa propre heure le dit** (`porteSonHeure`, 1900 seul) : le moteur ne pose pas sur
+lui son voile de nuit. Sans ce mot, le monde garde le voile (1890, le monde « à venir »).
+
 Si l'interface ne
 suffit pas au monde qu'on écrit, **elle s'étend d'abord, dans une tâche à part, avec le monde « à
 venir »** (que la signature oblige à suivre) : jamais un contournement dans le moteur ou la page.
