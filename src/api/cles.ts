@@ -24,6 +24,13 @@ export const cles = {
    * porte ni identifiant ni mot : le mot d'une carte est privé.
    */
   courrier: ['voyage', 'courrier'] as const,
+  /**
+   * Les membres que je suis (`GET /users/me/following`, toutes pages lues : `api/abonnements.ts`), pour
+   * choisir à qui écrire une carte postale ou qui inviter à table. **Hors du préfixe `voyage`** : un
+   * billet composté ne change pas mes abonnements. Aucune page hors Voyage ne la périme : qui s'en sert
+   * la relit en s'ouvrant (`staleTime: 0` sur son observateur).
+   */
+  abonnements: ['abonnements', 'moi'] as const,
   annee: (annee: number) => ['voyage', 'annee', annee] as const,
   /**
    * Le carton d'un film (`GET /reference/chroniques/films/{tmdbId}`) : hors du préfixe `voyage`, un

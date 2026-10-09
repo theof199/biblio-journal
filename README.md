@@ -976,7 +976,11 @@ wagon-restaurant n'ont rien à l'écran**
   la leur ; il n'écrit rien), `marquerCarteLue` (rejouable, `404` pour une carte que j'ai envoyée) et
   `posterCartePostale` (le corps tel quel, strict côté serveur ; aucun écran ne l'appelle encore). **Le
   mot d'une carte est privé** : il ne s'écrit ni dans un journal de console, ni dans une adresse, ni
-  dans un titre. Rien encore pour les tables.
+  dans un titre. Rien encore pour les tables. **Mes abonnements** (brief 14, `api/abonnements.ts`, un
+  fichier à part : la route n'est pas du Voyage) : `lireMesAbonnements` lit `GET /users/me/following`
+  **page après page** (cent par page, le curseur rendu tel quel, jusqu'à `next_cursor` nul) et rend les
+  membres dans l'ordre servi, sous `cles.abonnements`, **hors du préfixe `voyage`** ; la carte postale à
+  écrire et la table à dresser y choisissent « un membre que je suis », par cette fonction seule.
 - **Les clés** (`api/cles.ts`) : `voyageur`, `malle(decennie)` et `courrier`, **sous le préfixe
   `voyage`** : une écriture au journal, qui colle une étiquette, change le billet que le contrôleur
   demande ou boucle une gare (qui attend alors sa carte : `en_attente`), les
