@@ -79,10 +79,10 @@ function MalleOuverte({ malle, nouvelles, onFermer }: { malle: Malle; nouvelles:
   const choisie = malle.etiquettes.find((p) => p.numero === numero) ?? placeAuDepart(malle.etiquettes)
   return (
     <div className={styles.calque} role="dialog" aria-modal="true" aria-label={M.ouverte.titre}>
-      <button ref={refermer} type="button" className={styles.retour} aria-label={M.ouverte.refermer} onClick={onFermer}>
-        <span aria-hidden="true">‹</span>
-      </button>
       <div className={styles.defil}>
+        <button ref={refermer} type="button" className={styles.retour} aria-label={M.ouverte.refermer} onClick={onFermer}>
+          <span aria-hidden="true">‹</span>
+        </button>
         <div className={styles.cadre}>
           <Rubrique>
             {M.ouverte.titre} <small>{compteDeLaMalle(malle)}</small>

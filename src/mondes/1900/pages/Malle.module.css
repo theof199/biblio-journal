@@ -86,6 +86,7 @@
 }
 
 .defil {
+  position: relative;
   flex: 1;
   min-height: 0;
   padding: 40px 0 24px;
@@ -100,7 +101,8 @@
   margin: 0 auto;
 }
 
-/* Le retour de la sacoche, son jumeau. */
+/* Le retour de la sacoche, son jumeau. Il défile avec la valise, comme celui de la carte postale et de
+   la voiture ouverte : il ne passe jamais sur elle. Échap et le retour du téléphone ferment toujours. */
 .retour {
   position: absolute;
   z-index: 1;
