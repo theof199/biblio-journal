@@ -288,6 +288,36 @@
   color: var(--m-pale);
 }
 
+/* Le programme d'un film, sur sa fiche : la même coupe, une bobine par compartiment. Le talon d'une bobine qui reste à voir : détaché au pointillé sous son compartiment, il porte le
+   geste, au corail. */
+.talon {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 8px 8px;
+  padding-top: 8px;
+  border-top: 2px dashed color-mix(in srgb, var(--m-or) 45%, transparent);
+}
+
+.talon a {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 2px;
+  background: var(--corail);
+  color: var(--m-encre);
+  font: 700 13px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.talon a:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
 /* La porte au bout de la voiture : « En voir plus », ou ce qui la tient fermée. */
 .porte {
   display: block;

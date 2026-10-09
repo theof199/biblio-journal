@@ -60,7 +60,7 @@ export default function NoticeDuFilm({ salle, film, realisateurs, entree, phrase
           </p>
         </section>
       ) : null}
-      {programme ? <div className={styles.bobines}>{programme}</div> : null}
+      {programme}
       {guichet}
     </div>
   )

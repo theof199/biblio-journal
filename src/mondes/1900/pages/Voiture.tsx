@@ -1,34 +1,29 @@
 import { useId } from 'react'
-import { Link } from 'react-router-dom'
 import type { FilmDeSalle } from '../../../api/voyage'
 import { useDialogue } from '../../../voyage/dialogue'
 import { dureeLisible } from '../../../voyage/film'
 import type { PropsSalle } from '../../../voyage/salles/Salle'
 import { compteDeLaSalle, contexteLisible, etiquetteEtat, porteDeLEtagere } from '../../../voyage/salles'
 import { imageDu1900 } from '../images'
+import Compartiment from './Compartiment'
 import Rubrique from './Rubrique'
 import { MOTS_DES_VOIES, lettreDuCompartiment, mentionDeLaVoie, phraseDeLaVoiture, plaqueDuCompartiment } from './voies'
 import styles from './Voies.module.css'
 
 /** Un compartiment : l'affiche à sa fenêtre, le film, sa lettre, son état, et sa plaque. Il ouvre la fiche du film. */
-function Compartiment({ film, annee, perdu }: { film: FilmDeSalle; annee: number; perdu: string }) {
+function CompartimentDuFilm({ film, annee, perdu }: { film: FilmDeSalle; annee: number; perdu: string }) {
   const etiquette = etiquetteEtat(film.etat, perdu)
   const etat = film.etat === 'vu' && film.note !== null ? `${etiquette} · ${film.note}/10` : etiquette
-  const plaque = plaqueDuCompartiment(film.etat, perdu)
   const place = `compartiment ${lettreDuCompartiment(film.rang)}`
   return (
     <li>
-      <Link to={`/voyage/${annee}/films/${film.id}`} className={styles.compartiment} aria-label={`${film.title}, ${etat}`}>
-        {film.cover_url ? <img className={styles.fenetre} src={film.cover_url} alt="" loading="lazy" decoding="async" /> : <span className={`${styles.fenetre} ${styles.vide}`}>{MOTS_DES_VOIES.sansAffiche}</span>}
-        <span className={styles.film}>
-          {film.title}
-          <small>{film.year !== null ? `${film.year} · ${place}` : place}</small>
-          <small>{etat}</small>
-        </span>
-        <span className={`${styles.plaque} ${plaque.occupe ? styles.occupe : ''}`} aria-hidden="true">
-          {plaque.mot}
-        </span>
-      </Link>
+      <Compartiment
+        affiche={film.cover_url}
+        titre={film.title}
+        mentions={[film.year !== null ? `${film.year} · ${place}` : place, etat]}
+        plaque={plaqueDuCompartiment(film.etat, perdu)}
+        lien={{ vers: `/voyage/${annee}/films/${film.id}`, nom: `${film.title}, ${etat}` }}
+      />
       {film.programme ? (
         <div className={styles.bobines}>
           <p>{`${MOTS_DES_VOIES.programme} · ${dureeLisible(film.programme.duree_min)}`}</p>
@@ -89,7 +84,7 @@ export default function Voiture({ monde, annee, salle, ia, numero, onContexte, o
         </Rubrique>
         <ul className={styles.coupe} aria-label={`Les compartiments de la voiture ${salle.nom}`}>
           {salle.films.map((f) => (
-            <Compartiment key={f.id} film={f} annee={annee} perdu={perdu} />
+            <CompartimentDuFilm key={f.id} film={f} annee={annee} perdu={perdu} />
           ))}
           {porte ? (
             <li>

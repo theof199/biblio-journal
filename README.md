@@ -527,7 +527,12 @@ Où vit quoi :
   vers les Suivis, la raison, montre l'entrée d'un Hale's Tours (`hale`) et sa légende, et dit « Tes
   séances » en une phrase (la date, la note, les réactions du dernier visionnage, jamais la remarque) ;
   le guichet (`GuichetDuFilm`) rend les gestes que `Guichet` lui passe, « Composter une séance »
-  (`mots.billet.ouvrir`) et « Corriger » sur le bouton corail commun (`Action`). « Trois
+  (`mots.billet.ouvrir`) et « Corriger » sur le bouton corail commun (`Action`). Le programme d'un film
+  (`ProgrammeDuFilm`, pour `programmeDuFilm`) se lit en compartiments, un par bobine, sur le dessin que
+  la voiture emploie pour ses films (`Compartiment`, commun aux deux) : l'affiche à la fenêtre, la
+  durée et la place, l'état, la plaque ; une bobine qui reste à voir tend un talon, « Je l’ai vu », vers
+  `…/billet?bobine=<tmdb_id>`. La maquette ne dessine pas cet écran : il est fait par analogie avec sa
+  voiture (validée le 9 octobre 2026 ; `mondes/1900/pages/programme.test.tsx`). « Trois
   photogrammes », le studio, le mois de sortie et le nombre de séances de la maquette n'y sont pas :
   aucune donnée ne les porte sans une lecture de plus. **Le billet de séance** est un carton Edmondson
   sous son composteur (écrans 6 et 7 ; `Composteur`, pour `billetDeSeance`) : le carton (`Carton`, que
@@ -547,7 +552,7 @@ Où vit quoi :
   lui passe (`poincon` : ce qu'il dit à qui ne le voit pas, et `frais` quand il vient d'être percé) :
   le composteur ne le passe jamais, billet en correction compris (décision 11) ; leurs mots
   et leurs règles : `mondes/1900/pages/carton.ts`. **La nouvelle salle, la ligne du bas, les
-  feuillets, la feuille du chroniqueur, le programme d'un film et ses bobines gardent encore les
+  feuillets et la feuille du chroniqueur gardent encore les
   composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
   uni. **Le guichet** (écran 11, `Grille` et `TableauDesDeparts`) : sous le fronton « Billets · 1900 à
   1909 », une grille de laiton en plein cintre, l'employé derrière elle, qui paraît à l'ouverture et

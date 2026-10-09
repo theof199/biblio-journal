@@ -253,10 +253,6 @@
   color: var(--m-doux);
 }
 
-.bobines {
-  margin: 0 16px;
-}
-
 /* Le guichet : le bouton corail est commun (`Action`) ; la plaque, le filet, le texte discret. */
 .guichet {
   display: grid;

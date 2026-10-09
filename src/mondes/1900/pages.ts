@@ -27,6 +27,7 @@ import LiensDeLaLigne from './pages/LiensDeLaLigne'
 import LigneBouclee from './pages/LigneBouclee'
 import LigneDesAnnees from './pages/LigneDesAnnees'
 import NoticeDuFilm from './pages/NoticeDuFilm'
+import ProgrammeDuFilm from './pages/ProgrammeDuFilm'
 import MalleDeLaSacoche from './pages/MalleDeLaSacoche'
 import ObjetsDeLaSacoche from './pages/ObjetsDeLaSacoche'
 import PageDeLaSacoche from './pages/PageDeLaSacoche'
@@ -146,6 +147,7 @@ export const PAGES_1900: HabillagePages = {
     seance: TrainDuSoir,
     projection: Hale,
     noticeDuFilm: NoticeDuFilm,
+    programmeDuFilm: ProgrammeDuFilm,
     guichetDuFilm: GuichetDuFilm,
     billetDeSeance: Composteur,
     casier: CasierDuControleur,
