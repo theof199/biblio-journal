@@ -7,6 +7,7 @@ import type { PropsControleurDeLaCarte } from '../../../voyage/controleur/Contro
 import Carton from './Carton'
 import { MOTS_DU_COMPOSTEUR as C, datePressee } from './carton'
 import { MOTS_DU_CONTROLEUR as M, bulleDuControleur, ceQuiSePasse, ligneDuBilletDemande } from './controleur'
+import { imageDu1900 } from '../images'
 import DessinDuControleur from './DessinDuControleur'
 import styles from './Controleur.module.css'
 
@@ -17,7 +18,10 @@ import styles from './Controleur.module.css'
  * deux réponses, ou « Refermer la portière » une fois qu'il a répondu. Présenté, le poinçon doré se
  * perce sur le carton : `Carton` le porte, le même qu'au casier, ici frais (il luit et se perce).
  *
- * Un dialogue, par-dessus la carte qui reste derrière, assombrie : ni photographie ni autre décor.
+ * Un dialogue qui prend tout l'écran de la carte : derrière lui, la photographie du compartiment
+ * (maquette : `.controle`, `--i-interieur` ; ici `interieur` de `assets/`, celle que la carte montre
+ * déjà à la montée), sous un voile et la lueur d'une lampe, sur un fond plein. Rien de la carte ne
+ * transparaît : son bandeau d'objectif ne se lit plus sous la bulle. Sans l'image, le voile reste.
  * La carte ne pose pas les jetons des pages : il les pose lui-même (le tempo, lui, vient de l'écran de
  * la carte). Il ne lit ni n'écrit rien, et rien n'y bouge au calme (`data-vivante`).
  *
@@ -30,6 +34,7 @@ export default function ControleurDeLaCarte({ monde, billet, etat, panne, premie
   const { jetons, mots } = monde.pages
   // Les jetons ne sont que des variables : `CSSProperties` seul les refuserait (aucune propriété connue).
   const style: CSSProperties & typeof jetons = { ...jetons }
+  const photo = imageDu1900('interieur')
   const date = billet ? formatDateVisionnage(billet.item.entry.finished_at) : null
   const repondu = etat !== 'demande'
   const [arme, setArme] = useState(calme)
@@ -40,6 +45,7 @@ export default function ControleurDeLaCarte({ monde, billet, etat, panne, premie
   }, [repondu, arme])
   return (
     <div className={styles.controle} style={style} role="dialog" aria-modal="true" aria-label={M.nom} data-vivante={calme ? 'non' : 'oui'} data-etat={etat}>
+      <div className={styles.photo} style={photo ? { backgroundImage: `url(${photo})` } : undefined} aria-hidden="true" />
       <div className={styles.personnage}>
         <DessinDuControleur />
       </div>

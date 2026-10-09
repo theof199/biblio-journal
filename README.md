@@ -170,7 +170,9 @@ suivante. Le dernier message dit « les trois » pour un monde de trois bobines,
 **Les objets oubliés sur le quai** (lot d'écrans, brief 4 ; maquette « Voyage immobile 1900 »,
 `OBJETS`). Un objet d'époque par gare de 1900 à 1909 (`Monde.objets`, `mondes/1900/objets.ts` : le
 catalogue de la sacoche, avec la place de chacun sur son quai ; celles de la lanterne et du parapluie,
-que la maquette ne place pas, sont posées à droite du quai). Le monde dit lesquels se proposent
+que la maquette ne place pas, sont posées à droite du quai ; le chapeau melon de Creil attend plus bas
+que dans la maquette, sur le sol clair du quai et non devant les haies, et son feutre porte un liseré
+clair). Le monde dit lesquels se proposent
 (`gares.ts`, `objetsSurLeQuai` : dans une gare **développée** seulement, à l'écran, et jamais tant
 que la vitre n'a pas rempli l'écran) et les dessine lui-même, des mêmes tracés que la sacoche, tant
 que le moteur ne les dit pas ramassés ; le moteur n'inscrit que leur zone, qui passe devant le décor
@@ -801,8 +803,10 @@ par **entrée de journal** (`mon_billet.id`, jamais le film : une autre séance 
 pas), et `vu_ensemble` **tel que servi** (une place prise ne tamponne rien). Les défauts les ignorent,
 la boîte de 1890 ne lit aucune table. En 1900, `Carton` porte le tampon vert comme il porte le poinçon
 (`ensemble` : son mot, ce qu'il dit à qui ne le voit pas ; l'encre est le jeton `--m-vert`), **les deux
-ensemble sur un billet présenté et vu à deux** : le tampon se resserre alors à gauche du poinçon
-(`data-perce`). Le composteur ne passe ni l'un ni l'autre (`composteur.test.tsx`, `casier.test.tsx`).
+ensemble sur un billet présenté et vu à deux**. **Aucune marque ne couvre une ligne du carton**
+(`Carton.module.css`) : le poinçon se perce sur la bande rouge, hors de la colonne du texte ; le tampon
+vert a sa ligne à lui, entre la ligne du film et le pied, et les autres lignes se serrent pour la lui
+laisser (`data-perce` dit toujours qu'il partage le carton avec le poinçon, sans plus le déplacer). Le composteur ne passe ni l'un ni l'autre (`composteur.test.tsx`, `casier.test.tsx`).
 
 Dans les années 1900, la boîte est **le casier du contrôleur** (maquette, écran 8 ;
 `mondes/1900/pages/CasierDuControleur.tsx`, pour la clé `casier`) : un meuble à une case par année du
@@ -1300,7 +1304,10 @@ guichet d'un film**
   lecture de l'état ; `pages/Carte.controleur.test.tsx` tient le tout
   sur un 1890 auquel on prête un dessin. **En 1900** (`mondes/1900/pages/ControleurDeLaCarte.tsx`, sa
   feuille `Controleur.module.css`, ses mots et ses règles dans `controleur.ts` ; maquette, `#controle`) :
-  un dialogue par-dessus la carte assombrie, sans photographie ; le contrôleur dessiné
+  un dialogue qui prend tout l'écran de la carte, sur la photographie du compartiment de la maquette
+  (`interieur` de `mondes/1900/assets/`, déjà au précache pour la montée : aucun poids de plus), sous un
+  voile et la lueur d'une lampe, sur un fond plein : rien de la carte ne transparaît, et son bandeau
+  d'objectif ne se lit plus sous la bulle ; le contrôleur dessiné
   (`DessinDuControleur.tsx`, les tracés de la maquette) entre par la droite, sa bulle dit « Contrôle des
   billets, s’il vous plaît. », le billet demandé est le carton Edmondson (sa ligne ne dit « gare de »
   que d'une année de 1900 à 1909, son numéro seulement si la boîte l'a donné), puis « Présenter le

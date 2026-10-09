@@ -56,6 +56,9 @@ interface Props {
  * au moment du coup, jamais le composteur. Le tampon vert « Vu ensemble » (maquette, écran 20 :
  * `.ensemble-t`, à l'encre du jeton `--m-vert`) non plus : le casier, le billet sorti et la table du
  * wagon-restaurant le passent pour le billet d'une table vue à deux. Un billet peut porter les deux.
+ * **Aucune des deux ne couvre une ligne du carton** (`Carton.module.css`) : le poinçon se perce sur la
+ * bande rouge, hors de la colonne du texte ; le tampon vert a sa ligne à lui, entre celle du film et
+ * le pied, et les autres lignes se serrent pour la lui laisser.
  * Rien n'y bouge au calme : `data-vivante` porte seul les animations de la feuille.
  */
 export default function Carton({ tete, titre, titreDePage = false, sous, numero, numeroQuiRoule = false, note, presse, tampon, geste, frais, poincon, ensemble }: Props) {

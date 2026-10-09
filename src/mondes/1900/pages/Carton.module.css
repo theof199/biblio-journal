@@ -119,12 +119,15 @@
   color: color-mix(in srgb, var(--m-violet) 90%, transparent);
 }
 
-/* Le poinçon doré du contrôleur (maquette : `.edm .poincon-or`, à 45 % et 56 %, 14 % de la largeur du
-   carton). Frais, celui de la portière : il luit, et se perce sous la racine vivante. */
+/* Le poinçon doré du contrôleur (maquette : `.edm .poincon-or`). La maquette le posait à 45 % et 56 %,
+   sur la ligne du film et contre la note : ici il se perce **sur la bande rouge**, à mi-hauteur, hors
+   de la colonne du texte (qui finit à 67 % ; les dix places commencent à 78 %). Rien du carton n'est
+   dessous : ni le titre, ni la ligne du film, ni la note, ni les places. Frais, celui de la portière :
+   il luit, et se perce sous la racine vivante. */
 .poincon {
   position: absolute;
-  top: 56%;
-  left: 45%;
+  top: calc(50% - 7cqi);
+  left: calc(71.5% - 7cqi);
   width: 14cqi;
   height: 14cqi;
   pointer-events: none;
@@ -141,17 +144,19 @@
   filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--m-or) 85%, transparent)) drop-shadow(0 1px 1px var(--m-ombre));
 }
 
-/* Le tampon vert « Vu ensemble » du wagon-restaurant (maquette : `.duo.vus .ensemble-t`, à 24 % et
-   50 %, un double filet) : l'encre est le jeton vert. Sur un billet que le contrôleur a aussi
-   poinçonné, il remonte et se resserre pour laisser le poinçon à découvert. */
+/* Le tampon vert « Vu ensemble » du wagon-restaurant (maquette : `.duo.vus .ensemble-t`, un double
+   filet) : l'encre est le jeton vert. La maquette le posait par-dessus la ligne du film : ici il a
+   **sa ligne à lui** dans la colonne du carton, entre la ligne du film et le pied (`order` : le pied
+   passe après lui), et les autres lignes se serrent pour la lui laisser. Sa marge tient ses coins
+   penchés hors des lignes voisines. Avec ou sans poinçon, il garde sa place : le poinçon est ailleurs. */
 .ensemble {
-  position: absolute;
-  top: 50%;
-  left: 24%;
+  order: 1;
+  justify-self: center;
+  margin: 3cqi 0;
   padding: 1cqi 2.4cqi;
   border: 1.5cqi double color-mix(in srgb, var(--m-vert) 95%, transparent);
   background: color-mix(in srgb, var(--m-carton) 50%, transparent);
-  transform: rotate(-8deg);
+  transform: rotate(-5deg);
   font: 700 9.6cqi/1 var(--m-f-capitales);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -160,10 +165,8 @@
   pointer-events: none;
 }
 
-.ensemble[data-perce='oui'] {
-  top: 47%;
-  left: 3%;
-  font-size: 6.4cqi;
+.l4 {
+  order: 2;
 }
 
 /* Les gestes du composteur, posés d'un coup : le carton avalé reste enfoncé, le carton parti ne se

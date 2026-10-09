@@ -1,8 +1,9 @@
 /* Le contrôleur des billets sur la carte de 1900 (maquette « Voyage immobile 1900 » : `.controle`) : un
-   dialogue par-dessus la carte, qui reste derrière, assombrie sous la lueur d'une lampe (la maquette y
-   posait la photographie d'un compartiment : ici, rien qu'un voile). Le personnage entre par la
-   droite, sa bulle monte, le billet demandé attend au milieu, les réponses au pied. Toute durée est au
-   tempo, et rien ne bouge hors de `data-vivante='oui'`. */
+   dialogue qui prend tout l'écran de la carte, sur la photographie d'un compartiment (`.photo`, posée
+   par le composant) assombrie d'un voile, sous la lueur d'une lampe. Le fond est plein : rien de la
+   carte ne transparaît, image chargée ou non. Le personnage entre par la droite, sa bulle monte, le
+   billet demandé attend au milieu, les réponses au pied. Toute durée est au tempo, et rien ne bouge
+   hors de `data-vivante='oui'`. */
 .controle {
   position: absolute;
   inset: 0;
@@ -13,10 +14,28 @@
   gap: 10px;
   padding: 70px 16px 16px;
   overflow: hidden;
+  background: var(--m-fond);
+  color: var(--m-papier);
+}
+
+/* La photographie, cadrée comme dans la maquette (50 % 40 %, couvrante) ; par-dessus, la lueur de la
+   lampe puis le voile, pour que la bulle, le carton et les réponses se lisent. */
+.photo {
+  position: absolute;
+  inset: 0;
+  background-position: 50% 40%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background:
     radial-gradient(ellipse 58% 30% at 66% 3%, color-mix(in srgb, var(--m-or2) 34%, transparent), transparent 72%),
-    linear-gradient(color-mix(in srgb, var(--m-fond) 58%, transparent), color-mix(in srgb, var(--m-fond) 94%, transparent) 62%);
-  color: var(--m-papier);
+    linear-gradient(color-mix(in srgb, var(--m-fond) 46%, transparent), color-mix(in srgb, var(--m-fond) 90%, transparent) 62%);
 }
 
 .personnage {
