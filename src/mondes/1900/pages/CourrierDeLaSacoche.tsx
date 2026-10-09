@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { CartePostaleEnvoyee, CartePostaleRecue } from '../../../api/voyage'
 import Panne from '../../../ui/Panne'
 import type { CarteOuverte, PropsCourrierDeLaSacoche } from '../../../voyage/sacoche/Courrier'
@@ -54,12 +55,24 @@ function Pli({ entete, carte, nouvelle, ouvrir }: { entete: string; carte: Carte
  * `409` à l'envoi se dit ici, la carte refermée. Le dessin ne lit ni n'écrit rien :
  * `voyage/sacoche/Courrier.tsx` lui passe la boîte, la carte que l'adresse ouvre et les calques. Rien
  * n'y bouge.
+ *
+ * **Le focus d'une carte refermée ne se perd pas** : le dialogue le rend au bouton qui l'a ouverte
+ * (`useDialogue`), mais l'entrée « À écrire » d'une carte postée n'existe plus. Le focus resté sans
+ * élément revient alors au titre de la rubrique.
  */
 export default function CourrierDeLaSacoche({ panne, recues, envoyees, ouverte, ouvrir, fermer, enAttente, aEcrire, vientDePartir, refus, ecrire }: PropsCourrierDeLaSacoche) {
   const vide = recues !== null && envoyees !== null && recues.length + envoyees.length === 0
+  const titre = useRef<HTMLElement | null>(null)
+  const carteOuverte = ouverte !== null || aEcrire !== null
+  const etaitOuverte = useRef(false)
+  // Après le nettoyage du dialogue, qui a rendu le focus à son bouton s'il existe encore.
+  useEffect(() => {
+    if (etaitOuverte.current && !carteOuverte && document.activeElement === document.body) titre.current?.focus()
+    etaitOuverte.current = carteOuverte
+  }, [carteOuverte])
   return (
     <>
-      <Rubrique>
+      <Rubrique cible={titre}>
         {M.titre} <small>{M.sous}</small>
       </Rubrique>
       {panne ? (

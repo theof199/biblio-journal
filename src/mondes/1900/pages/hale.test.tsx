@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
+import App from '../../../App'
 import { createQueryClient } from '../../../api/queryClient'
 import type { JournalItem, JournalPage } from '../../../api/journal'
 import type { ReactionsCatalogue } from '../../../api/reactions'
@@ -10,7 +11,7 @@ import type { Bobine, FilmDeSalle, Table, Tables } from '../../../api/voyage'
 import VoyageFilm from '../../../pages/VoyageFilm'
 import { exemple } from '../../../test/contrat'
 import { visionnage } from '../../../test/journal'
-import { monterVoyage } from '../../../test/pageVoyage'
+import { SESSION, monterVoyage } from '../../../test/pageVoyage'
 import { json, servir } from '../../../test/serveur'
 import { fichePrete, filmDeSalle, salle, voyage1890 } from '../../../test/voyage'
 import { PAGES_1900 } from '../pages'
@@ -555,6 +556,168 @@ describe('dresser une table, du guichet d’un film des années 1900', () => {
     expect(await within(feuillet).findByText(/Tu ne suis encore personne/)).toBeInTheDocument()
     expect(within(feuillet).queryByRole('button', { name: 'Dresser la table' })).toBeNull()
     expect(within(feuillet).queryAllByRole('radio')).toEqual([])
+  })
+
+  // Un `409` de table resté au guichet masquait toute erreur suivante, et restait après un geste
+  // réussi. **Tout geste du guichet efface le refus d'avant** : l'erreur montrée est celle du dernier
+  // geste. Mutation, dans `Guichet.tsx` : `setConflit(null)` retiré de `geste`.
+  it('le refus d’une table ne masque pas l’erreur d’un geste suivant, et ne reste pas après un geste réussi', async () => {
+    const DEMANDER = `POST /api/me/voyage/demander/${VOL.tmdb_id}`
+    let demandes = 0
+    const { routes } = service(refus(409, 'Tu as déjà une table ce soir.'))
+    monterVoyage(page(VOL), { ...routes, [DEMANDER]: () => (demandes++ === 0 ? refus(400, 'Le Plex ne répond pas.')() : json({ demande: true })) })
+    const feuillet = await ouvrir()
+    fireEvent.click((await within(feuillet).findAllByRole('radio'))[0]!)
+    fireEvent.click(within(feuillet).getByRole('button', { name: 'Dresser la table' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/^Tu as déjà une table ce soir\.$/)
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    fireEvent.click(screen.getByRole('button', { name: MOTS_DE_LA_SEANCE.demander }))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/^Le Plex ne répond pas\.$/))
+    fireEvent.click(screen.getByRole('button', { name: MOTS_DE_LA_SEANCE.demander }))
+    await waitFor(() => expect(demandes).toBe(2))
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+  })
+
+  // Rouvrir le feuillet repart de rien : ni le refus du guichet (`409`), ni celui du feuillet (`400`)
+  // ne s'y retrouvent. Mutations : `setConflit(null)` retiré de `ouvrirLeChoix` (le `409` d'avant
+  // reste au guichet, sous le feuillet rouvert) ; `dresse.reset()` retiré (le `400` d'avant attend
+  // dans le feuillet rouvert, avant tout envoi).
+  it.each([
+    [409, 'Tu as déjà une table ce soir.'],
+    [400, 'Ce membre ne peut pas être invité.'],
+  ])('rouvrir le feuillet après un `%i` ne redit pas le refus d’avant', async (status, message) => {
+    const { routes, corps } = service(refus(status, message))
+    monterVoyage(page(VOL), routes)
+    const feuillet = await ouvrir()
+    fireEvent.click((await within(feuillet).findAllByRole('radio'))[0]!)
+    fireEvent.click(within(feuillet).getByRole('button', { name: 'Dresser la table' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    if (status !== 409) fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    const rouvert = await ouvrir()
+    await within(rouvert).findAllByRole('radio')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByText(message)).toBeNull()
+    expect(corps).toHaveLength(1)
+  })
+
+  // Aucune page hors Voyage ne périme mes abonnements : ils se relisent à chaque ouverture du
+  // feuillet. Mutation : `staleTime: 0` retiré de `ChoixDeLInvite` (trente secondes de fraîcheur par
+  // défaut : la seconde ouverture ne lit rien, dan manque).
+  it('mes abonnements se relisent à chaque ouverture du feuillet : un membre suivi entre-temps paraît', async () => {
+    const DAN = { ...SUIVIS.items[1]!, user: { ...CAMILLE, id: '44444444-4444-4444-8444-444444444444', pseudo: 'dan' } }
+    let suivis = SUIVIS.items
+    const { requetes } = monterVoyage(page(VOL), { ...service().routes, [ABONNEMENTS]: () => json({ items: suivis, next_cursor: null }) })
+    const feuillet = await ouvrir()
+    expect((await within(feuillet).findAllByRole('radio')).map((r) => r.closest('label')!.textContent)).toEqual([BOB.pseudo, CAMILLE.pseudo])
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    suivis = [...SUIVIS.items, DAN]
+    const rouvert = await ouvrir()
+    await waitFor(() => expect(within(rouvert).getAllByRole('radio').map((r) => r.closest('label')!.textContent)).toEqual([BOB.pseudo, CAMILLE.pseudo, 'dan']))
+    expect(requetes.filter((r) => r.includes('/following'))).toEqual([ABONNEMENTS, ABONNEMENTS])
+  })
+
+  // Le serveur refuse par `409` une table pour un compte désactivé : il n'est pas proposé, par la
+  // règle de la carte postale (`api/abonnements.ts`) ; s'il ne reste personne, le feuillet dit ce
+  // qu'il dit sans abonnement. Mutation : le filtre retiré de `lireMesAbonnements`.
+  it('un membre désactivé n’est pas proposé comme invité ; s’il ne reste personne, le feuillet le dit', async () => {
+    const eteint = (l: Suivis['items'][number]) => ({ ...l, user: { ...l.user, deactivated: true } })
+    let suivis = [eteint(SUIVIS.items[0]!), SUIVIS.items[1]!]
+    monterVoyage(page(VOL), { ...service().routes, [ABONNEMENTS]: () => json({ items: suivis, next_cursor: null }) })
+    const feuillet = await ouvrir()
+    expect((await within(feuillet).findAllByRole('radio')).map((r) => r.closest('label')!.textContent)).toEqual([CAMILLE.pseudo])
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    suivis = suivis.map(eteint)
+    const rouvert = await ouvrir()
+    expect(await within(rouvert).findByText(/Tu ne suis encore personne/)).toBeInTheDocument()
+    expect(within(rouvert).queryAllByRole('radio')).toEqual([])
+    expect(within(rouvert).queryByRole('button', { name: 'Dresser la table' })).toBeNull()
+  })
+
+  // Une relecture de mes tables partie pendant le `POST`, donc plus ancienne que la table dressée, ne
+  // doit pas l'écraser. Mutation : `cancelQueries` retiré de `onSuccess` (la relecture atterrit après,
+  // et la page du wagon perd la table qu'on vient de dresser).
+  it('une relecture de mes tables en vol pendant l’envoi est annulée : elle n’écrase pas la table dressée', async () => {
+    let rendre!: (r: Response) => void
+    let relire!: (t: Tables) => void
+    const { routes } = service(() => new Promise<Response>((ok) => (rendre = ok)))
+    const { client } = monterVoyage(page(VOL), routes)
+    await leGeste()
+    client.setQueryData<Tables>(cles.tables, { tables: [EXEMPLE.tables[1]!] })
+    const feuillet = await ouvrir()
+    fireEvent.click((await within(feuillet).findAllByRole('radio'))[0]!)
+    fireEvent.click(within(feuillet).getByRole('button', { name: 'Dresser la table' }))
+    await waitFor(() => expect(client.isMutating()).toBe(1))
+    void client.prefetchQuery({ queryKey: cles.tables, queryFn: () => new Promise<Tables>((r) => (relire = r)), staleTime: 0 })
+    await waitFor(() => expect(client.isFetching({ queryKey: cles.tables, exact: true })).toBe(1))
+    await act(async () => rendre(json(DRESSEE, 201)))
+    const wagon = await screen.findByRole('region', { name: 'Le wagon-restaurant' })
+    expect(await within(wagon).findByRole('article', { name: `Ta table, avec ${DRESSEE.invite.pseudo}` })).toBeInTheDocument()
+    await act(async () => relire({ tables: [EXEMPLE.tables[1]!] }))
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(client.getQueryData<Tables>(cles.tables)!.tables.map((t) => t.id)).toEqual([DRESSEE.id, EXEMPLE.tables[1]!.id])
+    expect(within(wagon).getByRole('article', { name: `Ta table, avec ${DRESSEE.invite.pseudo}` })).toBeInTheDocument()
+  })
+
+  /** L'app entière, avec la main sur l'historique : le « retour » du téléphone. */
+  function monterAvecHistorique(entree: string, routes: Record<string, (init: RequestInit) => Response | Promise<Response>>) {
+    let naviguer!: NavigateFunction
+    function Historique() {
+      naviguer = useNavigate()
+      return null
+    }
+    const client = createQueryClient()
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...routes })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[entree]}>
+          <Historique />
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    return { client, retour: () => act(async () => naviguer(-1)) }
+  }
+
+  // La page du wagon prend la place du feuillet dans l'historique : le retour ramène à la fiche,
+  // feuillet fermé. Mutation : `replace: true` retiré de la navigation (le retour rouvre le feuillet
+  // « Dresser une table », d'où une seconde table se dresserait).
+  it('le retour depuis le wagon ramène à la fiche du film, sans rouvrir le feuillet', async () => {
+    const { retour } = monterAvecHistorique(page(VOL), service().routes)
+    const feuillet = await ouvrir()
+    fireEvent.click((await within(feuillet).findAllByRole('radio'))[0]!)
+    fireEvent.click(within(feuillet).getByRole('button', { name: 'Dresser la table' }))
+    await screen.findByRole('region', { name: 'Le wagon-restaurant' })
+    await retour()
+    expect(await voiture(VOL)).toBeInTheDocument()
+    expect(await leGeste()).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  // Le feuillet refermé pendant l'envoi : la table est dressée (elle ne se retire pas) et le cache
+  // l'apprend, mais on reste sur la fiche ; remplacer l'adresse d'alors emporterait la fiche. Mutation :
+  // la garde `dernier.current.valeur !== null` retirée (le wagon s'ouvre à la place de la fiche).
+  it('le feuillet refermé pendant l’envoi : la table rendue va au cache, et l’on reste sur la fiche', async () => {
+    let rendre!: (r: Response) => void
+    const { routes } = service(() => new Promise<Response>((ok) => (rendre = ok)))
+    const { client } = monterVoyage(page(VOL), routes)
+    await leGeste()
+    client.setQueryData<Tables>(cles.tables, { tables: [] })
+    const feuillet = await ouvrir()
+    fireEvent.click((await within(feuillet).findAllByRole('radio'))[0]!)
+    fireEvent.click(within(feuillet).getByRole('button', { name: 'Dresser la table' }))
+    await waitFor(() => expect(client.isMutating()).toBe(1))
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await act(async () => rendre(json(DRESSEE, 201)))
+    await waitFor(() => expect(client.isMutating()).toBe(0))
+    await waitFor(() => expect(client.getQueryData<Tables>(cles.tables)!.tables.map((t) => t.id)).toEqual([DRESSEE.id]))
+    expect(screen.queryByRole('region', { name: 'Le wagon-restaurant' })).toBeNull()
+    expect(await voiture(VOL)).toBeInTheDocument()
   })
 
   // Sur un programme vu en partie, la table vise la bobine qui reste à voir, comme les autres gestes

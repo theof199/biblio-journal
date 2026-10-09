@@ -29,7 +29,9 @@ type Geste = { id: string; quoi: 'place' | 'decliner' }
  * `exact`, une relecture en vol annulée d'abord (atterrie après, elle rendrait la table d'avant) :
  * **rien n'est périmé**, surtout pas le préfixe `voyage`. **Un `409` n'est pas une panne** (le soir
  * est passé, la table est déclinée, je suis déjà à table ce soir) : les tables se relisent, en
- * `exact`, sans un mot. Tout autre refus se dit sur sa table, par le message du serveur, et se refait.
+ * `exact`, et son message se dit sur sa table (règle commune 4 : sans lui, « Prendre ma place » sur une
+ * seconde invitation du même soir ne répondait rien). Tout autre refus s'y dit aussi, par le message
+ * du serveur, sans relecture, et se refait. Le refus s'efface au geste suivant.
  * Dans `useMutation`, pas dans les rappels de `mutate` : le cache l'apprend même la page quittée.
  */
 function TablesDuVoyageur({ monde, Dessin }: { monde: Monde; Dessin: GabaritsDesPages['wagonRestaurant'] }) {
@@ -53,11 +55,7 @@ function TablesDuVoyageur({ monde, Dessin }: { monde: Monde; Dessin: GabaritsDes
     if (envoi.current) return
     envoi.current = true
     setRefus(null)
-    geste.mutate(g, {
-      onError: (e) => {
-        if (!(e instanceof ApiError && e.status === 409)) setRefus({ id: g.id, message: e.message })
-      },
-    })
+    geste.mutate(g, { onError: (e) => setRefus({ id: g.id, message: e.message }) })
   }
 
   // Rien avant la réponse : la page attend ses tables comme elle a attendu la carte.

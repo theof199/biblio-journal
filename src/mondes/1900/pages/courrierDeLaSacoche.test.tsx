@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { Abonnement } from '../../../api/abonnements'
 import type { CartePostaleEnvoyee, CartePostaleRecue, Courrier, Malle, RubriqueVue, Voyageur } from '../../../api/voyage'
 import { exemple } from '../../../test/contrat'
@@ -339,9 +339,11 @@ describe('écrire une carte postale en 1900', () => {
     expect(within(carte).getByRole('img', { name: M.ouverte.timbre })).toBeInTheDocument()
   })
 
-  // « L'appli borne la longueur et refuse le vide. » Mutations : `disabled` retiré de « Poster la
-  // carte » et la garde de la demande avec (un mot d'espaces, ou sans destinataire, arrive à la
-  // confirmation) ; `motPostable` remplacé par `mot !== ''`.
+  // « L'appli borne la longueur et refuse le vide. » **Le bouton se dit `aria-disabled`, il ne se
+  // désactive pas** (relecture du groupe D : comme la table et le feuillet, il garde le focus).
+  // Mutations : `aria-disabled` retiré de « Poster la carte » ; `disabled` remis à sa place ; `pret`
+  // retiré de la confirmation (un mot d'espaces, ou sans destinataire, y arrive) ; `motPostable`
+  // remplacé par `mot !== ''`.
   it.each([
     ['sans mot', '', true],
     ['avec un mot fait d’espaces', '   ', true],
@@ -351,7 +353,9 @@ describe('écrire une carte postale en 1900', () => {
     const champ = await within(carte).findByRole('textbox', { name: M.ecrire.mot })
     fireEvent.change(champ, { target: { value: mot } })
     if (choisir) fireEvent.click(within(carte).getByRole('radio', { name: 'bob' }))
-    expect(poster(carte)).toBeDisabled()
+    expect(poster(carte)).toHaveAttribute('aria-disabled', 'true')
+    expect(poster(carte)).toBeEnabled()
+    fireEvent.click(poster(carte))
     fireEvent.submit(champ.closest('form')!)
     expect(within(carte).queryByText(M.ecrire.avertir)).toBeNull()
     expect(corps).toEqual([])
@@ -401,6 +405,10 @@ describe('écrire une carte postale en 1900', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(entrees(courrier)).toEqual(['Écrire la carte de la gare de 1902'])
+    // L'entrée « À écrire » de 1900, qui avait ouvert la carte, n'existe plus : le focus ne reste pas
+    // sur le document, il revient au titre de la rubrique. Mutation, dans `CourrierDeLaSacoche.tsx` :
+    // l'effet qui rend le focus retiré ; `cible` retiré de la rubrique (un titre ne se focalise pas).
+    expect(within(courrier).getByRole('heading', { level: 2, name: `${M.titre} ${M.sous}` })).toHaveFocus()
     expect(plis(within(courrier).getByRole('list', { name: M.envoyees }))).toEqual([`À bob · gare de 1902${ENVOYEE.mot}`, `À camille · gare de 1904${MOT}`])
     expect(requetes.filter((r) => r === BOITE)).toHaveLength(1)
   })
@@ -419,7 +427,66 @@ describe('écrire une carte postale en 1900', () => {
     expect(screen.getByRole('dialog', { name: M.ecrire.titre })).toBe(carte)
     expect(champ.value).toBe(MOT)
     expect(within(carte).getByRole('radio', { name: 'camille' })).toBeChecked()
-    await waitFor(() => expect(poster(carte)).toBeEnabled())
+    await waitFor(() => expect(poster(carte)).toHaveAttribute('aria-disabled', 'false'))
+  })
+
+  // Une demande faite pendant l'envoi (Entrée dans le champ) ne doit pas ressortir en confirmation
+  // quand le serveur refuse : rien ne se confirme sans un geste sur une carte prête. Et l'envoi a
+  // démonté « Poster la carte » comme la confirmation : le refus revenu, le focus resté sans élément
+  // va au bouton revenu. Mutations : la garde `if (pret)` retirée de la soumission ; `carte.enCours`
+  // retiré des dépendances de l'effet du focus (il reste sur le document).
+  it('une soumission pendant l’envoi ne demande rien : le refus revenu, aucune confirmation n’attend', async () => {
+    let rendre!: (r: Response) => void
+    const { carte } = await ecrire({ [POSTER]: () => new Promise<Response>((r) => (rendre = r)) })
+    const champ = await remplir(carte)
+    fireEvent.click(poster(carte))
+    fireEvent.click(within(carte).getByRole('button', { name: M.ecrire.confirmer }))
+    expect(await within(carte).findByText(M.ecrire.enCours)).toBeInTheDocument()
+    fireEvent.submit(champ.closest('form')!)
+    await act(async () => rendre(panne('Le mot tient sur une ligne.')()))
+    expect(await within(carte).findByRole('alert')).toHaveTextContent('Le mot tient sur une ligne.')
+    expect(within(carte).queryByText(M.ecrire.avertir)).toBeNull()
+    expect(poster(carte)).toHaveFocus()
+  })
+
+  // **Une carte ne se retire pas** : la confirmation vaut pour le destinataire qu'on a lu. Changer de
+  // destinataire après « Poster la carte » la retire, et rien ne part. Mutation, dans
+  // `CarteAEcrire.tsx` : `setDemande(false)` retiré du choix d'un destinataire (« La poster pour de
+  // bon » resterait sous le doigt, pour un membre qu'on vient seulement de choisir).
+  it('changer de destinataire après « Poster la carte » retire la confirmation : il faut redemander', async () => {
+    const { carte, corps } = await ecrire()
+    await remplir(carte)
+    fireEvent.click(poster(carte))
+    expect(within(carte).getByRole('button', { name: M.ecrire.confirmer })).toBeInTheDocument()
+    fireEvent.click(within(carte).getByRole('radio', { name: 'bob' }))
+    expect(within(carte).queryByRole('button', { name: M.ecrire.confirmer })).toBeNull()
+    expect(within(carte).queryByText(M.ecrire.avertir)).toBeNull()
+    expect(corps).toEqual([])
+    fireEvent.click(poster(carte))
+    fireEvent.click(within(carte).getByRole('button', { name: M.ecrire.confirmer }))
+    await screen.findByRole('dialog', { name: M.ouverte.titre })
+    expect(corps).toEqual([{ annee: 1900, destinataire_id: LIGNE_DE_BOB.user.id, mot: MOT }])
+  })
+
+  // « Poster la carte », focalisé, est démonté par la demande : le focus va au groupe de la
+  // confirmation, que son avertissement nomme (il est donc lu), jamais sur « La poster pour de bon »
+  // (Entrée tenue posterait). « Pas encore » le rend à « Poster la carte ». Mutations : le focus de la
+  // confirmation retiré (il tombe sur le document) ; posé sur « La poster pour de bon » ;
+  // `aria-labelledby` ou le rôle du groupe retirés (l'avertissement n'est plus annoncé) ; le retour du
+  // focus à « Poster la carte » retiré.
+  it('à « Poster la carte », le focus va à la confirmation, qui annonce qu’une carte ne se corrige ni ne se retire ; « Pas encore » le rend au bouton', async () => {
+    const { carte } = await ecrire()
+    await remplir(carte)
+    poster(carte).focus()
+    fireEvent.click(poster(carte))
+    const confirmation = within(carte).getByRole('group', { name: M.ecrire.avertir })
+    expect(M.ecrire.avertir).toBe('Une carte postée ne se corrige ni ne se retire.')
+    expect(confirmation).toHaveFocus()
+    expect(confirmation).toContainElement(within(carte).getByRole('button', { name: M.ecrire.confirmer }))
+    const attendre = within(carte).getByRole('button', { name: M.ecrire.attendre })
+    attendre.focus()
+    fireEvent.click(attendre)
+    expect(poster(carte)).toHaveFocus()
   })
 
   // Un `409` n'est pas une panne. Mutations : le refus de la rubrique jamais rendu ; rendu en alerte
@@ -436,14 +503,17 @@ describe('écrire une carte postale en 1900', () => {
   })
 
   // Mutations : le champ offert quand même ; la phrase tue (une carte sans rien) ; la phrase dite
-  // pendant que mes abonnements se lisent (avant leur réponse).
+  // pendant que mes abonnements se lisent (avant leur réponse) ; rien de dit pendant leur lecture (le
+  // « Chargement… » retiré, ou dit hors d'un `role="status"`).
   it('sans abonnement, la carte le dit et n’offre ni champ, ni destinataire, ni envoi', async () => {
     let servir = (_: unknown) => undefined as void
     const { carte } = await ecrire({ [ABONNEMENTS]: () => new Promise<Response>((r) => void (servir = () => r(json({ items: [], next_cursor: null })))) })
     expect(carte).not.toHaveTextContent(M.ecrire.personne)
+    expect(within(carte).getByRole('status')).toHaveTextContent(/^Chargement…$/)
     servir(null)
     expect(await within(carte).findByText(M.ecrire.personne)).toBeInTheDocument()
     expect(carte.querySelectorAll('input, form, fieldset')).toHaveLength(0)
+    expect(within(carte).queryByRole('status')).toBeNull()
     expect(within(carte).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([M.ouverte.refermer])
   })
 

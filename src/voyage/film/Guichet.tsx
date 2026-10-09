@@ -71,7 +71,8 @@ interface Props {
  * cache ; une relecture en vol annulée d'abord, rien de périmé) et la page du wagon s'ouvre **à la
  * place** du feuillet. **Un `409` n'est pas une panne** (j'ai déjà une table ce soir, je ne suis plus
  * ce membre, le film est inconnu) : le feuillet se referme, les tables se relisent, et le message du
- * serveur se dit au guichet, tel quel. Tout autre refus se dit dans le feuillet, qui reste.
+ * serveur se dit au guichet, tel quel, jusqu'au geste suivant du guichet. Tout autre refus se dit dans
+ * le feuillet, qui reste.
  */
 export default function Guichet({ monde, annee, film, podium, entree, onFilm }: Props) {
   const client = useQueryClient()
@@ -90,9 +91,13 @@ export default function Guichet({ monde, annee, film, podium, entree, onFilm }: 
     },
   })
   const envoi = useRef(false)
+  // Le refus d'une table (`409`), dit au guichet. **Tout geste du guichet efface le refus d'avant** :
+  // l'erreur montrée est toujours celle du dernier geste, et un geste réussi n'en laisse aucune.
+  const [conflit, setConflit] = useState<string | null>(null)
   const geste = (g: Geste) => {
     if (envoi.current) return
     envoi.current = true
+    setConflit(null)
     ecrire.mutate(g, { onSettled: () => void (envoi.current = false) })
   }
 
@@ -104,7 +109,6 @@ export default function Guichet({ monde, annee, film, podium, entree, onFilm }: 
   const enCours = avecWagon ? carte.data?.annee_en_cours : undefined
   const tableOfferte = enCours !== undefined && gabaritSeul(mondes(decennieDe(enCours)), 'wagonRestaurant') !== null
   const choix = useCalque(CALQUE_DE_TABLE)
-  const [conflit, setConflit] = useState<string | null>(null)
   const envoiDeTable = useRef(false)
   // Dans `useMutation`, pas dans les rappels de `mutate` : le cache l'apprend même la fiche quittée.
   const dresse = useMutation({
@@ -205,8 +209,8 @@ interface PropsInvite {
  * Le feuillet « Dresser une table » : l'invité se choisit parmi **tous** mes abonnements
  * (`api/abonnements.ts`), lus à l'ouverture seulement et relus à chaque ouverture (aucune page hors
  * Voyage ne périme cette clé). **Choisir n'envoie rien** : une table dressée ne se retire pas, le
- * bouton seul l'envoie. Un membre désactivé reste proposé : le serveur refuse. Sans abonnement, le
- * feuillet le dit et n'offre rien.
+ * bouton seul l'envoie. Un membre désactivé n'est pas proposé (`lireMesAbonnements` ne le rend pas).
+ * Sans abonnement, le feuillet le dit et n'offre rien.
  */
 function ChoixDeLInvite({ titre, enCours, erreur, onDresser }: PropsInvite) {
   const abonnements = useQuery({ queryKey: cles.abonnements, queryFn: ({ signal }) => lireMesAbonnements(signal), staleTime: 0 })

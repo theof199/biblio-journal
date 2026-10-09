@@ -8,7 +8,7 @@ import { json } from '../../../test/serveur'
 import { ficheEnAttente, fichePrete, filmDeSalle, morceau, salle, seance, voyage1890 } from '../../../test/voyage'
 import { RELECTURES } from '../../../voyage/relecture'
 import { classeDe, filmDeLaMarche, MOTS_DES_CLASSES } from './classes'
-import { MOTS_DU_WAGON, ceQueDitLaPorte } from './wagon'
+import { MOTS_DU_WAGON, ceQueDitLaPorte, ceQueDitLaTable } from './wagon'
 
 /**
  * Les trois classes et le train du soir (plan des pages 1900, brief 4) : le podium d'une année 1900
@@ -393,14 +393,17 @@ describe('la porte du wagon-restaurant', () => {
 
   // Ce que la porte dit : l'état de l'invité, dit à l'hôte ou à l'invité ; plusieurs tables le même
   // soir, leur compte. Mutations : les phrases de l'hôte dites à l'invité ; la première table seule
-  // quand il y en a plusieurs ; « a pris sa place » dit d'une invitation qui attend.
+  // quand il y en a plusieurs ; « a pris sa place » dit d'une invitation qui attend ; la porte qui dit
+  // d'une table rendue qu'elle « reste dressée » (le contrat : l'hôte retrouve sa soirée).
   it('dit l’état de la table à l’hôte, à l’invité, ou le compte de mes tables', () => {
     const un = (t: Table, role: 'hote' | 'invite') => ceQueDitLaPorte([{ table: t, role }])
     expect((['attend', 'a_pris_sa_place', 'a_decline'] as const).map((e) => un(etat(LA_MIENNE, e), 'hote'))).toEqual([
       'bob n’a pas encore pris sa place : le même film, à deux, ce soir',
       'bob a pris sa place : le même film, à deux, ce soir',
-      'bob a rendu sa place : ta table reste dressée ce soir',
+      'bob a rendu sa place : ta soirée est libre',
     ])
+    // La phrase de la table, la même : l'hôte retrouve sa soirée, la porte ne dit pas qu'elle reste dressée.
+    expect(ceQueDitLaTable({ ...etat(LA_MIENNE, 'a_decline'), vu_ensemble: false }, 'hote')).toBe(`${un(etat(LA_MIENNE, 'a_decline'), 'hote')}.`)
     expect((['attend', 'a_pris_sa_place'] as const).map((e) => un(etat(CHEZ_BOB, e), 'invite'))).toEqual([
       'bob t’invite à sa table : le même film, à deux, ce soir',
       'Ta place est prise à la table de bob : le même film, à deux, ce soir',

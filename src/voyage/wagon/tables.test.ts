@@ -73,9 +73,12 @@ describe('les règles d’une table', () => {
   })
 
   // La porte du wagon-restaurant (brief 16, décision 10) : une table de ce soir, où je suis l'hôte ou
-  // l'invité, que je n'ai pas déclinée. Mutations : toute table (le filtre retiré) ; une table d'hier
-  // gardée (`!soirPasse` retiré) ; ma place rendue gardée ; la table que mon invité a déclinée
-  // retirée (le rôle non regardé) ; l'ordre servi retourné.
+  // l'invité, que je n'ai pas déclinée. **Une table que mon invité a déclinée ne compte pas quand une
+  // autre existe** (l'hôte a retrouvé sa soirée : la porte ne dit pas « 2 tables ») ; seule, elle ouvre
+  // encore la porte ; plusieurs rendues et rien d'autre, la première servie. Mutations : toute table
+  // (le filtre retiré) ; une table d'hier gardée (`!soirPasse` retiré) ; ma place rendue gardée ; la
+  // table que mon invité a déclinée toujours comptée (`tenues` ignoré), ou jamais (le repli retiré) ;
+  // toutes les rendues gardées (`slice` retiré) ; l'ordre servi retourné.
   it('la porte ne s’ouvre que pour une table de ce soir que je n’ai pas déclinée, dans l’ordre servi', () => {
     const t = (id: string, etat: Table['etat'], hote: string, soir: string) => ({ ...table(etat, hote, soir), id }) as Table
     const tables = [
@@ -87,8 +90,14 @@ describe('les règles d’une table', () => {
       t('hier-la-mienne', 'attend', MOI, '2026-10-08'),
       t('demain', 'attend', LUI, '2026-10-10'),
     ]
-    expect(tablesDeLaPorte(tables, MOI, CE_SOIR).map((x) => x.id)).toEqual(['invitee', 'la-mienne-declinee', 'prise'])
-    expect(tablesDeLaPorte([], MOI, CE_SOIR)).toEqual([])
+    const porte = (ts: Table[]) => tablesDeLaPorte(ts, MOI, CE_SOIR).map((x) => x.id)
+    expect(porte(tables)).toEqual(['invitee', 'prise'])
+    const rendue = tables[2]!
+    expect(porte([rendue, tables[0]!])).toEqual(['invitee'])
+    // Seule ce soir : elle reste la mienne, et la porte dit que mon invité a rendu sa place.
+    expect(porte([tables[1]!, rendue, tables[4]!])).toEqual(['la-mienne-declinee'])
+    expect(porte([rendue, { ...rendue, id: 'une-autre-rendue' }])).toEqual(['la-mienne-declinee'])
+    expect(porte([])).toEqual([])
   })
 
   // Le tampon « Vu ensemble » se pose par **entrée de journal** (`mon_billet.id`), jamais par film, et

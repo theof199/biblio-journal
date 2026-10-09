@@ -42,12 +42,17 @@ export function ceSoirMeme(soir: string, maintenant: number): boolean {
 /**
  * Les tables qui ouvrent la porte du wagon-restaurant sur la fiche de mon année en cours (plan des
  * écrans des lots, brief 16, décision 10) : celles de **ce soir**, où je suis l'hôte ou l'invité,
- * **que je n'ai pas déclinées**, dans l'ordre servi. Une table d'hier n'ouvre rien ; une table que mon
- * invité a déclinée reste la mienne. L'horloge de l'appareil ne fait que cacher une porte : la page du
- * wagon relit tout.
+ * **que je n'ai pas déclinées**, dans l'ordre servi. Une table d'hier n'ouvre rien. **Une table que
+ * mon invité a déclinée ne compte pas quand une autre existe** : l'hôte a retrouvé sa soirée, la porte
+ * ne dit pas « 2 tables » pour une rendue et une qui attend. Seule, elle ouvre encore la porte, qui dit
+ * que l'invité a rendu sa place ; plusieurs rendues et rien d'autre, la première servie seulement.
+ * L'horloge de l'appareil ne fait que cacher une porte : la page du wagon relit tout.
  */
 export function tablesDeLaPorte(tables: readonly Table[], moi: string, maintenant: number): Table[] {
-  return tables.filter((t) => ceSoirMeme(t.soir, maintenant) && !(roleA(t, moi) === 'invite' && t.etat === 'a_decline'))
+  // Passé ce filtre, une table déclinée l'est par mon invité : les miennes d'invité sont parties.
+  const ceSoir = tables.filter((t) => ceSoirMeme(t.soir, maintenant) && !(roleA(t, moi) === 'invite' && t.etat === 'a_decline'))
+  const tenues = ceSoir.filter((t) => t.etat !== 'a_decline')
+  return tenues.length > 0 ? tenues : ceSoir.slice(0, 1)
 }
 
 const AUCUN_BILLET: ReadonlySet<string> = new Set()
@@ -101,7 +106,7 @@ export interface TableDuWagon {
   gestes: GestesDeTable
   /** Une écriture est partie pour cette table et n'est pas revenue. */
   enCours: boolean
-  /** Ce que le serveur a dit d'un geste refusé ou tombé, tel quel. **Jamais pour un `409`** : les tables se relisent, sans un mot. */
+  /** Ce que le serveur a dit d'un geste refusé ou tombé, tel quel, `409` compris (les tables se relisent alors) ; nul dès le geste suivant. */
   refus: string | null
 }
 

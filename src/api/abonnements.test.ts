@@ -40,6 +40,21 @@ describe('mes abonnements', () => {
     expect(requetes).toEqual([PREMIERE])
   })
 
+  // La route sert aussi les comptes désactivés (elle ne filtre rien), et le serveur refuse par `409`
+  // une carte ou une table pour eux : ils ne sont pas rendus, pour les deux écrans d'un coup.
+  // Mutation : le filtre sur `deactivated` retiré (dan revient, à sa place).
+  it('ne rend pas un compte désactivé, sur quelque page qu’il soit ; s’il ne reste personne, la liste est vide', async () => {
+    const eteint = (ligne: Page['items'][number]) => ({ ...ligne, user: { ...ligne.user, deactivated: true } })
+    servir({
+      [PREMIERE]: () => json({ items: [BOB, eteint(DAN)], next_cursor: CURSEUR }),
+      [DEUXIEME]: () => json({ items: [eteint(DAN), CAMILLE], next_cursor: null }),
+    })
+    expect([BOB.user.deactivated, CAMILLE.user.deactivated]).toEqual([false, false])
+    expect(await lireMesAbonnements()).toEqual([BOB.user, CAMILLE.user])
+    servir({ [PREMIERE]: () => json({ items: [eteint(BOB), eteint(CAMILLE)], next_cursor: null }) })
+    expect(await lireMesAbonnements()).toEqual([])
+  })
+
   // Une écriture au journal périme le préfixe `voyage` : elle ne change pas qui je suis.
   // Mutation : la clé rangée sous `voyage` (`['voyage', 'abonnements']`).
   it('sa clé vit hors du préfixe `voyage`', () => {

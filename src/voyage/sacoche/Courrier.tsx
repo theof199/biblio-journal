@@ -31,7 +31,7 @@ export interface CarteAEcrire {
   annee: number
   /** Mon pseudo, pour signer. */
   moi: string
-  /** Les membres que je suis, toutes pages lues, dans l'ordre servi ; nul tant qu'ils ne sont pas lus, ou en panne. Vide : je ne suis personne. */
+  /** Les membres que je suis et à qui l'on peut écrire (aucun compte désactivé : `api/abonnements.ts`), toutes pages lues, dans l'ordre servi ; nul tant qu'ils ne sont pas lus, ou en panne. Vide : personne à qui écrire. */
   abonnements: readonly Abonnement[] | null
   /** Mes abonnements sont en panne : la carte le dit, et n'offre rien. */
   panne: PanneDeBloc | null
@@ -122,8 +122,17 @@ function CourrierDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['courrierDeLa
   })
 
   const gare = gareLue(ecriture.valeur)
-  // La carte qu'on vient de poster reste à l'écran, tamponnée, tant que son calque est ouvert.
-  const partie = gare !== null && poste.data?.annee === gare ? poste.data : null
+  // La carte qu'on vient de poster reste à l'écran, tamponnée, **tant que son calque n'a pas été
+  // quitté** : dès que l'adresse ne porte plus sa gare, l'envoi est oublié (le jumeau du guichet fait
+  // `dresse.reset()` à la réouverture), et ni « suivant » ni une réouverture ne la remontrent. La carte
+  // est aux envoyées, où elle s'ouvre comme une autre. **Une gare de `en_attente` montre toujours sa
+  // carte à écrire** : revenue dans la liste (le compte du destinataire supprimé rouvre la gare), la
+  // carte postée ne la masque pas.
+  const { data: postee, reset: oublier } = poste
+  useEffect(() => {
+    if (postee && postee.annee !== gare) oublier()
+  }, [postee, gare, oublier])
+  const partie = gare !== null && postee?.annee === gare && !lue?.en_attente.includes(gare) ? postee : null
   const enVol = gare !== null && poste.isPending && poste.variables?.annee === gare
   // **Une carte à écrire par gare de `en_attente`, et pour elles seules** : une année que la boîte
   // n'attend pas (une gare pas bouclée, une carte déjà partie, une adresse écrite à la main) n'ouvre

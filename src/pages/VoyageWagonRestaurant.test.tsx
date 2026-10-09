@@ -244,26 +244,42 @@ describe('le wagon-restaurant, une page dont le dessin est une clé sans défaut
     expect(dites()[1]).toBe(auRepos(AUTRE, 'invite', 'a_decline'))
   })
 
-  // **Un `409` n'est pas une panne** : les tables se relisent, sans un mot. Mutations : le `409` dit
-  // comme une erreur (son message sur la table) ; aucune relecture ; le préfixe `voyage` relu (la
-  // carte repart).
-  it('un `409` relit les tables et ne dit rien', async () => {
+  // **Un `409` n'est pas une panne** : les tables se relisent. **La règle a changé** (relecture du
+  // groupe D) : la règle commune 4 l'emporte sur le « sans message » du brief 15, le message du serveur
+  // se dit sur sa table, après la relecture, et s'efface au geste suivant. Mutations : le `409` tu
+  // (la garde `status !== 409` remise devant `setRefus`) ; aucune relecture ; le préfixe `voyage`
+  // relu (la carte repart) ; le refus dit sur toutes les tables ; `setRefus(null)` retiré du geste
+  // suivant (le refus reste sous une table qui vient de répondre).
+  it('un `409` relit les tables et dit le message du serveur sur sa table, après la relecture ; le geste suivant l’efface', async () => {
     let lectures = 0
+    const DITE = `${c(INVITATION)} | invite | a_decline | ce soir | au repos | Cette table ne se reprend pas.`
     const { client, requetes } = await monterPrete({
       [TABLES]: () => json(lectures++ === 0 ? MES_TABLES : ({ tables: [declinee(INVITATION), AUTRE, LA_MIENNE, PASSEE] } satisfies Tables)),
       [PLACE(INVITATION.id)]: refuse('Cette table ne se reprend pas.', 409),
+      [DECLINER(AUTRE.id)]: () => json(declinee(AUTRE)),
     })
 
     fireEvent.click(screen.getByRole('button', { name: `Prendre ${c(INVITATION)}` }))
-    await waitFor(() => expect(dites()).toEqual([auRepos(INVITATION, 'invite', 'a_decline'), ...TOUTES.slice(1)]))
+    await waitFor(() => expect(dites()).toEqual([DITE, ...TOUTES.slice(1)]))
     await auCalme(client)
 
-    expect(screen.queryByText(/ne se reprend pas/)).toBeNull()
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(dites()).toEqual([DITE, ...TOUTES.slice(1)])
     expect(requetes.filter((r) => r === TABLES || r === VOYAGE).sort()).toEqual([VOYAGE, TABLES, TABLES])
-    // Le verrou est rendu.
+    // Le verrou est rendu, et le refus d'avant s'efface.
     fireEvent.click(screen.getByRole('button', { name: `Décliner ${c(AUTRE)}` }))
-    await waitFor(() => expect(requetes).toContain(DECLINER(AUTRE.id)))
+    await waitFor(() => expect(dites()).toEqual([auRepos(INVITATION, 'invite', 'a_decline'), auRepos(AUTRE, 'invite', 'a_decline'), ...TOUTES.slice(2)]))
+  })
+
+  // Le cas qui ne répondait rien : je suis déjà à table ce soir, une seconde invitation attend, et
+  // « Prendre ma place » y reçoit un `409` que la relecture ne change pas. Mutation : le `409` tu.
+  it('« Prendre ma place » sur une seconde invitation du même soir dit pourquoi le serveur refuse', async () => {
+    const { client, requetes } = await monterPrete({ [PLACE(AUTRE.id)]: refuse('Tu es déjà à table ce soir.', 409) })
+
+    fireEvent.click(screen.getByRole('button', { name: `Prendre ${c(AUTRE)}` }))
+    await waitFor(() => expect(dites()[1]).toBe(`${c(AUTRE)} | invite | attend | ce soir | au repos | Tu es déjà à table ce soir.`))
+    await auCalme(client)
+    expect(requetes.filter((r) => r === TABLES)).toHaveLength(2)
+    expect([dites()[0], ...dites().slice(2)]).toEqual([TOUTES[0], ...TOUTES.slice(2)])
   })
 
   // Tout autre refus se dit, par le message du serveur, sur sa table et elle seule, et se refait.

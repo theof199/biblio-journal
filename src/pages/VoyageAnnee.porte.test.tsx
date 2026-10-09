@@ -38,8 +38,10 @@ const MOI_A_TABLE = EXEMPLE.tables.map((t) => (t.hote.id === MOI.id ? t.hote : t
 const table = (id: string, plus: Partial<Table>): Table => ({ ...EXEMPLE.tables[0]!, id, soir: '2026-10-09', hote: AUTRE, invite: MOI_A_TABLE, etat: 'attend', vu_ensemble: false, mon_billet: null, ...plus })
 /** Chez l'autre, ce soir : j'y suis invité. */
 const INVITATION = table('invitation', {})
-/** La mienne, ce soir, que mon invité a déclinée : elle reste la mienne. */
-const LA_MIENNE = table('la-mienne', { hote: MOI_A_TABLE, invite: AUTRE, etat: 'a_decline' })
+/** La mienne, ce soir, où mon invité n'a pas encore pris sa place. */
+const LA_MIENNE = table('la-mienne', { hote: MOI_A_TABLE, invite: AUTRE })
+/** Une autre des miennes, que mon invité a déclinée : elle ne compte pas quand une autre table existe, et ouvre la porte seule. */
+const RENDUE = table('rendue', { hote: MOI_A_TABLE, invite: AUTRE, etat: 'a_decline' })
 const DECLINEE = table('declinee-par-moi', { etat: 'a_decline' })
 const HIER = table('hier', { soir: '2026-10-08', etat: 'a_pris_sa_place' })
 const DEMAIN = table('demain', { soir: '2026-10-10' })
@@ -112,13 +114,14 @@ describe('la porte du wagon-restaurant, hors d’un monde qui la dessine', () =>
 describe('la porte du wagon-restaurant, dans un monde qui la dessine', () => {
   // Mutations : `tablesDeLaPorte` contournée dans le bloc (toutes les tables passées) ; le rôle
   // calculé sur le pseudo, ou toujours « invité » ; l'adresse écrite autrement que celle de la page
-  // du wagon ; la porte montée au compte IA seulement (`v.ia &&`).
+  // du wagon ; la porte montée au compte IA seulement (`v.ia &&`). **La liste a changé avec la règle**
+  // (relecture du groupe D) : une table que mon invité a déclinée ne compte plus à côté d'une autre.
   it.each([
     ['un membre hors IA', false],
     ['le compte IA', true],
   ])('pour %s, elle reçoit mes tables de ce soir que je n’ai pas déclinées, dans l’ordre servi, et mène au wagon', async (_, ia) => {
     preter()
-    const { requetes, client } = monterVoyage('/voyage/1897', routes([HIER, INVITATION, DECLINEE, LA_MIENNE, DEMAIN], ia))
+    const { requetes, client } = monterVoyage('/voyage/1897', routes([HIER, INVITATION, DECLINEE, RENDUE, LA_MIENNE, DEMAIN], ia))
     const page = await lAnnee()
     expect(await within(page).findByTestId('porte')).toHaveTextContent('invitation (invite) | la-mienne (hote)')
     expect(within(page).getByRole('link', { name: 'Entrer' })).toHaveAttribute('href', '/voyage/wagon-restaurant')

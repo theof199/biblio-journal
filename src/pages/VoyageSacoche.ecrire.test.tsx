@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Abonnement } from '../api/abonnements'
+import { cles } from '../api/cles'
 import type { CartePostaleEnvoyee, Courrier, Tickets, Voyageur } from '../api/voyage'
 import { PAGES_1890 } from '../mondes/1890/pages'
 import { exemple } from '../test/contrat'
@@ -62,8 +64,21 @@ const ligne = (p: PropsCourrierDeLaSacoche) => {
     p.refus ? `refus « ${p.refus} »` : 'sans refus',
   ].join(' | ')
 }
+/** L'adresse de la sacoche, et le bouton « suivant » du navigateur. */
+function Historique() {
+  const naviguer = useNavigate()
+  return (
+    <>
+      <p data-testid="adresse">{useLocation().search}</p>
+      <button type="button" onClick={() => naviguer(1)}>
+        Suivant
+      </button>
+    </>
+  )
+}
 const CourrierDuMonde = (p: PropsCourrierDeLaSacoche) => (
   <>
+    <Historique />
     <p data-testid="courrier">{ligne(p)}</p>
     {[1900, 1901, 1902].map((a) => (
       <button key={a} type="button" onClick={() => p.ecrire(a)}>{`Écrire ${a}`}</button>
@@ -179,13 +194,112 @@ describe('écrire une carte postale, dans le bloc du courrier', () => {
     expect([VOYAGE, TICKETS, BOITE, VOYAGEUR].map((r) => parties(requetes, r))).toEqual([1, 1, 1, 1])
     toucher('Refermer')
     await waitFor(() => expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | fermée | sans refus'))
-    // Sa gare n'attend plus rien : son adresse ne rouvre pas de carte à écrire (elle remontre la carte
-    // qu'on vient de poster, tant que la sacoche est montée), et rien ne repart.
+    // Sa gare n'attend plus rien : son adresse ne rouvre ni carte à écrire ni la carte postée (**la
+    // règle a changé**, relecture du groupe D : son calque quitté, elle ne se remontre plus), et rien
+    // ne repart.
     toucher('Écrire 1900')
-    await waitFor(() => expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | ouverte envoyee 1900 qui vient de partir | sans refus'))
+    await waitFor(() => expect(screen.getByTestId('adresse').textContent).toBe('?ecrire=1900'))
+    expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | fermée | sans refus')
     toucher('Poster')
     await auCalme(client)
     expect(parties(requetes, POSTER)).toBe(1)
+  })
+
+  // La carte postée ne se remontre que tant que son calque n'a pas été quitté : refermée, le bouton
+  // « suivant » du navigateur ramène l'adresse de sa gare, pas la carte « qui vient de partir ».
+  // Mutation, dans `Courrier.tsx` : l'effet qui oublie l'envoi retiré (`oublier()`).
+  it('la carte postée, refermée, ne revient pas par le bouton « suivant » du navigateur', async () => {
+    await monter({ entree: ['/voyage', SACOCHE] })
+    toucher('Écrire 1900')
+    await waitFor(() => expect(dit()).toBe(A_ECRIRE))
+    toucher('Poster')
+    await waitFor(() => expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | ouverte envoyee 1900 qui vient de partir | sans refus'))
+    toucher('Refermer')
+    await waitFor(() => expect(screen.getByTestId('adresse').textContent).toBe(''))
+    expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | fermée | sans refus')
+    toucher('Suivant')
+    await waitFor(() => expect(screen.getByTestId('adresse').textContent).toBe('?ecrire=1900'))
+    expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | fermée | sans refus')
+  })
+
+  // **Une gare de `en_attente` montre toujours sa carte à écrire** : le compte du destinataire
+  // supprimé rouvre la gare de l'expéditeur, et la carte « qui vient de partir », encore à l'écran, ne
+  // doit pas masquer celle qui est à réécrire. Mutation : `!lue?.en_attente.includes(gare)` retiré de
+  // `partie` (la carte partie reste à l'écran, la gare ne se réécrit pas tant que la sacoche est montée).
+  it('une gare revenue dans `en_attente` montre sa carte à écrire, même sous la carte qui vient de partir', async () => {
+    let boite = LA_BOITE
+    const { client } = await monter({ entree: `${SACOCHE}?ecrire=1900`, attendu: A_ECRIRE, routes: { [BOITE]: () => json(boite) } })
+    toucher('Poster')
+    await waitFor(() => expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | ouverte envoyee 1900 qui vient de partir | sans refus'))
+    await auCalme(client)
+    // Le serveur a rouvert la gare : la boîte relue ne connaît plus la carte, et attend celle de 1900.
+    boite = { ...LA_BOITE }
+    await act(async () => void client.invalidateQueries({ queryKey: cles.courrier, exact: true }))
+    await waitFor(() => expect(dit()).toBe(A_ECRIRE))
+  })
+
+  // Une relecture de la boîte partie pendant le `POST`, donc plus ancienne que la carte postée,
+  // rendrait la gare à `en_attente` et retirerait la carte des envoyées. Mutation : `cancelQueries`
+  // retiré de `onSuccess` (la relecture atterrit après, et la carte redevient à écrire).
+  it('une relecture de la boîte en vol pendant l’envoi est annulée : elle n’écrase pas la carte postée', async () => {
+    let rendre!: (r: Response) => void
+    let relire!: (r: Response) => void
+    let lectures = 0
+    const { client } = await monter({
+      entree: `${SACOCHE}?ecrire=1900`,
+      attendu: A_ECRIRE,
+      routes: {
+        [BOITE]: () => (lectures++ === 0 ? json(LA_BOITE) : new Promise<Response>((r) => (relire = r))),
+        [POSTER]: () => new Promise<Response>((r) => (rendre = r)),
+      },
+    })
+    await auCalme(client)
+    toucher('Poster')
+    await waitFor(() => expect(client.isMutating()).toBe(1))
+    void client.invalidateQueries({ queryKey: cles.courrier, exact: true })
+    await waitFor(() => expect(lectures).toBe(2))
+    await act(async () => rendre(json(POSTEE, 201)))
+    await waitFor(() => expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | ouverte envoyee 1900 qui vient de partir | sans refus'))
+    await act(async () => relire(json(LA_BOITE)))
+    await auCalme(client)
+    expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | ouverte envoyee 1900 qui vient de partir | sans refus')
+  })
+
+  // Aucune page hors Voyage ne périme mes abonnements : ils se relisent à chaque ouverture d'une carte
+  // à écrire, et un abonnement pris entre deux ouvertures paraît. Mutation : `staleTime: 0` retiré
+  // (trente secondes de fraîcheur par défaut : la seconde ouverture ne lit rien, dan manque).
+  it('mes abonnements se relisent à chaque ouverture : un membre suivi entre deux cartes paraît', async () => {
+    const DAN = { ...LIGNE_DE_CAMILLE, user: { ...LIGNE_DE_CAMILLE.user, id: '44444444-4444-4444-8444-444444444444', pseudo: 'dan' } }
+    let suite = [LIGNE_DE_CAMILLE]
+    const { requetes } = await monter({ entree: ['/voyage', SACOCHE], routes: { [SUITE]: () => json({ items: suite, next_cursor: null }) } })
+    toucher('Écrire 1900')
+    await waitFor(() => expect(dit()).toBe(A_ECRIRE))
+    toucher('Refermer')
+    await waitFor(() => expect(dit()).toBe(FERMEE))
+    suite = [LIGNE_DE_CAMILLE, DAN]
+    toucher('Écrire 1902')
+    await waitFor(() => expect(dit()).toBe('à écrire 1900, 1902 | envoyées 1901 | écrit 1902, signé alice, à [bob, camille, dan] | sans refus'))
+    expect(requetes.filter((r) => r.includes('/following'))).toEqual([ABONNEMENTS, SUITE, ABONNEMENTS, SUITE])
+  })
+
+  // Le serveur refuse par `409` une carte pour un compte désactivé, et ce `409` ferme la carte en
+  // perdant le brouillon : un membre désactivé n'est pas proposé (`api/abonnements.ts`, la règle des
+  // deux écrans) ; s'il ne reste personne, la liste est vide, comme sans abonnement. Mutation : le
+  // filtre retiré de `lireMesAbonnements`.
+  it('un membre désactivé n’est pas proposé ; s’il ne reste personne, la carte n’offre personne', async () => {
+    const eteint = (l: Page['items'][number]) => ({ ...l, user: { ...l.user, deactivated: true } })
+    let suite = [LIGNE_DE_CAMILLE]
+    await monter({
+      entree: ['/voyage', SACOCHE],
+      routes: { [ABONNEMENTS]: () => json({ items: [eteint(LIGNE_DE_BOB)], next_cursor: 'suite' }), [SUITE]: () => json({ items: suite, next_cursor: null }) },
+    })
+    toucher('Écrire 1900')
+    await waitFor(() => expect(dit()).toBe('à écrire 1900, 1902 | envoyées 1901 | écrit 1900, signé alice, à [camille] | sans refus'))
+    toucher('Refermer')
+    await waitFor(() => expect(dit()).toBe(FERMEE))
+    suite = [eteint(LIGNE_DE_CAMILLE)]
+    toucher('Écrire 1900')
+    await waitFor(() => expect(dit()).toBe('à écrire 1900, 1902 | envoyées 1901 | écrit 1900, signé alice, à [] | sans refus'))
   })
 
   // « L'appli borne la longueur et refuse le vide », et rien de plus. Mutations : `motPostable` retiré

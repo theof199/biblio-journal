@@ -57,6 +57,8 @@ export const cartonDeLInvite = (t: Convives, role: RoleATable): CartonDeTable =>
   role === 'invite' ? { nom: MOTS_DU_WAGON.moi, dit: DE_L_INVITE[t.etat].moi } : { nom: t.invite.pseudo, dit: DE_L_INVITE[t.etat].lui }
 
 const TAMPON = 'Si vous voyez tous deux le film, vos billets porteront le même tampon.'
+/** Ce que l'hôte lit d'une table que son invité a déclinée, sur la table comme à la porte : il retrouve sa soirée. */
+const placeRendue = (t: Convives): string => `${t.invite.pseudo} a rendu sa place : ta soirée est libre`
 /**
  * Ce que dit une table de ce soir, sous ses gestes. `vu_ensemble` l'emporte, **lu tel quel** ; sinon
  * l'état de l'invité, dit à l'invité ou à l'hôte.
@@ -70,7 +72,7 @@ export function ceQueDitLaTable(t: Convives & Pick<Table, 'vu_ensemble'>, role: 
   }
   if (t.etat === 'attend') return `${t.invite.pseudo} n’a pas encore pris sa place.`
   if (t.etat === 'a_pris_sa_place') return `${t.invite.pseudo} a pris sa place : deux couverts ce soir. ${TAMPON}`
-  return `${t.invite.pseudo} a rendu sa place : ta soirée est libre.`
+  return `${placeRendue(t)}.`
 }
 
 const D_UN_SOIR_PASSE: Record<Table['etat'], string> = { attend: 'n’a pas eu lieu', a_pris_sa_place: 'place prise', a_decline: 'place rendue' }
@@ -111,7 +113,8 @@ export function monBilletTamponne(t: Pick<Table, 'film' | 'vu_ensemble' | 'mon_b
 /**
  * Ce que dit la porte du wagon-restaurant, sur la fiche de mon année en cours (maquette, écran 17 :
  * `.lien-wr`, « Léa a pris sa place : le même film, à deux, ce soir »). Une table : l'état de l'invité,
- * dit à l'hôte ou à l'invité. Plusieurs le même soir : leur compte.
+ * dit à l'hôte ou à l'invité. Plusieurs le même soir : leur compte (`tablesDeLaPorte` n'y passe pas une
+ * table rendue par mon invité quand une autre existe). Rendue et seule : la phrase de la table.
  */
 export function ceQueDitLaPorte(tables: readonly { table: Convives; role: RoleATable }[]): string {
   if (tables.length !== 1) return `${tables.length} tables t’attendent ce soir`
@@ -119,6 +122,6 @@ export function ceQueDitLaPorte(tables: readonly { table: Convives; role: RoleAT
   const A_DEUX = MOTS_DU_WAGON.aDeux
   if (role === 'invite') return t.etat === 'a_pris_sa_place' ? `Ta place est prise à la table de ${t.hote.pseudo} : ${A_DEUX}` : `${t.hote.pseudo} t’invite à sa table : ${A_DEUX}`
   if (t.etat === 'a_pris_sa_place') return `${t.invite.pseudo} a pris sa place : ${A_DEUX}`
-  if (t.etat === 'a_decline') return `${t.invite.pseudo} a rendu sa place : ta table reste dressée ce soir`
+  if (t.etat === 'a_decline') return placeRendue(t)
   return `${t.invite.pseudo} n’a pas encore pris sa place : ${A_DEUX}`
 }

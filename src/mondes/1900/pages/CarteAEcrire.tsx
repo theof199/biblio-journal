@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import Panne from '../../../ui/Panne'
 import type { CarteAEcrire as Props } from '../../../voyage/sacoche/Courrier'
 import { MOT_MAX, motPostable } from '../../../voyage/sacoche/mot'
@@ -17,14 +17,27 @@ import sacoche from './Sacoche.module.css'
  * « La poster pour de bon » l'envoie. Le brouillon n'est que dans ce composant : refermée, la carte
  * est blanche. Sans abonnement, elle le dit et n'offre ni champ ni bouton. Le dessin ne lit ni n'écrit
  * rien : `voyage/sacoche/Courrier.tsx` lit mes abonnements et poste. Rien n'y bouge.
+ *
+ * **Le focus suit la demande** : « Poster la carte » disparaît sous le doigt, le focus va au groupe de
+ * la confirmation, nommé par son avertissement (il est donc lu), jamais sur « La poster pour de bon »
+ * (une touche Entrée tenue posterait). La confirmation retirée, ou un envoi refusé, le rend à « Poster
+ * la carte ». Ce bouton ne se désactive pas (`aria-disabled`) : il garde le focus et ne demande rien.
  */
 export default function CarteAEcrire({ carte, onFermer }: { carte: Props; onFermer: () => void }) {
   const [mot, setMot] = useState('')
   const [choisi, setChoisi] = useState<string | null>(null)
   const [demande, setDemande] = useState(false)
   const compte = useId()
+  const avertir = useId()
   const destinataire = carte.abonnements?.find((a) => a.id === choisi) ?? null
   const pret = motPostable(mot) && destinataire !== null && !carte.enCours
+  const confirme = demande && pret
+  const confirmation = useRef<HTMLDivElement>(null)
+  const boutonPoster = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (confirme) confirmation.current?.focus()
+    else if (document.activeElement === document.body) boutonPoster.current?.focus()
+  }, [confirme, carte.enCours])
 
   return (
     <CartePostale titre={M.ecrire.titre} annee={carte.annee} mot={mot} signe={carte.moi} postee={null} adresse={destinataire ? [destinataire.pseudo] : []} onFermer={onFermer}>
@@ -32,14 +45,18 @@ export default function CarteAEcrire({ carte, onFermer }: { carte: Props; onFerm
         <div className={sacoche.panne}>
           <Panne erreur={carte.panne.erreur} onReessayer={carte.panne.reessayer} />
         </div>
-      ) : carte.abonnements === null ? null : carte.abonnements.length === 0 ? (
+      ) : carte.abonnements === null ? (
+        <p className={styles.etat} role="status">
+          {M.ecrire.chargement}
+        </p>
+      ) : carte.abonnements.length === 0 ? (
         <p className={styles.etat}>{M.ecrire.personne}</p>
       ) : (
         <form
           className={styles.ecrire}
           onSubmit={(e) => {
             e.preventDefault()
-            setDemande(true)
+            if (pret) setDemande(true)
           }}
         >
           <label>
@@ -86,9 +103,9 @@ export default function CarteAEcrire({ carte, onFermer }: { carte: Props; onFerm
             <p className={styles.etat} role="status">
               {M.ecrire.enCours}
             </p>
-          ) : demande && pret ? (
-            <div className={styles.confirmer}>
-              <p>{M.ecrire.avertir}</p>
+          ) : confirme ? (
+            <div ref={confirmation} className={styles.confirmer} role="group" aria-labelledby={avertir} tabIndex={-1}>
+              <p id={avertir}>{M.ecrire.avertir}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -103,7 +120,7 @@ export default function CarteAEcrire({ carte, onFermer }: { carte: Props; onFerm
               </button>
             </div>
           ) : (
-            <button type="submit" className={styles.poster} disabled={!pret}>
+            <button ref={boutonPoster} type="submit" className={styles.poster} aria-disabled={!pret}>
               {M.ecrire.poster}
             </button>
           )}

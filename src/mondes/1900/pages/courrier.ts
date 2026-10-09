@@ -31,6 +31,7 @@ export const MOTS_DU_COURRIER = {
     titre: 'Carte à écrire',
     mot: 'Ton mot',
     aQui: 'À qui l’écris-tu ?',
+    chargement: 'Chargement…',
     personne: 'Tu ne suis encore personne : une carte s’écrit à un membre que tu suis.',
     poster: 'Poster la carte',
     avertir: 'Une carte postée ne se corrige ni ne se retire.',

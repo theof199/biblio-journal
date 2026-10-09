@@ -959,7 +959,9 @@ qu'il dit.
 suis. Le même bloc passe `en_attente` **telle que servie** (une entrée par gare, et pour elles seules)
 et ouvre la carte à écrire **dans l'adresse** (`?ecrire=<année>` : le retour la referme, un
 rechargement la rouvre, une année que la boîte n'attend pas n'ouvre rien). Mes abonnements
-(`api/abonnements.ts`, toutes pages) ne se lisent qu'à ce moment, et se relisent à chaque ouverture
+(`api/abonnements.ts`, toutes pages, **sans les comptes désactivés** : la route les sert, le serveur
+refuse par `409` une carte ou une table pour eux, et la règle est écrite là, une fois, pour la carte
+et pour la table) ne se lisent qu'à ce moment, et se relisent à chaque ouverture
 (`staleTime: 0` : aucune page hors Voyage ne périme leur clé) ; en panne, la carte le dit et n'offre
 personne. **Poster** (`posterCartePostale`) passe un verrou par référence (deux touchers, un envoi) et
 ne porte que `annee`, `destinataire_id` et `mot` : le serveur, strict, décide de l'expéditeur, de la
@@ -967,7 +969,9 @@ date et de la **gare du destinataire**, que l'appli ne connaît pas avant sa ré
 pas les règles du mot : elle borne sa longueur (140, `voyage/sacoche/mot.ts`) et refuse le vide.
 `201` : la carte rendue entre aux envoyées, rangée par gare, et sa gare quitte `en_attente`, sur
 `cles.courrier` en `exact`, une relecture en vol annulée d'abord, **sans rien périmer ni relire** ;
-elle reste à l'écran, tamponnée, tant que son calque est ouvert. Un `400` (ou une panne) se dit **sur
+elle reste à l'écran, tamponnée, tant que son calque n'a pas été quitté (l'envoi est alors oublié :
+ni le bouton « suivant » du navigateur ni une réouverture ne la remontrent, elle s'ouvre aux envoyées),
+et une gare revenue dans `en_attente` montre toujours sa carte à écrire. Un `400` (ou une panne) se dit **sur
 la carte**, avec le message du serveur tel quel, jamais un repli ; la carte reste à écrire, son
 brouillon intact, et le `400` relit la boîte. Un `409` n'est pas une panne (la gare a déjà sa carte,
 le destinataire n'est plus suivi) : la carte se referme, la boîte se relit, et le message du serveur
@@ -982,7 +986,11 @@ dit que le pseudo**. « Poster la carte » ne poste rien : il demande (« Une ca
 ni ne se retire. ») ; « La poster pour de bon » l'envoie, « Pas encore » non, et retoucher le mot ou
 le destinataire redemande. Postée, la même carte s'ouvre lue : son tampon, l'adresse servie, « Le
 tampon à date est frappé : la carte part pour la gare de 1904, chez camille. » Sans abonnement, elle
-le dit et n'offre ni champ ni envoi. **Le brouillon ne se garde pas** : il ne vit que dans le
+le dit et n'offre ni champ ni envoi ; pendant leur lecture, « Chargement… » (`role="status"`). « Poster
+la carte » ne se désactive pas (`aria-disabled`) ; à la demande, le focus va au groupe de la
+confirmation, que l'avertissement nomme, et « Pas encore » ou un refus le rend à « Poster la carte » ;
+la carte postée refermée, il revient au titre de la rubrique (son entrée « À écrire » n'existe plus).
+**Le brouillon ne se garde pas** : il ne vit que dans le
 composant, refermée la carte est blanche. Aucune réponse à une carte (constat 15), aucun mouvement au
 tampon. Le point rouge de la
 pastille est sur la carte (« La carte du Voyage ») (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
@@ -1057,8 +1065,10 @@ guichet d'un film**
   peuvent attendre le même soir : une liste), chacune avec son rôle, ses gestes, son envoi en cours et
   son refus (`PropsWagonRestaurant`, `TableDuWagon`). **Deux écritures, un verrou** par référence :
   acceptée, la table rendue se pose à sa place sur `cles.tables` en `exact`, une relecture en vol
-  annulée d'abord, sans rien périmer ni relire ; **un `409` relit les tables et ne dit rien** ; tout
-  autre refus se dit sur sa table, par le message du serveur, et se refait.
+  annulée d'abord, sans rien périmer ni relire ; **un `409` relit les tables et dit le message du
+  serveur sur sa table** (la règle commune 4 l'emporte sur le « sans message » du brief 15 : une
+  seconde invitation du même soir ne répondait rien) ; tout autre refus s'y dit aussi, sans relecture,
+  et se refait ; le refus s'efface au geste suivant.
   `pages/VoyageWagonRestaurant.test.tsx` tient la page sur un 1890 auquel on prête un dessin,
   `voyage/wagon/tables.test.ts` les règles. **1900 la remplit** (maquette, écran 20 ;
   `mondes/1900/pages/WagonRestaurant.tsx`, `Wagon.module.css`, les mots dans `wagon.ts`) : sous « Ce
@@ -1088,7 +1098,8 @@ guichet d'un film**
   (`cles.tables`) et n'écrit rien ; **la porte n'existe que s'il y a une table ce soir** où je suis
   l'hôte ou l'invité, que je n'ai pas déclinée (`voyage/wagon/tables.ts`, `tablesDeLaPorte`,
   `ceSoirMeme` : le jour de Paris, strict, ni la veille ni le lendemain ; la table que mon invité a
-  déclinée reste la mienne). Sans table, tant que rien n'est lu, ou en panne : rien, sans un mot. Le
+  déclinée ne compte pas quand une autre existe, et seule elle ouvre encore la porte, qui dit qu'il a
+  rendu sa place, par la phrase de la table). Sans table, tant que rien n'est lu, ou en panne : rien, sans un mot. Le
   dessin reçoit les tables de ce soir dans l'ordre servi, mon rôle à chacune, et l'adresse du wagon
   (`PropsPorteDuWagon`). `pages/VoyageAnnee.porte.test.tsx` le tient sur un 1890 auquel on prête un
   dessin ; `VoyageAnnee.test.tsx` n'est pas retouché. **En 1900** (maquette, écran 17 : `.lien-wr`) :
@@ -1110,9 +1121,10 @@ guichet d'un film**
   un verrou par référence. `201` : la table rendue se pose en tête de `cles.tables` si elles sont en
   cache (relecture en vol annulée, rien de périmé) et la page du wagon s'ouvre **à la place** du
   feuillet (le retour ramène à la fiche, feuillet fermé). **Un `409` n'est pas une panne** : le feuillet
-  se referme, mes tables se périment en `exact`, et le message du serveur se dit au guichet, tel quel.
-  Tout autre refus se dit dans le feuillet, qui reste, choix gardé. Sans abonnement, le feuillet le dit
-  et n'offre rien. `mondes/1900/pages/hale.test.tsx` le tient dans l'app entière, `voyage/film.test.ts`
+  se referme, mes tables se périment en `exact`, et le message du serveur se dit au guichet, tel quel,
+  jusqu'au geste suivant du guichet (l'erreur montrée est celle du dernier geste). Tout autre refus se
+  dit dans le feuillet, qui reste, choix gardé. Sans abonnement (un compte désactivé n'en est pas un),
+  le feuillet le dit et n'offre rien. `mondes/1900/pages/hale.test.tsx` le tient dans l'app entière, `voyage/film.test.ts`
   la liste des gestes.
 - **La carte en sait plus, sans rien dessiner** (brief 9 des écrans des lots). `GET /me/voyage` sert
   déjà l'horaire de chaque année et les haltes : `pages/Carte.tsx` les met dans l'état de la carte,
