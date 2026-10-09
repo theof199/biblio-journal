@@ -160,7 +160,8 @@ function peindre(g: CanvasRenderingContext2D, nom: Ambiance, w: number, h: numbe
 
 /**
  * Pose une ambiance du fond à `x`, large de `w` et haute de `h`, à l'opacité courante du contexte.
- * Cuite une fois par taille, à la densité de l'écran (`VueMonde.densite`) : étirée d'une toile de
+ * Cuite une fois par taille, à la densité de l'écran (`VueMonde.densite`) plafonnée à
+ * `PLAFOND_DE_CUISSON` (`cuisson.ts` : 2, même sur une toile à 3) : étirée d'une toile de
  * `w` × `h` pixels, elle était floue sur un téléphone. Sans toile hors écran, peinte à même le
  * contexte. Seule la montagne porte une photographie : elle seule se recuit quand la sienne arrive.
  */
