@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { formatDateVisionnage, jourLocal } from '../../../ui/format'
 import { useMouvementReduit } from '../../../ui/mouvement'
 import type { PropsLigneDuBas } from '../../../voyage/annee/LigneDuBas'
+import { jourDeParis } from '../../../voyage/passeport'
 import { STYLE_DU_TEMPO } from '../../../voyage/tempo'
 import Action from './Action'
 import Carton from './Carton'
@@ -50,7 +50,8 @@ export default function PiedDeLaGare({ monde, annee, ligne, onUtiliser, occupe, 
   }
 
   if (ligne.type === 'billet') {
-    const le = formatDateVisionnage(jourLocal(new Date(ligne.utiliseLe)))
+    // Le jour de Paris, comme au portefeuille de la sacoche : le même ticket ne dit pas deux jours.
+    const le = jourDeParis(ligne.utiliseLe)
     return (
       <>
         <Rubrique>

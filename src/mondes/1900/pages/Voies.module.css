@@ -329,6 +329,28 @@
   color: var(--m-encre);
 }
 
+/* Sur un écran étroit, une plaque au mot long (« introuvable ») passe sous le titre : à côté, elle ne
+   laissait au titre et à ses mentions qu'une colonne de 90 px. */
+@media (max-width: 359px) {
+  .plaqueLongue {
+    grid-template-columns: 70px minmax(0, 1fr);
+    row-gap: 6px;
+  }
+
+  .plaqueLongue .fenetre {
+    grid-row: 1 / span 2;
+  }
+
+  .plaqueLongue .film {
+    align-self: end;
+  }
+
+  .plaqueLongue .plaque {
+    align-self: start;
+    justify-self: start;
+  }
+}
+
 /* Les bobines d'un programme, sous son compartiment. */
 .bobines {
   margin: 0 8px 10px 88px;

@@ -95,10 +95,13 @@ describe('le bas d’une gare des années 1900', () => {
   })
 
   // Mutations : le billet qui ne se retourne pas (`setRetourne` retiré) ; le dos montré avec le recto
-  // (`aria-hidden` retiré d'une face) ; le jour pris en UTC ; le dos de la foire (« salles et séances »).
-  it('le billet utilisé dit son année et son jour, celui du téléphone, se retourne, et son dos ne parle plus de foire', () => {
-    vi.stubEnv('TZ', 'Europe/Paris')
-    monter({ type: 'billet', annee: 1903, utiliseLe: '2026-10-01T22:30:00.000Z' })
+  // (`aria-hidden` retiré d'une face) ; le jour pris en UTC, ou dans le fuseau de l'appareil (le 1er octobre, quand le
+  // portefeuille de la sacoche dit le 2) ; le dos de la foire (« salles et séances »).
+  it('le billet utilisé dit son année et son jour, celui de Paris quel que soit le téléphone, se retourne, et son dos ne parle plus de foire', () => {
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    // 23 h 30 UTC le 1er octobre : 1 h 30 le 2 à Paris, 16 h 30 le 1er sur ce téléphone.
+    expect(new Date('2026-10-01T23:30:00.000Z').getDate()).toBe(1)
+    monter({ type: 'billet', annee: 1903, utiliseLe: '2026-10-01T23:30:00.000Z' })
     const billet = screen.getByRole('button', { pressed: false })
     expect(billet).toHaveAccessibleName(/^Ticket pour ?1903 ?utilisé le 2 octobre 2026 ?Entrée$/)
     fireEvent.click(billet)

@@ -14,12 +14,17 @@ interface Props {
   lien?: { vers: string; nom: string }
 }
 
+/** Au-delà, le mot d'une plaque ne tient plus à côté du titre à 320 px (« occupé », « libre » : six lettres au plus). */
+const PLAQUE_COURTE = 6
+
 /**
  * Un compartiment (maquette, écran 4 : `.compart`) : l'affiche à sa fenêtre, le titre et ses mentions,
  * la plaque. Commun à la voiture d'une salle, où un film ouvre sa fiche, et au programme d'un film, où
  * une bobine n'a pas de fiche à elle. Rien n'y bouge.
  */
 export default function Compartiment({ affiche, titre, mentions, plaque, lien }: Props) {
+  // Une plaque au mot long (« introuvable ») : sur un écran étroit, la feuille la passe sous le titre.
+  const classe = plaque.mot.length > PLAQUE_COURTE ? `${styles.compartiment} ${styles.plaqueLongue}` : styles.compartiment
   const corps = (
     <>
       {affiche ? <img className={styles.fenetre} src={affiche} alt="" loading="lazy" decoding="async" /> : <span className={`${styles.fenetre} ${styles.vide}`}>{MOTS_DES_VOIES.sansAffiche}</span>}
@@ -35,10 +40,10 @@ export default function Compartiment({ affiche, titre, mentions, plaque, lien }:
     </>
   )
   return lien ? (
-    <Link to={lien.vers} className={styles.compartiment} aria-label={lien.nom}>
+    <Link to={lien.vers} className={classe} aria-label={lien.nom}>
       {corps}
     </Link>
   ) : (
-    <div className={styles.compartiment}>{corps}</div>
+    <div className={classe}>{corps}</div>
   )
 }
