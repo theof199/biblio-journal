@@ -186,8 +186,10 @@ sacoche le montre sans rien relire ; une lecture de l'état encore en vol est an
 au milieu de la pastille de la sacoche (`DUREE_DE_L_ENVOL` de la page, au tempo, que
 `voyage/tempo.test.ts` lie à la durée de `.vol` dans la feuille), puis la région d'état dit « Objet trouvé 2 sur 10 », compté
 sur le catalogue du monde, et la phrase de l'objet (`ObjetCache.phrase`). Au calme, rien ne vole ni
-n'attend. Refusé ou en panne, il est rendu au moteur (`rendreObjet`) et revient sur le quai, sans un
-mot. Le moteur tient deux listes : ce que la page dit ramassé (`reglerObjets`) et ce qu'un toucher
+n'attend. Refusé ou en panne, il est rendu au moteur (`rendreObjet`) et revient sur le quai, et le
+message du refus (celui du serveur, ou celui du client quand l'API est injoignable) se dit tel quel là où
+la carte dit ses messages, sans prendre le plein écran, jusqu'au geste suivant : un doigt posé sur la carte
+ou un objet touché. Le moteur tient deux listes : ce que la page dit ramassé (`reglerObjets`) et ce qu'un toucher
 vient de prendre, que la liste de la page n'efface pas.
 
 **Le point rouge de la pastille de la sacoche** (lot d'écrans, brief 5 ; maquette « Voyage immobile

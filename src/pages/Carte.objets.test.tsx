@@ -46,6 +46,8 @@ const DIX = ['lanterne', 'melon', 'parapluie', 'montre', 'programme', 'facteur',
 const REFUS = { code: 'NOT_FOUND', message: 'Cette année est verrouillée.', retryable: false }
 const LIRE = 'GET /api/me/voyage/voyageur'
 const RAMASSER_LE_MELON = 'POST /api/me/voyage/objets/melon/ramasser'
+const RAMASSER_LE_PARAPLUIE = 'POST /api/me/voyage/objets/parapluie/ramasser'
+const PARAPLUIE: ObjetRamasse = { cle: 'parapluie', annee: 1902, ramasse_le: '2026-10-08T11:00:00.000Z' }
 const OU = { x: 60, y: 520 }
 
 /** Un Voyage de 1895 à 1909, toutes les années ouvertes jusqu'à `enCours`. */
@@ -203,13 +205,15 @@ describe('les objets sur le quai, côté page', () => {
   })
 
   // Refusé (la gare n'est pas ouverte pour le serveur) ou en panne : l'objet est rendu au moteur, qui
-  // le remet sur le quai ; rien n'entre au cache, rien ne se dit, et le toucher se refait. Mutations :
-  // rien n'est rendu au moteur sur l'échec ; le verrou gardé après l'échec ; « Objet trouvé » dit
-  // quand même ; l'objet posé au cache avant la réponse.
+  // le remet sur le quai ; rien n'entre au cache, et le toucher se refait. **Refusé, la région d'état
+  // dit le message du serveur, tel quel** (correction du 9 octobre 2026 : la règle d'avant le taisait) ;
+  // l'API injoignable se dit par le message que `api/client.ts` lui donne. Mutations : rien n'est rendu au moteur sur l'échec ; le verrou
+  // gardé après l'échec ; « Objet trouvé » dit quand même ; l'objet posé au cache avant la réponse ;
+  // le refus tu (`setRefusDuRamassage` retiré) ; un repli générique à la place de `erreur.message`.
   it.each([
-    ['refusé', () => json(REFUS, 404)],
-    ['en panne', () => Promise.reject(new TypeError('réseau'))],
-  ])('%s, l’objet revient sur le quai : rendu au moteur, rien au cache, rien de dit, et il se retouche', async (_cas, reponse) => {
+    ['refusé', () => json(REFUS, 404), REFUS.message],
+    ['en panne', () => Promise.reject(new TypeError('réseau')), 'L’API est injoignable. Vérifie ta connexion, puis réessaie.'],
+  ])('%s, l’objet revient sur le quai : rendu au moteur, rien au cache, il se retouche, et le refus se dit tel quel', async (_cas, reponse, dit) => {
     calme()
     const banc = await monter({ [RAMASSER_LE_MELON]: reponse })
     banc.toucher('melon')
@@ -217,10 +221,58 @@ describe('les objets sur le quai, côté page', () => {
     expect(banc.moteur.rendreObjet).toHaveBeenCalledTimes(1)
     expect(banc.client.getQueryData<Voyageur>(cles.voyageur)).toEqual(ETAT)
     expect(banc.dits().pop()).toEqual(['lanterne'])
-    expect(etat()).not.toBeInTheDocument()
+    expect(etat()?.textContent).toBe(dit)
     banc.toucher('melon')
     await waitFor(() => expect(banc.requetes.filter((r) => r === RAMASSER_LE_MELON)).toHaveLength(2))
     await waitFor(() => expect(banc.moteur.rendreObjet).toHaveBeenCalledTimes(2))
+  })
+
+  // Le refus ne retombe pas seul (il n'a pas de minuterie : le temps de lecture d'un message passé, il
+  // est toujours là) et s'efface au geste suivant : un doigt posé sur la carte. Mutations : le refus
+  // rangé dans `message` (il retombe avec lui) ; `onPointerDownCapture` retiré de l'écran.
+  it('le refus tient l’écran jusqu’au geste suivant : le temps ne l’efface pas, un doigt posé sur la carte si', async () => {
+    calme()
+    const banc = await monter({ [RAMASSER_LE_MELON]: () => json(REFUS, 404) })
+    banc.doubler()
+    banc.toucher('melon')
+    await banc.passer(0)
+    expect(etat()).toHaveTextContent(REFUS.message)
+    await banc.passer(60_000)
+    expect(etat()).toHaveTextContent(REFUS.message)
+    fireEvent.pointerDown(document.querySelector(`.${stylesDeLaCarte.ecran}`)!.querySelector('h1')!)
+    expect(etat()).not.toBeInTheDocument()
+  })
+
+  // Le geste suivant peut être le même objet retouché : le refus s'efface au toucher, avant la
+  // réponse, et un ramassage réussi ne le laisse pas derrière lui. Mutation : `oublierLeRefus()`
+  // retiré de l'entrée de `objetTouche`.
+  it('le refus ne reste pas après un ramassage réussi : il s’efface dès l’objet retouché, puis « Objet trouvé » se dit seul', async () => {
+    calme()
+    let repondre!: (r: Response) => void
+    let essais = 0
+    const banc = await monter({ [RAMASSER_LE_MELON]: () => (essais++ === 0 ? json(REFUS, 404) : new Promise<Response>((fin) => (repondre = fin))) })
+    banc.toucher('melon')
+    await waitFor(() => expect(etat()).toHaveTextContent(REFUS.message))
+    banc.toucher('melon')
+    expect(etat()).not.toBeInTheDocument()
+    await waitFor(() => expect(banc.requetes.filter((r) => r === RAMASSER_LE_MELON)).toHaveLength(2))
+    await act(async () => repondre(json(MELON)))
+    await waitFor(() => expect(etat()).toHaveTextContent(/^Objet trouvé 2 sur 10/))
+    expect(screen.queryByText(REFUS.message)).toBeNull()
+  })
+
+  // Deux objets en main : le refus de l'un est à l'écran quand l'autre est accepté. Le ramassage
+  // réussi l'emporte, le refus ne le cache pas. Mutation : `oublierLeRefus()` retiré du succès.
+  it('un objet refusé pendant qu’un autre se ramasse : accepté, celui-ci se dit et le refus s’efface', async () => {
+    calme()
+    let repondre!: (r: Response) => void
+    const banc = await monter({ [RAMASSER_LE_MELON]: () => json(REFUS, 404), [RAMASSER_LE_PARAPLUIE]: () => new Promise<Response>((fin) => (repondre = fin)) })
+    banc.toucher('parapluie')
+    banc.toucher('melon')
+    await waitFor(() => expect(etat()).toHaveTextContent(REFUS.message))
+    await act(async () => repondre(json(PARAPLUIE)))
+    await waitFor(() => expect(etat()).toHaveTextContent('Objet trouvé 2 sur 10'))
+    expect(screen.queryByText(REFUS.message)).toBeNull()
   })
 
   // L'envol est à la page, au tempo : l'objet vole, et la région d'état ne parle qu'à son arrivée.

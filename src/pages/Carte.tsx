@@ -439,6 +439,13 @@ export default function Carte() {
   // même objet n'écrit pas deux fois. Deux objets différents se ramassent l'un pendant l'autre.
   const objetsEnMain = useRef(new Set<string>())
   const [vols, setVols] = useState<Array<{ objet: ObjetCache; de: { x: number; y: number }; vers: { x: number; y: number } }>>([])
+  // Le refus du serveur à un ramassage (`{ code, message, retryable }`, `message` fait pour l'affichage) :
+  // il se dit là où la carte dit ses messages, **sans prendre le plein écran** (il n'entre pas dans
+  // `passager` : il ne retombe pas seul, et tiendrait le contrôleur et la halte dehors), et s'efface
+  // au geste suivant, un doigt posé sur la carte ou un objet touché. L'API injoignable se dit de même,
+  // par le message que `api/client.ts` lui donne.
+  const [refusDuRamassage, setRefusDuRamassage] = useState<string | null>(null)
+  const oublierLeRefus = useCallback(() => setRefusDuRamassage(null), [])
   const sacocheRef = useRef<HTMLAnchorElement>(null)
   // La séquence d'un ramassage attend l'envol : elle relit ce drapeau avant de toucher à la page.
   const monte = useRef(true)
@@ -643,12 +650,14 @@ export default function Carte() {
   // Un objet oublié touché (le rappel `objet` du moteur, qui l'a déjà ôté du décor) : la page l'écrit.
   // Accepté, il vole vers la pastille de la sacoche, puis la région d'état dit son compte dans son
   // monde et sa phrase ; au calme, il arrive d'un coup. Refusé ou en panne, il est rendu au moteur
-  // et revient sur le quai, sans un mot : le toucher se refait.
+  // et revient sur le quai : le toucher se refait. Refusé, le message du serveur se dit
+  // (`refusDuRamassage`) jusqu'au geste suivant ; l'API injoignable aussi, par le message du client.
   const objetTouche = (cle: string, de: { x: number; y: number }) => {
     const sien = decenniesDuVoyage.map((d) => mondes(d).objets).find((objets) => objets.some((o) => o.cle === cle))
     const objet = sien?.find((o) => o.cle === cle)
     if (!sien || !objet || objetsEnMain.current.has(cle)) return
     objetsEnMain.current.add(cle)
+    oublierLeRefus()
     let envol = Promise.resolve()
     if (!calme) {
       const e = ecranRef.current?.getBoundingClientRect()
@@ -669,17 +678,20 @@ export default function Carte() {
         lacher()
         if (!monte.current) return
         const ranges = client.getQueryData<Voyageur>(cles.voyageur)?.objets ?? []
+        oublierLeRefus()
         setMessage({ titre: `Objet trouvé ${sien.filter((o) => ranges.some((r) => r.cle === o.cle)).length} sur ${sien.length}`, texte: objet.phrase })
       },
-      () => {
+      (erreur: unknown) => {
         lacher()
-        if (monte.current) moteur?.rendreObjet(cle)
+        if (!monte.current) return
+        moteur?.rendreObjet(cle)
+        if (erreur instanceof ApiError) setRefusDuRamassage(erreur.message)
       },
     )
   }
 
   return (
-    <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }}>
+    <div ref={ecranRef} className={styles.ecran} style={{ ['--accent' as string]: monde.palette.accent, ...STYLE_DU_TEMPO }} onPointerDownCapture={refusDuRamassage === null ? undefined : oublierLeRefus}>
       <h1 ref={titreRef} tabIndex={-1} className="sr-only">
         Le Voyage de {user.pseudo}
       </h1>
@@ -868,7 +880,11 @@ export default function Carte() {
             <objet.Dessin />
           </span>
         ))}
-        {message ? (
+        {refusDuRamassage !== null ? (
+          <p role="status" className={styles.message}>
+            {refusDuRamassage}
+          </p>
+        ) : message ? (
           <p role="status" className={styles.message}>
             <b>{message.titre}</b>
             {message.texte ? (

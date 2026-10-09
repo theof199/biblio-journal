@@ -784,6 +784,21 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
     })
   })
 
+  // Le refus d'un ramassage se dit jusqu'au geste suivant, sans minuterie : s'il comptait dans ce qui
+  // passe, il tiendrait le contrôleur dehors tant que rien n'est touché. Mutation : `refusDuRamassage
+  // !== null` ajouté à `passager`.
+  it('le refus d’un ramassage à l’écran ne prend pas le plein écran : le contrôleur entre', async () => {
+    preter(PAGES_1900)
+    const REFUS = { code: 'NOT_FOUND', message: 'Cette année est verrouillée.', retryable: false }
+    const banc = await monter(AU_REPOS, { ...ROUTES_DU_JEU, [LIRE]: () => json(AU_REPOS), [RAMASSER_LE_MELON]: () => json(REFUS, 404) }, { voyage: EN_1903 })
+    await banc.calme()
+    act(() => banc.rappels().objet?.('melon', { x: 60, y: 520 }))
+    expect(await screen.findByText(REFUS.message)).toBeInTheDocument()
+    await banc.calme()
+    act(() => banc.client.setQueryData(cles.voyageur, { ...IL_ATTEND, objets: etatEnCache(banc.client)!.objets }))
+    await portiere()
+  })
+
   describe('la portière ouverte : le billet retenu et le dessin du monde, un seul fait', () => {
     const vivante = () => expect(screen.getByRole('heading', { level: 1 }).parentElement!.querySelectorAll(':scope > [inert]')).toHaveLength(0)
 
