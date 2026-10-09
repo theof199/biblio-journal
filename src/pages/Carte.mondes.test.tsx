@@ -72,13 +72,23 @@ const voyage = (enCours: number) =>
     }),
   )
 
+/**
+ * Depuis que les bobines suivent le compte, la carte d'un membre arrivé en 1900 les y range : le
+ * versement de celles que l'appareil tient, puis chaque trouvaille. Le serveur d'essai les accepte
+ * toutes, sous leur clé à tirets bas ; `Carte.bobines.test.tsx` tient ces écritures, pas ce fichier.
+ */
+const RANGER = Object.fromEntries(
+  ['les_quatre_diables', 'la_tete_de_janus', 'londres_apres_minuit', 'essai_1900_a', 'essai_1900_b'].map((cle) => [`POST /api/me/voyage/bobines/${cle}/ramasser`, () => json({ cle, ramasse_le: '2026-10-09T09:00:00.000Z' })]),
+)
+
 async function monter(enCours: number) {
   const f = moteurFactice()
-  servir({
+  const requetes = servir({
     'GET /api/auth/me': () => json(SESSION),
     'GET /api/me/voyage': () => json(voyage(enCours)),
     'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
     ...ROUTES_DU_JEU,
+    ...RANGER,
   })
   render(
     <QueryClientProvider client={createQueryClient()}>
@@ -97,7 +107,7 @@ async function monter(enCours: number) {
       f.rappels().bobine(cle)
       f.rappels().bobineArrivee(cle)
     })
-  return { ...f, aLEcran, trouver }
+  return { ...f, aLEcran, trouver, requetes }
 }
 
 const compteur = () => screen.getByText(/^Bobines retrouvées/)
@@ -114,7 +124,7 @@ describe('le compteur de bobines, par décennie', () => {
   // trouvées avant le lot, écrites sous ce nom-ci, ne seraient plus comptées).
   it('ne mêle pas deux décennies : une trouvaille dans l’une ne monte pas le compte de l’autre, et celles d’avant le lot restent comptées', async () => {
     localStorage.setItem(CLE_BOBINES, JSON.stringify(['les-quatre-diables', 'la-tete-de-janus', 'essai-1900-a']))
-    const { aLEcran, trouver } = await monter(1903)
+    const { aLEcran, trouver, requetes } = await monter(1903)
     aLEcran(1900)
     expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
     aLEcran(1890)
@@ -124,7 +134,12 @@ describe('le compteur de bobines, par décennie', () => {
     expect(compteur()).toHaveTextContent('Bobines retrouvées 2/2')
     aLEcran(1890)
     expect(compteur()).toHaveTextContent('Bobines retrouvées 2/3')
-    expect(JSON.parse(localStorage.getItem(CLE_BOBINES)!)).toEqual(['les-quatre-diables', 'la-tete-de-janus', 'essai-1900-a', 'essai-1900-b'])
+    // En 1903 le compte fait foi : celles de l'appareil y sont versées et le quittent, la trouvaille n'y est plus écrite.
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(CLE_BOBINES)!)).toEqual([]))
+    expect(requetes.filter((r) => r.includes('/bobines/')).sort()).toEqual(Object.keys(RANGER).filter((r) => !r.includes('londres')).sort())
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 2/3')
+    aLEcran(1900)
+    expect(compteur()).toHaveTextContent('Bobines retrouvées 2/2')
   })
 
   // Une bobine ramassée à une frontière, devant un autre monde que le sien.
@@ -138,10 +153,11 @@ describe('le compteur de bobines, par décennie', () => {
     act(() => rappels().bobine('essai-1900-a'))
     expect(compteur()).toHaveTextContent('Bobines retrouvées 0/2')
     act(() => rappels().bobineArrivee('essai-1900-a'))
-    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/2« Essai A », Personne, 1900 : un film perdu.')
+    // La trouvaille se dit quand le compte l'a rangée.
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/2« Essai A », Personne, 1900 : un film perdu.'))
     expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
     trouver('essai-1900-b')
-    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 2/2')
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 2/2'))
     expect(compteur()).toHaveTextContent('Bobines retrouvées 2/2')
     expect(await screen.findByText('Toutes les bobines perdues sont retrouvées.', {}, { timeout: 4500 })).toBeInTheDocument()
   }, 15000)
@@ -175,7 +191,7 @@ describe('le compteur de bobines, par décennie', () => {
     const { aLEcran, trouver } = await monter(1903)
     aLEcran(1890)
     trouver('essai-1900-a')
-    expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/2')
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 1/2'))
     expect(compteur()).toHaveTextContent('Bobines retrouvées 1/2')
     // Devant un monde sans bobines, il garde ce qu'il montre ; le moteur dit 1900 puis 1890 : il suit.
     aLEcran(1910)

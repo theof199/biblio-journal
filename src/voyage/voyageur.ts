@@ -82,7 +82,9 @@ export interface RubriqueDeLaPastille {
 
 /**
  * **La liste des rubriques qui allument le point, écrite ici et nulle part ailleurs.** `bobine` n'y
- * sera jamais (ses éléments n'ont pas de date, et la sacoche n'en monte aucun bloc) ; `courrier` y
+ * est pas : ses bobines sont datées par `ramasse_le` depuis qu'elles suivent le compte, mais la sacoche
+ * n'en monte aucun bloc, donc rien ne la marquerait vue et son point ne s'éteindrait jamais ; elle y
+ * entrera avec le bloc qui les montrera. `courrier` y
  * est entré avec son bloc (plan des écrans des lots, brief 13) : une carte **reçue** l'allume par son
  * `postee_le`, jamais une carte envoyée, et `lue_le` n'y change rien (c'est la visite de la rubrique
  * qui l'éteint). Dans l'ordre des blocs de la sacoche.

@@ -9,9 +9,10 @@ import CarteCanvas, { type Moteur } from '../carte/CarteCanvas'
 import Apercu from '../carte/Apercu'
 import type { CaseCarte, EtatCarte } from '../carte/moteur'
 import { jouerAvancee } from '../carte/avancee'
-import { ecrireAnneeVue, ecrireBobines, ecrireSon, lireAnneeVue, lireBobines, lireSon } from '../carte/memoire'
+import { ecrireAnneeVue, ecrireSon, lireAnneeVue, lireSon } from '../carte/memoire'
 import { ambianceDeLaPage } from '../carte/son'
 import { auTempo, STYLE_DU_TEMPO } from '../voyage/tempo'
+import { useBobinesPerdues } from '../voyage/bobines'
 import { creerRegistre } from '../mondes'
 import type { BobinePerdue, DateVraie, ObjetCache } from '../mondes/types'
 import { useSession } from '../session/SessionContext'
@@ -182,11 +183,10 @@ export default function Carte() {
     }
   }
 
-  // Les bobines perdues (plan 2d) : trouvées sur cet appareil, par membre. Celle qui vole vers le
-  // compteur n'y est comptée qu'à son arrivée.
-  const [trouvees, setTrouvees] = useState(() => lireBobines(user.id))
-  const trouveesRef = useRef(trouvees)
+  // Les bobines perdues (plan 2d) : celle qui vole vers le compteur n'y est comptée qu'à son arrivée.
+  // Qui les tient, l'appareil ou le compte : `bobines`, plus bas, sous la lecture de l'état du voyageur.
   const [enVol, setEnVol] = useState<string | null>(null)
+  const enVolRef = useRef<string | null>(null)
   const [pulsation, setPulsation] = useState(0)
   const [message, setMessage] = useState<{ titre: string; texte: string | null } | null>(null)
   const compteurRef = useRef<HTMLParagraphElement>(null)
@@ -414,12 +414,25 @@ export default function Carte() {
   // serveur, sans écriture, et une carte restée ouverte ne le verrait pas entrer. Posé sur cet
   // observateur, donc pour cette clé seulement, et jamais là où la lecture est coupée (1890) : ni la
   // carte, ni les tickets, ni la malle, ni le courrier ne se relisent.
+  const leCompteFaitFoi = objetsDeLaCarte.length > 0 || rubriquesDuPoint.length > 0 || DessinDuControleur !== null
   const voyageur = useQuery({
     queryKey: cles.voyageur,
     queryFn: ({ signal }) => lireVoyageur(signal),
-    enabled: objetsDeLaCarte.length > 0 || rubriquesDuPoint.length > 0 || DessinDuControleur !== null,
+    enabled: leCompteFaitFoi,
     refetchOnWindowFocus: 'always',
   })
+  // Les bobines perdues : **le compte fait foi là où cette lecture part**, l'appareil là où elle ne part
+  // pas (1890, qui ne lit jamais l'état du voyageur et écrit seulement, au geste). `voyage/bobines.ts`
+  // tient la règle, le versement de l'appareil au compte compris.
+  const bobines = useBobinesPerdues(user.id, leCompteFaitFoi, voyageur.data)
+  // Ce que le moteur ne propose pas. Là où le compte fait foi, tant qu'il n'est pas lu (ou en panne
+  // sans rien en cache), on ignore ce qu'il tient : aucune bobine ne se propose, comme aucun objet.
+  const bobinesDuVoyage = useMemo(() => decenniesDuVoyage.flatMap((d) => mondes(d).bobines.map((b) => b.cle)), [decenniesDuVoyage])
+  const bobinesTues = bobines.lues ? bobines.trouvees : bobinesDuVoyage
+  // Une bobine en main, sa promesse d'écriture : le message de la trouvaille l'attend. Refusée en
+  // plein vol, elle n'est rendue qu'à l'arrivée (le moteur garde hors du décor celle qui vole).
+  const ecritures = useRef(new Map<string, Promise<void>>())
+  const aRendre = useRef(new Set<string>())
   // La malle de ma décennie, pour les `collee_le` : seulement si une rubrique montée s'y date. En
   // panne ou pas encore lue, elle se tait : sa rubrique reste éteinte, et la carte reste.
   const decennieDeLaMalle = anneeEnCours !== undefined && rubriquesDuPoint.some((r) => r.malle) ? decennieDe(anneeEnCours) : null
@@ -620,7 +633,7 @@ export default function Carte() {
   const decennieDuCompteur = (enVol === null ? null : decennieDeLaBobine(enVol)) ?? decennieVue ?? decennieDOuverture
   const bobinesDuCompteur = decennieDuCompteur === null ? [] : mondes(decennieDuCompteur).bobines
   const comptees = (bobines: readonly BobinePerdue[], cles: readonly string[], sauf: string | null) => bobines.filter((b) => cles.includes(b.cle) && b.cle !== sauf).length
-  const nBobines = comptees(bobinesDuCompteur, trouvees, enVol)
+  const nBobines = comptees(bobinesDuCompteur, bobines.trouvees, enVol)
   // Dit à chaque image : la page n'en retient que le changement. Devant un monde sans bobines, le
   // compteur garde la décennie qu'il montrait.
   const montrerDecennie = (decennie: number | null) => {
@@ -628,15 +641,33 @@ export default function Carte() {
     decennieVueRef.current = decennie
     setDecennieVue(decennie)
   }
-  const ramassee = (cle: string) => {
-    if (!trouveesRef.current.includes(cle)) trouveesRef.current = [...trouveesRef.current, cle]
-    setTrouvees(trouveesRef.current)
-    ecrireBobines(user.id, trouveesRef.current)
+  const voler = (cle: string | null) => {
+    enVolRef.current = cle
     setEnVol(cle)
+  }
+  // Une bobine touchée (le rappel `bobine` du moteur, qui l'a déjà ôtée du décor) : `bobines` l'écrit,
+  // sur l'appareil en 1890, au compte partout. Là où le compte fait foi, son refus se dit comme celui
+  // d'un objet (`refusDuRamassage`) et la bobine revient dans le décor : le toucher se refait.
+  const ramassee = (cle: string) => {
+    const ecriture = bobines.ramasser(cle)
+    if (ecriture) {
+      oublierLeRefus()
+      ecritures.current.set(cle, ecriture)
+      ecriture.then(
+        () => void ecritures.current.delete(cle),
+        (erreur: unknown) => {
+          ecritures.current.delete(cle)
+          if (enVolRef.current === cle) aRendre.current.add(cle)
+          else bobines.rendre(cle)
+          if (monte.current && erreur instanceof ApiError) setRefusDuRamassage(erreur.message)
+        },
+      )
+    }
+    voler(cle)
     ambiance.carillon()
   }
   const arrivee = (cle: string) => {
-    setEnVol(null)
+    voler(null)
     setPulsation((p) => p + 1)
     // Le message compte dans la décennie de la bobine, et le compteur y reste : `decennieVueRef`
     // n'est pas touchée, elle garde ce que le moteur a dit en dernier. Le compteur ne revient donc à
@@ -644,9 +675,21 @@ export default function Carte() {
     // apparaîtrait pour une bobine de 1900 et disparaîtrait aussitôt devant un 1890 sans trouvaille).
     const decennie = decennieDeLaBobine(cle)
     if (decennie !== null) setDecennieVue(decennie)
+    if (aRendre.current.delete(cle)) return bobines.rendre(cle)
+    // La trouvaille se dit une fois rangée : tout de suite en 1890, où l'appareil la tient ; à la
+    // réponse du compte ailleurs, et jamais s'il la refuse.
+    const ecriture = leCompteFaitFoi ? ecritures.current.get(cle) : undefined
+    if (!ecriture) return direLaTrouvaille(cle)
+    ecriture.then(
+      () => void (monte.current && direLaTrouvaille(cle)),
+      () => undefined,
+    )
+  }
+  const direLaTrouvaille = (cle: string) => {
+    const decennie = decennieDeLaBobine(cle)
     const sienne = decennie === null ? [] : mondes(decennie).bobines
     const b = sienne.find((x) => x.cle === cle)
-    const n = comptees(sienne, trouveesRef.current, null)
+    const n = comptees(sienne, bobines.connues(), null)
     const total = sienne.length
     if (b) setMessage({ titre: `Bobine retrouvée ${n}/${total}`, texte: `« ${b.titre} », ${b.qui} : un film perdu.` })
     if (b && n === total) {
@@ -719,7 +762,7 @@ export default function Carte() {
           <CarteCanvas
             etat={etat}
             calme={calme}
-            bobines={trouvees}
+            bobines={bobinesTues}
             objets={objetsRamasses}
             // Le levier de la halte ouverte bascule, et revient quand elle se referme : un fait d'état,
             // la halte que le dialogue courant montre, jamais celle que l'adresse porte en attendant.

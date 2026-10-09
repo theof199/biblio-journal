@@ -89,7 +89,7 @@ export const FabriqueMoteurContexte = createContext<FabriqueMoteur>(fabriqueReel
 interface Props {
   etat: EtatCarte
   calme: boolean
-  /** Les bobines perdues déjà trouvées sur cet appareil (plan 2d). */
+  /** Les bobines perdues que le moteur ne propose pas : déjà trouvées (sur l'appareil en 1890, au compte ailleurs), ou toutes tant que le compte n'est pas lu. */
   bobines: readonly string[]
   /** Les objets cachés déjà ramassés, d'après la page (l'état du voyageur) : le moteur garde en plus ce qu'un toucher vient de prendre. */
   objets: readonly string[]

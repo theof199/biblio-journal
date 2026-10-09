@@ -49,7 +49,9 @@ export function ecrireSon(membre: string, allume: boolean): void {
 
 /**
  * Les bobines perdues trouvées sur cet appareil (plan 2d), par membre, par leur clé
- * (`BobinePerdue.cle`). Illisible ou abîmé : aucune, et elles se ramassent de nouveau.
+ * (`BobinePerdue.cle`). Illisible ou abîmé : aucune, et elles se ramassent de nouveau. **Elles ne
+ * font foi qu'en 1890** : là où la carte lit l'état du voyageur, le compte fait foi, et ce stockage
+ * n'est plus que ce qui reste à lui verser (`voyage/bobines.ts`, seul lecteur de ces deux fonctions).
  */
 const cleDesBobines = (membre: string) => `journal.carte.bobines.${membre}`
 

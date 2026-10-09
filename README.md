@@ -152,9 +152,37 @@ autres en 1900 (`mondes/1900/bobines.ts`), en gare de 1900, de 1901 et de 1904. 
 pose par `VueMonde.bobine`, le moteur les dessine et inscrit leur zone, qui passe devant le reste du
 décor. Un toucher la ramasse : elle vole vers le compteur du HUD (`DUREE_DE_L_ENVOL`, au tempo), qui
 n'apparaît qu'à la première trouvaille ; un message dit le film, puis, à la troisième, que les trois
-sont retrouvées. Au calme, elle arrive d'un coup. Les trouvailles se gardent sur l'appareil, par
-membre (`journal.carte.bobines.<membre>`) : une bobine trouvée ne se dessine plus, sa zone ne se
-touche plus. Un stockage illisible vaut « coupé » et « aucune ».
+sont retrouvées. Au calme, elle arrive d'un coup. Une bobine trouvée ne se dessine plus, sa zone ne
+se touche plus. Un stockage illisible vaut « coupé » et « aucune ».
+
+**Les bobines suivent le compte** (9 octobre 2026 ; `voyage/bobines.ts`, `useBobinesPerdues` ;
+`pages/Carte.bobines.test.tsx`). `GET /me/voyage/voyageur` les rend (`bobines`), et
+`POST /me/voyage/bobines/{cle}/ramasser` en range une (`api/voyage.ts`, `ramasserUneBobine`). Le
+serveur écrit ses clés avec des tirets bas, les mondes avec des tirets : la traduction n'est écrite
+qu'une fois (`cleDeBobineServie`, `cleDeBobineDuMonde`), et tout le reste de l'appli parle en clés du
+monde. Deux régimes, selon que la carte lit ou non l'état du voyageur :
+
+- **En 1890, l'appareil fait foi.** La carte d'un membre de 1890 ne lit pas l'état du voyageur
+  (aucune requête de plus : la règle des écrans des lots), donc ne sait pas ce que le compte tient :
+  elle lit `journal.carte.bobines.<membre>`, comme avant. Ramasser écrit sur l'appareil **et** range
+  au compte, d'une écriture au geste ; son échec se tait, l'appareil tient la bobine. Une bobine
+  ramassée sur un autre appareil se repropose donc en 1890 : la ramasser de nouveau est sans effet
+  au compte (la route est rejouable, la date reste la première).
+- **Dès que la carte lit l'état du voyageur (un membre arrivé en 1900), le compte fait foi.** Tant
+  qu'il n'est pas lu, ou en panne sans rien en cache, aucune bobine ne se propose, comme aucun objet.
+  Ramasser n'écrit plus qu'au compte : le cache n'apprend que son champ `bobines` (une lecture en vol
+  annulée d'abord, jamais le préfixe `voyage`), la trouvaille se dit à la réponse, et un refus se
+  dit comme celui d'un objet (`refusDuRamassage`) pendant que la bobine revient dans le décor (à son
+  arrivée si elle volait encore : le moteur garde hors du décor celle qui vole).
+- **Le versement**, à la première lecture de l'état, une fois par visite de la carte, sans rien
+  montrer : ce que le compte tient déjà quitte l'appareil, puis chaque clé restante est rangée au
+  compte, une à une (`verser`). Acceptée, ou refusée pour elle-même (`404`, `400` : `cleRefusee`), la
+  clé est réglée et quitte l'appareil ; toute autre panne arrête le versement sans rien régler, les
+  bobines restent trouvées, et la visite suivante reprend. **Après un versement complet le stockage
+  de l'appareil est vide et n'est plus écrit** : il n'est pas gardé en repli hors ligne, la carte ne
+  s'ouvrant pas hors ligne (rien de `/api/` n'est au précache).
+- **La rubrique `bobine` n'allume pas le point rouge** : aucun écran de la sacoche ne montre les
+  bobines, rien ne la marquerait vue, et la carte ne la marque pas vue après un versement.
 
 **Le compteur va par décennie** (plan 3a ; `pages/Carte.tsx`). Il compte les bobines du monde de la
 décennie à l'écran : celle du monde au plus fort poids de mélange (le premier des deux à égalité),
@@ -200,7 +228,7 @@ voyageur : une étiquette vient d'être collée sur la malle et un objet trouvé
 lien se nomme exactement « Sacoche du voyageur ». La liste des rubriques qui l'allument s'écrit en un
 point (`voyage/voyageur.ts`, `RUBRIQUES_DE_LA_PASTILLE` : `etiquette` par les `collee_le` de la malle,
 `courrier` par les `postee_le` des cartes postales **reçues**, jamais des envoyées, et sans regarder
-`lue_le` : c'est la visite de la rubrique qui l'éteint, `objet` par les `ramasse_le` ; `bobine` jamais), et **la carte ne regarde
+`lue_le` : c'est la visite de la rubrique qui l'éteint, `objet` par les `ramasse_le` ; `bobine` jamais : ses bobines sont datées depuis le 9 octobre 2026, mais aucun écran de la sacoche ne les montre, rien ne l'éteindrait), et **la carte ne regarde
 que celles dont la sacoche du monde de mon année en cours monte le bloc** (`rubriquesDeLaPastille`) :
 elle lit alors l'état du voyageur (la même clé que pour les objets du quai, une seule lecture), pour
 `etiquette` la malle de ma décennie, et pour `courrier` ma boîte aux cartes postales (`cles.courrier`),
@@ -1085,7 +1113,7 @@ guichet d'un film**
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
   (`GET /me/voyage/voyageur` : mes objets ramassés, mes rubriques vues, le contrôleur, mes poinçons),
-  `lireMalle` (`GET /me/voyage/decennies/{decennie}/etiquettes`), `ramasserObjet`,
+  `lireMalle` (`GET /me/voyage/decennies/{decennie}/etiquettes`), `ramasserObjet`, `ramasserUneBobine`,
   `marquerRubriqueVue`, `repondreAuControleur`, `accepterHoraire` (sans corps : le serveur seul choisit
   l'échéance) et `retirerHoraire`. **Les cartes postales** (brief 13) : `lireCourrier`
   (`GET /me/voyage/cartes-postales` : mes cartes reçues, envoyées, et mes gares bouclées qui attendent
