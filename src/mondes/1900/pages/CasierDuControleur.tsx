@@ -18,9 +18,11 @@ import styles from './Casier.module.css'
  * Il ne lit rien et ne numérote rien : la case choisie et le billet ouvert vivent dans l'adresse, que
  * la page tient ; le numéro est celui du billet de séance. Un billet que le contrôleur a poinçonné
  * (`poinconnes`, que la page tient de l'état du voyageur, par entrée de journal) garde son poinçon
- * doré, et le bouton du carton le dit. Rien n'y bouge au calme.
+ * doré, et le bouton du carton le dit ; le billet d'une table vue à deux (`vusEnsemble`, que la page
+ * tient de mes tables, par entrée de journal aussi) porte le tampon vert « Vu ensemble », seul ou avec
+ * le poinçon. Rien n'y bouge au calme.
  */
-export default function CasierDuControleur({ monde, intercalaires, choisi, onChoisir, billets, nouveau, onOuvrir, poinconnes }: PropsCasier) {
+export default function CasierDuControleur({ monde, intercalaires, choisi, onChoisir, billets, nouveau, onOuvrir, poinconnes, vusEnsemble }: PropsCasier) {
   const m = monde.pages.mots
   const calme = useMouvementReduit()
   const liasse = liasseDe(billets)
@@ -71,6 +73,7 @@ export default function CasierDuControleur({ monde, intercalaires, choisi, onCho
                     presse={datePressee(entry.finished_at)}
                     tampon={{ mot: m.billet.tampon, dit: `${m.billet.tampon} : ${m.billet.tamponAutour} ${formatDateVisionnage(entry.finished_at)}` }}
                     poincon={poinconnes?.has(entry.id) ? { dit: MOTS_DU_COMPOSTEUR.poincon } : null}
+                    ensemble={vusEnsemble?.has(entry.id) ? MOTS_DU_COMPOSTEUR.ensemble : null}
                   />
                   {neuf ? <span className={styles.lecteur}>{`, ${M.range}`}</span> : null}
                 </button>

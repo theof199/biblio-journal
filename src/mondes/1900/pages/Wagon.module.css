@@ -1,8 +1,8 @@
 /* Le wagon-restaurant de 1900 (maquette « Voyage immobile 1900 », écran 20 : `.wr-scene`, `.wr-carte`,
    `.wr-menu`, `.wr-choix`) : la table vue du bout de la nappe, la vitre au fond, la lampe entre les
    deux couverts ; les cartons des convives et le menu posés dessus. Les couleurs du décor sont dans
-   son tracé ; ici tout passe par les jetons (le vert de « a pris sa place » attend son jeton,
-   décision 12 : l'encre en tient lieu). Toute durée est au tempo, et rien ne bouge hors de
+   son tracé ; ici tout passe par les jetons (le vert de « a pris sa place » est le jeton
+   `--m-vert`, décision 12). Toute durée est au tempo, et rien ne bouge hors de
    `data-vivante='oui'` : les lointains de la vitre y défilent en boucle (`AMBIANCE`). */
 .wagon {
   padding-bottom: 8px;
@@ -156,6 +156,13 @@
   color: var(--m-encre2);
 }
 
+/* Une place prise se dit en vert (maquette : `.wr-carte.lea span`, `.prise .wr-carte.toi span`) :
+   l'hôte, toujours à sa table, et l'invité une fois la sienne prise. Le jeton vert, foncé d'encre. */
+.carton[data-qui='hote'] span,
+.scene[data-etat='a_pris_sa_place'] .carton[data-qui='invite'] span {
+  color: color-mix(in srgb, var(--m-vert) 78%, var(--m-encre));
+}
+
 /* L'invité qui attend : son nom est pâle, comme sur la maquette. */
 .scene[data-etat='attend'] .carton[data-qui='invite'] b {
   color: color-mix(in srgb, var(--m-email) 34%, transparent);
@@ -305,7 +312,7 @@
   border-bottom: 1px solid var(--m-filet);
 }
 
-.passees small {
+.passees li > small {
   grid-column: 1 / -1;
   font: 11px var(--m-f-capitales);
   letter-spacing: 0.14em;
@@ -313,17 +320,28 @@
   color: var(--m-or);
 }
 
-.passees b {
+.passees li > b {
   grid-column: 1 / -1;
   font: italic 400 18px/1.2 var(--m-f-texte);
 }
 
-.passees span {
+.passees li > span {
   font: 14px/1.4 var(--m-f-texte);
   color: var(--m-doux);
 }
 
-.passees em {
+.passees li > em {
   font: italic 14px/1.4 var(--m-f-texte);
   color: var(--m-or2);
+}
+
+/* Mon billet d'une table vue à deux (maquette : `.duo`) : le carton Edmondson, à sa largeur de liasse. */
+.billet {
+  width: min(250px, 72%);
+  margin: 12px auto 4px;
+}
+
+.passees .billet {
+  grid-column: 1 / -1;
+  margin: 8px 0 2px;
 }

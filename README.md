@@ -790,6 +790,17 @@ perce ni n'y luit, la percée est à la portière. Présenté sur la carte, il s
 rechargement : la réponse a garni le cache que la boîte lit (`mondes/1900/pages/casier.test.tsx`,
 `controleur.test.tsx`).
 
+**Le tampon « Vu ensemble »** (brief 16 des écrans des lots) suit la même voie, sans clé de plus : si
+le monde de la décennie de la boîte compose `wagonRestaurant`, la page lit aussi mes tables
+(`cles.tables`), sans les attendre, panne muette, et passe au casier (`vusEnsemble`) et au billet sorti
+(`vuEnsemble`) les billets d'une table vue à deux : `voyage/wagon/tables.ts`, `entreesVuesEnsemble`,
+par **entrée de journal** (`mon_billet.id`, jamais le film : une autre séance du même film ne le porte
+pas), et `vu_ensemble` **tel que servi** (une place prise ne tamponne rien). Les défauts les ignorent,
+la boîte de 1890 ne lit aucune table. En 1900, `Carton` porte le tampon vert comme il porte le poinçon
+(`ensemble` : son mot, ce qu'il dit à qui ne le voit pas ; l'encre est le jeton `--m-vert`), **les deux
+ensemble sur un billet présenté et vu à deux** : le tampon se resserre alors à gauche du poinçon
+(`data-perce`). Le composteur ne passe ni l'un ni l'autre (`composteur.test.tsx`, `casier.test.tsx`).
+
 Dans les années 1900, la boîte est **le casier du contrôleur** (maquette, écran 8 ;
 `mondes/1900/pages/CasierDuControleur.tsx`, pour la clé `casier`) : un meuble à une case par année du
 Voyage, les cartons empilés dans leur fente, « Tous » sur une plaque de laiton, et sous lui la liasse
@@ -1058,11 +1069,13 @@ prend sa place ou décline (dresser une table et la porte sur la fiche d'année 
   carton tourné et rouge une fois la place rendue). Deux cartons (« Toi » pour moi) et le menu, qui ne
   dit que `film.titre`, « Ce soir » et « servi pour deux » : ni réalisateur, ni année, ni durée, ni
   heure (constat 17). Les gestes sont ceux que la page offre, et eux seuls. **« Vu ensemble » se lit sur
-  `vu_ensemble`, jamais sur l'état** ; rien de `mon_billet` n'est dessiné (le mien et son tampon : brief
-  16), « Composter à deux » et « la proposition retourne au train du soir » de la maquette ne sont pas
+  `vu_ensemble`, jamais sur l'état** ; **une table vue à deux montre mon billet tamponné** (brief 16 :
+  `wagon.ts`, `monBilletTamponne`, mon `mon_billet` sur son carton sous le tampon vert, ce soir comme un
+  soir passé, sans numéro, que le contrat ne dit pas ; le billet de l'autre n'est pas servi),
+  « Composter à deux » et « la proposition retourne au train du soir » de la maquette ne sont pas
   repris (faux au contrat). Seuls les lointains de la vitre bougent, en boucle (`AMBIANCE`), jamais au
   calme ; la mise en lumière de la maquette (la lampe qui s'allume, le menu qui se pose) n'est pas
-  portée. Le vert de « a pris sa place » attend son jeton (décision 12) : l'encre en tient lieu.
+  portée. Une place prise se dit en vert, au jeton `--m-vert` (décision 12).
   `mondes/1900/pages/wagonRestaurant.test.tsx` tient ce qu'il dit et offre, et la page entière en 1901.
 - **La carte en sait plus, sans rien dessiner** (brief 9 des écrans des lots). `GET /me/voyage` sert
   déjà l'horaire de chaque année et les haltes : `pages/Carte.tsx` les met dans l'état de la carte,

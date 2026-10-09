@@ -1,6 +1,7 @@
 import { formatDateVisionnage } from '../../../ui/format'
 import type { RoleATable } from '../../../voyage/wagon/tables'
 import type { Table } from '../../../api/voyage'
+import { MOTS_DU_COMPOSTEUR, datePressee } from './carton'
 
 /**
  * Les mots du wagon-restaurant de 1900 (maquette « Voyage immobile 1900 », écran 20, l. 2463-2476 et
@@ -23,6 +24,9 @@ export const MOTS_DU_WAGON = {
   decliner: 'Décliner',
   rienNeSePerd: 'rien ne se perd',
   vuEnsemble: 'Vu ensemble',
+  monBillet: 'Ton billet',
+  porte: 'Wagon-restaurant',
+  aDeux: 'le même film, à deux, ce soir',
 } as const
 
 type Convives = Pick<Table, 'hote' | 'invite' | 'etat'>
@@ -82,4 +86,39 @@ export function soirPasseDit(t: Convives & Pick<Table, 'soir' | 'film' | 'vu_ens
     ou: role === 'hote' ? `à ta table, avec ${t.invite.pseudo}` : `à la table de ${t.hote.pseudo}`,
     reste: t.vu_ensemble ? MOTS_DU_WAGON.vuEnsemble : D_UN_SOIR_PASSE[t.etat],
   }
+}
+
+/**
+ * Mon billet d'une table vue à deux (brief 16) : ce que son carton porte, ou rien. **`vu_ensemble` se
+ * lit tel que servi**, et le billet est `mon_billet`, le mien seul : celui de l'autre convive n'est pas
+ * servi. Ni place prise ni billet sans `vu_ensemble` ne tamponnent rien. Le contrat ne dit pas son
+ * numéro dans la décennie : le carton n'en porte pas ici, le casier le dit.
+ */
+export function monBilletTamponne(t: Pick<Table, 'film' | 'vu_ensemble' | 'mon_billet'>, tampon: string, autour: string) {
+  if (!t.vu_ensemble || !t.mon_billet) return null
+  const jour = formatDateVisionnage(t.mon_billet.finished_at)
+  return {
+    tete: MOTS_DU_COMPOSTEUR.compagnie,
+    titre: t.film.titre,
+    sous: `${MOTS_DU_WAGON.moi.toLowerCase()} · ${jour}`,
+    note: t.mon_billet.rating,
+    presse: datePressee(t.mon_billet.finished_at),
+    tampon: { mot: tampon, dit: `${tampon} : ${autour} ${jour}` },
+    ensemble: MOTS_DU_COMPOSTEUR.ensemble,
+  }
+}
+
+/**
+ * Ce que dit la porte du wagon-restaurant, sur la fiche de mon année en cours (maquette, écran 17 :
+ * `.lien-wr`, « Léa a pris sa place : le même film, à deux, ce soir »). Une table : l'état de l'invité,
+ * dit à l'hôte ou à l'invité. Plusieurs le même soir : leur compte.
+ */
+export function ceQueDitLaPorte(tables: readonly { table: Convives; role: RoleATable }[]): string {
+  if (tables.length !== 1) return `${tables.length} tables t’attendent ce soir`
+  const { table: t, role } = tables[0]!
+  const A_DEUX = MOTS_DU_WAGON.aDeux
+  if (role === 'invite') return t.etat === 'a_pris_sa_place' ? `Ta place est prise à la table de ${t.hote.pseudo} : ${A_DEUX}` : `${t.hote.pseudo} t’invite à sa table : ${A_DEUX}`
+  if (t.etat === 'a_pris_sa_place') return `${t.invite.pseudo} a pris sa place : ${A_DEUX}`
+  if (t.etat === 'a_decline') return `${t.invite.pseudo} a rendu sa place : ta table reste dressée ce soir`
+  return `${t.invite.pseudo} n’a pas encore pris sa place : ${A_DEUX}`
 }

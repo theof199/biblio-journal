@@ -15,12 +15,13 @@ import styles from './Casier.module.css'
  * titre, la ligne du film, le numéro et la note ; dessous, la date de la séance en toutes lettres (la
  * tranche ne la porte que pressée), les réactions en coupons, et ma remarque sur le carnet, que la
  * page tient de mon seul journal. « Corriger le billet » ne s'offre que si la page le passe. Présenté
- * au contrôleur (`poinconne`), le carton garde son poinçon doré.
+ * au contrôleur (`poinconne`), le carton garde son poinçon doré ; billet d'une table vue à deux
+ * (`vuEnsemble`), il porte le tampon vert, sans que l'un efface l'autre.
  *
  * Un dialogue : « Ranger au casier » prend le focus et le rend, Échap et le voile ferment. Il ne lit
  * rien : `Visionneuse` lui passe les réactions lues. Rien n'y bouge au calme.
  */
-export default function BilletDuCasier({ monde, billet, reactions, corriger, onFermer, poinconne = false }: PropsBilletEnGrand) {
+export default function BilletDuCasier({ monde, billet, reactions, corriger, onFermer, poinconne = false, vuEnsemble = false }: PropsBilletEnGrand) {
   const m = monde.pages.mots
   const calme = useMouvementReduit()
   const ranger = useDialogue<HTMLButtonElement>(onFermer)
@@ -40,6 +41,7 @@ export default function BilletDuCasier({ monde, billet, reactions, corriger, onF
             presse={datePressee(entry.finished_at)}
             tampon={{ mot: m.billet.tampon, dit: `${m.billet.tampon} : ${m.billet.tamponAutour} ${date}` }}
             poincon={poinconne ? { dit: C.poincon } : null}
+            ensemble={vuEnsemble ? C.ensemble : null}
           />
         </div>
         <p className={styles.seance}>{`${m.billet.titre} ${date}`}</p>

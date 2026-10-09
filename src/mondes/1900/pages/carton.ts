@@ -24,6 +24,8 @@ export const MOTS_DU_COMPOSTEUR = {
   remarqueVide: 'Ce que tu en retiens, pour toi…',
   /** Ce que le poinçon doré dit à qui ne le voit pas : le carton ne le porte que si on le lui passe. */
   poincon: 'Poinçon doré du contrôleur',
+  /** Le tampon vert du wagon-restaurant : son mot, et ce qu'il dit à qui ne le voit pas. Le carton ne le porte que si on le lui passe. */
+  ensemble: { mot: 'Vu ensemble', dit: 'Vu ensemble : le tampon du wagon-restaurant' },
   corriger: 'Corriger le billet',
   corrigerSous: 'il garde son numéro',
   modele: 'Le modèle',

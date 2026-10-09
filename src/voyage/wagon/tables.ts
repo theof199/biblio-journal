@@ -1,4 +1,4 @@
-import type { Table } from '../../api/voyage'
+import type { Table, Tables } from '../../api/voyage'
 import type { Monde } from '../../mondes/types'
 import type { PanneDeBloc } from '../sacoche'
 
@@ -29,6 +29,50 @@ const minuit = (jour: string) => Date.parse(`${jour}T00:00:00Z`)
  */
 export function soirPasse(soir: string, maintenant: number): boolean {
   return !(minuit(soir) >= minuit(jourAParis(maintenant)))
+}
+
+/**
+ * Le soir d'une table est-il **ce soir**, à Paris, à l'instant `maintenant` ? Ni hier, ni demain
+ * (`soirPasse` rend faux pour un soir à venir). Un soir illisible n'est pas ce soir.
+ */
+export function ceSoirMeme(soir: string, maintenant: number): boolean {
+  return minuit(soir) === minuit(jourAParis(maintenant))
+}
+
+/**
+ * Les tables qui ouvrent la porte du wagon-restaurant sur la fiche de mon année en cours (plan des
+ * écrans des lots, brief 16, décision 10) : celles de **ce soir**, où je suis l'hôte ou l'invité,
+ * **que je n'ai pas déclinées**, dans l'ordre servi. Une table d'hier n'ouvre rien ; une table que mon
+ * invité a déclinée reste la mienne. L'horloge de l'appareil ne fait que cacher une porte : la page du
+ * wagon relit tout.
+ */
+export function tablesDeLaPorte(tables: readonly Table[], moi: string, maintenant: number): Table[] {
+  return tables.filter((t) => ceSoirMeme(t.soir, maintenant) && !(roleA(t, moi) === 'invite' && t.etat === 'a_decline'))
+}
+
+const AUCUN_BILLET: ReadonlySet<string> = new Set()
+/**
+ * Les billets qui portent le tampon « Vu ensemble », par l'identifiant de leur **entrée de journal**
+ * (`mon_billet.id`), jamais par film : une autre séance du même film n'en porte pas. **`vu_ensemble`
+ * se lit tel que servi** : une place prise ne tamponne rien, un billet servi sans lui non plus.
+ */
+export function entreesVuesEnsemble(tables: Tables | undefined): ReadonlySet<string> {
+  if (!tables) return AUCUN_BILLET
+  return new Set(tables.tables.flatMap((t) => (t.vu_ensemble && t.mon_billet ? [t.mon_billet.id] : [])))
+}
+
+/** Où mène la porte, et où mène une table qu'on vient de dresser. */
+export const VERS_LE_WAGON = '/voyage/wagon-restaurant'
+
+/**
+ * Ce que reçoit le dessin de la porte du wagon-restaurant (`GabaritsDesPages.porteDuWagon`, sans
+ * défaut) : mes tables de ce soir, **jamais vide**, dans l'ordre servi, chacune avec mon rôle, et
+ * l'adresse du wagon. `voyage/wagon/Porte.tsx` lit ; le dessin ne lit rien et ne décide de rien.
+ */
+export interface PropsPorteDuWagon {
+  monde: Monde
+  tables: readonly { table: Table; role: RoleATable }[]
+  vers: string
 }
 
 /** Ce qui s'offre sur une table. */

@@ -23,6 +23,8 @@ export interface PropsBilletEnGrand {
   onFermer: () => void
   /** Le contrôleur a poinçonné ce billet, cette séance et non son film. Le billet par défaut l'ignore. */
   poinconne?: boolean
+  /** Ce billet est celui d'une table vue à deux, cette séance et non son film. Le billet par défaut l'ignore. */
+  vuEnsemble?: boolean
 }
 
 /**

@@ -35,6 +35,12 @@ interface Props {
    * porte que si on le lui passe, et le composteur ne le passe jamais.
    */
   poincon?: { dit: string; frais?: boolean } | null
+  /**
+   * Le tampon vert « Vu ensemble » du wagon-restaurant : son mot, et ce qu'il dit à qui ne le voit pas.
+   * Absent ou nul, aucun tampon vert : comme le poinçon, le carton ne le porte que si on le lui passe,
+   * et le composteur ne le passe jamais. Les deux marques se portent ensemble, l'une n'efface pas l'autre.
+   */
+  ensemble?: { mot: string; dit: string } | null
 }
 
 /**
@@ -47,10 +53,12 @@ interface Props {
  * Il ne porte jamais la mention de classe (décision 6). Le poinçon doré du contrôleur (maquette :
  * `.poincon-or`, un cercle perlé et une étoile percée, dont les couleurs sont la donnée) n'y est que
  * si on le lui passe : le casier et le billet sorti pour un billet présenté, la portière du contrôleur
- * au moment du coup, jamais le composteur.
+ * au moment du coup, jamais le composteur. Le tampon vert « Vu ensemble » (maquette, écran 20 :
+ * `.ensemble-t`, à l'encre du jeton `--m-vert`) non plus : le casier, le billet sorti et la table du
+ * wagon-restaurant le passent pour le billet d'une table vue à deux. Un billet peut porter les deux.
  * Rien n'y bouge au calme : `data-vivante` porte seul les animations de la feuille.
  */
-export default function Carton({ tete, titre, titreDePage = false, sous, numero, numeroQuiRoule = false, note, presse, tampon, geste, frais, poincon }: Props) {
+export default function Carton({ tete, titre, titreDePage = false, sous, numero, numeroQuiRoule = false, note, presse, tampon, geste, frais, poincon, ensemble }: Props) {
   const calme = useMouvementReduit()
   const Titre = titreDePage ? 'h1' : 'div'
   const perces = frais?.trous
@@ -85,6 +93,11 @@ export default function Carton({ tete, titre, titreDePage = false, sous, numero,
       {tampon ? (
         <span className={styles.vu} role="img" aria-label={tampon.dit}>
           {tampon.mot}
+        </span>
+      ) : null}
+      {ensemble ? (
+        <span className={styles.ensemble} role="img" aria-label={ensemble.dit} data-perce={poincon ? 'oui' : undefined}>
+          {ensemble.mot}
         </span>
       ) : null}
       {poincon ? (

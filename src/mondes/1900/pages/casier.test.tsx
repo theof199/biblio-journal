@@ -3,7 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { cles } from '../../../api/cles'
 import type { JournalItem, JournalPage } from '../../../api/journal'
 import type { ReactionsCatalogue } from '../../../api/reactions'
-import type { Voyageur } from '../../../api/voyage'
+import type { Table, Tables, Voyageur } from '../../../api/voyage'
 import { exemple } from '../../../test/contrat'
 import { visionnage } from '../../../test/journal'
 import { SESSION, monterVoyage } from '../../../test/pageVoyage'
@@ -41,6 +41,8 @@ const JOURNAL = 'GET /api/me/journal?limit=100&sortie_min=1900&sortie_max=1909'
 const REACTIONS = 'GET /api/reference/reactions'
 /** L'état du voyageur, que la boîte de 1900 lit pour ses poinçons (lot d'écrans, brief 8). */
 const VOYAGEUR = 'GET /api/me/voyage/voyageur'
+/** Mes tables, que la boîte de 1900 lit pour le tampon « Vu ensemble » (lot d'écrans, brief 16). */
+const TABLES = 'GET /api/me/voyage/tables'
 const BOITE = '/voyage/decennies/1900/billets'
 
 const vu = (id: string, an: number, date: string, o: { titre: string; note?: number | null; tmdb?: number; realisateur?: string | null; remarque?: string; reactions?: string[] }) => {
@@ -66,7 +68,7 @@ const VOL = vu('e3', 1903, '2026-09-01', { titre: 'Le Vol du grand rapide', note
 const TOUS = [VOL, SWALLOW, ROVER, FIREMAN]
 
 const journal = (items: JournalItem[]) => () => json({ ...PAGE, items, next_cursor: null })
-const ROUTES = { [CARTE]: () => json(VOYAGE), [JOURNAL]: journal(TOUS), [REACTIONS]: () => json(CATALOGUE), [VOYAGEUR]: () => json(VOYAGEUR_VIDE) }
+const ROUTES = { [CARTE]: () => json(VOYAGE), [JOURNAL]: journal(TOUS), [REACTIONS]: () => json(CATALOGUE), [VOYAGEUR]: () => json(VOYAGEUR_VIDE), [TABLES]: () => json({ tables: [] }) }
 
 const cases = async () => within(await screen.findByRole('group', { name: M.cases }))
 /** Les cartons de la liasse sortie, dans l'ordre de la page. */
@@ -135,19 +137,20 @@ describe('le casier du contrôleur', () => {
   // Mutations : une fiche d'année lue par le casier ou par le billet sorti (`useQuery` sur
   // `cles.annee`) ; le catalogue des réactions lu dès l'ouverture du casier. La liste gagne l'état du
   // voyageur au brief 8 du lot d'écrans, parce que la règle change : 1900 compose le contrôleur, sa
-  // boîte lit ses poinçons. Elle reste entière : une lecture de plus doit y passer.
-  it('ne lit que la carte, mes films de la décennie et l’état du voyageur, puis les réactions du seul billet sorti : jamais une fiche d’année', async () => {
+  // boîte lit ses poinçons ; et mes tables au brief 16, de même : 1900 compose le wagon-restaurant, sa
+  // boîte lit ses tampons « Vu ensemble ». Elle reste entière : une lecture de plus doit y passer.
+  it('ne lit que la carte, mes films de la décennie, l’état du voyageur et mes tables, puis les réactions du seul billet sorti : jamais une fiche d’année', async () => {
     const { requetes, client } = monterVoyage(BOITE, ROUTES)
     await liasse(M.toute)
     await waitFor(() => expect(client.isFetching()).toBe(0))
-    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL, VOYAGEUR].sort())
+    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL, TABLES, VOYAGEUR].sort())
     fireEvent.click(carton(/Life of an American Fireman/))
     await screen.findByRole('dialog', { name: 'Life of an American Fireman' })
     fireEvent.keyDown(document, { key: 'Escape' })
     fireEvent.click(carton(/Le Vol du grand rapide/))
     const dialogue = await screen.findByRole('dialog', { name: 'Le Vol du grand rapide' })
     expect(await within(dialogue).findByText('❤️ J’ai adoré')).toBeInTheDocument()
-    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL, REACTIONS, VOYAGEUR].sort())
+    expect(requetes.filter((r) => r !== 'GET /api/auth/me').sort()).toEqual([CARTE, JOURNAL, REACTIONS, TABLES, VOYAGEUR].sort())
   })
 
   // Le numéro est celui du billet de séance : la même liste, la même règle (`billetsDeLaDecennie`,
@@ -344,5 +347,87 @@ describe('le poinçon doré au casier', () => {
     expect(cartons.map((x) => poincons(x).length)).toEqual([0, 0, 0, 0, 0])
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByText(/souffrant/)).toBeNull()
+  })
+})
+
+describe('le tampon « Vu ensemble » au casier', () => {
+  /** Une seconde séance du « Vol du grand rapide » : le même film (`media_id`), une autre entrée, celle de la table vue à deux. */
+  const SECONDE = vu('e4', 1903, '2026-09-20', { titre: 'Le Vol du grand rapide', note: 9, realisateur: 'Edwin S. Porter', tmdb: 776 })
+  SECONDE.media.id = VOL.media.id
+  SECONDE.entry.media_id = VOL.entry.media_id
+  /** L'exemple du contrat : chez bob, vue ensemble, mon billet. Ici, mon billet est la seconde séance. */
+  const VUE = exemple<Tables>('/me/voyage/tables', 'get', 200).tables[1]!
+  const table = (plus: Partial<Table> = {}): Table => ({ ...VUE, mon_billet: { ...VUE.mon_billet!, id: SECONDE.entry.id, media_id: SECONDE.media.id }, ...plus })
+  const servir = (tables: Table[], voyageur: Voyageur = VOYAGEUR_VIDE) => ({ ...ROUTES, [JOURNAL]: journal([...TOUS, SECONDE]), [TABLES]: () => json({ tables }), [VOYAGEUR]: () => json(voyageur) })
+  const tampons = (ou: HTMLElement) => within(ou).queryAllByRole('img', { name: C.ensemble.dit })
+  const poincons = (ou: HTMLElement) => within(ou).queryAllByRole('img', { name: C.poincon })
+
+  // Mutations : `vusEnsemble` ignoré par le casier ; le tampon posé sur tout carton ; cherché par le
+  // film (`mon_billet.media_id` dans `entreesVuesEnsemble`, et `entry.media_id` au casier : la première
+  // séance le porterait) ; `vuEnsemble` ignoré par le billet sorti, ou vrai pour tous ; son nom tu dans
+  // le bouton du carton.
+  it('le billet d’une table vue à deux porte le tampon, en liasse et sorti en grand ; l’autre séance du même film ne le porte pas', async () => {
+    monterVoyage(`${BOITE}?annee=1903`, servir([table()]))
+    const cartons = await liasse('La liasse de 1903')
+    expect(cartons.map((x) => within(x).getByText(/^N° /).textContent)).toEqual(['N° 0002', 'N° 0004', 'N° 0005'])
+    await waitFor(() => expect(cartons.map((x) => tampons(x).length)).toEqual([0, 0, 1]))
+    expect(tampons(cartons[2]!)[0]).toHaveTextContent(C.ensemble.mot)
+    expect(cartons[2]).toHaveAccessibleName(new RegExp(C.ensemble.dit))
+    expect(cartons[1]).not.toHaveAccessibleName(new RegExp(C.ensemble.dit))
+    expect(cartons.map((x) => poincons(x).length)).toEqual([0, 0, 0])
+
+    fireEvent.click(cartons[2]!)
+    const sorti = await screen.findByRole('dialog', { name: 'Le Vol du grand rapide' })
+    expect(within(sorti).getByText('N° 0005')).toBeInTheDocument()
+    expect(tampons(sorti)).toHaveLength(1)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    fireEvent.click(cartons[1]!)
+    const autre = await screen.findByRole('dialog', { name: 'Le Vol du grand rapide' })
+    expect(within(autre).getByText('N° 0004')).toBeInTheDocument()
+    expect(tampons(autre)).toHaveLength(0)
+  })
+
+  // **`vu_ensemble` se lit tel que servi** : une place prise, mon billet déjà au journal, ne tamponne
+  // rien tant que l'autre ne l'a pas vu. Mutations : `vu_ensemble` remplacé par
+  // `etat === 'a_pris_sa_place'` dans `entreesVuesEnsemble` ; tout `mon_billet` tamponné.
+  it('une place prise ne tamponne rien tant que le serveur ne dit pas « vu ensemble »', async () => {
+    const { client, requetes } = monterVoyage(BOITE, servir([table({ vu_ensemble: false, etat: 'a_pris_sa_place' })]))
+    const cartons = await liasse(M.toute)
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(requetes).toContain(TABLES)
+    expect(cartons).toHaveLength(5)
+    expect(cartons.map((x) => tampons(x).length)).toEqual([0, 0, 0, 0, 0])
+    expect(document.body.textContent).not.toMatch(/vu ensemble/i)
+  })
+
+  // Un billet présenté au contrôleur **et** vu à deux porte les deux marques : le poinçon n'est pas
+  // effacé par le tampon, ni l'inverse. Mutations : une seule marque dans `Carton` (`poincon &&
+  // !ensemble`, `ensemble && !poincon`) ; au casier, le tampon passé à la place du poinçon
+  // (`ensemble` seulement quand `poinconnes` ne l'a pas).
+  it('un billet poinçonné et vu ensemble garde ses deux marques, en liasse et sorti en grand', async () => {
+    const POINCONNE: Voyageur = { ...VOYAGEUR_VIDE, poincons: [{ log_entry_id: SECONDE.entry.id, media_id: SECONDE.media.id, poinconne_le: '2026-10-08T18:00:00.000Z' }] }
+    monterVoyage(`${BOITE}?annee=1903`, servir([table()], POINCONNE))
+    const cartons = await liasse('La liasse de 1903')
+    await waitFor(() => expect(cartons.map((x) => [tampons(x).length, poincons(x).length])).toEqual([[0, 0], [0, 0], [1, 1]]))
+    expect(cartons[2]).toHaveAccessibleName(new RegExp(C.ensemble.dit))
+    expect(cartons[2]).toHaveAccessibleName(new RegExp(C.poincon))
+
+    fireEvent.click(cartons[2]!)
+    const sorti = await screen.findByRole('dialog', { name: 'Le Vol du grand rapide' })
+    expect([tampons(sorti).length, poincons(sorti).length]).toEqual([1, 1])
+  })
+
+  // Mutation : l'erreur de mes tables jointe aux pannes de la page (`voyage.error || journal.error`).
+  it('mes tables en panne : toute la liasse, aucun tampon, pas un mot', async () => {
+    const { client, requetes } = monterVoyage(BOITE, { ...servir([]), [TABLES]: () => json({ code: 'INTERNAL', message: 'Le wagon est en révision.', retryable: false }, 500) })
+    const cartons = await liasse(M.toute)
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(requetes).toContain(TABLES)
+    expect(cartons).toHaveLength(5)
+    expect(cartons.map((x) => tampons(x).length)).toEqual([0, 0, 0, 0, 0])
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByText(/révision/)).toBeNull()
   })
 })

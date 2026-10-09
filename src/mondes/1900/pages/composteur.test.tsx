@@ -460,6 +460,9 @@ describe('le billet Edmondson, en correction', () => {
     const vue = corriger(routes)
     const sansPoincon = (c: HTMLElement) => {
       expect(within(c).queryByRole('img', { name: M.poincon })).toBeNull()
+      // Ni le tampon vert du wagon-restaurant (brief 16) : le composteur ne passe aucune des deux marques.
+      expect(within(c).queryByRole('img', { name: M.ensemble.dit })).toBeNull()
+      expect(c.textContent).not.toMatch(/vu ensemble/i)
       expect(c.querySelector('svg')).toBeNull()
       // Tout ce que le carton cache au lecteur d'écran : la date pressée et les dix places.
       expect([...c.querySelectorAll('[aria-hidden="true"]')].map((e) => e.textContent)).toEqual([datePressee('2026-09-01'), ''])
@@ -506,6 +509,44 @@ describe('le billet Edmondson, en correction', () => {
     avec.unmount()
 
     expect(poser({ dit: M.poincon, frais: true }).getByRole('img', { name: M.poincon })).toHaveAttribute('data-frais', 'oui')
+  })
+
+  // Le tampon vert « Vu ensemble » (lot d'écrans, brief 16), sur la même forme que le poinçon : une
+  // marque passée en propriété. **Les deux se portent ensemble, l'une n'efface pas l'autre.**
+  // Mutations : le tampon rendu sans la propriété (`ensemble = M.ensemble`), ou pour une propriété
+  // nulle ; son mot ou ce qu'il dit écrits en dur ; `role="img"` retiré ; une seule marque
+  // (`ensemble && !poincon`, puis `poincon && !ensemble`) ; `data-perce` posé d'office.
+  it('le carton ne porte le tampon « Vu ensemble » que si on le lui passe, et le porte avec le poinçon sans que l’un efface l’autre', () => {
+    const ENSEMBLE = { mot: 'Vu à deux, dit le test', dit: 'Tamponné à deux, dit le test' }
+    const VU = 'VU : vu le 1er septembre 2026'
+    const poser = (marques: { ensemble?: typeof ENSEMBLE | null; poincon?: { dit: string } | null } = {}) =>
+      render(<Carton tete={M.compagnie} titre="Le Royaume des fées" note={9} presse={datePressee('2026-09-01')} tampon={{ mot: 'VU', dit: VU }} {...marques} />)
+    const marques = (vue: ReturnType<typeof poser>) => vue.queryAllByRole('img').map((i) => i.getAttribute('aria-label'))
+
+    for (const sans of [undefined, null]) {
+      const vue = poser({ ensemble: sans })
+      expect(marques(vue)).toEqual([VU])
+      expect(vue.container.textContent).not.toMatch(/vu ensemble|vu à deux/i)
+      vue.unmount()
+    }
+
+    const seul = poser({ ensemble: ENSEMBLE })
+    expect(marques(seul)).toEqual([VU, ENSEMBLE.dit])
+    expect(seul.getByRole('img', { name: ENSEMBLE.dit })).toHaveTextContent(ENSEMBLE.mot)
+    expect(seul.getByRole('img', { name: ENSEMBLE.dit })).not.toHaveAttribute('data-perce')
+    expect(seul.container.querySelector('svg')).toBeNull()
+    seul.unmount()
+
+    const sansTampon = poser({ poincon: { dit: 'Poinçonné, dit le test' } })
+    expect(marques(sansTampon)).toEqual([VU, 'Poinçonné, dit le test'])
+    sansTampon.unmount()
+
+    const deux = poser({ ensemble: ENSEMBLE, poincon: { dit: 'Poinçonné, dit le test' } })
+    expect(marques(deux)).toEqual([VU, ENSEMBLE.dit, 'Poinçonné, dit le test'])
+    expect(deux.getByRole('img', { name: 'Poinçonné, dit le test' }).querySelector('svg')).not.toBeNull()
+    expect(deux.getByRole('img', { name: ENSEMBLE.dit })).toHaveTextContent(ENSEMBLE.mot)
+    // Sur un billet poinçonné, le tampon s'écarte du poinçon : la feuille le lit sur cette marque.
+    expect(deux.getByRole('img', { name: ENSEMBLE.dit })).toHaveAttribute('data-perce', 'oui')
   })
 })
 

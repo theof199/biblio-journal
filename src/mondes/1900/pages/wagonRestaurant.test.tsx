@@ -9,6 +9,7 @@ import { json } from '../../../test/serveur'
 import { ROUTES_DU_JEU, annee, voyage1890 } from '../../../test/voyage'
 import type { TableDuWagon } from '../../../voyage/wagon/tables'
 import WagonRestaurant from './WagonRestaurant'
+import { MOTS_DU_COMPOSTEUR as C } from './carton'
 import { MOTS_DU_WAGON as M, cartonDeLHote, cartonDeLInvite, ceQueDitLaTable, soirPasseDit } from './wagon'
 
 // Le wagon-restaurant de 1900 (plan des écrans des lots, brief 15) : ce qu'il dit et ce qu'il offre,
@@ -154,12 +155,13 @@ describe('le wagon-restaurant de 1900', () => {
   })
 
   // Les soirs passés : des lignes, sans scène ni geste, dans l'ordre reçu ; le jour est celui servi,
-  // dit hors du fuseau de l'appareil. **Le billet de l'autre n'est pas dessiné**, et le mien ne vient
-  // qu'au brief 16 : rien de `mon_billet` ne paraît. Mutations : un bouton rendu sur une ligne
-  // passée, même offert par erreur ; `mon_billet.rating` ou `finished_at` écrits sur la ligne ; le
-  // jour passé par `new Date(soir)` sous un fuseau de l'ouest ; « n'a pas eu lieu » dit d'une table
-  // déclinée.
-  it('un soir passé se dit en une ligne, sans scène, sans geste, sans billet', () => {
+  // dit hors du fuseau de l'appareil. **Ce test change au brief 16 parce que la règle change** : une
+  // table vue à deux montre mon billet tamponné (il disait « sans billet »). Le billet de l'autre
+  // n'est pas dessiné, et une table qui n'est pas vue à deux n'en montre aucun. Mutations : un bouton
+  // rendu sur une ligne passée, même offert par erreur ; le jour passé par `new Date(soir)` sous un
+  // fuseau de l'ouest ; « n'a pas eu lieu » dit d'une table déclinée ; `MonBillet` retiré des lignes
+  // passées, ou monté sur toutes.
+  it('un soir passé se dit en une ligne, sans scène, sans geste ; vu à deux, il montre mon billet tamponné, et lui seul', () => {
     vi.stubEnv('TZ', 'America/Los_Angeles')
     const jamais: Table = { ...LA_MIENNE, id: 'd4000000-0000-4000-8000-000000000004', soir: '2026-10-01' }
     monter([invite(VUE, { passee: true, gestes: LES_DEUX }), hote(jamais, { passee: true }), invite(etat({ ...CHEZ_CAROL, soir: '2026-09-30' }, 'a_decline'), { passee: true, gestes: AUCUN })])
@@ -168,14 +170,45 @@ describe('le wagon-restaurant de 1900', () => {
     expect(screen.queryByRole('list', { name: M.ceSoir })).toBeNull()
     expect(screen.getByText(M.aucune)).toBeInTheDocument()
     const lignes = within(screen.getByRole('list', { name: M.passees })).getAllByRole('listitem')
-    expect(lignes.map((l) => [...l.children].map((c) => c.textContent).join(' | '))).toEqual([
+    expect(lignes.map((l) => [...l.querySelectorAll(':scope > small, :scope > b, :scope > span, :scope > em')].map((c) => c.textContent).join(' | '))).toEqual([
       '2 octobre 2026 | Le Voyage dans la Lune | à la table de bob | Vu ensemble',
       '1er octobre 2026 | Le Voyage à travers l’impossible | à ta table, avec bob | n’a pas eu lieu',
       '30 septembre 2026 | Le Voyage à travers l’impossible | à la table de carol | place rendue',
     ])
     expect(boutons()).toEqual([])
     expect(document.querySelectorAll('svg')).toHaveLength(0)
-    expect(document.body.textContent).not.toMatch(/8 ?\/ ?10|3 octobre|2026-10-03/)
+    expect(lignes.map((l) => within(l).queryAllByRole('figure', { name: M.monBillet }).length)).toEqual([1, 0, 0])
+    const billet = within(lignes[0]!).getByRole('figure', { name: M.monBillet })
+    expect(billet).toHaveTextContent('Le Voyage dans la Lune')
+    expect(billet).toHaveTextContent('toi · 3 octobre 2026')
+    expect(billet).toHaveTextContent('8 / 10')
+    expect(within(billet).getAllByRole('img').map((i) => i.getAttribute('aria-label'))).toEqual(['VU : Le voyage immobile · vu le 3 octobre 2026', C.ensemble.dit])
+    // Le mien seul : rien du billet de bob, que le serveur ne sert pas.
+    expect(billet.textContent).not.toMatch(/bob/)
+    expect(lignes[1]!.textContent + lignes[2]!.textContent).not.toMatch(/\/ ?10|sans note/)
+  })
+
+  // **Le tampon suit `vu_ensemble`, tel que servi** (brief 16) : ni une place prise, ni un billet à
+  // mon journal que le serveur ne dit pas vu ensemble, ni un « vu ensemble » sans billet servi ne
+  // montrent de carton. Vue à deux ce soir même, la table montre mon billet sous sa scène.
+  // Mutations : dans `monBilletTamponne`, `vu_ensemble` remplacé par `etat === 'a_pris_sa_place'`,
+  // ou retiré (posé dès `mon_billet`) ; `MonBillet` retiré de la table du soir ; le tampon vert non
+  // passé au carton.
+  it('mon billet ne paraît, tamponné, que sur une table que le serveur dit vue à deux', () => {
+    const prise = etat(CHEZ_BOB, 'a_pris_sa_place')
+    const { unmount } = monter([invite({ ...prise, mon_billet: VUE.mon_billet }), invite({ ...prise, id: 'c3000000-0000-4000-8000-000000000003', vu_ensemble: true, mon_billet: null }), invite({ ...VUE, vu_ensemble: false }, { passee: true, gestes: AUCUN })])
+    expect(screen.queryAllByRole('figure')).toEqual([])
+    expect(screen.queryAllByRole('img', { name: C.ensemble.dit })).toEqual([])
+    unmount()
+
+    monter([invite({ ...prise, vu_ensemble: true, mon_billet: VUE.mon_billet }), invite(CHEZ_CAROL)])
+    const [bob, carol] = duSoir()
+    const billet = within(bob!).getByRole('figure', { name: M.monBillet })
+    expect(billet).toHaveTextContent(prise.film.titre)
+    expect(within(billet).getAllByRole('img').map((i) => i.getAttribute('aria-label'))).toEqual(['VU : Le voyage immobile · vu le 3 octobre 2026', C.ensemble.dit])
+    expect(within(billet).getByRole('img', { name: C.ensemble.dit })).toHaveTextContent(C.ensemble.mot)
+    expect(within(carol!).queryByRole('figure')).toBeNull()
+    expect(screen.getAllByRole('figure')).toHaveLength(1)
   })
 
   // Mutations : le refus dit sans rôle d'alerte, ou sur toutes les tables ; la panne tue ; les tables
@@ -239,10 +272,11 @@ describe('la page du wagon-restaurant, en 1901', () => {
   // lit une fiche d'année, l'état du voyageur ou le courrier.
   it('1900 compose la clé : mes tables s’y lisent, « Prendre ma place » part et la table le dit, sans rien lire d’autre', async () => {
     const { requetes } = monterVoyage('/voyage/wagon-restaurant', {
+      // Les routes du jeu d'abord : elles servent des tables vides (brief 16), que ce test remplace.
+      ...ROUTES_DU_JEU,
       'GET /api/me/voyage': () => json(EN_1901),
       'GET /api/me/voyage/tables': () => json({ tables: [CHEZ_BOB, LA_MIENNE, VUE] } satisfies Tables),
       [PLACE]: () => json(etat(CHEZ_BOB, 'a_pris_sa_place')),
-      ...ROUTES_DU_JEU,
     })
 
     const page = await screen.findByRole('region', { name: 'Le wagon-restaurant' })

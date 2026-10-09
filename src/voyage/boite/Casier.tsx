@@ -21,6 +21,12 @@ export interface PropsCasier {
    * par défaut l'ignore.
    */
   poinconnes?: ReadonlySet<string>
+  /**
+   * Les billets d'une table vue à deux, par l'identifiant de leur entrée de journal
+   * (`entreesVuesEnsemble`). La page ne le garnit que pour un monde qui compose le wagon-restaurant ;
+   * la boîte par défaut l'ignore.
+   */
+  vusEnsemble?: ReadonlySet<string>
 }
 
 /**

@@ -104,6 +104,8 @@ export const COURRIER_VIDE: Courrier = { recues: [], envoyees: [], en_attente: [
 export const ROUTES_DU_JEU: Record<string, () => Response> = {
   'GET /api/me/voyage/cartes-postales': () => new Response(JSON.stringify(COURRIER_VIDE)),
   'GET /api/me/voyage/voyageur': () => new Response(JSON.stringify(VOYAGEUR_VIDE)),
+  // Mes tables du wagon-restaurant : la boîte à billets de 1900 et la fiche de mon année en cours les lisent (brief 16).
+  'GET /api/me/voyage/tables': () => new Response(JSON.stringify({ tables: [] })),
   'GET /api/me/voyage/decennies/1900/etiquettes': () => new Response(JSON.stringify(malleVide(1900))),
 }
 

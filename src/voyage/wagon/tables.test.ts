@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Table } from '../../api/voyage'
-import { gestesOfferts, roleA, soirPasse } from './tables'
+import type { Table, Tables } from '../../api/voyage'
+import { exemple } from '../../test/contrat'
+import { ceSoirMeme, entreesVuesEnsemble, gestesOfferts, roleA, soirPasse, tablesDeLaPorte } from './tables'
 
 // Les règles d'une table du wagon-restaurant (plan des écrans des lots, brief 15), sans rendu.
 const MOI = '11111111-1111-4111-8111-111111111111'
@@ -57,5 +58,52 @@ describe('les règles d’une table', () => {
     expect(soirPasse('2025-12-31', CE_SOIR)).toBe(true)
     expect(soirPasse('2026-10-10', CE_SOIR)).toBe(false)
     expect(soirPasse('bientôt', CE_SOIR)).toBe(true)
+  })
+
+  // « Ce soir » strict, pour la porte : `soirPasse` rend faux pour un soir à venir, qui n'est pourtant
+  // pas ce soir. À 23 h 30 de Greenwich, c'est déjà demain à Paris. Mutations : `!soirPasse(soir)` à la
+  // place de l'égalité (demain serait ce soir) ; le jour de Greenwich ; un soir illisible tenu pour ce soir.
+  it('ce soir est le jour de Paris, ni la veille ni le lendemain', () => {
+    expect(ceSoirMeme('2026-10-09', CE_SOIR)).toBe(true)
+    expect(ceSoirMeme('2026-10-08', CE_SOIR)).toBe(false)
+    expect(ceSoirMeme('2026-10-10', CE_SOIR)).toBe(false)
+    expect(ceSoirMeme('2026-10-10', a('2026-10-09T22:30:00Z'))).toBe(true)
+    expect(ceSoirMeme('2026-10-09', a('2026-10-09T22:30:00Z'))).toBe(false)
+    expect(ceSoirMeme('bientôt', CE_SOIR)).toBe(false)
+  })
+
+  // La porte du wagon-restaurant (brief 16, décision 10) : une table de ce soir, où je suis l'hôte ou
+  // l'invité, que je n'ai pas déclinée. Mutations : toute table (le filtre retiré) ; une table d'hier
+  // gardée (`!soirPasse` retiré) ; ma place rendue gardée ; la table que mon invité a déclinée
+  // retirée (le rôle non regardé) ; l'ordre servi retourné.
+  it('la porte ne s’ouvre que pour une table de ce soir que je n’ai pas déclinée, dans l’ordre servi', () => {
+    const t = (id: string, etat: Table['etat'], hote: string, soir: string) => ({ ...table(etat, hote, soir), id }) as Table
+    const tables = [
+      t('invitee', 'attend', LUI, '2026-10-09'),
+      t('declinee-par-moi', 'a_decline', LUI, '2026-10-09'),
+      t('la-mienne-declinee', 'a_decline', MOI, '2026-10-09'),
+      t('prise', 'a_pris_sa_place', LUI, '2026-10-09'),
+      t('hier', 'a_pris_sa_place', LUI, '2026-10-08'),
+      t('hier-la-mienne', 'attend', MOI, '2026-10-08'),
+      t('demain', 'attend', LUI, '2026-10-10'),
+    ]
+    expect(tablesDeLaPorte(tables, MOI, CE_SOIR).map((x) => x.id)).toEqual(['invitee', 'la-mienne-declinee', 'prise'])
+    expect(tablesDeLaPorte([], MOI, CE_SOIR)).toEqual([])
+  })
+
+  // Le tampon « Vu ensemble » se pose par **entrée de journal** (`mon_billet.id`), jamais par film, et
+  // `vu_ensemble` se lit tel que servi. Mutations : `mon_billet.media_id` rendu (une autre séance du
+  // même film le porterait) ; `vu_ensemble` remplacé par `etat === 'a_pris_sa_place'` ; tout
+  // `mon_billet` rendu ; des tables non lues tenues pour une erreur.
+  it('les billets vus ensemble sont les entrées `mon_billet` des tables que le serveur dit vues à deux', () => {
+    const VUE = exemple<Tables>('/me/voyage/tables', 'get', 200).tables[1]!
+    const billet = VUE.mon_billet!
+    expect(VUE.vu_ensemble).toBe(true)
+    const prise: Table = { ...VUE, id: 'autre', vu_ensemble: false, mon_billet: { ...billet, id: 'e-seule' } }
+    const sansBillet: Table = { ...VUE, id: 'sans', mon_billet: null }
+    const vues = entreesVuesEnsemble({ tables: [prise, VUE, sansBillet] })
+    expect([...vues]).toEqual([billet.id])
+    expect(vues.has(billet.media_id)).toBe(false)
+    expect(entreesVuesEnsemble(undefined).size).toBe(0)
   })
 })

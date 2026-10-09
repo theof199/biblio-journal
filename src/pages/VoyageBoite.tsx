@@ -3,7 +3,7 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { journalDesAnnees } from '../api/journal'
-import { lireVoyage, lireVoyageur, type FicheAnnee } from '../api/voyage'
+import { lireTables, lireVoyage, lireVoyageur, type FicheAnnee } from '../api/voyage'
 import { creerRegistre } from '../mondes'
 import { useSession } from '../session/SessionContext'
 import { formatDateVisionnage } from '../ui/format'
@@ -18,6 +18,7 @@ import { useCalque } from '../voyage/calque'
 import { gabaritDe, gabaritSeul } from '../voyage/gabarit'
 import { anneeCivile, decennieDeLAdresse } from '../voyage/decennie'
 import { entreesPoinconnees } from '../voyage/voyageur'
+import { entreesVuesEnsemble } from '../voyage/wagon/tables'
 import styles from './VoyageBoite.module.css'
 
 /** Un registre pour la page, comme la carte et la page d'une décennie ont le leur. */
@@ -47,6 +48,10 @@ export default function VoyageBoite() {
  * voyageur, sous la clé de la carte, et passe au casier et au billet sorti les billets poinçonnés, par
  * leur entrée de journal. Elle ne l'attend pas et sa panne se tait : le casier se montre sans poinçon.
  * Tout autre monde ne lit rien de plus.
+ *
+ * **Le tampon « Vu ensemble »** (brief 16) suit la même voie : si le monde de la décennie compose le
+ * wagon-restaurant (`wagonRestaurant`), la page lit mes tables, sous leur clé, et passe les billets
+ * d'une table vue à deux (`entreesVuesEnsemble` : `mon_billet.id`, `vu_ensemble` tel que servi).
  */
 function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   const monde = mondes(d)
@@ -69,6 +74,11 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
   const avecControleur = gabaritSeul(monde, 'controleurDeLaCarte') !== null
   const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: avecControleur })
   const poinconnes = entreesPoinconnees(avecControleur ? voyageur.data : undefined)
+  // Le tampon « Vu ensemble » (brief 16), de même : mes tables ne se lisent que si le monde de la
+  // décennie compose le wagon-restaurant, sans les attendre, panne muette.
+  const avecWagon = gabaritSeul(monde, 'wagonRestaurant') !== null
+  const tables = useQuery({ queryKey: cles.tables, queryFn: ({ signal }) => lireTables(signal), enabled: avecWagon })
+  const vusEnsemble = entreesVuesEnsemble(avecWagon ? tables.data : undefined)
 
   // Le billet que la séance vient de ranger, lu une fois à l'ouverture : le liseré tient tant que la
   // page reste montée, même une fois la boîte l'ayant oublié.
@@ -168,6 +178,7 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
           nouveau={nouveau?.item.entry.id ?? null}
           onOuvrir={(id) => vue.ouvrir(id)}
           poinconnes={poinconnes}
+          vusEnsemble={vusEnsemble}
         />
         {premier && dernier ? (
           <p className={styles.pied}>
@@ -189,7 +200,7 @@ function BoiteDeLaDecennie({ decennie: d }: { decennie: number }) {
     <section className={styles.page} style={style} aria-label={`${m.boite.titre}, années ${d}`}>
       {entete}
       {corps}
-      {ouvert ? <Visionneuse monde={monde} billet={ouvert} corriger={film !== null ? `/voyage/${annee}/films/${film}/billet/corriger` : null} onFermer={vue.fermer} poinconne={poinconnes.has(ouvert.item.entry.id)} /> : null}
+      {ouvert ? <Visionneuse monde={monde} billet={ouvert} corriger={film !== null ? `/voyage/${annee}/films/${film}/billet/corriger` : null} onFermer={vue.fermer} poinconne={poinconnes.has(ouvert.item.entry.id)} vuEnsemble={vusEnsemble.has(ouvert.item.entry.id)} /> : null}
     </section>
   )
 }
