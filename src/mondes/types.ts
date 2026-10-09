@@ -32,6 +32,7 @@ import type { PropsOrdreDeDecennie } from '../voyage/decennie/Ordre'
 import type { PropsRegistre } from '../voyage/decennie/Registre'
 import type { PropsComptoir } from '../voyage/film/Comptoir'
 import type { PropsNotice } from '../voyage/film/Notice'
+import type { PropsProgrammeDuFilm } from '../voyage/film/Programme'
 import type { PropsProjection } from '../voyage/film/Projection'
 import type { PropsMarches } from '../voyage/parade/Marches'
 import type { PropsCatalogueDuGuichet } from '../voyage/recherche/Catalogue'
@@ -819,6 +820,13 @@ export interface GabaritsDesPages {
    * feuillet du podium, et lui passe les gestes offerts (`boutonsDuFilm`) : le dessin n'en ajoute aucun.
    */
   guichetDuFilm: ComponentType<PropsComptoir>
+  /**
+   * Le programme d'un film de salle (`voyage/film/Programme.tsx`) : sa durée, ses bobines, l'état de
+   * chacune, et « Je l’ai vu » sur une bobine qui reste à voir. Lu par `pages/VoyageFilm.tsx`, qui ne
+   * le monte que pour un film qui a un programme et le passe tout monté à la notice. Le dessin ne lit
+   * rien : l'adresse du billet d'une bobine reste `…/films/<ligne>/billet?bobine=<tmdb_id>`.
+   */
+  programmeDuFilm: ComponentType<PropsProgrammeDuFilm>
   /**
    * Le dessin du billet de séance (`voyage/billet/BilletDeSeance.tsx`) : la tête, la date, la note, les
    * réactions, la remarque, le tampon, le numéro, le bouton. Lu par `pages/VoyageBillet.tsx`, qui garde

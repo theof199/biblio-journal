@@ -8,7 +8,8 @@ import styles from './Programme.module.css'
 /** Le traitement des affiches du monde, par `filter` CSS : jamais une lecture de pixels. */
 const TRAITEMENT = { sepia: styles.sepia, gris: styles.gris, couleur: '' } as const
 
-interface Props {
+/** Ce que la page passe au programme d'un film, que le monde peut composer (`GabaritsDesPages.programmeDuFilm`). */
+export interface PropsProgrammeDuFilm {
   monde: Monde
   annee: number
   /** Le film de la salle, qui porte le programme ; sa ligne (`id`) est celle du billet de chaque bobine. */
@@ -22,7 +23,7 @@ interface Props {
  * bobine : une bobine non vue ouvre le billet du programme avec `?bobine=<tmdb_id>` (tâche 11 :
  * `bobineDuFilm`, `candidatDuBillet(film, bobine)`).
  */
-export default function Programme({ monde, annee, film, programme }: Props) {
+export default function Programme({ monde, annee, film, programme }: PropsProgrammeDuFilm) {
   const perdu = monde.pages.mots.introuvable
   return (
     <section className={styles.programme} aria-label="Programme">

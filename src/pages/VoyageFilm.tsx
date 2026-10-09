@@ -190,6 +190,7 @@ function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
 
   const Ecran = gabaritDe(monde, 'projection', Projection)
   const Fiche = gabaritDe(monde, 'noticeDuFilm', Notice)
+  const Bobines = gabaritDe(monde, 'programmeDuFilm', Programme)
 
   return (
     <>
@@ -201,7 +202,7 @@ function FilmDeLAnnee({ monde, annee, salle, film, podium }: PropsFilm) {
         realisateurs={realisateurs.data?.realisateurs ?? []}
         entree={entree}
         phrase={(cle) => reactions.data?.reactions.find((r) => r.cle === cle)?.phrase ?? cle}
-        programme={film.programme ? <Programme monde={monde} annee={annee} film={film} programme={film.programme} /> : null}
+        programme={film.programme ? <Bobines monde={monde} annee={annee} film={film} programme={film.programme} /> : null}
         guichet={<Guichet monde={monde} annee={annee} film={film} podium={podium} entree={entree} onFilm={() => feuille.ouvrir('film')} />}
       />
 
