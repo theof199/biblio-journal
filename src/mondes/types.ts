@@ -570,6 +570,8 @@ export const JETONS_DE_PAGE = [
   '--m-email',
   /** L'encre des tampons (maquette 1900 : `--violet`). */
   '--m-violet',
+  /** Le vert : l'encre du tampon « Vu ensemble », une place prise à table, la plaque d'une halte (maquette 1900 : `--halte`, `--etq`, `#2f6b47` ; décision 12 du lot d'écrans). */
+  '--m-vert',
   '--m-f-titre',
   '--m-f-affiche',
   '--m-f-texte',

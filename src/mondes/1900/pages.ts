@@ -67,6 +67,7 @@ const JETONS: Readonly<Record<JetonDePage, string>> = {
   '--m-bois': '#6e5222',
   '--m-email': '#1d3767',
   '--m-violet': '#5d3f8c',
+  '--m-vert': '#2f6b47',
   '--m-f-titre': "'Oswald', 'Arial Narrow', 'Helvetica Neue', sans-serif",
   '--m-f-affiche': "'Oswald', 'Arial Narrow', 'Helvetica Neue', sans-serif",
   '--m-f-texte': "'Spectral', 'Iowan Old Style', Georgia, serif",

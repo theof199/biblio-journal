@@ -109,6 +109,8 @@ describe('le costume de 1900', () => {
     expect(within(page).queryByRole('region', { name: PAGES_A_VENIR.mots.boniment })).toBeNull()
     expect(within(page).queryByText(PAGES_A_VENIR.mots.annonce.enCours)).toBeNull()
     expect(page.style.getPropertyValue('--m-email')).toBe('#1d3767')
+    // Le vert de la maquette (`--halte`, le tampon « Vu ensemble ») : un jeton à lui, jamais le bleu de l'émail (décision 12).
+    expect(page.style.getPropertyValue('--m-vert')).toBe('#2f6b47')
     expect(page.style.getPropertyValue('--m-f-affiche')).toMatch(/^'Oswald'/)
   })
 })

@@ -34,6 +34,9 @@ export const PAGES_1890: HabillagePages = {
     // son rouge. Aucune feuille ne les lit encore (plan des pages 1900, brief 0).
     '--m-email': '#602e1e',
     '--m-violet': '#794229',
+    // Hors de la maquette 1890, qui n'a pas de vert : un vert de bouteille, sourd comme son velours.
+    // Aucune feuille ne le lit en 1890 (les écrans des lots sont de 1900 seulement).
+    '--m-vert': '#3f5a3a',
     '--m-f-titre': "'Fraunces', Georgia, serif",
     '--m-f-affiche': "'Limelight', Didot, Georgia, serif",
     '--m-f-texte': "'IM Fell English', 'Iowan Old Style', Georgia, serif",

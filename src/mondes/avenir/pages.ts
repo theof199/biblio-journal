@@ -28,6 +28,8 @@ export const PAGES_A_VENIR: HabillagePages = {
     // Sans plaque ni tampon à lui : le velours et le rouge de sa palette.
     '--m-email': '#4a2a22',
     '--m-violet': '#9a4a36',
+    // Sans vert à lui : un vert sourd, qu'aucune feuille ne lit encore dans ce monde.
+    '--m-vert': '#3d5446',
     '--m-f-titre': "'Fraunces', Georgia, serif",
     '--m-f-affiche': "'Limelight', Georgia, serif",
     '--m-f-texte': "'Fraunces', Georgia, serif",
