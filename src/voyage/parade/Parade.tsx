@@ -49,7 +49,7 @@ export default function Parade({ monde, annee, podium, salles }: Props) {
     <>
       <LePodium monde={monde} annee={annee} podium={podium} salles={salles} onOuvrir={(place) => feuillet.ouvrir(String(place))} onVider={(place) => vider.envoyer({ place, candidat: null })} erreur={vider.erreur} />
       {ouverte !== null ? (
-        <Feuillet monde={monde} titre={`Marche ${ouverte}`} onFermer={feuillet.fermer}>
+        <Feuillet monde={monde} titre={monde.pages.mots.parade.marche(ouverte)} onFermer={feuillet.fermer}>
           <ChoixDeLaMarche annee={annee} place={ouverte} marche={podium[ouverte - 1] ?? null} salles={salles} onFermer={feuillet.fermer} />
         </Feuillet>
       ) : null}

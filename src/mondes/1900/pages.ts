@@ -4,7 +4,9 @@ import Affiche from './pages/Affiche'
 import BadgeColleSurLaMalle from './pages/BadgeColleSurLaMalle'
 import BilletDuCasier from './pages/BilletDuCasier'
 import CasierDuControleur from './pages/CasierDuControleur'
+import CadreDuFeuillet from './pages/CadreDuFeuillet'
 import Classes from './pages/Classes'
+import { classeDe } from './pages/classes'
 import Composteur from './pages/Composteur'
 import Compteur from './pages/Compteur'
 import Correspondances from './pages/Correspondances'
@@ -100,7 +102,7 @@ export const PAGES_1900: HabillagePages = {
     lireOuverture: 'Lire l’ouverture',
     echos: 'Les faits de l’année',
     programme: { sur: 'L’indicateur', titre: 'Arrivées' },
-    parade: { titre: 'Les trois classes', sous: 'ton podium' },
+    parade: { titre: 'Les trois classes', sous: 'ton podium', marche: (place) => classeDe(place).nom },
     seance: { titre: 'Ce soir', sous: 'en gare' },
     nouvelleSalle: 'Le chroniqueur propose des pistes ; une phrase suffit.',
     jury: 'Le jury',
@@ -148,6 +150,7 @@ export const PAGES_1900: HabillagePages = {
     projection: Hale,
     noticeDuFilm: NoticeDuFilm,
     programmeDuFilm: ProgrammeDuFilm,
+    feuillet: CadreDuFeuillet,
     guichetDuFilm: GuichetDuFilm,
     billetDeSeance: Composteur,
     casier: CasierDuControleur,

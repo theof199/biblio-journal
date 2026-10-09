@@ -114,16 +114,19 @@ describe('les trois classes', () => {
     expect(within(classes).getByText(MOTS_DES_CLASSES.aide)).toBeInTheDocument()
   })
 
-  // Les gestes du podium restent ceux de la page : le feuillet d'une marche, dans l'adresse.
-  // Mutations : « Changer » ou la portière libre non branchés ; la place d'une autre portière.
+  // Les gestes du podium restent ceux de la page : le feuillet d'une marche, dans l'adresse, qui se
+  // nomme en 1900 par la classe de sa portière (`mots.parade.marche`), jamais « Marche N ».
+  // Mutations : « Changer » ou la portière libre non branchés ; la place d'une autre portière ; le
+  // titre écrit dans `Parade` (`Marche ${ouverte}`) sans passer par le mot du monde.
   it.each([
-    ['« Changer »', '1ʳᵉ classe : changer de voyageur', 'Marche 1'],
-    ['la portière d’un film hors des salles', '2ᵉ classe : Un film du journal, changer de voyageur', 'Marche 2'],
-    ['la portière libre', '3ᵉ classe : place libre, installer un film', 'Marche 3'],
+    ['« Changer »', '1ʳᵉ classe : changer de voyageur', '1ʳᵉ classe'],
+    ['la portière d’un film hors des salles', '2ᵉ classe : Un film du journal, changer de voyageur', '2ᵉ classe'],
+    ['la portière libre', '3ᵉ classe : place libre, installer un film', '3ᵉ classe'],
   ])('%s ouvre le feuillet de sa marche', async (_quoi, nom, feuillet) => {
     monterVoyage('/voyage/1903', routes())
     fireEvent.click(within(await lesClasses()).getByRole('button', { name: nom }))
     expect(await screen.findByRole('dialog', { name: feuillet })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: /^Marche/ })).toBeNull()
   })
 
   // Tenir une portière la vide, une fois, et le relâcher n'ouvre pas le film qu'on vient de retirer ;

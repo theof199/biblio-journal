@@ -1,0 +1,96 @@
+/* Le cadre d'un feuillet des pages 1900 : une feuille détachée du carnet à souches du contrôleur. La
+   maquette « Voyage immobile 1900 » ne dessine pas de feuillet : le pointillé et le bouton au filet
+   d'encre viennent de ses talons (`.talons`), les capitales de ses choix (`.a-choix`), le papier de
+   son carnet (`.carnet`). La place et la hauteur du dialogue restent à `voyage/Feuillet.module.css`
+   (`.dialogue`) ; les couleurs et les polices viennent des jetons du monde. */
+.cadre {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--m-papier);
+  color: var(--m-encre);
+  box-shadow: 0 -12px 32px var(--m-ombre);
+  transform-origin: 50% 100%;
+}
+
+/* La souche : le bord dentelé par où la feuille s'est détachée. */
+.cadre::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  background: radial-gradient(circle at 50% 0, var(--m-fond) 3.5px, transparent 4px) 50% 0 / 14px 5px repeat-x;
+  pointer-events: none;
+}
+
+/* Seule l'entrée bouge, et jamais au calme : la feuille se détache, au tempo. */
+.cadre[data-vivante='oui'] {
+  animation: detache calc(225ms * var(--tempo)) cubic-bezier(0.3, 1.3, 0.5, 1) backwards;
+}
+
+@keyframes detache {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+/* La tête ne défile pas : « Fermer » ne passe jamais sur les choix. */
+.tete {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 16px;
+  padding: 16px 0 10px;
+  border-bottom: 2px dashed color-mix(in srgb, var(--m-encre) 60%, transparent);
+}
+
+.tete h2 {
+  min-width: 0;
+  margin: 0;
+  font: 700 19px/1.15 var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* « Fermer », en talon : le filet d'encre, les capitales. */
+.fermer {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--m-encre);
+  border-radius: 2px;
+  background: none;
+  color: var(--m-encre);
+  font: 700 12px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.fermer:focus-visible {
+  outline: 2px solid var(--m-rouge);
+  outline-offset: 2px;
+}
+
+/* Les choix du site : eux seuls défilent, sous la tête. */
+.choix {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px 16px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font: 15.5px/1.45 var(--m-f-texte);
+}
+
+/* Chaque ligne touchable fait 44 px au moins. */
+.choix :is(button, a) {
+  min-height: 44px;
+}

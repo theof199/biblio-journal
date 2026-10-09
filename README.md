@@ -515,7 +515,8 @@ Où vit quoi :
   (`Classes`) : trois portières, la première au centre et plus haute, le chiffre romain de la classe,
   l'affiche à la fenêtre. Toucher une portière occupée ouvre son film quand il est dans une salle de
   l'année (`filmDeLaMarche`, `mondes/1900/pages/classes.ts`) ; « Changer », une place libre, ou un film
-  hors des salles ouvrent le feuillet de la marche ; tenir une portière occupée la vide. Une année en
+  hors des salles ouvrent le feuillet de la marche, qui se nomme par sa classe (« 2ᵉ classe » :
+  `mots.parade.marche`, le mot du monde que `Parade` lit, « Marche 2 » ailleurs) ; tenir une portière occupée la vide. Une année en
   attente a les mêmes portières, sans film à ouvrir. La séance est un **train du soir** (`TrainDuSoir`) :
   l'affichette « Train de plaisir », le long en voiture et le court en tête, l'anecdote du trajet, les
   quatre talons, le tampon « Prise » (le seul à bouger, jamais au calme), « Composer une séance » et les
@@ -551,8 +552,15 @@ Où vit quoi :
   percée : un dessin, dont les couleurs sont la donnée) est au carton, qui ne le porte que si on le
   lui passe (`poincon` : ce qu'il dit à qui ne le voit pas, et `frais` quand il vient d'être percé) :
   le composteur ne le passe jamais, billet en correction compris (décision 11) ; leurs mots
-  et leurs règles : `mondes/1900/pages/carton.ts`. **La nouvelle salle, la ligne du bas, les
-  feuillets et la feuille du chroniqueur gardent encore les
+  et leurs règles : `mondes/1900/pages/carton.ts`. **Les cinq feuillets** (« Quelle salle ? », une
+  classe, « Un autre long » ou « court », « Mettre sur le podium », « Dresser une table ») ont un cadre
+  de 1900 (`CadreDuFeuillet`, pour `feuillet`) : une feuille détachée du carnet à souches, son bord
+  dentelé, le titre en capitales, « Fermer » en talon, le pointillé ; les choix seuls défilent, sous
+  la tête, et la feuille ne se détache (son entrée, au tempo) que hors du calme. Leurs contenus sont
+  ceux des sites, inchangés. La maquette ne dessine aucun feuillet : le cadre est fait par analogie avec
+  ses talons, ses choix et son carnet (validée le 9 octobre 2026 ; `mondes/1900/pages/feuillet.test.tsx`).
+  **La nouvelle salle, la ligne du bas, les
+  feuille du chroniqueur gardent encore les
   composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
   uni. **Le guichet** (écran 11, `Grille` et `TableauDesDeparts`) : sous le fronton « Billets · 1900 à
   1909 », une grille de laiton en plein cintre, l'employé derrière elle, qui paraît à l'ouverture et

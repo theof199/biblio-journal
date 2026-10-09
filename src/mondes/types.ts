@@ -613,7 +613,8 @@ export interface MotsDesPages {
   lireOuverture: string
   echos: string
   programme: { sur: string; titre: string }
-  parade: { titre: string; sous: string }
+  /** La parade ; `marche` nomme une place du podium en tête du feuillet où l'on choisit son film (« Marche 2 »). */
+  parade: { titre: string; sous: string; marche: (place: number) => string }
   seance: { titre: string; sous: string }
   nouvelleSalle: string
   jury: string

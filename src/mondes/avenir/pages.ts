@@ -44,7 +44,7 @@ export const PAGES_A_VENIR: HabillagePages = {
     lireOuverture: 'Lire l’ouverture',
     echos: 'Les faits de l’année',
     programme: { sur: 'Pour avancer', titre: 'Prochain pas' },
-    parade: { titre: 'Le podium', sous: 'tes trois films' },
+    parade: { titre: 'Le podium', sous: 'tes trois films', marche: (place) => `Marche ${place}` },
     seance: { titre: 'Ce soir', sous: 'la séance' },
     nouvelleSalle: 'Le chroniqueur propose des pistes ; une phrase suffit.',
     jury: 'Le jury',

@@ -51,7 +51,7 @@ export const PAGES_1890: HabillagePages = {
     lireOuverture: 'Lire l’ouverture',
     echos: 'Échos de l’année',
     programme: { sur: 'Au programme ce soir', titre: 'Prochain pas' },
-    parade: { titre: 'La parade', sous: 'le podium' },
+    parade: { titre: 'La parade', sous: 'le podium', marche: (place) => `Marche ${place}` },
     seance: { titre: 'Ce soir', sous: 'à la baraque' },
     nouvelleSalle: 'Le chroniqueur propose des pistes ; une phrase suffit.',
     jury: 'Le jury',
