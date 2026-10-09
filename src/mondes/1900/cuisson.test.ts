@@ -98,8 +98,9 @@ describe('le four des toiles cuites', () => {
     expect(toiles.map((t) => t.width)).toEqual([0, 0, 10, 10, 10])
   })
 
-  // Mutation : la toile d'avant rendue avant de savoir si la fabrique en donne une autre.
-  it('sans toile, ne rend rien, ne peint rien, et garde celle qu’il avait', () => {
+  // Mutations : la toile d'avant rendue avant de savoir si la fabrique en donne une autre ; rien de
+  // resservi quand la recuisson est refusée (le fond serait repeint à chaque image).
+  it('sans toile neuve, ne peint rien, ne rend rien pour une clé qu’il ne tient pas, et ressert celle qu’il tient à l’autre finesse', () => {
     const { toiles, fabrique } = fabriqueTemoin()
     let refus = false
     const cuire = creerFour((w, h) => (refus ? null : fabrique(w, h)))
@@ -107,7 +108,7 @@ describe('le four des toiles cuites', () => {
     const a = cuire('a', 10, 10, peindre)
     refus = true
     expect(cuire('b', 10, 10, peindre, 2)).toBeNull()
-    expect(cuire('a', 10, 10, peindre, 2)).toBeNull()
+    expect(cuire('a', 10, 10, peindre, 2)).toBe(a)
     expect(peindre).toHaveBeenCalledTimes(1)
     expect(cuire('a', 10, 10, peindre)).toBe(a)
     expect(toiles[0]!.width).toBe(10)

@@ -400,6 +400,12 @@ describe('l’heure', () => {
     // Aucun monde ne porte son heure : le voile entier, où que soit la caméra.
     expect(partDuVoileDeNuit([0.3, 0.7], [false, false])).toBe(1)
     expect(partDuVoileDeNuit([0.3, 0.7], [])).toBe(1)
+    // Des poids qui ne font pas 1 : un monde qui ne dit rien garde tout son voile, seul le poids
+    // d'un monde qui porte son heure en retire. Mutation : la somme des poids des mondes qui gardent le voile.
+    expect(partDuVoileDeNuit([0.5], [false])).toBe(1)
+    expect(partDuVoileDeNuit([0.5, 0.25], [false, true])).toBe(0.75)
+    expect(partDuVoileDeNuit([0, 0], [false, true])).toBe(1)
+    expect(partDuVoileDeNuit([0.5, 1.5], [false, true])).toBe(0)
   })
 
   it('fait le jour à midi et la nuit à minuit', () => {

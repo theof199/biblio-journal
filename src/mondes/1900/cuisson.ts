@@ -59,9 +59,10 @@ export function toileHorsEcran(w: number, h: number): ToileHorsEcran | null {
  * la première fois : large de `w × finesse` pixels, haute de `h × finesse`, le contexte déjà à la
  * finesse, si bien que `peindre` dessine dans `w` × `h` et que la toile se pose dans `w` × `h`.
  * Redemandée à une autre finesse (l'écran a changé de densité : une rotation, un zoom), la toile
- * d'avant est rendue et une autre se cuit : jamais deux finesses de la même clé. Nulle là où aucune
- * toile hors écran ne s'obtient (jsdom, un navigateur à court de mémoire) : le dessin s'en passe
- * alors, et pose ce qu'il a sans fondu.
+ * d'avant est rendue et une autre se cuit : jamais deux finesses de la même clé ; si la fabrique
+ * refuse la nouvelle, celle d'avant est gardée et resservie. Nulle là où aucune toile hors écran ne
+ * s'obtient et où il n'en tient aucune sous cette clé (jsdom, un navigateur à court de mémoire) : le
+ * dessin s'en passe alors, et pose ce qu'il a sans fondu.
  */
 export function creerFour(fabrique: (w: number, h: number) => ToileHorsEcran | null, plafond = PLAFOND) {
   const cuites = new Map<string, { toile: HTMLCanvasElement; finesse: number }>()
@@ -73,7 +74,9 @@ export function creerFour(fabrique: (w: number, h: number) => ToileHorsEcran | n
       return deja.toile
     }
     const neuve = fabrique(w * finesse, h * finesse)
-    if (!neuve) return null
+    // Refusée à cette finesse : la toile tenue est resservie telle quelle (elle se pose dans `w` × `h`
+    // à toute finesse). La taire ferait repeindre le fond à chaque image, là où la mémoire manque déjà.
+    if (!neuve) return deja?.toile ?? null
     if (deja) {
       deja.toile.width = 0
       cuites.delete(cle)

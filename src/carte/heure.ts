@@ -1,13 +1,14 @@
 import { clamp, lerp, lisse } from './outils'
 
 /**
- * La part du voile de nuit que le moteur pose, de 0 à 1 : le poids de mélange (`poidsSections`) des
- * mondes qui ne portent pas leur propre heure (`Monde.porteSonHeure`). 1 sur la foire, 0 dans le
- * train de 1900, et entre les deux la part de l'écran que la foire tient encore : le voile se lève
- * à mesure que le train entre, sans saut.
+ * La part du voile de nuit que le moteur pose, de 0 à 1 : tout, moins le poids de mélange
+ * (`poidsSections`) des mondes qui portent leur propre heure (`Monde.porteSonHeure`). 1 sur la foire,
+ * 0 dans le train de 1900, et entre les deux la part de l'écran que la foire tient encore : le voile
+ * se lève à mesure que le train entre, sans saut. **Seul un monde qui porte son heure retire du
+ * voile** : si les poids ne font pas 1, un monde qui ne dit rien garde tout le sien.
  */
 export function partDuVoileDeNuit(poids: readonly number[], porteSonHeure: readonly boolean[]): number {
-  return clamp(poids.reduce((somme, p, i) => (porteSonHeure[i] ? somme : somme + p), 0), 0, 1)
+  return clamp(1 - poids.reduce((somme, p, i) => (porteSonHeure[i] ? somme + p : somme), 0), 0, 1)
 }
 
 /** La lumière selon l'heure du visiteur, de 0 à 24 (maquette : `calculerHeure`). */
