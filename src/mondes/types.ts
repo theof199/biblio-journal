@@ -619,6 +619,8 @@ export interface MotsDesPages {
   parade: { titre: string; sous: string; marche: (place: number) => string }
   seance: { titre: string; sous: string }
   nouvelleSalle: string
+  /** La nouvelle salle : le geste qui ouvre son feuillet, et ce qu'elle dit pendant que le chroniqueur l'écrit. */
+  salleNeuve: { ouvrir: string; sEcrit: string }
   jury: string
   /** Le mot d'un film introuvable sous son affiche (« perdu » en 1890). */
   introuvable: string

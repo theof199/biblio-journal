@@ -43,6 +43,7 @@ import Tete from './pages/Tete'
 import TitreDeLaLigne from './pages/TitreDeLaLigne'
 import TrainDuSoir from './pages/TrainDuSoir'
 import Voie from './pages/Voie'
+import VoieAOuvrir from './pages/VoieAOuvrir'
 import VoieFermee from './pages/VoieFermee'
 import VoitureComplete from './pages/VoitureComplete'
 import PorteDuWagon from './pages/PorteDuWagon'
@@ -106,6 +107,7 @@ export const PAGES_1900: HabillagePages = {
     parade: { titre: 'Les trois classes', sous: 'ton podium', marche: (place) => classeDe(place).nom },
     seance: { titre: 'Ce soir', sous: 'en gare' },
     nouvelleSalle: 'Le chroniqueur propose des pistes ; une phrase suffit.',
+    salleNeuve: { ouvrir: 'Ouvrir une voie', sEcrit: 'La salle s’écrit…' },
     jury: 'Le jury',
     introuvable: 'introuvable',
     fermee: { pancarte: 'Une plaque de verre', dejaVus: 'Déjà vus', enAvance: 'en avance' },
@@ -152,6 +154,7 @@ export const PAGES_1900: HabillagePages = {
     noticeDuFilm: NoticeDuFilm,
     programmeDuFilm: ProgrammeDuFilm,
     ligneDuBas: PiedDeLaGare,
+    nouvelleSalle: VoieAOuvrir,
     feuillet: CadreDuFeuillet,
     guichetDuFilm: GuichetDuFilm,
     billetDeSeance: Composteur,

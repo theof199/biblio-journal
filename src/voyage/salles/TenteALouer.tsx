@@ -49,7 +49,7 @@ export default function TenteALouer({ monde, zone, demande, abandon, onOuvrir, o
             </button>
           </div>
         ) : (
-          <p role="status">La salle s’écrit…</p>
+          <p role="status">{monde.pages.mots.salleNeuve.sEcrit}</p>
         )}
         <div className={styles.cadres} aria-hidden="true">
           <i />
@@ -70,7 +70,7 @@ export default function TenteALouer({ monde, zone, demande, abandon, onOuvrir, o
         <p>{monde.pages.mots.nouvelleSalle}</p>
       )}
       <button type="button" className={styles.bouton} onClick={onOuvrir}>
-        Ouvrir une nouvelle salle
+        {monde.pages.mots.salleNeuve.ouvrir}
       </button>
     </div>
   )

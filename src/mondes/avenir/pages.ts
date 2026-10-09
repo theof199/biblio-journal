@@ -47,6 +47,7 @@ export const PAGES_A_VENIR: HabillagePages = {
     parade: { titre: 'Le podium', sous: 'tes trois films', marche: (place) => `Marche ${place}` },
     seance: { titre: 'Ce soir', sous: 'la séance' },
     nouvelleSalle: 'Le chroniqueur propose des pistes ; une phrase suffit.',
+    salleNeuve: { ouvrir: 'Ouvrir une nouvelle salle', sEcrit: 'La salle s’écrit…' },
     jury: 'Le jury',
     introuvable: 'introuvable',
     fermee: { pancarte: 'Fermée jusqu’au ticket', dejaVus: 'Déjà vus', enAvance: 'en avance' },

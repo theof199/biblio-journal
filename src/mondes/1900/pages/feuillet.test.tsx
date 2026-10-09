@@ -185,7 +185,7 @@ describe('les feuillets d’une fiche d’année 1900 gardent leur contenu', () 
   // Mutation, pour les trois : le cadre de 1900 qui ne rend plus ses enfants.
   it('« Quelle salle ? » garde son champ', async () => {
     monterVoyage('/voyage/1903', ROUTES)
-    fireEvent.click(await screen.findByRole('button', { name: 'Ouvrir une nouvelle salle' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Ouvrir une voie' }))
     expect(within(await ouvert('Quelle salle ?')).getByRole('textbox')).toBeInTheDocument()
   })
 

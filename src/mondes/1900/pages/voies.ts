@@ -18,6 +18,15 @@ export const MOTS_DES_VOIES = {
   complete: 'voiture complète',
   seRemplit: 'la voiture se remplit…',
   programme: 'Programme',
+  // La voie à ouvrir (la nouvelle salle, au compte IA) : la maquette ne la dessine pas.
+  aOuvrir: 'Voie à ouvrir',
+  aOuvrirSous: 'une salle de plus',
+  travaux: 'Voie en travaux',
+  enTravaux: 'en travaux',
+  refusee: 'demande refusée',
+  sansMotif: 'Le chroniqueur n’a pas trouvé de quoi ouvrir cette salle.',
+  sansReponse: 'Le chroniqueur n’a pas répondu, reviens plus tard.',
+  reessayer: 'Réessayer',
 } as const
 
 /**

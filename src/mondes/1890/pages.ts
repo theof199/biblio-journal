@@ -54,6 +54,7 @@ export const PAGES_1890: HabillagePages = {
     parade: { titre: 'La parade', sous: 'le podium', marche: (place) => `Marche ${place}` },
     seance: { titre: 'Ce soir', sous: 'à la baraque' },
     nouvelleSalle: 'Le chroniqueur propose des pistes ; une phrase suffit.',
+    salleNeuve: { ouvrir: 'Ouvrir une nouvelle salle', sEcrit: 'La salle s’écrit…' },
     jury: 'Le jury',
     introuvable: 'perdu',
     fermee: { pancarte: 'Fermé jusqu’au ticket', dejaVus: 'Déjà vus', enAvance: 'en avance' },

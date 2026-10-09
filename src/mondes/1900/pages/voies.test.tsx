@@ -127,7 +127,7 @@ describe('les voies d’une gare', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.queryByRole('link', { name: /Le Voyage dans la Lune/ })).toBeNull()
     // La nouvelle salle reste offerte au compte IA, sous les voies.
-    expect(screen.getByRole('button', { name: 'Ouvrir une nouvelle salle' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ouvrir une voie' })).toBeInTheDocument()
     // Les gabarits ne lisent rien : la fiche, une fois.
     expect(requetes.filter((r) => r.startsWith('GET /api/me/voyage/annees/'))).toEqual([FICHE])
     expect(requetes.filter((r) => r.startsWith('POST'))).toEqual([])
@@ -223,7 +223,8 @@ describe('la voiture d’une salle', () => {
     const { requetes, unmount } = ouverte(HORS_IA)
     const v = await screen.findByRole('dialog', { name: 'Méliès, toujours' })
     expect(within(v).queryByRole('button', { name: 'En voir plus' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Ouvrir une nouvelle salle' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ouvrir une voie' })).toBeNull()
+    expect(screen.queryByRole('region', { name: MOTS_DES_VOIES.aOuvrir })).toBeNull()
     // Le contexte écrit se lit, sans appel.
     fireEvent.click(within(v).getByRole('button', { name: /Le contexte de la salle/ }))
     await waitFor(() => expect(feuille()).toHaveTextContent(CONTEXTE))

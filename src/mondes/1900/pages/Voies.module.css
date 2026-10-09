@@ -72,6 +72,76 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La voie à ouvrir (la nouvelle salle, au compte IA ; par analogie avec `.voie`) : en pointillé et la
+   plaque vide au repos, hachurée « en travaux » pendant que la salle s'écrit, au rouge quand la demande
+   est refusée. Rien n'y bouge. */
+.aOuvrir {
+  min-height: 62px;
+  border: 1.5px dashed color-mix(in srgb, var(--m-or) 55%, transparent);
+  background: none;
+}
+
+.aOuvrir .numero {
+  border: 1.5px dashed color-mix(in srgb, var(--m-papier) 45%, transparent);
+  background: none;
+  box-shadow: none;
+  color: var(--m-pale);
+}
+
+.aOuvrir .nom {
+  font-style: italic;
+  color: var(--m-doux);
+}
+
+.aOuvrir[data-etat='fantome'] {
+  border-style: solid;
+  background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--m-or) 10%, transparent) 0 8px, transparent 8px 16px);
+}
+
+.aOuvrir[data-etat='fantome'] .numero {
+  border: 0;
+  background: repeating-linear-gradient(-45deg, var(--m-or) 0 6px, var(--m-encre) 6px 12px);
+  color: transparent;
+}
+
+.aOuvrir[data-etat='fantome'] .nom,
+.aOuvrir[data-etat='refus'] .nom {
+  font-style: normal;
+  color: var(--m-papier);
+}
+
+.aOuvrir[data-etat='fantome'] .nom small {
+  font: italic 400 13px var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.aOuvrir .compte {
+  padding: 3px 7px;
+  border: 1px solid var(--m-or);
+  border-radius: 2px;
+  font: 600 10px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.aOuvrir[data-etat='refus'] {
+  border-color: color-mix(in srgb, var(--m-rouge) 85%, var(--m-papier));
+}
+
+.aOuvrir[data-etat='refus'] .numero {
+  border-color: color-mix(in srgb, var(--m-rouge) 85%, var(--m-papier));
+}
+
+.suite {
+  margin-top: 10px;
+}
+
+.sansReponse {
+  margin: 0 16px 10px;
+  font: italic 15px/1.4 var(--m-f-texte);
+  color: var(--m-papier);
+}
+
 /* La voiture ouverte : par-dessus la gare, sous le bandeau « Nouvelle version » et la barre d'onglets. */
 .voiture {
   position: fixed;

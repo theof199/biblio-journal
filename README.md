@@ -570,9 +570,17 @@ Où vit quoi :
   glissant hors du calme seulement) sur un dos qui parle de gare, de correspondances et de train du
   soir ; le mot du jury est une dépêche télégraphique épinglée. La maquette ne dessine pas cet écran :
   il est fait par analogie avec ses écrans 12, 13 et 15 et ses dépêches (validée le 9 octobre 2026 ;
-  `mondes/1900/pages/pied.ts`, `pied.test.tsx`). **La nouvelle salle et la
-  feuille du chroniqueur gardent encore les
-  composants par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
+  `mondes/1900/pages/pied.ts`, `pied.test.tsx`). **La nouvelle salle** (`VoieAOuvrir`, pour
+  `nouvelleSalle`, au compte IA) : sous les correspondances, une « Voie à ouvrir » en pointillé, la plaque
+  vide, et le bouton corail « Ouvrir une voie » (le mot `salleNeuve.ouvrir` du monde ; 1890 garde « Ouvrir
+  une nouvelle salle ») ; pendant que le chroniqueur écrit, une « Voie en travaux » hachurée qui dit la
+  demande et que la salle s'écrit, sans rien offrir ; le guet abandonné, elle le dit et offre
+  « Réessayer » ; refusée, elle porte le motif du refus, au rouge. Sa ligne est celle d'une voie
+  (`LigneDeVoie`, commune à `Voie`) ; le feuillet « Quelle salle ? » et son formulaire restent ceux du
+  conteneur. La maquette ne la dessine pas : analogie avec ses voies (écran 2), validée le 9 octobre 2026
+  (`mondes/1900/pages/voieAOuvrir.test.tsx`). **La
+  feuille du chroniqueur garde encore le
+  composant par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
   uni. **Le guichet** (écran 11, `Grille` et `TableauDesDeparts`) : sous le fronton « Billets · 1900 à
   1909 », une grille de laiton en plein cintre, l'employé derrière elle, qui paraît à l'ouverture et
   hoche la tête à chaque lettre, et la tablette où l'on demande son film, que la page amène au-dessus
