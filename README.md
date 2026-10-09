@@ -941,16 +941,46 @@ expéditeur ; « Adresse », le timbre, le tampon à date (la gare d'où elle pa
 Paris**) et l'adresse **telle que servie** (`destinataire.pseudo`, `gare_destinataire` figée à l'envoi,
 et le lieu de cette gare si 1900 le connaît), jamais mon année en cours. **Le mot est un texte d'un
 autre membre** : rendu en texte, en entier, ses retours à la ligne visibles, jamais en HTML ; aucun
-attribut, aucun nom lu, aucun titre ne le porte. Rien n'y bouge. On n'y écrit pas de carte (brief 14 :
-`en_attente` est lu, rien ne l'annonce). `mondes/1900/pages/courrierDeLaSacoche.test.tsx` tient ce
-qu'il dit. Le point rouge de la
+attribut, aucun nom lu, aucun titre ne le porte. Rien n'y bouge. `mondes/1900/pages/courrierDeLaSacoche.test.tsx` tient ce
+qu'il dit.
+**Écrire une carte** (brief 14) : une gare bouclée a sa carte à écrire, une seule, à un membre que je
+suis. Le même bloc passe `en_attente` **telle que servie** (une entrée par gare, et pour elles seules)
+et ouvre la carte à écrire **dans l'adresse** (`?ecrire=<année>` : le retour la referme, un
+rechargement la rouvre, une année que la boîte n'attend pas n'ouvre rien). Mes abonnements
+(`api/abonnements.ts`, toutes pages) ne se lisent qu'à ce moment, et se relisent à chaque ouverture
+(`staleTime: 0` : aucune page hors Voyage ne périme leur clé) ; en panne, la carte le dit et n'offre
+personne. **Poster** (`posterCartePostale`) passe un verrou par référence (deux touchers, un envoi) et
+ne porte que `annee`, `destinataire_id` et `mot` : le serveur, strict, décide de l'expéditeur, de la
+date et de la **gare du destinataire**, que l'appli ne connaît pas avant sa réponse. L'appli ne refait
+pas les règles du mot : elle borne sa longueur (140, `voyage/sacoche/mot.ts`) et refuse le vide.
+`201` : la carte rendue entre aux envoyées, rangée par gare, et sa gare quitte `en_attente`, sur
+`cles.courrier` en `exact`, une relecture en vol annulée d'abord, **sans rien périmer ni relire** ;
+elle reste à l'écran, tamponnée, tant que son calque est ouvert. Un `400` (ou une panne) se dit **sur
+la carte**, avec le message du serveur tel quel, jamais un repli ; la carte reste à écrire, son
+brouillon intact, et le `400` relit la boîte. Un `409` n'est pas une panne (la gare a déjà sa carte,
+le destinataire n'est plus suivi) : la carte se referme, la boîte se relit, et le message du serveur
+se dit sous la rubrique, jusqu'à la prochaine carte qu'on écrit. `pages/VoyageSacoche.ecrire.test.tsx`
+le tient sur un 1890 auquel on prête un dessin. **En 1900**, une carte lue et une carte à écrire ont
+**un seul dessin** (`mondes/1900/pages/CartePostale.tsx` : le recto de la gare, le dos divisé, le
+timbre, le tampon à date une fois postée seulement) : sous « À écrire », « Écrire la carte de la gare
+de 1900 » ; la carte à écrire (`CarteAEcrire.tsx`) montre le brouillon à la plume sur son dos, signé
+de moi, puis **un champ d'une ligne** (la maquette avait un `textarea`, le serveur refuse un saut de
+ligne), son compte (« 20 sur 140 signes »), mes abonnements en boutons radio, et une adresse qui **ne
+dit que le pseudo**. « Poster la carte » ne poste rien : il demande (« Une carte postée ne se corrige
+ni ne se retire. ») ; « La poster pour de bon » l'envoie, « Pas encore » non, et retoucher le mot ou
+le destinataire redemande. Postée, la même carte s'ouvre lue : son tampon, l'adresse servie, « Le
+tampon à date est frappé : la carte part pour la gare de 1904, chez camille. » Sans abonnement, elle
+le dit et n'offre ni champ ni envoi. **Le brouillon ne se garde pas** : il ne vit que dans le
+composant, refermée la carte est blanche. Aucune réponse à une carte (constat 15), aucun mouvement au
+tampon. Le point rouge de la
 pastille est sur la carte (« La carte du Voyage ») (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
 le droit de lire, et la liste entière de ses rubriques).
 
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
 carte, au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`), et en 1900 seulement la malle
 de ma décennie, ma boîte aux cartes postales et l'état du voyageur, dont elle marque les rubriques
-`etiquette`, `courrier` et `objet` vues (et, au geste, la carte reçue qu'on ouvre) :
+`etiquette`, `courrier` et `objet` vues (et, au geste, la carte reçue qu'on ouvre, la carte qu'on
+poste, et mes abonnements à l'ouverture d'une carte à écrire) :
 **jamais une fiche d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties, et
 `mondes/1900/pages/sacoche.test.tsx` pour la sacoche de 1900). Pas de générique au toucher
 d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
@@ -963,8 +993,8 @@ wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la s
 ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
 billets passe sur la carte et son poinçon doré reste au casier ; l'horaire se prend, se retire et se dit
 sur la fiche de son année, et la plaque de sa gare le dit sur la carte ; la halte s'ouvre sur la carte ;
-les cartes postales reçues et envoyées se lisent dans la sacoche ; écrire une carte et le
-wagon-restaurant n'ont rien à l'écran**
+les cartes postales se lisent et s'écrivent dans la sacoche ; le wagon-restaurant n'a rien à
+l'écran**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -974,7 +1004,7 @@ wagon-restaurant n'ont rien à l'écran**
   l'échéance) et `retirerHoraire`. **Les cartes postales** (brief 13) : `lireCourrier`
   (`GET /me/voyage/cartes-postales` : mes cartes reçues, envoyées, et mes gares bouclées qui attendent
   la leur ; il n'écrit rien), `marquerCarteLue` (rejouable, `404` pour une carte que j'ai envoyée) et
-  `posterCartePostale` (le corps tel quel, strict côté serveur ; aucun écran ne l'appelle encore). **Le
+  `posterCartePostale` (le corps tel quel, strict côté serveur ; un seul appelant, le bloc du courrier). **Le
   mot d'une carte est privé** : il ne s'écrit ni dans un journal de console, ni dans une adresse, ni
   dans un titre. Rien encore pour les tables. **Mes abonnements** (brief 14, `api/abonnements.ts`, un
   fichier à part : la route n'est pas du Voyage) : `lireMesAbonnements` lit `GET /users/me/following`
@@ -1204,7 +1234,7 @@ wagon-restaurant n'ont rien à l'écran**
   pour une consigne vide. **Le crochet ne marque aucune rubrique pendant une relecture de l'état du
   voyageur, ni après une relecture en panne** (la malle comprise : sa marque, partie sur l'état en
   cache, effacerait la panne que les objets trouvés doivent dire ; `pages/VoyageSacoche.objets.test.tsx`). `mondes/1900/pages/sacoche.test.tsx` tient ce que la sacoche de 1900
-  ne montre ni ne lit encore, un interdit par rubrique (`PAS_ENCORE`), que le lot de chacune lèvera.
+  ne montre ni ne lit encore, un interdit par rubrique (`PAS_ENCORE`, vide depuis le brief 14 des écrans des lots), que le lot de chacune lève.
 
 ## Le thème
 

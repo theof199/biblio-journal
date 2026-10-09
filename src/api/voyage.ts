@@ -184,7 +184,8 @@ export const marquerCarteLue = (id: string) => api.post<CartePostaleRecue>(`/me/
  * Poster la carte d'une gare bouclée (`201`) : le corps est strict côté serveur, `annee`,
  * `destinataire_id` et `mot`, rien d'autre. Une carte postée ne se corrige ni ne se retire. `409` si
  * la gare n'est pas bouclée, si le destinataire n'est pas un membre que je suis, ou si la carte de
- * cette gare est déjà partie ; `400` pour un mot refusé. Aucun écran ne l'appelle encore (brief 14).
+ * cette gare est déjà partie ; `400` pour un mot refusé. Un seul appelant, sous un verrou et après une
+ * confirmation : `voyage/sacoche/Courrier.tsx` (brief 14).
  */
 export const posterCartePostale = (corps: CorpsCartePostale) => api.post<CartePostaleEnvoyee>('/me/voyage/cartes-postales', corps)
 

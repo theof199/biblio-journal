@@ -1,11 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { lireMesAbonnements, type Abonnement } from '../../api/abonnements'
 import { cles } from '../../api/cles'
-import { lireCourrier, marquerCarteLue, type CartePostaleEnvoyee, type CartePostaleRecue, type Courrier as CourrierLu } from '../../api/voyage'
+import { ApiError } from '../../api/client'
+import { lireCourrier, marquerCarteLue, posterCartePostale, type CartePostaleEnvoyee, type CartePostaleRecue, type CorpsCartePostale, type Courrier as CourrierLu } from '../../api/voyage'
 import type { GabaritsDesPages, Monde } from '../../mondes/types'
+import { useSession } from '../../session/SessionContext'
 import { useCalque } from '../calque'
 import { gabaritSeul } from '../gabarit'
 import type { PanneDeBloc } from '../sacoche'
+import { motPostable, rangerLaPostee } from './mot'
 import commun from './Sacoche.module.css'
 import { useVisiteDeRubrique } from './visite'
 
@@ -16,10 +20,34 @@ import { useVisiteDeRubrique } from './visite'
 export type CarteOuverte = { sens: 'recue'; carte: CartePostaleRecue } | { sens: 'envoyee'; carte: CartePostaleEnvoyee }
 
 /**
+ * La carte à écrire (brief 14) : celle d'une gare de `en_attente`, que l'adresse ouvre (`?ecrire=<année>`).
+ * Le dessin tient le brouillon (jamais gardé sur l'appareil : refermée, la carte est blanche), le
+ * destinataire choisi et la confirmation ; le bloc tient la lecture de mes abonnements, l'envoi et son
+ * verrou. **La gare du destinataire n'est pas connue avant l'envoi** : le serveur la décide et la sert
+ * avec la carte postée.
+ */
+export interface CarteAEcrire {
+  /** La gare bouclée d'où part la carte. */
+  annee: number
+  /** Mon pseudo, pour signer. */
+  moi: string
+  /** Les membres que je suis, toutes pages lues, dans l'ordre servi ; nul tant qu'ils ne sont pas lus, ou en panne. Vide : je ne suis personne. */
+  abonnements: readonly Abonnement[] | null
+  /** Mes abonnements sont en panne : la carte le dit, et n'offre rien. */
+  panne: PanneDeBloc | null
+  /** Ce que le serveur a dit d'un envoi refusé ou tombé, tel quel ; la carte reste à écrire. */
+  refus: string | null
+  /** L'envoi est parti et n'est pas revenu. */
+  enCours: boolean
+  /** Poste la carte, **pour de bon** : le dessin a demandé la confirmation. Sans effet pour un mot vide ou trop long, ou pendant un envoi. */
+  poster: (destinataireId: string, mot: string) => void
+}
+
+/**
  * Ce que reçoit le dessin du courrier (`GabaritsDesPages.courrierDeLaSacoche`, sans défaut) : ma
  * boîte **telle que servie** (les reçues de la plus récente à la plus ancienne, « nouvelle » tant que
  * `lue_le` est nul ; les envoyées par gare), la carte que l'adresse ouvre, et le calque.
- * `Courrier.tsx` garde la région, la lecture, les deux écritures (la rubrique vue, la carte lue) et
+ * `Courrier.tsx` garde la région, les lectures, les trois écritures (la rubrique vue, la carte lue, la carte postée) et
  * l'adresse : le dessin ne lit ni n'écrit rien. **Le mot d'une carte est un texte d'un autre membre** :
  * il se rend en texte, jamais en HTML, et ne s'écrit ni dans une adresse ni dans un titre.
  */
@@ -33,11 +61,25 @@ export interface PropsCourrierDeLaSacoche {
   /** La carte ouverte : l'adresse porte son identifiant (`?carte`), le retour du téléphone la referme. Nulle si la boîte ne la connaît pas. */
   ouverte: CarteOuverte | null
   ouvrir: (id: string) => void
+  /** Referme ce que l'adresse ouvre : la carte lue, ou la carte à écrire. */
   fermer: () => void
+  /** Mes gares bouclées qui attendent leur carte (`en_attente`), **telles que servies** : une carte à écrire pour chacune, et pour elles seules. Nul en panne. */
+  enAttente: readonly number[] | null
+  /** La carte à écrire que l'adresse ouvre (`?ecrire`) ; nulle si sa gare n'attend pas de carte. */
+  aEcrire: CarteAEcrire | null
+  /** `ouverte` est la carte qu'on vient de poster : le tampon vient d'être frappé. */
+  vientDePartir: boolean
+  /** Un `409` à l'envoi (la gare a déjà sa carte, le destinataire n'est plus suivi) : la carte s'est refermée, la boîte se relit, le message du serveur se dit ici. */
+  refus: string | null
+  ecrire: (annee: number) => void
 }
 
 /** Le nom du calque dans l'adresse de la sacoche : il porte l'identifiant de la carte, jamais son mot. */
 const CALQUE = 'carte'
+/** Le calque de la carte à écrire : il porte l'année de sa gare, jamais le brouillon. */
+const CALQUE_D_ECRITURE = 'ecrire'
+/** L'année d'une gare lue dans l'adresse, ou rien. */
+const gareLue = (valeur: string | null): number | null => (valeur !== null && /^\d{1,4}$/.test(valeur) ? Number(valeur) : null)
 
 function trouver(boite: CourrierLu, id: string | null): CarteOuverte | null {
   if (id === null) return null
@@ -49,13 +91,80 @@ function trouver(boite: CourrierLu, id: string | null): CarteOuverte | null {
 
 function CourrierDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['courrierDeLaSacoche'] }) {
   const client = useQueryClient()
+  const { user } = useSession()
   const boite = useQuery({ queryKey: cles.courrier, queryFn: ({ signal }) => lireCourrier(signal) })
   const calque = useCalque(CALQUE)
+  const ecriture = useCalque(CALQUE_D_ECRITURE)
   const lue = boite.data ?? null
-  const ouverte = lue ? trouver(lue, calque.valeur) : null
-  // Une carte ouverte reste à l'écran si la relecture de la boîte tombe en panne, comme la malle : le
-  // dialogue ne se referme pas seul sous le doigt. La panne se dit sur la rubrique, la carte refermée.
-  const erreur = ouverte ? null : boite.error
+
+  // Poster une carte (brief 14). **Elle ne se corrige ni ne se retire** : un verrou par référence
+  // (`isPending` ne se voit qu'au rendu suivant), deux touchers ne font qu'un envoi. Le corps porte
+  // `annee`, `destinataire_id` et `mot`, rien d'autre : le serveur, strict, décide de l'expéditeur, de
+  // la date et de la gare du destinataire. Postée, le cache apprend la carte rendue et sa gare quitte
+  // `en_attente`, sur `cles.courrier` en `exact`, une relecture en vol annulée d'abord : **rien n'est
+  // périmé**, surtout pas le préfixe `voyage`. Dans `useMutation`, pas dans les rappels de `mutate` :
+  // le cache l'apprend même la sacoche quittée.
+  const envoi = useRef(false)
+  const [refus, setRefus] = useState<{ annee: number | null; message: string } | null>(null)
+  const poste = useMutation({
+    mutationFn: (corps: CorpsCartePostale) => posterCartePostale(corps),
+    onSuccess: async (carte) => {
+      await client.cancelQueries({ queryKey: cles.courrier, exact: true })
+      client.setQueryData<CourrierLu>(cles.courrier, (b) => (b ? { ...b, envoyees: rangerLaPostee(b.envoyees, carte), en_attente: b.en_attente.filter((a) => a !== carte.annee) } : b))
+    },
+    // `400` et `409` : le serveur a refusé, la boîte se relit (la gare a pu partir ailleurs), en
+    // `exact` ; un `409` peut tenir à mes abonnements, relus à la prochaine carte. Une panne ne relit rien.
+    onError: (e) => {
+      if (!(e instanceof ApiError) || (e.status !== 400 && e.status !== 409)) return
+      void client.invalidateQueries({ queryKey: cles.courrier, exact: true })
+    },
+    onSettled: () => void (envoi.current = false),
+  })
+
+  const gare = gareLue(ecriture.valeur)
+  // La carte qu'on vient de poster reste à l'écran, tamponnée, tant que son calque est ouvert.
+  const partie = gare !== null && poste.data?.annee === gare ? poste.data : null
+  const enVol = gare !== null && poste.isPending && poste.variables?.annee === gare
+  // **Une carte à écrire par gare de `en_attente`, et pour elles seules** : une année que la boîte
+  // n'attend pas (une gare pas bouclée, une carte déjà partie, une adresse écrite à la main) n'ouvre
+  // rien. Elle reste le temps de son envoi : le cache la retire de `en_attente` avant que la carte
+  // rendue arrive à l'écran.
+  const aEcrire = lue !== null && gare !== null && partie === null && (enVol || lue.en_attente.includes(gare)) ? gare : null
+  const parAdresse = lue ? trouver(lue, calque.valeur) : null
+  const ouverte: CarteOuverte | null = parAdresse ?? (partie ? { sens: 'envoyee', carte: partie } : null)
+  const vientDePartir = partie !== null && ouverte?.carte.id === partie.id
+
+  // Mes abonnements ne se lisent que la carte à écrire ouverte, et se relisent à chaque ouverture :
+  // aucune page hors Voyage ne périme cette clé quand je suis ou cesse de suivre un membre.
+  const abonnements = useQuery({ queryKey: cles.abonnements, queryFn: ({ signal }) => lireMesAbonnements(signal), enabled: aEcrire !== null, staleTime: 0 })
+
+  // Le dernier calque d'écriture rendu : le rappel d'un envoi court après le rendu qui l'a lancé, et
+  // refermer deux fois reculerait de deux entrées dans l'historique.
+  const dernier = useRef(ecriture)
+  dernier.current = ecriture
+  const poster = (annee: number, destinataireId: string, mot: string) => {
+    if (envoi.current || !motPostable(mot)) return
+    envoi.current = true
+    setRefus(null)
+    poste.mutate(
+      { annee, destinataire_id: destinataireId, mot },
+      {
+        // **Le message du serveur, tel quel**, jamais un repli. Un `409` n'est pas une panne : la carte
+        // se referme (si elle est encore celle de l'adresse) et le refus se dit sur la rubrique ; tout
+        // autre refus se dit sur la carte, qui reste à écrire, son brouillon intact.
+        onError: (e) => {
+          const conflit = e instanceof ApiError && e.status === 409
+          setRefus({ annee: conflit ? null : annee, message: e.message })
+          if (conflit && gareLue(dernier.current.valeur) === annee) dernier.current.fermer()
+        },
+      },
+    )
+  }
+
+  // Une carte ouverte, lue ou à écrire, reste à l'écran si la relecture de la boîte tombe en panne,
+  // comme la malle : le dialogue ne se referme pas seul sous le doigt. La panne se dit sur la
+  // rubrique, la carte refermée.
+  const erreur = ouverte || aEcrire !== null ? null : boite.error
   // Le point rouge se date sur les reçues : sans carte reçue, rien à dater, rien à marquer ; en panne non plus.
   useVisiteDeRubrique('courrier', !boite.error && lue !== null && lue.recues.length > 0)
 
@@ -91,7 +200,27 @@ function CourrierDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['courrierDeLa
         envoyees={erreur ? null : lue!.envoyees}
         ouverte={ouverte}
         ouvrir={calque.ouvrir}
-        fermer={calque.fermer}
+        fermer={parAdresse || ecriture.valeur === null ? calque.fermer : ecriture.fermer}
+        enAttente={erreur ? null : lue!.en_attente}
+        aEcrire={
+          aEcrire === null || ouverte
+            ? null
+            : {
+                annee: aEcrire,
+                moi: user.pseudo,
+                abonnements: abonnements.error ? null : (abonnements.data ?? null),
+                panne: abonnements.error ? { erreur: abonnements.error, reessayer: () => void abonnements.refetch() } : null,
+                refus: refus?.annee === aEcrire ? refus.message : null,
+                enCours: enVol,
+                poster: (destinataireId, mot) => poster(aEcrire, destinataireId, mot),
+              }
+        }
+        vientDePartir={vientDePartir}
+        refus={refus?.annee === null ? refus.message : null}
+        ecrire={(annee) => {
+          setRefus(null)
+          ecriture.ouvrir(String(annee))
+        }}
       />
     </section>
   )
@@ -102,7 +231,9 @@ function CourrierDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['courrierDeLa
  * se monte que si le monde de mon année en cours compose `courrierDeLaSacoche` (`gabaritSeul`), et ne
  * lit rien sinon. Monté, il lit ma boîte et l'état du voyageur (par le crochet de la visite), marque
  * la rubrique `courrier` vue une fois par visite quand j'ai reçu une carte, marque lue la carte reçue
- * qu'on ouvre, et tombe seul en panne. **Une carte ne se montre qu'ici.** On n'y écrit pas de carte.
+ * qu'on ouvre, et tombe seul en panne. **Une carte ne se montre qu'ici.** On y écrit la carte d'une
+ * gare bouclée (brief 14) : une par gare de `en_attente`, à un membre que je suis (`api/abonnements.ts`,
+ * lus à l'ouverture de la carte à écrire seulement), postée sous un verrou.
  */
 export default function Courrier({ monde }: { monde: Monde | null }) {
   const Dessin = monde ? gabaritSeul(monde, 'courrierDeLaSacoche') : null

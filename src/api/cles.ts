@@ -20,7 +20,8 @@ export const cles = {
    * qu'une écriture au journal le change. `en_attente` liste mes gares bouclées sans carte, et une
    * gare se boucle quand le ticket de l'année suivante est émis : c'est un billet composté qui l'émet.
    * Les cartes elles-mêmes ne changent pas avec le journal ; marquer une carte lue ne périme donc
-   * rien, elle pose sa réponse sur cette clé, en `exact` (`voyage/sacoche/Courrier.tsx`). La clé ne
+   * rien, elle pose sa réponse sur cette clé, en `exact` (`voyage/sacoche/Courrier.tsx`) ; poster une
+   * carte non plus : la carte rendue entre aux envoyées et sa gare quitte `en_attente`. La clé ne
    * porte ni identifiant ni mot : le mot d'une carte est privé.
    */
   courrier: ['voyage', 'courrier'] as const,

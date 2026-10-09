@@ -1,5 +1,6 @@
 import type { CartePostaleEnvoyee, CartePostaleRecue } from '../../../api/voyage'
 import type { CarteOuverte } from '../../../voyage/sacoche/Courrier'
+import { MOT_MAX } from '../../../voyage/sacoche/mot'
 import { LIEU } from '../gares'
 import { imageDu1900 } from '../images'
 import { dateDuTampon } from './frontiere'
@@ -24,6 +25,18 @@ export const MOTS_DU_COURRIER = {
     adresse: 'Adresse',
     refermer: 'Refermer la carte',
     timbre: 'Un timbre des Chemins de fer du Voyage',
+  },
+  aEcrire: 'À écrire',
+  ecrire: {
+    titre: 'Carte à écrire',
+    mot: 'Ton mot',
+    aQui: 'À qui l’écris-tu ?',
+    personne: 'Tu ne suis encore personne : une carte s’écrit à un membre que tu suis.',
+    poster: 'Poster la carte',
+    avertir: 'Une carte postée ne se corrige ni ne se retire.',
+    confirmer: 'La poster pour de bon',
+    attendre: 'Pas encore',
+    enCours: 'La carte part…',
   },
 } as const
 
@@ -71,3 +84,16 @@ export function ceQueDitLaCarte({ sens, carte }: CarteOuverte): string {
   const { libelle } = dateDuTampon(carte.postee_le)
   return sens === 'recue' ? `${carte.expediteur.pseudo} te l’a postée de la ${gareDe(carte.annee)}, le ${libelle}.` : `Postée de ta ${gareDe(carte.annee)}, le ${libelle}.`
 }
+
+/** L'entrée d'une gare qui attend sa carte (brief 14) : une par gare de `en_attente`. */
+export const carteAEcrireDe = (annee: number): string => `Écrire la carte de la ${gareDe(annee)}`
+
+/** Le compte du mot, sous son champ : « 26 sur 140 signes ». */
+export const compteDuMot = (mot: string): string => `${mot.length} sur ${MOT_MAX} signes`
+
+/**
+ * Sous la carte qu'on vient de poster : le tampon est frappé, et la gare où elle part, **celle que le
+ * serveur vient de servir** (`gare_destinataire`) : avant l'envoi, l'adresse ne disait que le pseudo.
+ */
+export const ceQueDitLaPostee = (carte: CartePostaleEnvoyee): string =>
+  `Le tampon à date est frappé : la carte part pour la ${gareDe(carte.gare_destinataire)}, chez ${carte.destinataire.pseudo}.`
