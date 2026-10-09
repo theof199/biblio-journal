@@ -35,8 +35,12 @@ export default function CarteAEcrire({ carte, onFermer }: { carte: Props; onFerm
   const confirmation = useRef<HTMLDivElement>(null)
   const boutonPoster = useRef<HTMLButtonElement>(null)
   useEffect(() => {
-    if (confirme) confirmation.current?.focus()
-    else if (document.activeElement === document.body) boutonPoster.current?.focus()
+    if (confirme) {
+      // Le focus amène la confirmation à l'écran ; le défilement la veut entière, sa marge comprise
+      // (`scroll-margin`, `Courrier.module.css`), d'un coup : rien n'y bouge, au calme ou non.
+      confirmation.current?.focus()
+      confirmation.current?.scrollIntoView?.({ block: 'nearest' })
+    } else if (document.activeElement === document.body) boutonPoster.current?.focus()
   }, [confirme, carte.enCours])
 
   return (

@@ -67,7 +67,8 @@ interface Props {
  * Une carte postale de 1900, **un seul dessin pour la lire et pour l'écrire** (maquette, écran 19) : le
  * recto de sa gare s'il a une photographie, puis son dos divisé d'époque — « Correspondance », le mot,
  * signé ; « Adresse », le timbre, le tampon à date **une fois postée seulement**, et l'adresse. Un
- * dialogue par-dessus la sacoche : « Refermer la carte » prend le focus et le rend, Échap ferme. **Le
+ * dialogue par-dessus la sacoche : « Refermer la carte » prend le focus et le rend, défile avec la
+ * carte (jamais sur la photographie), Échap ferme. **Le
  * mot est un texte** (celui d'un autre membre, ou mon brouillon) : rendu en texte, jamais en HTML ; ni
  * le nom du dialogue ni aucun attribut ne le portent. Rien n'y bouge.
  */
@@ -76,10 +77,10 @@ export default function CartePostale({ titre, annee, mot, signe, postee, adresse
   const recto = rectoDe(annee)
   return (
     <div className={styles.calque} role="dialog" aria-modal="true" aria-label={titre}>
-      <button ref={refermer} type="button" className={styles.retour} aria-label={M.ouverte.refermer} onClick={onFermer}>
-        <span aria-hidden="true">‹</span>
-      </button>
       <div className={styles.defil}>
+        <button ref={refermer} type="button" className={styles.retour} aria-label={M.ouverte.refermer} onClick={onFermer}>
+          <span aria-hidden="true">‹</span>
+        </button>
         <div className={styles.cadre}>
           <Rubrique balise="p">
             {titre} <small>{gareDe(annee)}</small>

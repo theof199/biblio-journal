@@ -111,10 +111,12 @@
   color: var(--m-papier);
 }
 
+/* Le pied laisse au-dessus de la barre d'onglets la marge des pages du Voyage (`pages/Voyage*.module.css`). */
 .defil {
+  position: relative;
   flex: 1;
   min-height: 0;
-  padding: 40px 0 24px;
+  padding: 40px 0 30px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -126,6 +128,8 @@
   margin: 0 auto;
 }
 
+/* Le retour défile avec la carte, comme celui de la voiture ouverte et de la feuille du chroniqueur :
+   il ne passe jamais sur la photographie du recto. Échap et le retour du téléphone ferment toujours. */
 .retour {
   position: absolute;
   z-index: 1;
@@ -228,9 +232,13 @@
   content: '— ';
 }
 
+/* La première rangée garde la place du timbre et du tampon à date, posés par-dessus : l'adresse
+   commence dessous, si longue soit-elle (un pseudo sur deux lignes, la gare, sa ville), et la carte
+   grandit plutôt que de laisser le tampon mordre sur un nom. */
 .adr {
   position: relative;
   display: grid;
+  grid-template-rows: minmax(92px, auto) auto;
   align-content: space-between;
   min-width: 0;
   min-height: 150px;
@@ -400,10 +408,12 @@
   cursor: default;
 }
 
+/* Amenée à l'écran quand elle paraît, la confirmation garde sous elle la marge du pied. */
 .confirmer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+  scroll-margin-bottom: 30px;
 }
 
 .confirmer p {
