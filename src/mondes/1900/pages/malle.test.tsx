@@ -72,16 +72,18 @@ describe('l’état d’une place de la malle', () => {
 })
 
 describe('ce que dit une place', () => {
-  // Mutations : la branche « à gagner » retirée de `compteDeLaTrace` ; la garde `seuil > 1` retirée
-  // de `nomLuDeLaPlace` (le nom lu dirait « à gagner » après « pas encore gagnée »).
-  it('un seuil de un se dit « à gagner », jamais « 0 sur 1 »', () => {
+  // Décision du propriétaire, 9 octobre 2026 : un seuil de un dit son compte comme les autres (la
+  // règle d'avant disait « à gagner »). Mutations : le cas particulier du seuil de un remis dans
+  // `compteDeLaTrace` (« à gagner ») ; la garde `seuil > 1` remise dans `nomLuDeLaPlace` (le nom lu
+  // perdrait son compte).
+  it('un seuil de un dit « 0 sur 1 », comme les autres disent leur compte', () => {
     const une = place({ cle: 'express', nom: 'L’Express', quoi: 'gare passée en moins de 48 heures', progression: { fait: 0, seuil: 1 } })
-    expect([compteDeLaTrace({ fait: 0, seuil: 1 }), compteDeLaTrace({ fait: 3, seuil: 4 })]).toEqual(['à gagner', '3 sur 4'])
-    expect(ceQueDitLaTrace(une)).toBe('à gagner · gare passée en moins de 48 heures')
+    expect([compteDeLaTrace({ fait: 0, seuil: 1 }), compteDeLaTrace({ fait: 3, seuil: 4 })]).toEqual(['0 sur 1', '3 sur 4'])
+    expect(ceQueDitLaTrace(une)).toBe('0 sur 1 · gare passée en moins de 48 heures')
     const lu = badge(une)
-    expect(lu.ecrit).toBe('à gagner')
-    expect(lu.nom).toBe('L’Express, pas encore gagnée. Composter cinq séances après minuit.')
-    expect(`${lu.ecrit} ${lu.nom} ${ceQueDitLaTrace(une)}`).not.toMatch(/sur 1\b/)
+    expect(lu.ecrit.replace(/\s/g, '')).toBe('0sur1')
+    expect(lu.nom).toBe('L’Express, pas encore gagnée, 0 sur 1. Composter cinq séances après minuit.')
+    expect(`${lu.ecrit} ${lu.nom} ${ceQueDitLaTrace(une)}`).not.toMatch(/gagner/)
   })
 
   // Mutations : le compte retiré du nom lu d'une trace ; dans le dessin, le compte remplacé par le nom.

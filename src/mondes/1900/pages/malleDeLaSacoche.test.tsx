@@ -190,17 +190,16 @@ describe('la malle dans la sacoche de 1900', () => {
     expect(fiche(malle).querySelectorAll('[data-fait]')).toHaveLength(0)
   })
 
-  // Le point (a) laissé par le brief 1 : la fiche de la maquette écrirait « 0 sur 1 · … » ; la règle
-  // du brief 1 l'emporte (un seuil de un se dit « à gagner », jamais « 0 sur 1 »), sur la fiche comme
-  // sur le badge. Mutation : la fiche qui écrit `fait sur seuil · quoi` comme la maquette.
-  it('pour un seuil de un, la fiche dit « à gagner », jamais « 0 sur 1 », et sa jauge n’a qu’une case', async () => {
+  // Décision du propriétaire, 9 octobre 2026 : la fiche dit « 0 sur 1 · … » comme la maquette, et
+  // comme le badge. Mutation : le cas particulier du seuil de un remis (« à gagner »).
+  it('pour un seuil de un, la fiche dit « 0 sur 1 » comme les autres disent leur compte, et sa jauge n’a qu’une case', async () => {
     const chef = place(1, { cle: 'chef-de-gare', nom: 'Le Chef de gare', devise: 'Départ', regle: 'Boucler une année sans jamais utiliser « Ignorer » au train du soir.', quoi: 'année bouclée sans « Ignorer »', progression: { fait: 0, seuil: 1 } })
     monterVoyage(SACOCHE, { ...ROUTES, [MALLE]: () => json(malleDe(chef, TRAIN_DE_NUIT)) })
     const malle = await ouvrir()
     // Aucune collée : la première place est choisie, la fiche n'est jamais vide.
     expect(touchee(malle)).toEqual([nomLuDeLaPlace(chef)])
-    expect(fiche(malle)).toHaveTextContent('à gagner · année bouclée sans « Ignorer »')
-    expect(fiche(malle)).not.toHaveTextContent(/\d sur \d/)
+    expect(fiche(malle)).toHaveTextContent('0 sur 1 · année bouclée sans « Ignorer »')
+    expect(fiche(malle)).not.toHaveTextContent(/gagner/)
     expect([...fiche(malle).querySelectorAll('[data-fait]')].map((i) => i.getAttribute('data-fait'))).toEqual(['non'])
   })
 

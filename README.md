@@ -905,8 +905,8 @@ places telles que le serveur les range, par numéro, chacune son badge (`BadgeDe
 bouton de la place porte le seul nom lu), « Nouvelle » sous celles qui le sont et dans leur nom lu
 (`nomLuDeLaPlace`), la plaque de la
 décennie ; au pied, la fiche de la place touchée (la dernière collée en s'ouvrant, sinon la
-première) : son numéro, son nom, sa règle, « Collée le … » ou ce qui manque avec sa jauge, « à
-gagner » pour un seuil de un, et rien d'elle pour une cachée. Une décennie sans malle ne montre rien ;
+première) : son numéro, son nom, sa règle, « Collée le … » ou ce qui manque avec sa jauge, « 0 sur
+1 » pour un seuil de un comme les autres disent leur compte, et rien d'elle pour une cachée. Une décennie sans malle ne montre rien ;
 en panne, la malle le dit sous sa rubrique, et elle seule.
 
 **Les objets trouvés** (maquette, écran 15 ; `ObjetsDeLaSacoche`, sa feuille `Consigne.module.css`,
@@ -1310,7 +1310,7 @@ guichet d'un film**
 - **Le badge d'une place de la malle** (`mondes/1900/pages/BadgeDeMalle.tsx`, ses règles et sa table dans
   `mondes/1900/pages/malle.ts` ; maquette, écran 18) : les quinze étiquettes dessinées en SVG, **par `cle`
   du contrat**, dans leurs trois états. Collée (`collee_le` non nul) : la forme en papier, ses encres, son
-  dessin, son nom court et la devise servie. En trace de colle : la forme pâle et « 3 sur 4 », « à gagner »
+  dessin, son nom court et la devise servie. En trace de colle : la forme pâle et « 3 sur 4 », « 0 sur 1 »
   pour un seuil de un ; `fait` au seuil sans `collee_le` reste une trace. Cachée non gagnée (`cle` nul, et
   non `cachee` vrai) : un « ? », sans forme, et un nom lu qui ne dit rien d'elle. Une clé inconnue garde sa
   place : une forme neutre, le nom servi. `muet`, il se tait : la malle le pose dans un bouton ou à côté

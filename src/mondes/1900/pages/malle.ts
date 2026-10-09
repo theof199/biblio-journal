@@ -100,7 +100,6 @@ export function etatDeLaPlace(place: PlaceDeMalle): EtatDePlace {
 
 export const MOTS_DE_LA_MALLE = {
   cachee: 'Une étiquette cachée : elle ne se montre qu’une fois gagnée.',
-  aGagner: 'à gagner',
   sur: 'sur',
   signeDeLaCachee: '?',
   titre: 'La malle',
@@ -121,9 +120,9 @@ export const MOTS_DE_LA_MALLE = {
   },
 } as const
 
-/** Le compte d'une trace de colle : « 3 sur 4 », et « à gagner » pour un seuil de un (jamais « 0 sur 1 »). */
+/** Le compte d'une trace de colle : « 3 sur 4 », et « 0 sur 1 » pour un seuil de un, comme les autres disent leur compte. */
 export function compteDeLaTrace({ fait, seuil }: { fait: number; seuil: number }): string {
-  return seuil === 1 ? MOTS_DE_LA_MALLE.aGagner : `${fait} ${MOTS_DE_LA_MALLE.sur} ${seuil}`
+  return `${fait} ${MOTS_DE_LA_MALLE.sur} ${seuil}`
 }
 
 /**
@@ -148,7 +147,7 @@ export function nomLuDeLaPlace(place: PlaceDeMalle, nouvelle = false): string {
   const regle = place.regle === null ? '' : ` ${place.regle}`
   if (etat === 'collee') return `${place.nom}, ${nouvelle ? `${MOTS_DE_LA_MALLE.nouvelle} ` : ''}étiquette collée le ${jourDeParis(place.collee_le!)}.${regle}`
   const p = place.progression
-  const compte = p !== null && p.seuil > 1 ? `, ${compteDeLaTrace(p)}` : ''
+  const compte = p !== null ? `, ${compteDeLaTrace(p)}` : ''
   return `${place.nom}, pas encore gagnée${compte}.${regle}`
 }
 
