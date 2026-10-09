@@ -6,7 +6,7 @@ import { APPUI_LONG_MS } from './geste'
 import { TUILE } from './dessin/sol'
 import { MARGE_HAUT } from './placement'
 import { mondeAVenir } from '../mondes/avenir'
-import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Glissement, HalteVue, HoraireVue, Monde, MusiqueDuMonde, ObjetCache, Ralenti, SuiviGare, TempsDEntree, VueMonde } from '../mondes/types'
+import type { BobinePerdue, CadreDeBande, DateVraie, EtatDeBande, Glissement, HalteVue, HoraireVue, Monde, MusiqueDuMonde, ObjetCache, Ralenti, SuiviGare, TempsDEntree, TempsDeRetour, VueMonde } from '../mondes/types'
 import { auTempo, TEMPO } from '../voyage/tempo'
 
 const W = 390
@@ -173,6 +173,8 @@ function monter(
     arrets?: readonly number[]
     /** Plan 3a : les temps du passage d'entrée de la section collante, en `y` de la section. */
     entree?: readonly TempsDEntree[]
+    /** Les durées du retour que le monde collant déclare (`SceneCollante.retour`) ; sans elles, il n'en déclare pas. */
+    retour?: readonly TempsDeRetour[]
     /** Plan 3b : le monde collant porte une date, une bobine et un sémaphore (`DEPECHE`, `BOBINE_1900`). */
     garni?: boolean
     /** Lot « moteur » : les ralentis du roulement de la section collante, en `y` de la section. */
@@ -222,6 +224,7 @@ function monter(
       const { chantier1898, particules } = options
       return {
         ...m,
+        scene: m.scene && options.retour ? { ...m.scene, retour: options.retour } : m.scene,
         palette: options.sansColonne ? { ...m.palette, colonne: null } : m.palette,
         dessinerCiel: options.cielSage ? (v) => (v.vivant ? m.dessinerCiel(v) : void vus.push(v)) : m.dessinerCiel,
         siteDuChantier: (annee) => (chantier1898 !== undefined && annee === 1898 ? chantier1898 : m.siteDuChantier(annee)),
@@ -2280,6 +2283,75 @@ describe('le moteur de la carte', () => {
           await Promise.resolve()
           expect(bonjour.fini).toBe(true)
           expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[0])
+        })
+
+        // Le retour abrégé : un monde dit ce que dure son retour, rang par rang. Mutations : `retour`
+        // ignoré par le meneur (l'aller rejoué : la caméra encore en pause au dernier temps) ; non
+        // transmis par `tempsDe` ; lu aussi à l'endroit ; la durée d'un segment prise au temps où
+        // l'on arrive ; la pause prise à l'aller ; l'ordre des temps changé avec les durées.
+        describe('quand le monde déclare les durées de son retour', () => {
+          const RETOUR: TempsDeRetour[] = [{ duree: 9999, arret: 120 }, { duree: 400, arret: 80 }, { duree: 600, arret: 160 }]
+          const BASE_DU_RETOUR = RETOUR[2]!.arret + RETOUR[2]!.duree + RETOUR[1]!.arret + RETOUR[1]!.duree + RETOUR[0]!.arret
+
+          it('à l’envers, joue ces durées et ces pauses, par les mêmes temps dans l’ordre inverse', async () => {
+            expect(BASE_DU_RETOUR).not.toBe(BASE)
+            const banc = auPassage({ retour: RETOUR })
+            const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'envers'))
+            expect(banc.vers()).toEqual([T[2]])
+            // La pause du dernier temps, celle du retour : rien ne bouge.
+            banc.filer(auTempo(RETOUR[2]!.arret) - 40)
+            expect(banc.vers()).toEqual([T[2]])
+            // Le segment du dernier temps au deuxième dure ce que le retour dit du dernier temps.
+            banc.filer(auTempo(RETOUR[2]!.duree) - 40)
+            const enChemin = banc.vers()
+            expect(enChemin[enChemin.length - 1]!).toBeGreaterThan(T[1]!)
+            expect(enChemin[enChemin.length - 1]!).toBeLessThan(T[2]!)
+            banc.filer(120)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[1])
+            // La caméra ne remonte jamais plus haut que le temps suivant, ni ne redescend.
+            banc.vers().forEach((y, i, tous) => expect(y <= (i ? tous[i - 1]! : T[2]!) && y >= T[1]!).toBe(true))
+            banc.filer(auTempo(BASE_DU_RETOUR) - auTempo(RETOUR[2]!.arret + RETOUR[2]!.duree) - 120)
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(false)
+            banc.filer(80)
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(true)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[0])
+          })
+
+          it('à l’endroit, l’aller garde ses durées', async () => {
+            const banc = auPassage({ retour: RETOUR })
+            const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'endroit'))
+            banc.filer(auTempo(BASE) - 40)
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(false)
+            banc.filer(80)
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(true)
+            expect(banc.rappels.defilerVers).toHaveBeenLastCalledWith(T[2])
+          })
+
+          // Mutation : un rang sans durée de retour joué à zéro (un défaut inventé) au lieu de l'aller.
+          it('un rang que le retour ne couvre pas rejoue l’aller', async () => {
+            const banc = auPassage({ retour: RETOUR.slice(0, 2) })
+            const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'envers'))
+            const base = TEMPS[2]!.arret + TEMPS[2]!.duree + RETOUR[1]!.arret + RETOUR[1]!.duree + RETOUR[0]!.arret
+            banc.filer(auTempo(base) - 40)
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(false)
+            banc.filer(80)
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(true)
+          })
+
+          it('au calme, se pose d’un coup au premier temps', async () => {
+            const banc = auPassage({ calme: true, retour: RETOUR })
+            banc.poserA(HAUT_1900 + GARES[5]!)
+            const bonjour = banc.temoin(banc.moteur.direBonjour(1900, 'envers'))
+            await Promise.resolve()
+            expect(bonjour.fini).toBe(true)
+            expect(banc.vers()).toEqual([T[0]])
+          })
         })
 
         // Mutation : la garde `this.calme` retirée de `direBonjour` : la caméra posée au premier

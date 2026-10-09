@@ -22,7 +22,7 @@ import { dessinerPlaqueRoulotte, dessinerRoulotte } from './dessin/roulotte'
 import { imageCommune } from './images'
 import { dessinerBobinePerdue, dessinerEnvol } from './dessin/bobines'
 import { auTempo } from '../voyage/tempo'
-import { A_L_ARRET, Meneur, type SensDuPassage } from './meneur'
+import { A_L_ARRET, Meneur, type SensDuPassage, type TempsDeCarte } from './meneur'
 
 /** Le corail : ce que le joueur déclenche. Jamais sous un voile, jamais teinté (spec, « Le rendu »). */
 export const CORAIL = '#FF6B57'
@@ -627,12 +627,15 @@ export class MoteurCarte {
    * Les temps du passage d'entrée de la section de rang `section`, en `y` de carte, bornés à ce que
    * le défilement atteint ; aucun pour une section ordinaire, inconnue, ou dont le monde n'en donne pas.
    */
-  private tempsDe(section: number): Array<{ y: number; duree: number; arret: number }> {
+  private tempsDe(section: number): TempsDeCarte[] {
     const s = this.plan.sections[section]
     const scene = this.sceneDe(section)
     if (!s || !scene) return []
     const fond = Math.max(0, this.plan.hauteur - this.H)
-    return scene.entree.map((x) => ({ y: clamp(s.y0 + x.y, 0, fond), duree: x.duree, arret: x.arret }))
+    return scene.entree.map((x, i) => {
+      const retour = scene.retour?.[i]
+      return { y: clamp(s.y0 + x.y, 0, fond), duree: x.duree, arret: x.arret, ...(retour ? { retour: { duree: retour.duree, arret: retour.arret } } : {}) }
+    })
   }
 
   /**

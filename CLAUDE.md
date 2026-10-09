@@ -78,7 +78,8 @@ ce qui bouge se tire de `VueMonde.avance`. Ses six membres, et ce que chacun doi
 - `arrets` : un `y` de la section par année, dans l'ordre des années. Une année sans arrêt n'est
   atteinte ni par `marcher`, ni par « Tu es ici », ni par la sortie de la vue d'ensemble.
 - `entree` : les temps du passage d'entrée, dans l'ordre de l'endroit ; vide, aucun passage. Durées
-  et pauses en millisecondes **de base, sans tempo** : le moteur seul les joue au tempo.
+  et pauses en millisecondes **de base, sans tempo** : le moteur seul les joue au tempo. `retour`,
+  facultatif, dit ce que dure le passage joué à l'envers, au même rang ; sans lui, l'aller retourné.
 - `ralentis` : où la caméra qui roule ralentit, en `y` de la section, croissants, disjoints, sans
   arrêt dedans ni rien avant le premier arrêt ; le moteur ne le vérifie pas, un test du monde si.
 

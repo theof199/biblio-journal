@@ -302,7 +302,8 @@ export interface VueMonde {
 /**
  * Un temps du passage d'entrée d'un monde (`SceneCollante.entree`) : la caméra se tient à `y` et y
  * marque une pause, qu'elle y soit venue d'un autre temps ou qu'elle y ait été posée d'un coup (le
- * premier temps du sens joué). Joué à l'envers, le passage est le retournement exact de l'endroit.
+ * premier temps du sens joué). Joué à l'envers, le passage est le retournement exact de l'endroit,
+ * sauf pour un monde qui déclare les durées de son retour (`SceneCollante.retour`).
  * « Le temps i » désigne ici le rang du temps dans la liste, quel que soit le sens joué. Les durées
  * s'écrivent en millisecondes **de base, sans tempo** : le moteur seul les joue au tempo
  * (`voyage/tempo.ts`), là où il les joue.
@@ -383,6 +384,18 @@ export interface Ralenti {
  * prend à sa charge ce que le moteur dessinait (la route, les cases, l'avatar, la roulotte garée,
  * la brume, sa bande de la vue d'ensemble).
  */
+/**
+ * Ce que dure le retour à un temps du passage d'entrée (`SceneCollante.retour`), en millisecondes
+ * **de base, sans tempo**, comme `TempsDEntree`. Les positions ne se redisent pas : le retour passe
+ * par les temps de `entree`, dans l'ordre inverse.
+ */
+export interface TempsDeRetour {
+  /** La durée, au retour, du segment qui relie ce temps à celui d'avant dans `entree` : le même segment que `TempsDEntree.duree`, parcouru dans l'autre sens. Celle du premier rang n'est jamais lue. */
+  duree: number
+  /** La pause que la caméra marque à ce temps au retour. */
+  arret: number
+}
+
 export interface SceneCollante {
   /**
    * Où se tient `annee` à l'écran, en px CSS ; nul hors de vue. Le moteur y inscrit la zone `case` et
@@ -410,6 +423,13 @@ export interface SceneCollante {
    * rend de sa fin compris) rappelle la caméra à l'arrêt le plus proche.
    */
   entree: readonly TempsDEntree[]
+  /**
+   * Les durées du passage joué à l'envers, si le monde veut un retour qui ne dure pas ce que dure
+   * l'aller : une par temps de `entree`, au même rang. Absent, le retour rejoue l'aller retourné,
+   * durées et pauses ; un rang qu'il ne couvre pas, de même. L'ordre des temps, lui, ne change
+   * jamais : l'inverse de l'aller. L'aller ne les lit pas.
+   */
+  retour?: readonly TempsDeRetour[]
   /**
    * Les `y` de la section où la caméra se pose, un par année, dans l'ordre des années, et croissants :
    * le moteur tient le premier de la liste pour le plus haut (le rappel ne vaut pas avant lui) et, au

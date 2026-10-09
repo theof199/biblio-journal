@@ -28,6 +28,8 @@ export interface TempsDeCarte {
   y: number
   duree: number
   arret: number
+  /** Ce que le monde déclare pour ce temps joué à l'envers (`SceneCollante.retour`) ; absent, l'envers rejoue l'aller. */
+  retour?: { duree: number; arret: number }
 }
 
 /**
@@ -305,7 +307,9 @@ export class Meneur {
     if (temps.length === 0) return Promise.resolve()
     // Les temps dans l'ordre joué, chacun avec la durée du segment qui y mène : à l'envers, celle
     // que la liste donne au temps d'où l'on vient (la durée appartient au segment, pas au sens).
-    const joues = sens === 'envers' ? temps.map((x, i) => ({ ...x, duree: temps[i + 1]?.duree ?? 0 })).reverse() : temps
+    // Un monde peut dire ce que dure son retour (`SceneCollante.retour`) : sans lui, celui de l'aller.
+    const auRetour = (x: TempsDeCarte | undefined) => x?.retour ?? x
+    const joues = sens === 'envers' ? temps.map((x, i) => ({ y: x.y, arret: auRetour(x)!.arret, duree: auRetour(temps[i + 1])?.duree ?? 0 })).reverse() : temps
     // Aucun passage ne joue ici (plus haut) : il n'y en a pas à arrêter.
     this.prendreLaCamera()
     // Le défilement qui a mené ici n'a plus rien à constater : le passage commande la caméra.

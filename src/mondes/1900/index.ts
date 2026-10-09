@@ -17,7 +17,7 @@ import { ROULEMENT } from './roulement'
 import { ralentisDuTunnel } from './tunnel'
 import { c, RAMPE } from './couleur'
 import { ARRETS, trace1900 } from './trace'
-import { ENTREE } from './entree'
+import { ENTREE, RETOUR } from './entree'
 
 /**
  * Le voyage immobile : le Panorama transsibérien de l'Exposition de 1900, quatre toiles qui défilent
@@ -85,6 +85,7 @@ export function creerMonde1900(): Monde {
       dessinerBande,
       // Le passage de la foire au train : quatre positions, le moteur les joue au tempo (`entree.ts`).
       entree: ENTREE,
+      retour: RETOUR,
       arrets: ARRETS,
       // Le train lève le pied dans le tunnel, d'une bouche à l'autre, quand il roule (`tunnel.ts`).
       ralentis: ralentisDuTunnel(),

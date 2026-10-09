@@ -272,7 +272,10 @@ caméra : il combattrait le défilement que le doigt mène.
 **`direBonjour` et le passage d'entrée.** `direBonjour(decennie, sens)` joue `scene.entree`, le
 jumeau de `direAdieu` : la caméra est posée d'un coup au premier temps du sens joué, y tient sa
 pause, puis glisse d'un temps au suivant ; à l'envers, c'est le retournement exact de l'endroit (la
-durée appartient au segment, pas au sens). Les durées et les pauses s'écrivent dans le monde en
+durée appartient au segment, pas au sens), sauf pour un monde qui déclare les durées de son retour
+(`scene.retour`, une ligne par temps, au même rang : les positions et leur ordre ne changent pas, un
+rang non couvert rejoue l'aller). 1900 le fait (`entree.ts`, `RETOUR`) : 11,5 s à l'écran de la
+foire au train, 5,6 s du train à la foire, sans pause. Les durées et les pauses s'écrivent dans le monde en
 millisecondes de base : le moteur seul les joue au tempo. Le monde reçoit `VueMonde.entree`, les
 secondes écoulées, -1 hors passage. La promesse se résout après la pause du dernier temps ; aussitôt
 pour un monde sans `scene` ou sans temps ; aussitôt au calme, la caméra posée au dernier temps du

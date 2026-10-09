@@ -370,9 +370,15 @@ maquette y a déjà compté le tempo de l'appli (l. 2746).
 | `assis` | 1000 |
 | `trajet` | 4600 |
 
-Onze secondes et demie en tout. Les trois durées du retour (`retourTrain` 2400, `retourQuai` 1400,
-`retourFoire` 1800) sont dans la maquette et **ne sont pas jouées** : le moteur rejoue l'endroit
-retourné (plan 3b, tâche 12).
+Onze secondes et demie en tout. **Le retour est abrégé** (décision du propriétaire du 9 octobre
+2026 ; `planDuPassage`, l. 3276) : trois segments sans pause, de la gare au compartiment, du
+compartiment au quai, du quai à la foire, cinq secondes six en tout (`entree.ts`, `RETOUR`).
+
+| Temps | À l'écran, ms |
+|---|---|
+| `retourTrain` | 2400 |
+| `retourQuai` | 1400 |
+| `retourFoire` | 1800 |
 
 **Les quatre positions** (plan 3b, tâche 12 ; `planDuPassage`, l. 3273-3277 ; les positions,
 l. 2951-2955). « En base » vaut la moitié de l'écran : `TEMPO` vaut 2, et le moteur seul joue au

@@ -3,7 +3,7 @@ import { creerMonde1900 } from '.'
 import type { CaseVue, VueMonde } from '../types'
 import { vueFactice } from '../../test/vueFactice'
 import { auTempo } from '../../voyage/tempo'
-import { ENTREE } from './entree'
+import { ENTREE, RETOUR } from './entree'
 import { borneALEcran, departALEcran, ecranDeLaCase, milieuDeLaGare } from './gares'
 import { assise, bouffee, cadrageDuQuai, dessousDevant, interieurALEcran, jonctionALEcran, montee, ouverture, quaiALEcran, trajet, VITRE, vitreALEcran, vitreOuverte } from './passage'
 import { couvertureDuPassage, dansLaFenetre, decalages } from './toiles'
@@ -59,7 +59,7 @@ describe('les positions du passage', () => {
   // Mutations : `auTempo` posé sur une seule valeur, tour à tour sur chacune des cinq (elle double) ;
   // une valeur qui dérive d'un cran.
   it('portent chacune la moitié exacte de ce que la fiche de données montre à l’écran', () => {
-    expect(A_L_ECRAN).toEqual({ descente: 2600, quai: 1100, montee: 2200, assis: 1000, trajet: 4600 })
+    expect(A_L_ECRAN).toEqual({ descente: 2600, quai: 1100, montee: 2200, assis: 1000, trajet: 4600, retourTrain: 2400, retourQuai: 1400, retourFoire: 1800 })
     const [foire, quai, assis, gare] = [ENTREE[0]!, ENTREE[1]!, ENTREE[2]!, ENTREE[3]!]
     expect(auTempo(quai.duree)).toBe(A_L_ECRAN.descente)
     expect(auTempo(quai.arret)).toBe(A_L_ECRAN.quai)
@@ -69,6 +69,24 @@ describe('les positions du passage', () => {
     // Ni pause sur la foire, ni pause en gare : le passage finit à l'arrivée.
     expect([foire.arret, gare.arret]).toEqual([0, 0])
     expect(ENTREE).toHaveLength(4)
+  })
+
+  // Le retour abrégé (9 octobre 2026). Mutations : `retour` retiré de la `scene` (le retour rejoue
+  // l'aller : 11,5 s) ; `auTempo` posé sur une durée ; deux durées échangées ; une pause rendue au
+  // quai ; une ligne de moins que `ENTREE` (le rang manquant rejouerait l'aller).
+  it('au retour, portent les trois durées de la fiche, sans pause : 5,6 s à l’écran contre 11,5 s à l’aller', () => {
+    const scene = creerMonde1900().scene!
+    expect(scene.retour).toBe(RETOUR)
+    expect(RETOUR).toHaveLength(ENTREE.length)
+    const [, quai, assis, gare] = [RETOUR[0]!, RETOUR[1]!, RETOUR[2]!, RETOUR[3]!]
+    // La durée d'un rang est celle du segment qui le relie au rang d'avant : de la gare au compartiment, etc.
+    expect(auTempo(gare.duree)).toBe(A_L_ECRAN.retourTrain)
+    expect(auTempo(assis.duree)).toBe(A_L_ECRAN.retourQuai)
+    expect(auTempo(quai.duree)).toBe(A_L_ECRAN.retourFoire)
+    expect(RETOUR.map((x) => x.arret)).toEqual([0, 0, 0, 0])
+    const total = (temps: ReadonlyArray<{ duree: number; arret: number }>) => auTempo(temps.reduce((somme, x, i) => somme + (i ? x.duree : 0) + x.arret, 0))
+    expect(total(scene.retour!)).toBe(5600)
+    expect(total(scene.entree)).toBe(11500)
   })
 
   // Mutation : l'arrêt du quai à zéro ; les deux arrêts échangés.
