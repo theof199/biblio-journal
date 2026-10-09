@@ -18368,7 +18368,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -31155,7 +31155,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -31634,7 +31634,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -31838,7 +31838,7 @@
                   "tmdb_id": {
                     "type": "integer",
                     "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991,
+                    "maximum": 2147483647,
                     "description": "Identifiant de la personne chez TMDB"
                   }
                 },
@@ -32024,7 +32024,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -32080,7 +32080,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -32338,7 +32338,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -32772,7 +32772,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -32816,7 +32816,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -33075,7 +33075,7 @@
                   "tmdb_id": {
                     "type": "integer",
                     "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991,
+                    "maximum": 2147483647,
                     "description": "Identifiant de la collection chez TMDB"
                   }
                 },
@@ -33261,7 +33261,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -33317,7 +33317,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -33578,7 +33578,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -33588,7 +33588,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "filmId",
@@ -33652,7 +33652,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -33662,7 +33662,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "filmId",
@@ -44156,7 +44156,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
@@ -46526,7 +46526,7 @@
                     "description": "Un film de mon journal, sorti cette année-là",
                     "type": "integer",
                     "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
+                    "maximum": 2147483647
                   },
                   "programme_id": {
                     "description": "Un film ou un programme de mes salles de cette année, entièrement vu",
@@ -47485,7 +47485,7 @@
                     "description": "Une bobine du programme visé par film_id — seulement pour morceau: \"court\"",
                     "type": "integer",
                     "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
+                    "maximum": 2147483647
                   }
                 },
                 "required": [
@@ -48861,7 +48861,7 @@
             "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+              "maximum": 2147483647
             },
             "in": "path",
             "name": "tmdbId",
