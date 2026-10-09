@@ -36,6 +36,8 @@ export function createQueryClient() {
         // service non configuré ne sert à rien.
         retry: (failureCount, error) =>
           error instanceof ApiError && error.retryable && failureCount < 2,
+        // Coupé pour tout : une fiche d'année relue sans geste n'est pas anodine (`CLAUDE.md`). Une
+        // seule exception, posée sur son observateur : l'état du voyageur sur la carte (`pages/Carte.tsx`).
         refetchOnWindowFocus: false,
         staleTime: 30_000,
       },

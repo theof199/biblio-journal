@@ -799,6 +799,62 @@ describe('le contrôleur sur la carte, une clé sans défaut', () => {
     await portiere()
   })
 
+  describe('la fenêtre revient au premier plan', () => {
+    /** Ce que le navigateur dit quand l'app revient devant ; TanStack l'écoute sur la fenêtre. */
+    const revenir = () => act(() => void window.dispatchEvent(new Event('visibilitychange')))
+    const compte = (requetes: readonly string[]) => Object.fromEntries([...new Set(requetes)].sort().map((r) => [r, requetes.filter((x) => x === r).length]))
+
+    // `attend` change avec l'horloge du serveur, sans écriture : une carte restée ouverte ne le voyait
+    // entrer qu'à sa prochaine lecture de l'état. Tout le cache est périmé avant le retour (une heure
+    // a passé) : seul l'état du voyageur se relit, une fois. Mutations : `refetchOnWindowFocus` retiré
+    // de la lecture de l'état (ni relecture ni portière) ; la relecture au retour ouverte à tout le
+    // cache (`refetchOnWindowFocus: true` ou `'always'` dans `api/queryClient.ts`) ou le préfixe
+    // `voyage` périmé au retour : la carte, les tickets, la malle et le courrier se relisent.
+    it('l’état du voyageur se relit, lui seul, et le contrôleur entre', async () => {
+      preter(PAGES_1900)
+      let etat = AU_REPOS
+      const banc = await monter(AU_REPOS, { ...ROUTES_DU_JEU, [LIRE]: () => json(etat) }, { voyage: EN_1903 })
+      await banc.calme()
+      pasDePortiere()
+      const avant = compte(banc.requetes)
+      expect(avant).toMatchObject({ [LIRE]: 1, [VOYAGE]: 1, [TICKETS]: 1, 'GET /api/me/voyage/decennies/1900/etiquettes': 1, 'GET /api/me/voyage/cartes-postales': 1 })
+      await act(() => banc.client.invalidateQueries({ refetchType: 'none' }))
+      etat = IL_ATTEND
+      revenir()
+      await portiere()
+      await banc.calme()
+      expect(compte(banc.requetes)).toEqual({ ...avant, [LIRE]: 2, [JOURNAL]: 1 })
+    })
+
+    // Les règles d'entrée restent les mêmes : une fois par visite. Refermée sans réponse, il attend
+    // toujours, et un retour de la fenêtre le relit sans le faire rentrer. Mutation : la garde
+    // `controleurPasse.current` retirée de l'effet d'entrée (d'autres tests la tiennent aussi).
+    it('une fois par visite : refermée sans réponse, un retour de la fenêtre relit l’état et ne rouvre pas la portière', async () => {
+      preter()
+      const banc = await monter(IL_ATTEND)
+      await portiere()
+      await banc.calme()
+      fireEvent.click(bouton('Laisser'))
+      pasDePortiere()
+      revenir()
+      await waitFor(() => expect(banc.requetes.filter((r) => r === LIRE)).toHaveLength(2))
+      await banc.calme()
+      pasDePortiere()
+    })
+
+    // 1890 ne lit toujours pas l'état du voyageur, retour de la fenêtre compris. Mutation : au retour,
+    // une relecture forcée (`voyageur.refetch()`), qui ne regarde pas `enabled`.
+    it('en 1890, sans la clé : aucune requête au retour de la fenêtre', async () => {
+      const banc = await monter(IL_ATTEND)
+      await banc.calme()
+      await act(() => banc.client.invalidateQueries({ refetchType: 'none' }))
+      revenir()
+      await banc.calme()
+      expect(compte(banc.requetes)).toEqual({ 'GET /api/auth/me': 1, [VOYAGE]: 1, [TICKETS]: 1 })
+      pasDePortiere()
+    })
+  })
+
   describe('la portière ouverte : le billet retenu et le dessin du monde, un seul fait', () => {
     const vivante = () => expect(screen.getByRole('heading', { level: 1 }).parentElement!.querySelectorAll(':scope > [inert]')).toHaveLength(0)
 

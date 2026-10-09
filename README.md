@@ -1291,9 +1291,13 @@ guichet d'un film**
   carte** (il est entré seul : le plus souvent rien ne l'avait, et il tomberait au document).
   `409` (il n'attendait plus) : la portière se referme et l'état se relit, sans rien
   dire. Toute autre panne se dit dans le dialogue, avec le message du serveur, et la réponse se
-  refait. **`controleur.attend` change avec l'horloge du serveur, sans écriture** : une carte restée
-  ouverte ne le voit entrer qu'à sa prochaine lecture de l'état (trente secondes de fraîcheur, aucune
-  relecture au retour de la fenêtre, aucun sondage) ; `pages/Carte.controleur.test.tsx` tient le tout
+  refait. **`controleur.attend` change avec l'horloge du serveur, sans écriture** : la carte
+  **relit l'état du voyageur quand la fenêtre revient au premier plan** (`refetchOnWindowFocus:
+  'always'` sur cette lecture seule ; coupé pour tout le reste dans `api/queryClient.ts`, où une fiche
+  d'année relue sans geste coûterait) : ni la carte, ni les tickets, ni la malle, ni le courrier ne se
+  relisent, 1890 ne lit toujours rien, et il entre alors selon les mêmes règles (`pleinEcranOccupe`,
+  une fois par visite). Aucun sondage : une carte restée au premier plan ne le voit qu'à sa prochaine
+  lecture de l'état ; `pages/Carte.controleur.test.tsx` tient le tout
   sur un 1890 auquel on prête un dessin. **En 1900** (`mondes/1900/pages/ControleurDeLaCarte.tsx`, sa
   feuille `Controleur.module.css`, ses mots et ses règles dans `controleur.ts` ; maquette, `#controle`) :
   un dialogue par-dessus la carte assombrie, sans photographie ; le contrôleur dessiné

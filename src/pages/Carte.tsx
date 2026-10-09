@@ -405,7 +405,17 @@ export default function Carte() {
   // monde de mon année en cours. Sans elle (1890, le monde « à venir »), ni lecture ni portière.
   const DessinDuControleur = anneeEnCours === undefined ? null : gabaritSeul(mondes(decennieDe(anneeEnCours)), 'controleurDeLaCarte')
   // Une seule lecture de l'état du voyageur, pour les objets du quai, le point et le contrôleur.
-  const voyageur = useQuery({ queryKey: cles.voyageur, queryFn: ({ signal }) => lireVoyageur(signal), enabled: objetsDeLaCarte.length > 0 || rubriquesDuPoint.length > 0 || DessinDuControleur !== null })
+  // **Elle seule se relit quand la fenêtre revient au premier plan** (`refetchOnWindowFocus`, coupé
+  // pour tout le reste dans `api/queryClient.ts`) : `controleur.attend` change avec l'horloge du
+  // serveur, sans écriture, et une carte restée ouverte ne le verrait pas entrer. Posé sur cet
+  // observateur, donc pour cette clé seulement, et jamais là où la lecture est coupée (1890) : ni la
+  // carte, ni les tickets, ni la malle, ni le courrier ne se relisent.
+  const voyageur = useQuery({
+    queryKey: cles.voyageur,
+    queryFn: ({ signal }) => lireVoyageur(signal),
+    enabled: objetsDeLaCarte.length > 0 || rubriquesDuPoint.length > 0 || DessinDuControleur !== null,
+    refetchOnWindowFocus: 'always',
+  })
   // La malle de ma décennie, pour les `collee_le` : seulement si une rubrique montée s'y date. En
   // panne ou pas encore lue, elle se tait : sa rubrique reste éteinte, et la carte reste.
   const decennieDeLaMalle = anneeEnCours !== undefined && rubriquesDuPoint.some((r) => r.malle) ? decennieDe(anneeEnCours) : null
