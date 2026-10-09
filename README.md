@@ -195,10 +195,13 @@ vient de prendre, que la liste de la page n'efface pas.
 voyageur : une étiquette vient d'être collée sur la malle et un objet trouvé en gare ». Éteint, le
 lien se nomme exactement « Sacoche du voyageur ». La liste des rubriques qui l'allument s'écrit en un
 point (`voyage/voyageur.ts`, `RUBRIQUES_DE_LA_PASTILLE` : `etiquette` par les `collee_le` de la malle,
-`objet` par les `ramasse_le` ; `bobine` jamais, `courrier` avec son bloc), et **la carte ne regarde
+`courrier` par les `postee_le` des cartes postales **reçues**, jamais des envoyées, et sans regarder
+`lue_le` : c'est la visite de la rubrique qui l'éteint, `objet` par les `ramasse_le` ; `bobine` jamais), et **la carte ne regarde
 que celles dont la sacoche du monde de mon année en cours monte le bloc** (`rubriquesDeLaPastille`) :
-elle lit alors l'état du voyageur (la même clé que pour les objets du quai, une seule lecture) et, pour
-`etiquette`, la malle de ma décennie. Un membre de 1890 ne lit rien de plus ; un membre du monde « à
+elle lit alors l'état du voyageur (la même clé que pour les objets du quai, une seule lecture), pour
+`etiquette` la malle de ma décennie, et pour `courrier` ma boîte aux cartes postales (`cles.courrier`),
+**dont elle ne montre rien** : une carte postale ne se lit que dans la sacoche, et son mot n'entre ni
+dans le nom du lien ni dans son titre. Un membre de 1890 ne lit rien de plus ; un membre du monde « à
 venir » n'a pas de point, même devant les quais de 1900, car sa sacoche ne marquerait rien vu. La carte
 n'attend aucune de ces deux lectures, et leur panne se tait : pas de point pour la rubrique qu'elle
 prive de ses dates, et la carte reste. **Le point se lit sur le cache, que deux écritures tiennent
@@ -924,13 +927,30 @@ La rubrique `courrier` se marque vue une fois par visite (`useVisiteDeRubrique`)
 carte, jamais pour une boîte vide ou des envoyées seules (le point rouge se date sur les reçues). En
 panne, le bloc le dit, et lui seul ; une carte ouverte quand la relecture tombe reste à l'écran, et la
 panne se dit une fois refermée. `pages/VoyageSacoche.courrier.test.tsx` le tient sur un 1890 auquel on
-prête un dessin. **Aucun monde ne remplit encore la clé** : le point rouge de la
+prête un dessin. **1900 la dessine** (maquette « Voyage immobile 1900 », écrans 15 et 19 ;
+`mondes/1900/pages/CourrierDeLaSacoche.tsx`, `Courrier.module.css`, les mots et les règles dans
+`courrier.ts`) : la rubrique « Le courrier · les cartes postales », puis « Reçues », un pli de papier
+par carte (la photographie de la gare d'où elle part, ou un dos de carte ; « De Léa · gare de 1902 » ;
+le mot sur deux lignes au plus ; « Nouvelle » tant que `lue_le` est nul), puis « Envoyées » (« À Léa ·
+gare de 1902 », l'adresse servie), et « Aucune carte encore. » pour une boîte vide. Ouverte, la carte
+est un dialogue par-dessus la sacoche (« Refermer la carte » prend le focus et le rend, Échap ferme) :
+**le recto de sa gare seulement si 1900 en a la photographie** (ses dix gares ; une carte partie d'une
+gare de la foire ou d'après 1909 n'a que son verso, décision 8, jamais une image cassée), sa légende
+(le lieu de l'image), puis le dos divisé d'époque : « Correspondance », le mot à la plume, signé de son
+expéditeur ; « Adresse », le timbre, le tampon à date (la gare d'où elle part, le jour de l'envoi **à
+Paris**) et l'adresse **telle que servie** (`destinataire.pseudo`, `gare_destinataire` figée à l'envoi,
+et le lieu de cette gare si 1900 le connaît), jamais mon année en cours. **Le mot est un texte d'un
+autre membre** : rendu en texte, en entier, ses retours à la ligne visibles, jamais en HTML ; aucun
+attribut, aucun nom lu, aucun titre ne le porte. Rien n'y bouge. On n'y écrit pas de carte (brief 14 :
+`en_attente` est lu, rien ne l'annonce). `mondes/1900/pages/courrierDeLaSacoche.test.tsx` tient ce
+qu'il dit. Le point rouge de la
 pastille est sur la carte (« La carte du Voyage ») (`mondes/1900/pages/sacoche.test.tsx` nomme, route par route, ce que la sacoche de 1900 a
 le droit de lire, et la liste entière de ses rubriques).
 
 Elle lit la carte (`GET /me/voyage`) et les tickets (`GET /me/voyage/tickets`) sous les clés de la
 carte, au dépli des Coulisses les dépenses (`GET /me/voyage/depenses`), et en 1900 seulement la malle
-de ma décennie et l'état du voyageur, dont elle marque les rubriques `etiquette` et `objet` vues :
+de ma décennie, ma boîte aux cartes postales et l'état du voyageur, dont elle marque les rubriques
+`etiquette`, `courrier` et `objet` vues (et, au geste, la carte reçue qu'on ouvre) :
 **jamais une fiche d'année** (`pages/VoyageSacoche.test.tsx` compte les requêtes parties, et
 `mondes/1900/pages/sacoche.test.tsx` pour la sacoche de 1900). Pas de générique au toucher
 d'un tampon : il n'est pas venu avec les célébrations, et reste à faire. Le Profil n'en porte rien.
@@ -942,8 +962,9 @@ trouvés, le point rouge, le contrôleur et son poinçon, l'horaire, la halte, l
 wagon-restaurant) : **la malle et les objets trouvés ont leur écran, dans la sacoche, et les objets se
 ramassent sur le quai de la carte, où la pastille de la sacoche porte son point rouge ; le contrôleur des
 billets passe sur la carte et son poinçon doré reste au casier ; l'horaire se prend, se retire et se dit
-sur la fiche de son année, et la plaque de sa gare le dit sur la carte ; les trois autres n'ont rien à
-l'écran (les haltes vont déjà jusqu'au monde, plus bas)**
+sur la fiche de son année, et la plaque de sa gare le dit sur la carte ; la halte s'ouvre sur la carte ;
+les cartes postales reçues et envoyées se lisent dans la sacoche ; écrire une carte et le
+wagon-restaurant n'ont rien à l'écran**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`

@@ -1,4 +1,4 @@
-import type { Malle, RubriqueVue, Voyageur } from '../api/voyage'
+import type { Courrier, Malle, RubriqueVue, Voyageur } from '../api/voyage'
 import type { ClesSansDefaut, Monde } from '../mondes/types'
 import { gabaritSeul } from './gabarit'
 
@@ -16,7 +16,7 @@ const estConnue = (rubrique: string): rubrique is Rubrique => (RUBRIQUES as read
 
 /**
  * Par rubrique, les dates de ses éléments, telles que le contrat les sert (des instants ISO) : un
- * `ramasse_le` par objet, un `collee_le` par place de la malle. Un élément sans date (une place pas
+ * `ramasse_le` par objet, un `collee_le` par place de la malle, un `postee_le` par carte postale reçue. Un élément sans date (une place pas
  * encore collée) se passe nul et ne compte pas. **Une rubrique dont rien n'est passé reste éteinte** :
  * l'appelant ne passe que celles dont il montre le bloc.
  */
@@ -54,10 +54,14 @@ export function rubriquesAllumees(rubriques: readonly RubriqueVue[], dates: Date
 /** Le nom du lien de la sacoche sur la carte, point éteint : il reste exactement celui-ci. */
 export const NOM_DE_LA_SACOCHE = 'Sacoche du voyageur'
 
-/** Ce que la carte a lu pour le point rouge : l'état du voyageur, et la malle de la décennie de mon année en cours. Absent : pas lu, ou en panne. */
+/**
+ * Ce que la carte a lu pour le point rouge : l'état du voyageur, la malle de la décennie de mon année
+ * en cours, et ma boîte aux cartes postales. Absent : pas lu, ou en panne.
+ */
 export interface LuPourLaPastille {
   voyageur: Voyageur | undefined
   malle: Malle | undefined
+  courrier: Courrier | undefined
 }
 
 /**
@@ -70,6 +74,8 @@ export interface RubriqueDeLaPastille {
   bloc: ClesSansDefaut
   /** Vrai si ses dates se lisent dans la malle de la décennie : la carte ne la lit que pour elle. */
   malle: boolean
+  /** Vrai si ses dates se lisent dans ma boîte aux cartes postales : la carte ne la lit que pour elle, et n'en montre rien. */
+  boite: boolean
   dates: (lu: LuPourLaPastille) => readonly (string | null)[] | undefined
   pourquoi: string
 }
@@ -77,11 +83,14 @@ export interface RubriqueDeLaPastille {
 /**
  * **La liste des rubriques qui allument le point, écrite ici et nulle part ailleurs.** `bobine` n'y
  * sera jamais (ses éléments n'ont pas de date, et la sacoche n'en monte aucun bloc) ; `courrier` y
- * entre avec son bloc (plan des écrans des lots, brief 13), d'une ligne.
+ * est entré avec son bloc (plan des écrans des lots, brief 13) : une carte **reçue** l'allume par son
+ * `postee_le`, jamais une carte envoyée, et `lue_le` n'y change rien (c'est la visite de la rubrique
+ * qui l'éteint). Dans l'ordre des blocs de la sacoche.
  */
 export const RUBRIQUES_DE_LA_PASTILLE: readonly RubriqueDeLaPastille[] = [
-  { rubrique: 'etiquette', bloc: 'malleDeLaSacoche', malle: true, dates: ({ malle }) => malle?.etiquettes.map((p) => p.collee_le), pourquoi: 'une étiquette vient d’être collée sur la malle' },
-  { rubrique: 'objet', bloc: 'objetsDeLaSacoche', malle: false, dates: ({ voyageur }) => voyageur?.objets.map((o) => o.ramasse_le), pourquoi: 'un objet trouvé en gare' },
+  { rubrique: 'etiquette', bloc: 'malleDeLaSacoche', malle: true, boite: false, dates: ({ malle }) => malle?.etiquettes.map((p) => p.collee_le), pourquoi: 'une étiquette vient d’être collée sur la malle' },
+  { rubrique: 'courrier', bloc: 'courrierDeLaSacoche', malle: false, boite: true, dates: ({ courrier }) => courrier?.recues.map((c) => c.postee_le), pourquoi: 'une carte postale est arrivée' },
+  { rubrique: 'objet', bloc: 'objetsDeLaSacoche', malle: false, boite: false, dates: ({ voyageur }) => voyageur?.objets.map((o) => o.ramasse_le), pourquoi: 'un objet trouvé en gare' },
 ]
 
 /**

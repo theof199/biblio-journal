@@ -10,7 +10,7 @@ import { FabriqueMoteurContexte } from '../carte/CarteCanvas'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
-import { malleVide, voyage1890 } from '../test/voyage'
+import { COURRIER_VIDE, malleVide, voyage1890 } from '../test/voyage'
 
 /**
  * La carte en sait plus (plan des écrans des lots, brief 9), côté page : ce que `GET /me/voyage` sert
@@ -46,6 +46,7 @@ async function monter(servi: () => Voyage, f = moteurFactice()) {
     'GET /api/me/voyage': () => json(servi()),
     'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
     'GET /api/me/voyage/voyageur': () => json(ETAT),
+    'GET /api/me/voyage/cartes-postales': () => json(COURRIER_VIDE),
     'GET /api/me/voyage/decennies/1900/etiquettes': () => json(malleVide(1900)),
   })
   render(

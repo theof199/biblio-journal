@@ -12,7 +12,7 @@ import type { HabillagePages } from '../mondes/types'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
-import { malleVide, voyage1890 } from '../test/voyage'
+import { COURRIER_VIDE, malleVide, voyage1890 } from '../test/voyage'
 import type { PropsControleurDeLaCarte } from '../voyage/controleur/Controleur'
 import type { PropsHalteDeLaCarte } from '../voyage/halte/Halte'
 
@@ -463,7 +463,7 @@ describe('la halte sur la carte de 1900', () => {
       ),
       { haltes: [MELIES] },
     )
-  const ROUTES = { [LIRE]: () => json({ ...BASE, controleur: { attend: false, billet: null } }), 'GET /api/me/voyage/decennies/1900/etiquettes': () => json(malleVide(1900)) }
+  const ROUTES = { [LIRE]: () => json({ ...BASE, controleur: { attend: false, billet: null } }), 'GET /api/me/voyage/decennies/1900/etiquettes': () => json(malleVide(1900)), 'GET /api/me/voyage/cartes-postales': () => json(COURRIER_VIDE) }
 
   // La clé se lit au monde de la halte, pas à celui de mon année en cours : rendu en 1910 (le monde
   // « à venir », qui ne compose rien), la ligne de 1900 est toujours à l'écran, et sa halte s'ouvre.

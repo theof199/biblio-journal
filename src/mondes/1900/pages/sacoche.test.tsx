@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { QueryClient } from '@tanstack/react-query'
-import type { Depenses, Malle, RubriqueVue, TicketUtilise, Tickets, Voyage, Voyageur } from '../../../api/voyage'
+import type { CartePostaleRecue, Courrier, Depenses, Malle, RubriqueVue, TicketUtilise, Tickets, Voyage, Voyageur } from '../../../api/voyage'
 import { exemple } from '../../../test/contrat'
 import { monterVoyage } from '../../../test/pageVoyage'
 import { json } from '../../../test/serveur'
@@ -14,9 +14,10 @@ import { MOTS_DE_LA_SACOCHE as M, compteDeLAnneau, etatDeLaPage, libelleDUtilise
  * La sacoche du voyageur des années 1900 (plan des pages 1900, brief 10 ; maquette, écran 15) : la
  * page montée dans l'app entière, le monde n'y arrive que par le registre. Les tests de
  * `pages/VoyageSacoche.test.tsx`, montés sur 1890, tiennent le défaut ; ceux-ci tiennent ce que 1900
- * en fait, et ce qu'il n'en fait pas encore (`PAS_ENCORE` : le courrier). La malle est branchée (plan
- * des écrans des lots, brief 2), les objets trouvés aussi (brief 3) : `malleDeLaSacoche.test.tsx` et
- * `objetsDeLaSacoche.test.tsx` tiennent ce qu'ils montrent.
+ * en fait, et ce qu'il n'en fait pas encore (`PAS_ENCORE` : écrire une carte postale). La malle est
+ * branchée (plan des écrans des lots, brief 2), les objets trouvés (brief 3) et le courrier reçu
+ * (brief 13) aussi : `malleDeLaSacoche.test.tsx`, `objetsDeLaSacoche.test.tsx` et
+ * `courrierDeLaSacoche.test.tsx` tiennent ce qu'ils montrent.
  */
 const SACOCHE = '/voyage/sacoche'
 const CARTE = 'GET /api/me/voyage'
@@ -27,8 +28,16 @@ const MALLE = 'GET /api/me/voyage/decennies/1900/etiquettes'
 const VOYAGEUR = 'GET /api/me/voyage/voyageur'
 const VUE = 'POST /api/me/voyage/rubriques/etiquette/vue'
 const VUE_DES_OBJETS = 'POST /api/me/voyage/rubriques/objet/vue'
+const BOITE = 'GET /api/me/voyage/cartes-postales'
+const VUE_DU_COURRIER = 'POST /api/me/voyage/rubriques/courrier/vue'
 /** Les marques « vue » des rubriques : des `POST` qui ne sont pas des gestes du membre. */
-const MARQUES = [VUE, VUE_DES_OBJETS]
+const MARQUES = [VUE, VUE_DES_OBJETS, VUE_DU_COURRIER]
+/** L'exemple du contrat (une carte reçue de bob, déjà lue ; une envoyée), et une carte reçue pas encore lue, en tête. */
+const EXEMPLE_DE_BOITE = exemple<Courrier>('/me/voyage/cartes-postales', 'get', 200)
+const NEUVE: CartePostaleRecue = { ...EXEMPLE_DE_BOITE.recues[0]!, id: '5d1c7a40-2b6e-4f93-a0d8-9e3b1c6f7a54', annee: 1903, mot: 'Bien arrivé à Longueville.', postee_le: '2026-09-28T07:00:00.000Z', lue_le: null }
+const LA_BOITE: Courrier = { ...EXEMPLE_DE_BOITE, recues: [NEUVE, ...EXEMPLE_DE_BOITE.recues] }
+/** Marquer lue la carte qu'on ouvre : la seule écriture du courrier qui soit un geste du membre. */
+const LUE = `POST /api/me/voyage/cartes-postales/${NEUVE.id}/lue`
 
 /** Les années 1890 bouclées et tamponnées, trois gares de 1900 récompensées, la quatrième en cours. */
 const VOYAGE: Voyage = voyage1890(
@@ -61,6 +70,9 @@ const ROUTES = {
   [VOYAGEUR]: () => json(exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)),
   [VUE]: () => json({ rubrique: 'etiquette', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
   [VUE_DES_OBJETS]: () => json({ rubrique: 'objet', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
+  [BOITE]: () => json(LA_BOITE),
+  [VUE_DU_COURRIER]: () => json({ rubrique: 'courrier', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
+  [LUE]: () => json({ ...NEUVE, lue_le: '2026-09-29T12:00:05.000Z' } satisfies CartePostaleRecue),
 }
 // `retryable: false` : une panne relancée par TanStack attendrait trois secondes avant de se dire.
 const panne = (message: string) => () => json({ code: 'VALIDATION_ERROR', message, retryable: false }, 400)
@@ -73,11 +85,12 @@ const deplier = async () => fireEvent.click(within(await region(M.coulisses.titr
 /**
  * Ce que la sacoche de 1900 ne montre ni ne lit **pas encore**, une ligne par rubrique à venir : les
  * mots qui l'annonceraient, les routes qu'elle lirait. Le brief qui branche une rubrique retire sa
- * ligne, et elle seule (le courrier au brief 13 ; la malle a retiré la sienne au brief 2, les objets
- * trouvés au brief 3).
+ * ligne, et elle seule (la malle a retiré la sienne au brief 2, les objets trouvés au brief 3, le
+ * courrier reçu au brief 13, qui laisse celle-ci : **on n'écrit pas encore de carte**, brief 14). Les
+ * routes se lisent avec leur méthode : lire la boîte est permis, y poster ne l'est pas.
  */
 const PAS_ENCORE: Record<string, { mots: RegExp; routes: RegExp }> = {
-  'le courrier': { mots: /courrier|cartes? postales?/i, routes: /\/cartes-postales/ },
+  'écrire une carte postale': { mots: /poster|carte à écrire|écrire une carte/i, routes: /^POST \/api\/me\/voyage\/cartes-postales$/ },
 }
 /**
  * Ce que la sacoche de 1900 lit et écrit sous `/me/voyage`, **route par route** : un bloc neuf y ajoute
@@ -85,12 +98,15 @@ const PAS_ENCORE: Record<string, { mots: RegExp; routes: RegExp }> = {
  * du voyageur, et de marquer vue la rubrique `etiquette`, elle seule : la marque d'une autre rubrique
  * (`…/rubriques/courrier/vue`) n'est pas nommée ici, la garde la refuse. Les objets trouvés (brief 3)
  * ne lisent que le même état du voyageur et n'écrivent que la marque de la rubrique `objet` :
- * **ramasser (`…/objets/{cle}/ramasser`) reste hors de la sacoche**, c'est le geste de la carte.
+ * **ramasser (`…/objets/{cle}/ramasser`) reste hors de la sacoche**, c'est le geste de la carte. Le
+ * courrier (brief 13) lit ma boîte, marque vue la rubrique `courrier` et, **au geste seulement**
+ * (`AU_GESTE` : une carte reçue qu'on ouvre), marque cette carte lue ; il ne poste rien.
  */
-const LECTURES = [CARTE, TICKETS, DEPENSES, MALLE, VOYAGEUR, VUE, VUE_DES_OBJETS]
+const LECTURES = [CARTE, TICKETS, DEPENSES, MALLE, VOYAGEUR, VUE, VUE_DES_OBJETS, BOITE, VUE_DU_COURRIER]
+const AU_GESTE = [LUE]
 /** Les rubriques que la sacoche de 1900 montre, dans l'ordre, et aucune autre : qui en ajoute une la nomme. */
 const PORTEFEUILLE = 'Le portefeuille les tickets'
-const RUBRIQUES = ['Le passeport une page par décennie', 'La malle les étiquettes de la décennie', PORTEFEUILLE, 'Les objets trouvés 2 sur 10', 'Les coulisses']
+const RUBRIQUES = ['Le passeport une page par décennie', 'La malle les étiquettes de la décennie', PORTEFEUILLE, 'Le courrier les cartes postales', 'Les objets trouvés 2 sur 10', 'Les coulisses']
 // Le signe du pli, à côté du titre des coulisses, ne se lit pas : il n'est pas du titre.
 const rubriques = (page: HTMLElement) => within(page).getAllByRole('heading', { level: 2 }).map((h) => h.textContent?.replace(/[▸▾]$/, '') ?? '')
 
@@ -165,17 +181,27 @@ describe('la sacoche du voyageur en 1900', () => {
   // clair (on ne ramasse pas depuis la sacoche). Mutations : une `useQuery` de `lireAnnee(1903)` ajoutée
   // à `pages/VoyageSacoche.tsx` ; une lecture de `GET /me/voyage/tables` ajoutée à la même page ; un
   // `POST …/rubriques/courrier/vue` à son montage ; `ramasserObjet('melon')` au montage du bloc des
-  // objets trouvés ; une `Rubrique` « Le wagon-restaurant » ajoutée au dessin de la malle.
-  it('ne lit aucune fiche d’année, coulisses dépliées comprises, ni rien que ce fichier ne nomme, ne ramasse rien, et ne montre que ses cinq rubriques', async () => {
+  // objets trouvés ; une `Rubrique` « Le wagon-restaurant » ajoutée au dessin de la malle. **Elle a
+  // changé au brief 13** : le courrier reçu est branché, une rubrique, une lecture et une marque de
+  // plus, et une écriture au geste (la carte reçue qu'on ouvre se marque lue, elle seule : `AU_GESTE`).
+  // Mutations : `marquerCarteLue` au montage du bloc du courrier, pour chaque carte reçue (la garde
+  // d'avant le geste rougit) ; `lireCourrier` relu à l'ouverture d'une carte.
+  it('ne lit aucune fiche d’année, coulisses dépliées comprises, ni rien que ce fichier ne nomme, ne ramasse rien, et ne montre que ses six rubriques', async () => {
     const { page, requetes } = await sacocheDepliee()
     expect(rubriques(page)).toEqual(RUBRIQUES)
+    // Avant tout geste : rien que `LECTURES`, une fois chacune pour la boîte. Puis la carte neuve
+    // ouverte : sa marque part, et rien d'autre.
+    expect(requetes.filter((r) => r.includes('/cartes-postales'))).toEqual([BOITE])
+    fireEvent.click(within(await region('Courrier')).getByRole('button', { name: /Longueville/ }))
+    await screen.findByRole('dialog', { name: 'Carte postale' })
+    await waitFor(() => expect(requetes.filter((r) => r.includes('/cartes-postales'))).toEqual([BOITE, LUE]))
     expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([M.coulisses.depenses, M.coulisses.credits])
     const duVoyage = requetes.filter((r) => r.includes('/me/voyage'))
     expect(LECTURES.filter((r) => !duVoyage.includes(r))).toEqual([])
     expect(duVoyage.filter((r) => r.includes('/annees'))).toEqual([])
     expect(duVoyage.filter((r) => r.includes('/objets/'))).toEqual([])
     const nommees = Object.values(PAS_ENCORE).map((r) => r.routes)
-    expect(duVoyage.filter((r) => !LECTURES.includes(r) && !nommees.some((n) => n.test(r)))).toEqual([])
+    expect(duVoyage.filter((r) => !LECTURES.includes(r) && !AU_GESTE.includes(r) && !nommees.some((n) => n.test(r)))).toEqual([])
   })
 
   // **Un interdit par rubrique pas encore faite** (plan des écrans des lots, brief 0) : chacune a sa
@@ -263,8 +289,9 @@ describe('la sacoche du voyageur en 1900', () => {
     expect(utilise).not.toHaveTextContent('1902 est bouclée')
     expect([offert, attend, utilise].map((li) => li.getAttribute('data-utilise'))).toEqual(['non', 'non', 'oui'])
 
-    // La règle a changé au brief 2 des écrans des lots, puis au brief 3 : la sacoche marque vues la
-    // rubrique de la malle et celle des objets trouvés, deux `POST` qui ne sont pas des encaissements.
+    // La règle a changé au brief 2 des écrans des lots, puis aux briefs 3 et 13 : la sacoche marque vues
+    // les rubriques de la malle, des objets trouvés et du courrier, trois `POST` qui ne sont pas des
+    // encaissements (`MARQUES`, et rien d'autre : la carte lue n'en est pas, personne ne l'ouvre ici).
     const bouton = within(offert).getByRole('button', { name: 'Utiliser le ticket pour 1904' })
     expect(bouton).toHaveTextContent(/^Utiliser$/)
     fireEvent.click(bouton)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Malle, RubriqueVue, Voyageur } from '../api/voyage'
+import type { Courrier, Malle, RubriqueVue, Voyageur } from '../api/voyage'
 import { exemple } from '../test/contrat'
 import { creerRegistre } from '../mondes'
 import type { Monde } from '../mondes/types'
@@ -129,33 +129,54 @@ describe('la pastille de la sacoche', () => {
 
   // Mutations : le filtre retiré (toute la liste pour tout monde) ; `gabaritSeul` lu sur une seule clé
   // pour toutes les rubriques (`malleDeLaSacoche` : un monde qui ne compose que la consigne n'aurait rien).
-  it('ne regarde que les rubriques dont le monde compose le bloc : aucune en 1890 ni « à venir », les deux en 1900', () => {
+  it('ne regarde que les rubriques dont le monde compose le bloc : aucune en 1890 ni « à venir », les trois en 1900, dans l’ordre de la sacoche', () => {
     expect(rubriquesDeLaPastille(mondes(1890))).toEqual([])
     expect(rubriquesDeLaPastille(mondes(1910))).toEqual([])
-    expect(rubriquesDeLaPastille(mondes(1900)).map((r) => r.rubrique)).toEqual(['etiquette', 'objet'])
+    expect(rubriquesDeLaPastille(mondes(1900)).map((r) => r.rubrique)).toEqual(['etiquette', 'courrier', 'objet'])
     const m = mondes(1900)
-    const consigneSeule: Monde = { ...m, pages: { ...m.pages, gabarits: { ...m.pages.gabarits, malleDeLaSacoche: undefined } } }
+    const consigneSeule: Monde = { ...m, pages: { ...m.pages, gabarits: { ...m.pages.gabarits, malleDeLaSacoche: undefined, courrierDeLaSacoche: undefined } } }
     expect(rubriquesDeLaPastille(consigneSeule).map((r) => r.rubrique)).toEqual(['objet'])
   })
 
   // Mutations : toutes les rubriques servies sans `vue_le` allumées (`bobine`, `courrier`, « wagon ») ;
   // les rubriques de toute la liste et non les rubriques montées ; l'ordre des phrases pris au serveur.
-  it('dit pourquoi, une phrase par rubrique montée et allumée, jamais pour « bobine », « courrier » ni une inconnue', () => {
-    const lu = { voyageur: jamais, malle }
+  it('dit pourquoi, une phrase par rubrique montée et allumée, jamais pour « bobine », un « courrier » dont la boîte n’est pas lue, ni une inconnue', () => {
+    const lu = { voyageur: jamais, malle, courrier: undefined }
     expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, lu)).toEqual([ETIQUETTE, OBJET])
     expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { ...lu, voyageur: { ...jamais, rubriques: [...jamais.rubriques].reverse() } })).toEqual([ETIQUETTE, OBJET])
     expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE.filter((r) => r.rubrique === 'objet'), lu)).toEqual([OBJET])
     expect(nouveautesDeLaSacoche([], lu)).toEqual([])
     // Tout vu, `bobine`, `courrier` et « wagon » restant jamais ouvertes : plus rien.
     const vu = { ...jamais, rubriques: jamais.rubriques.map((r) => (r.rubrique === 'etiquette' || r.rubrique === 'objet' ? { ...r, vue_le: '2026-10-08T12:00:00.000Z' } : r)) }
-    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: vu, malle })).toEqual([])
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: vu, malle, courrier: undefined })).toEqual([])
   })
 
   // Mutations : la garde `!lu.voyageur` retirée (la carte tomberait avant la réponse) ; les dates de
   // la malle lues sans garde (`malle.etiquettes` d'une malle pas lue).
   it('sans l’état du voyageur, rien ; sans la malle, sa rubrique seule reste éteinte', () => {
-    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: undefined, malle })).toEqual([])
-    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: jamais, malle: undefined })).toEqual([OBJET])
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: undefined, malle, courrier: undefined })).toEqual([])
+    expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: jamais, malle: undefined, courrier: undefined })).toEqual([OBJET])
+  })
+
+  // Le courrier (brief 13) : une carte **reçue** l'allume par son `postee_le`, comparé à la visite de
+  // la rubrique. L'exemple du contrat : une reçue postée le 6 octobre 2026 (déjà lue), une envoyée le
+  // 5. Mutations, dans `RUBRIQUES_DE_LA_PASTILLE` : les envoyées prises avec les reçues (une carte que
+  // j'écris allumerait mon propre point) ; les seules cartes non lues (`lue_le === null` : une carte
+  // ouverte sur un autre appareil éteindrait le point sans que la rubrique soit vue ici) ; `lue_le`
+  // pris pour date ; la boîte pas lue qui fait tomber la règle (`courrier.recues` sans garde).
+  it('une carte postale reçue allume « courrier » par son `postee_le` : ni une carte envoyée, ni `lue_le`, ni une boîte pas lue', () => {
+    const COURRIER = 'une carte postale est arrivée'
+    const boite = exemple<Courrier>('/me/voyage/cartes-postales', 'get', 200)
+    const vuLe = (courrier: string | null): Voyageur => ({ ...base, objets: [], rubriques: [vue('etiquette', '2026-10-08T12:00:00.000Z'), vue('objet', null), vue('courrier', courrier)] })
+    const dit = (v: Voyageur, courrier: Courrier | undefined) => nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: v, malle, courrier })
+    expect(boite.recues.map((c) => [c.postee_le, c.lue_le])).toEqual([['2026-10-06T08:30:00.000Z', '2026-10-06T12:04:11.000Z']])
+    expect(dit(vuLe(null), boite)).toEqual([COURRIER])
+    expect(dit(vuLe('2026-10-06T08:00:00.000Z'), boite)).toEqual([COURRIER])
+    // Vue entre l'envoi et la lecture de la carte : la rubrique est éteinte, `lue_le` n'y change rien.
+    expect(dit(vuLe('2026-10-06T09:00:00.000Z'), boite)).toEqual([])
+    // Des envoyées seules, la rubrique jamais ouverte : rien.
+    expect(dit(vuLe(null), { ...boite, recues: [] })).toEqual([])
+    expect(dit(vuLe(null), undefined)).toEqual([])
   })
 
   // Mutation : le suffixe toujours posé.

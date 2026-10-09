@@ -272,7 +272,7 @@ describe('la sacoche du voyageur', () => {
       expect(bloc).toBeVisible()
       expect(bloc).not.toBeEmptyDOMElement()
     }
-    expect(regionsDe(page)).toEqual(['Passeport', 'Portefeuille', 'Objets trouvés', MOTS_DE_LA_SACOCHE.coulisses.titre])
+    expect(regionsDe(page)).toEqual(['Passeport', 'Portefeuille', 'Courrier', 'Objets trouvés', MOTS_DE_LA_SACOCHE.coulisses.titre])
   })
 
   // La carte en panne, la page prend le monde du départ et chaque bloc dit ce qu'il a ; « Réessayer »
@@ -312,7 +312,7 @@ describe('la sacoche du voyageur', () => {
     await auCalme(client)
     // Par son nom, jamais par son rang : 1900 monte ses blocs du jeu avant elle.
     expect(screen.getByRole('region', { name: MOTS_DE_LA_SACOCHE.coulisses.titre })).toBe(coulisses)
-    expect(regionsDe(page)).toEqual(['Passeport', 'Portefeuille', 'Objets trouvés', MOTS_DE_LA_SACOCHE.coulisses.titre, 'Dépenses', 'Crédits des images'])
+    expect(regionsDe(page)).toEqual(['Passeport', 'Portefeuille', 'Courrier', 'Objets trouvés', MOTS_DE_LA_SACOCHE.coulisses.titre, 'Dépenses', 'Crédits des images'])
     expect(coulisses).toBeVisible()
     expect(within(coulisses).getByRole('button', { expanded: true })).toBeInTheDocument()
     expect(within(coulisses).queryByRole('button', { expanded: false })).toBeNull()

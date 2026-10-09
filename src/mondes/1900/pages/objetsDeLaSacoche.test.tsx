@@ -4,7 +4,7 @@ import type { Malle, RubriqueVue, Tickets, Voyage, Voyageur } from '../../../api
 import { exemple } from '../../../test/contrat'
 import { monterVoyage } from '../../../test/pageVoyage'
 import { json } from '../../../test/serveur'
-import { voyage1890 } from '../../../test/voyage'
+import { COURRIER_VIDE, voyage1890 } from '../../../test/voyage'
 import { OBJETS } from '../objets'
 import { MOTS_DE_LA_CONSIGNE as M, compteDeLaConsigne, nomLuDeLaConsigne, placesDeConsigne } from './consigne'
 
@@ -35,6 +35,7 @@ const ROUTES = {
   [TICKETS]: () => json(TICKETS_LUS),
   [MALLE]: () => json(exemple<Malle>('/me/voyage/decennies/{decennie}/etiquettes', 'get', 200)),
   [VOYAGEUR]: () => json(ETAT),
+  'GET /api/me/voyage/cartes-postales': () => json(COURRIER_VIDE),
   [VUE]: () => json({ rubrique: 'objet', vue_le: '2026-10-08T10:00:00.000Z' } satisfies RubriqueVue),
   [VUE_DE_LA_MALLE]: () => json({ rubrique: 'etiquette', vue_le: '2026-10-08T10:00:00.000Z' } satisfies RubriqueVue),
 }

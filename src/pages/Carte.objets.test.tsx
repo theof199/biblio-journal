@@ -11,7 +11,7 @@ import stylesDeLaCarte from '../carte/Carte.module.css'
 import { exemple } from '../test/contrat'
 import { moteurFactice } from '../test/moteurFactice'
 import { json, servir } from '../test/serveur'
-import { malleVide, voyage1890 } from '../test/voyage'
+import { COURRIER_VIDE, malleVide, voyage1890 } from '../test/voyage'
 import { auTempo } from '../voyage/tempo'
 
 /**
@@ -71,6 +71,7 @@ async function monter(routes: Routes = {}, { enCours = 1903, lu = true }: { enCo
     'GET /api/me/voyage': () => json(voyage(enCours)),
     'GET /api/me/voyage/tickets': () => json({ tickets: [] }),
     [LIRE]: () => json(ETAT),
+    'GET /api/me/voyage/cartes-postales': () => json(COURRIER_VIDE),
     // Depuis le brief 5, la carte d'un membre de 1900 lit aussi la malle de sa décennie, pour le point rouge.
     'GET /api/me/voyage/decennies/1900/etiquettes': () => json(malleVide(1900)),
     ...routes,

@@ -1,5 +1,6 @@
 import type {
   AnneeCarte,
+  Courrier,
   FicheEnAttente,
   FichePrete,
   FicheVerrouillee,
@@ -87,8 +88,9 @@ export function seance(s: Partial<Seance> & { id: string; rang: number; long: Fi
 }
 
 /**
- * Ce que la carte de 1900 lit en plus de la carte et des tickets (lot d'écrans, briefs 4 et 5) : l'état
- * d'un voyageur qui n'a rien ramassé ni rien ouvert, et une malle de 1900 où rien n'est collé. Un test
+ * Ce que la carte de 1900 lit en plus de la carte et des tickets (lot d'écrans, briefs 4, 5 et 13) : l'état
+ * d'un voyageur qui n'a rien ramassé ni rien ouvert, une malle de 1900 où rien n'est collé, et une
+ * boîte aux cartes postales vide. Un test
  * de la carte qui ne regarde ni les objets ni le point rouge les sert tels quels : rien ne s'allume.
  */
 export const VOYAGEUR_VIDE: Voyageur = {
@@ -98,7 +100,9 @@ export const VOYAGEUR_VIDE: Voyageur = {
   poincons: [],
 }
 export const malleVide = (decennie: number): Malle => ({ decennie, total: 0, collees: 0, etiquettes: [] })
+export const COURRIER_VIDE: Courrier = { recues: [], envoyees: [], en_attente: [] }
 export const ROUTES_DU_JEU: Record<string, () => Response> = {
+  'GET /api/me/voyage/cartes-postales': () => new Response(JSON.stringify(COURRIER_VIDE)),
   'GET /api/me/voyage/voyageur': () => new Response(JSON.stringify(VOYAGEUR_VIDE)),
   'GET /api/me/voyage/decennies/1900/etiquettes': () => new Response(JSON.stringify(malleVide(1900))),
 }

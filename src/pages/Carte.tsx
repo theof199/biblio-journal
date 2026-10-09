@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../api/cles'
 import { ApiError } from '../api/client'
-import { estPrete, lireAnnee, lireMalle, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type BilletDemande, type FicheAnnee, type Voyageur } from '../api/voyage'
+import { estPrete, lireAnnee, lireCourrier, lireMalle, lireTickets, lireVoyage, lireVoyageur, ramasserObjet, utiliserTicket, type BilletDemande, type FicheAnnee, type Voyageur } from '../api/voyage'
 import CarteCanvas, { type Moteur } from '../carte/CarteCanvas'
 import Apercu from '../carte/Apercu'
 import type { CaseCarte, EtatCarte } from '../carte/moteur'
@@ -410,9 +410,13 @@ export default function Carte() {
   // panne ou pas encore lue, elle se tait : sa rubrique reste éteinte, et la carte reste.
   const decennieDeLaMalle = anneeEnCours !== undefined && rubriquesDuPoint.some((r) => r.malle) ? decennieDe(anneeEnCours) : null
   const malle = useQuery({ queryKey: cles.malle(decennieDeLaMalle ?? 0), queryFn: ({ signal }) => lireMalle(decennieDeLaMalle!, signal), enabled: decennieDeLaMalle !== null })
+  // Ma boîte aux cartes postales, pour les `postee_le` des reçues (brief 13) : seulement si une
+  // rubrique montée s'y date, donc jamais en 1890. **La carte n'en montre rien** : une carte postale
+  // ne se lit que dans la sacoche. En panne ou pas encore lue, elle se tait comme la malle.
+  const courrier = useQuery({ queryKey: cles.courrier, queryFn: ({ signal }) => lireCourrier(signal), enabled: rubriquesDuPoint.some((r) => r.boite) })
   // Le point se lit sur le cache, que la sacoche (une rubrique vue) et le quai (un objet ramassé)
   // écrivent champ par champ : il s'éteint et se rallume sans rien relire.
-  const nouveautes = nouveautesDeLaSacoche(rubriquesDuPoint, { voyageur: voyageur.data, malle: malle.data })
+  const nouveautes = nouveautesDeLaSacoche(rubriquesDuPoint, { voyageur: voyageur.data, malle: malle.data, courrier: courrier.data })
   const nomDuLien = nomDeLaSacoche(nouveautes)
   // Ce que le moteur ne propose pas. Tant que l'état n'est pas lu, ou en panne sans rien en cache, on
   // ignore ce qui est ramassé : rien ne se propose, sans un mot, et la carte reste.

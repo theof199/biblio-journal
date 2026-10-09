@@ -10,6 +10,7 @@ import Correspondances from './pages/Correspondances'
 import ControleurDeLaCarte from './pages/ControleurDeLaCarte'
 import HalteDeLaCarte from './pages/HalteDeLaCarte'
 import CoulissesDeLaSacoche from './pages/CoulissesDeLaSacoche'
+import CourrierDeLaSacoche from './pages/CourrierDeLaSacoche'
 import Courroie from './pages/Courroie'
 import EtiquetteDeMalle from './pages/EtiquetteDeMalle'
 import Frontiere from './pages/Frontiere'
@@ -159,6 +160,7 @@ export const PAGES_1900: HabillagePages = {
     portefeuille: PortefeuilleDeLaSacoche,
     coulisses: CoulissesDeLaSacoche,
     malleDeLaSacoche: MalleDeLaSacoche,
+    courrierDeLaSacoche: CourrierDeLaSacoche,
     objetsDeLaSacoche: ObjetsDeLaSacoche,
     feteDeLaSalle: VoitureComplete,
     feteDeLaRecompense: EtiquetteDeMalle,
