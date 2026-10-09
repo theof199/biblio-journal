@@ -177,6 +177,17 @@ export function premiereDecennieCachee(annees: readonly { annee: number }[], ann
 export const halteEnService = (apres: number, anneeEnCours: number): boolean => decennieDe(apres) === decennieDe(anneeEnCours)
 
 /**
+ * Une halte s'offre-t-elle sur la carte ? En service (`halteEnService`), et la gare de son
+ * embranchement développée : `gare` est la case de l'année `apres` parmi celles que la carte montre,
+ * et `estFermee` la règle de la plaque à développer (sans case, verrouillée, en attente du Voyage
+ * suivi). **La seule garde de la page** : la carte ne passe au monde que les haltes offertes, et le
+ * toucher comme l'adresse `?halte=` n'ouvrent que celles-là. Avant d'arriver à la gare, le monde ne
+ * dessine pas de levier : l'adresse n'ouvre donc rien que le doigt ne pourrait ouvrir.
+ */
+export const halteOfferte = (apres: number, anneeEnCours: number, gare: { etat: EtatCase; attente?: boolean } | undefined): boolean =>
+  halteEnService(apres, anneeEnCours) && !estFermee(gare)
+
+/**
  * Une année se montre-t-elle ? `cachee` vient de `premiereDecennieCachee`. Tout ce qui suit une
  * décennie fermée l'est aussi, monde « à venir » compris : la carte s'arrête au bas de la décennie
  * d'avant, elle ne reprend pas au-delà d'un trou. Vaut pour une case comme pour l'année où est

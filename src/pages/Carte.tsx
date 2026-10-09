@@ -38,7 +38,7 @@ import {
   estFermee,
   estMontree,
   etatDeCase,
-  halteEnService,
+  halteOfferte,
   jauge,
   premiereDecennieCachee,
   prochainPas,
@@ -353,11 +353,12 @@ export default function Carte() {
       cases: montrees,
       // Les haltes servies, pour le monde qui en dessinera l'embranchement : jamais celle d'une année
       // que la carte ne montre pas (une décennie cachée, `premiereDecennieCachee`), ni celle d'une
-      // décennie que j'ai quittée (`halteEnService` : rendu en 1910, la ligne de 1900 n'a plus ni
-      // levier ni poteau, et ni le toucher ni l'adresse n'ouvrent sa halte, qui se lisent ici). Le
+      // décennie que j'ai quittée, ni celle dont la gare est encore à développer (`halteOfferte` :
+      // rendu en 1910, la ligne de 1900 n'a plus ni levier ni poteau ; en 1901, la gare de 1902 n'a
+      // pas encore le sien ; et ni le toucher ni l'adresse n'ouvrent ces haltes, qui se lisent ici). Le
       // compte se fait sur ce qui est servi, jamais sur un catalogue de l'appli.
       haltes: v.haltes
-        .filter((h) => halteEnService(h.apres, v.annee_en_cours) && montrees.some((c) => c.annee === h.apres))
+        .filter((h) => halteOfferte(h.apres, v.annee_en_cours, montrees.find((c) => c.annee === h.apres)))
         .map((h) => ({ cle: h.cle, nom: h.nom, apres: h.apres, ...compteDeLaHalte(h.films) })),
     }
   }, [v, anneeAvatar, fiches, user.pseudo, ticketsEmis])
@@ -477,7 +478,7 @@ export default function Carte() {
   // Une halte ouverte (brief 12) : **l'adresse le dit** (`?halte=<clé>` : le retour du téléphone la
   // ferme, un rechargement la rouvre), et rien d'autre. Elle n'existe que servie, montrée par la
   // carte (`etat.haltes` : jamais celle d'une décennie cachée, ni celle d'une décennie que j'ai
-  // quittée, `halteEnService` : le toucher et l'adresse y lisent la même garde) et dessinée par le monde de sa
+  // quittée, ni celle d'une gare à développer, `halteOfferte` : le toucher et l'adresse y lisent la même garde) et dessinée par le monde de sa
   // décennie (`halteDeLaCarte`, sans défaut) : une clé inconnue dans l'adresse n'ouvre rien. Portée
   // par l'adresse avant que l'écran soit libre (un rechargement, l'historique avancé), elle attend
   // son tour dans l'ordre des dialogues : jamais deux dialogues, jamais par-dessus une avancée.

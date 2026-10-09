@@ -1153,7 +1153,10 @@ guichet d'un film**
   `halteEnService` : mon année en cours est dans la décennie de son `apres`) : la page ne la met plus
   dans l'état de la carte, donc le monde ne la reçoit plus (rendu en 1910, la ligne de 1900 n'a plus
   ni levier ni poteau fléché, rien à toucher), et ni un rappel `aiguillage` ni `?halte=<clé>` ne
-  l'ouvrent : le toucher et l'adresse lisent tous deux `etat.haltes`. Le bloc lecteur
+  l'ouvrent : le toucher et l'adresse lisent tous deux `etat.haltes`. **Ni avant que sa gare soit
+  développée** (`halteOfferte`, la seule garde de la page : en service, et la case de son `apres` non
+  fermée, `estFermee`, la règle de la plaque) : en 1900 ou 1901, la gare de 1902 n'a pas de levier, et
+  l'adresse n'ouvre que ce que le toucher pourrait ouvrir. Le bloc lecteur
   (`voyage/halte/Halte.tsx`) ne lit ni n'écrit aucune route (une halte n'a pas d'écriture : un film vu
   passe par le journal) ; il garde Échap, le focus et le compte (`voyage/halte/compte.ts`,
   `compteDeLaHalte` : les films à l'état `vu` sur ceux que le serveur sert, la même règle que pour le

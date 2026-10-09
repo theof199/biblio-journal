@@ -538,6 +538,30 @@ describe('la halte sur la carte de 1900', () => {
     expect(await screen.findByRole('dialog', { name: 'Halte Méliès' })).toBeInTheDocument()
   })
 
+  // L'adresse n'ouvre que la halte que le toucher pourrait ouvrir : tant que la gare de 1902 est une
+  // plaque à développer (je suis en 1900 ou en 1901), le monde ne dessine ni levier ni poteau, et
+  // `?halte=melies` n'ouvre rien non plus. La page ne passe pas la halte au moteur : le toucher et
+  // l'adresse lisent `etat.haltes`, la gare fermée s'y lit par `estFermee`, la règle de la plaque.
+  // Mutations : `halteOfferte` sans sa garde `estFermee` (les trois tombent) ; `halteDemandee` lisant
+  // `v.haltes` (l'adresse ouvre).
+  it.each([1900, 1901])('en %i, la gare de 1902 à développer : l’adresse n’ouvre pas sa halte, le toucher non plus, et le moteur ne la reçoit pas', async (enCours) => {
+    const banc = await monter({ voyage: jusqua(enCours), routes: ROUTES, depuis: '/voyage?halte=melies' })
+    aucunDialogue()
+    expect(inertes()).toBe(0)
+    await toucher(banc, 'melies')
+    aucunDialogue()
+    expect(ou()).toBe('/voyage?halte=melies')
+    expect(banc.etats[banc.etats.length - 1]!.haltes).toEqual([])
+  })
+
+  // La gare développée, dès l'année de l'embranchement : l'adresse ouvre toujours. Mutation :
+  // `halteOfferte` toujours fausse (ce test, et ceux de 1903 et de 1909, tombent).
+  it('en 1902, la gare développée : l’adresse ouvre la halte à l’arrivée, et le moteur la reçoit', async () => {
+    const banc = await monter({ voyage: jusqua(1902), routes: ROUTES, depuis: '/voyage?halte=melies' })
+    expect(banc.etats[banc.etats.length - 1]!.haltes).toEqual([{ cle: 'melies', nom: 'Halte Méliès', apres: 1902, vus: 1, total: 3 }])
+    expect(await screen.findByRole('dialog', { name: 'Halte Méliès' })).toBeInTheDocument()
+  })
+
   // Mutation : `halteDeLaCarte` retirée de `PAGES_1900`.
   it('en 1903, l’aiguillage touché ouvre la Halte Méliès telle que servie : son compte, ses trois films, sans rien lire de plus', async () => {
     const banc = await monter({ voyage: jusqua(1903), routes: ROUTES })
