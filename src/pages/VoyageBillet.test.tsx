@@ -82,7 +82,7 @@ const PAGE = exemple<JournalPage>('/me/journal', 'get', 200)
  * le contrôleur demande. Le courrier aussi (brief 13) : un billet boucle une gare, qui attend alors sa
  * carte. Mutation : l'une des trois clés sortie du préfixe `voyage` dans `api/cles.ts`.
  */
-const PERIMABLES = [cles.seances, cles.stats, cles.tickets, cles.voyageur, cles.malle(1900), cles.courrier, cles.realisateurs, cles.sagas]
+const PERIMABLES = [cles.seances, cles.stats, cles.tickets, cles.voyageur, cles.malle(1900), cles.courrier, cles.tables, cles.realisateurs, cles.sagas]
 
 /** L'entrée que rend `POST /me/journal` : un film sorti en `annee` (l'année que l'API lit pour le jury). */
 function entreeRendue(annee: number | null = 2010): JournalItem {

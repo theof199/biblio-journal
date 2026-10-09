@@ -3,6 +3,8 @@ import {
   DELAI_CHRONIQUEUR_MS,
   accepterHoraire,
   composerUneSeance,
+  declinerLaTable,
+  dresserUneTable,
   estPrete,
   ignorerLaSeance,
   lireAnnee,
@@ -11,11 +13,13 @@ import {
   lireCourrier,
   lireGenerique,
   lireMalle,
+  lireTables,
   lireVoyageur,
   marquerCarteLue,
   marquerRubriqueVue,
   ouvrirUneSalle,
   poserSurLePodium,
+  prendreMaPlace,
   posterCartePostale,
   prendreLaSeance,
   ramasserObjet,
@@ -277,5 +281,48 @@ describe('le client du courrier', () => {
     await posterCartePostale(corps)
     const [url, init] = vi.mocked(fetch).mock.calls[0]!
     expect({ url, methode: init?.method, corps: JSON.parse(String(init?.body)) }).toEqual({ url: '/api/me/voyage/cartes-postales', methode: 'POST', corps })
+  })
+})
+
+// Les tables du wagon-restaurant (plan des écrans des lots, brief 15) : lire mes tables, prendre ma
+// place, décliner, et dresser une table (qu'aucun écran n'appelle avant le brief 16).
+describe('le client du wagon-restaurant', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 }))))
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Mutations : les tables lues sur `/me/voyage/cartes-postales` ; le signal oublié.
+  it('lit mes tables par `GET`, sans corps, sous le signal de l’appelant', async () => {
+    const quitter = new AbortController()
+    await lireTables(quitter.signal)
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!
+    expect({ url, methode: init?.method, corps: init?.body }).toEqual({ url: '/api/me/voyage/tables', methode: 'GET', corps: undefined })
+    expect(init!.signal!.aborted).toBe(false)
+    quitter.abort()
+    expect(init!.signal!.aborted).toBe(true)
+  })
+
+  // Mutations : les deux routes échangées (décliner prendrait la place) ; `encodeURIComponent` retiré ;
+  // l'identifiant posé dans un corps.
+  it('prend ma place et décline par `POST`, l’identifiant encodé dans le chemin, sans corps', async () => {
+    await prendreMaPlace('3f0e6c1a-0000-4000-8000-000000000001')
+    await declinerLaTable('3f0e6c1a-0000-4000-8000-000000000001')
+    await prendreMaPlace('../tables?x')
+    await declinerLaTable('../tables?x')
+    const partis = vi.mocked(fetch).mock.calls.map(([url, init]) => ({ url, methode: init?.method, corps: init?.body }))
+    expect(partis).toEqual([
+      { url: '/api/me/voyage/tables/3f0e6c1a-0000-4000-8000-000000000001/place', methode: 'POST', corps: undefined },
+      { url: '/api/me/voyage/tables/3f0e6c1a-0000-4000-8000-000000000001/decliner', methode: 'POST', corps: undefined },
+      { url: '/api/me/voyage/tables/..%2Ftables%3Fx/place', methode: 'POST', corps: undefined },
+      { url: '/api/me/voyage/tables/..%2Ftables%3Fx/decliner', methode: 'POST', corps: undefined },
+    ])
+  })
+
+  // Le corps est strict côté serveur : un champ de plus vaut `400`. Mutations : un champ ajouté au
+  // corps (`soir`) ; la table dressée par `PUT`.
+  it('dresse une table par `POST`, le corps tel quel', async () => {
+    const corps = { invite_id: '3f0e6c1a-0000-4000-8000-000000000002', tmdb_id: 775 }
+    await dresserUneTable(corps)
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!
+    expect({ url, methode: init?.method, corps: JSON.parse(String(init?.body)) }).toEqual({ url: '/api/me/voyage/tables', methode: 'POST', corps })
   })
 })

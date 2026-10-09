@@ -104,6 +104,18 @@ export type CartePostaleEnvoyee = Courrier['envoyees'][number]
 export type CorpsCartePostale = Corps<paths['/me/voyage/cartes-postales']['post']>
 
 /**
+ * Mes tables du wagon-restaurant (`GET /me/voyage/tables`) : celles que j'ai dressées et celles où je
+ * suis invité, du soir le plus récent au plus ancien. **Une table n'est servie qu'à ses deux convives.**
+ * `etat` est celui de l'invité (l'hôte est à table dès qu'il la dresse) ; `vu_ensemble` se calcule au
+ * serveur à chaque lecture et ne se déduit pas ; `mon_billet` est mon entrée de journal, jamais celle
+ * de l'autre, nulle tant que `vu_ensemble` est faux. `soir` est un jour de Paris, sans heure.
+ */
+export type Tables = Json<paths['/me/voyage/tables']['get']['responses'][200]>
+/** Une table : la même forme dans la liste, au `201` de la table dressée et au `200` d'une place prise ou déclinée. */
+export type Table = Tables['tables'][number]
+export type CorpsTable = Corps<paths['/me/voyage/tables']['post']>
+
+/**
  * Les trois appels **synchrones** au chroniqueur (contexte d'une salle, pistes, générique) :
  * l'API ne borne pas le client Anthropic (`new Anthropic({ apiKey })`,
  * `apps/api/src/chroniqueur/anthropic.ts`), et le nginx du front coupe à 75 s
@@ -188,6 +200,27 @@ export const marquerCarteLue = (id: string) => api.post<CartePostaleRecue>(`/me/
  * confirmation : `voyage/sacoche/Courrier.tsx` (brief 14).
  */
 export const posterCartePostale = (corps: CorpsCartePostale) => api.post<CartePostaleEnvoyee>('/me/voyage/cartes-postales', corps)
+
+/** Mes tables. **Ce `GET` n'écrit rien.** Toujours sous `cles.tables`. */
+export const lireTables = (signal?: AbortSignal) => api.get<Tables>('/me/voyage/tables', undefined, signal)
+
+/**
+ * Dresser une table pour **ce soir** (`201`) : le corps est strict côté serveur, `invite_id` et
+ * `tmdb_id`, rien d'autre (ni l'hôte, ni le soir, ni le titre). `409` si l'invité n'est pas un membre
+ * que je suis, si le film n'est connu nulle part, ou si j'ai déjà une table ce soir. Aucun écran ne
+ * l'appelle avant le brief 16.
+ */
+export const dresserUneTable = (corps: CorpsTable) => api.post<Table>('/me/voyage/tables', corps)
+
+/**
+ * Prendre ma place à une table où je suis **l'invité**, jusqu'à son soir (jour de Paris) ; rend la
+ * table. Rejouable. `404` pour toute table où je ne suis pas l'invité. **`409` n'est pas une panne** :
+ * le soir est passé, j'ai décliné, ou je suis déjà à table ce soir ; on relit les tables.
+ */
+export const prendreMaPlace = (id: string) => api.post<Table>(`/me/voyage/tables/${encodeURIComponent(id)}/place`)
+
+/** Décliner, que j'aie pris ma place ou non, jusqu'au soir de la table ; rend la table. Rejouable. `404` et `409` comme ci-dessus. */
+export const declinerLaTable = (id: string) => api.post<Table>(`/me/voyage/tables/${encodeURIComponent(id)}/decliner`)
 
 /** `{ configure: false }` n'a pas de `statut` : la seule façon sûre de reconnaître une fiche prête. */
 export const estPrete = (f: FicheAnnee | undefined): f is FichePrete => !!f && 'statut' in f && f.statut === 'prete'

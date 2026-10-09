@@ -26,6 +26,14 @@ export const cles = {
    */
   courrier: ['voyage', 'courrier'] as const,
   /**
+   * Mes tables du wagon-restaurant (`GET /me/voyage/tables`) : **sous le préfixe `voyage`**, parce
+   * qu'une écriture au journal les change. `vu_ensemble` et `mon_billet` se calculent au serveur sur
+   * les deux journaux : c'est un billet composté qui les fait paraître, et il périme ce préfixe.
+   * Prendre sa place ou décliner ne périme rien : la table rendue se pose sur cette clé, en `exact`
+   * (`pages/VoyageWagonRestaurant.tsx`).
+   */
+  tables: ['voyage', 'tables'] as const,
+  /**
    * Les membres que je suis (`GET /users/me/following`, toutes pages lues : `api/abonnements.ts`), pour
    * choisir à qui écrire une carte postale ou qui inviter à table. **Hors du préfixe `voyage`** : un
    * billet composté ne change pas mes abonnements. Aucune page hors Voyage ne la périme : qui s'en sert

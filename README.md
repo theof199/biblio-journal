@@ -1006,14 +1006,19 @@ l'écran**
   la leur ; il n'écrit rien), `marquerCarteLue` (rejouable, `404` pour une carte que j'ai envoyée) et
   `posterCartePostale` (le corps tel quel, strict côté serveur ; un seul appelant, le bloc du courrier). **Le
   mot d'une carte est privé** : il ne s'écrit ni dans un journal de console, ni dans une adresse, ni
-  dans un titre. Rien encore pour les tables. **Mes abonnements** (brief 14, `api/abonnements.ts`, un
+  dans un titre. **Les tables du wagon-restaurant** (brief 15) : `lireTables` (`GET /me/voyage/tables` :
+  celles que j'ai dressées et celles où je suis invité, du soir le plus récent au plus ancien ; il
+  n'écrit rien), `prendreMaPlace` et `declinerLaTable` (l'identifiant encodé dans le chemin, sans corps,
+  rejouables ; `409` n'est pas une panne) et `dresserUneTable` (le corps tel quel, `invite_id` et
+  `tmdb_id`, strict côté serveur ; aucun écran ne l'appelle avant le brief 16). **Mes abonnements** (brief 14, `api/abonnements.ts`, un
   fichier à part : la route n'est pas du Voyage) : `lireMesAbonnements` lit `GET /users/me/following`
   **page après page** (cent par page, le curseur rendu tel quel, jusqu'à `next_cursor` nul) et rend les
   membres dans l'ordre servi, sous `cles.abonnements`, **hors du préfixe `voyage`** ; la carte postale à
   écrire et la table à dresser y choisissent « un membre que je suis », par cette fonction seule.
-- **Les clés** (`api/cles.ts`) : `voyageur`, `malle(decennie)` et `courrier`, **sous le préfixe
+- **Les clés** (`api/cles.ts`) : `voyageur`, `malle(decennie)`, `courrier` et `tables`, **sous le préfixe
   `voyage`** : une écriture au journal, qui colle une étiquette, change le billet que le contrôleur
-  demande ou boucle une gare (qui attend alors sa carte : `en_attente`), les
+  demande, boucle une gare (qui attend alors sa carte : `en_attente`) ou fait paraître « vu ensemble »
+  sur une table (`vu_ensemble` se calcule au serveur sur les deux journaux), les
   périme sans qu'aucune page hors Voyage les connaisse (`api/cles.test.ts`,
   `pages/VoyageBillet.test.tsx`). L'état du voyageur n'a qu'une clé et qu'une fonction, pour la
   carte, la sacoche et le casier.
