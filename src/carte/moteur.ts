@@ -1043,6 +1043,7 @@ export class MoteurCarte {
       W: this.W,
       H: this.H,
       k: this.k,
+      densite: this.dpr,
       t,
       vivant: !this.calme,
       presence,

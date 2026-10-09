@@ -1,6 +1,6 @@
 import type { VueMonde } from '../types'
 import { c } from './couleur'
-import { cuire, fondre } from './cuisson'
+import { cuire, finesseDeCuisson, fondre } from './cuisson'
 import { CADRE_LOIN, RACCORD_LOIN, SUITE_LOIN, type VueLointaine } from './donnees'
 import { imageDu1900, TAILLES } from './images'
 import { decalages, ouvrir, RAPPORTS } from './toiles'
@@ -43,8 +43,10 @@ export function vuesALEcran(v: Pick<VueMonde, 'W' | 'H' | 'avance'>): Array<VueL
  * `h0` à `h1`, et son bord gauche se fond sur la vue d'avant, restée pleine dessous. Retournée, elle
  * se raccorde à elle-même sans couture.
  */
-function vueFondue(nom: string, miroir: boolean, photo: CanvasImageSource, w: number, h: number): CanvasImageSource | null {
-  const [lp] = TAILLES[nom]!
+function vueFondue(nom: string, miroir: boolean, photo: CanvasImageSource, w: number, h: number, densite: number): CanvasImageSource | null {
+  const [lp, hp] = TAILLES[nom]!
+  // Une photographie : cuite à la densité de l'écran, jamais plus fin que ses propres pixels (sur un téléphone debout, elle est déjà agrandie : 1).
+  const finesse = finesseDeCuisson(densite, hp, h)
   const [x0, x1, h0, h1] = CADRE_LOIN[nom]!
   return cuire(`loin:${nom}:${miroir ? 'm' : ''}:${Math.round(h)}`, w, h, (g, lw, lh) => {
     g.save()
@@ -66,7 +68,7 @@ function vueFondue(nom: string, miroir: boolean, photo: CanvasImageSource, w: nu
     g.restore()
     fondre(g, 0, 0, RACCORD_LOIN, 0, [[0, 0], [1, 1]], lw, lh)
     fondre(g, 0, 0, 0, lh, [[0, 0], [h0 / 100, 0], [h1 / 100, 1], [1, 1]], lw, lh)
-  })
+  }, finesse)
 }
 
 /**
@@ -83,7 +85,7 @@ export function dessinerLointain(v: VueMonde): void {
     const url = imageDu1900(nom)
     const photo = url ? v.image(url) : null
     if (!photo) continue
-    const fondue = vueFondue(nom, miroir, photo, w, h)
+    const fondue = vueFondue(nom, miroir, photo, w, h, v.densite)
     if (fondue) g.drawImage(fondue, x, haut, w, h)
     else g.drawImage(photo, x, haut, w, h)
   }

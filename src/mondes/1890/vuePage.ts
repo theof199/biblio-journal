@@ -16,6 +16,8 @@ export function vuePage(o: { ctx: CanvasRenderingContext2D; W: number; H: number
     W: o.W,
     H: o.H,
     k: 1,
+    // Une page ne cuit rien hors écran : la densité de sa toile n'y est lue par personne.
+    densite: 1,
     t: o.t,
     vivant: o.vivant,
     presence: 1,

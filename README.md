@@ -295,7 +295,10 @@ appel ; le meneur arbitre. La vue d'ensemble ouverte, il ne lance ni rappel ni p
 
 **Le monde 1900** (`mondes/1900/`, « Le voyage immobile »). Le Panorama transsibérien de
 l'Exposition : quatre toiles défilent à des vitesses différentes derrière la vitre d'un train qui
-ne bouge pas (`toiles.ts`, `RAPPORTS`), et tout se tire de l'avance de la caméra. La section porte
+ne bouge pas (`toiles.ts`, `RAPPORTS`), et tout se tire de l'avance de la caméra. Ce que le monde
+peint une fois pour le reposer (`cuisson.ts`, `cuire`, vingt-huit toiles au plus) se cuit à la densité
+de la toile du moteur, son plafond de 2 compris (`VueMonde.densite`) : le fond d'une ambiance à cette
+densité, une photographie jamais plus fin que ses propres pixels (`finesseDeCuisson`). La section porte
 en haut la zone du passage, puis dix gares, une par année, à 700 px de geste l'une de l'autre
 (`trace.ts`, `ARRETS`, `PAS`) ; chaque gare est une photographie d'époque. Une année fermée, en
 attente du Voyage suivi (`estFermee`, la règle de la carte entière, dans `voyage/regles.ts` : la gare, la bande de la vue d'ensemble et la liste des années de la page lisent la même), ou où

@@ -445,6 +445,15 @@ describe('le moteur de la carte', () => {
     expect(rappels.defilerVers).toHaveBeenCalled()
   })
 
+  // Le moteur plafonne sa densité à 2 : le monde reçoit celle de sa toile, pas celle de l'appareil.
+  // Mutations : `densite: 1` dans `vueMonde` ; la densité de l'appareil passée telle quelle (3).
+  it.each([[1, 1], [1.5, 1.5], [2, 2], [3, 2]])('donne au monde la densité de sa toile : %d à l’appareil, %d au monde', (appareil, attendue) => {
+    const banc = monter()
+    banc.moteur.mesurer(W, H, appareil)
+    banc.moteur.image(1000)
+    expect(vus[vus.length - 1]!.densite).toBe(attendue)
+  })
+
   // Mutation : `nuit: 0` dans `vueMonde`, ou l'heure du visiteur ignorée : la foire resterait de jour à minuit.
   it('donne au monde la nuit de l’heure du visiteur', () => {
     monter({ heure: 23 }).moteur.image(1000)

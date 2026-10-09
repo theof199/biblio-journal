@@ -192,6 +192,12 @@ export interface VueMonde {
   W: number
   H: number
   k: number
+  /**
+   * La densité de la toile du moteur : combien de ses pixels pour un px de `W`, telle qu'il l'a
+   * retenue à la mesure, son plafond compris. Ce qu'un monde peint une fois hors écran pour le
+   * reposer se cuit à cette densité, pas à une autre : étiré, il serait flou.
+   */
+  densite: number
   /** L'horloge du décor, déjà tenue à la cadence du monde. */
   t: number
   /** Faux quand le visiteur demande moins d'animations : le décor se pose, immobile. */

@@ -11,6 +11,7 @@ export function vueFactice(surcharge: Partial<VueMonde> = {}) {
     W: 390,
     H: 700,
     k: 1,
+    densite: 1,
     t: 3.2,
     vivant: true,
     presence: 1,

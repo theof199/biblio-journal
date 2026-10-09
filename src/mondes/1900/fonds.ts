@@ -1,5 +1,5 @@
 import { c } from './couleur'
-import { cuire, fondre } from './cuisson'
+import { cuire, finesseDeCuisson, fondre } from './cuisson'
 import type { Ambiance } from './donnees'
 import { TAILLES } from './images'
 
@@ -85,16 +85,18 @@ const FONDS: Record<Ambiance, Fond> = {
 }
 
 /** La photographie du fond de montagne, fondue par ses côtés et par le haut (maquette : `.montagne::before`, l. 92-93). */
-function picFondu(photo: CanvasImageSource, w: number, h: number): CanvasImageSource {
+function picFondu(photo: CanvasImageSource, w: number, h: number, densite: number): CanvasImageSource {
+  // Une photographie : cuite à la densité de l'écran, jamais plus fin que ses propres pixels.
+  const finesse = finesseDeCuisson(densite, TAILLES.fond![0], w)
   return cuire(`pic:${Math.round(w)}`, w, h, (g, lw, lh) => {
     g.drawImage(photo, 0, 0, lw, lh)
     fondre(g, 0, 0, lw, 0, [[0, 0], [0.2, 1], [0.8, 1], [1, 0]], lw, lh)
     fondre(g, 0, 0, 0, lh, [[0, 0], [0.26, 1], [1, 1]], lw, lh)
-  }) ?? photo
+  }, finesse) ?? photo
 }
 
 /** Peint une ambiance dans un rectangle de `w` × `h` posé à l'origine du contexte. */
-function peindre(g: CanvasRenderingContext2D, nom: Ambiance, w: number, h: number, photo: CanvasImageSource | null): void {
+function peindre(g: CanvasRenderingContext2D, nom: Ambiance, w: number, h: number, photo: CanvasImageSource | null, densite: number): void {
   const fond = FONDS[nom]
   const ciel = g.createLinearGradient(0, 0, 0, h)
   for (const [ou, teinte] of fond.ciel) ciel.addColorStop(ou, c(teinte))
@@ -103,7 +105,7 @@ function peindre(g: CanvasRenderingContext2D, nom: Ambiance, w: number, h: numbe
   if (nom === 'montagne' && photo) {
     const [lp, hp] = TAILLES.fond!
     const lw = (w * 530) / 800
-    g.drawImage(picFondu(photo, lw, (lw * hp) / lp), (w * 165) / 800, h * 0.24, lw, (lw * hp) / lp)
+    g.drawImage(picFondu(photo, lw, (lw * hp) / lp, densite), (w * 165) / 800, h * 0.24, lw, (lw * hp) / lp)
   }
   g.save()
   g.scale(w / 800, h / 350)
@@ -158,16 +160,19 @@ function peindre(g: CanvasRenderingContext2D, nom: Ambiance, w: number, h: numbe
 
 /**
  * Pose une ambiance du fond à `x`, large de `w` et haute de `h`, à l'opacité courante du contexte.
- * Cuite une fois par taille ; sans toile hors écran, peinte à même le contexte.
+ * Cuite une fois par taille, à la densité de l'écran (`VueMonde.densite`) : étirée d'une toile de
+ * `w` × `h` pixels, elle était floue sur un téléphone. Sans toile hors écran, peinte à même le
+ * contexte. Seule la montagne porte une photographie : elle seule se recuit quand la sienne arrive.
  */
-export function dessinerFond(g: CanvasRenderingContext2D, nom: Ambiance, x: number, w: number, h: number, photo: CanvasImageSource | null): void {
-  const cuit = cuire(`fond:${nom}:${Math.round(w)}:${Math.round(h)}:${photo ? 1 : 0}`, w, h, (t, lw, lh) => peindre(t, nom, lw, lh, photo))
+export function dessinerFond(g: CanvasRenderingContext2D, nom: Ambiance, x: number, w: number, h: number, photo: CanvasImageSource | null, densite: number): void {
+  const pic = nom === 'montagne' ? photo : null
+  const cuit = cuire(`fond:${nom}:${Math.round(w)}:${Math.round(h)}:${pic ? 1 : 0}`, w, h, (t, lw, lh) => peindre(t, nom, lw, lh, pic, densite), finesseDeCuisson(densite))
   if (cuit) {
     g.drawImage(cuit, x, 0, w, h)
     return
   }
   g.save()
   g.translate(x, 0)
-  peindre(g, nom, w, h, photo)
+  peindre(g, nom, w, h, pic, densite)
   g.restore()
 }

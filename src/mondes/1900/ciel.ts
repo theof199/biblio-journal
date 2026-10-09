@@ -44,7 +44,7 @@ export function dessinerCiel(v: VueMonde): void {
     if (parts[nom] <= 0) continue
     g.save()
     g.globalAlpha *= parts[nom]
-    dessinerFond(g, nom, x, w, h, photo)
+    dessinerFond(g, nom, x, w, h, photo, v.densite)
     g.restore()
   }
   // Le bas de la toile se fond dans le ciel (maquette : le masque de `.fond`).
