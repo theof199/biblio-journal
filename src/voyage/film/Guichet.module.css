@@ -183,3 +183,67 @@
   font: italic 15px/1.4 var(--m-f-texte);
   color: var(--m-rouge);
 }
+
+/* Le feuillet « Dresser une table » : ce qu'il engage, mes abonnements en boutons radio, le bouton. */
+.table {
+  display: grid;
+  gap: 10px;
+}
+
+.aide {
+  margin: 0;
+  font: italic 15px/1.35 var(--m-f-texte);
+  color: var(--m-encre2);
+}
+
+.invites {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.invites legend {
+  padding: 0;
+  font: 13px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-encre2);
+}
+
+.invites label {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--m-encre2) 35%, transparent);
+  color: var(--m-encre);
+  font: 15.5px/1.3 var(--m-f-texte);
+  cursor: pointer;
+}
+
+.invites input {
+  justify-self: center;
+  accent-color: var(--m-rouge);
+}
+
+.dresser {
+  min-height: 46px;
+  border: 1px solid var(--m-encre);
+  border-radius: 3px;
+  background: var(--m-encre);
+  color: var(--m-papier);
+  font: 15px var(--m-f-capitales);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.dresser[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dresser:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}

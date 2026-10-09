@@ -39,6 +39,27 @@ describe('le guichet', () => {
     expect(boutonsDuFilm('demande', null, false)).toEqual(['vu', 'introuvable'])
   })
 
+  // « Dresser une table » (plan des écrans des lots, brief 16) **s'ajoute** à la liste figée par le
+  // brief 5 des pages : en dernier, quel que soit l'état, et seulement quand le guichet l'offre. Sans
+  // lui, chaque liste est celle d'avant, au geste près. Mutations : `b.unshift('table')` (il passerait
+  // devant « Corriger ») ; posé sans regarder `table` ; réservé à un film à voir.
+  it('« Dresser une table » s’ajoute en dernier quand le guichet l’offre, sans déplacer aucun autre geste', () => {
+    const cas: [Parameters<typeof boutonsDuFilm>[0], string | null, boolean][] = [
+      ['sur_le_plex', 'https://plex/1', false],
+      ['a_demander', null, false],
+      ['demande', null, false],
+      ['introuvable', null, false],
+      ['vu', 'https://plex/1', true],
+      ['vu', null, false],
+    ]
+    for (const [etat, plex, entree] of cas) {
+      const sans = boutonsDuFilm(etat, plex, entree)
+      expect(sans).not.toContain('table')
+      expect(boutonsDuFilm(etat, plex, entree, false)).toEqual(sans)
+      expect(boutonsDuFilm(etat, plex, entree, true)).toEqual([...sans, 'table'])
+    }
+  })
+
   it('remet à voir un introuvable, sans le marquer deux fois', () => {
     expect(boutonsDuFilm('introuvable', null, false)).toEqual(['vu', 'remettre'])
   })

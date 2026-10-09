@@ -515,7 +515,8 @@ Où vit quoi :
   attente a les mêmes portières, sans film à ouvrir. La séance est un **train du soir** (`TrainDuSoir`) :
   l'affichette « Train de plaisir », le long en voiture et le court en tête, l'anecdote du trajet, les
   quatre talons, le tampon « Prise » (le seul à bouger, jamais au calme), « Composer une séance » et les
-  séances passées ; la porte du wagon-restaurant de la maquette attend le lot À deux. **La fiche d'un
+  séances passées ; dessous, hors d'elle, la porte du wagon-restaurant quand une table existe ce soir
+  (`PorteDuWagon`, plus bas, « Le jeu des années 1900 »). **La fiche d'un
   film** se regarde du fond d'un Hale's Tours (écran 5) : la fausse voiture (`Hale`, pour `projection`),
   ses banquettes, et l'écran au bout de l'allée, qui porte la seule image que la page a chargée et
   tangue, sauf au calme ; la notice (`NoticeDuFilm`) garde le titre, les réalisateurs et leurs liens
@@ -1005,8 +1006,8 @@ ramassent sur le quai de la carte, où la pastille de la sacoche porte son point
 billets passe sur la carte et son poinçon doré reste au casier ; l'horaire se prend, se retire et se dit
 sur la fiche de son année, et la plaque de sa gare le dit sur la carte ; la halte s'ouvre sur la carte ;
 les cartes postales se lisent et s'écrivent dans la sacoche ; le wagon-restaurant a sa page, où l'on
-prend sa place ou décline, et sa porte sur la fiche de mon année en cours (dresser une table reste à
-faire, brief 16)**
+prend sa place ou décline, sa porte sur la fiche de mon année en cours, et une table se dresse du
+guichet d'un film**
 (`docs/cerveau/jeu-1900.md` tient où en est chaque écran) :
 
 - **Les routes** (`api/voyage.ts`, les types par alias sur le contrat) : `lireVoyageur`
@@ -1022,7 +1023,7 @@ faire, brief 16)**
   celles que j'ai dressées et celles où je suis invité, du soir le plus récent au plus ancien ; il
   n'écrit rien), `prendreMaPlace` et `declinerLaTable` (l'identifiant encodé dans le chemin, sans corps,
   rejouables ; `409` n'est pas une panne) et `dresserUneTable` (le corps tel quel, `invite_id` et
-  `tmdb_id`, strict côté serveur ; aucun écran ne l'appelle avant le brief 16). **Mes abonnements** (brief 14, `api/abonnements.ts`, un
+  `tmdb_id`, strict côté serveur ; le guichet d'un film l'appelle, brief 16). **Mes abonnements** (brief 14, `api/abonnements.ts`, un
   fichier à part : la route n'est pas du Voyage) : `lireMesAbonnements` lit `GET /users/me/following`
   **page après page** (cent par page, le curseur rendu tel quel, jusqu'à `next_cursor` nul) et rend les
   membres dans l'ordre servi, sous `cles.abonnements`, **hors du préfixe `voyage`** ; la carte postale à
@@ -1090,7 +1091,29 @@ faire, brief 16)**
   déclinée reste la mienne). Sans table, tant que rien n'est lu, ou en panne : rien, sans un mot. Le
   dessin reçoit les tables de ce soir dans l'ordre servi, mon rôle à chacune, et l'adresse du wagon
   (`PropsPorteDuWagon`). `pages/VoyageAnnee.porte.test.tsx` le tient sur un 1890 auquel on prête un
-  dessin ; `VoyageAnnee.test.tsx` n'est pas retouché.
+  dessin ; `VoyageAnnee.test.tsx` n'est pas retouché. **En 1900** (maquette, écran 17 : `.lien-wr`) :
+  `mondes/1900/pages/PorteDuWagon.tsx`, un lien sous sa petite lampe, rangé par `Gare` sous le train du
+  soir, qui dit en une ligne l'état de ma table (`wagon.ts`, `ceQueDitLaPorte` : à l'hôte ou à
+  l'invité, ou le compte de mes tables de ce soir) ; `mondes/1900/pages/classes.test.tsx` le tient,
+  son « aucun wagon-restaurant » inversé.
+- **Dresser une table** (brief 16, décision 10 : du guichet d'un film du Voyage, pour tout membre).
+  « Dresser une table » **s'ajoute** aux gestes du guichet (`voyage/film.ts`, `boutonsDuFilm` : en
+  dernier, quel que soit l'état du film, sans déplacer aucun autre) quand le monde du film **et** celui
+  de mon année en cours composent `wagonRestaurant` : le premier le dessine (`GuichetDuFilm`, une
+  plaque ; le comptoir par défaut ne le reçoit jamais), le second montrera la table. Le guichet
+  (`voyage/film/Guichet.tsx`) lit donc la carte, dans un monde qui compose la clé seulement : la fiche
+  d'un film de 1890 ne lit rien de plus. Le feuillet « Dresser une table » (le feuillet du podium, dans
+  l'adresse : `?table=choisir`) lit **tous** mes abonnements à son ouverture seulement
+  (`api/abonnements.ts`, `staleTime: 0`) et les offre en boutons radio : **choisir n'envoie rien**, une
+  table ne se retire pas, « Dresser la table » seul envoie. Le corps : `invite_id` et `tmdb_id` (celui
+  que visent les autres gestes, `tmdbVise` : la bobine qui reste à voir d'un programme), rien d'autre ;
+  un verrou par référence. `201` : la table rendue se pose en tête de `cles.tables` si elles sont en
+  cache (relecture en vol annulée, rien de périmé) et la page du wagon s'ouvre **à la place** du
+  feuillet (le retour ramène à la fiche, feuillet fermé). **Un `409` n'est pas une panne** : le feuillet
+  se referme, mes tables se périment en `exact`, et le message du serveur se dit au guichet, tel quel.
+  Tout autre refus se dit dans le feuillet, qui reste, choix gardé. Sans abonnement, le feuillet le dit
+  et n'offre rien. `mondes/1900/pages/hale.test.tsx` le tient dans l'app entière, `voyage/film.test.ts`
+  la liste des gestes.
 - **La carte en sait plus, sans rien dessiner** (brief 9 des écrans des lots). `GET /me/voyage` sert
   déjà l'horaire de chaque année et les haltes : `pages/Carte.tsx` les met dans l'état de la carte,
   dans le même `useMemo` que les cases (relue à l'identique, la carte ne refait pas son état), et le

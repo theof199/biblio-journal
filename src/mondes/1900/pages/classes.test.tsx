@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import type { FichePrete, FilmSeance, Voyage } from '../../../api/voyage'
+import type { FichePrete, FilmSeance, Table, Tables, Voyage } from '../../../api/voyage'
 import type { JournalPage } from '../../../api/journal'
 import { exemple } from '../../../test/contrat'
 import { monterVoyage } from '../../../test/pageVoyage'
@@ -8,6 +8,7 @@ import { json } from '../../../test/serveur'
 import { ficheEnAttente, fichePrete, filmDeSalle, morceau, salle, seance, voyage1890 } from '../../../test/voyage'
 import { RELECTURES } from '../../../voyage/relecture'
 import { classeDe, filmDeLaMarche, MOTS_DES_CLASSES } from './classes'
+import { MOTS_DU_WAGON, ceQueDitLaPorte } from './wagon'
 
 /**
  * Les trois classes et le train du soir (plan des pages 1900, brief 4) : le podium d'une année 1900
@@ -55,6 +56,8 @@ const routes = (v: Voyage = VOYAGE, f: () => FichePrete = fiche) => ({
 })
 const lesClasses = () => screen.findByRole('region', { name: 'Les trois classes, ton podium' })
 const leSoir = () => screen.findByRole('region', { name: 'Ce soir en gare' })
+/** Mes tables, que la fiche de mon année en cours lit pour la porte du wagon-restaurant (lot d'écrans, brief 16). */
+const TABLES = 'GET /api/me/voyage/tables'
 const calme = () => vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined }))
 
 beforeEach(() => {
@@ -177,10 +180,12 @@ describe('les trois classes', () => {
 
 describe('le train du soir', () => {
   // Mutations : `TrainDuSoir` retiré des gabarits (le prospectus par défaut dirait « Grande séance ») ;
-  // le court, l'anecdote ou les séances passées oubliés ; la porte du wagon-restaurant de la maquette
-  // (`.lien-wr`) portée telle quelle.
-  it('l’affichette : le long en voiture, le court en tête, l’anecdote, les quatre talons, les séances passées, et aucun wagon-restaurant', async () => {
-    monterVoyage('/voyage/1903', routes())
+  // le court, l'anecdote ou les séances passées oubliés ; la porte du wagon-restaurant montée sans
+  // table (`.lien-wr` de la maquette portée telle quelle, ou `tablesDeLaPorte` contournée). **« Aucun
+  // wagon-restaurant » s'inverse au brief 16 du lot d'écrans** : la porte existe, plus bas, quand une
+  // table existe ce soir ; ici mes tables sont vides, et elle n'y est pas.
+  it('l’affichette : le long en voiture, le court en tête, l’anecdote, les quatre talons, les séances passées ; sans table ce soir, aucune porte du wagon-restaurant', async () => {
+    const { requetes } = monterVoyage('/voyage/1903', { ...routes(), [TABLES]: () => json({ tables: [] }) })
     const soir = await leSoir()
     expect(soir).toHaveTextContent('Ce soiren gare de 1903')
     const affichette = within(soir).getByRole('article', { name: 'Séance n° 7' })
@@ -192,7 +197,8 @@ describe('le train du soir', () => {
     expect(within(affichette).getAllByRole('button').map((b) => b.textContent)).toEqual(['Prendre', 'Ignorer', 'Autre long', 'Autre court'])
     expect(within(affichette).queryByText('Prise')).toBeNull()
     expect(within(soir).getByText('Séances passées').closest('details')).toHaveTextContent('The Great Train Robbery · 21 juin 2026 · vue')
-    // La séance à deux attend son lot : ni porte, ni mot.
+    // Mes tables sont lues, et vides : ni porte, ni mot.
+    await waitFor(() => expect(requetes).toContain(TABLES))
     expect(screen.queryByText(/wagon-restaurant/i)).toBeNull()
     expect(within(soir).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/voyage/1903/films/f-fees/billet', '/voyage/1903/films/f-prog/billet?bobine=901'])
   })
@@ -328,5 +334,77 @@ describe('le train du soir', () => {
     calme()
     monterVoyage('/voyage/1903', routes())
     expect(await leSoir()).toHaveAttribute('data-vivante', 'non')
+  })
+})
+
+// La porte du wagon-restaurant (plan des écrans des lots, brief 16, décision 10 ; maquette, écran 17 :
+// `.lien-wr`) : sur la fiche de mon année en cours, quand une table existe ce soir. Le bloc lecteur
+// est tenu par `pages/VoyageAnnee.porte.test.tsx` sur un dessin prêté ; ici, la gare de 1900.
+describe('la porte du wagon-restaurant', () => {
+  const EXEMPLE = exemple<Tables>('/me/voyage/tables', 'get', 200)
+  /** Alice (moi) a dressé une table pour bob, ce soir. */
+  const LA_MIENNE: Table = { ...EXEMPLE.tables[0]!, soir: '2026-10-09' }
+  /** Bob m'invite, ce soir. */
+  const CHEZ_BOB: Table = { ...LA_MIENNE, id: 'a1000000-0000-4000-8000-000000000001', hote: LA_MIENNE.invite, invite: LA_MIENNE.hote }
+  const etat = (t: Table, e: Table['etat']): Table => ({ ...t, etat: e })
+  const aTable = (tables: Table[], v: Voyage = VOYAGE) => ({ ...routes(v), [TABLES]: () => json({ tables } satisfies Tables) })
+  const laPorte = () => screen.findByRole('link', { name: new RegExp(`^${MOTS_DU_WAGON.porte}`) })
+
+  beforeEach(() => {
+    calme()
+    // L'heure se fixe, elle ne s'attend pas : le 9 octobre 2026, 20 h à Paris.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-09T18:00:00.000Z'))
+  })
+
+  // Mutations : `porteDuWagon` retiré des gabarits de `PAGES_1900` ; `{porte}` oublié par `Gare`, ou
+  // rangé avant le train du soir ; le lien mené ailleurs que là où `Porte` le dit (`to="/voyage"`).
+  it('sous le train du soir, hors de lui, elle dit ce qu’il en est de ma table et mène au wagon', async () => {
+    monterVoyage('/voyage/1903', aTable([etat(LA_MIENNE, 'a_pris_sa_place')]))
+    const porte = await laPorte()
+    expect(porte).toHaveAttribute('href', '/voyage/wagon-restaurant')
+    expect(porte).toHaveAccessibleName(`${MOTS_DU_WAGON.porte} bob a pris sa place : le même film, à deux, ce soir`)
+    const soir = await leSoir()
+    expect(soir.contains(porte)).toBe(false)
+    expect(soir.compareDocumentPosition(porte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const classes = await lesClasses()
+    expect(classes.compareDocumentPosition(porte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  // **Pour tout membre** : hors IA, la page ne monte pas le train du soir, et la porte est là quand
+  // même. Mutation : la porte rendue par `TrainDuSoir`, ou rangée dans la place `seance`.
+  it('un membre hors IA n’a pas de train du soir, et trouve la porte', async () => {
+    monterVoyage('/voyage/1903', aTable([CHEZ_BOB], HORS_IA))
+    expect(await laPorte()).toHaveAccessibleName(`${MOTS_DU_WAGON.porte} bob t’invite à sa table : le même film, à deux, ce soir`)
+    expect(screen.queryByRole('region', { name: 'Ce soir en gare' })).toBeNull()
+  })
+
+  // Mutations : dans `tablesDeLaPorte`, toute table gardée ; le soir comparé au jour de l'appareil.
+  it.each([
+    ['d’hier', [{ ...etat(CHEZ_BOB, 'a_pris_sa_place'), soir: '2026-10-08' }]],
+    ['que j’ai déclinée', [etat(CHEZ_BOB, 'a_decline')]],
+  ])('une table %s n’ouvre aucune porte', async (_, tables) => {
+    const { requetes, client } = monterVoyage('/voyage/1903', aTable(tables))
+    await leSoir()
+    await waitFor(() => expect(requetes).toContain(TABLES))
+    await waitFor(() => expect(client.isFetching()).toBe(0))
+    expect(screen.queryByText(new RegExp(MOTS_DU_WAGON.porte, 'i'))).toBeNull()
+  })
+
+  // Ce que la porte dit : l'état de l'invité, dit à l'hôte ou à l'invité ; plusieurs tables le même
+  // soir, leur compte. Mutations : les phrases de l'hôte dites à l'invité ; la première table seule
+  // quand il y en a plusieurs ; « a pris sa place » dit d'une invitation qui attend.
+  it('dit l’état de la table à l’hôte, à l’invité, ou le compte de mes tables', () => {
+    const un = (t: Table, role: 'hote' | 'invite') => ceQueDitLaPorte([{ table: t, role }])
+    expect((['attend', 'a_pris_sa_place', 'a_decline'] as const).map((e) => un(etat(LA_MIENNE, e), 'hote'))).toEqual([
+      'bob n’a pas encore pris sa place : le même film, à deux, ce soir',
+      'bob a pris sa place : le même film, à deux, ce soir',
+      'bob a rendu sa place : ta table reste dressée ce soir',
+    ])
+    expect((['attend', 'a_pris_sa_place'] as const).map((e) => un(etat(CHEZ_BOB, e), 'invite'))).toEqual([
+      'bob t’invite à sa table : le même film, à deux, ce soir',
+      'Ta place est prise à la table de bob : le même film, à deux, ce soir',
+    ])
+    expect(ceQueDitLaPorte([{ table: CHEZ_BOB, role: 'invite' }, { table: LA_MIENNE, role: 'hote' }])).toBe('2 tables t’attendent ce soir')
   })
 })

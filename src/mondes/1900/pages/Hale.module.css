@@ -332,3 +332,11 @@
   font: italic 15px/1.4 var(--m-f-texte);
   color: var(--m-or2);
 }
+
+/* La précision sous le mot d'une plaque (« Dresser une table », au wagon-restaurant, ce soir). */
+.plaque small {
+  display: block;
+  font: italic 400 12.5px/1.2 var(--m-f-texte);
+  letter-spacing: 0;
+  text-transform: none;
+}

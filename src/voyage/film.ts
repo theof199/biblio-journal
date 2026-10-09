@@ -16,15 +16,17 @@ export function filmDeLaFiche(fiche: FichePrete, filmId: string): { salle: Salle
   return null
 }
 
-export type BoutonDuFilm = 'corriger' | 'plex' | 'vu' | 'demander' | 'introuvable' | 'remettre' | 'podium'
+export type BoutonDuFilm = 'corriger' | 'plex' | 'vu' | 'demander' | 'introuvable' | 'remettre' | 'podium' | 'table'
 
 /**
  * Les boutons du guichet (portée de `boutonsFicheVoyage`) : « Voir sur le Plex » ne dépend que du
  * lien ; « Je l'ai vu » tant que le film n'est pas vu, « Corriger » à sa place une fois vu **et**
  * son entrée retrouvée ; « Demander » sur `a_demander` seulement ; « Introuvable » et son inverse,
- * exclusifs, jamais sur un film vu ; « Mettre sur le podium » sur un film vu.
+ * exclusifs, jamais sur un film vu ; « Mettre sur le podium » sur un film vu. **« Dresser une table »**
+ * (plan des écrans des lots, brief 16, décision 10) **s'ajoute en dernier**, quand le guichet l'offre
+ * (`table`) et quel que soit l'état du film : il ne retire ni ne déplace aucun des autres.
  */
-export function boutonsDuFilm(etat: EtatFilm, plexUrl: string | null, entreeConnue: boolean): BoutonDuFilm[] {
+export function boutonsDuFilm(etat: EtatFilm, plexUrl: string | null, entreeConnue: boolean, table = false): BoutonDuFilm[] {
   const b: BoutonDuFilm[] = []
   if (etat === 'vu' && entreeConnue) b.push('corriger')
   if (plexUrl) b.push('plex')
@@ -33,6 +35,7 @@ export function boutonsDuFilm(etat: EtatFilm, plexUrl: string | null, entreeConn
   if (etat === 'introuvable') b.push('remettre')
   else if (etat !== 'vu') b.push('introuvable')
   if (etat === 'vu') b.push('podium')
+  if (table) b.push('table')
   return b
 }
 

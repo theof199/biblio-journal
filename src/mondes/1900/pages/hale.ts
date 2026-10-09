@@ -15,6 +15,8 @@ export const MOTS_DE_LA_SEANCE = {
   corrigerSous: 'ta note, tes réactions',
   plex: 'Voir sur le Plex',
   podium: 'Mettre sur le podium',
+  table: 'Dresser une table',
+  tableSous: 'au wagon-restaurant, ce soir',
   demander: 'Demander sur Sir',
   demande: 'demandé',
   introuvable: 'Introuvable',

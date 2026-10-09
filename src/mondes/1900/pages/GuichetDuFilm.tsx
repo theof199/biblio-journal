@@ -6,11 +6,11 @@ import styles from './Hale.module.css'
 /**
  * Le guichet de la fiche d'un film des années 1900 (maquette, écran 5 : `.bout-action`) : le bouton
  * corail pour ce qui mène au billet (« Composter une séance », le mot du monde, ou « Corriger »), la
- * plaque de laiton pour le Plex et le podium, le filet pour la demande et « Le film », le texte
+ * plaque de laiton pour le Plex, le podium et « Dresser une table » (brief 16 des écrans des lots), le filet pour la demande et « Le film », le texte
  * discret pour « Introuvable » et son inverse. `Guichet` décide des gestes offerts, tient les
  * écritures et leur verrou : le dessin les rend dans l'ordre reçu, sans en ajouter. Rien n'y bouge.
  */
-export default function GuichetDuFilm({ monde, film, boutons, billet, entree, occupe, erreur, onEcrire, onPodium, onFilm }: PropsComptoir) {
+export default function GuichetDuFilm({ monde, film, boutons, billet, entree, occupe, erreur, onEcrire, onPodium, onTable, onFilm }: PropsComptoir) {
   const mots = monde.pages.mots.billet
   return (
     <div className={styles.guichet}>
@@ -38,6 +38,12 @@ export default function GuichetDuFilm({ monde, film, boutons, billet, entree, oc
             return (
               <button key={b} type="button" className={styles.plaque} onClick={onPodium}>
                 {M.podium}
+              </button>
+            )
+          case 'table':
+            return (
+              <button key={b} type="button" className={styles.plaque} onClick={onTable}>
+                {M.table} <small>{M.tableSous}</small>
               </button>
             )
           case 'demander':

@@ -26,6 +26,8 @@ export interface PropsComptoir {
   erreur: string | null
   onEcrire: (geste: GesteDuGuichet) => void
   onPodium: () => void
+  /** « Dresser une table » : n'est dans `boutons` que si le guichet l'offre (un monde qui compose le wagon-restaurant). */
+  onTable: () => void
   /** « Le film » : la feuille du chroniqueur. */
   onFilm: () => void
 }
@@ -94,6 +96,10 @@ export default function Comptoir({ monde, film, boutons, billet, entree, occupe,
                 Mettre sur le podium
               </button>
             )
+          // « Dresser une table » n'arrive qu'au guichet d'un monde qui compose le wagon-restaurant,
+          // et ce monde-là le dessine : le comptoir par défaut ne le reçoit jamais.
+          case 'table':
+            return null
         }
       })}
       {film.etat === 'demande' ? <p className={styles.note}>demandé</p> : null}
