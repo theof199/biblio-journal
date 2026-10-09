@@ -110,6 +110,7 @@ describe('l’habillage des pages du Voyage', () => {
         '/src/mondes/1900/pages/Pied.module.css',
         '/src/mondes/1900/pages/Malle.module.css',
         '/src/mondes/1900/pages/Consigne.module.css',
+        '/src/mondes/1900/pages/Bobines.module.css',
         '/src/mondes/1900/pages/Courrier.module.css',
         '/src/mondes/1900/pages/Fetes.module.css',
         '/src/mondes/1900/pages/Controleur.module.css',

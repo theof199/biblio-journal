@@ -16,7 +16,7 @@ const estConnue = (rubrique: string): rubrique is Rubrique => (RUBRIQUES as read
 
 /**
  * Par rubrique, les dates de ses éléments, telles que le contrat les sert (des instants ISO) : un
- * `ramasse_le` par objet, un `collee_le` par place de la malle, un `postee_le` par carte postale reçue. Un élément sans date (une place pas
+ * `ramasse_le` par objet et par bobine, un `collee_le` par place de la malle, un `postee_le` par carte postale reçue. Un élément sans date (une place pas
  * encore collée) se passe nul et ne compte pas. **Une rubrique dont rien n'est passé reste éteinte** :
  * l'appelant ne passe que celles dont il montre le bloc.
  */
@@ -81,10 +81,12 @@ export interface RubriqueDeLaPastille {
 }
 
 /**
- * **La liste des rubriques qui allument le point, écrite ici et nulle part ailleurs.** `bobine` n'y
- * est pas : ses bobines sont datées par `ramasse_le` depuis qu'elles suivent le compte, mais la sacoche
- * n'en monte aucun bloc, donc rien ne la marquerait vue et son point ne s'éteindrait jamais ; elle y
- * entrera avec le bloc qui les montrera. `courrier` y
+ * **La liste des rubriques qui allument le point, écrite ici et nulle part ailleurs.** `bobine` y
+ * est entrée avec le bloc qui montre les bobines (`voyage/sacoche/Bobines.tsx`) : **toute** bobine que
+ * le compte tient l'allume par son `ramasse_le`, de quelque monde qu'elle soit, et le bloc marque la
+ * rubrique vue sur la même condition. Les bobines versées de l'appareil sont datées de leur versement :
+ * elles l'allument une fois, et la première visite de la sacoche l'éteint (rien n'est marqué vu
+ * d'office). Un état servi sans `bobines` (une API d'avant) ne date rien. `courrier` y
  * est entré avec son bloc (plan des écrans des lots, brief 13) : une carte **reçue** l'allume par son
  * `postee_le`, jamais une carte envoyée, et `lue_le` n'y change rien (c'est la visite de la rubrique
  * qui l'éteint). Dans l'ordre des blocs de la sacoche.
@@ -93,6 +95,8 @@ export const RUBRIQUES_DE_LA_PASTILLE: readonly RubriqueDeLaPastille[] = [
   { rubrique: 'etiquette', bloc: 'malleDeLaSacoche', malle: true, boite: false, dates: ({ malle }) => malle?.etiquettes.map((p) => p.collee_le), pourquoi: 'une étiquette vient d’être collée sur la malle' },
   { rubrique: 'courrier', bloc: 'courrierDeLaSacoche', malle: false, boite: true, dates: ({ courrier }) => courrier?.recues.map((c) => c.postee_le), pourquoi: 'une carte postale est arrivée' },
   { rubrique: 'objet', bloc: 'objetsDeLaSacoche', malle: false, boite: false, dates: ({ voyageur }) => voyageur?.objets.map((o) => o.ramasse_le), pourquoi: 'un objet trouvé en gare' },
+  // Maquette « Voyage immobile 1900 », l. 3225 : `signalerSacoche('une bobine retrouvée')`.
+  { rubrique: 'bobine', bloc: 'bobinesDeLaSacoche', malle: false, boite: false, dates: ({ voyageur }) => (voyageur as Partial<Voyageur> | undefined)?.bobines?.map((b) => b.ramasse_le), pourquoi: 'une bobine retrouvée' },
 ]
 
 /**

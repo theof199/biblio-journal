@@ -32,6 +32,7 @@ import NoticeDuFilm from './pages/NoticeDuFilm'
 import ProgrammeDuFilm from './pages/ProgrammeDuFilm'
 import MalleDeLaSacoche from './pages/MalleDeLaSacoche'
 import ObjetsDeLaSacoche from './pages/ObjetsDeLaSacoche'
+import BobinesDeLaSacoche from './pages/BobinesDeLaSacoche'
 import PageDuGuide from './pages/PageDuGuide'
 import PageDeLaSacoche from './pages/PageDeLaSacoche'
 import PasseportDeLaSacoche from './pages/PasseportDeLaSacoche'
@@ -180,6 +181,7 @@ export const PAGES_1900: HabillagePages = {
     malleDeLaSacoche: MalleDeLaSacoche,
     courrierDeLaSacoche: CourrierDeLaSacoche,
     objetsDeLaSacoche: ObjetsDeLaSacoche,
+    bobinesDeLaSacoche: BobinesDeLaSacoche,
     feteDeLaSalle: VoitureComplete,
     feteDeLaRecompense: EtiquetteDeMalle,
     feteDuBadge: BadgeColleSurLaMalle,

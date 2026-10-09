@@ -1,0 +1,117 @@
+/* Les bobines retrouvées de la sacoche des années 1900. La maquette « Voyage immobile 1900 » ne
+   dessine pas cette rubrique : elle reprend le casier de la consigne (`Consigne.module.css` : le cuir
+   assombri, le laiton, l'étiquette de papier, le pointillé d'une place vide) et le mot « Nouvelle »
+   du courrier. La boîte de film est celle de la carte (maquette : `.bobine::before`), au laiton du
+   monde. Les couleurs et les polices viennent des jetons du monde. Rien n'y bouge. */
+.boites {
+  display: grid;
+  gap: 6px;
+  margin: 0 16px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--m-or) 34%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-velours) 22%, var(--m-fond));
+  box-shadow: inset 0 3px 12px var(--m-ombre);
+  list-style: none;
+}
+
+.boites li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 52px;
+  padding: 6px 10px 6px 8px;
+  border-radius: 2px;
+}
+
+.boites svg {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.boites p {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  font: 400 13px/1.25 var(--m-f-texte);
+}
+
+/* Le titre du film, en entier : il passe à la ligne plutôt que de déborder. */
+.boites b {
+  overflow-wrap: anywhere;
+  font: italic 600 15.5px/1.2 var(--m-f-texte);
+}
+
+.boites small {
+  font: 700 11px/1.3 var(--m-f-presse);
+  letter-spacing: 0.04em;
+}
+
+.boites em {
+  padding: 3px 7px;
+  border-radius: 2px;
+  background: var(--m-rouge);
+  color: var(--m-papier);
+  font: normal 700 10.5px var(--m-f-titre);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Retrouvée : la boîte de fer sur son étiquette de papier. */
+.boites li[data-etat='la'] {
+  background: linear-gradient(var(--m-papier), var(--m-papier2));
+  box-shadow:
+    0 1px 0 var(--m-or3),
+    0 4px 8px var(--m-ombre);
+  color: var(--m-encre);
+}
+
+.boites li[data-etat='la'] small {
+  color: var(--m-rouge);
+}
+
+.boites li[data-etat='la'] svg {
+  filter: drop-shadow(1px 2px 1.5px var(--m-ombre));
+}
+
+.boites li[data-etat='la'] circle {
+  fill: var(--m-or);
+  stroke: var(--m-encre);
+  stroke-width: 1.2;
+}
+
+.boites li[data-etat='la'] circle:nth-child(2) {
+  fill: var(--m-or3);
+}
+
+.boites li[data-etat='la'] circle:nth-child(n + 3) {
+  fill: var(--m-encre);
+  stroke: none;
+}
+
+/* À trouver : la place en pointillé, le contour de la boîte, sans rien qui la nomme. */
+.boites li[data-etat='manque'] {
+  border: 1px dashed color-mix(in srgb, var(--m-papier) 26%, transparent);
+  color: var(--m-pale);
+}
+
+.boites li[data-etat='manque'] circle {
+  fill: none;
+  stroke: color-mix(in srgb, var(--m-papier) 30%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 2 2.5;
+}
+
+.boites li[data-etat='manque'] circle:nth-child(n + 3) {
+  stroke: none;
+}
+
+.boites li[data-etat='manque'] i {
+  font: italic 400 13px/1.25 var(--m-f-texte);
+}
+
+.boites li[data-etat='manque'] small {
+  color: var(--m-doux);
+}

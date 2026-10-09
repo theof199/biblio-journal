@@ -5,7 +5,7 @@ import { lireVoyageur, marquerRubriqueVue, type Voyageur } from '../../api/voyag
 import type { Rubrique } from '../voyageur'
 
 /**
- * Ma visite d'une rubrique de la sacoche (`etiquette`, `objet`, `courrier`), pour le bloc qui la
+ * Ma visite d'une rubrique de la sacoche (`etiquette`, `objet`, `bobine`, `courrier`), pour le bloc qui la
  * montre : il lit l'état du voyageur (une seule clé, `cles.voyageur`) et rend **le `vue_le` lu à
  * l'arrivée, figé pour la visite** — c'est sur lui que « nouvelle » se calcule (`estNouveau`), si bien
  * qu'elle ne s'efface pas sous les yeux quand la marque part. Nul tant que l'état n'est pas lu, et s'il

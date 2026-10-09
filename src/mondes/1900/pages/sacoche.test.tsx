@@ -16,8 +16,8 @@ import { MOTS_DE_LA_SACOCHE as M, compteDeLAnneau, etatDeLaPage, libelleDUtilise
  * `pages/VoyageSacoche.test.tsx`, montés sur 1890, tiennent le défaut ; ceux-ci tiennent ce que 1900
  * en fait, et ce qu'il n'en fait pas encore (`PAS_ENCORE` : plus rien). La malle est
  * branchée (plan des écrans des lots, brief 2), les objets trouvés (brief 3), le courrier reçu
- * (brief 13) et la carte à écrire (brief 14) aussi : `malleDeLaSacoche.test.tsx`, `objetsDeLaSacoche.test.tsx` et
- * `courrierDeLaSacoche.test.tsx` tiennent ce qu'ils montrent.
+ * (brief 13), la carte à écrire (brief 14) et les bobines retrouvées aussi : `malleDeLaSacoche.test.tsx`,
+ * `objetsDeLaSacoche.test.tsx`, `courrierDeLaSacoche.test.tsx` et `bobinesDeLaSacoche.test.tsx` tiennent ce qu'ils montrent.
  */
 const SACOCHE = '/voyage/sacoche'
 const CARTE = 'GET /api/me/voyage'
@@ -30,8 +30,9 @@ const VUE = 'POST /api/me/voyage/rubriques/etiquette/vue'
 const VUE_DES_OBJETS = 'POST /api/me/voyage/rubriques/objet/vue'
 const BOITE = 'GET /api/me/voyage/cartes-postales'
 const VUE_DU_COURRIER = 'POST /api/me/voyage/rubriques/courrier/vue'
+const VUE_DES_BOBINES = 'POST /api/me/voyage/rubriques/bobine/vue'
 /** Les marques « vue » des rubriques : des `POST` qui ne sont pas des gestes du membre. */
-const MARQUES = [VUE, VUE_DES_OBJETS, VUE_DU_COURRIER]
+const MARQUES = [VUE, VUE_DES_OBJETS, VUE_DU_COURRIER, VUE_DES_BOBINES]
 /** L'exemple du contrat (une carte reçue de bob, déjà lue ; une envoyée), et une carte reçue pas encore lue, en tête. */
 const EXEMPLE_DE_BOITE = exemple<Courrier>('/me/voyage/cartes-postales', 'get', 200)
 const NEUVE: CartePostaleRecue = { ...EXEMPLE_DE_BOITE.recues[0]!, id: '5d1c7a40-2b6e-4f93-a0d8-9e3b1c6f7a54', annee: 1903, mot: 'Bien arrivé à Longueville.', postee_le: '2026-09-28T07:00:00.000Z', lue_le: null }
@@ -74,6 +75,7 @@ const ROUTES = {
   [VOYAGEUR]: () => json(exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)),
   [VUE]: () => json({ rubrique: 'etiquette', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
   [VUE_DES_OBJETS]: () => json({ rubrique: 'objet', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
+  [VUE_DES_BOBINES]: () => json({ rubrique: 'bobine', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
   [BOITE]: () => json(LA_BOITE),
   [VUE_DU_COURRIER]: () => json({ rubrique: 'courrier', vue_le: '2026-09-29T12:00:00.000Z' } satisfies RubriqueVue),
   [LUE]: () => json({ ...NEUVE, lue_le: '2026-09-29T12:00:05.000Z' } satisfies CartePostaleRecue),
@@ -107,13 +109,14 @@ const PAS_ENCORE: Record<string, { mots: RegExp; routes: RegExp }> = {}
  * (`AU_GESTE` : une carte reçue qu'on ouvre), marque cette carte lue. **Écrire une carte** (brief 14)
  * est un geste aussi : `POST …/cartes-postales` ne part qu'à la confirmation, jamais au montage, et
  * mes abonnements (`/users/me/following`, hors de `/me/voyage`) ne se lisent qu'à l'ouverture d'une
- * carte à écrire.
+ * carte à écrire. Les bobines retrouvées ne lisent que le même état du voyageur et n'écrivent que la
+ * marque de la rubrique `bobine` : **ramasser (`…/bobines/{cle}/ramasser`) reste hors de la sacoche**.
  */
-const LECTURES = [CARTE, TICKETS, DEPENSES, MALLE, VOYAGEUR, VUE, VUE_DES_OBJETS, BOITE, VUE_DU_COURRIER]
+const LECTURES = [CARTE, TICKETS, DEPENSES, MALLE, VOYAGEUR, VUE, VUE_DES_OBJETS, BOITE, VUE_DU_COURRIER, VUE_DES_BOBINES]
 const AU_GESTE = [LUE, POSTER]
 /** Les rubriques que la sacoche de 1900 montre, dans l'ordre, et aucune autre : qui en ajoute une la nomme. */
 const PORTEFEUILLE = 'Le portefeuille les tickets'
-const RUBRIQUES = ['Le passeport une page par décennie', 'La malle les étiquettes de la décennie', PORTEFEUILLE, 'Le courrier les cartes postales', 'Les objets trouvés 2 sur 10', 'Les coulisses']
+const RUBRIQUES = ['Le passeport une page par décennie', 'La malle les étiquettes de la décennie', PORTEFEUILLE, 'Le courrier les cartes postales', 'Les objets trouvés 2 sur 10', 'Les bobines retrouvées 2 sur 6', 'Les coulisses']
 // Le signe du pli, à côté du titre des coulisses, ne se lit pas : il n'est pas du titre.
 const rubriques = (page: HTMLElement) => within(page).getAllByRole('heading', { level: 2 }).map((h) => h.textContent?.replace(/[▸▾]$/, '') ?? '')
 
@@ -196,8 +199,11 @@ describe('la sacoche du voyageur en 1900', () => {
   // brief 14** : écrire une carte est branché, son interdit de `PAS_ENCORE` est levé et son `POST`
   // entre dans `AU_GESTE`. Mutations : `posterCartePostale` au montage du bloc, pour la première gare
   // en attente ; mes abonnements lus au montage (`enabled` retiré) ; le `POST` parti dès « Poster la
-  // carte », sans la confirmation ; la boîte relue après le `201`.
-  it('ne lit aucune fiche d’année, coulisses dépliées comprises, ni rien que ce fichier ne nomme, ne ramasse rien, et ne montre que ses six rubriques', async () => {
+  // carte », sans la confirmation ; la boîte relue après le `201`. **Elle a changé le 9 octobre 2026** :
+  // les bobines retrouvées sont branchées, une rubrique et une marque de plus, aucune lecture.
+  // Mutations : `ramasserUneBobine('hamlet')` au montage du bloc des bobines (`/bobines/` n'est nommé
+  // nulle part ici) ; une lecture de la malle de 1890 ajoutée au bloc.
+  it('ne lit aucune fiche d’année, coulisses dépliées comprises, ni rien que ce fichier ne nomme, ne ramasse rien, et ne montre que ses sept rubriques', async () => {
     const { page, requetes } = await sacocheDepliee()
     expect(rubriques(page)).toEqual(RUBRIQUES)
     // Avant tout geste : rien que `LECTURES`, une fois chacune pour la boîte. Puis la carte neuve

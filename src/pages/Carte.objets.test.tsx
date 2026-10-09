@@ -379,11 +379,13 @@ describe('les objets sur le quai, côté page', () => {
       'GET /api/me/voyage/decennies/1900/etiquettes': () => json({ ...MALLE, decennie: 1900 }),
       'POST /api/me/voyage/rubriques/etiquette/vue': () => json({ rubrique: 'etiquette', vue_le: '2026-10-08T11:00:00.000Z' }),
       'POST /api/me/voyage/rubriques/objet/vue': () => json({ rubrique: 'objet', vue_le: '2026-10-08T11:00:00.000Z' }),
+      'POST /api/me/voyage/rubriques/bobine/vue': () => json({ rubrique: 'bobine', vue_le: '2026-10-08T11:00:00.000Z' }),
     })
     banc.toucher('melon')
     await screen.findByText('Objet trouvé 2 sur 10')
-    // Le point rouge est allumé (brief 5) : le nom du lien dit pourquoi, à la suite.
-    fireEvent.click(screen.getByRole('link', { name: 'Sacoche du voyageur : un objet trouvé en gare' }))
+    // Le point rouge est allumé (brief 5) : le nom du lien dit pourquoi, à la suite. L'exemple du
+    // contrat tient aussi deux bobines, leur rubrique jamais ouverte : elles le disent après l'objet.
+    fireEvent.click(screen.getByRole('link', { name: 'Sacoche du voyageur : un objet trouvé en gare et une bobine retrouvée' }))
     const consigne = await screen.findByRole('region', { name: 'Objets trouvés' })
     expect(within(consigne).getByRole('img', { name: '1901 : un chapeau melon, dans la sacoche' })).toBeInTheDocument()
     expect(within(consigne).getByRole('img', { name: '1903 : un objet à trouver en gare' })).toBeInTheDocument()

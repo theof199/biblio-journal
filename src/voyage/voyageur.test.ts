@@ -124,23 +124,23 @@ describe('la pastille de la sacoche', () => {
   const OBJET = 'un objet trouvé en gare'
   const malle = exemple<Malle>('/me/voyage/decennies/{decennie}/etiquettes', 'get', 200)
   const base = exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)
-  /** Jamais rien ouvert, un objet ramassé, et une rubrique que l'appli ne connaît pas. */
-  const jamais: Voyageur = { ...base, rubriques: [vue('etiquette', null), vue('objet', null), vue('bobine', null), vue('courrier', null), vue('wagon', null)] }
+  /** Jamais rien ouvert, un objet ramassé, aucune bobine, et une rubrique que l'appli ne connaît pas. */
+  const jamais: Voyageur = { ...base, bobines: [], rubriques: [vue('etiquette', null), vue('objet', null), vue('bobine', null), vue('courrier', null), vue('wagon', null)] }
 
   // Mutations : le filtre retiré (toute la liste pour tout monde) ; `gabaritSeul` lu sur une seule clé
   // pour toutes les rubriques (`malleDeLaSacoche` : un monde qui ne compose que la consigne n'aurait rien).
-  it('ne regarde que les rubriques dont le monde compose le bloc : aucune en 1890 ni « à venir », les trois en 1900, dans l’ordre de la sacoche', () => {
+  it('ne regarde que les rubriques dont le monde compose le bloc : aucune en 1890 ni « à venir », les quatre en 1900, dans l’ordre de la sacoche', () => {
     expect(rubriquesDeLaPastille(mondes(1890))).toEqual([])
     expect(rubriquesDeLaPastille(mondes(1910))).toEqual([])
-    expect(rubriquesDeLaPastille(mondes(1900)).map((r) => r.rubrique)).toEqual(['etiquette', 'courrier', 'objet'])
+    expect(rubriquesDeLaPastille(mondes(1900)).map((r) => r.rubrique)).toEqual(['etiquette', 'courrier', 'objet', 'bobine'])
     const m = mondes(1900)
-    const consigneSeule: Monde = { ...m, pages: { ...m.pages, gabarits: { ...m.pages.gabarits, malleDeLaSacoche: undefined, courrierDeLaSacoche: undefined } } }
+    const consigneSeule: Monde = { ...m, pages: { ...m.pages, gabarits: { ...m.pages.gabarits, malleDeLaSacoche: undefined, courrierDeLaSacoche: undefined, bobinesDeLaSacoche: undefined } } }
     expect(rubriquesDeLaPastille(consigneSeule).map((r) => r.rubrique)).toEqual(['objet'])
   })
 
-  // Mutations : toutes les rubriques servies sans `vue_le` allumées (`bobine`, `courrier`, « wagon ») ;
+  // Mutations : toutes les rubriques servies sans `vue_le` allumées (`bobine` sans bobine, `courrier`, « wagon ») ;
   // les rubriques de toute la liste et non les rubriques montées ; l'ordre des phrases pris au serveur.
-  it('dit pourquoi, une phrase par rubrique montée et allumée, jamais pour « bobine », un « courrier » dont la boîte n’est pas lue, ni une inconnue', () => {
+  it('dit pourquoi, une phrase par rubrique montée et allumée, jamais pour une « bobine » sans bobine, un « courrier » dont la boîte n’est pas lue, ni une inconnue', () => {
     const lu = { voyageur: jamais, malle, courrier: undefined }
     expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, lu)).toEqual([ETIQUETTE, OBJET])
     expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { ...lu, voyageur: { ...jamais, rubriques: [...jamais.rubriques].reverse() } })).toEqual([ETIQUETTE, OBJET])
@@ -156,6 +156,30 @@ describe('la pastille de la sacoche', () => {
   it('sans l’état du voyageur, rien ; sans la malle, sa rubrique seule reste éteinte', () => {
     expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: undefined, malle, courrier: undefined })).toEqual([])
     expect(nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: jamais, malle: undefined, courrier: undefined })).toEqual([OBJET])
+  })
+
+  // Les bobines : **toute** bobine que le compte tient allume « bobine » par son `ramasse_le`, comparé
+  // à la visite de la rubrique ; ses clés ne sont pas lues (une bobine d'un autre monde, ou inconnue,
+  // l'allume aussi : le bloc marque la rubrique vue sur la même condition). L'exemple du contrat : deux
+  // bobines, la dernière ramassée le 7 octobre 2026 à 21 h 15 min 40 s, la rubrique jamais vue.
+  // Mutations, dans `RUBRIQUES_DE_LA_PASTILLE` : la ligne retirée ; ses dates prises aux objets
+  // (`voyageur.objets`) ; `bobines` lu sans garde (un état servi sans le champ ferait tomber la carte) ;
+  // sa phrase rangée avant celle des objets.
+  it('une bobine au compte allume « bobine » par son `ramasse_le` : ni sans bobine, ni par une bobine d’avant la visite, ni sur un état servi sans ses bobines', () => {
+    const BOBINE = 'une bobine retrouvée'
+    const vuLe = (bobine: string | null, bobines = base.bobines): Voyageur => ({ ...base, bobines, rubriques: [vue('etiquette', '2026-10-08T12:00:00.000Z'), vue('objet', '2026-10-08T12:00:00.000Z'), vue('bobine', bobine)] })
+    const dit = (v: Voyageur) => nouveautesDeLaSacoche(RUBRIQUES_DE_LA_PASTILLE, { voyageur: v, malle, courrier: undefined })
+    expect(base.bobines.map((b) => b.ramasse_le)).toEqual(['2026-10-04T20:41:09.000Z', '2026-10-07T21:15:40.000Z'])
+    expect(dit(vuLe(null))).toEqual([BOBINE])
+    expect(dit(vuLe('2026-10-07T21:15:39.999Z'))).toEqual([BOBINE])
+    expect(dit(vuLe('2026-10-07T21:15:40.000Z'))).toEqual([])
+    expect(dit(vuLe(null, []))).toEqual([])
+    expect(dit(vuLe(null, [{ cle: 'metropolis', ramasse_le: '2026-10-09T08:00:00.000Z' }]))).toEqual([BOBINE])
+    const sansLeChamp: Partial<Voyageur> = vuLe(null)
+    delete sansLeChamp.bobines
+    expect(dit(sansLeChamp as Voyageur)).toEqual([])
+    // Avec un objet neuf : la phrase des bobines vient après, dans l'ordre des blocs de la sacoche.
+    expect(dit({ ...vuLe(null), rubriques: [vue('bobine', null), vue('objet', null)] })).toEqual([OBJET, BOBINE])
   })
 
   // Le courrier (brief 13) : une carte **reçue** l'allume par son `postee_le`, comparé à la visite de

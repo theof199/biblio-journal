@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
 import { cles } from '../api/cles'
 import { createQueryClient } from '../api/queryClient'
-import type { CartePostaleRecue, Courrier, Malle, ObjetRamasse, Voyageur } from '../api/voyage'
+import type { BobineRamassee, CartePostaleRecue, Courrier, Malle, ObjetRamasse, Voyageur } from '../api/voyage'
 import { FabriqueMoteurContexte } from '../carte/CarteCanvas'
 import stylesDeLaCarte from '../carte/Carte.module.css'
 import { exemple } from '../test/contrat'
@@ -29,6 +29,7 @@ const SACOCHE = 'Sacoche du voyageur'
 const ETIQUETTE = 'une étiquette vient d’être collée sur la malle'
 const OBJET = 'un objet trouvé en gare'
 const COURRIER = 'une carte postale est arrivée'
+const BOBINE = 'une bobine retrouvée'
 /** L'exemple du contrat : une carte reçue de bob postée le 6 octobre 2026 (déjà lue le même jour), une envoyée le 5. */
 const BOITE_DU_CONTRAT = exemple<Courrier>('/me/voyage/cartes-postales', 'get', 200)
 const RECUE: CartePostaleRecue = BOITE_DU_CONTRAT.recues[0]!
@@ -39,10 +40,13 @@ const MELON: ObjetRamasse = { cle: 'melon', annee: 1901, ramasse_le: '2026-10-08
 /** L'exemple du contrat : la Correspondance collée le 29 septembre 2026, les autres places sans date. */
 const MALLE: Malle = { ...exemple<Malle>('/me/voyage/decennies/{decennie}/etiquettes', 'get', 200), decennie: 1900 }
 const BASE = exemple<Voyageur>('/me/voyage/voyageur', 'get', 200)
-/** Un état dont chaque rubrique porte la visite donnée ; une rubrique absente de `vues` n'a jamais été ouverte. */
-const etat = (objets: ObjetRamasse[], vues: Record<string, string>): Voyageur => ({
+/** « Hamlet », au compte depuis le 5 octobre 2026, en clé du serveur. */
+const HAMLET: BobineRamassee = { cle: 'hamlet', ramasse_le: '2026-10-05T10:00:00.000Z' }
+/** Un état dont chaque rubrique porte la visite donnée ; une rubrique absente de `vues` n'a jamais été ouverte. Aucune bobine, sauf dites. */
+const etat = (objets: ObjetRamasse[], vues: Record<string, string>, bobines: BobineRamassee[] = []): Voyageur => ({
   ...BASE,
   objets,
+  bobines,
   rubriques: ['etiquette', 'objet', 'bobine', 'courrier'].map((rubrique) => ({ rubrique, vue_le: vues[rubrique] ?? null })),
 })
 const AVANT_TOUT = '2026-09-01T00:00:00.000Z'
@@ -164,9 +168,51 @@ describe('le point rouge de la sacoche, sur la carte de 1900', () => {
     expect(nom()).not.toContain(RECUE.expediteur.pseudo)
   })
 
-  // `bobine` et `courrier` jamais ouvertes, une rubrique inconnue servie : rien ne s'allume par elles.
+  // Les bobines : toute bobine que le compte tient allume le point par son `ramasse_le`, comparé à ma
+  // visite de la rubrique `bobine`. Mutations : la ligne `bobine` retirée de
+  // `RUBRIQUES_DE_LA_PASTILLE` ; ses dates jamais passées (`dates: () => undefined`) ; le point allumé
+  // dès qu'une rubrique servie n'a pas de `vue_le` (jamais ouverte, sans bobine) ; `estNouveau` rendu
+  // vrai pour une date d'avant la visite ; `bobinesDeLaSacoche` retiré des gabarits de 1900.
+  it.each([
+    ['une bobine ramassée depuis ma visite', etat([LANTERNE], { etiquette: APRES_TOUT, objet: APRES_TOUT, bobine: AVANT_TOUT }, [HAMLET]), `${SACOCHE} : ${BOBINE}`, 1],
+    ['une bobine au compte, la rubrique jamais ouverte, avec un objet neuf', etat([LANTERNE], { etiquette: APRES_TOUT, objet: AVANT_TOUT }, [HAMLET]), `${SACOCHE} : ${OBJET} et ${BOBINE}`, 1],
+    ['une bobine ramassée avant ma visite', etat([LANTERNE], { etiquette: APRES_TOUT, objet: APRES_TOUT, bobine: APRES_TOUT }, [HAMLET]), SACOCHE, 0],
+    ['aucune bobine, la rubrique jamais ouverte', etat([LANTERNE], { etiquette: APRES_TOUT, objet: APRES_TOUT }), SACOCHE, 0],
+  ])('les bobines, %s : le point et le nom du lien suivent, sans une lecture de plus', async (_cas, voyageur, attendu, n) => {
+    const banc = await monter(voyageur)
+    await banc.calme()
+    expect(nom()).toBe(attendu)
+    expect(points()).toBe(n)
+    expect(banc.requetes.filter((r) => r.includes('/me/voyage')).sort()).toEqual(['GET /api/me/voyage', 'GET /api/me/voyage/tickets', LIRE, MALLE_1900, BOITE].sort())
+  })
+
+  // Le jumeau des objets et du courrier : la rubrique vue dans la sacoche éteint le point au retour,
+  // sur le cache, sans rien relire. Mutations : `Bobines.tsx` qui ne marque plus la rubrique
+  // (`useVisiteDeRubrique('bobine', false)` : le point reste) ; la marque posée sur une autre rubrique.
+  it('de retour de la sacoche, le point des bobines est éteint, sans que rien soit relu', async () => {
+    const vu = '2026-10-08T11:00:00.000Z'
+    const banc = await monter(etat([LANTERNE], { etiquette: APRES_TOUT, objet: APRES_TOUT }, [HAMLET]), {
+      [VUE('etiquette')]: () => json({ rubrique: 'etiquette', vue_le: vu }),
+      [VUE('objet')]: () => json({ rubrique: 'objet', vue_le: vu }),
+      [VUE('bobine')]: () => json({ rubrique: 'bobine', vue_le: vu }),
+      'GET /api/me/voyage/depenses': () => json({ code: 'INTERNAL', message: 'Panne.', retryable: false }, 500),
+    })
+    await waitFor(() => expect(nom()).toBe(`${SACOCHE} : ${BOBINE}`))
+    expect(points()).toBe(1)
+    fireEvent.click(lien())
+    await screen.findByRole('region', { name: 'Bobines retrouvées' })
+    await waitFor(() => expect(banc.client.getQueryData<Voyageur>(cles.voyageur)?.rubriques.find((r) => r.rubrique === 'bobine')?.vue_le).toBe(vu))
+    await banc.calme()
+    fireEvent.click(screen.getByRole('link', { name: 'Retour à la carte' }))
+    await waitFor(laCarteEstLa)
+    expect(nom()).toBe(SACOCHE)
+    expect(points()).toBe(0)
+    expect(banc.requetes.filter((r) => r === LIRE)).toHaveLength(1)
+  })
+
+  // `bobine` (sans bobine au compte) et `courrier` jamais ouvertes, une rubrique inconnue servie : rien ne s'allume par elles.
   // Mutation : le point allumé dès qu'une rubrique servie n'a pas de `vue_le`.
-  it('ni « bobine », ni un « courrier » sans carte reçue (la boîte servie est vide), ni une rubrique inconnue n’allument le point', async () => {
+  it('ni une « bobine » sans bobine, ni un « courrier » sans carte reçue (la boîte servie est vide), ni une rubrique inconnue n’allument le point', async () => {
     const banc = await monter({ ...TOUT_VU, rubriques: [...TOUT_VU.rubriques, { rubrique: 'wagon', vue_le: null }] })
     await banc.calme()
     expect(TOUT_VU.rubriques.filter((r) => r.vue_le === null).map((r) => r.rubrique)).toEqual(['bobine', 'courrier'])

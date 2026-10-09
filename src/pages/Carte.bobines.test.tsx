@@ -222,14 +222,17 @@ describe('les bobines perdues, là où le compte fait foi (un membre arrivé en 
     expect(etat()?.textContent).toBe(REFUS.message)
   })
 
-  // Aucun écran de la sacoche ne montre les bobines : rien n'éteindrait leur point. Mutation :
-  // `bobine` ajoutée à `RUBRIQUES_DE_LA_PASTILLE` ; une marque « vue » envoyée après le versement.
-  it('des bobines au compte, la rubrique jamais ouverte : pas de point, et aucune rubrique n’est marquée vue par la carte', async () => {
+  // La sacoche de 1900 montre les bobines (`bobinesDeLaSacoche`) : leur rubrique allume le point. Le
+  // versement date ses bobines de l'instant où il les range : elles l'allument une fois, et **la carte
+  // ne marque rien vu** (décision du 9 octobre 2026 : c'est la première visite de la sacoche qui
+  // l'éteint). Mutations : la ligne `bobine` retirée de `RUBRIQUES_DE_LA_PASTILLE` (le nom reste
+  // « Sacoche du voyageur ») ; une marque « vue » envoyée par la carte après le versement.
+  it('une bobine versée, la rubrique jamais ouverte : le point s’allume et dit pourquoi, et aucune rubrique n’est marquée vue par la carte', async () => {
     appareil(['soldiers'])
-    const banc = await monter(etatDuCompte([DIABLES, HAMLET]), { [ranger('soldiers')]: () => json(ligne('soldiers')) })
-    await waitFor(() => expect(banc.auCache()?.bobines).toHaveLength(3))
+    const banc = await monter(etatDuCompte([]), { [ranger('soldiers')]: () => json(ligne('soldiers')) })
+    await waitFor(() => expect(banc.auCache()?.bobines).toHaveLength(1))
     await repos()
-    expect(screen.getByRole('link', { name: new RegExp(`^${NOM_DE_LA_SACOCHE}`) })).toHaveAttribute('aria-label', NOM_DE_LA_SACOCHE)
+    expect(screen.getByRole('link', { name: new RegExp(`^${NOM_DE_LA_SACOCHE}`) })).toHaveAttribute('aria-label', `${NOM_DE_LA_SACOCHE} : une bobine retrouvée`)
     expect(banc.requetes.filter((r) => r.includes('/rubriques/'))).toEqual([])
   })
 })

@@ -191,8 +191,11 @@ monde. Deux régimes, selon que la carte lit ou non l'état du voyageur :
   stockage d'abord, et garde ce qu'un autre onglet y a mis. **Après un versement complet le stockage
   de l'appareil est vide et n'est plus écrit** : il n'est pas gardé en repli hors ligne, la carte ne
   s'ouvrant pas hors ligne (rien de `/api/` n'est au précache).
-- **La rubrique `bobine` n'allume pas le point rouge** : aucun écran de la sacoche ne montre les
-  bobines, rien ne la marquerait vue, et la carte ne la marque pas vue après un versement.
+- **La rubrique `bobine` allume le point rouge là où la sacoche montre les bobines** (1900, « Les
+  bobines retrouvées », plus bas) : toute bobine que le compte tient, par son `ramasse_le`. Les
+  bobines versées sont datées de l'instant du versement : elles l'allument **une fois**, et la
+  première visite de la sacoche l'éteint. La carte ne marque rien vu après un versement (décision
+  du propriétaire, 9 octobre 2026).
 
 **Le compteur va par décennie** (plan 3a ; `pages/Carte.tsx`). Il compte les bobines du monde de la
 décennie à l'écran : celle du monde au plus fort poids de mélange (le premier des deux à égalité),
@@ -238,7 +241,7 @@ voyageur : une étiquette vient d'être collée sur la malle et un objet trouvé
 lien se nomme exactement « Sacoche du voyageur ». La liste des rubriques qui l'allument s'écrit en un
 point (`voyage/voyageur.ts`, `RUBRIQUES_DE_LA_PASTILLE` : `etiquette` par les `collee_le` de la malle,
 `courrier` par les `postee_le` des cartes postales **reçues**, jamais des envoyées, et sans regarder
-`lue_le` : c'est la visite de la rubrique qui l'éteint, `objet` par les `ramasse_le` ; `bobine` jamais : ses bobines sont datées depuis le 9 octobre 2026, mais aucun écran de la sacoche ne les montre, rien ne l'éteindrait), et **la carte ne regarde
+`lue_le` : c'est la visite de la rubrique qui l'éteint, `objet` par les `ramasse_le`, `bobine` de même, par ceux de **toute** bobine au compte, de quelque monde qu'elle soit, et sans tomber sur un état servi sans `bobines` ; le nom du lien dit alors « une bobine retrouvée », le mot de la maquette), et **la carte ne regarde
 que celles dont la sacoche du monde de mon année en cours monte le bloc** (`rubriquesDeLaPastille`) :
 elle lit alors l'état du voyageur (la même clé que pour les objets du quai, une seule lecture), pour
 `etiquette` la malle de ma décennie, et pour `courrier` ma boîte aux cartes postales (`cles.courrier`),
@@ -1028,7 +1031,15 @@ figé pour la visite (`useVisiteDeRubrique`, repris tel quel) ; la rubrique `bob
 fois par visite, dès que le compte tient une bobine, **même sans place ici** (c'est sur toutes que le
 point de la carte s'allume), jamais en panne ni pendant une relecture. Un état servi sans `bobines`
 vaut « pas lu » : la rubrique ne paraît pas. `pages/VoyageSacoche.bobines.test.tsx` tient la règle et
-le bloc, sur un 1890 auquel on prête un dessin.
+le bloc, sur un 1890 auquel on prête un dessin. **En 1900** (`BobinesDeLaSacoche`, sa feuille
+`Bobines.module.css`, mots et compte dans `mondes/1900/pages/retrouvees.ts`) : **la maquette ne
+dessine pas cette rubrique**, elle est faite par analogie avec la consigne. Une ligne par place, la
+foire puis le train : retrouvée, la boîte de film sur son étiquette de papier, le titre et qui l'a
+tourné **tels que le fichier de son monde les dit** (`mondes/1890/bobines.ts`,
+`mondes/1900/bobines.ts`), « Années 1890 », et « Nouvelle » si elle l'est ; sinon la place en
+pointillé, « à trouver » et sa décennie, sans rien qui la nomme. Le compte, « 2 sur 6 », se dit sur
+les places passées. `mondes/1900/pages/bobinesDeLaSacoche.test.tsx` tient ce qu'elle dit ; le point
+rouge qu'elle allume et éteint est dit plus haut (« Le point rouge »).
 **Le courrier** (brief 13 des écrans des lots) vient entre le portefeuille et les objets trouvés, par
 la clé sans défaut `courrierDeLaSacoche`, que `voyage/sacoche/Courrier.tsx` lit avec ma boîte
 (`GET /me/voyage/cartes-postales`, sous `cles.courrier`) et, par le crochet de la visite, l'état du
