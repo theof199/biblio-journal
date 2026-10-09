@@ -614,7 +614,7 @@ Où vit quoi :
   ceux des sites, inchangés. La maquette ne dessine aucun feuillet : le cadre est fait par analogie avec
   ses talons, ses choix et son carnet (validée le 9 octobre 2026 ; `mondes/1900/pages/feuillet.test.tsx`).
   **Le bas d'une gare** (`PiedDeLaGare`, pour `ligneDuBas`) : sous la rubrique « Au guichet », le ticket
-  qui attend est le « Bon pour » d'une ligne bouclée (`Carton`) et son bouton corail « Utiliser le ticket
+  qui attend est le « Bon pour » d'une ligne bouclée (`Carton`, dans sa `taille` grande, que ce pied demande seul) et son bouton corail « Utiliser le ticket
   de 1904 » (`Action`), le refus de l'API en alerte dessous ; le billet utilisé est le ticket pâli du
   portefeuille (`Ticket`, le dessin commun aux deux), daté comme lui du jour de Paris (`jourDeParis`, jamais
   le fuseau de l'appareil), tamponné « Entrée », qu'un toucher retourne (en

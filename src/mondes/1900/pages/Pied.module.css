@@ -2,8 +2,8 @@
    maquette « Voyage immobile 1900 » : `.edm` et `.bout-action` pour le ticket qui attend, `.tk.utilise`
    pour le billet utilisé, `.depeche` pour le mot du jury). Les couleurs et les polices viennent des
    jetons du monde. Seul le billet bouge, quand il se retourne, sous sa racine vivante et au tempo. */
-/* Le carton prend la largeur de la page : ses lignes se mesurent à lui (`cqi`, `Carton.module.css`),
-   et à 270 px « de 1903 à … » et « Entrée » tombaient sous 13 px. */
+/* Le carton prend la largeur de la page, et demande ses lignes en grand (`taille`, `Carton.module.css`) :
+   à celles de la maquette, « de 1903 à … » et « Entrée » restaient sous 10 px sur un écran de 320. */
 .bon {
   width: min(100% - 32px, 420px);
   margin: 4px auto 16px;

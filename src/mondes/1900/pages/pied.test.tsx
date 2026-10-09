@@ -4,6 +4,7 @@ import { creerRegistre } from '../..'
 import type { LigneDuBas } from '../../../voyage/annee'
 import type { PropsLigneDuBas } from '../../../voyage/annee/LigneDuBas'
 import { PAGES_1900 } from '../pages'
+import Carton from './Carton'
 import { MOTS_DU_PIED, dosDuBillet, libelleDuTicket } from './pied'
 
 /**
@@ -73,6 +74,22 @@ describe('le bas d’une gare des années 1900', () => {
     fireEvent.click(within(region).getByRole('button', { name: libelleDuTicket(1904) }))
     expect(onUtiliser.mock.calls).toEqual([[1904]])
     expect(libelleDuTicket(1904)).toBe('Utiliser le ticket de 1904')
+  })
+
+  // Le carton du pied demande ses lignes en grand (`taille`), et lui seul : tout autre site du carton
+  // rend les lignes de la maquette. Le trait n'est pas testé (les tailles se voient sur capture).
+  // Mutations : `taille` retiré du pied ; `taille = 'grande'` par défaut dans `Carton` ; `taille="grande"`
+  // posé sur le carton du casier, du contrôleur ou d'une fête.
+  it('le « Bon pour » du pied demande le carton en grand, et aucun autre site du carton ne le demande', () => {
+    monter(TICKET)
+    expect(screen.getByText('Bon pour 1904').closest('[data-taille]')).toHaveAttribute('data-taille', 'grande')
+    cleanup()
+    render(<Carton tete="Ch. de fer du Voyage" titre="Bon pour 1904" sous="de 1903 à Allaman" numero="Entrée" />)
+    expect(screen.getByText('Bon pour 1904').closest('[data-taille]')).toBeNull()
+    const sources = import.meta.glob<string>('./*.tsx', { query: '?raw', import: 'default', eager: true })
+    const sites = Object.keys(sources).filter((f) => !f.endsWith('.test.tsx') && /<Carton\b/.test(sources[f]!))
+    expect(sites.length).toBeGreaterThanOrEqual(6)
+    expect(sites.filter((f) => /\btaille=/.test(sources[f]!))).toEqual(['./PiedDeLaGare.tsx'])
   })
 
   // Le verrou vient de la page : le dessin ne l'ignore pas. Mutation : `disabled={occupe}` retiré.

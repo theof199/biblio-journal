@@ -35,7 +35,7 @@ export default function PiedDeLaGare({ monde, annee, ligne, onUtiliser, occupe, 
           {M.titre} <small>{M.attend}</small>
         </Rubrique>
         <div className={styles.bon}>
-          <Carton tete={MOTS_DES_FETES.compagnie} titre={`${MOTS_DES_FETES.bon} ${ligne.annee}`} sous={trajetDuBon(annee, ligne.annee)} numero={MOTS_DES_FETES.entree} />
+          <Carton tete={MOTS_DES_FETES.compagnie} titre={`${MOTS_DES_FETES.bon} ${ligne.annee}`} sous={trajetDuBon(annee, ligne.annee)} numero={MOTS_DES_FETES.entree} taille="grande" />
         </div>
         <Action onClick={() => onUtiliser(ligne.annee)} disabled={occupe}>
           {libelleDuTicket(ligne.annee)}

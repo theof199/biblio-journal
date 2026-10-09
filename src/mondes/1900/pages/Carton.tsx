@@ -41,6 +41,12 @@ interface Props {
    * et le composteur ne le passe jamais. Les deux marques se portent ensemble, l'une n'efface pas l'autre.
    */
   ensemble?: { mot: string; dit: string } | null
+  /**
+   * La taille des lignes. Absente, celles de la maquette, mesurées au carton : c'est le carton de tous
+   * ses sites. `grande` : les quatre lignes grossies, pour un carton posé seul sur la largeur de la page
+   * et qui ne porte ni places ni date (le « Bon pour » au pied d'une gare, qui la demande seul).
+   */
+  taille?: 'grande'
 }
 
 /**
@@ -61,12 +67,12 @@ interface Props {
  * le pied, et les autres lignes se serrent pour la lui laisser.
  * Rien n'y bouge au calme : `data-vivante` porte seul les animations de la feuille.
  */
-export default function Carton({ tete, titre, titreDePage = false, sous, numero, numeroQuiRoule = false, note, presse, tampon, geste, frais, poincon, ensemble }: Props) {
+export default function Carton({ tete, titre, titreDePage = false, sous, numero, numeroQuiRoule = false, note, presse, tampon, geste, frais, poincon, ensemble, taille }: Props) {
   const calme = useMouvementReduit()
   const Titre = titreDePage ? 'h1' : 'div'
   const perces = frais?.trous
   return (
-    <div className={styles.carton} style={STYLE_DU_TEMPO} data-vivante={calme ? 'non' : 'oui'} data-geste={geste ?? undefined}>
+    <div className={styles.carton} style={STYLE_DU_TEMPO} data-vivante={calme ? 'non' : 'oui'} data-geste={geste ?? undefined} data-taille={taille}>
       <div className={styles.l1}>{tete}</div>
       <Titre className={styles.l2}>{titre}</Titre>
       {sous ? <div className={styles.l3}>{sous}</div> : null}

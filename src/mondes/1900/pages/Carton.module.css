@@ -52,6 +52,22 @@
   white-space: nowrap;
 }
 
+/* La variante `grande`, que seul le pied d'une gare demande : les lignes se mesurent à la colonne du
+   texte (61 % du carton, soit 176 px sur un écran de 320), où celles de la maquette tombaient à 8 et
+   9,5 px. Grossies, « de 1903 à … » et « Entrée » y font 15 px, et le titre garde son rang. */
+.carton[data-taille='grande'] .l1 {
+  font-size: 6.4cqi;
+}
+
+.carton[data-taille='grande'] .l2 {
+  font-size: 12.4cqi;
+}
+
+.carton[data-taille='grande'] .l3,
+.carton[data-taille='grande'] .l4 {
+  font-size: 8.6cqi;
+}
+
 /* La date, pressée à l'encre violette sur la tranche. */
 .presse {
   position: absolute;
