@@ -735,7 +735,7 @@ describe('le ticket', () => {
     // Le tampon, lui, se lit toujours : il n'est pas derrière.
     expect(tampon.closest('[inert]')).toBeNull()
     rienNeRepond(moteur, 'le tampon')
-    await waitFor(() => expect(marche).toHaveLength(1), { timeout: 4000 })
+    await waitFor(() => expect(marche).toHaveLength(1))
     expect(screen.queryByText('Années 1900')).toBeNull()
     rienNeRepond(moteur, 'la marche')
     await act(async () => marche[0]!.lacher())
@@ -901,7 +901,7 @@ describe('le ticket', () => {
     expect(screen.queryByText('Années 1910')).toBeNull()
     expect(screen.getByText('Années 1900')).toBeInTheDocument()
 
-    await waitFor(() => expect(moteur.marcher).toHaveBeenCalledTimes(1), { timeout: 4000 })
+    await waitFor(() => expect(moteur.marcher).toHaveBeenCalledTimes(1))
     await act(async () => arriver())
     await screen.findByText('Années 1910')
     await waitFor(() => expect(localStorage.getItem(CLE_ANNEE_VUE)).toBe('1910'), { timeout: 6000 })
@@ -993,7 +993,7 @@ describe('le ticket', () => {
     rienNeRepond(moteur, 'le tampon')
     expect(screen.queryByText(ANNONCE_1900)).toBeNull()
 
-    await waitFor(() => expect(passage).toHaveLength(1), { timeout: 4000 })
+    await waitFor(() => expect(passage).toHaveLength(1))
     expect(moteur.direBonjour).toHaveBeenCalledWith(1900, 'endroit')
     expect(screen.queryByText('Années 1890')).toBeNull()
     // La toile répond : le doigt posé atteint le moteur, qui pose le passage à sa fin.
@@ -1520,7 +1520,7 @@ describe('le son et les bobines perdues (plan 2d)', () => {
       rappels().bobineArrivee('londres-apres-minuit')
     })
     expect(screen.getByRole('status')).toHaveTextContent('Bobine retrouvée 3/3')
-    expect(await screen.findByText('Les trois bobines perdues sont retrouvées.', {}, { timeout: 4500 })).toBeInTheDocument()
+    expect(await screen.findByText('Les trois bobines perdues sont retrouvées.')).toBeInTheDocument()
   }, 15000)
 
   // Mutations : un `try` retiré de `carte/memoire.ts` (son ou bobines) : un stockage bloqué
