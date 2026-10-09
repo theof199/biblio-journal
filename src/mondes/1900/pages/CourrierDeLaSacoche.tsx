@@ -52,7 +52,8 @@ function Pli({ entete, carte, nouvelle, ouvrir }: { entete: string; carte: Carte
  * mot, « Nouvelle » tant que `lue_le` est nul), puis les envoyées (« À Léa · gare de 1902 », l'adresse
  * servie), **sans rien dire de leur lecture**, puis « À écrire » : une entrée par gare de `en_attente`,
  * et pour elles seules (brief 14 ; la carte à écrire : `CarteAEcrire.tsx`). Une boîte vide le dit. Un
- * `409` à l'envoi se dit ici, la carte refermée. Le dessin ne lit ni n'écrit rien :
+ * `409` à l'envoi se dit ici, la carte refermée, quand sa gare n'attend plus de carte (sinon sur la
+ * carte, restée ouverte). Le dessin ne lit ni n'écrit rien :
  * `voyage/sacoche/Courrier.tsx` lui passe la boîte, la carte que l'adresse ouvre et les calques. Rien
  * n'y bouge.
  *

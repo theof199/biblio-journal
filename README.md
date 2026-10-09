@@ -979,9 +979,15 @@ elle reste à l'écran, tamponnée, tant que son calque n'a pas été quitté (l
 ni le bouton « suivant » du navigateur ni une réouverture ne la remontrent, elle s'ouvre aux envoyées),
 et une gare revenue dans `en_attente` montre toujours sa carte à écrire. Un `400` (ou une panne) se dit **sur
 la carte**, avec le message du serveur tel quel, jamais un repli ; la carte reste à écrire, son
-brouillon intact, et le `400` relit la boîte. Un `409` n'est pas une panne (la gare a déjà sa carte,
-le destinataire n'est plus suivi) : la carte se referme, la boîte se relit, et le message du serveur
-se dit sous la rubrique, jusqu'à la prochaine carte qu'on écrit. `pages/VoyageSacoche.ecrire.test.tsx`
+brouillon intact, et le `400` relit la boîte. Un `409` n'est pas une panne, et il a deux causes
+(correction du 9 octobre 2026 : il refermait toujours la carte et perdait le brouillon). La boîte se
+relit **d'abord** (l'envoi reste en cours, son verrou tenu), et la carte se décide sur la boîte relue :
+**la gare n'y attend plus sa carte** (une carte en est déjà partie), la carte se referme et le message
+du serveur se dit sous la rubrique, jusqu'à la prochaine carte qu'on écrit ; **la gare l'attend encore**
+(le destinataire n'est plus suivi), la carte reste ouverte, son brouillon intact, le message se dit sur
+elle comme un `400`, et mes abonnements se relisent, pour ne plus proposer qui n'est plus suivi. Une
+boîte qui ne se relit pas garde la gare : la carte reste. Refermée pendant l'envoi, la carte ne se
+rouvre pas : le message se dit sous la rubrique. `pages/VoyageSacoche.ecrire.test.tsx`
 le tient sur un 1890 auquel on prête un dessin. **En 1900**, une carte lue et une carte à écrire ont
 **un seul dessin** (`mondes/1900/pages/CartePostale.tsx` : le recto de la gare, le dos divisé, le
 timbre, le tampon à date une fois postée seulement) : sous « À écrire », « Écrire la carte de la gare

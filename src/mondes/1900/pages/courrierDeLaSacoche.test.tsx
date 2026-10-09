@@ -489,17 +489,42 @@ describe('écrire une carte postale en 1900', () => {
     expect(poster(carte)).toHaveFocus()
   })
 
-  // Un `409` n'est pas une panne. Mutations : le refus de la rubrique jamais rendu ; rendu en alerte
-  // avec « Réessayer » (une panne) .
-  it('un `409` referme la carte et dit le message du serveur sous la rubrique, sans « Réessayer »', async () => {
-    const { carte, courrier } = await ecrire({ [POSTER]: () => json({ code: 'CONFLICT', message: 'Tu ne suis plus ce membre.', retryable: false }, 409) })
+  // Un `409` n'est pas une panne (la règle a changé le 9 octobre 2026 : ce test tenait qu'il refermait
+  // toujours la carte). La gare déjà partie ailleurs : la boîte relue ne l'attend plus. Mutations : le
+  // refus de la rubrique jamais rendu ; rendu en alerte avec « Réessayer » (une panne).
+  it('un `409` dont la gare a déjà sa carte referme la carte et dit le message du serveur sous la rubrique, sans « Réessayer »', async () => {
+    let boite = DEUX_GARES
+    const { carte, courrier } = await ecrire({ [BOITE]: () => json(boite), [POSTER]: () => json({ code: 'CONFLICT', message: 'La carte de cette gare est déjà partie.', retryable: false }, 409) })
     await remplir(carte)
+    boite = { ...DEUX_GARES, en_attente: DEUX_GARES.en_attente.filter((a) => a !== 1900) }
     fireEvent.click(poster(carte))
     fireEvent.click(within(carte).getByRole('button', { name: M.ecrire.confirmer }))
-    expect(await within(courrier).findByRole('status')).toHaveTextContent(/^Tu ne suis plus ce membre\.$/)
+    expect(await within(courrier).findByRole('status')).toHaveTextContent(/^La carte de cette gare est déjà partie\.$/)
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(within(courrier).queryByRole('alert')).toBeNull()
     expect(within(courrier).queryByRole('button', { name: 'Réessayer' })).toBeNull()
+  })
+
+  // La gare attend encore sa carte (le destinataire que je ne suis plus) : la carte reste ouverte, le
+  // mot intact, le message du serveur sur elle comme un `400`, et le membre refusé n'est plus proposé
+  // une fois mes abonnements relus. Mutations (dans `voyage/sacoche/Courrier.tsx`) : la carte refermée
+  // sur tout `409` ; mes abonnements non relus (camille reste proposée).
+  it('un `409` dont la gare attend encore sa carte laisse la carte ouverte, le mot intact, dit le message du serveur sur elle, et ne propose plus le membre refusé', async () => {
+    let suivis = [LIGNE_DE_BOB, LIGNE_DE_CAMILLE]
+    const { carte, courrier } = await ecrire({
+      [ABONNEMENTS]: () => json({ items: suivis, next_cursor: null }),
+      [POSTER]: () => json({ code: 'CONFLICT', message: 'Tu ne suis plus ce membre.', retryable: false }, 409),
+    })
+    const champ = await remplir(carte)
+    suivis = [LIGNE_DE_BOB]
+    fireEvent.click(poster(carte))
+    fireEvent.click(within(carte).getByRole('button', { name: M.ecrire.confirmer }))
+    expect(await within(carte).findByRole('alert')).toHaveTextContent(/^Tu ne suis plus ce membre\.$/)
+    await waitFor(() => expect(within(carte).queryByRole('radio', { name: 'camille' })).toBeNull())
+    expect(screen.getByRole('dialog', { name: M.ecrire.titre })).toBe(carte)
+    expect(champ.value).toBe(MOT)
+    expect(within(carte).getByRole('radio', { name: 'bob' })).toBeInTheDocument()
+    expect(within(courrier).queryByRole('status')).toBeNull()
   })
 
   // Mutations : le champ offert quand même ; la phrase tue (une carte sans rien) ; la phrase dite

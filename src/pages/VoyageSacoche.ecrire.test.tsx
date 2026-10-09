@@ -80,6 +80,8 @@ const CourrierDuMonde = (p: PropsCourrierDeLaSacoche) => (
   <>
     <Historique />
     <p data-testid="courrier">{ligne(p)}</p>
+    {/* Le brouillon ne vit que dans le dessin, le temps de sa carte à écrire : démontée, il est perdu. */}
+    {p.aEcrire ? <input aria-label="Brouillon" defaultValue="" /> : null}
     {[1900, 1901, 1902].map((a) => (
       <button key={a} type="button" onClick={() => p.ecrire(a)}>{`Écrire ${a}`}</button>
     ))}
@@ -336,11 +338,14 @@ describe('écrire une carte postale, dans le bloc du courrier', () => {
     expect(corps).toHaveLength(2)
   })
 
-  // Un `409` n'est pas une panne : la gare a déjà sa carte (postée d'un autre appareil), ou le
-  // destinataire n'est plus suivi. La carte se referme, la boîte se relit, le message se dit sur la
-  // rubrique. Mutations : le `409` traité comme un `400` (la carte reste, le refus sur elle) ; la
+  // Un `409` n'est pas une panne, et il a deux causes (la règle a changé le 9 octobre 2026 : ce test
+  // tenait « un `409` referme la carte », quelle qu'en soit la cause). **La gare a déjà sa carte**
+  // (postée d'un autre appareil) : la boîte relue ne l'attend plus, la carte se referme, le message
+  // se dit sur la rubrique. La boîte d'avant, en cache, attendait encore 1900 : la décision se prend
+  // sur la boîte relue. Mutations : la carte jamais refermée (le `409` traité comme un `400`) ; la
+  // décision prise avant la relecture (la promesse non rendue par `onError` : la carte reste) ; la
   // fermeture sans relecture ; le message perdu à la fermeture (`setRefus` retiré du conflit).
-  it('un `409` referme la carte, relit la boîte et dit le message du serveur sur la rubrique, sans quitter la sacoche ; écrire une autre carte l’efface', async () => {
+  it('un `409` dont la gare n’attend plus sa carte dans la boîte relue referme la carte et dit le message du serveur sur la rubrique, sans quitter la sacoche ; écrire une autre carte l’efface', async () => {
     let boite = LA_BOITE
     const { requetes } = await monter({ entree: ['/voyage', SACOCHE], routes: { [BOITE]: () => json(boite), [POSTER]: refuse(409, 'La carte de cette gare est déjà partie.') } })
     toucher('Écrire 1900')
@@ -354,11 +359,57 @@ describe('écrire une carte postale, dans le bloc du courrier', () => {
     await waitFor(() => expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | écrit 1902, signé alice, à [bob, camille] | sans refus'))
   })
 
+  // **La gare attend encore sa carte** dans la boîte relue (le destinataire que je ne suis plus) : la
+  // carte reste ouverte, le brouillon intact, le message du serveur se dit sur elle comme un `400`, et
+  // mes abonnements se relisent : bob, refusé, n'est plus proposé. L'adresse ne bouge pas, la carte
+  // repart. Mutations : la carte toujours refermée sur un `409` ; le brouillon vidé (la carte à
+  // écrire retirée le temps de la relecture de la boîte : son dessin se démonte) ; mes abonnements non
+  // relus ; le refus dit sur la rubrique.
+  it('un `409` dont la gare attend encore sa carte laisse la carte ouverte, le brouillon intact, dit le message du serveur sur elle et relit mes abonnements', async () => {
+    let suivis = [LIGNE_DE_BOB, LIGNE_DE_CAMILLE]
+    let refus = true
+    // La relecture de la boîte est retenue : la carte et son brouillon se regardent pendant qu'elle court.
+    let relire: (() => void) | null = null
+    let lectures = 0
+    const { requetes, client, corps } = await monter({
+      entree: ['/voyage', SACOCHE],
+      routes: {
+        [BOITE]: () => (++lectures === 1 ? json(LA_BOITE) : new Promise<Response>((r) => void (relire = () => r(json(LA_BOITE))))),
+        [ABONNEMENTS]: () => json({ items: suivis, next_cursor: null }),
+        [POSTER]: () => (refus ? refuse(409, 'Tu ne suis plus ce membre.')() : json(POSTEE, 201)),
+      },
+    })
+    toucher('Écrire 1900')
+    await waitFor(() => expect(dit()).toBe(A_ECRIRE))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Brouillon' }), { target: { value: MOT } })
+    suivis = [LIGNE_DE_CAMILLE]
+    toucher('Poster')
+    await waitFor(() => expect(relire).not.toBeNull())
+    // La relecture en vol : la carte ne quitte pas l'écran, l'envoi reste en cours.
+    expect(dit()).toBe('à écrire 1900, 1902 | envoyées 1901 | écrit 1900, signé alice, à [bob, camille], en cours | sans refus')
+    expect(screen.getByRole('textbox', { name: 'Brouillon' })).toHaveValue(MOT)
+    await act(async () => relire!())
+    await waitFor(() => expect(dit()).toBe('à écrire 1900, 1902 | envoyées 1901 | écrit 1900, signé alice, à [camille], refus « Tu ne suis plus ce membre. » | sans refus'))
+    await auCalme(client)
+    expect(screen.getByRole('textbox', { name: 'Brouillon' })).toHaveValue(MOT)
+    expect(screen.getByTestId('adresse')).toHaveTextContent('?ecrire=1900')
+    expect(parties(requetes, BOITE)).toBe(2)
+    expect(parties(requetes, ABONNEMENTS)).toBe(2)
+    expect(parties(requetes, VOYAGE)).toBe(1)
+    refus = false
+    toucher('Poster')
+    await waitFor(() => expect(dit()).toBe('à écrire 1902 | envoyées 1901, 1900 | ouverte envoyee 1900 qui vient de partir | sans refus'))
+    expect(corps).toHaveLength(2)
+  })
+
   // Le rappel d'un envoi court après le rendu qui l'a lancé : la carte refermée pendant l'envoi, son
   // calque d'alors se croit encore ouvert, et le refermer reculerait d'une entrée de trop. Mutation :
   // `ecriture.fermer()` appelé tel quel sur un `409`, sans relire le dernier calque rendu (la sacoche
-  // est quittée pour la carte).
-  it('un `409` arrivé après que la carte a été refermée ne quitte pas la sacoche, et se dit quand même', async () => {
+  // est quittée pour la carte). **Il ne la rouvre pas non plus**, même si sa gare attend encore sa
+  // carte (la boîte relue la sert toujours) : le refus se dit sur la rubrique, où on le lit. Mutation :
+  // la garde `ouverteIci` retirée de la branche qui garde la carte (le refus, rangé sur une carte
+  // fermée, n'est dit nulle part).
+  it('un `409` arrivé après que la carte a été refermée ne quitte pas la sacoche, ne rouvre pas la carte, et se dit quand même', async () => {
     let repondre = () => undefined as void
     const { client } = await monter({ entree: ['/voyage', SACOCHE], routes: { [POSTER]: () => new Promise<Response>((r) => void (repondre = () => r(refuse(409, 'La carte de cette gare est déjà partie.')()))) } })
     toucher('Écrire 1900')
@@ -372,6 +423,8 @@ describe('écrire une carte postale, dans le bloc du courrier', () => {
     await auCalme(client)
     expect(screen.getByRole('region', { name: 'La sacoche du voyageur' })).toBeInTheDocument()
     expect(dit()).toContain('fermée')
+    expect(screen.getByTestId('adresse')).toHaveTextContent(/^$/)
+    expect(screen.queryByRole('textbox', { name: 'Brouillon' })).toBeNull()
   })
 
   // Règle commune 3 : une lecture en panne n'éteint que son bloc. Mutation : la panne de mes

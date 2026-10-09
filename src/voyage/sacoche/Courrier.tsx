@@ -35,7 +35,7 @@ export interface CarteAEcrire {
   abonnements: readonly Abonnement[] | null
   /** Mes abonnements sont en panne : la carte le dit, et n'offre rien. */
   panne: PanneDeBloc | null
-  /** Ce que le serveur a dit d'un envoi refusé ou tombé, tel quel ; la carte reste à écrire. */
+  /** Ce que le serveur a dit d'un envoi refusé ou tombé, tel quel ; la carte reste à écrire. Un `409` aussi, quand sa gare attend encore sa carte. */
   refus: string | null
   /** L'envoi est parti et n'est pas revenu. */
   enCours: boolean
@@ -69,7 +69,7 @@ export interface PropsCourrierDeLaSacoche {
   aEcrire: CarteAEcrire | null
   /** `ouverte` est la carte qu'on vient de poster : le tampon vient d'être frappé. */
   vientDePartir: boolean
-  /** Un `409` à l'envoi (la gare a déjà sa carte, le destinataire n'est plus suivi) : la carte s'est refermée, la boîte se relit, le message du serveur se dit ici. */
+  /** Un `409` à l'envoi dont la gare n'attend plus de carte dans la boîte relue (une carte en est déjà partie), ou arrivé la carte refermée : le message du serveur se dit ici. Si la gare attend encore (le destinataire n'est plus suivi), il se dit sur la carte, restée ouverte (`CarteAEcrire.refus`). */
   refus: string | null
   ecrire: (annee: number) => void
 }
@@ -113,10 +113,13 @@ function CourrierDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['courrierDeLa
       client.setQueryData<CourrierLu>(cles.courrier, (b) => (b ? { ...b, envoyees: rangerLaPostee(b.envoyees, carte), en_attente: b.en_attente.filter((a) => a !== carte.annee) } : b))
     },
     // `400` et `409` : le serveur a refusé, la boîte se relit (la gare a pu partir ailleurs), en
-    // `exact` ; un `409` peut tenir à mes abonnements, relus à la prochaine carte. Une panne ne relit rien.
+    // `exact`. Une panne ne relit rien. **Un `409` attend sa relecture** (la promesse rendue : l'envoi
+    // reste en cours, son verrou tenu, et le rappel de `mutate` ne court qu'après) : ce qu'il advient
+    // de la carte se décide sur la boîte relue, jamais sur celle d'avant.
     onError: (e) => {
       if (!(e instanceof ApiError) || (e.status !== 400 && e.status !== 409)) return
-      void client.invalidateQueries({ queryKey: cles.courrier, exact: true })
+      const relue = client.invalidateQueries({ queryKey: cles.courrier, exact: true })
+      return e.status === 409 ? relue : undefined
     },
     onSettled: () => void (envoi.current = false),
   })
@@ -158,13 +161,25 @@ function CourrierDuVoyageur({ Dessin }: { Dessin: GabaritsDesPages['courrierDeLa
     poste.mutate(
       { annee, destinataire_id: destinataireId, mot },
       {
-        // **Le message du serveur, tel quel**, jamais un repli. Un `409` n'est pas une panne : la carte
-        // se referme (si elle est encore celle de l'adresse) et le refus se dit sur la rubrique ; tout
-        // autre refus se dit sur la carte, qui reste à écrire, son brouillon intact.
+        // **Le message du serveur, tel quel**, jamais un repli. Un `409` n'est pas une panne, et il a
+        // deux causes. **La gare n'attend plus sa carte** dans la boîte relue (une carte en est déjà
+        // partie) : la carte se referme, si elle est encore celle de l'adresse, et le refus se dit sur
+        // la rubrique. **La gare l'attend encore** (le destinataire que je ne suis plus) : la carte
+        // reste à écrire, son brouillon intact, le refus se dit sur elle comme un `400`, et mes
+        // abonnements se relisent, pour ne plus proposer qui n'est plus suivi. Une boîte qui ne se
+        // relit pas garde la gare : la carte reste. Refermée pendant l'envoi, la carte ne se rouvre
+        // pas : le refus se dit sur la rubrique. Tout autre refus se dit sur la carte.
         onError: (e) => {
           const conflit = e instanceof ApiError && e.status === 409
-          setRefus({ annee: conflit ? null : annee, message: e.message })
-          if (conflit && gareLue(dernier.current.valeur) === annee) dernier.current.fermer()
+          const ouverteIci = gareLue(dernier.current.valeur) === annee
+          const attendEncore = client.getQueryData<CourrierLu>(cles.courrier)?.en_attente.includes(annee) ?? false
+          if (conflit && !(ouverteIci && attendEncore)) {
+            setRefus({ annee: null, message: e.message })
+            if (ouverteIci) dernier.current.fermer()
+            return
+          }
+          setRefus({ annee, message: e.message })
+          if (conflit) void client.invalidateQueries({ queryKey: cles.abonnements, exact: true })
         },
       },
     )
