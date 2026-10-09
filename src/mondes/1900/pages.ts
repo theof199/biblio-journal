@@ -32,6 +32,7 @@ import NoticeDuFilm from './pages/NoticeDuFilm'
 import ProgrammeDuFilm from './pages/ProgrammeDuFilm'
 import MalleDeLaSacoche from './pages/MalleDeLaSacoche'
 import ObjetsDeLaSacoche from './pages/ObjetsDeLaSacoche'
+import PageDuGuide from './pages/PageDuGuide'
 import PageDeLaSacoche from './pages/PageDeLaSacoche'
 import PasseportDeLaSacoche from './pages/PasseportDeLaSacoche'
 import PiedDeLaGare from './pages/PiedDeLaGare'
@@ -113,7 +114,8 @@ export const PAGES_1900: HabillagePages = {
     fermee: { pancarte: 'Une plaque de verre', dejaVus: 'Déjà vus', enAvance: 'en avance' },
     intertitre: 'Quatre toiles défilent derrière la vitre d’un train qui ne bouge pas.',
     feuille: { tete: 'Guide du voyageur', titre: 'Le Guide', sous: 'du chroniqueur', pied: 'Le chroniqueur', imprimeur: 'Le Voyage' },
-    chroniqueur: { ecrit: 'Le chroniqueur écrit…', relache: 'RELÂCHE', numero: (n) => `Feuille n° ${n}` },
+    // Le numéro garde le mot de 1890 : il est ici le folio de la page, en tête (`Feuille.test.tsx` le lit sur une feuille de 1900).
+    chroniqueur: { ecrit: 'Le Guide est sous presse…', relache: 'Service interrompu', numero: (n) => `Feuille n° ${n}` },
     billet: { tete: 'Le composteur', titre: 'Séance du', valider: 'Composter le billet', validerSous: 'il part au casier', tampon: 'VU', tamponAutour: 'Le voyage immobile · vu le', ouvrir: 'Composter une séance', ouvrirSous: 'ouvre le composteur' },
     decennie: { annonce: 'La ligne des années', toucher: null, passeport: 'Passeport du Voyage', palissade: { titre: 'Les affiches', sous: 'par année' }, registre: 'L’indicateur de la ligne', prochainement: 'Plaque à développer' },
     boite: { sur: 'Collection', titre: 'Le casier du contrôleur', etiquette: 'LE VOYAGE IMMOBILE · BILLETS', tous: 'Tous', vide: 'Aucun billet pour cette année.', ranger: 'Ranger au casier' },
@@ -157,6 +159,7 @@ export const PAGES_1900: HabillagePages = {
     ligneDuBas: PiedDeLaGare,
     nouvelleSalle: VoieAOuvrir,
     feuillet: CadreDuFeuillet,
+    feuilleDuChroniqueur: PageDuGuide,
     guichetDuFilm: GuichetDuFilm,
     billetDeSeance: Composteur,
     casier: CasierDuControleur,
@@ -194,6 +197,7 @@ export const PAGES_1900: HabillagePages = {
   // La projection de la fiche d'un film aussi (`Hale`).
   dessinerScene: unie,
   // L'estrade du chroniqueur, que la maquette ne dessine pas : un fond uni (plan des pages 1900, décision 9).
+  // La feuille du chroniqueur ne la monte plus (`PageDuGuide`) : seule une année en préparation la peint encore.
   dessinerEstrade: unie,
   // Le monument de la décennie est un gabarit (`Affiche`) : cette toile ne se peint plus sur sa page.
   dessinerMonument: unie,

@@ -579,9 +579,17 @@ Où vit quoi :
   (`LigneDeVoie`, commune à `Voie`) ; le feuillet « Quelle salle ? » et son formulaire restent ceux du
   conteneur. La maquette ne la dessine pas : analogie avec ses voies (écran 2), validée le 9 octobre 2026
   (`mondes/1900/pages/voieAOuvrir.test.tsx`). **La
-  feuille du chroniqueur garde encore le
-  composant par défaut**, aux mots et aux couleurs de 1900 ; l'estrade du chroniqueur est un fond
-  uni. **Le guichet** (écran 11, `Grille` et `TableauDesDeparts`) : sous le fronton « Billets · 1900 à
+  feuille du chroniqueur** (`PageDuGuide`, pour `feuilleDuChroniqueur` ; décision du 9 octobre 2026)
+  est une page du « Guide du voyageur », sans estrade : en tête, hors de ce qui défile, le titre
+  courant (`Rubrique`), le folio (le numéro de la feuille) et « Fermer » ; dessous, la rubrique que le
+  site passe (« Ouverture », « Générique », « Salle », « Le film »), le titre, puis le texte en colonne
+  sous sa lettrine, au filet de laiton de l'encart du guide. `Feuille` cadence toujours : un mot ne
+  vient qu'à son moment, la suite et chaque paragraphe que dits vus, et rien au calme. L'attente se
+  frappe à la presse (« Le Guide est sous presse… »), l'erreur est un avis de gare (« Service
+  interrompu », le message de l'API, « Réessayer » en bouton d'action) : mots de `mots.chroniqueur`, le
+  numéro gardant « Feuille n° » (`Feuille.test.tsx` le lit sur une feuille de 1900). La maquette ne la
+  dessine pas : analogie avec son encart `.guide` (`mondes/1900/pages/pageDuGuide.test.tsx`). L'estrade
+  de 1900, un fond uni, ne se peint plus que sur une année en préparation. **Le guichet** (écran 11, `Grille` et `TableauDesDeparts`) : sous le fronton « Billets · 1900 à
   1909 », une grille de laiton en plein cintre, l'employé derrière elle, qui paraît à l'ouverture et
   hoche la tête à chaque lettre, et la tablette où l'on demande son film, que la page amène au-dessus
   du clavier. Dessous, les années prêtes en plaques de laiton, puis le tableau des départs : l'année,

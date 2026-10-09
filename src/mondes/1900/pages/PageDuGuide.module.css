@@ -1,0 +1,196 @@
+/* La feuille du chroniqueur des pages 1900 : une page du « Guide du voyageur ». La maquette « Voyage
+   immobile 1900 » ne dessine pas cet écran : il déplie l'encart du guide de la fiche d'année (`.guide` :
+   le filet de laiton à gauche, le fond assombri, le texte en `--m-doux`) sous un titre de rubrique
+   (`.sec`, `Rubrique`). La place du dialogue reste à `voyage/Feuille.module.css` (`.calque`, qui pose le
+   teck) ; les couleurs et les polices viennent des jetons du monde. */
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  height: 100%;
+  margin: 0 auto;
+  color: var(--m-doux);
+}
+
+/* La tête ne défile pas : le titre courant, le folio, et « Fermer », qui ne passe jamais sur le texte. */
+.tete {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 10px 12px 8px 0;
+}
+
+/* Le titre de rubrique commun, sans ses marges de section : le filet court jusqu'à « Fermer ». Un
+   cran plus petit et sur une seule ligne : à 320 px, le titre courant et le folio tiennent devant le bouton. */
+.tete > p {
+  flex: 1;
+  min-width: 0;
+  margin: 0 8px 0 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* « Fermer », en plaque : le filet de laiton, les capitales. */
+.fermer {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--m-or);
+  border-radius: 2px;
+  background: none;
+  color: var(--m-or2);
+  font: 700 12px var(--m-f-capitales);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.fermer:focus-visible {
+  outline: 2px solid var(--m-or2);
+  outline-offset: 2px;
+}
+
+/* La page : elle seule défile, sous la tête. */
+.defile {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px 0 26px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.titre {
+  margin: 10px 16px 16px;
+}
+
+.titre span {
+  display: block;
+  font: 600 13px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-or2);
+}
+
+.titre h2 {
+  margin: 4px 0 3px;
+  font: 600 27px/1.12 var(--m-f-titre);
+  letter-spacing: 0.02em;
+  color: var(--m-papier);
+}
+
+.titre p {
+  margin: 0;
+  font: italic 15px/1.4 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+/* La colonne du guide : le filet de laiton de l'encart, le texte courant. */
+.colonne {
+  min-height: 132px;
+  margin: 0 14px;
+  padding: 14px 14px 12px;
+  border-left: 3px solid var(--m-or);
+  background: color-mix(in srgb, var(--m-fond) 35%, transparent);
+  font: 16.5px/1.6 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.colonne p {
+  margin: 0 0 12px;
+}
+
+.colonne p:last-child {
+  margin-bottom: 0;
+}
+
+.lettrine {
+  float: left;
+  margin: 5px 9px 0 0;
+  font: 600 52px/0.8 var(--m-f-affiche);
+  color: var(--m-or2);
+}
+
+/* Un mot de la part composée : à sa place d'emblée ; seule sa venue bouge, sous une racine vivante. */
+.mot {
+  display: inline-block;
+  white-space: pre;
+}
+
+/* Le mot attend son tour hors de vue (`backwards`), puis vient de la gauche, comme la ligne qu'on suit du doigt. */
+.page[data-vivante='oui'] .mot {
+  animation: vient calc(130ms * var(--tempo)) ease-out backwards;
+}
+
+@keyframes vient {
+  from {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+}
+
+/* La suite et les paragraphes suivants : la page retire leur `opacity: 0` posé en ligne quand ils sont dits vus. */
+.page[data-vivante='oui'] .suite {
+  transition: opacity calc(400ms * var(--tempo));
+}
+
+/* L'attente : la phrase se frappe à la presse, lettre à lettre ; le tiret marque où tombera la suivante. */
+.attente {
+  font: 16px/1.5 var(--m-f-presse);
+  color: var(--m-papier);
+}
+
+.curseur {
+  display: inline-block;
+  width: 9px;
+  height: 2px;
+  margin-left: 2px;
+  background: var(--m-or2);
+}
+
+/* L'erreur : un avis de gare, sa plaque rouge, le message de l'API, le bouton d'action commun. */
+.avis {
+  padding: 6px 0 4px;
+  text-align: center;
+}
+
+.plaque {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 2px;
+  background: var(--m-rouge);
+  color: var(--m-papier);
+  font: 600 14px var(--m-f-capitales);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.avis p {
+  margin: 14px 0 16px;
+  font-style: italic;
+  color: var(--m-papier);
+}
+
+/* Le pied : de quel guide vient la page, et qui la signe. */
+.pied {
+  margin: 18px 16px 0;
+  padding-top: 10px;
+  border-top: 1px dotted var(--m-filet);
+  text-align: center;
+}
+
+.pied p {
+  margin: 0;
+  font: 14px/1.4 var(--m-f-texte);
+  color: var(--m-doux);
+}
+
+.pied .colophon {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: 600 11px var(--m-f-capitales);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-pale);
+}
