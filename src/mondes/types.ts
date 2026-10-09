@@ -44,6 +44,7 @@ import type { PropsPageDuPasseport } from '../voyage/sacoche/Page'
 import type { PropsPasseportDeLaSacoche } from '../voyage/sacoche/Pages'
 import type { PropsMalleDeLaSacoche } from '../voyage/sacoche/Malle'
 import type { PropsCourrierDeLaSacoche } from '../voyage/sacoche/Courrier'
+import type { PropsBobinesDeLaSacoche } from '../voyage/sacoche/Bobines'
 import type { PropsObjetsDeLaSacoche } from '../voyage/sacoche/Objets'
 import type { PropsCoulisses } from '../voyage/sacoche/Repli'
 import type { PropsTeteDeLaSacoche } from '../voyage/sacoche/Tete'
@@ -1020,6 +1021,14 @@ export interface GabaritsDesPages {
    */
   objetsDeLaSacoche: ComponentType<PropsObjetsDeLaSacoche>
   /**
+   * Les bobines retrouvées de la sacoche : une place par bobine perdue des mondes traversés, que le
+   * bloc range et date (elles sont de tous les mondes, pas du seul qui dessine). **Sans défaut**
+   * (`ClesSansDefaut`) : un monde qui ne la compose pas ne monte pas le bloc
+   * `voyage/sacoche/Bobines.tsx`, qui ne lit alors pas l'état du voyageur, et la rubrique `bobine`
+   * n'allume pas le point rouge de la carte. Le bloc garde la région, la lecture et la marque « vue ».
+   */
+  bobinesDeLaSacoche: ComponentType<PropsBobinesDeLaSacoche>
+  /**
    * Le courrier de la sacoche (plan des écrans des lots, brief 13) : mes cartes postales reçues et
    * envoyées, et la carte ouverte. **Sans défaut** (`ClesSansDefaut`) : un monde qui ne la compose pas
    * ne monte pas le bloc `voyage/sacoche/Courrier.tsx`, qui ne lit alors ni ma boîte ni l'état du
@@ -1103,7 +1112,7 @@ export interface GabaritsDesPages {
  * `gabaritSeul` (`src/voyage/gabarit.ts`), qui rend le composant du monde ou rien, jamais par
  * `gabaritDe` ; sans composant, le bloc lecteur ne se monte pas et aucune requête ne part.
  */
-export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'courrierDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte' | 'wagonRestaurant' | 'porteDuWagon'
+export type ClesSansDefaut = 'malleDeLaSacoche' | 'objetsDeLaSacoche' | 'bobinesDeLaSacoche' | 'courrierDeLaSacoche' | 'feteDuBadge' | 'controleurDeLaCarte' | 'horaireDeLAnnee' | 'halteDeLaCarte' | 'wagonRestaurant' | 'porteDuWagon'
 
 export interface HabillagePages {
   jetons: Readonly<Record<JetonDePage, string>>

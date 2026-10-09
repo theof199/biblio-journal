@@ -8,6 +8,7 @@ import { useSession } from '../session/SessionContext'
 import { useRevenir } from '../ui/revenir'
 import { gabaritDe } from '../voyage/gabarit'
 import { decennieDe } from '../voyage/regles'
+import Bobines from '../voyage/sacoche/Bobines'
 import Coulisses from '../voyage/sacoche/Coulisses'
 import Courrier from '../voyage/sacoche/Courrier'
 import Malle from '../voyage/sacoche/Malle'
@@ -32,8 +33,9 @@ const DEPART: Voyage['depart'] = 1895
  * composer (`teteDeLaSacoche`, `passeportDeLaSacoche`, `pageDuPasseport`, `portefeuille`,
  * `coulisses`). Entre le passeport et le portefeuille, la malle aux étiquettes (`Malle`,
  * `malleDeLaSacoche`) **n'a pas de défaut** : un monde qui ne la compose pas ne la monte ni ne la lit.
- * De même le courrier (`Courrier`, `courrierDeLaSacoche`) puis les objets trouvés (`Objets`,
- * `objetsDeLaSacoche`), entre le portefeuille et les coulisses.
+ * De même le courrier (`Courrier`, `courrierDeLaSacoche`), les objets trouvés (`Objets`,
+ * `objetsDeLaSacoche`) puis les bobines retrouvées (`Bobines`, `bobinesDeLaSacoche`), entre le
+ * portefeuille et les coulisses.
  * **Aucune fiche d'année n'est lue** : `GET /me/voyage/annees/*` enfilerait
  * une ouverture chez le chroniqueur ; la carte, les tickets et, au dépli, les dépenses suffisent.
  *
@@ -82,6 +84,7 @@ export default function VoyageSacoche() {
       <Portefeuille monde={monde} />
       <Courrier monde={monde} />
       <Objets monde={monde} />
+      <Bobines monde={monde} />
       <Coulisses monde={monde} />
     </section>
   )

@@ -476,7 +476,7 @@ Où vit quoi :
 - `Monde.pages.gabarits` (`GabaritsDesPages`) : les sections qu'un monde compose lui-même. La page
   lit `gabaritDe(monde, cle, Defaut)` (`voyage/gabarit.ts`) et monte le composant du monde, avec les
   propriétés du défaut, ou le défaut si le monde n'en fournit pas ; les lectures et les gestes restent
-  à la page. Quarante-huit clés, deux sur la carte, seize sur la fiche d'année, quatre sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, huit sur la sacoche, une sur le wagon-restaurant, une sur les feuillets (`feuillet` : le cadre, `Cadre` de `voyage/Feuillet.tsx`, qui la lit lui-même et garde le dialogue, le focus, Échap, le voile et la fermeture ; ses cinq sites ne changent pas), une sur la feuille du chroniqueur (`feuilleDuChroniqueur` : son dessin, `Prospectus` de `voyage/Feuille.tsx`, qui la lit lui-même et garde le dialogue, le focus, Échap, les cadences et le calme ; il passe au dessin ce qui est vu et ce qui est tapé, et ses quatre sites ne changent pas ; « RELÂCHE », « Feuille n° » et la phrase de l'attente sont des mots du monde, `mots.chroniqueur`) et quatre sur les célébrations (plus bas, « Les célébrations »). Neuf d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` et `porteDuWagon` sur la fiche d'année, `malleDeLaSacoche`, `courrierDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `wagonRestaurant` sur le wagon-restaurant, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
+  à la page. Quarante-neuf clés, deux sur la carte, seize sur la fiche d'année, quatre sur la fiche d'un film, une sur le billet de séance, deux sur la boîte à billets, six sur la page d'une décennie, deux sur le guichet, neuf sur la sacoche, une sur le wagon-restaurant, une sur les feuillets (`feuillet` : le cadre, `Cadre` de `voyage/Feuillet.tsx`, qui la lit lui-même et garde le dialogue, le focus, Échap, le voile et la fermeture ; ses cinq sites ne changent pas), une sur la feuille du chroniqueur (`feuilleDuChroniqueur` : son dessin, `Prospectus` de `voyage/Feuille.tsx`, qui la lit lui-même et garde le dialogue, le focus, Échap, les cadences et le calme ; il passe au dessin ce qui est vu et ce qui est tapé, et ses quatre sites ne changent pas ; « RELÂCHE », « Feuille n° » et la phrase de l'attente sont des mots du monde, `mots.chroniqueur`) et quatre sur les célébrations (plus bas, « Les célébrations »). Neuf d'entre elles, `controleurDeLaCarte` et `halteDeLaCarte` sur la carte, `horaireDeLAnnee` et `porteDuWagon` sur la fiche d'année, `malleDeLaSacoche`, `courrierDeLaSacoche` et `objetsDeLaSacoche` sur la sacoche, `wagonRestaurant` sur le wagon-restaurant, `feteDuBadge` sur les célébrations, **n'ont pas de défaut** : elles se lisent par `gabaritSeul(monde, cle)`, qui rend le composant du monde ou rien, et leur bloc lecteur ne se monte ni ne lit rien dans un monde qui ne les compose pas (plus bas, « Le jeu des années 1900 »). Sur la fiche d'année : `teteDAnnee` (la tête, à la place du bandeau
   dessiné sur une toile, `voyage/annee/Bandeau.tsx` ; le lien de retour et la plaque du chapitre
   restent à la page), `fronton` (sous la tête d'une fiche prête ou en préparation), `anneeFermee`
   (le corps d'une année fermée ou en attente), puis, sur une fiche prête, `corde`, `boniment` et
@@ -947,9 +947,10 @@ recherche ; `manivelle.ts` ; `billet/range.ts` : le billet rangé) ; les morceau
 Voyage, repris du profil de l'appli Android, au costume du Voyage : habillée par le monde de mon
 année en cours, sous l'onglet Voyage. On l'ouvre par la pastille « Sacoche du voyageur » de la
 carte (l'icône de la mallette, à côté du son) ; le retour ramène à la carte. Trois blocs fixes (le
-passeport, le portefeuille, les coulisses), et deux de plus dans un monde qui les compose (la malle
-entre le passeport et le portefeuille, les objets trouvés entre le portefeuille et les coulisses :
-plus bas, « La malle aux étiquettes » et « Les objets trouvés »), chacun lisant ses données et
+passeport, le portefeuille, les coulisses), et quatre de plus dans un monde qui les compose (la malle
+entre le passeport et le portefeuille ; le courrier, les objets trouvés puis les bobines retrouvées
+entre le portefeuille et les coulisses : plus bas, « La malle aux étiquettes », « Les objets
+trouvés », « Le courrier » et « Les bobines retrouvées »), chacun lisant ses données et
 tombant seul en panne (`voyage/sacoche/`, règles sans rendu dans `voyage/sacoche.ts`). **Tant que la carte n'a pas répondu, aucun monde n'habille la page** (ouverte
 par un lien direct, elle ne montre pas la sacoche de la foire à un voyageur de 1900) : elle attend
 comme la carte attend, sans jetons, les trois blocs fixes déjà montés, cachés et sans dessin, leurs lectures
@@ -1014,6 +1015,20 @@ court (lu « 1900 : une lanterne de chef de gare, dans la sacoche ») ; sinon sa
 sur 10 », se dit sur le catalogue : une clé servie qu'il ne connaît pas n'a pas de place et ne compte
 pas. En panne, la consigne le dit sous sa rubrique, et elle seule : la malle garde sa ligne. On ne
 ramasse rien ici : c'est le geste de la carte (« La carte du Voyage », les objets oubliés sur le quai).
+**Les bobines retrouvées** viennent après les objets trouvés, par la clé sans défaut
+`bobinesDeLaSacoche`, que `voyage/sacoche/Bobines.tsx` lit avec le seul état du voyageur (la carte,
+que la page tient déjà, lui dit les décennies traversées). **Ce sont les bobines du voyageur, pas
+celles d'une décennie** : le bloc interroge le registre et passe au dessin une place par bobine des
+mondes traversés, de la décennie du départ à celle de mon année en cours, dans leur ordre
+(`voyage/sacoche/retrouvees.ts`, `placesDesBobines`). Une place est retrouvée si le compte tient sa
+bobine : la clé servie, à tirets bas, est traduite avant d'être cherchée, jamais montrée ; une clé
+qu'aucun monde traversé ne connaît n'a pas de place. **Une place vide ne reçoit que sa décennie**,
+ni titre ni clé : le dessin ne peut pas la nommer. « Nouvelle » se lit sur le `vue_le` de l'arrivée,
+figé pour la visite (`useVisiteDeRubrique`, repris tel quel) ; la rubrique `bobine` se marque vue une
+fois par visite, dès que le compte tient une bobine, **même sans place ici** (c'est sur toutes que le
+point de la carte s'allume), jamais en panne ni pendant une relecture. Un état servi sans `bobines`
+vaut « pas lu » : la rubrique ne paraît pas. `pages/VoyageSacoche.bobines.test.tsx` tient la règle et
+le bloc, sur un 1890 auquel on prête un dessin.
 **Le courrier** (brief 13 des écrans des lots) vient entre le portefeuille et les objets trouvés, par
 la clé sans défaut `courrierDeLaSacoche`, que `voyage/sacoche/Courrier.tsx` lit avec ma boîte
 (`GET /me/voyage/cartes-postales`, sous `cles.courrier`) et, par le crochet de la visite, l'état du
