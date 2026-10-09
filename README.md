@@ -341,7 +341,7 @@ appel ; le meneur arbitre. La vue d'ensemble ouverte, il ne lance ni rappel ni p
 l'Exposition : quatre toiles défilent à des vitesses différentes derrière la vitre d'un train qui
 ne bouge pas (`toiles.ts`, `RAPPORTS`), et tout se tire de l'avance de la caméra. Ce que le monde
 peint une fois pour le reposer (`cuisson.ts`, `cuire`, vingt-huit toiles au plus) se cuit à la densité
-de la toile du moteur, son plafond de 2 compris (`VueMonde.densite`) : le fond d'une ambiance à cette
+de la toile du moteur (`VueMonde.densite`, qui monte à 3), sans dépasser 2 (`PLAFOND_DE_CUISSON`) : le fond d'une ambiance à cette
 densité, une photographie jamais plus fin que ses propres pixels (`finesseDeCuisson`). La section porte
 en haut la zone du passage, puis dix gares, une par année, à 700 px de geste l'une de l'autre
 (`trace.ts`, `ARRETS`, `PAS`) ; chaque gare est une photographie d'époque. Une année fermée, en

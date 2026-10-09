@@ -207,6 +207,8 @@ function monter(
   bandes.length = 0
   const principal = contexteFactice()
   const toiles: Appel[][] = []
+  /** La taille de chaque toile créée, dans l'ordre. */
+  const tailles: string[] = []
   /** Les images que le moteur a demandées et qu'aucun test n'a encore jouées : sa boucle, pour qui veut la faire tourner. */
   const demandees: Array<(t: number) => void> = []
   const deps: Dependances = {
@@ -216,6 +218,7 @@ function monter(
       // du grain, deux tuiles) ne se confondent pas.
       const toile = { width: w, height: h, numero: toiles.length, getContext: () => f.ctx }
       toiles.push(f.appels)
+      tailles.push(`${w}x${h}`)
       return toile
     },
     image: () => ({}) as CanvasImageSource,
@@ -259,7 +262,8 @@ function monter(
     },
   }
   const rappels: Rappels = { toucherAnnee: vi.fn(), apercu: vi.fn(), finApercu: vi.fn(), ensemble: vi.fn(), defilerVers: vi.fn(), date: vi.fn(), roulotte: vi.fn(), avatarVisible: vi.fn(), bobine: vi.fn(), bobineArrivee: vi.fn(), cibleBobines: vi.fn(() => ({ x: 350, y: 40 })), clap: vi.fn(), presences: vi.fn(), entreeProche: vi.fn(), objet: vi.fn(), aiguillage: vi.fn(), passage: vi.fn() }
-  const moteur = new MoteurCarte({ width: 0, height: 0, getContext: () => principal.ctx }, rappels, deps)
+  const toile = { width: 0, height: 0, getContext: () => principal.ctx }
+  const moteur = new MoteurCarte(toile, rappels, deps)
   moteur.mesurer(W, H, 2)
   moteur.reglerCalme(options.calme ?? false)
   const cases: CaseCarte[] = Array.from({ length: 2026 - 1895 + 1 }, (_, i) => {
@@ -275,7 +279,7 @@ function monter(
   })
   const roulotte = options.roulotte ?? null
   moteur.majEtat({ cases, anneeAvatar: 1898, tampons: [], tickets: [], roulotte })
-  return { moteur, appels: principal.appels, toiles, rappels, deps, cases, roulotte, demandees }
+  return { moteur, appels: principal.appels, toiles, tailles, toile, rappels, deps, cases, roulotte, demandees }
 }
 
 const pleinEcran = (a: Appel) => (a.nom === 'fillRect' || a.nom === 'drawImage') && a.args.slice(-2).join() === `${W},${H}`
@@ -452,13 +456,28 @@ describe('le moteur de la carte', () => {
     expect(rappels.defilerVers).toHaveBeenCalled()
   })
 
-  // Le moteur plafonne sa densité à 2 : le monde reçoit celle de sa toile, pas celle de l'appareil.
-  // Mutations : `densite: 1` dans `vueMonde` ; la densité de l'appareil passée telle quelle (3).
-  it.each([[1, 1], [1.5, 1.5], [2, 2], [3, 2]])('donne au monde la densité de sa toile : %d à l’appareil, %d au monde', (appareil, attendue) => {
+  // Le moteur plafonne sa densité à 3 : le monde reçoit celle de sa toile, pas celle de l'appareil.
+  // Mutations : `densite: 1` dans `vueMonde` ; la densité de l'appareil passée telle quelle (4) ; le
+  // plafond de la toile remis à 2 (un téléphone à 3 resterait étiré) ; la toile mesurée à une autre
+  // densité que celle dite au monde.
+  it.each([[1, 1], [1.5, 1.5], [2, 2], [3, 3], [4, 3]])('donne au monde la densité de sa toile : %d à l’appareil, %d à la toile et au monde', (appareil, attendue) => {
     const banc = monter()
     banc.moteur.mesurer(W, H, appareil)
     banc.moteur.image(1000)
     expect(vus[vus.length - 1]!.densite).toBe(attendue)
+    expect([banc.toile.width, banc.toile.height]).toEqual([Math.round(W * attendue), Math.round(H * attendue)])
+  })
+
+  // Les tuiles du sol, elles, restent à 2 : six tuiles à 3 pèseraient plus du double. Mutation : le
+  // plafond des tuiles retiré (`this.dpr` : 1170 × 1536).
+  it.each([[1, 1], [2, 2], [3, 2], [4, 2]])('cuit les tuiles du sol à 2 au plus : %d à l’appareil, %d aux tuiles', (appareil, attendue) => {
+    const banc = monter()
+    const avant = banc.tailles.length
+    banc.moteur.mesurer(W, H, appareil)
+    banc.moteur.image(1000)
+    const tuiles = banc.tailles.slice(avant).filter((t) => t !== '128x128')
+    expect(tuiles.length).toBeGreaterThan(0)
+    expect([...new Set(tuiles)]).toEqual([`${W * attendue}x${512 * attendue}`])
   })
 
   // Mutation : `nuit: 0` dans `vueMonde`, ou l'heure du visiteur ignorée : la foire resterait de jour à minuit.

@@ -9,7 +9,8 @@
  *
  * Une toile se cuit à une finesse : tant de pixels par px du dessin. Ce qui se dessine (le fond d'une
  * ambiance) se cuit à la densité de l'écran, celle que le moteur donne à sa propre toile
- * (`VueMonde.densite`) ; une photographie, jamais plus fin que ce qu'elle porte (`finesseDeCuisson`).
+ * (`VueMonde.densite`), jamais au-delà de `PLAFOND_DE_CUISSON` ; une photographie, jamais plus fin que
+ * ce qu'elle porte (`finesseDeCuisson`).
  * Sans finesse dite, 1 : la toile a la taille demandée, comme avant.
  */
 import { c } from './couleur'
@@ -27,12 +28,18 @@ export interface ToileHorsEcran {
 export type PeintreDeToile = (g: CanvasRenderingContext2D, w: number, h: number) => void
 
 /**
+ * La finesse la plus haute d'une toile cuite. La toile du moteur monte à 3 sur un téléphone qui l'a ;
+ * les fonds cuits, eux, restent à 2 : à 3, ils passeraient d'une trentaine de Mo à plus de soixante.
+ */
+export const PLAFOND_DE_CUISSON = 2
+
+/**
  * La finesse à laquelle cuire ce qui se posera à la densité `densite` : cette densité, jamais moins
- * de 1. Pour une photographie de `natif` px posée sur `pose` px, pas au-delà de ce qu'elle porte :
+ * de 1, jamais plus que `PLAFOND_DE_CUISSON`. Pour une photographie de `natif` px posée sur `pose` px, pas au-delà de ce qu'elle porte :
  * l'agrandir dans sa toile coûterait de la mémoire sans rien montrer de plus.
  */
 export function finesseDeCuisson(densite: number, natif?: number, pose?: number): number {
-  const ecran = Math.max(1, densite || 1)
+  const ecran = Math.min(PLAFOND_DE_CUISSON, Math.max(1, densite || 1))
   if (natif === undefined || pose === undefined || pose <= 0) return ecran
   return Math.min(ecran, Math.max(1, natif / pose))
 }

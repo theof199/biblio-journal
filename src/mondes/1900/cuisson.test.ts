@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { contexteFactice } from '../../test/contexteFactice'
 import { vueFactice } from '../../test/vueFactice'
-import { creerFour, finesseDeCuisson, PLAFOND, type ToileHorsEcran } from './cuisson'
+import { creerFour, finesseDeCuisson, PLAFOND, PLAFOND_DE_CUISSON, type ToileHorsEcran } from './cuisson'
 import { ARRETS, B1 } from './trace'
 
 /** Une fabrique de toiles pour le four : elle note ce qu'on lui demande, et rend des toiles qui ne dessinent rien. */
@@ -30,7 +30,18 @@ describe('la finesse d’une toile cuite', () => {
     expect(finesseDeCuisson(1.5, 941, 530)).toBe(1.5)
     // 469 pixels posés sur 540 : déjà agrandie, elle reste à 1.
     expect(finesseDeCuisson(2, 469, 540)).toBe(1)
-    expect(finesseDeCuisson(3, 1200, 300)).toBe(3)
+    // 1200 pixels posés sur 300 porteraient 4 : la densité de l'écran borne, 1,5 ici.
+    expect(finesseDeCuisson(1.5, 1200, 300)).toBe(1.5)
+  })
+
+  // La toile du moteur monte à 3, la cuisson reste à 2. Mutations : le plafond retiré de
+  // `finesseDeCuisson` (3 rendrait 3) ; le plafond posé après la photographie seulement, ou avant elle seulement.
+  it('ne dépasse jamais le plafond de cuisson, quelle que soit la densité de l’écran', () => {
+    expect(PLAFOND_DE_CUISSON).toBe(2)
+    expect(finesseDeCuisson(3)).toBe(2)
+    expect(finesseDeCuisson(4)).toBe(2)
+    expect(finesseDeCuisson(3, 1200, 300)).toBe(2)
+    expect(finesseDeCuisson(3, 941, 530)).toBeCloseTo(941 / 530, 9)
   })
 })
 
@@ -152,6 +163,13 @@ describe('les fonds de 1900, cuits à la densité de l’écran', () => {
     expect(tailles[0]).toEqual([`${FOND.w}x${Math.ceil(FOND.h)}`])
     const double = await toilesDemandees([2])
     expect(double.tailles[0]).toEqual([`${FOND.w * 2}x${Math.ceil(FOND.h * 2)}`])
+  })
+
+  // Sur un téléphone à 3, le moteur donne 3 au monde : le fond se cuit comme à 2, pas plus grand.
+  // Mutation : le plafond de cuisson retiré (2400 × 1165, plus du double de la mémoire).
+  it('à la densité 3, le fond d’une ambiance se cuit comme à 2', async () => {
+    const { tailles } = await toilesDemandees([3])
+    expect(tailles[0]).toEqual([`${FOND.w * 2}x${Math.ceil(FOND.h * 2)}`])
   })
 
   // Mutation : la densité hors de ce que le four compare (la toile de la densité 1 resservie à 2).

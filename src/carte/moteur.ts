@@ -30,6 +30,16 @@ export const CORAIL = '#FF6B57'
 export const DUREE_DE_L_ENVOL = auTempo(1000) / 1000
 /** Les tuiles du sol gardées en mémoire (voir `Lru`). */
 export const MAX_TUILES = 6
+/**
+ * La densité de la toile principale ne dépasse pas celle-ci : un téléphone à 3 n'est plus étiré d'une
+ * toile à 2. À 390 × 844, la toile pèse 11,3 Mio à 3, contre 5 à 2.
+ */
+export const DENSITE_MAX = 3
+/**
+ * Les tuiles du sol, pré-rendues hors écran, restent à 2 au plus : six tuiles de 390 px de large pèsent
+ * 19 Mio à 2, et en pèseraient 43 à 3. Ce qu'un monde cuit a son propre plafond (`mondes/1900/cuisson.ts`).
+ */
+export const DENSITE_MAX_DES_TUILES = 2
 export { A_L_ARRET, DUREE_DU_ROULEMENT, REPOS_DU_DEFILEMENT, type SensDuPassage } from './meneur'
 
 export interface CaseCarte {
@@ -281,7 +291,7 @@ export class MoteurCarte {
   mesurer(W: number, H: number, dpr: number): void {
     this.W = W
     this.H = H
-    this.dpr = Math.min(2, dpr || 1)
+    this.dpr = Math.min(DENSITE_MAX, dpr || 1)
     this.canvas.width = Math.round(W * this.dpr)
     this.canvas.height = Math.round(H * this.dpr)
     this.k = W / 390
@@ -1278,10 +1288,11 @@ export class MoteurCarte {
   private tuile(i: number): Toile {
     const deja = this.tuiles.get(i)
     if (deja) return deja
-    const toile = this.deps.creerToile(Math.ceil(this.W * this.dpr), TUILE * this.dpr)
+    const densite = Math.min(DENSITE_MAX_DES_TUILES, this.dpr)
+    const toile = this.deps.creerToile(Math.ceil(this.W * densite), TUILE * densite)
     const x = toile.getContext('2d')
     if (x && this.chemin) {
-      x.scale(this.dpr, this.dpr)
+      x.scale(densite, densite)
       x.translate(0, -i * TUILE)
       dessinerSol(x, this.chemin, this.route, this.plan, this.etat, (d) => this.deps.mondeDe(d))
     }

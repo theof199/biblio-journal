@@ -196,8 +196,8 @@ export interface VueMonde {
   k: number
   /**
    * La densité de la toile du moteur : combien de ses pixels pour un px de `W`, telle qu'il l'a
-   * retenue à la mesure, son plafond compris. Ce qu'un monde peint une fois hors écran pour le
-   * reposer se cuit à cette densité, pas à une autre : étiré, il serait flou.
+   * retenue à la mesure, son plafond compris (3). Ce qu'un monde peint une fois hors écran pour le
+   * reposer se cuit d'après elle, sous le plafond que le monde se donne (1900 : `PLAFOND_DE_CUISSON`).
    */
   densite: number
   /** L'horloge du décor, déjà tenue à la cadence du monde. */
