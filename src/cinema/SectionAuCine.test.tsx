@@ -20,17 +20,20 @@ import { simulerNavigateur } from '../test/navigateur'
 /**
  * Depuis le sceau des Suivis, l'onglet demande aussi les deux listes suivies, et depuis le tableau du
  * hall les séances du jour : vides ici, sauf quand un test les pose lui-même (`routes` l'emporte sur
- * ces défauts).
+ * ces défauts). De même la lecture de toutes les séances, qui part dès qu'une première page annonce
+ * une suite : vide ici, les tests du compte et de la coche la posent eux-mêmes.
  */
 const servir = (routes: Parameters<typeof servirBrut>[0]) =>
   servirBrut({
     'GET /api/me/realisateurs': () => json([]),
     'GET /api/me/sagas': () => json([]),
     [ROUTE_PROCHAINES_SEANCES]: () => json(SEANCES_VIDES),
+    [ROUTE_TOUTES_LES_SEANCES]: () => json({ items: [], next_cursor: null }),
     ...routes,
   })
 
 const ROUTE_PROCHAINES_SEANCES = 'GET /api/me/cinema/seances'
+const ROUTE_TOUTES_LES_SEANCES = 'GET /api/me/journal?limit=100&reaction=en_salle'
 const SEANCES_VIDES: SeancesDuJour = { jour: '2026-09-15', calcule_le: null, cinemas: [], seances: [] }
 const SORTIES_EXEMPLE = exemple<Sorties>('/reference/sorties', 'get', 200)
 const BASE_ITEM = exemple<JournalPage>('/me/journal', 'get', 200).items[0]!
@@ -342,14 +345,16 @@ describe('Au ciné', () => {
     monter()
     await deplier()
 
+    // Les pages de la liste seules : la lecture de toutes les séances (`limit=100`) n'en est pas une.
+    const pagesDeLaListe = () => requetes.filter((r) => r.startsWith('GET /api/me/journal?limit=40'))
     await screen.findByTestId('sentinelle-au-cine')
-    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toHaveLength(1)
+    expect(pagesDeLaListe()).toHaveLength(1)
 
     FauxObservateur.dernier!.declencher()
 
     await screen.findByText('Seconde')
     await vi.waitFor(() => expect(screen.queryByTestId('sentinelle-au-cine')).not.toBeInTheDocument())
-    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([
+    expect(pagesDeLaListe()).toEqual([
       'GET /api/me/journal?limit=40&reaction=en_salle',
       'GET /api/me/journal?limit=40&cursor=page-2&reaction=en_salle',
     ])
@@ -537,6 +542,102 @@ describe('Au ciné', () => {
     monter()
 
     expect(await screen.findByText('2 séances cette année')).toBeInTheDocument()
+  })
+
+  describe('le compte de l’année et la coche ne dépendent pas de ce que la liste a chargé', () => {
+    const GARDIENS = '912649'
+    const jour = (n: number) => new Date(Date.UTC(2026, 9, 12) - n * 86_400_000).toISOString().slice(0, 10)
+    /** `n` séances de 2026, de la plus récente à la plus ancienne, une par jour depuis le 12 octobre. */
+    const de2026 = (n: number, debut = 0) =>
+      Array.from({ length: n }, (_, i) => seance({ id: `s${debut + i + 1}`, finished_at: jour(debut + i), externalId: `autre-${debut + i}` }))
+    // Quarante-cinq séances cette année : la liste n'en tient que quarante. La quarante-cinquième est
+    // celle des « Gardiens de la nuit », à l'affiche ; puis une séance de l'an dernier.
+    const PREMIERES = de2026(40)
+    const SUITE = [...de2026(4, 40), seance({ id: 's45', finished_at: jour(44), externalId: GARDIENS })]
+    const AN_DERNIER = seance({ id: 'vieille', finished_at: '2025-12-20', externalId: 'autre-vieille' })
+    const routes = () => ({
+      'GET /api/reference/sorties': () => json(SORTIES_EXEMPLE),
+      ...routeSeances(PREMIERES, 'page-2'),
+      // La lecture entière, en deux pages : la coche et le compte attendent la dernière.
+      [ROUTE_TOUTES_LES_SEANCES]: () => json({ items: [...PREMIERES, ...SUITE.slice(0, 4)], next_cursor: 'suite' }),
+      'GET /api/me/journal?limit=100&cursor=suite&reaction=en_salle': () => json({ items: [SUITE[4]!, AN_DERNIER], next_cursor: null }),
+    })
+    const coche = (tuile: HTMLElement) => tuile.querySelector('[aria-label="Déjà dans ton journal"]')
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-10-13T12:00:00+02:00'))
+    })
+
+    // Mutations, dans `SectionAuCine.tsx` : `vues` réduit à `items` (« 40 séances », pas de coche) ;
+    // `enabled` lié à `deplie` (rien ne part repliée) ; dans `toutesLesSeances.ts`, la boucle arrêtée
+    // à la première page (« 44 séances », pas de coche).
+    it('repliée : le compte dit le vrai total, et la tuile dont la séance est au-delà de la quarantième porte sa coche', async () => {
+      const requetes = servir(routes())
+      monter()
+
+      expect(await screen.findByText('45 séances cette année')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Tout voir' })).toHaveAttribute('aria-expanded', 'false')
+      expect(coche(screen.getByRole('link', { name: /Les Gardiens de la nuit/ }))).toBeInTheDocument()
+      expect(coche(screen.getByRole('link', { name: /Marée basse/ }))).not.toBeInTheDocument()
+      // La suite de la liste, elle, ne s'est pas demandée.
+      expect(pagesDe(requetes)).toBe(0)
+
+      // La fiche s'ouvre sur ce même visionnage : cochée sur la tuile, elle ne proposera pas « vu ».
+      fireEvent.click(screen.getByRole('link', { name: /Les Gardiens de la nuit/ }))
+      expect(await screen.findByText('Fiche du film Les Gardiens de la nuit (912649), vu (s45)')).toBeInTheDocument()
+    })
+
+    // Mutation : `vues` réduit à `items` une fois dépliée (`hasNextPage && !deplie ? … : items`). La
+    // liste dépliée n'a toujours que ses quarante lignes : sa sentinelle n'est pas venue en vue.
+    it('dépliée : le même compte et la même coche, la liste n’ayant chargé que quarante séances', async () => {
+      const requetes = servir(routes())
+      monter()
+      await deplier()
+
+      expect(await screen.findByText('45 séances cette année')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Réduire' })).toBeInTheDocument()
+      expect(coche(screen.getByRole('link', { name: /Les Gardiens de la nuit/ }))).toBeInTheDocument()
+      expect(screen.getAllByRole('link', { name: new RegExp(BASE_ITEM.media.title) })).toHaveLength(40)
+      expect(pagesDe(requetes)).toBe(0)
+    })
+
+    // Mutation : `seancesCetteAnnee` sans son filtre d'année (« 43 séances »).
+    it('une séance de l’an dernier, au-delà de la quarantième, ne compte pas', async () => {
+      servir({
+        ...routes(),
+        [ROUTE_TOUTES_LES_SEANCES]: () =>
+          json({ items: [...PREMIERES, ...de2026(1, 40), AN_DERNIER, seance({ id: 'vieille-2', finished_at: '2025-03-02' })], next_cursor: null }),
+      })
+      monter()
+
+      expect(await screen.findByText('41 séances cette année')).toBeInTheDocument()
+    })
+
+    // Mutation : `enabled: true`.
+    it('sans suite, la première page est déjà tout : rien de plus ne part', async () => {
+      const requetes = servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances(PREMIERES) })
+      monter()
+
+      expect(await screen.findByText('40 séances cette année')).toBeInTheDocument()
+      await patienter(30)
+      expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual(['GET /api/me/journal?limit=40&reaction=en_salle'])
+    })
+
+    // Mutation : `compteConnu` qui n'attend plus la lecture entière (« 40 séances cette année », faux).
+    it('la lecture entière en panne : le compte se tait plutôt que de mentir, la coche des séances chargées reste', async () => {
+      servir({
+        ...routes(),
+        ...routeSeances([seance({ id: 'recente', finished_at: jour(0), externalId: GARDIENS }), ...PREMIERES.slice(1)], 'page-2'),
+        [ROUTE_TOUTES_LES_SEANCES]: pannePassagere,
+      })
+      monter()
+
+      const tuile = await screen.findByRole('link', { name: /Les Gardiens de la nuit/ })
+      await vi.waitFor(() => expect(coche(tuile)).toBeInTheDocument())
+      await patienter(60)
+      expect(screen.queryByText(/cette année/)).not.toBeInTheDocument()
+    })
   })
 
   describe('le sceau des Suivis', () => {

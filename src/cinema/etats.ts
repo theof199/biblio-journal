@@ -10,8 +10,9 @@ import type { EtatFilmographie } from '../suivis/liste'
  */
 
 /**
- * Le nombre de séances de l'année donnée, parmi les entrées **déjà chargées** de « Tes séances » —
- * reprise de `AuCineUi.seancesCetteAnnee()`. Une séance passée (une année précédente) ne compte
+ * Le nombre de séances de l'année donnée, parmi les séances qu'on lui donne (la section lui donne
+ * toutes mes séances, pas seulement les pages chargées de « Tes séances ») — reprise de
+ * `AuCineUi.seancesCetteAnnee()`. Une séance passée (une année précédente) ne compte
  * jamais, quelle que soit la page où elle vit.
  */
 export function seancesCetteAnnee(seances: JournalItem[], annee: number): number {

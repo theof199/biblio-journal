@@ -25,6 +25,7 @@ import {
 import { entreesDuTableau, heureAffichee, prochaineSeanceParFilm } from './seances'
 import { TableauDuHall, TableauEnAttente } from './TableauDuHall'
 import { useDepliMemorise } from './depli'
+import { toutesLesSeances } from './toutesLesSeances'
 import { useMaintenant } from './useMaintenant'
 import { usePosition } from './usePosition'
 import { useFilmographiesSagas } from '../suivis/useFilmographies'
@@ -52,8 +53,11 @@ const LIMITE = 40
  * (`coque/defilement.ts`). Elle ne dépend de rien d'autre sur la page : ses requêtes, ses attentes et
  * ses pannes sont les siennes. « Tes séances » y arrive repliée derrière « Tout voir » (décision D5 ;
  * dépliée, elle le reste pour cette entrée d'historique, `cinema/depli.ts`) :
- * les séances se lisent quand même, le compte de l'année, la coche des tuiles et l'état de la fiche
- * d'un film en viennent ; leur suite ne se demande qu'une fois la liste dépliée.
+ * la première page se lit quand même, et la suite de la liste ne se demande qu'une fois dépliée. Le
+ * compte de l'année, la coche des tuiles et l'état de la fiche d'un film, eux, ne dépendent pas de ce
+ * que la liste a chargé (décision du 13 octobre 2026) : dès que la première page annonce une suite,
+ * toutes les séances se lisent à part, par pages de cent (`cinema/toutesLesSeances.ts`), repliée ou
+ * non. Sans suite, la première page est déjà tout : aucun appel de plus.
  *
  * (Reprise de `AuCineScreen.kt`) : mes séances (`GET /me/journal?reaction=en_salle`),
  * et les sorties en salle de la semaine en cours et de la semaine prochaine (`GET
@@ -115,7 +119,19 @@ export default function SectionAuCine() {
 
   const items = useMemo(() => seances.data?.pages.flatMap((page) => page.items) ?? [], [seances.data])
   const chargementComplet = !hasNextPage
-  const compte = seancesCetteAnnee(items, new Date().getFullYear())
+
+  // Le compte et la coche ne regardent pas la liste : tant qu'elle a une suite non chargée, ils lisent
+  // toutes les séances, à part. Sans suite, ce que la liste tient est déjà tout, et rien ne part.
+  const toutes = useQuery({
+    queryKey: cles.toutesLesSeances,
+    queryFn: ({ signal }) => toutesLesSeances(signal),
+    enabled: !!hasNextPage,
+  })
+  const vues = hasNextPage ? (toutes.data ?? items) : items
+  // Un compte sur des séances tronquées mentirait : il attend, et se tait si la lecture échoue. La
+  // coche, elle, se pose sur ce qu'on sait déjà : présente, elle est toujours vraie.
+  const compteConnu = !seances.isPending && (!hasNextPage || toutes.data !== undefined)
+  const compte = seancesCetteAnnee(vues, new Date().getFullYear())
 
   const entrees = useMemo(
     () => entreesDuTableau(prochainesSeances.data, position.coordonnees, maintenant),
@@ -128,7 +144,7 @@ export default function SectionAuCine() {
   // Offrir la position n'a de sens que si un cinéma a des coordonnées à rapprocher d'elle.
   const proposerPosition =
     position.statut === 'a_demander' && (prochainesSeances.data?.cinemas.some((cinema) => cinema.latitude != null && cinema.longitude != null) ?? false)
-  const ouvrir = (film: FilmOuvrable) => ({ to: `/au-cine/films/${film.tmdb_id}`, state: etatFiche(film, items) })
+  const ouvrir = (film: FilmOuvrable) => ({ to: `/au-cine/films/${film.tmdb_id}`, state: etatFiche(film, vues) })
 
   const enCours = sorties.data?.en_cours
   const messageEnCours = enCours ? messageAuCine(enCours) : null
@@ -144,7 +160,7 @@ export default function SectionAuCine() {
           Au ciné
         </h2>
         {/* Absent tant que les séances ne sont pas là : « 0 séance » à côté d'un squelette se lirait comme un fait. */}
-        {seances.isPending ? null : (
+        {!compteConnu ? null : (
           <p className={styles.compte}>
             {compte} séance{compte > 1 ? 's' : ''} cette année
           </p>
@@ -190,7 +206,7 @@ export default function SectionAuCine() {
                 <TuileEnCours
                   key={film.allocine_id}
                   film={film}
-                  dejaVu={dejaDansLeJournal(items, film.tmdb_id)}
+                  dejaVu={dejaDansLeJournal(vues, film.tmdb_id)}
                   marque={marqueEnCours(reperes, film)}
                   avecCinemas={cinemaUnique == null}
                   ouvrir={ouvrir}
@@ -216,7 +232,7 @@ export default function SectionAuCine() {
               <TuileProchaine
                 key={film.tmdb_id}
                 film={film}
-                dejaVu={dejaDansLeJournal(items, film.tmdb_id)}
+                dejaVu={dejaDansLeJournal(vues, film.tmdb_id)}
                 marque={marqueProchaine(reperes, film)}
                 ouvrir={ouvrir}
               />
@@ -296,8 +312,8 @@ type Ouvrir = (film: FilmOuvrable) => { to: string; state: unknown }
 /**
  * L'état de navigation de la fiche d'un film ouvert depuis Au ciné : la fiche vit de lui. Ce que la
  * ligne ne dit pas, la fiche le lit (`GET /reference/films/{id}`) ou le résout (ses réalisateurs).
- * « Vu » vient des séances chargées de cet onglet, comme la coche des tuiles : un film vu hors salle,
- * ou plus loin que les pages chargées, s'ouvre donc comme « à voir ».
+ * « Vu » vient de mes séances en salle, comme la coche des tuiles (toutes, pas seulement celles que la
+ * liste a chargées) : un film vu hors salle s'ouvre donc comme « à voir ».
  */
 function etatFiche(film: FilmOuvrable, journal: JournalItem[]): EtatFiche {
   const visionnage = dernierVisionnage(journal, film.tmdb_id)

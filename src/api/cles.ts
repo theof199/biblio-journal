@@ -62,6 +62,13 @@ export const cles = {
    * (`Formulaire.tsx`, après une écriture) la périme aussi.
    */
   seances: ['journal', 'seances'] as const,
+  /**
+   * Toutes mes séances en salle, à plat (`cinema/toutesLesSeances.ts`) : le compte de l'année et la
+   * coche des tuiles d'Au ciné, quand « Tes séances » a une suite qu'elle n'a pas chargée. Sous le
+   * préfixe `journal`, périmée comme lui par toute écriture ; **hors** de `seances`, dont elle n'est
+   * pas une page.
+   */
+  toutesLesSeances: ['journal', 'toutes-les-seances'] as const,
   sorties: ['sorties'] as const,
   /**
    * Les séances du jour (`GET /me/cinema/seances`, `GET /reference/films/{tmdbId}/seances`) : hors du
