@@ -1,0 +1,301 @@
+import { useState, type ReactNode } from 'react'
+import {
+  IconArrowBarToUp,
+  IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
+  IconFileText,
+  IconList,
+  IconPlus,
+  IconStack2,
+  IconUsers,
+  type TablerIcon,
+} from '@tabler/icons-react'
+import Affiche from '../../ui/Affiche'
+import Attente, { Barre } from '../../ui/Attente'
+import { lireLeRetourDuVu, type EpisodeCoche } from '../retourDuVu'
+import MessageDuVu from './MessageDuVu'
+import type { Vue } from './vues'
+import styles from './Panneau.module.css'
+
+/** Le prochain épisode à voir d'une série. */
+export interface EpisodeAVoir {
+  saison: number
+  numero: number
+  titre: string | null
+}
+
+/** Une série « en cours », telle que l'écran la montre. */
+export interface SerieALEcran {
+  /** `media_id`. */
+  id: string
+  titre: string
+  /** L'adresse de la jaquette, prête à afficher, ou rien. */
+  affiche: string | null
+  /** Son prochain épisode ; `null` : elle est à jour. */
+  episode: EpisodeAVoir | null
+  /** La ligne du bas, déjà dite (« Regardée hier soir »). */
+  quand: string | null
+}
+
+/** Une invitation « vu à deux » qui m'attend. */
+export interface InvitationALEcran {
+  id: string
+  /** Le pseudo de qui propose. */
+  de: string
+  serie: string
+  episode: EpisodeAVoir
+  /** « Proposé hier soir ». */
+  quand: string | null
+}
+
+/** Ce que montre le petit écran. Une invitation passe avant toute série. */
+export type EtatDeLEcran =
+  | { etat: 'attente' }
+  /** Aucune série en cours. */
+  | { etat: 'vide' }
+  /** `rang` sur `sur` : « 1 sur 4 », dans l'ordre du dernier visionnage. */
+  | { etat: 'serie'; serie: SerieALEcran; rang: number; sur: number }
+  | { etat: 'invitation'; invitation: InvitationALEcran; sur: number }
+
+export interface PropsVueTelecommande {
+  ecran: EtatDeLEcran
+  /** Le compte porté par la touche « En cours », s'il est connu. */
+  enCours: number | null
+  /** Les touches « Aller à » : passer à une autre vue du panneau. */
+  allerA: (vue: Vue) => void
+  /** Les flèches. Sans fonction, la touche est éteinte. */
+  onPrecedente?: () => void
+  onSuivante?: () => void
+  /** « Vu » : cocher le prochain épisode de la série à l'écran. */
+  onVu?: (coche: EpisodeCoche) => void
+  /** « Annuler », dans le message qui suit « Vu ». */
+  onAnnulerLeVu?: (coche: EpisodeCoche) => void
+  /** Les trois touches de « Cet épisode ». */
+  onVuADeux?: (serie: SerieALEcran) => void
+  onToutJusquIci?: (serie: SerieALEcran) => void
+  onTouteLaSaison?: (serie: SerieALEcran) => void
+  /** L'invitation à l'écran. */
+  onConfirmer?: (invitation: InvitationALEcran) => void
+  onRefuser?: (invitation: InvitationALEcran) => void
+}
+
+export const codeDe = (episode: EpisodeAVoir) => `S${episode.saison} E${episode.numero}`
+
+function Pave({ Icone, onClick, children }: { Icone: TablerIcon; onClick?: () => void; children: ReactNode }) {
+  return (
+    <button type="button" className={`${styles.touche} ${styles.pave}`} data-piece="touche" disabled={!onClick} onClick={onClick}>
+      <Icone aria-hidden="true" className={styles.icone} />
+      <span>{children}</span>
+    </button>
+  )
+}
+
+/**
+ * La vue d'ouverture du panneau : le petit écran (la série regardée en dernier, ou l'invitation qui
+ * attend), la rangée principale (précédente, « Vu », suivante), les trois touches de « Cet épisode »,
+ * les trois d'« Aller à », le pied. Elle ne lit rien : tout lui vient de ses propriétés.
+ */
+export default function VueTelecommande(props: PropsVueTelecommande) {
+  const { ecran, enCours, allerA } = props
+  const [retour, setRetour] = useState<{ texte: string; coche: EpisodeCoche } | null>(null)
+
+  const serie = ecran.etat === 'serie' ? ecran.serie : null
+  const invitation = ecran.etat === 'invitation' ? ecran.invitation : null
+  const episode = serie?.episode ?? null
+  const surSerie = <T,>(action?: (serie: SerieALEcran) => T) => (serie && episode && action ? () => action(serie) : undefined)
+
+  const vu = () => {
+    if (!serie || !episode || !props.onVu) return
+    const coche: EpisodeCoche = { serieId: serie.id, serie: serie.titre, saison: episode.saison, numero: episode.numero, titre: episode.titre }
+    props.onVu(coche)
+    setRetour({ texte: lireLeRetourDuVu(coche), coche })
+  }
+
+  return (
+    <>
+      <Ecran ecran={ecran} />
+
+      {/* La rangée principale : sa hauteur est fixe, le message y prend la place des touches. */}
+      <div className={`${styles.rangee} ${styles.grande}`} data-piece="rangee-principale">
+        {retour ? (
+          <MessageDuVu
+            texte={retour.texte}
+            onAnnuler={() => {
+              props.onAnnulerLeVu?.(retour.coche)
+              setRetour(null)
+            }}
+            onPartir={() => setRetour(null)}
+          />
+        ) : invitation ? (
+          <>
+            <button type="button" className={`${styles.touche} ${styles.large}`} data-piece="touche" disabled={!props.onRefuser} onClick={() => props.onRefuser?.(invitation)}>
+              Refuser
+            </button>
+            <button type="button" className={`${styles.touche} ${styles.principale} ${styles.large}`} data-piece="touche-principale" disabled={!props.onConfirmer} onClick={() => props.onConfirmer?.(invitation)}>
+              <IconCheck aria-hidden="true" className={styles.icone} />
+              Confirmer
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className={`${styles.touche} ${styles.carree}`} data-piece="touche" aria-label="Série précédente" disabled={!serie || !props.onPrecedente} onClick={props.onPrecedente}>
+              <IconChevronLeft aria-hidden="true" className={styles.icone} />
+            </button>
+            <button
+              type="button"
+              className={`${styles.touche} ${styles.principale} ${styles.large}`}
+              data-piece="touche-principale"
+              aria-label={serie && episode ? `Vu : ${serie.titre}, ${codeDe(episode)}` : undefined}
+              disabled={!serie || !episode || !props.onVu}
+              onClick={vu}
+            >
+              <IconCheck aria-hidden="true" className={styles.icone} />
+              Vu
+            </button>
+            <button type="button" className={`${styles.touche} ${styles.carree}`} data-piece="touche" aria-label="Série suivante" disabled={!serie || !props.onSuivante} onClick={props.onSuivante}>
+              <IconChevronRight aria-hidden="true" className={styles.icone} />
+            </button>
+          </>
+        )}
+      </div>
+
+      <p className={styles.libelle} id="telecommande-cet-episode">
+        Cet épisode
+      </p>
+      <div className={`${styles.rangee} ${styles.trois}`} role="group" aria-labelledby="telecommande-cet-episode">
+        <Pave Icone={IconUsers} onClick={surSerie(props.onVuADeux)}>
+          Vu à deux
+        </Pave>
+        <Pave Icone={IconArrowBarToUp} onClick={surSerie(props.onToutJusquIci)}>
+          Tout jusqu’ici
+        </Pave>
+        <Pave Icone={IconStack2} onClick={surSerie(props.onTouteLaSaison)}>
+          Toute la saison
+        </Pave>
+      </div>
+
+      <p className={styles.libelle} id="telecommande-aller-a">
+        Aller à
+      </p>
+      <div className={`${styles.rangee} ${styles.trois}`} role="group" aria-labelledby="telecommande-aller-a">
+        <Pave Icone={IconList} onClick={() => allerA({ nom: 'en-cours' })}>
+          En cours{enCours === null ? null : <span className={styles.compte}> {enCours}</span>}
+        </Pave>
+        <Pave Icone={IconPlus} onClick={() => allerA({ nom: 'ajouter' })}>
+          Ajouter
+        </Pave>
+        <Pave Icone={IconFileText} onClick={serie ? () => allerA({ nom: 'fiche', serie: serie.id }) : undefined}>
+          Fiche
+        </Pave>
+      </div>
+    </>
+  )
+}
+
+/** Le petit écran. En attente, il garde sa forme : une affiche et deux lignes laissées en blanc. */
+function Ecran({ ecran }: { ecran: EtatDeLEcran }) {
+  if (ecran.etat === 'attente') {
+    return (
+      <div className={styles.ecran} data-piece="ecran" data-etat="attente">
+        <Attente libelle="La télécommande s’allume…" className={styles.fantome}>
+          <div className={styles.etat}>
+            <Barre largeur="courte" />
+          </div>
+          <div className={styles.sujet}>
+            <Affiche src={null} titre="" taille="ligne" />
+            <div className={styles.infos}>
+              <Barre largeur="longue" />
+              <Barre largeur="moyenne" />
+            </div>
+          </div>
+          <div className={styles.etat}>
+            <Barre largeur="moyenne" />
+          </div>
+        </Attente>
+      </div>
+    )
+  }
+
+  if (ecran.etat === 'vide') {
+    return (
+      <div className={styles.ecran} data-piece="ecran" data-etat="vide">
+        <p className={styles.etat}>
+          <span className={styles.libelle}>En cours</span>
+        </p>
+        <div className={styles.sujet}>
+          <Affiche src={null} titre="" taille="ligne" />
+          <div className={styles.infos}>
+            <h3 className={styles.titre}>Aucune série en cours</h3>
+            <p className={styles.doux}>« Ajouter » en cherche une.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (ecran.etat === 'invitation') {
+    const { invitation, sur } = ecran
+    return (
+      <div className={`${styles.ecran} ${styles.invitation}`} data-piece="ecran" data-etat="invitation">
+        <p className={styles.etat}>
+          <span className={styles.libelle}>
+            <span className={styles.pastille} />
+            <b>À confirmer</b>
+          </span>
+          {sur > 0 ? <span className={styles.libelle}>{sur === 1 ? 'Avant ta série' : `Avant tes ${sur} séries`}</span> : null}
+        </p>
+        <div className={styles.sujet}>
+          <span className={styles.mono} aria-hidden="true">
+            {invitation.de.slice(0, 1).toUpperCase()}
+          </span>
+          <p className={styles.dit}>
+            <b>{invitation.de}</b> a vu{' '}
+            <b>
+              {invitation.serie} {codeDe(invitation.episode)}
+            </b>{' '}
+            avec toi
+          </p>
+        </div>
+        {invitation.quand ? (
+          <p className={styles.etat}>
+            <span className={styles.libelle}>{invitation.quand}</span>
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
+  const { serie, rang, sur } = ecran
+  return (
+    <div className={styles.ecran} data-piece="ecran" data-etat="serie">
+      <p className={styles.etat}>
+        <span className={styles.libelle}>En cours</span>
+        <span className={styles.libelle}>
+          <b>
+            {rang} sur {sur}
+          </b>
+        </span>
+      </p>
+      <div className={styles.sujet}>
+        <Affiche src={serie.affiche} titre={serie.titre} taille="ligne" />
+        <div className={styles.infos}>
+          <h3 className={styles.titre}>{serie.titre}</h3>
+          {serie.episode ? (
+            <p className={styles.episode}>
+              <span className={styles.code}>{codeDe(serie.episode)}</span>
+              {serie.episode.titre ? <span className={styles.nomEp}>{serie.episode.titre}</span> : null}
+            </p>
+          ) : (
+            <p className={styles.doux}>À jour</p>
+          )}
+        </div>
+      </div>
+      {serie.quand ? (
+        <p className={styles.etat}>
+          <span className={styles.libelle}>{serie.quand}</span>
+        </p>
+      ) : null}
+    </div>
+  )
+}

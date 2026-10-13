@@ -37,14 +37,24 @@ export function restaurer(zone: HTMLElement, cible: number): () => void {
 }
 
 /**
+ * Une entrée d'historique peut se dire « sur place » par son état (`navigate(…, { state: { surPlace: true } })`) :
+ * la même page, avec quelque chose par-dessus (le panneau de la télécommande du Feuilleton, que son
+ * adresse ouvre). Elle ne part pas du haut : la page dessous ne bouge pas.
+ */
+export function estSurPlace(etat: unknown): boolean {
+  return typeof etat === 'object' && etat !== null && (etat as { surPlace?: unknown }).surPlace === true
+}
+
+/**
  * Le défilement de la zone de contenu de la coque, comme le navigateur le fait pour un document :
  * une navigation nouvelle (`PUSH`, `REPLACE`) part du haut ; un retour ou une avance dans
  * l'historique (`POP`) retrouve la position que cette entrée avait quand on l'a quittée, mémorisée
  * par sa clé (`location.key`, propre à chaque entrée : seul un `POP` en revoit une, une navigation
  * nouvelle en tire toujours une neuve). La zone est la même d'une page à l'autre : sans ce
- * crochet, la page ouverte hériterait de la position de la précédente.
+ * crochet, la page ouverte hériterait de la position de la précédente. Seule exception : une entrée
+ * « sur place » (`estSurPlace`) garde la position où elle trouve la zone.
  */
-export function useDefilementMemorise(zone: RefObject<HTMLElement>, cle: string) {
+export function useDefilementMemorise(zone: RefObject<HTMLElement>, cle: string, surPlace = false) {
   const positions = useRef(new Map<string, number>())
   const courante = useRef(cle)
 
@@ -66,9 +76,12 @@ export function useDefilementMemorise(zone: RefObject<HTMLElement>, cle: string)
     courante.current = cle
     const cible = positions.current.get(cle)
     if (!cible) {
-      element.scrollTop = 0
+      // Une navigation « sur place » (un panneau ouvert par-dessus la page) laisse la page où elle est.
+      if (surPlace) positions.current.set(cle, element.scrollTop)
+      else element.scrollTop = 0
       return
     }
     return restaurer(element, cible)
-  }, [zone, cle])
+    // `surPlace` appartient à l'entrée : il ne change qu'avec `cle`.
+  }, [zone, cle, surPlace])
 }

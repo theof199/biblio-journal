@@ -12,6 +12,7 @@ import { json, servir } from '../test/serveur'
 await import('./Feuilleton')
 await import('../studio/Studio')
 await import('../maison/Maison')
+await import('./telecommande/Panneau')
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 
@@ -122,13 +123,18 @@ describe('le Feuilleton', () => {
     ecrit.mockRestore()
   })
 
-  // Les pages vides ne lisent rien : une requête de plus doit passer par ici.
-  it('aucune requête au-delà de la session', async () => {
+  // Les pages vides ne lisent rien, la télécommande non plus tant que son contrat n'est pas tiré : une
+  // requête de plus doit passer par ici (ce test change au lot qui branche l'API).
+  it('aucune requête au-delà de la session, télécommande ouverte comprise', async () => {
     vi.setSystemTime(HEURE_DE_TRAVAIL)
     monter('/feuilleton')
     await screen.findByRole('heading', { level: 1, name: 'Travail' })
     fireEvent.click(within(espaces()).getByRole('link', { name: /Passer à la Maison/ }))
     await screen.findByRole('heading', { level: 1, name: 'Maison' })
+    fireEvent.click(screen.getByRole('button', { name: 'Télécommande' }))
+    const panneau = await screen.findByRole('dialog', { name: 'Télécommande' })
+    fireEvent.click(within(panneau).getByRole('button', { name: /^En cours/ }))
+    await within(panneau).findByRole('heading', { level: 2, name: 'En cours' })
 
     expect(requetes).toEqual(['GET /api/auth/me'])
   })

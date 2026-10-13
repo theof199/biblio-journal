@@ -111,6 +111,27 @@ describe('le défilement de la coque', () => {
     expect(zone.scrollTop).toBe(1200)
   })
 
+  // Mutation, dans `defilement.ts` : la branche `surPlace` ôtée (la page sous un panneau remonterait à son ouverture).
+  it('une entrée « sur place » (un panneau ouvert par-dessus la page) ne remonte pas la page, et le retour la retrouve', async () => {
+    const { zone } = await accueilDescendu()
+
+    act(() => historique({ search: '?panneau=1' }, { state: { surPlace: true } }))
+    expect(zone.scrollTop).toBe(1200)
+
+    defiler(zone, 900)
+    act(() => historique(-1))
+    expect(zone.scrollTop).toBe(1200)
+  })
+
+  // Mutation : `estSurPlace` qui rend toujours vrai.
+  it('la même navigation sans cet état part du haut, comme toute navigation nouvelle', async () => {
+    const { zone } = await accueilDescendu()
+
+    act(() => historique({ search: '?panneau=1' }))
+
+    expect(zone.scrollTop).toBe(0)
+  })
+
   it('une navigation nouvelle vers la même liste part du haut', async () => {
     const { zone } = await accueilDescendu()
     await ouvrirFilm(zone, 14)

@@ -1,0 +1,48 @@
+/* L'habillage « chapitre-1 » de la télécommande : un boîtier de télé, classique et sobre. Tout ce qui s'en
+   voit est ici, et seulement ici : chaque `--h-*` que lisent les composants (`feuilleton/telecommande/`),
+   tiré d'un jeton de `ui/theme.css`. Un autre chapitre est un autre fichier, qui redonne les mêmes
+   variables (`docs/feuilleton/habillages.md`). Les rapports de contraste sont mesurés en tête de
+   `docs/maquettes/telecommande.html`. */
+
+.habillage {
+  /* Les couleurs. */
+  --h-voile: var(--telecommande-voile);
+  --h-boitier-fond: var(--couleur-surface);
+  --h-boitier-contour: var(--couleur-bordure);
+  --h-boitier-texte: var(--couleur-texte);
+  --h-boitier-texte-doux: var(--couleur-texte-doux);
+  --h-ecran-fond: var(--couleur-fond);
+  --h-ecran-contour: var(--couleur-texte-doux);
+  --h-ecran-texte: var(--couleur-texte);
+  --h-ecran-texte-doux: var(--couleur-texte-doux);
+  --h-touche-fond: var(--couleur-surface-2);
+  --h-touche-texte: var(--couleur-texte);
+  --h-touche-contour: var(--couleur-texte-doux);
+  --h-principale-fond: var(--couleur-bloc);
+  --h-principale-texte: var(--couleur-sur-bloc);
+  --h-principale-contour: var(--couleur-texte-doux);
+  --h-alerte: var(--couleur-accent);
+  /* Le bouton rond : un disque de l'encre du thème, cerné, qui se détache de n'importe quel espace. */
+  --h-bouton-fond: var(--couleur-texte);
+  --h-bouton-icone: var(--couleur-fond);
+  --h-bouton-cerne: var(--couleur-fond);
+
+  /* Les formes : les touches sont des gommes au pied plus épais, la principale et les rondes des pilules. */
+  --h-rayon-boitier: var(--rayon-l);
+  --h-rayon-ecran: var(--rayon-s);
+  --h-rayon-touche: var(--rayon-m);
+  --h-rayon-principale: var(--rayon-plein);
+  --h-rayon-ronde: var(--rayon-plein);
+  --h-trait: var(--trait);
+  --h-trait-fort: var(--telecommande-trait-fort);
+  --h-pied-touche: inset 0 var(--telecommande-pied-de-touche) 0 var(--h-touche-contour);
+  --h-ombre-boitier: var(--ombre-m);
+  --h-ombre-bouton: var(--ombre-m);
+  --h-icone-trait-fort: var(--telecommande-icone-trait-fort);
+
+  /* La typographie, parmi les trois rôles du thème. */
+  --h-police-titre: var(--police-titre);
+  --h-police-code: var(--police-fronton);
+  --h-police-libelle: var(--police-fronton);
+  --h-police-touche: var(--police-texte);
+}

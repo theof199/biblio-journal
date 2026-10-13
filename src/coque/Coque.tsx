@@ -9,7 +9,7 @@ import {
   type TablerIcon,
 } from '@tabler/icons-react'
 import PageEnAttente from '../session/PageEnAttente'
-import { useDefilementMemorise } from './defilement'
+import { estSurPlace, useDefilementMemorise } from './defilement'
 import { Filet } from './Filet'
 import styles from './Coque.module.css'
 
@@ -54,8 +54,8 @@ export function estMarque({ chemin, aussi = [] }: Onglet, pathname: string): boo
  */
 export default function Coque() {
   const contenu = useRef<HTMLElement>(null)
-  const { key, pathname } = useLocation()
-  useDefilementMemorise(contenu, key)
+  const { key, pathname, state } = useLocation()
+  useDefilementMemorise(contenu, key, estSurPlace(state))
 
   // Le Voyage a son propre fond : sans cet attribut sur `<html>`, `theme.css` peint le ciel du bâtiment.
   const auVoyage = pathname === '/voyage' || pathname.startsWith('/voyage/')

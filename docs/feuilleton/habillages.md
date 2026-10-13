@@ -1,0 +1,71 @@
+# Les habillages de la télécommande
+
+La télécommande du Feuilleton change d'apparence à chaque chapitre du jeu. Tout ce qui s'en voit
+(couleurs, formes des touches, cadre, écran, polices, la marque gravée au pied) tient dans **un
+habillage** : un fichier de variables et une ligne de table. Les composants ne changent pas.
+
+## Les fichiers
+
+| Chemin | Rôle |
+|---|---|
+| `src/feuilleton/habillages/chapitre-1.module.css` | L'habillage du chapitre 1 : une classe `.habillage` qui pose les variables `--h-*`, chacune tirée d'un jeton de `src/ui/theme.css`. |
+| `src/feuilleton/habillages/index.ts` | `HABILLAGES`, la table des chapitres (la classe, et les deux libellés d'ambiance `marque` et `modele`), et `habillageActif()`, **le seul endroit où le chapitre se choisit**. |
+| `src/feuilleton/telecommande/*.module.css` | La structure : boîtes, tailles, rangées. Ces feuilles ne lisent au thème que des mesures, et tout le reste par `var(--h-…)`. |
+| `src/feuilleton/Feuilleton.tsx` | Le seul appelant de `habillageActif()` : il passe l'habillage au bouton rond et au panneau, qui posent sa classe sur leur racine (avec `data-chapitre`, pour qui inspecte la page). |
+
+## Ajouter un chapitre
+
+1. Copier `chapitre-1.module.css` en `chapitre-2.module.css` et changer les valeurs. La classe garde
+   son nom, `.habillage`.
+2. Ajouter sa ligne à `HABILLAGES` dans `index.ts` :
+   `'chapitre-2': { classe: chapitre2.habillage ?? '', marque: '…', modele: '…' }`.
+3. Le rendre actif : faire rendre `'chapitre-2'` à `habillageActif()` (le jour où le jeu le dira,
+   c'est là que se lit l'état du joueur).
+
+Aucun fichier de `src/feuilleton/telecommande/` n'est à ouvrir.
+
+## Les variables qu'un chapitre doit définir
+
+Toutes celles que les composants lisent ; `habillages.test.ts` en tire la liste des feuilles
+elles-mêmes et refuse un chapitre qui en oublie une, ou qui en définit une que personne ne lit.
+
+- **Couleurs** : `--h-voile` ; `--h-boitier-fond`, `-contour`, `-texte`, `-texte-doux` ;
+  `--h-ecran-fond`, `-contour`, `-texte`, `-texte-doux` ; `--h-touche-fond`, `-texte`, `-contour` ;
+  `--h-principale-fond`, `-texte`, `-contour` ; `--h-alerte` ; `--h-bouton-fond`, `-icone`, `-cerne`.
+- **Formes** : `--h-rayon-boitier`, `-ecran`, `-touche`, `-principale`, `-ronde` ; `--h-trait`,
+  `--h-trait-fort` ; `--h-pied-touche` (l'ombre intérieure qui fait le pied d'une touche) ;
+  `--h-ombre-boitier`, `--h-ombre-bouton` ; `--h-icone-trait-fort`.
+- **Polices** : `--h-police-titre`, `-code`, `-libelle`, `-touche`, parmi les trois rôles du thème.
+
+Une valeur est toujours un jeton de `theme.css` (ou une autre variable `--h-*`) : ni couleur ni
+police en dur. Une couleur que le thème n'a pas y gagne d'abord un jeton, dans ses trois blocs si
+elle change entre le jour et la nuit.
+
+Un chapitre qui veut plus qu'une valeur (une touche d'une autre forme) ajoute ses règles dans son
+fichier, sous sa classe, en visant les pièces par leur attribut : `.habillage [data-piece='touche']`.
+Les pièces : `boitier`, `voile`, `ecran`, `touche`, `touche-principale`, `rangee-principale`,
+`message`, `voyant`, `pied`, `point`.
+
+## Ce qu'un chapitre ne change jamais
+
+- La structure : quelles vues, quelles rangées, dans quel ordre.
+- Les libellés d'action (« Vu », « Annuler », « Tout jusqu'ici »…) : `marque` et `modele` ne sont
+  que de l'ambiance, cachés aux lecteurs d'écran.
+- Les tailles de cible (44 px au moins) et la hauteur fixe des rangées.
+- Le sens des couleurs d'état : `--h-alerte` est ce qui attend, et rien d'autre.
+- Les seuils de contraste de la table en tête de `docs/maquettes/telecommande.html` : 4,5 pour le
+  texte courant, 3 pour le grand texte et les contours. Ils se remesurent pour chaque chapitre, en
+  jour et en nuit ; aucun test ne le fait.
+
+## Le vérifier
+
+```bash
+npx vitest run src/feuilleton/habillages src/ui/theme.test.ts
+```
+
+`habillages.test.ts` garde la séparation (aucune couleur, police, rayon ni ombre du thème dans un
+composant ; un seul importeur des chapitres ; un seul appel de `habillageActif()`) et le contrat de
+chaque chapitre ; `chapitreDEssai.test.tsx` déclare un chapitre dans le test et constate qu'il
+s'applique au bouton et au panneau sans toucher à un composant. Puis regarder : le bouton rond sur
+les deux espaces et le panneau ouvert (`/feuilleton/maison?telecommande=telecommande`), en jour et
+en nuit, à 390 et à 320 px.

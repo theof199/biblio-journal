@@ -1,0 +1,437 @@
+/* Structure seulement : des boîtes, des grilles, des tailles. Ce qui se voit (couleurs, polices, rayons,
+   traits, ombres) vient des variables `--h-*` de l'habillage du chapitre (`feuilleton/habillages/`),
+   jamais d'un jeton de couleur ou de police du thème : `feuilleton/habillages.test.ts` le refuse. */
+
+/* Le dialogue occupe l'écran sous la barre d'onglets (`--z-telecommande`), qui reste touchable. */
+.dialogue {
+  position: fixed;
+  z-index: var(--z-telecommande);
+  inset: 0;
+}
+
+/* Le voile ne laisse pas passer le doigt jusqu'à la page. */
+.voile {
+  position: absolute;
+  inset: 0;
+  background: var(--h-voile);
+  touch-action: none;
+}
+
+/* Le boîtier : posé sur la barre, centré, de largeur bornée sur grand écran. Sa hauteur est fixe : il
+   recouvre la page, bouton « Passer à… » compris, et c'est son corps qui défile. Un seul mouvement, à
+   l'ouverture : il monte. */
+.boitier {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--coque-bas);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  width: 100%;
+  max-width: var(--telecommande-largeur);
+  height: var(--telecommande-hauteur);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--gouttiere-page) 0;
+  border: var(--h-trait) solid var(--h-boitier-contour);
+  border-bottom: 0;
+  border-radius: var(--h-rayon-boitier) var(--h-rayon-boitier) 0 0;
+  background: var(--h-boitier-fond);
+  color: var(--h-boitier-texte);
+  box-shadow: var(--h-ombre-boitier);
+  animation: monter var(--telecommande-duree) ease-out;
+}
+
+/* Le focus de l'ouverture se pose sur le boîtier lui-même : il ne se dessine pas, ce n'est pas une touche. */
+.boitier:focus {
+  outline: 0;
+}
+
+@keyframes monter {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boitier {
+    animation: none;
+  }
+}
+
+.bandeau {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  min-height: var(--cible-tactile);
+}
+
+/* Le dernier du bandeau (la fermeture, ou le voyant devant elle) part à droite. */
+.bandeau > :last-child,
+.bandeau > .voyant {
+  margin-left: auto;
+}
+
+.bandeau > .voyant + :last-child {
+  margin-left: 0;
+}
+
+/* Le voyant n'existe qu'allumé : éteint, il se lisait comme une case à cocher. */
+.voyant {
+  flex: none;
+  width: var(--espace-3);
+  height: var(--espace-3);
+  border-radius: var(--h-rayon-ronde);
+  background: var(--h-alerte);
+}
+
+.vue {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  min-width: 0;
+  min-height: 0;
+  padding-bottom: var(--espace-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.vue > * {
+  flex: none;
+}
+
+.pile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.pied {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  margin: auto 0 0;
+  padding-top: var(--espace-2);
+  color: var(--h-boitier-texte-doux);
+  line-height: var(--interligne-serre);
+  text-align: center;
+}
+
+.piedMarque {
+  font-family: var(--h-police-libelle);
+  font-size: var(--taille-m);
+  letter-spacing: var(--telecommande-interlettre-marque);
+  text-transform: uppercase;
+}
+
+.piedModele {
+  font-size: var(--taille-xs);
+}
+
+/* Un petit libellé en capitales : « Cet épisode », « En cours », « 1 sur 4 ». */
+.libelle {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  min-width: 0;
+  margin: 0;
+  color: var(--h-boitier-texte-doux);
+  font-family: var(--h-police-libelle);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.libelle b {
+  color: var(--h-boitier-texte);
+  font-weight: var(--graisse-normale);
+}
+
+.marque {
+  font-size: var(--taille-m);
+}
+
+.pastille {
+  flex: none;
+  width: var(--espace-2);
+  height: var(--espace-2);
+  border-radius: var(--h-rayon-ronde);
+  background: var(--h-alerte);
+}
+
+.titreVue {
+  min-width: 0;
+  margin: 0;
+  font-family: var(--h-police-titre);
+  font-size: var(--taille-xl);
+}
+
+/* L'écran : ce qui s'affiche. Une carte d'une liste est un écran. */
+.ecran {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+  min-width: 0;
+  padding: var(--espace-3);
+  border: var(--h-trait) solid var(--h-ecran-contour);
+  border-radius: var(--h-rayon-ecran);
+  background: var(--h-ecran-fond);
+  color: var(--h-ecran-texte);
+}
+
+.ecran .libelle {
+  color: var(--h-ecran-texte-doux);
+}
+
+.ecran .libelle b {
+  color: var(--h-ecran-texte);
+}
+
+/* Une invitation : cernée de la couleur de ce qui attend, sans que rien ne bouge autour. */
+.invitation {
+  border-color: var(--h-alerte);
+  box-shadow: inset 0 0 0 var(--h-trait) var(--h-alerte);
+}
+
+.fantome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.etat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-2);
+  margin: 0;
+}
+
+.sujet {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  min-width: 0;
+}
+
+.sujet > * {
+  flex: none;
+}
+
+.sujet > .infos,
+.sujet > .dit {
+  flex: 1;
+}
+
+.infos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
+.titre {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--h-police-titre);
+  font-size: var(--taille-xl);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.episode {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-2);
+  min-width: 0;
+  margin: 0;
+}
+
+.code {
+  flex: none;
+  font-family: var(--h-police-code);
+  font-size: var(--taille-l);
+  letter-spacing: var(--telecommande-interlettre-code);
+  line-height: var(--interligne-serre);
+  white-space: nowrap;
+}
+
+.nomEp,
+.doux {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--h-ecran-texte-doux);
+  font-size: var(--taille-s);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dit {
+  margin: 0;
+  font-size: var(--taille-l);
+  line-height: var(--interligne-titre);
+}
+
+.mono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--espace-6);
+  height: var(--espace-6);
+  border-radius: var(--h-rayon-ronde);
+  background: var(--h-touche-fond);
+  color: var(--h-touche-texte);
+  font-family: var(--h-police-titre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-serre);
+}
+
+/* Une rangée de touches. Sa hauteur est fixe : ce qui remplace ses touches (le message) prend la même. */
+.rangee {
+  display: flex;
+  gap: var(--espace-2);
+  min-width: 0;
+  height: var(--bouton-hauteur);
+}
+
+.rangee.grande {
+  height: var(--telecommande-touche-grande);
+}
+
+.rangee.trois {
+  height: auto;
+}
+
+.rangee.trois > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.rangee > * {
+  min-height: 0;
+}
+
+.icone {
+  flex: none;
+  width: var(--taille-l);
+  height: var(--taille-l);
+}
+
+/* Une touche : une gomme, son pied plus épais. */
+.touche {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-2);
+  min-width: var(--cible-tactile);
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border: var(--h-trait) solid var(--h-touche-contour);
+  border-radius: var(--h-rayon-touche);
+  background: var(--h-touche-fond);
+  color: var(--h-touche-texte);
+  box-shadow: var(--h-pied-touche);
+  font-family: var(--h-police-touche);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-titre);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.touche:disabled {
+  box-shadow: none;
+  opacity: var(--opacite-inactif);
+  cursor: default;
+}
+
+.touche.large {
+  flex: 1;
+  min-width: 0;
+}
+
+.touche.carree {
+  flex: none;
+  width: var(--telecommande-touche-grande);
+  padding: 0;
+  border-radius: var(--h-rayon-ronde);
+}
+
+.touche.ronde {
+  flex: none;
+  width: var(--cible-tactile);
+  height: var(--cible-tactile);
+  padding: 0;
+  border-radius: var(--h-rayon-ronde);
+}
+
+.touche.principale {
+  border-color: var(--h-principale-contour);
+  border-radius: var(--h-rayon-principale);
+  background: var(--h-principale-fond);
+  color: var(--h-principale-texte);
+  font-size: var(--taille-l);
+}
+
+.touche.principale .icone {
+  stroke-width: var(--h-icone-trait-fort);
+}
+
+.touche.pave {
+  flex-direction: column;
+  gap: var(--espace-1);
+  min-height: var(--telecommande-touche-grande);
+  padding: var(--espace-2) var(--espace-1);
+  font-size: var(--taille-s);
+  text-align: center;
+  white-space: normal;
+}
+
+.compte {
+  font-family: var(--h-police-code);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-normale);
+  line-height: var(--interligne-serre);
+}
+
+/* Le message : il REMPLACE les touches d'une rangée, dans la même boîte. */
+.message {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--espace-1) 0 var(--espace-4);
+  border: var(--h-trait) dashed var(--h-touche-contour);
+  border-radius: var(--h-rayon-principale);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-moyenne);
+}
+
+.texte {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.touche.deMessage {
+  flex: none;
+  padding: 0 var(--espace-3);
+  border-radius: var(--h-rayon-principale);
+  font-size: var(--taille-s);
+}

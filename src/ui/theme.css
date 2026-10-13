@@ -358,6 +358,7 @@
   --billet-onglet-marge-cote: 6px;
   --billet-onglet-icone: 19px; /* l'icône d'un billet (la barre n'a plus la place de `--barre-onglets-icone`) */
   --billet-onglet-libelle-taille: 0.875rem;
+  --billet-onglet-libelle-interlettre: var(--interlettre-capitales); /* resserré sur un écran étroit, plus bas : « Feuilleton » y touchait les bords du billet */
   --billet-onglet-encre-eteinte: rgba(29, 26, 46, 0.62); /* l'encre d'un billet qui n'est pas celui de la page */
   --billet-onglet-levee: -7px; /* le billet courant sort du rouleau, vers le haut */
   --billet-onglet-inclinaison: -1.6deg;
@@ -803,10 +804,27 @@
   /* Ce qu'un élément fixé en bas doit laisser libre sous la coque : la barre et la zone sûre. */
   --coque-bas: calc(var(--barre-onglets-hauteur) + env(safe-area-inset-bottom));
 
+  /* La télécommande du Feuilleton (`feuilleton/telecommande/`) : ses mesures. Ses couleurs, ses formes et ses
+     polices ne sont pas ici : un habillage par chapitre les tire des jetons (`feuilleton/habillages/`). */
+  --telecommande-bouton: 3.5rem; /* le diamètre du bouton rond */
+  /* La hauteur du panneau sorti : il recouvre la page jusqu'à un filet sous le haut de l'écran, bouton
+     « Passer à… » compris ; son corps défile dedans. */
+  --telecommande-hauteur: calc(100dvh - var(--coque-bas) - env(safe-area-inset-top) - var(--espace-2));
+  --telecommande-largeur: 30rem; /* sa largeur maximale : sur grand écran il est centré */
+  --telecommande-voile: rgba(16, 19, 58, 0.4); /* le voile sur la page, sous le panneau */
+  --telecommande-duree: 240ms; /* la montée du panneau (`--duree` est trop court pour cette course) */
+  --telecommande-trait-fort: 2px; /* le pied d'une touche, le contour d'une invitation, le cerne du bouton et du point */
+  --telecommande-pied-de-touche: calc(-1 * var(--telecommande-trait-fort)); /* le même, vers le bas, en ombre intérieure */
+  --telecommande-touche-grande: 4rem; /* la hauteur de la rangée principale et des touches à pictogramme */
+  --telecommande-icone-trait-fort: 3; /* le trait d'une icône sur la touche principale */
+  --telecommande-interlettre-marque: 0.3em; /* la marque gravée au pied du boîtier */
+  --telecommande-interlettre-code: 0.04em; /* « S2 E5 » */
+
   /* Empilement */
   --z-derriere: -1; /* derrière le contenu de son parent, qui forme alors un contexte d'empilement (`isolation: isolate`) */
   --z-calque: 5; /* un calque du Voyage (la feuille du chroniqueur, un feuillet) : sous le bandeau et la barre, qu'il laisse visibles */
   --z-bandeau: 10; /* le bandeau « Nouvelle version » : au-dessus de la carte, sous la barre d'onglets */
+  --z-telecommande: 15; /* le bouton rond, le voile et le panneau de la télécommande : sous la barre d'onglets, qui reste touchable */
   --z-barre-onglets: 20;
 }
 
@@ -829,6 +847,16 @@
     --profil-largeur-page: calc(3 * var(--profil-largeur-max) + 2 * var(--rythme-section));
     --profil-colonnes: repeat(3, minmax(0, 1fr));
     --fiche-bouton-alignement: flex-start;
+  }
+}
+
+/* ------------------------------------------------------------------ Écran étroit */
+/* Sous 340 px (un téléphone de 320), le libellé d'un billet de la barre se resserre : « Feuilleton »,
+   dix lettres, n'y avait que deux pixels de marge. Au-dessus rien ne change. Comme plus haut, un jeton
+   seulement, et la condition en dur. */
+@media (max-width: 21.25rem) {
+  :root {
+    --billet-onglet-libelle-interlettre: 0.03em;
   }
 }
 
@@ -921,6 +949,7 @@
     --caisse-ombre: drop-shadow(0 16px 16px rgba(1, 2, 16, 0.85)) drop-shadow(0 2px 2px rgba(1, 2, 16, 0.4));
     --affichette-lampe: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 244, 214, 0.5), rgba(255, 244, 214, 0) 70%);
     --intercalaire-fond: rgba(244, 236, 215, 0.16);
+    --telecommande-voile: rgba(1, 2, 16, 0.62);
   }
 }
 
@@ -1008,6 +1037,7 @@
   --caisse-ombre: drop-shadow(0 16px 16px rgba(1, 2, 16, 0.85)) drop-shadow(0 2px 2px rgba(1, 2, 16, 0.4));
   --affichette-lampe: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 244, 214, 0.5), rgba(255, 244, 214, 0) 70%);
   --intercalaire-fond: rgba(244, 236, 215, 0.16);
+  --telecommande-voile: rgba(1, 2, 16, 0.62);
 }
 
 /* ------------------------------------------------------------------ La carte d'adhérent */

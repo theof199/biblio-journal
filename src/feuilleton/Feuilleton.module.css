@@ -14,17 +14,19 @@
   justify-content: flex-end;
 }
 
-/* Le bouton qui passe de l'autre côté : plein, de la couleur d'accent, pour qu'on ne le cherche pas. */
+/* Le bouton qui passe de l'autre côté : neutre et discret, un contour sur la surface. Le rouge du thème
+   est réservé à ce qui attend (le point du bouton rond, une invitation). */
 .autreCote {
   display: flex;
   align-items: center;
   gap: var(--espace-2);
   min-height: var(--cible-tactile);
   padding: 0 var(--espace-4);
+  border: var(--trait) solid var(--couleur-texte-doux);
   border-radius: var(--rayon-m);
-  background: var(--couleur-accent);
-  color: var(--couleur-sur-accent);
+  background: var(--couleur-surface);
+  color: var(--couleur-texte);
   font-size: var(--taille-m);
-  font-weight: var(--graisse-forte);
+  font-weight: var(--graisse-moyenne);
   text-decoration: none;
 }

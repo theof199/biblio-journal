@@ -45,3 +45,23 @@ describe('le découpage du Feuilleton', () => {
     expect(paresseuses).toEqual(['feuilleton/Feuilleton', 'studio/Studio', 'maison/Maison'])
   })
 })
+
+/**
+ * Le panneau de la télécommande ne se charge qu'à son ouverture : le bouton rond, lui, vient avec la
+ * mise en page du Feuilleton.
+ */
+describe('le découpage de la télécommande', () => {
+  const [feuilleton] = Object.values(import.meta.glob('../feuilleton/Feuilleton.tsx', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)
+
+  // Mutation : `import Panneau from './telecommande/Panneau'` dans `Feuilleton.tsx`.
+  it('Feuilleton.tsx n’importe statiquement ni le panneau ni une de ses vues', () => {
+    const statiques = [...feuilleton!.matchAll(/^import\s[^\n]*from\s+'\.\/telecommande\/(\w+)'/gm)].map((trouve) => trouve[1])
+    expect(statiques.sort()).toEqual(['Bouton', 'adresse', 'donnees'])
+  })
+
+  // Mutation : la même : le morceau manque à la liste.
+  it('le panneau a son morceau', () => {
+    const paresseuses = [...feuilleton!.matchAll(/paresseux\(\(\) => import\('\.\/(telecommande\/\w+)'\)\)/g)].map((trouve) => trouve[1])
+    expect(paresseuses).toEqual(['telecommande/Panneau'])
+  })
+})

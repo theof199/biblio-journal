@@ -109,14 +109,16 @@
   outline-offset: var(--billet-onglet-focus-retrait);
 }
 
-/* Sorti du rouleau, le billet courant n'a plus de pointillé, ni lui ni son voisin de droite. */
 .onglet[aria-current='page'] {
-  border-left: 0;
   background: var(--billet-onglet-papier-eclaire);
   color: var(--ticket-encre);
   box-shadow: inset 0 var(--billet-onglet-bande-hauteur) 0 var(--ticket-bande-vive);
 }
 
+/* Sorti du rouleau, le billet courant n'a plus de pointillé, ni lui ni son voisin de droite. Posé ici, et
+   du poids de `.element + .element .onglet` au moins : sur `.onglet[aria-current='page']`, plus léger, il
+   perdait et le billet courant gardait son pointillé. */
+.element:has(> [aria-current='page']) .onglet,
 .element:has(> [aria-current='page']) + .element .onglet {
   border-left: 0;
 }
@@ -131,7 +133,11 @@
   font-family: var(--police-fronton);
   font-size: var(--billet-onglet-libelle-taille);
   font-weight: var(--graisse-normale);
-  letter-spacing: var(--interlettre-capitales);
+  letter-spacing: var(--billet-onglet-libelle-interlettre);
   line-height: var(--interligne-serre);
   text-transform: uppercase;
+  /* Jamais deux lignes. Et des lettres posées au sous-pixel : à la densité 1, de jour, chacune s'arrondissait
+     au pixel entier et le mot s'ouvrait (« FEUILLE TON »). */
+  white-space: nowrap;
+  text-rendering: geometricPrecision;
 }

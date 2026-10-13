@@ -139,6 +139,15 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   le Travail ; sinon la Maison). Rien n'est mémorisé : le bouton ne vaut que pour la visite en cours.
 - **Le Feuilleton est hors du bâtiment** (`docs/identite.md`) : il ne s'invente pas d'endroit du
   cinéma, ses pages restent sur les jetons de `theme.css`, et jamais de palette du Voyage.
+- **La télécommande est commune** (`src/feuilleton/telecommande/`, `README.md`, « La télécommande du
+  Feuilleton ») et **s'habille par chapitre** : ses feuilles ne lisent au thème que des mesures, tout ce
+  qui se voit passe par une variable `--h-*` qu'un fichier de `src/feuilleton/habillages/` définit. Un
+  chapitre de plus ne touche aucun composant (`docs/feuilleton/habillages.md`,
+  `habillages/habillages.test.ts`). Un espace ne modifie pas la télécommande : il lui parle par
+  `fournirLeRetourDuVu` (`src/feuilleton/retourDuVu.ts`), inscrit à son montage, retiré à son démontage.
+- **Un panneau ouvert par l'adresse navigue « sur place »** (`state: { surPlace: true }`,
+  `src/coque/defilement.ts`) : sans cet état, la coque remonte la page dessous comme pour toute
+  navigation nouvelle.
 
 ## Les fiches
 

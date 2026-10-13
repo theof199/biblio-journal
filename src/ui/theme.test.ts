@@ -53,6 +53,9 @@ function regle(css: string, selecteur: string) {
   return reste.slice(reste.indexOf('{') + 1, reste.indexOf('}'))
 }
 
+/** Les variables `--h-*` que pose l'habillage de la télécommande du Feuilleton. */
+const D_HABILLAGE = new Set([...definies(MODULES['/src/feuilleton/habillages/chapitre-1.module.css']!)].filter((nom) => nom.startsWith('--h-')))
+
 /** Ce qu'une valeur a le droit de porter en dur : la mise en page, pas l'habillage. */
 const PERMIS = new Set(['0', '100%', '100dvh'])
 
@@ -79,7 +82,10 @@ describe('le thème', () => {
     // Attrape la faute de frappe, qui retombe en silence sur la valeur héritée, et la palette du
     // Voyage (`--papier`…), qui n'est pas définie dans theme.css.
     const connues = definies(theme)
-    expect(lues(css).filter((nom) => !connues.has(nom))).toEqual([])
+    // Seule exception : les variables `--h-*` de l'habillage de la télécommande, que les feuilles du
+    // Feuilleton lisent et qu'un chapitre définit (`feuilleton/habillages/habillages.test.ts` garde qu'il les définit toutes).
+    const habillage = _chemin.startsWith('/src/feuilleton/') ? D_HABILLAGE : new Set<string>()
+    expect(lues(css).filter((nom) => !connues.has(nom) && !habillage.has(nom))).toEqual([])
   })
 
   it('theme.css ne lit rien du Voyage', () => {
@@ -180,6 +186,33 @@ describe('la barre d’onglets : le rouleau du guichet', () => {
   it('le focus clavier est tracé dans le billet, où le masque ne le coupe pas', () => {
     expect(regle(coque, '.onglet:focus-visible')).toMatch(/outline-offset:\s*var\(--billet-onglet-focus-retrait\)/)
     expect(valeurDe(BLOC_JOUR, '--billet-onglet-focus-retrait')).toMatch(/^-\d/)
+  })
+
+  // Mutations : `white-space: nowrap` ou `text-rendering` ôtés de `.libelle` (« FEUILLE TON », ou deux lignes à 320 px).
+  it('un libellé ne se coupe jamais, et ses lettres se posent au sous-pixel', () => {
+    const libelle = regle(coque, '.libelle')
+    expect(libelle).toMatch(/white-space:\s*nowrap/)
+    expect(libelle).toMatch(/text-rendering:\s*geometricPrecision/)
+    expect(libelle).toMatch(/letter-spacing:\s*var\(--billet-onglet-libelle-interlettre\)/)
+  })
+
+  // Mutation : le bloc `@media (max-width: 21.25rem)` ôté de `theme.css` (10 lettres pour 60 px à 320 px).
+  it('sur un écran étroit le libellé se resserre, et lui seul ; ailleurs il garde l’interlettrage des capitales', () => {
+    expect(valeurDe(BLOC_JOUR, '--billet-onglet-libelle-interlettre')).toBe('var(--interlettre-capitales)')
+    const etroit = sansCommentaires(theme).match(/@media \(max-width: 21\.25rem\)\s*\{\s*:root\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(etroit.trim()).toMatch(/^--billet-onglet-libelle-interlettre:\s*0\.0\dem;$/)
+  })
+
+  // Mutation : le pointillé remis à zéro sur `.onglet[aria-current='page']` seul, plus léger que
+  // `.element + .element .onglet` : le billet courant gardait son pointillé de gauche.
+  it('le billet courant et son voisin de droite perdent leur pointillé, d’une règle qui l’emporte', () => {
+    const css = sansCommentaires(coque)
+    const pose = css.indexOf('.element + .element .onglet {')
+    const retire = css.indexOf(".element:has(> [aria-current='page']) .onglet,\n.element:has(> [aria-current='page']) + .element .onglet {")
+    expect(pose).toBeGreaterThan(-1)
+    expect(retire).toBeGreaterThan(pose)
+    expect(css.slice(retire, css.indexOf('}', retire))).toMatch(/border-left:\s*0/)
+    expect(regle(coque, ".onglet[aria-current='page']")).not.toMatch(/border-left/)
   })
 
   it('la barre ne grandit pas : sa hauteur et son fond sont ceux d’avant', () => {
@@ -554,5 +587,76 @@ describe('l’attente', () => {
     expect(sansCommentaires(attente)).toMatch(
       /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.attente\s*\{[^{}]*animation:\s*none;[^{}]*\}\s*\}/,
     )
+  })
+})
+
+describe('le Feuilleton et sa télécommande', () => {
+  const feuilleton = MODULES['/src/feuilleton/Feuilleton.module.css']!
+  const panneau = MODULES['/src/feuilleton/telecommande/Panneau.module.css']!
+  const bouton = MODULES['/src/feuilleton/telecommande/Bouton.module.css']!
+  const BLOC_JOUR = regle(theme, ':root')
+  const BLOCS_SOMBRES = [regle(theme, ":root:not([data-theme='clair'])"), regle(theme, ":root[data-theme='sombre']")]
+  const valeurDe = (bloc: string, jeton: string) => bloc.match(new RegExp(`${jeton}:\\s*([^;]+);`))?.[1]?.trim()
+
+  // Mutation : `background: var(--couleur-accent)` rendu à `.autreCote`.
+  it('« Passer à… » est neutre : le rouge du thème est réservé à ce qui attend', () => {
+    const autreCote = regle(feuilleton, '.autreCote')
+    expect(autreCote).not.toMatch(/--couleur-(sur-)?accent/)
+    expect(autreCote).toMatch(/border:\s*var\(--trait\) solid var\(--couleur-texte-doux\)/)
+    expect(sansCommentaires(feuilleton)).not.toMatch(/--couleur-(sur-)?accent/)
+  })
+
+  // Mutation : `--telecommande-voile` ôté d'un des deux blocs sombres (le voile du jour, trop clair, la nuit).
+  it('le voile est posé le jour et dans les deux blocs sombres, de la même valeur la nuit', () => {
+    expect(sansCommentaires(theme).match(/--telecommande-voile:/g)).toHaveLength(3)
+    const [suivantLeTelephone, force] = BLOCS_SOMBRES.map((bloc) => valeurDe(bloc, '--telecommande-voile'))
+    expect(suivantLeTelephone).toBeDefined()
+    expect(suivantLeTelephone).not.toBe(valeurDe(BLOC_JOUR, '--telecommande-voile'))
+    expect(force).toBe(suivantLeTelephone)
+  })
+
+  // Mutations : `z-index: var(--z-barre-onglets)` sur le dialogue ; `--z-telecommande: 25`.
+  it('le bouton rond et le panneau passent sous la barre d’onglets, qui reste touchable, et au-dessus du bandeau', () => {
+    expect(regle(panneau, '.dialogue')).toMatch(/z-index:\s*var\(--z-telecommande\)/)
+    expect(regle(bouton, '.ancre')).toMatch(/z-index:\s*var\(--z-telecommande\)/)
+    const z = (jeton: string) => Number(valeurDe(BLOC_JOUR, jeton))
+    expect(z('--z-telecommande')).toBeGreaterThan(z('--z-bandeau'))
+    expect(z('--z-telecommande')).toBeLessThan(z('--z-barre-onglets'))
+  })
+
+  // Mutations : `bottom: 0` sur le boîtier (il passerait sous la barre) ; `max-height` à la place de
+  // `height` (un panneau plus court que la page couperait « Passer à… » en deux).
+  it('le boîtier est posé sur la barre et recouvre la page, « Passer à… » compris : sa hauteur ne dépend pas de son contenu', () => {
+    const boitier = regle(panneau, '.boitier')
+    expect(boitier).toMatch(/(^|[\s;])bottom:\s*var\(--coque-bas\)/)
+    expect(boitier).toMatch(/(^|[\s;])height:\s*var\(--telecommande-hauteur\)/)
+    expect(boitier).toMatch(/max-width:\s*var\(--telecommande-largeur\)/)
+    expect(valeurDe(BLOC_JOUR, '--telecommande-hauteur')).toBe('calc(100dvh - var(--coque-bas) - env(safe-area-inset-top) - var(--espace-2))')
+    // Le haut du panneau (`--espace-2` sous le haut de l'écran) est au-dessus du bouton (`--espace-4`, le haut de la page).
+    expect(regle(feuilleton, '.feuilleton')).toMatch(/padding:\s*var\(--espace-4\) /)
+  })
+
+  // Mutations : une seconde animation (sur le voile) ; le bloc `prefers-reduced-motion` ôté.
+  it('un seul mouvement, à l’ouverture, et aucun pour qui en demande moins', () => {
+    const css = sansCommentaires(panneau)
+    expect(css.match(/(^|[\s;{])animation:/g)).toHaveLength(2)
+    expect(css.match(/\btransition\b/g)).toBeNull()
+    expect(regle(panneau, '.boitier')).toMatch(/animation:\s*monter var\(--telecommande-duree\)/)
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.boitier\s*\{\s*animation:\s*none;\s*\}\s*\}/)
+    expect(sansCommentaires(bouton)).not.toMatch(/\b(transition|animation)\b/)
+  })
+
+  // Mutation : `height: auto` sur la rangée principale (le message, plus bas que « Vu », ferait sauter le reste).
+  it('la rangée principale a une hauteur fixe : le message qui remplace ses touches prend la même', () => {
+    expect(regle(panneau, '.rangee.grande')).toMatch(/(^|[\s;])height:\s*var\(--telecommande-touche-grande\)/)
+    expect(regle(panneau, '.message')).not.toMatch(/(^|[\s;])(min-)?height:/)
+  })
+
+  // Mutation : `right: var(--espace-4)` sur une ancre sans colonne (le bouton irait au bord de la fenêtre sur grand écran).
+  it('le bouton rond flotte au-dessus de la barre, au bord de la colonne de la page', () => {
+    expect(regle(bouton, '.ancre')).toMatch(/position:\s*fixed/)
+    expect(regle(bouton, '.ancre')).toMatch(/bottom:\s*calc\(var\(--coque-bas\) \+ var\(--espace-4\)\)/)
+    expect(regle(bouton, '.colonne')).toMatch(/max-width:\s*var\(--largeur-page\)/)
+    expect(regle(feuilleton, '.feuilleton')).toMatch(/max-width:\s*var\(--largeur-page\)/)
   })
 })
