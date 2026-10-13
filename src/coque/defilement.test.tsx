@@ -10,6 +10,9 @@ import { json, servir } from '../test/serveur'
 import { ROUTES_ACCUEIL } from '../test/routesAccueil'
 import { visionnage } from '../test/journal'
 import { DELAI_RESTAURATION, restaurer, sauter } from './defilement'
+import { oublierLesDeplis } from '../cinema/depli'
+
+afterEach(oublierLesDeplis)
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 const FILMS = Array.from({ length: 20 }, (_, i) =>
@@ -240,6 +243,59 @@ describe('l’arrivée sur la section Au ciné', () => {
 
     await accueilArrive(zone)
     expect(zone.scrollTop).toBe(1500)
+  })
+
+  // Mutation, dans `useDefilementMemorise` : `if (cible)` au lieu de `cible !== undefined` : une
+  // position notée `0` passerait pour absente, et le retour resauterait à la section.
+  it('au retour sur cette entrée laissée tout en haut, la page reste en haut : zéro est une place quittée', async () => {
+    poserLaSection({ valeur: 700 })
+    servirAccueil()
+    monter('/#au-cine')
+    const zone = await screen.findByRole('main')
+    await accueilArrive(zone)
+    expect(zone.scrollTop).toBe(700)
+    fireEvent.wheel(zone)
+    defiler(zone, 0)
+    await ouvrirFilm(zone, 3)
+
+    act(() => historique(-1))
+
+    await accueilArrive(zone)
+    expect(zone.scrollTop).toBe(0)
+  })
+
+  const SEANCES = Array.from({ length: 6 }, (_, i) =>
+    visionnage({ id: `s${i}`, titre: `Séance ${i}`, date: `2026-08-${String(20 - i).padStart(2, '0')}` }),
+  )
+
+  // Vingt films au journal : le plus bas de la zone est 1 500 px tant que « Tes séances » est repliée,
+  // 2 100 px avec ses six lignes. La place quittée, 1 900 px, n'existe que la liste dépliée.
+  // Mutation, dans `cinema/depli.ts` : l'état gardé dans un `useState` du composant : au retour la
+  // liste est repliée, la zone trop courte, et la position reste à 1 500.
+  it('« Tes séances » dépliée, une séance ouverte : le retour rend la liste dépliée et la ligne quittée', async () => {
+    servir({
+      'GET /api/auth/me': () => json(SESSION),
+      ...ROUTES_ACCUEIL,
+      [JOURNAL]: () => json({ items: FILMS, next_cursor: null }),
+      'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items: SEANCES, next_cursor: null }),
+      'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
+    })
+    monter('/')
+    const zone = await screen.findByRole('main')
+    await accueilArrive(zone)
+    borner(zone)
+    fireEvent.click(await screen.findByRole('button', { name: 'Tout voir' }))
+    expect(zone.querySelector('a[href="/journal/s5"]')).not.toBeNull()
+    defiler(zone, 1900)
+    expect(zone.scrollTop).toBe(1900)
+    fireEvent.click(zone.querySelector('a[href="/journal/s5"]')!)
+    await screen.findByRole('heading', { level: 1, name: 'Séance 5' })
+
+    act(() => historique(-1))
+
+    await accueilArrive(zone)
+    expect(zone.querySelector('a[href="/journal/s5"]')).not.toBeNull()
+    expect(zone.scrollTop).toBe(1900)
   })
 })
 

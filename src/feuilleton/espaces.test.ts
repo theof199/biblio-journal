@@ -94,4 +94,12 @@ describe('les espaces du Feuilleton', () => {
     expect(espaceDuChemin('/feuilleton')).toBeNull()
     expect(espaceDuChemin('/')).toBeNull()
   })
+
+  // Mutation : la barre finale non retirée (l'égalité sur `pathname` tel quel) : `/feuilleton/studio/`
+  // ne serait aucun espace, et la mise en page renverrait à l'espace de l'heure.
+  it('une barre oblique finale ne change pas l’espace, et n’en fait pas un de `/feuilleton/`', () => {
+    expect(espaceDuChemin('/feuilleton/studio/')).toBe('studio')
+    expect(espaceDuChemin('/feuilleton/maison/')).toBe('maison')
+    expect(espaceDuChemin('/feuilleton/')).toBeNull()
+  })
 })

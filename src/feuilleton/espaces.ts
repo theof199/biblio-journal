@@ -12,9 +12,13 @@ export const ESPACES: Record<Espace, { libelle: string; chemin: string; passer: 
 
 export const autreEspace = (espace: Espace): Espace => (espace === 'studio' ? 'maison' : 'studio')
 
-/** L'espace d'une adresse, ou rien : `/feuilleton` seul n'en est pas un. */
+/**
+ * L'espace d'une adresse, ou rien : `/feuilleton` seul n'en est pas un. Une barre oblique finale est
+ * tolérée, comme le routeur la tolère : `/feuilleton/studio/` est le Studio, pas l'espace de l'heure.
+ */
 export function espaceDuChemin(pathname: string): Espace | null {
-  const trouve = (Object.keys(ESPACES) as Espace[]).find((espace) => ESPACES[espace].chemin === pathname)
+  const chemin = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+  const trouve = (Object.keys(ESPACES) as Espace[]).find((espace) => ESPACES[espace].chemin === chemin)
   return trouve ?? null
 }
 

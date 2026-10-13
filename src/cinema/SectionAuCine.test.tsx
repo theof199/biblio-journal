@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import SectionAuCine from './SectionAuCine'
+import { oublierLesDeplis } from './depli'
 import { createQueryClient } from '../api/queryClient'
 import { json, servir as servirBrut } from '../test/serveur'
 import { exemple } from '../test/contrat'
@@ -106,11 +107,23 @@ function StubFiche() {
   )
 }
 
+/** Le geste « retour » du téléphone et une arrivée neuve, que la section ne dessine pas. */
+let historique!: NavigateFunction
+function Historique() {
+  historique = useNavigate()
+  return null
+}
+
+// `MemoryRouter` donne la même clé à la première entrée de chaque test : l'état déplié d'un test
+// ne doit pas passer au suivant.
+afterEach(oublierLesDeplis)
+
 function monter(client = createQueryClient()) {
   return render(
     <QueryClientProvider client={client}>
       <FournisseurPosition>
         <MemoryRouter initialEntries={['/au-cine']}>
+          <Historique />
           <Routes>
             <Route path="/au-cine" element={<SectionAuCine />} />
             <Route path="/au-cine/films/:tmdbId" element={<StubFicheFilm />} />
@@ -371,8 +384,9 @@ describe('Au ciné', () => {
   describe('« Tes séances », repliée derrière « Tout voir »', () => {
     const s1 = seance({ id: 's1', finished_at: '2026-09-10', title: 'Premiere' })
     const s2 = seance({ id: 's2', finished_at: '2026-09-01', title: 'Seconde' })
+    const SORTIES = structuredClone(SORTIES_EXEMPLE)
 
-    // Mutations, dans `SectionAuCine.tsx` : `useState(true)` (la liste arrive dépliée) ; la sentinelle
+    // Mutations, dans `cinema/depli.ts` : `deplies.has(key)` rendu vrai (la liste arrive dépliée) ; la sentinelle
     // rendue ou observée sans `deplie` (la suite se demande sans que personne ne regarde la liste).
     it('arrive repliée : aucune ligne, aucune sentinelle, et la suite ne se demande pas, même le bas de la page en vue', async () => {
       vi.stubGlobal('IntersectionObserver', ObservateurVisible)
@@ -412,6 +426,86 @@ describe('Au ciné', () => {
 
       expect(screen.queryByText('Premiere')).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Tout voir' })).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    // Mutations, dans `cinema/depli.ts` : `deplies.has(key)` remplacé par un `useState(false)` local
+    // (la section, démontée par la fiche, revient repliée) ; la clé remplacée par une constante
+    // (l'arrivée neuve hérite de l'état de l'entrée quittée).
+    it('dépliée, puis une séance ouverte : au retour elle est encore dépliée ; une arrivée neuve part repliée', async () => {
+      servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances([s1, s2]) })
+      monter()
+      await deplier()
+      fireEvent.click(screen.getByText('Seconde'))
+      expect(await screen.findByText('Fiche de Seconde, depuis /#au-cine')).toBeInTheDocument()
+
+      act(() => historique(-1))
+
+      expect(await screen.findByText('Seconde')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Réduire' })).toHaveAttribute('aria-expanded', 'true')
+
+      act(() => historique('/au-cine'))
+
+      expect(await screen.findByRole('button', { name: 'Tout voir' })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByText('Seconde')).not.toBeInTheDocument()
+    })
+
+    // Mutation, dans `cinema/depli.ts` : `deplies.delete(key)` retiré (« Réduire » ne s'oublierait pas).
+    it('repliée par « Réduire », puis une fiche ouverte : au retour elle est repliée', async () => {
+      servir({ 'GET /api/reference/sorties': () => json(SORTIES), ...routeSeances([s1]) })
+      monter()
+      await deplier()
+      fireEvent.click(screen.getByRole('button', { name: 'Réduire' }))
+      fireEvent.click((await screen.findAllByText('Marée basse'))[0]!)
+      await screen.findByText(/Fiche du film Marée basse/)
+
+      act(() => historique(-1))
+
+      expect(await screen.findByRole('button', { name: 'Tout voir' })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByText('Premiere')).not.toBeInTheDocument()
+    })
+
+    // Mutations, dans `SectionAuCine.tsx` : l'alerte rendue sur `seances.error` seul ; « Chargement… »
+    // rendu sur `isFetchingNextPage` seul.
+    it('repliée pendant puis après l’échec d’une page suivante : ni « Chargement… » ni « Réessayer » sans leur liste, qui reviennent avec elle', async () => {
+      vi.stubGlobal('IntersectionObserver', ObservateurVisible)
+      let liberer!: () => void
+      servir({
+        'GET /api/reference/sorties': () => json(SORTIES_VIDES),
+        'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items: [s1], next_cursor: 'page-2' }),
+        'GET /api/me/journal?limit=40&cursor=page-2&reaction=en_salle': () =>
+          new Promise<Response>((r) => (liberer = () => r(json({ code: 'INTERNAL', message: 'Le journal n’a pas pu être lu.', retryable: false }, 500)))),
+      })
+      monter()
+      await deplier()
+      expect(await screen.findByText('Chargement…')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Réduire' }))
+      expect(screen.queryByText('Chargement…')).not.toBeInTheDocument()
+
+      await act(async () => {
+        liberer()
+        await patienter(50)
+      })
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+
+      await deplier()
+      expect(within(screen.getByRole('alert')).getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+    })
+
+    // Mutation : le bouton offert sur `items.length > 0` seul : la suite d'une première page vide ne
+    // se demanderait jamais, et rien ne se lirait sous le titre.
+    it('une première page vide qui a une suite offre « Tout voir », et la suite arrive une fois dépliée', async () => {
+      vi.stubGlobal('IntersectionObserver', ObservateurVisible)
+      servir({
+        'GET /api/reference/sorties': () => json(SORTIES_VIDES),
+        'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items: [], next_cursor: 'page-2' }),
+        'GET /api/me/journal?limit=40&cursor=page-2&reaction=en_salle': () => json({ items: [s2], next_cursor: null }),
+      })
+      monter()
+      await deplier()
+
+      expect(await screen.findByText('Seconde')).toBeInTheDocument()
     })
 
     // Mutation : le bouton rendu sans condition : il ouvrirait sur rien.

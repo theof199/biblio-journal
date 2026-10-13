@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { IconCheck, IconMovie, IconUser } from '@tabler/icons-react'
@@ -24,6 +24,7 @@ import {
 } from './etats'
 import { entreesDuTableau, heureAffichee, prochaineSeanceParFilm } from './seances'
 import { TableauDuHall, TableauEnAttente } from './TableauDuHall'
+import { useDepliMemorise } from './depli'
 import { useMaintenant } from './useMaintenant'
 import { usePosition } from './usePosition'
 import { useFilmographiesSagas } from '../suivis/useFilmographies'
@@ -47,9 +48,10 @@ const LIMITE = 40
 
 /**
  * « Au ciné », une section de l'accueil depuis le 13 octobre 2026 (elle était un onglet) : elle porte
- * l'ancre `au-cine`, où mènent son ancienne adresse et le retour de la fiche d'un film
+ * l'ancre `au-cine`, où mènent son ancienne adresse et le repli d'une fiche ouverte d'un lien
  * (`coque/defilement.ts`). Elle ne dépend de rien d'autre sur la page : ses requêtes, ses attentes et
- * ses pannes sont les siennes. « Tes séances » y est repliée derrière « Tout voir » (décision D5) :
+ * ses pannes sont les siennes. « Tes séances » y arrive repliée derrière « Tout voir » (décision D5 ;
+ * dépliée, elle le reste pour cette entrée d'historique, `cinema/depli.ts`) :
  * les séances se lisent quand même, le compte de l'année, la coche des tuiles et l'état de la fiche
  * d'un film en viennent ; leur suite ne se demande qu'une fois la liste dépliée.
  *
@@ -105,7 +107,9 @@ export default function SectionAuCine() {
     if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage()
   }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
   // Repliée, la liste n'a pas de sentinelle : rien ne demande la suite de ce qu'on ne regarde pas.
-  const [deplie, setDeplie] = useState(false)
+  // L'état se garde par entrée d'historique (`cinema/depli.ts`) : au retour d'une fiche, la liste
+  // quittée dépliée l'est encore, et la position que la coque restaure retrouve sa ligne.
+  const [deplie, setDeplie] = useDepliMemorise()
   const idListe = useId()
   const sentinelle = useChargementInfini(chargerLaSuite, deplie && !!hasNextPage)
 
@@ -224,7 +228,8 @@ export default function SectionAuCine() {
       <section className={styles.section}>
         <div className={styles.enteteSection}>
           <p className={styles.titreSection}>Tes séances</p>
-          {items.length > 0 ? (
+          {/* Une première page vide qui a une suite s'offre aussi : sans le bouton, la suite ne se demanderait jamais. */}
+          {items.length > 0 || hasNextPage ? (
             <button type="button" className={styles.toutVoir} aria-expanded={deplie} aria-controls={idListe} onClick={() => setDeplie(!deplie)}>
               {deplie ? 'Réduire' : 'Tout voir'}
             </button>
@@ -250,7 +255,9 @@ export default function SectionAuCine() {
               </div>
             )}
 
-            {seances.error ? (
+            {/* L'échec et le chargement d'une page suivante sont ceux de la liste : repliée, ils se taisent
+                avec elle. L'échec d'une relecture, lui, touche le compte de l'en-tête : il se dit toujours. */}
+            {seances.error && (deplie || !isFetchNextPageError) ? (
               <div className={styles.erreur} role="alert">
                 <p className={styles.erreurTexte}>{seances.error.message}</p>
                 <button
@@ -263,7 +270,7 @@ export default function SectionAuCine() {
               </div>
             ) : null}
 
-            {isFetchingNextPage ? (
+            {deplie && isFetchingNextPage ? (
               <p role="status" className={styles.chargement}>
                 Chargement…
               </p>

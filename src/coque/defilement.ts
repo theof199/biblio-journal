@@ -39,8 +39,10 @@ export function restaurer(zone: HTMLElement, cible: number): () => void {
 /**
  * La seule ancre que la coque honore : la section « Au ciné » de l'accueil (`cinema/SectionAuCine.tsx`).
  * C'est l'exception au défilement « toujours celui du doigt » (`docs/identite.md`, « Le mouvement » ;
- * décision D6 du 13 octobre 2026) : l'ancien onglet et le retour de la fiche d'un film mènent à
- * `/#au-cine`, et la page s'ouvre sur la section au lieu de s'ouvrir en haut.
+ * décision D6 du 13 octobre 2026) : l'ancienne adresse de l'onglet (`/au-cine`) mène à `/#au-cine`,
+ * et la page s'ouvre sur la section au lieu de s'ouvrir en haut. Le « Retour » d'une fiche, lui,
+ * recule dans l'historique et retrouve la place quittée ; il ne mène à `/#au-cine` que comme repli,
+ * quand la fiche (d'un film, d'une séance) a été ouverte d'un lien, sans rien derrière elle.
  */
 export const ANCRE_AU_CINE = 'au-cine'
 
@@ -104,8 +106,9 @@ export function useDefilementMemorise(zone: RefObject<HTMLElement>, cle: string,
     const element = zone.current
     if (!element) return
     courante.current = cle
+    // La présence, pas la vérité : une entrée laissée tout en haut (`0`) est retrouvée, elle aussi.
     const cible = positions.current.get(cle)
-    if (cible) return restaurer(element, cible)
+    if (cible !== undefined) return restaurer(element, cible)
     if (ancre === `#${ANCRE_AU_CINE}`) return sauter(element, ANCRE_AU_CINE)
     element.scrollTop = 0
   }, [zone, cle, ancre])

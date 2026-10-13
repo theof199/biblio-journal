@@ -90,8 +90,9 @@ blanc, et ils respirent lentement, tous ensemble, jusqu'à l'arrivée des donné
 Sous `prefers-reduced-motion`, tout est allumé d'emblée (`src/ui/mouvement.ts`) et les objets en blanc
 restent immobiles. Un défilement est toujours celui du doigt, jamais automatique, à une exception
 (décision du 13 octobre 2026) : l'arrivée sur `/#au-cine`, où mènent l'ancienne adresse d'« Au ciné »
-et le retour de la fiche d'un film, ouvre l'accueil sur la section, d'un coup, sans animation
-(`src/coque/defilement.ts`). Ce n'est pas un défilement qu'on regarde : la page s'ouvre là.
+et le repli d'une fiche (d'un film, d'une séance) ouverte d'un lien, ouvre l'accueil sur la section,
+d'un coup, sans animation (`src/coque/defilement.ts`). Le retour ordinaire d'une fiche recule dans
+l'historique et rend la place quittée. Ce n'est pas un défilement qu'on regarde : la page s'ouvre là.
 
 ## Les mots
 
