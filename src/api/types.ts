@@ -12345,6 +12345,11 @@ export interface paths {
                     /** Format: uuid */
                     id: string;
                     saison: number;
+                    /**
+                     * Format: uuid
+                     * @description L’identifiant de la saison de l’épisode
+                     */
+                    saison_id: string;
                     numero: number;
                     titre: string | null;
                   };
@@ -12403,6 +12408,11 @@ export interface paths {
                     id: string;
                     /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
                     saison: number;
+                    /**
+                     * Format: uuid
+                     * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                     */
+                    saison_id: string;
                     /** @description Le numéro de l’épisode dans sa saison */
                     numero: number;
                     titre: string | null;
@@ -12417,6 +12427,11 @@ export interface paths {
                     id: string;
                     /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
                     saison: number;
+                    /**
+                     * Format: uuid
+                     * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                     */
+                    saison_id: string;
                     /** @description Le numéro de l’épisode dans sa saison */
                     numero: number;
                     titre: string | null;
@@ -12539,6 +12554,11 @@ export interface paths {
                   id: string;
                   /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
                   saison: number;
+                  /**
+                   * Format: uuid
+                   * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                   */
+                  saison_id: string;
                   /** @description Le numéro de l’épisode dans sa saison */
                   numero: number;
                   titre: string | null;
@@ -12553,6 +12573,11 @@ export interface paths {
                   id: string;
                   /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
                   saison: number;
+                  /**
+                   * Format: uuid
+                   * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                   */
+                  saison_id: string;
                   /** @description Le numéro de l’épisode dans sa saison */
                   numero: number;
                   titre: string | null;
@@ -12674,6 +12699,11 @@ export interface paths {
                 /** Format: uuid */
                 id: string;
                 saison: number;
+                /**
+                 * Format: uuid
+                 * @description L’identifiant de la saison de l’épisode
+                 */
+                saison_id: string;
                 numero: number;
                 titre: string | null;
               };
@@ -12796,6 +12826,11 @@ export interface paths {
                   /** Format: uuid */
                   id: string;
                   saison: number;
+                  /**
+                   * Format: uuid
+                   * @description L’identifiant de la saison de l’épisode
+                   */
+                  saison_id: string;
                   numero: number;
                   titre: string | null;
                 };
@@ -12861,6 +12896,11 @@ export interface paths {
                   id: string;
                   /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
                   saison: number;
+                  /**
+                   * Format: uuid
+                   * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                   */
+                  saison_id: string;
                   /** @description Le numéro de l’épisode dans sa saison */
                   numero: number;
                   titre: string | null;
@@ -12875,6 +12915,11 @@ export interface paths {
                   id: string;
                   /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
                   saison: number;
+                  /**
+                   * Format: uuid
+                   * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                   */
+                  saison_id: string;
                   /** @description Le numéro de l’épisode dans sa saison */
                   numero: number;
                   titre: string | null;
@@ -12984,6 +13029,11 @@ export interface paths {
                 /** Format: uuid */
                 id: string;
                 saison: number;
+                /**
+                 * Format: uuid
+                 * @description L’identifiant de la saison de l’épisode
+                 */
+                saison_id: string;
                 numero: number;
                 titre: string | null;
               };

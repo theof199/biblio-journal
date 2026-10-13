@@ -53863,6 +53863,12 @@
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
                               },
+                              "saison_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "L’identifiant de la saison de l’épisode"
+                              },
                               "numero": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
@@ -53882,6 +53888,7 @@
                             "required": [
                               "id",
                               "saison",
+                              "saison_id",
                               "numero",
                               "titre"
                             ],
@@ -54030,6 +54037,12 @@
                                     "maximum": 9007199254740991,
                                     "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
                                   },
+                                  "saison_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`"
+                                  },
                                   "numero": {
                                     "type": "integer",
                                     "minimum": -9007199254740991,
@@ -54076,6 +54089,7 @@
                                 "required": [
                                   "id",
                                   "saison",
+                                  "saison_id",
                                   "numero",
                                   "titre",
                                   "runtime_min",
@@ -54106,6 +54120,12 @@
                                     "maximum": 9007199254740991,
                                     "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
                                   },
+                                  "saison_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`"
+                                  },
                                   "numero": {
                                     "type": "integer",
                                     "minimum": -9007199254740991,
@@ -54152,6 +54172,7 @@
                                 "required": [
                                   "id",
                                   "saison",
+                                  "saison_id",
                                   "numero",
                                   "titre",
                                   "runtime_min",
@@ -54239,6 +54260,7 @@
                           "episode": {
                             "id": "aaaaaaaa-0000-4000-8000-000000000015",
                             "saison": 2,
+                            "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                             "numero": 5,
                             "titre": "Perdus et trouvés"
                           },
@@ -54264,6 +54286,7 @@
                           "prochain": {
                             "id": "aaaaaaaa-0000-4000-8000-000000000015",
                             "saison": 2,
+                            "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                             "numero": 5,
                             "titre": "Perdus et trouvés",
                             "runtime_min": 53,
@@ -54272,6 +54295,7 @@
                           "ensuite": {
                             "id": "aaaaaaaa-0000-4000-8000-000000000016",
                             "saison": 2,
+                            "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                             "numero": 6,
                             "titre": "Un cycle sans fin",
                             "runtime_min": 56,
@@ -54529,6 +54553,12 @@
                                   "maximum": 9007199254740991,
                                   "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
                                 },
+                                "saison_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`"
+                                },
                                 "numero": {
                                   "type": "integer",
                                   "minimum": -9007199254740991,
@@ -54575,6 +54605,7 @@
                               "required": [
                                 "id",
                                 "saison",
+                                "saison_id",
                                 "numero",
                                 "titre",
                                 "runtime_min",
@@ -54605,6 +54636,12 @@
                                   "maximum": 9007199254740991,
                                   "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
                                 },
+                                "saison_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`"
+                                },
                                 "numero": {
                                   "type": "integer",
                                   "minimum": -9007199254740991,
@@ -54651,6 +54688,7 @@
                               "required": [
                                 "id",
                                 "saison",
+                                "saison_id",
                                 "numero",
                                 "titre",
                                 "runtime_min",
@@ -54739,6 +54777,7 @@
                         "prochain": {
                           "id": "aaaaaaaa-0000-4000-8000-000000000017",
                           "saison": 2,
+                          "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                           "numero": 7,
                           "titre": "Le diable blanc",
                           "runtime_min": 57,
@@ -54747,6 +54786,7 @@
                         "ensuite": {
                           "id": "aaaaaaaa-0000-4000-8000-000000000018",
                           "saison": 2,
+                          "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                           "numero": 8,
                           "titre": "Fins et débuts",
                           "runtime_min": 60,
@@ -54978,6 +55018,12 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "saison_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "L’identifiant de la saison de l’épisode"
+                        },
                         "numero": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -54997,6 +55043,7 @@
                       "required": [
                         "id",
                         "saison",
+                        "saison_id",
                         "numero",
                         "titre"
                       ],
@@ -55078,6 +55125,7 @@
                       "episode": {
                         "id": "aaaaaaaa-0000-4000-8000-000000000014",
                         "saison": 2,
+                        "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                         "numero": 4,
                         "titre": "Les voyageurs"
                       },
@@ -55301,6 +55349,12 @@
                               "minimum": -9007199254740991,
                               "maximum": 9007199254740991
                             },
+                            "saison_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "description": "L’identifiant de la saison de l’épisode"
+                            },
                             "numero": {
                               "type": "integer",
                               "minimum": -9007199254740991,
@@ -55320,6 +55374,7 @@
                           "required": [
                             "id",
                             "saison",
+                            "saison_id",
                             "numero",
                             "titre"
                           ],
@@ -55489,6 +55544,12 @@
                                   "maximum": 9007199254740991,
                                   "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
                                 },
+                                "saison_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`"
+                                },
                                 "numero": {
                                   "type": "integer",
                                   "minimum": -9007199254740991,
@@ -55535,6 +55596,7 @@
                               "required": [
                                 "id",
                                 "saison",
+                                "saison_id",
                                 "numero",
                                 "titre",
                                 "runtime_min",
@@ -55565,6 +55627,12 @@
                                   "maximum": 9007199254740991,
                                   "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
                                 },
+                                "saison_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`"
+                                },
                                 "numero": {
                                   "type": "integer",
                                   "minimum": -9007199254740991,
@@ -55611,6 +55679,7 @@
                               "required": [
                                 "id",
                                 "saison",
+                                "saison_id",
                                 "numero",
                                 "titre",
                                 "runtime_min",
@@ -55703,6 +55772,7 @@
                         "episode": {
                           "id": "aaaaaaaa-0000-4000-8000-000000000015",
                           "saison": 2,
+                          "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                           "numero": 5,
                           "titre": "Perdus et trouvés"
                         },
@@ -55728,6 +55798,7 @@
                         "prochain": {
                           "id": "aaaaaaaa-0000-4000-8000-000000000016",
                           "saison": 2,
+                          "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                           "numero": 6,
                           "titre": "Un cycle sans fin",
                           "runtime_min": 56,
@@ -55736,6 +55807,7 @@
                         "ensuite": {
                           "id": "aaaaaaaa-0000-4000-8000-000000000017",
                           "saison": 2,
+                          "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                           "numero": 7,
                           "titre": "Le diable blanc",
                           "runtime_min": 57,
@@ -55958,6 +56030,12 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "saison_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "L’identifiant de la saison de l’épisode"
+                        },
                         "numero": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -55977,6 +56055,7 @@
                       "required": [
                         "id",
                         "saison",
+                        "saison_id",
                         "numero",
                         "titre"
                       ],
@@ -56058,6 +56137,7 @@
                       "episode": {
                         "id": "aaaaaaaa-0000-4000-8000-000000000015",
                         "saison": 2,
+                        "saison_id": "bbbbbbbb-0000-4000-8000-000000000002",
                         "numero": 5,
                         "titre": "Perdus et trouvés"
                       },
