@@ -151,9 +151,12 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   requête de plus au montage passe par le test qui les compte (`Feuilleton.test.tsx`). Les écritures
   sont dans `telecommande/vivante.ts`, les appels dans `src/api/feuilleton.ts`.
 - **Une mutation optimiste suit trois temps**, et « Vu » en est le modèle (`vivante.ts`) : `onMutate`
-  fait `cancelQueries` sur la clé, photographie le cache, écrit d'avance et rend la photo en contexte ;
-  `onError` repose la photo et dit l'échec (le message d'`ApiError`, tel quel) ; `onSettled` relit la
-  clé, réussite ou non, sauf si une autre écriture de la même file attend (`isMutating`), qui relira.
+  fait `cancelQueries` sur la clé et écrit d'avance ; `onError` **défait la seule carte en échec** (la
+  carte d'avant de cette série, portée par le geste) et dit l'échec (le message d'`ApiError`, tel quel) ;
+  `onSettled` relit la clé, réussite ou non, sauf si une autre écriture de la même file attend
+  (`isMutating`), qui relira. **Jamais de photo du cache reposée** : deux écritures se suivent dans la
+  file, et la photo de la seconde porte l'avance de la première. Un « Annuler » raté ne défait rien : la
+  relecture seule. Les fiches à périmer attendent aussi la fin de la file (`perimerALaFin`).
   Ces rappels sont ceux de `useMutation`, pas de `mutate` : ils survivent au démontage. Des écritures
   qui touchent la même clé partagent une file (`scope`) : elles partent une à une. Une écriture dont la
   réponse porte l'état à jour (une portée, une confirmation) n'est pas optimiste : elle pose sa réponse
@@ -162,8 +165,9 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   carte** (`verrous`, l'identifiant de la série ou de l'invitation). `useTelecommandeVivante` n'est appelé
   qu'une fois, par `Panneau.tsx`, et sert le petit écran, la liste et le « vu à deux » : une vue de plus
   y prend ses écritures, elle n'en refait pas. La fiche a les siennes (`telecommande/fiche.ts`), **dans la
-  même file** (`FILE`, `ECRITURE`, exportées de `vivante.ts`) ; son retour arrière défait la seule case
-  en échec au lieu de reposer une photo, parce que plusieurs cases peuvent attendre leur tour.
+  même file** (`FILE`, `ECRITURE`, exportées de `vivante.ts`) ; son retour arrière défait de même la
+  seule case en échec, parce que plusieurs cases peuvent attendre leur tour. Un verrou pris se rend
+  dans `onSettled` : chaque verrou a son test qui refait le geste après la fin du premier.
 - **La fiche et la télécommande se tiennent à jour, dans les deux sens.** Toute écriture de
   `vivante.ts` périme `cles.ficheDeSerie(id)`, préfixe de tout ce que la fiche lit (ses saisons dépliées
   sont dessous) ; toute écriture de `fiche.ts` relit la télécommande, ou y pose la carte que sa réponse
@@ -175,10 +179,15 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
 - **Fermer quitte toutes les entrées du panneau** (`adresse.ts`) : une vue de plus se pousse par
   `allerA`, ou prend la place de la vue ouverte par `remplacer` ; aucune ne navigue elle-même.
 - **Un avis part avec sa vue** (`vivante.ts`), sauf celui que le « vu à deux » dit en rendant la main.
+- **Le bouton rond ne masque jamais le contenu d'un espace** : la page du Feuilleton réserve en bas
+  `--telecommande-reserve` (`Feuilleton.module.css`). Un espace n'a rien à prévoir.
+- **Le message du « Vu » porte le focus et s'annonce** (`MessageDuVu.tsx`) : « Annuler » à l'apparition,
+  « Vu » au départ, jamais contre l'utilisateur ; la région vivante est montée vide, puis remplie.
 - **Une liste ne bouge pas sous le doigt.** Une écriture optimiste qui réordonne (un « Vu » fait de la
   série la plus récente, et la sort de « En pause ») ne déplace pas la carte qu'on vient de toucher :
   `VueListe.tsx` fige l'ordre montré tant qu'un message tient une carte, et ne le rend aux données qu'à
-  la fin du geste en cours. Deux tests le gardent (`Liste.test.tsx`).
+  la fin du geste en cours ; un avis sans carte qui chasse ce message rend l'ordre à son départ
+  (`Liste.test.tsx`).
 - **Les membres du « vu à deux » se lisent à l'ouverture de sa vue** (`useLesMembres`), pas au montage du
   Feuilleton ni à l'ouverture du panneau (`ADeux.test.tsx` compte les requêtes). Le dernier membre choisi
   est la seule chose que la télécommande garde sur l'appareil (`telecommande/memoire.ts`).

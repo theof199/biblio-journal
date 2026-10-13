@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
 import { cocherLEpisode, cocherUnePortee, confirmerLeVuADeux, inviterAVoirADeux, refuserLeVuADeux, type CarteDeSerie, type InvitationAConfirmer, type Membre, type Telecommande } from '../../api/feuilleton'
@@ -15,12 +15,17 @@ import type { Vue } from './vues'
  * écritures, les mêmes pour les trois vues (un seul appel, dans `Panneau.tsx`). Chargé avec le panneau.
  *
  * **La règle d'une mutation optimiste** (la première du dépôt ; `CLAUDE.md`, « Le Feuilleton ») :
- * 1. `onMutate` : `cancelQueries` sur la clé (une lecture en vol n'écrase pas ce qu'on va poser), la
- *    photo du cache, puis l'écriture d'avance ; la photo est rendue en contexte ;
- * 2. `onError` : la photo est reposée telle quelle, et l'échec se dit (le message d'`ApiError`) ;
+ * 1. `onMutate` : `cancelQueries` sur la clé (une lecture en vol n'écrase pas ce qu'on va poser), puis
+ *    l'écriture d'avance ;
+ * 2. `onError` : **la seule carte en échec est défaite** (la carte d'avant de cette série, que le geste
+ *    porte, est reposée), et l'échec se dit (le message d'`ApiError`). Jamais une photo du cache : une
+ *    autre écriture de la file a pu avancer une autre carte depuis, et la photo d'une écriture prise
+ *    pendant qu'une autre était d'avance repose cette avance après son échec. Un « Annuler » raté ne
+ *    défait rien : la relecture seule dit où en est la série ;
  * 3. `onSettled` : la clé est relue, réussite ou non : le serveur a le dernier mot. Quand une autre
  *    écriture de la même file attend, c'est elle qui relira (sinon la relecture rendrait un état que
- *    l'écriture suivante n'a pas encore changé).
+ *    l'écriture suivante n'a pas encore changé). Les fiches à périmer attendent de même la fin de la
+ *    file (`perimerALaFin`) : relue plus tôt, une fiche décocherait un instant une case qui attend.
  * Les écritures de la télécommande partagent une file (`scope`) : elles partent une à une, dans l'ordre
  * des gestes ; « Annuler » touché avant la réponse du « Vu » part après elle. Rien de cela ne tient au
  * composant : ces rappels sont ceux de `useMutation`, qui survivent à la fermeture du panneau.
@@ -29,6 +34,25 @@ import type { Vue } from './vues'
  */
 export const ECRITURE = [...cles.telecommande, 'ecriture'] as const
 export const FILE = { id: 'feuilleton-telecommande' }
+
+/** Les fiches que des écritures de la file ont périmées, par cache : elles se relisent à la fin de la file. */
+const A_PERIMER = new WeakMap<QueryClient, Set<string>>()
+
+/**
+ * Une fiche déjà ouverte reflète ce qu'on vient d'écrire : la fiche de la série et ses saisons dépliées
+ * sont périmées (relues si elles sont à l'écran, à leur retour sinon), **quand plus aucune écriture de la
+ * file n'attend**. S'appelle dans `onSettled` (l'écriture qui finit compte encore pour une) ; `serieId`
+ * absent : rien de plus à périmer, seulement la fin de la file à constater. Rend la fin des relectures.
+ */
+export async function perimerALaFin(client: QueryClient, serieId?: string): Promise<void> {
+  const series = A_PERIMER.get(client) ?? new Set<string>()
+  A_PERIMER.set(client, series)
+  if (serieId) series.add(serieId)
+  if (client.isMutating({ mutationKey: ECRITURE }) > 1) return
+  const aRelire = [...series]
+  series.clear()
+  await Promise.all(aRelire.map((id) => client.invalidateQueries({ queryKey: cles.ficheDeSerie(id) })))
+}
 
 const SAISON_INTROUVABLE = 'Cette saison est introuvable. Réessaie depuis la fiche.'
 export const messageDe = (erreur: unknown) => (erreur instanceof Error ? erreur.message : 'Une erreur inattendue est survenue. Réessaie.')
@@ -82,6 +106,8 @@ export interface TelecommandeVivante {
 /**
  * `vue` : la vue que dit l'adresse. Une télécommande **réglée sur une série** (`serie-<identifiant>`, la
  * touche « ⋯ » de la liste) montre cette série, en pause ou non, avant toute invitation : on l'a choisie.
+ * **Réglée sur une série que la télécommande ne porte pas** (une adresse d'ailleurs, une série finie), elle
+ * se comporte comme sans réglage : l'invitation d'abord, sinon la série regardée en dernier.
  */
 export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
   const client = useQueryClient()
@@ -118,8 +144,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
   const dire = (texte: string, alerte = false, autres: Pick<Avis, 'sujet' | 'annuler'> = {}) => setAvis({ cle: ++numero.current, texte, alerte, ...autres })
   const ecrire = (maj: (telecommande: Telecommande) => Telecommande) => client.setQueryData<Telecommande>(cles.telecommande, (telecommande) => (telecommande ? maj(telecommande) : telecommande))
   const relire = () => client.invalidateQueries({ queryKey: cles.telecommande })
-  /** Une fiche déjà ouverte reflète ce qu'on vient d'écrire : la fiche de la série et ses saisons dépliées sont périmées (relues si elles sont à l'écran, à leur retour sinon). */
-  const perimerLaFiche = (serieId: string) => void client.invalidateQueries({ queryKey: cles.ficheDeSerie(serieId) })
+  const perimerLaFiche = (serieId: string) => void perimerALaFin(client, serieId)
   /** Poser ce qu'une réponse rend : une lecture en vol, partie avant l'écriture, ne doit pas repasser dessus. */
   const poser = async (maj: (telecommande: Telecommande) => Telecommande) => {
     await client.cancelQueries({ queryKey: cles.telecommande })
@@ -132,12 +157,11 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     mutationFn: ({ episodeId, vu }: Coche) => cocherLEpisode(episodeId, vu),
     onMutate: async ({ carte, vu }) => {
       await client.cancelQueries({ queryKey: cles.telecommande })
-      const avant = client.getQueryData<Telecommande>(cles.telecommande)
       ecrire((telecommande) => (vu ? avancer(telecommande, carte.id, new Date()) : poserLaCarte(telecommande, carte)))
-      return { avant }
     },
-    onError: (erreur, { carte }, contexte) => {
-      if (contexte?.avant) client.setQueryData(cles.telecommande, contexte.avant)
+    onError: (erreur, { carte, vu }) => {
+      // La seule carte en échec, jamais une photo du cache. Un « Annuler » raté : la relecture seule.
+      if (vu) ecrire((telecommande) => poserLaCarte(telecommande, carte))
       dire(messageDe(erreur), true, { sujet: carte.id })
     },
     onSettled: async (_reponse, _erreur, { carte, vu }) => {
@@ -153,7 +177,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
   /**
    * Le « vu à deux » : la coche, **puis** l'invitation, en une seule écriture de la file, pour qu'un
    * « Annuler » touché entre-temps parte après les deux (décocher retire l'invitation, côté API). La
-   * carte avance d'avance, comme pour « Vu ». La coche échoue : rien n'est proposé, la photo est reposée.
+   * carte avance d'avance, comme pour « Vu ». La coche échoue : rien n'est proposé, la carte d'avant est reposée.
    * La coche passe et l'invitation échoue : l'épisode reste coché, la fonction rend l'échec au lieu de
    * le lever (rien n'est à défaire), et un avis le dit.
    */
@@ -171,16 +195,14 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     },
     onMutate: async ({ carte }) => {
       await client.cancelQueries({ queryKey: cles.telecommande })
-      const avant = client.getQueryData<Telecommande>(cles.telecommande)
       ecrire((telecommande) => avancer(telecommande, carte.id, new Date()))
-      return { avant }
     },
     onSuccess: (refus, { carte, episodeId, pour }) => {
       // « Annuler » est déjà passé : l'épisode va être décoché, dire « noté, mais… » serait faux.
       if (refus && !annules.current.has(episodeId)) dire(dejaRecu(refus) ? `Épisode noté, mais ${pour.pseudo} l’a déjà reçu` : messageDe(refus), true, { sujet: carte.id })
     },
-    onError: (erreur, { carte }, contexte) => {
-      if (contexte?.avant) client.setQueryData(cles.telecommande, contexte.avant)
+    onError: (erreur, { carte }) => {
+      ecrire((telecommande) => poserLaCarte(telecommande, carte))
       dire(messageDe(erreur), true, { sujet: carte.id })
     },
     onSettled: async (_reponse, _erreur, { carte, episodeId }) => {
@@ -235,6 +257,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
       await relire()
     },
     onSettled: (_reponse, _erreur, { id }) => {
+      void perimerALaFin(client)
       verrous.current.delete(id)
     },
   })
@@ -255,11 +278,12 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
   const horsParcours = choix ? telecommande?.series.find((serie) => serie.id === choix.id && serie.en_pause) : undefined
   const carte = horsParcours ?? enCours[rang]
   const invitation = telecommande?.a_confirmer[0]
+  const regleeTrouvee = reglee !== null && telecommande?.series.some((serie) => serie.id === reglee)
   const panne = !telecommande && lecture.isError && !lecture.isFetching ? messageDe(lecture.error) : null
 
   let ecran: EtatDeLEcran
   if (!telecommande) ecran = panne === null ? { etat: 'attente' } : { etat: 'panne', message: panne }
-  else if (invitation && !reglee) ecran = { etat: 'invitation', sur: enCours.length, invitation: invitationALEcran(invitation, maintenant) }
+  else if (invitation && !regleeTrouvee) ecran = { etat: 'invitation', sur: enCours.length, invitation: invitationALEcran(invitation, maintenant) }
   else if (carte) ecran = { etat: 'serie', serie: aLEcran(carte, maintenant), rang: rang + 1, sur: enCours.length }
   else ecran = { etat: 'vide' }
 

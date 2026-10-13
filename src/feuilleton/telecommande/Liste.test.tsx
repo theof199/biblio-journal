@@ -85,7 +85,7 @@ function monter(routes: Routes, vue = 'en-cours') {
   return { requetes, corps, ecritures: () => requetes.filter((requete) => !requete.startsWith('GET ')) }
 }
 
-const dialogue = () => screen.getByRole('dialog', { name: 'Télécommande' })
+const dialogue = () => screen.getByRole('dialog')
 const section = (nom: 'En cours' | 'En pause') => screen.findByRole('list', { name: nom })
 /** Les titres des cartes d'une section, dans l'ordre montré. */
 const titres = (nom: 'En cours' | 'En pause') => within(screen.getByRole('list', { name: nom })).getAllByRole('heading', { level: 3 }).map((titre) => titre.textContent)
@@ -350,6 +350,179 @@ describe('« Vu » sur une carte de la liste', () => {
     expect(titres('En cours')).toEqual(['Dark', 'Andor', 'Slow Horses', 'The Bear'])
   })
 
+  // Mutations, dans `vivante.ts` : le retour arrière de `coche` rendu à une photo du cache prise dans
+  // `onMutate` (l'échec de Dark déferait Andor en vol ; celui d'Andor reposerait Dark avancée).
+  it('deux « Vu » à la file, tous deux en échec, relecture en échec aussi : chaque échec ne défait que SA carte', async () => {
+    const dark = retenue()
+    const andor = retenue()
+    let lectures = 0
+    monter({ [LIRE]: () => (++lectures === 1 ? json(SANS_INVITATION) : refus(500, 'Le service est indisponible. Réessaie plus tard.')), [vuDe(DARK)]: () => dark.promesse, [vuDe(ANDOR)]: () => andor.promesse })
+    await section('En cours')
+    fireEvent.click(within(carte('Dark')).getByRole('button', { name: 'Vu : Dark, S2 E5' }))
+    await vi.waitFor(() => expect(carte('Dark')).toHaveTextContent('S2 E6'))
+    fireEvent.click(within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' }))
+    await vi.waitFor(() => expect(carte('Andor')).toHaveTextContent('S1 E4'))
+
+    // L'échec du premier pendant que le second attend : Andor, en vol, reste avancée.
+    dark.rendre(refus(500, 'Dark a échoué.'))
+    expect(await within(carte('Dark')).findByRole('alert')).toHaveTextContent('Dark a échoué.')
+    expect(carte('Dark')).toHaveTextContent('S2 E5')
+    expect(carte('Andor')).toHaveTextContent('S1 E4')
+
+    // L'échec du second : Dark ne repart pas en avant.
+    andor.rendre(refus(500, 'Andor a échoué.'))
+    expect(await within(carte('Andor')).findByRole('alert')).toHaveTextContent('Andor a échoué.')
+    await vi.waitFor(() => expect(lectures).toBeGreaterThan(1))
+    await unInstant()
+    expect(carte('Andor')).toHaveTextContent('S1 E3')
+    expect(carte('Dark')).toHaveTextContent('S2 E5')
+    expect(within(carte('Dark')).getByRole('button', { name: 'Vu : Dark, S2 E5' })).toBeEnabled()
+  })
+
+  // Mutations, dans `vivante.ts` : le retour arrière de `coche` rendu à une photo (celle d'« Annuler », prise
+  // carte avancée, la reposerait avancée) ; un « Annuler » raté qui ré-avance la carte.
+  it('« Vu » puis « Annuler » avant la réponse, tous deux en échec, relecture en échec aussi : la carte reste à l’épisode que rien n’a coché', async () => {
+    const coche = retenue()
+    const decoche = retenue()
+    let ecrits = 0
+    let lectures = 0
+    const { ecritures } = monter({ [LIRE]: () => (++lectures === 1 ? json(SANS_INVITATION) : refus(500, 'Le service est indisponible. Réessaie plus tard.')), [vuDe(ANDOR)]: () => (++ecrits === 1 ? coche.promesse : decoche.promesse) })
+    await section('En cours')
+    fireEvent.click(within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' }))
+    await vi.waitFor(() => expect(carte('Andor')).toHaveTextContent('S1 E4'))
+    fireEvent.click(within(carte('Andor')).getByRole('button', { name: 'Annuler' }))
+    await vi.waitFor(() => expect(carte('Andor')).toHaveTextContent('S1 E3'))
+
+    coche.rendre(refus(500, 'La coche a échoué.'))
+    await vi.waitFor(() => expect(ecritures()).toHaveLength(2))
+    expect(carte('Andor')).toHaveTextContent('S1 E3')
+    decoche.rendre(refus(500, 'La décoche a échoué.'))
+    await vi.waitFor(() => expect(within(carte('Andor')).getByRole('alert')).toHaveTextContent('La décoche a échoué.'))
+    await vi.waitFor(() => expect(lectures).toBeGreaterThan(1))
+    await unInstant()
+
+    expect(carte('Andor')).toHaveTextContent('S1 E3')
+    expect(titres('En cours')).toEqual(['Dark', 'Andor', 'Slow Horses', 'The Bear'])
+  })
+
+  // Mutation, dans `vivante.ts` : `cancelQueries` ôté de `coche.onMutate` (la relecture en vol, partie avant
+  // le geste, reposerait la carte d'avant sur l'avance).
+  it('une relecture en vol au moment du « Vu » ne repasse pas sur la carte avancée', async () => {
+    const relecture = retenue()
+    const andor = retenue()
+    let lectures = 0
+    const { ecritures } = monter({ [LIRE]: () => (++lectures === 1 ? json(SANS_INVITATION) : relecture.promesse), [vuDe(DARK)]: () => json(COCHE), [vuDe(ANDOR)]: () => andor.promesse })
+    await section('En cours')
+    fireEvent.click(within(carte('Dark')).getByRole('button', { name: 'Vu : Dark, S2 E5' }))
+    await vi.waitFor(() => expect(lectures).toBe(2))
+
+    fireEvent.click(within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' }))
+    await vi.waitFor(() => expect(carte('Andor')).toHaveTextContent('S1 E4'))
+    // La relecture d'avant le geste répond enfin, avec Andor à son épisode d'avant.
+    relecture.rendre(json(SANS_INVITATION))
+    await vi.waitFor(() => expect(ecritures()).toEqual([vuDe(DARK), vuDe(ANDOR)]))
+    await unInstant()
+
+    expect(carte('Andor')).toHaveTextContent('S1 E4')
+  })
+
+  // Mutation, dans `vivante.ts` : la garde `isMutating(…) === 1` ôtée d'`onSettled` de `coche` (la relecture
+  // partirait entre les deux écritures, et rendrait un état que la seconde n'a pas encore changé).
+  it('deux « Vu » à la file : une seule relecture, après la dernière écriture', async () => {
+    const dark = retenue()
+    const andor = retenue()
+    let lectures = 0
+    const { ecritures } = monter({ [LIRE]: () => json(++lectures === 1 ? SANS_INVITATION : APRES), [vuDe(DARK)]: () => dark.promesse, [vuDe(ANDOR)]: () => andor.promesse })
+    await section('En cours')
+    fireEvent.click(within(carte('Dark')).getByRole('button', { name: 'Vu : Dark, S2 E5' }))
+    fireEvent.click(within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' }))
+    await vi.waitFor(() => expect(ecritures()).toEqual([vuDe(DARK)]))
+
+    dark.rendre(json(COCHE))
+    await vi.waitFor(() => expect(ecritures()).toEqual([vuDe(DARK), vuDe(ANDOR)]))
+    await unInstant()
+    expect(lectures).toBe(1)
+
+    andor.rendre(json(COCHE))
+    await vi.waitFor(() => expect(lectures).toBe(2))
+  })
+
+  // Mutation, dans `vivante.ts` : `verrous.current.delete(carte.id)` ôté d'`onSettled` de `coche` (la carte
+  // ne se cocherait plus jamais, jusqu'à la fermeture du panneau).
+  it('le verrou se rend à la fin de l’écriture : la même carte se coche de nouveau', async () => {
+    let lectures = 0
+    const suivant = `PUT /api/episodes/${ANDOR.ensuite!.id}/watched`
+    const { ecritures } = monter({ [LIRE]: () => json(++lectures === 1 ? SANS_INVITATION : APRES), [vuDe(ANDOR)]: () => json(COCHE), [suivant]: () => json(COCHE) })
+    await section('En cours')
+    fireEvent.click(within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' }))
+    await vi.waitFor(() => expect(lectures).toBe(2))
+    toucherAilleurs()
+
+    fireEvent.click(await within(carte('Andor')).findByRole('button', { name: 'Vu : Andor, S1 E4' }))
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([vuDe(ANDOR), suivant]))
+  })
+
+  // Mutation, dans `VueListe.tsx` : `rendreLOrdre()` ôté du départ de l'avis seul (l'ordre resterait figé
+  // jusqu'à la fermeture de la liste).
+  it('un avis sans carte (« Invitation refusée ») chasse le message d’une carte : à son départ, l’ordre suit les données', async () => {
+    let lectures = 0
+    const apres: Telecommande = { a_confirmer: [INVITATION], series: [ANDOR_VU, DARK, LEGENDES, SLOW, SEVERANCE, BEAR] }
+    monter({ [LIRE]: () => json(++lectures === 1 ? TOUT : apres), [vuDe(ANDOR)]: () => json(COCHE), [REFUSER]: () => json(REFUS) })
+    await section('En cours')
+    fireEvent.click(within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' }))
+    await vi.waitFor(() => expect(lectures).toBe(2))
+    expect(within(carte('Andor')).getByRole('status')).toHaveTextContent('Épisode noté')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refuser' }))
+    const avis = await screen.findByText('Invitation refusée', { selector: '[aria-hidden]' })
+    expect(avis.closest('li')).toBeNull()
+    expect(within(carte('Andor')).queryByRole('status')).toBeNull()
+    expect(titres('En cours')).toEqual(['Dark', 'Andor', 'Slow Horses', 'The Bear'])
+
+    toucherAilleurs()
+    await vi.waitFor(() => expect(titres('En cours')).toEqual(['Andor', 'Dark', 'Slow Horses', 'The Bear']))
+  })
+
+  // Mutations, dans `VueListe.tsx` : `rendreLOrdre()` ôté du départ de l'avis seul ; `deplie ?` ôté de
+  // `sujets` (l'avis d'une carte repliée se poserait sur une carte qu'on ne voit pas).
+  it('l’échec d’une carte de « En pause » repliée se dit en tête de liste : à son départ, l’ordre suit les données', async () => {
+    const reponse = retenue()
+    let lectures = 0
+    monter({ [LIRE]: () => json(++lectures === 1 ? SANS_INVITATION : APRES), [vuDe(LEGENDES)]: () => reponse.promesse })
+    await section('En cours')
+    fireEvent.click(repli())
+    fireEvent.click(within(carte('Le Bureau des légendes')).getByRole('button', { name: /^Vu : Le Bureau des légendes/ }))
+    await vi.waitFor(() => expect(within(carte('Le Bureau des légendes')).getByRole('status')).toHaveTextContent('Épisode noté'))
+    fireEvent.click(repli())
+
+    reponse.rendre(refus(500, 'Le service est indisponible. Réessaie plus tard.'))
+    const alerte = await screen.findByRole('alert')
+    expect(alerte.closest('li')).toBeNull()
+    await vi.waitFor(() => expect(lectures).toBe(2))
+    await unInstant()
+    expect(titres('En cours')).toEqual(['Dark', 'Andor', 'Slow Horses', 'The Bear'])
+
+    toucherAilleurs()
+    await vi.waitFor(() => expect(titres('En cours')).toEqual(['Andor', 'Dark', 'Slow Horses', 'The Bear']))
+  })
+
+  // Mutations, dans `MessageDuVu.tsx` : le `focus()` de l'apparition ôté (le focus tomberait sur `body`,
+  // « Annuler » hors d'atteinte au clavier) ; le retour du focus ôté du départ.
+  it('le focus suit le message d’une carte : sur « Annuler » à son apparition, rendu à « Vu » de la même carte à son départ', async () => {
+    monter({ [LIRE]: () => json(SANS_INVITATION), [vuDe(ANDOR)]: () => json(COCHE) })
+    await section('En cours')
+    const vu = within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' })
+    vu.focus()
+
+    fireEvent.click(vu)
+    const annuler = await within(carte('Andor')).findByRole('button', { name: 'Annuler' })
+    await vi.waitFor(() => expect(document.activeElement).toBe(annuler))
+
+    fireEvent.click(annuler)
+    await vi.waitFor(() => expect(document.activeElement).toBe(within(carte('Andor')).getByRole('button', { name: 'Vu : Andor, S1 E3' })))
+  })
+
   // Mutations, dans `vivante.ts` : `prendre` qui rend toujours `true` (le second toucher d'Andor aurait son
   // message) ; un verrou commun (`prendre('tout')` : Dark serait refusée tant qu'Andor attend).
   it('le verrou est par carte : un second « Vu » de la même carte n’envoie rien avant la réponse, une autre carte se coche', async () => {
@@ -483,6 +656,27 @@ describe('« ⋯ » règle la télécommande sur la série', () => {
     await vi.waitFor(() => expect(ecran()).toHaveTextContent('Slow Horses'))
     expect(ecran()).toHaveTextContent('3 sur 4')
     expect(screen.queryByRole('button', { name: /^Retour/ })).toBeNull()
+  })
+})
+
+describe('réglée sur une série que la télécommande ne porte pas', () => {
+  const ABSENTE = 'serie-d0000000-0000-4000-8000-0000000000ff'
+
+  // Mutation, dans `vivante.ts` : `!regleeTrouvee` rendu à `!reglee` (l'invitation serait cachée derrière
+  // une série qu'on n'a pas choisie).
+  it('elle se comporte comme sans réglage : l’invitation qui attend passe d’abord', async () => {
+    monter({ [LIRE]: () => json(TOUT) }, ABSENTE)
+
+    await screen.findByText(/a vu/)
+    expect(ecran()).toHaveAttribute('data-etat', 'invitation')
+    expect(screen.getByRole('button', { name: 'Confirmer' })).toBeEnabled()
+  })
+
+  it('sans invitation : la série regardée en dernier', async () => {
+    monter({ [LIRE]: () => json(SANS_INVITATION) }, ABSENTE)
+
+    expect(await screen.findByRole('heading', { level: 3, name: 'Dark' })).toBeInTheDocument()
+    expect(ecran()).toHaveTextContent('1 sur 4')
   })
 })
 

@@ -47,7 +47,7 @@ function monter(chemin: string) {
 
 const adresse = () => screen.getByTestId('adresse').textContent
 const boutonRond = () => screen.findByRole('button', { name: 'Télécommande' })
-const dialogue = () => screen.findByRole('dialog', { name: 'Télécommande' })
+const dialogue = () => screen.findByRole('dialog')
 const pasDeDialogue = () => vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 const ouvrir = async () => {
   fireEvent.click(await boutonRond())
@@ -237,6 +237,45 @@ describe('la télécommande du Feuilleton', () => {
     const panneau = await dialogue()
     expect(panneau).toHaveAttribute('data-vue', vue)
     expect(screen.getByRole('heading', { level: 1, name: 'Travail' })).toBeInTheDocument()
+  })
+
+  // Mutation, dans `adresse.ts` : la garde `if (vue) return` ôtée d'`ouvrir` (deux entrées : « Fermer » ne
+  // quitterait que la seconde, le panneau resterait ouvert).
+  it('un second toucher du bouton rond n’empile rien : « Fermer » ferme', async () => {
+    monter('/feuilleton/maison')
+    const bouton = await boutonRond()
+    fireEvent.click(bouton)
+    const panneau = await dialogue()
+    fireEvent.click(bouton)
+
+    fireEvent.click(within(panneau).getByRole('button', { name: 'Fermer la télécommande' }))
+
+    await pasDeDialogue()
+    expect(adresse()).toBe('/feuilleton/maison')
+  })
+
+  // Mutations, dans `adresse.ts` : `state: { surPlace: true }` ôté du remplacement de `fermer` (sans vue
+  // poussée), ou de celui de l'effet qui ôte le paramètre (après une vue poussée) : la page remonterait.
+  it.each([
+    ['sans vue poussée', false],
+    ['après une vue poussée', true],
+  ])('fermer un panneau ouvert par son adresse (%s) laisse la page dessous où elle est', async (_cas, poussee) => {
+    monter('/feuilleton/maison?telecommande=telecommande')
+    const panneau = await dialogue()
+    const zone = document.querySelector('main')!
+    // La coque note la position à chaque défilement, sous l'entrée affichée.
+    zone.scrollTop = 300
+    fireEvent.scroll(zone)
+    if (poussee) {
+      fireEvent.click(within(panneau).getByRole('button', { name: /^En cours/ }))
+      await vi.waitFor(() => expect(adresse()).toBe('/feuilleton/maison?telecommande=en-cours'))
+    }
+
+    fireEvent.click(within(panneau).getByRole('button', { name: 'Fermer la télécommande' }))
+
+    await pasDeDialogue()
+    await vi.waitFor(() => expect(adresse()).toBe('/feuilleton/maison'))
+    expect(zone.scrollTop).toBe(300)
   })
 
   // Mutations, dans `adresse.ts` : `fermer` qui recule toujours (une adresse ouverte telle quelle n'a

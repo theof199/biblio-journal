@@ -33,6 +33,11 @@ export function useLaFiche(serieId: string) {
   return useQuery({ queryKey: cles.ficheDeSerie(serieId), queryFn: ({ signal }) => lireLaFiche(serieId, signal) })
 }
 
+/** Le titre de la série dont la fiche est ouverte, tel que le cache le sait : **aucune lecture** ici, c'est la vue qui lit. */
+export function useLeTitreDeLaFiche(serieId: string | null): string | null {
+  return useQuery({ queryKey: cles.ficheDeSerie(serieId ?? ''), queryFn: ({ signal }) => lireLaFiche(serieId ?? '', signal), enabled: false, select: (fiche) => fiche.title }).data ?? null
+}
+
 /** Les épisodes d'une saison, toutes pages lues, **au dépliage** (`depliee`). */
 export function useLesEpisodes(serieId: string, saisonId: string, depliee: boolean) {
   return useQuery({ queryKey: cles.episodesDeSaison(serieId, saisonId), queryFn: ({ signal }) => lireLesEpisodes(saisonId, signal), enabled: depliee })

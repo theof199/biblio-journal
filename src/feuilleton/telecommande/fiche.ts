@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { cocherLEpisode, cocherUnePortee, type EpisodeDeSaison, type FicheDeSerie, type Telecommande } from '../../api/feuilleton'
 import { poserLaCarte } from './donnees'
-import { ECRITURE, FILE, direLeLot, messageDe } from './vivante'
+import { ECRITURE, FILE, direLeLot, messageDe, perimerALaFin } from './vivante'
 
 /** Un message de la fiche, sur la saison dont il parle : un lot noté, ou son échec. */
 export interface AvisDeSaison {
@@ -58,7 +58,6 @@ export function useEcrituresDeLaFiche(serieId: string) {
     )
     client.setQueryData<FicheDeSerie>(cleDeLaFiche, (fiche) => (fiche ? compter(fiche, saisonId, vu ? 1 : -1) : fiche))
   }
-  const relire = () => Promise.all([client.invalidateQueries({ queryKey: cleDeLaFiche }), client.invalidateQueries({ queryKey: cles.telecommande })])
 
   const coche = useMutation({
     mutationKey: ECRITURE,
@@ -75,7 +74,10 @@ export function useEcrituresDeLaFiche(serieId: string) {
     },
     onSettled: async (_reponse, _erreur, { episodeId }) => {
       try {
-        if (client.isMutating({ mutationKey: ECRITURE }) === 1) await relire()
+        // À la fin de la file seulement : cette fiche (et celles que la télécommande a périmées entre-temps,
+        // `perimerALaFin`), et la télécommande, dont la carte ne vient pas dans la réponse.
+        const fin = client.isMutating({ mutationKey: ECRITURE }) === 1
+        await Promise.all([perimerALaFin(client, serieId), fin ? client.invalidateQueries({ queryKey: cles.telecommande }) : null])
       } finally {
         verrous.current.delete(episodeId)
       }
@@ -90,10 +92,11 @@ export function useEcrituresDeLaFiche(serieId: string) {
       await client.cancelQueries({ queryKey: cles.telecommande })
       client.setQueryData<Telecommande>(cles.telecommande, (telecommande) => (telecommande ? poserLaCarte(telecommande, reponse.serie) : telecommande))
       setAvis({ cle: ++numero.current, saisonId, texte: direLeLot(reponse.episode_ids.length), alerte: false })
-      await client.invalidateQueries({ queryKey: cleDeLaFiche })
+      await perimerALaFin(client, serieId)
     },
     onError: (erreur, { saisonId }) => setAvis({ cle: ++numero.current, saisonId, texte: messageDe(erreur), alerte: true }),
     onSettled: (_reponse, _erreur, { saisonId }) => {
+      void perimerALaFin(client)
       verrous.current.delete(saisonId)
     },
   })

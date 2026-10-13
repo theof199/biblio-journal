@@ -49,6 +49,13 @@
   --h-police-code: var(--police-fronton);
   --h-police-libelle: var(--police-fronton);
   --h-police-touche: var(--police-texte);
+  /* L'ambiance des libellés : gravés en capitales ; trois graisses ; le contour pointillé d'un message,
+     d'une note, d'un état vide. */
+  --h-casse-libelle: var(--telecommande-casse);
+  --h-graisse-legere: var(--graisse-normale);
+  --h-graisse-moyenne: var(--graisse-moyenne);
+  --h-graisse-forte: var(--graisse-forte);
+  --h-trait-de-note: var(--telecommande-trait-de-note);
 }
 
 /* Une variable se résout là où elle est déclarée : sur `.habillage`, `--identite` serait celle de la page. */

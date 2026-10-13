@@ -4,6 +4,7 @@ import type { Habillage } from '../habillages'
 import { useTelecommande } from './adresse'
 import { NOMS, PARENTES } from './Coquille'
 import { useDialogue } from './dialogue'
+import { useLeTitreDeLaFiche } from './donnees'
 import VueADeux from './VueADeux'
 import VueAjouter from './VueAjouter'
 import VueFiche from './VueFiche'
@@ -32,7 +33,10 @@ export default function Panneau({ habillage, chapitre, boutonRond, invitation }:
   const { vue, precedente, allerA, remplacer, revenir, fermer } = useTelecommande()
   const boite = useDialogue<HTMLElement>(fermer, boutonRond, vue ? ecrireLaVue(vue) : '')
   const vivante = useTelecommandeVivante(vue)
+  const titreDeLaFiche = useLeTitreDeLaFiche(vue?.nom === 'fiche' ? vue.serie : null)
   if (!vue) return null
+  // Le nom du dialogue suit la vue : « Télécommande », « En cours », « Ajouter une série », « Vu à deux », « Fiche de Dark ».
+  const nom = vue.nom === 'fiche' && titreDeLaFiche ? `${NOMS.fiche} de ${titreDeLaFiche}` : NOMS[vue.nom]
 
   // Réglée sur une série depuis la liste, la télécommande y ramène ; à son ouverture, elle n'a pas de retour.
   const retour = vue.nom === 'telecommande' ? (vue.serie && precedente?.nom === 'en-cours' ? precedente : null) : (precedente ?? PARENTES[vue.nom])
@@ -40,7 +44,7 @@ export default function Panneau({ habillage, chapitre, boutonRond, invitation }:
   return (
     <div className={`${styles.dialogue} ${habillage.classe}`} data-chapitre={chapitre}>
       <div className={styles.voile} data-piece="voile" onClick={fermer} />
-      <section ref={boite} role="dialog" aria-modal="true" aria-label="Télécommande" tabIndex={-1} className={styles.boitier} data-piece="boitier" data-vue={vue.nom}>
+      <section ref={boite} role="dialog" aria-modal="true" aria-label={nom} tabIndex={-1} className={styles.boitier} data-piece="boitier" data-vue={vue.nom}>
         <header className={styles.bandeau}>
           {retour ? (
             <button type="button" className={styles.touche} data-piece="touche" aria-label={`Retour : ${NOMS[retour.nom]}`} onClick={() => revenir(retour)}>

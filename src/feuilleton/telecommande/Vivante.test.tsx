@@ -430,6 +430,94 @@ describe('« Tout jusqu’ici » et « Toute la saison »', () => {
   })
 })
 
+describe('les verrous se rendent', () => {
+  // Mutation, dans `vivante.ts` : `verrous.current.delete(carte.id)` ôté d'`onSettled` du lot.
+  it('un lot en échec rend la carte : « Tout jusqu’ici » repart', async () => {
+    let essais = 0
+    const { ecritures } = monter({ [LIRE]: () => json(TROIS), [LOT]: () => (++essais === 1 ? refus(500, 'Le service est indisponible.') : json(PORTEE)) })
+    await enSerie('Dark')
+    fireEvent.click(touche('Tout jusqu’ici'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le service est indisponible.')
+    fireEvent.pointerDown(document.body)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Tout jusqu’ici' }))
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([LOT, LOT]))
+  })
+
+  // Mutation, dans `vivante.ts` : `verrous.current.delete(id)` ôté d'`onSettled` de la réponse à une invitation.
+  it('une confirmation en échec rend l’invitation : « Confirmer » repart', async () => {
+    let essais = 0
+    const { ecritures } = monter({ [LIRE]: () => json({ ...TROIS, a_confirmer: [INVITATION] }), [CONFIRMER]: () => (++essais === 1 ? refus(500, 'La confirmation a échoué.') : json(CONFIRMATION)) })
+    await screen.findByText(/a vu/)
+    fireEvent.click(touche('Confirmer'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('La confirmation a échoué.')
+    fireEvent.pointerDown(document.body)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([CONFIRMER, CONFIRMER]))
+  })
+})
+
+describe('le focus suit le message du « Vu »', () => {
+  const annuler = () => screen.findByRole('button', { name: 'Annuler' })
+
+  // Mutations, dans `MessageDuVu.tsx` : le `focus()` de l'apparition ôté ; le retour du focus ôté du départ.
+  it('sur « Annuler » à l’apparition du message, rendu à « Vu » à son départ', async () => {
+    monter({ [LIRE]: () => json(TROIS), [VU]: () => retenue().promesse })
+    await enSerie('Dark')
+    const vu = touche('Vu : Dark, S2 E5')
+    vu.focus()
+
+    fireEvent.click(vu)
+    await vi.waitFor(async () => expect(document.activeElement).toBe(await annuler()))
+
+    fireEvent.pointerDown(document.body)
+    await vi.waitFor(() => expect(document.activeElement).toBe(touche('Vu : Dark, S2 E6')))
+  })
+
+  // Mutation, dans `MessageDuVu.tsx` : `?? boite.current` ôté (l'échec, sans « Annuler », laisserait le
+  // focus sur `body`, et rien ne le rendrait à « Vu »).
+  it('l’échec qui remplace « Épisode noté » garde le focus dans la rangée, et le rend à « Vu » à son départ', async () => {
+    const reponse = retenue()
+    monter({ [LIRE]: () => json(TROIS), [VU]: () => reponse.promesse })
+    await enSerie('Dark')
+    const vu = touche('Vu : Dark, S2 E5')
+    vu.focus()
+    fireEvent.click(vu)
+    await vi.waitFor(async () => expect(document.activeElement).toBe(await annuler()))
+
+    reponse.rendre(refus(500, 'Le service est indisponible.'))
+    const alerte = await screen.findByRole('alert')
+    await vi.waitFor(() => expect(document.activeElement).toBe(alerte))
+
+    fireEvent.pointerDown(document.body)
+    await vi.waitFor(() => expect(document.activeElement).toBe(touche('Vu : Dark, S2 E5')))
+  })
+
+  // Mutations, dans `MessageDuVu.tsx` : `focusPerdu()` ôté de l'apparition (le focus serait pris à qui est
+  // ailleurs) ; `message.contains(document.activeElement)` ôté du départ (de même).
+  it('sans voler le focus : ni à l’apparition si le focus est ailleurs, ni au départ si l’on a quitté « Annuler »', async () => {
+    monter({ [LIRE]: () => json(TROIS), [VU]: () => retenue().promesse })
+    await enSerie('Dark')
+    const enCours = touche(/^En cours/)
+    enCours.focus()
+
+    fireEvent.click(touche('Vu : Dark, S2 E5'))
+    await annuler()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(document.activeElement).toBe(enCours)
+
+    ;(await annuler()).focus()
+    enCours.focus()
+    fireEvent.pointerDown(document.body)
+    await vi.waitFor(() => expect(screen.queryByRole('button', { name: 'Annuler' })).toBeNull())
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(document.activeElement).toBe(enCours)
+  })
+})
+
 describe('confirmer et refuser une invitation depuis l’écran', () => {
   const AVEC: Telecommande = { ...TROIS, a_confirmer: [INVITATION] }
   const point = () => document.querySelector('[data-piece="point"]')

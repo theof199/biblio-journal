@@ -127,7 +127,7 @@
   font-family: var(--h-police-libelle);
   font-size: var(--taille-m);
   letter-spacing: var(--telecommande-interlettre-marque);
-  text-transform: uppercase;
+  text-transform: var(--h-casse-libelle);
 }
 
 .piedModele {
@@ -144,16 +144,16 @@
   color: var(--h-boitier-texte-doux);
   font-family: var(--h-police-libelle);
   font-size: var(--taille-s);
-  font-weight: var(--graisse-normale);
+  font-weight: var(--h-graisse-legere);
   letter-spacing: var(--interlettre-capitales);
   line-height: var(--interligne-serre);
-  text-transform: uppercase;
+  text-transform: var(--h-casse-libelle);
   white-space: nowrap;
 }
 
 .libelle b {
   color: var(--h-boitier-texte);
-  font-weight: var(--graisse-normale);
+  font-weight: var(--h-graisse-legere);
 }
 
 .marque {
@@ -294,7 +294,7 @@
   color: var(--h-mono-texte);
   font-family: var(--h-police-titre);
   font-size: var(--taille-l);
-  font-weight: var(--graisse-forte);
+  font-weight: var(--h-graisse-forte);
   line-height: var(--interligne-serre);
 }
 
@@ -345,7 +345,7 @@
   box-shadow: var(--h-pied-touche);
   font-family: var(--h-police-touche);
   font-size: var(--taille-m);
-  font-weight: var(--graisse-forte);
+  font-weight: var(--h-graisse-forte);
   line-height: var(--interligne-titre);
   white-space: nowrap;
   cursor: pointer;
@@ -402,7 +402,7 @@
 .compte {
   font-family: var(--h-police-code);
   font-size: var(--taille-m);
-  font-weight: var(--graisse-normale);
+  font-weight: var(--h-graisse-legere);
   line-height: var(--interligne-serre);
 }
 
@@ -415,10 +415,10 @@
   min-width: 0;
   margin: 0;
   padding: 0 var(--espace-1) 0 var(--espace-4);
-  border: var(--h-trait) dashed var(--h-touche-contour);
+  border: var(--h-trait) var(--h-trait-de-note) var(--h-touche-contour);
   border-radius: var(--h-rayon-principale);
   font-size: var(--taille-s);
-  font-weight: var(--graisse-moyenne);
+  font-weight: var(--h-graisse-moyenne);
 }
 
 .texte {
@@ -494,7 +494,7 @@
   min-width: 0;
   margin: 0;
   padding: 0 var(--espace-2);
-  border: var(--h-trait) dashed var(--h-touche-contour);
+  border: var(--h-trait) var(--h-trait-de-note) var(--h-touche-contour);
   border-radius: var(--h-rayon-touche);
   color: var(--h-ecran-texte-doux);
   font-size: var(--taille-s);
@@ -651,7 +651,7 @@
   align-items: center;
   gap: var(--espace-2);
   padding: var(--espace-6) var(--espace-4);
-  border: var(--h-trait) dashed var(--h-ecran-contour);
+  border: var(--h-trait) var(--h-trait-de-note) var(--h-ecran-contour);
   border-radius: var(--h-rayon-ecran);
   text-align: center;
 }
@@ -667,14 +667,23 @@
   align-items: flex-end;
 }
 
-.afficheDeFiche {
-  width: var(--largeur-affiche-fiche);
+/* Le titre de la fiche se lit en entier, **sans couper un mot** : la colonne du texte ne descend pas sous
+   son mot le plus long (`min-content`), et c'est l'affiche qui cède la place, jusqu'à la largeur d'une
+   affiche de ligne. Seul un mot plus large que ce qui reste alors se coupe, plutôt que de se perdre. */
+.sujet.grand > .afficheDeFiche {
+  flex: 0 1 var(--largeur-affiche-fiche);
+  width: auto;
+  min-width: var(--largeur-affiche-ligne);
 }
 
-/* Le titre de la fiche se lit en entier : un mot plus large que sa colonne se coupe plutôt que de se perdre. */
+.sujet.grand > .infos {
+  flex: 1 0 0;
+  min-width: min-content;
+}
+
 .titre.deFiche {
   font-size: var(--taille-xl);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .synopsis {
@@ -701,7 +710,7 @@
 
 .nomDeSaison {
   font-size: var(--taille-m);
-  font-weight: var(--graisse-forte);
+  font-weight: var(--h-graisse-forte);
 }
 
 .avance {
@@ -750,14 +759,14 @@
 }
 
 .ep[data-prochain] .nomDEpisode {
-  font-weight: var(--graisse-forte);
+  font-weight: var(--h-graisse-forte);
 }
 
 .nomDEpisode small {
   display: block;
   color: var(--h-ecran-texte-doux);
   font-size: var(--taille-meta);
-  font-weight: var(--graisse-normale);
+  font-weight: var(--h-graisse-legere);
 }
 
 .nomDEpisode small[role='alert'] {

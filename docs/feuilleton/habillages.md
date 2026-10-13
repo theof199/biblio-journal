@@ -1,8 +1,8 @@
 # Les habillages de la télécommande
 
 La télécommande du Feuilleton change d'apparence à chaque chapitre du jeu. Tout ce qui s'en voit
-(couleurs, formes des touches, cadre, écran, polices, la marque gravée au pied) tient dans **un
-habillage** : un fichier de variables et une ligne de table. Les composants ne changent pas.
+(couleurs, formes des touches, cadre, écran, polices, capitales, graisses, pointillés, la marque
+gravée au pied) tient dans **un habillage** : un fichier de variables et une ligne de table. Les composants ne changent pas.
 
 ## Les fichiers
 
@@ -22,7 +22,19 @@ habillage** : un fichier de variables et une ligne de table. Les composants ne c
 3. Le rendre actif : faire rendre `'chapitre-2'` à `habillageActif()` (le jour où le jeu le dira,
    c'est là que se lit l'état du joueur).
 
-Aucun fichier de `src/feuilleton/telecommande/` n'est à ouvrir.
+Aucun fichier de `src/feuilleton/telecommande/` n'est à ouvrir, **et aucun test n'est à retoucher** :
+ils ne comptent pas les chapitres.
+
+- `habillages.test.ts` exige autant de fichiers `chapitre-N.module.css` que de lignes dans
+  `HABILLAGES`, du même nom (l'étape 1 sans l'étape 2 tombe, et l'inverse), que chaque ligne ait sa
+  classe, sa marque et son modèle, et que `habillageActif()` rende un nom de la table. Il lit chaque
+  chapitre : toutes les variables du contrat, rien que des jetons, rien d'orphelin.
+- `src/ui/theme.test.ts` (« ne lit que des variables de theme.css ») tient pour connues les `--h-*`
+  de **tous** les fichiers de `habillages/`.
+- `chapitreDEssai.test.tsx` déclare son propre chapitre : il ne dépend pas du chapitre actif.
+
+Un test qui nomme le chapitre 1 (`HABILLAGES['chapitre-1']`, sa marque) ne tombe pas à l'ajout d'un
+chapitre : il ne tomberait qu'au retrait du premier.
 
 ## Les variables qu'un chapitre doit définir
 
@@ -37,6 +49,10 @@ elles-mêmes et refuse un chapitre qui en oublie une, ou qui en définit une que
   `--h-trait-fort` ; `--h-pied-touche` (l'ombre intérieure qui fait le pied d'une touche) ;
   `--h-ombre-boitier`, `--h-ombre-bouton` ; `--h-icone-trait-fort`.
 - **Polices** : `--h-police-titre`, `-code`, `-libelle`, `-touche`, parmi les trois rôles du thème.
+- **Ambiance** : `--h-casse-libelle` (la casse des libellés gravés : `--telecommande-casse`) ;
+  `--h-graisse-legere`, `-moyenne`, `-forte` (parmi `--graisse-*`) ; `--h-trait-de-note` (le style du
+  contour d'un message, d'une note, d'un état vide : `--telecommande-trait-de-note`). Une feuille de
+  composant n'écrit ni `uppercase`, ni une graisse, ni `dashed` : le test le refuse.
 
 Une valeur est toujours un jeton de `theme.css` (ou une autre variable `--h-*`) : ni couleur ni
 police en dur. Une couleur que le thème n'a pas y gagne d'abord un jeton, dans ses trois blocs si
@@ -72,8 +88,9 @@ résout là où elle est déclarée : le chapitre redéclare donc `--h-mono-fond
 npx vitest run src/feuilleton/habillages src/ui/theme.test.ts
 ```
 
-`habillages.test.ts` garde la séparation (aucune couleur, police, rayon ni ombre du thème dans un
-composant ; un seul importeur des chapitres ; un seul appel de `habillageActif()`) et le contrat de
+`habillages.test.ts` garde la séparation (aucune couleur, police, graisse, rayon ni ombre du thème
+dans un composant ; aucune couleur nommée, `currentColor` compris ; un seul importeur des chapitres ;
+un seul appel de `habillageActif()` ; rien de `src/feuilleton/` n'importe `studio/` ni `maison/`) et le contrat de
 chaque chapitre ; `chapitreDEssai.test.tsx` déclare un chapitre dans le test et constate qu'il
 s'applique au bouton et au panneau sans toucher à un composant. Puis regarder : le bouton rond sur
 les deux espaces et le panneau ouvert (`/feuilleton/maison?telecommande=telecommande`), en jour et

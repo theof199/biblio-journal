@@ -53,8 +53,13 @@ function regle(css: string, selecteur: string) {
   return reste.slice(reste.indexOf('{') + 1, reste.indexOf('}'))
 }
 
-/** Les variables `--h-*` que pose l'habillage de la télécommande du Feuilleton. */
-const D_HABILLAGE = new Set([...definies(MODULES['/src/feuilleton/habillages/chapitre-1.module.css']!)].filter((nom) => nom.startsWith('--h-')))
+/** Les variables `--h-*` que posent les habillages de la télécommande du Feuilleton, tous chapitres confondus. */
+const D_HABILLAGE = new Set(
+  Object.entries(MODULES)
+    .filter(([chemin]) => chemin.startsWith('/src/feuilleton/habillages/'))
+    .flatMap(([, css]) => [...definies(css)])
+    .filter((nom) => nom.startsWith('--h-')),
+)
 
 /** Ce qu'une valeur a le droit de porter en dur : la mise en page, pas l'habillage. */
 const PERMIS = new Set(['0', '100%', '100dvh'])
@@ -634,6 +639,29 @@ describe('le Feuilleton et sa télécommande', () => {
     expect(valeurDe(BLOC_JOUR, '--telecommande-hauteur')).toBe('calc(100dvh - var(--coque-bas) - env(safe-area-inset-top) - var(--espace-2))')
     // Le haut du panneau (`--espace-2` sous le haut de l'écran) est au-dessus du bouton (`--espace-4`, le haut de la page).
     expect(regle(feuilleton, '.feuilleton')).toMatch(/padding:\s*var\(--espace-4\) /)
+  })
+
+  // Mutations : le bas de `.feuilleton` rendu à `var(--espace-6)` (le bouton, haut de 3,5 rem à 1 rem de la
+  // barre, masquerait la fin d'un espace) ; `--telecommande-reserve` sans la hauteur du bouton, ou sans son écart.
+  it('le bouton rond ne masque jamais le contenu d’un espace : la page lui réserve en bas sa hauteur et son écart', () => {
+    expect(regle(feuilleton, '.feuilleton')).toMatch(/padding:\s*var\(--espace-4\) var\(--gouttiere-page\) var\(--telecommande-reserve\);/)
+    expect(valeurDe(BLOC_JOUR, '--telecommande-reserve')).toBe('calc(var(--telecommande-bouton) + 2 * var(--espace-4))')
+    // Les mêmes jetons que le bouton : son diamètre, et son écart à la barre.
+    expect(regle(bouton, '.bouton')).toMatch(/height:\s*var\(--telecommande-bouton\)/)
+    expect(regle(bouton, '.ancre')).toMatch(/bottom:\s*calc\(var\(--coque-bas\) \+ var\(--espace-4\)\)/)
+    expect(sansCommentaires(theme).match(/--telecommande-reserve:/g)).toHaveLength(1)
+  })
+
+  // Mutations : `overflow-wrap: anywhere` rendu au titre de la fiche (« Severanc / e » à 320 px) ;
+  // `min-width: min-content` ôté de la colonne du texte ; l'affiche rendue à une largeur fixe.
+  it('le titre de la fiche ne coupe pas un mot : sa colonne ne descend pas sous son mot le plus long, l’affiche cède', () => {
+    expect(regle(panneau, '.titre.deFiche')).toMatch(/overflow-wrap:\s*break-word/)
+    expect(sansCommentaires(panneau)).not.toMatch(/overflow-wrap:\s*anywhere|word-break|hyphens/)
+    expect(regle(panneau, '.sujet.grand > .infos')).toMatch(/min-width:\s*min-content/)
+    const affiche = regle(panneau, '.sujet.grand > .afficheDeFiche')
+    expect(affiche).toMatch(/flex:\s*0 1 var\(--largeur-affiche-fiche\)/)
+    expect(affiche).toMatch(/min-width:\s*var\(--largeur-affiche-ligne\)/)
+    expect(affiche).not.toMatch(/(^|[\s;])width:\s*var\(/)
   })
 
   // Mutations : une seconde animation (sur le voile) ; le bloc `prefers-reduced-motion` ôté.

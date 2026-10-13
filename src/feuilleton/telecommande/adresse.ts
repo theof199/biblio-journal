@@ -57,7 +57,11 @@ export function useTelecommande() {
     vue,
     /** La vue d'où l'on vient, si c'en est une du panneau : c'est là que `revenir` ramène. */
     precedente: trace.pas > 0 && trace.avant ? lireLaVue(`?${PARAMETRE}=${trace.avant}`) : null,
-    ouvrir: () => naviguer({ search: rechercheAvec(search, VUE_D_OUVERTURE) }, { state: etat({ sous: true, pas: 0 }) }),
+    /** Ouvrir, du bouton rond. Déjà ouvert, il ne fait rien : un second toucher n'empile pas une entrée que « Fermer » ne quitterait pas. */
+    ouvrir: () => {
+      if (vue) return
+      naviguer({ search: rechercheAvec(search, VUE_D_OUVERTURE) }, { state: etat({ sous: true, pas: 0 }) })
+    },
     /** Passer à une autre vue du panneau. */
     allerA: (suivante: Vue) => naviguer({ search: rechercheAvec(search, suivante) }, { state: etat({ sous: trace.sous, pas: trace.pas + 1, avant: vue ? ecrireLaVue(vue) : undefined }) }),
     /** Le retour d'une vue : à celle d'avant si on en vient, sinon à `parente`, à sa place. */

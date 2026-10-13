@@ -128,7 +128,7 @@ describe('le Feuilleton', () => {
   // bouton rond en dépend), et le panneau qui s'ouvre se sert de cette lecture. Une requête de plus doit
   // passer par ici. Mutations : `useInvitationEnAttente()` ôté de `Feuilleton.tsx` (rien ne part avant
   // l'ouverture du panneau) ; une clé propre au panneau dans `useLaTelecommande` (deux lectures).
-  it('une seule requête au-delà de la session : la télécommande, lue au montage, panneau fermé ; l’ouvrir et changer d’espace n’en ajoutent aucune', async () => {
+  it('une seule requête au-delà de la session : la télécommande, lue au montage, panneau fermé ; l’ouvrir aussitôt et changer d’espace n’en ajoutent aucune', async () => {
     vi.setSystemTime(HEURE_DE_TRAVAIL)
     monter('/feuilleton')
     await screen.findByRole('heading', { level: 1, name: 'Travail' })
@@ -144,6 +144,21 @@ describe('le Feuilleton', () => {
     await within(panneau).findByRole('heading', { level: 2, name: /^En cours/ })
 
     expect(requetes).toEqual(['GET /api/auth/me', 'GET /api/me/feuilleton/telecommande'])
+  })
+
+  // Mutation, dans `api/queryClient.ts` : `staleTime` porté à l'infini (le panneau montrerait pour toujours
+  // la lecture du montage).
+  it('ouvert plus de trente secondes après le montage, le panneau relit la télécommande', async () => {
+    vi.setSystemTime(HEURE_DE_TRAVAIL)
+    monter('/feuilleton')
+    await screen.findByRole('heading', { level: 1, name: 'Travail' })
+    await vi.waitFor(() => expect(requetes).toEqual(['GET /api/auth/me', 'GET /api/me/feuilleton/telecommande']))
+
+    vi.setSystemTime(new Date(HEURE_DE_TRAVAIL.getTime() + 31_000))
+    fireEvent.click(screen.getByRole('button', { name: 'Télécommande' }))
+    await screen.findByRole('dialog', { name: 'Télécommande' })
+
+    await vi.waitFor(() => expect(requetes).toEqual(['GET /api/auth/me', 'GET /api/me/feuilleton/telecommande', 'GET /api/me/feuilleton/telecommande']))
   })
 
   // Mutation, dans `App.tsx` : une route `feuilleton/*` qui prendrait tout.

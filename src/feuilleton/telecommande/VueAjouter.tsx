@@ -3,7 +3,7 @@ import { IconCheck, IconSearch, IconX } from '@tabler/icons-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
-import { ajouterUneSerie, type SerieTrouvee } from '../../api/feuilleton'
+import { ajouterUneSerie, type SerieTrouvee, type Telecommande } from '../../api/feuilleton'
 import { useValeurDebouncee } from '../../recherche/useValeurDebouncee'
 import Affiche from '../../ui/Affiche'
 import Attente, { Barre } from '../../ui/Attente'
@@ -20,6 +20,7 @@ export interface PropsVueAjouter {
 }
 
 const FANTOMES = 4
+const DEJA_FINIE = 'Déjà finie : elle n’est plus en cours'
 const nomDe = (resultat: SerieTrouvee) => (resultat.year ? `${resultat.title} (${resultat.year})` : resultat.title)
 
 /**
@@ -29,7 +30,8 @@ const nomDe = (resultat: SerieTrouvee) => (resultat.year ? `${resultat.title} ($
  * (`200`, rien d'un suivi commencé n'est écrasé), il n'y a donc rien à garder ici.
  *
  * « Ajouter » : un seul `POST /media`, qui peut durer (une requête TMDB par saison) : la touche le dit et
- * se verrouille, **résultat par résultat**. Au succès la télécommande est relue, puis `onAjoutee`.
+ * se verrouille, **résultat par résultat**. Au succès la télécommande est relue, puis `onAjoutee` ; si la
+ * télécommande relue ne porte pas la série (finie au sens du jeu), un message le dit à la place de la touche.
  */
 export default function VueAjouter({ suivies, onAjoutee }: PropsVueAjouter) {
   const client = useQueryClient()
@@ -42,6 +44,8 @@ export default function VueAjouter({ suivies, onAjoutee }: PropsVueAjouter) {
   const verrous = useRef(new Set<string>())
   const [enAjout, setEnAjout] = useState<ReadonlySet<string>>(new Set())
   const [echecs, setEchecs] = useState<Record<string, string>>({})
+  /** Les résultats ajoutés que la télécommande ne porte pas : finis au sens du jeu. */
+  const [finies, setFinies] = useState<ReadonlySet<string>>(new Set())
   const monte = useRef(true)
   useEffect(() => {
     monte.current = true
@@ -65,7 +69,12 @@ export default function VueAjouter({ suivies, onAjoutee }: PropsVueAjouter) {
     ajout
       .mutateAsync(resultat)
       .then((reponse) => {
-        if (monte.current) onAjoutee(reponse.media.id)
+        if (!monte.current) return
+        // Relue, la télécommande ne porte pas la série : elle est finie au sens du jeu. On le dit, plutôt que
+        // de régler la télécommande sur une série qu'elle ne montrerait pas. (Relecture ratée : on ne sait pas.)
+        const lue = client.getQueryState<Telecommande>(cles.telecommande)
+        if (lue?.status === 'success' && lue.data && !lue.data.series.some((serie) => serie.id === reponse.media.id)) setFinies((avant) => new Set(avant).add(cle))
+        else onAjoutee(reponse.media.id)
       })
       .catch((erreur: unknown) => {
         if (monte.current) setEchecs((avant) => ({ ...avant, [cle]: messageDe(erreur) }))
@@ -145,6 +154,10 @@ export default function VueAjouter({ suivies, onAjoutee }: PropsVueAjouter) {
                     <IconCheck aria-hidden="true" className={styles.icone} />
                     déjà suivie
                   </span>
+                ) : finies.has(cle) ? (
+                  <p className={styles.echec} role="status">
+                    {DEJA_FINIE}
+                  </p>
                 ) : (
                   <button type="button" className={`${styles.touche} ${styles.principale}`} data-piece="touche-principale" aria-label={`Ajouter ${nomDe(resultat)}`} aria-busy={part} disabled={part} onClick={() => ajouter(resultat)}>
                     {part ? 'Ajout…' : 'Ajouter'}

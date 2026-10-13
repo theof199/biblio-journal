@@ -46,7 +46,8 @@ const FANTOMES = 3
  * moment du « Vu » : la carte avance sur place (son épisode change, son message prend la place de ses
  * touches), et l'ordre ne suit les données qu'après le départ du message. Si le message part parce qu'on
  * touche ailleurs, l'ordre attend encore la fin de ce geste : ce qu'on est en train de toucher ne bouge
- * pas, et si c'est un autre « Vu », son message tient l'ordre à son tour.
+ * pas, et si c'est un autre « Vu », son message tient l'ordre à son tour. Un avis sans carte (« Vu à deux
+ * noté », ou l'avis d'une carte de « En pause » repliée) qui chasse ce message rend l'ordre à son départ.
  */
 export default function VueListe(props: PropsVueListe) {
   const { lecture, invitations, enCours, enPause, avis, allerA } = props
@@ -230,7 +231,17 @@ export default function VueListe(props: PropsVueListe) {
     <>
       {avisSeul ? (
         <div className={styles.rangee}>
-          <MessageDuVu key={avisSeul.cle} texte={avisSeul.texte} alerte={avisSeul.alerte} onAnnuler={annulerLAvis(avisSeul, props)} onPartir={() => props.onAvisParti?.()} />
+          <MessageDuVu
+            key={avisSeul.cle}
+            texte={avisSeul.texte}
+            alerte={avisSeul.alerte}
+            onAnnuler={annulerLAvis(avisSeul, props)}
+            onPartir={() => {
+              props.onAvisParti?.()
+              // Il a pu chasser le message d'une carte (ou parler d'une carte repliée) : l'ordre figé se rend ici aussi.
+              rendreLOrdre()
+            }}
+          />
         </div>
       ) : null}
 

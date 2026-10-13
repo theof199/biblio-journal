@@ -16,8 +16,9 @@ interface Props {
 
 /**
  * Le bouton rond de la télécommande : il flotte en bas à droite, au-dessus de la barre d'onglets, sur
- * les deux espaces. La page ne lui réserve rien. Sur grand écran il reste au bord de la colonne de la
- * page, pas de la fenêtre.
+ * les deux espaces. Il ne masque jamais le contenu d'un espace : la page du Feuilleton lui réserve en bas
+ * sa hauteur et son écart (`--telecommande-reserve`, `Feuilleton.module.css`). Sur grand écran il reste au
+ * bord de la colonne de la page, pas de la fenêtre.
  */
 const Bouton = forwardRef<HTMLButtonElement, Props>(function Bouton({ habillage, chapitre, invitation, ouvert, onOuvrir }, ref) {
   return (

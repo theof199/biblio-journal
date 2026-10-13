@@ -142,7 +142,42 @@ describe('la fiche d’une série : ce qu’elle montre', () => {
     expect(corps).toEqual([{ watched: true }])
   })
 
-  // Mutation, dans `VueFiche.tsx` : la branche `fiche.isError` ôtée.
+  // Mutations, dans `VueFiche.tsx` : `resteACocher` forcé à vrai ; `!aVenir(episode, aujourdHui)` ôté (un
+  // épisode pas encore diffusé compterait comme à cocher).
+  it.each([
+    ['une saison complète', 'Saison 1', {}],
+    ['une saison où ne reste qu’un épisode à venir', 'Saison 2', { [`${EPISODES(S2.id)}&cursor=c1`]: () => json({ items: [{ ...E4, watched: { me: true, others: 0 } }, { ...PAGE_2[1]!, watched: { me: true, others: 0 } }, PAGE_2[2]!], next_cursor: null }) }],
+  ] as [string, string, ReturnType<typeof lectures>][])('« Toute la saison » est absente de %s : rien de diffusé n’y reste à cocher', async (_cas, nom, routes) => {
+    const tousVus = Array.from({ length: 3 }, (_, rang) => episode(rang + 1, `Vu ${rang + 1}`, '2017-12-01', true, `aaaaaaaa-0000-4000-8000-0000000001a${rang}`))
+    monter({ ...lectures(), [EPISODES(S1.id)]: () => json({ items: tousVus, next_cursor: null }), ...routes }, VUE)
+    await caseDe(/^E4 /)
+    fireEvent.click(await repli(/^Saison 1/))
+    await screen.findByRole('list', { name: 'Épisodes : Saison 1' })
+
+    expect(screen.queryByRole('button', { name: `Toute la saison : ${nom}` })).toBeNull()
+    expect(screen.queryAllByRole('button', { name: /^Toute la saison/ })).toHaveLength(nom === 'Saison 1' ? 1 : 0)
+  })
+
+  // Mutations, dans `VueFiche.tsx` : `!fiche.data` rendu à `fiche.isError`, `!episodes.data` à
+  // `episodes.isError` (une relecture ratée, données en main, remplacerait la fiche par « Sans signal »).
+  it('une relecture qui échoue ne remplace ni la fiche ni ses épisodes déjà lus par la panne', async () => {
+    let fiches = 0
+    let pages = 0
+    const panne = () => refus(500, 'Le service est indisponible. Réessaie plus tard.')
+    const { combien } = monter({ ...lectures(), [LA_FICHE]: () => (++fiches === 1 ? json(FICHE) : panne()), [EPISODES(S2.id)]: () => (++pages === 1 ? json({ items: PAGE_1, next_cursor: 'c1' }) : panne()), [COCHER(E4.id)]: () => json(COCHE) }, VUE)
+
+    fireEvent.click(await caseDe(/^E4 /))
+    await vi.waitFor(() => expect(combien(LA_FICHE)).toBe(2))
+    await vi.waitFor(() => expect(combien(EPISODES(S2.id))).toBe(2))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Dark' })).toBeInTheDocument()
+    expect(await caseDe(/^E4 /)).toBeInTheDocument()
+    expect(screen.queryByText('Sans signal')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull()
+  })
+
+  // Mutation, dans `VueFiche.tsx` : la branche de la panne (`!fiche.data`) ôtée.
   it('la fiche ne se lit pas : le message de l’API et « Réessayer », dans le boîtier', async () => {
     let essais = 0
     monter({ [LIRE]: () => json(DEUX), [LA_FICHE]: () => (++essais === 1 ? refus(404, 'Cette œuvre est introuvable.') : json({ ...FICHE, next_up: null })) }, VUE)
@@ -224,6 +259,50 @@ describe('la fiche d’une série : cocher et décocher', () => {
   })
 })
 
+describe('la fiche : les verrous se rendent', () => {
+  // Mutation, dans `fiche.ts` : `verrous.current.delete(episodeId)` ôté d'`onSettled` de la case.
+  it('une case se retouche après la fin de son écriture', async () => {
+    const { ecritures, combien } = monter({ ...lectures(), [COCHER(E4.id)]: () => json(COCHE) }, VUE)
+    fireEvent.click(await caseDe(/^E4 /))
+    await vi.waitFor(() => expect(combien(`${EPISODES(S2.id)}&cursor=c1`)).toBe(2))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    fireEvent.click(await caseDe(/^E4 /))
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([COCHER(E4.id), COCHER(E4.id)]))
+  })
+
+  // Mutation, dans `fiche.ts` : `verrous.current.delete(saisonId)` ôté d'`onSettled` du lot.
+  it('« Toute la saison » en échec rend la saison : la touche repart', async () => {
+    let essais = 0
+    const { ecritures } = monter({ ...lectures(), [LOT]: () => (++essais === 1 ? refus(500, 'Le service est indisponible.') : json(PORTEE)) }, VUE)
+    fireEvent.click(await screen.findByRole('button', { name: 'Toute la saison : Saison 2' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le service est indisponible.')
+    fireEvent.pointerDown(document.body)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Toute la saison : Saison 2' }))
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([LOT, LOT]))
+  })
+})
+
+describe('le nom du dialogue suit la vue', () => {
+  // Mutations, dans `Panneau.tsx` : `aria-label` rendu à « Télécommande » pour toutes les vues ; le titre de
+  // la série ôté du nom de la fiche.
+  it.each([
+    ['telecommande', 'Télécommande'],
+    ['en-cours', 'En cours'],
+    ['ajouter', 'Ajouter une série'],
+    ['a-deux', 'Vu à deux'],
+    [VUE, 'Fiche de Dark'],
+  ])('`?telecommande=%s` : « %s »', async (vue, nom) => {
+    monter({ ...lectures(), 'GET /api/users?limit=100': () => json({ items: [], next_cursor: null }) }, vue)
+
+    expect(await screen.findByRole('dialog', { name: nom })).toBeInTheDocument()
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+  })
+})
+
 describe('la fiche et la télécommande se tiennent à jour', () => {
   // Mutations, dans `fiche.ts` : la télécommande ôtée de `relire` ; la fiche ôtée de `relire` (la progression
   // et « Le prochain » resteraient ceux d'avant).
@@ -258,6 +337,49 @@ describe('la fiche et la télécommande se tiennent à jour', () => {
 
     await vi.waitFor(() => expect(ecran()).toHaveTextContent(`S${PORTEE.serie.prochain!.saison} E${PORTEE.serie.prochain!.numero}`))
     expect(combien(LIRE)).toBe(1)
+  })
+
+  // Mutation, dans `vivante.ts` : la garde `isMutating(…) > 1` ôtée de `perimerALaFin` (la fiche se relirait
+  // dès la fin du « Vu », et décocherait un instant la case qui attend son tour).
+  it('la fiche ne se relit pas tant qu’une écriture de la file attend : la case en attente reste cochée', async () => {
+    const vu = retenue()
+    const caseE5 = retenue()
+    const e5 = PAGE_2[1]!
+    const { ecritures, combien } = monter({ ...lectures(), [COCHER(E4.id)]: () => vu.promesse, [COCHER(e5.id)]: () => caseE5.promesse }, 'telecommande')
+    fireEvent.click(await screen.findByRole('button', { name: 'Vu : Dark, S2 E5' }))
+    await versLaFiche()
+    fireEvent.click(await caseDe(/^E5 /))
+    await vi.waitFor(async () => expect(await caseDe(/^E5 /)).toHaveAttribute('aria-checked', 'true'))
+
+    vu.rendre(json(COCHE))
+    await vi.waitFor(() => expect(ecritures()).toEqual([COCHER(E4.id), COCHER(e5.id)]))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(combien(LA_FICHE)).toBe(1)
+    expect(combien(EPISODES(S2.id))).toBe(1)
+    expect(await caseDe(/^E5 /)).toHaveAttribute('aria-checked', 'true')
+
+    caseE5.rendre(json(COCHE))
+    await vi.waitFor(() => expect(combien(LA_FICHE)).toBe(2))
+  })
+
+  // Mutation, dans `fiche.ts` : la garde `isMutating(…) === 1` ôtée d'`onSettled` de la case.
+  it('deux cases à la file : une seule relecture, après la dernière', async () => {
+    const e4 = retenue()
+    const caseE5 = retenue()
+    const e5 = PAGE_2[1]!
+    const { ecritures, combien } = monter({ ...lectures(), [COCHER(E4.id)]: () => e4.promesse, [COCHER(e5.id)]: () => caseE5.promesse }, VUE)
+    fireEvent.click(await caseDe(/^E4 /))
+    fireEvent.click(await caseDe(/^E5 /))
+
+    e4.rendre(json(COCHE))
+    await vi.waitFor(() => expect(ecritures()).toEqual([COCHER(E4.id), COCHER(e5.id)]))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(combien(LA_FICHE)).toBe(1)
+    expect(combien(LIRE)).toBe(1)
+
+    caseE5.rendre(json(COCHE))
+    await vi.waitFor(() => expect(combien(LA_FICHE)).toBe(2))
+    expect(combien(LIRE)).toBe(2)
   })
 
   // Mutation, dans `vivante.ts` : `perimerLaFiche` ôté d'`onSettled` de la coche (la fiche, lue il y a moins

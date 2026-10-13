@@ -820,6 +820,11 @@
   --telecommande-icone-trait-fort: 3; /* le trait d'une icône sur la touche principale */
   --telecommande-interlettre-marque: 0.3em; /* la marque gravée au pied du boîtier */
   --telecommande-interlettre-code: 0.04em; /* « S2 E5 » */
+  --telecommande-casse: uppercase; /* les libellés gravés du boîtier */
+  --telecommande-trait-de-note: dashed; /* le contour d'un message, d'une note, d'un état vide */
+  /* Ce que la page du Feuilleton laisse libre en bas : le bouton rond, son écart à la barre, et le même
+     au-dessus de lui. Défilée jusqu'au bout, la page ne passe pas sous le bouton. */
+  --telecommande-reserve: calc(var(--telecommande-bouton) + 2 * var(--espace-4));
 
   /* Empilement */
   --z-derriere: -1; /* derrière le contenu de son parent, qui forme alors un contexte d'empilement (`isolation: isolate`) */

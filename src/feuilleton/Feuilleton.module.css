@@ -1,12 +1,14 @@
 /* Aucune valeur en dur : tout vient de `ui/theme.css`. */
 
+/* En bas, la page réserve la place du bouton rond de la télécommande (`--telecommande-reserve`) : il
+   flotte sur cette marge, jamais sur le contenu d'un espace. */
 .feuilleton {
   display: flex;
   flex-direction: column;
   gap: var(--espace-4);
   max-width: var(--largeur-page);
   margin: 0 auto;
-  padding: var(--espace-4) var(--gouttiere-page) var(--espace-6);
+  padding: var(--espace-4) var(--gouttiere-page) var(--telecommande-reserve);
 }
 
 .passage {

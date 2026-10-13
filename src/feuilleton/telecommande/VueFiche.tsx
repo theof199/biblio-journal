@@ -62,7 +62,8 @@ export default function VueFiche({ serieId }: { serieId: string }) {
       </div>
     )
   }
-  if (fiche.isError) return <Panne message={messageDe(fiche.error)} onReessayer={() => void fiche.refetch()} />
+  // La panne ne se dit que sans données : une relecture ratée (`isError`, avec les données d'avant) laisse la fiche lisible.
+  if (!fiche.data) return <Panne message={messageDe(fiche.error)} onReessayer={() => void fiche.refetch()} />
 
   const serie: FicheDeSerie = fiche.data
   const prochain = serie.next_up?.kind === 'episode' ? serie.next_up : null
@@ -127,6 +128,8 @@ function Saison({ serieId, saison, depliee, onBasculer, prochainId, aujourdHui, 
   const id = useId()
   const nom = nomDeLaSaison(saison)
   const avis = ecritures.avis?.saisonId === saison.id ? ecritures.avis : null
+  // « Toute la saison » ne s'offre que s'il reste du diffusé à cocher : d'après les épisodes lus, et d'après la progression en les attendant.
+  const resteACocher = episodes.data ? episodes.data.some((episode) => !episode.watched.me && !aVenir(episode, aujourdHui)) : saison.progress.me.checked < saison.progress.me.total
 
   return (
     <li className={styles.saison} data-piece="ecran" data-etat="saison">
@@ -142,7 +145,7 @@ function Saison({ serieId, saison, depliee, onBasculer, prochainId, aujourdHui, 
         {!depliee ? null : (
           <>
             {/* La portée ne coche que hors saison 0 : aux épisodes spéciaux, on coche un par un. */}
-            {saison.number === 0 ? null : (
+            {saison.number === 0 || (!avis && !resteACocher) ? null : (
               <div className={styles.rangee}>
                 {avis ? (
                   <MessageDuVu key={avis.cle} texte={avis.texte} alerte={avis.alerte} onPartir={ecritures.onAvisParti} />
@@ -164,7 +167,7 @@ function Saison({ serieId, saison, depliee, onBasculer, prochainId, aujourdHui, 
                   </div>
                 ))}
               </Attente>
-            ) : episodes.isError ? (
+            ) : !episodes.data ? (
               <div className={styles.rate} role="alert">
                 <p className={styles.panne}>{messageDe(episodes.error)}</p>
                 <button type="button" className={styles.touche} data-piece="touche" onClick={() => void episodes.refetch()}>

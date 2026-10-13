@@ -226,6 +226,42 @@ describe('le vu à deux : proposer', () => {
     expect(ecran()).toHaveTextContent('S2 E6')
   })
 
+  // Mutation, dans `vivante.ts` : la garde `isMutating(…) === 1` ôtée d'`onSettled` du « vu à deux » (la
+  // relecture partirait avant l'« Annuler » qui attend, et montrerait l'épisode coché un instant).
+  it('« Annuler » attend derrière le « vu à deux » : une seule relecture, après lui', async () => {
+    const coche = retenue()
+    const decoche = retenue()
+    let ecrits = 0
+    let lectures = 0
+    const { ecritures } = monter({ [LIRE]: () => json(++lectures === 1 ? DEUX : APRES), [MEMBRES]: () => page([MOI, BOB]), [VU]: () => (++ecrits === 1 ? coche.promesse : decoche.promesse), [INVITER]: () => json(INVITATION_FAITE, 201) })
+    await ouvrirLeVuADeux()
+    await choisir('bob')
+    fireEvent.click(await screen.findByRole('button', { name: 'Annuler' }))
+
+    coche.rendre(json(COCHE))
+    await vi.waitFor(() => expect(ecritures()).toEqual([VU, INVITER, VU]))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(lectures).toBe(1)
+
+    decoche.rendre(json(COCHE))
+    await vi.waitFor(() => expect(lectures).toBe(2))
+  })
+
+  // Mutation, dans `vivante.ts` : `verrous.current.delete(carte.id)` ôté d'`onSettled` du « vu à deux ».
+  it('le verrou se rend à la fin du « vu à deux » : « Vu » repart sur la même série', async () => {
+    let lectures = 0
+    const suivant = `PUT /api/episodes/${DARK.ensuite!.id}/watched`
+    const { ecritures } = monter({ [LIRE]: () => json(++lectures === 1 ? DEUX : APRES), [MEMBRES]: () => page([MOI, BOB]), [VU]: () => json(COCHE), [INVITER]: () => json(INVITATION_FAITE, 201), [suivant]: () => retenue().promesse })
+    await ouvrirLeVuADeux()
+    await choisir('bob')
+    await vi.waitFor(() => expect(lectures).toBe(2))
+    fireEvent.pointerDown(document.body)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Vu : Dark, S2 E6' }))
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([VU, INVITER, suivant]))
+  })
+
   // Mutations, dans `VueTelecommande.tsx` : `onAnnuler={annulerLAvis(…)}` ôté de l'avis (« Proposé » serait
   // sans « Annuler ») ; dans `vivante.ts` : `annuler: vu` ôté de son `dire` ; `dernierVu.current = …` ôté de
   // `onProposer` (« Annuler » ne déferait rien).

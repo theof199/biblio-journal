@@ -129,7 +129,8 @@ describe('ajouter une série : l’ajout', () => {
   // les résultats (The Crown s'éteindrait) ; « Ajout… » ôté.
   it('« Ajouter » : un seul `POST /media`, son corps exact ; la touche dit l’attente et se verrouille, résultat par résultat', async () => {
     const import_ = retenue()
-    const { corps, ecritures } = monter({ [LIRE]: () => json(DEUX), [CHERCHER('the')]: () => page(RESULTATS), [AJOUTER]: () => import_.promesse }, 'ajouter')
+    let lectures = 0
+    const { corps, ecritures } = monter({ [LIRE]: () => json(++lectures === 1 ? DEUX : { ...DEUX, series: [WIRE, ...DEUX.series] }), [CHERCHER('the')]: () => page(RESULTATS), [AJOUTER]: () => import_.promesse }, 'ajouter')
     await taper('the')
     const wire = await resultat('The Wire')
 
@@ -174,6 +175,37 @@ describe('ajouter une série : l’ajout', () => {
 
     act(() => historique(-1))
     await vi.waitFor(() => expect(adresse()).toBe('/feuilleton/maison?telecommande=telecommande'))
+  })
+
+  // Mutations, dans `VueAjouter.tsx` : la garde ôtée (`onAjoutee` toujours : la télécommande se réglerait
+  // sur une série qu'elle ne porte pas, et en montrerait une autre sans le dire) ; le message ôté.
+  it('ajouter une série que la télécommande ne porte pas ensuite (finie au sens du jeu) : « Déjà finie », on reste sur la recherche', async () => {
+    const LOST_ID = 'd0000000-0000-4000-8000-0000000000f1'
+    const { combien } = monter({ [LIRE]: () => json(DEUX), [CHERCHER('the')]: () => page(RESULTATS), [AJOUTER]: () => json({ created: false, media: { ...AJOUT.media, id: LOST_ID } }, 200) }, 'ajouter')
+    await taper('the')
+    const lost = await resultat('Lost')
+
+    fireEvent.click(within(lost).getByRole('button', { name: 'Ajouter Lost (2004)' }))
+
+    expect(await within(lost).findByRole('status')).toHaveTextContent('Déjà finie : elle n’est plus en cours')
+    expect(within(lost).queryByRole('button')).toBeNull()
+    expect(combien(LIRE)).toBe(2)
+    expect(adresse()).toBe('/feuilleton/maison?telecommande=ajouter')
+    expect(within(await resultat('The Wire')).getByRole('button')).toBeEnabled()
+  })
+
+  // Mutation, dans `VueAjouter.tsx` : `lue?.status === 'success'` ôté (une relecture ratée, où l'on ne sait
+  // pas, dirait « Déjà finie » d'une série qui ne l'est pas).
+  it('la relecture de la télécommande échoue après l’ajout : rien ne dit « Déjà finie », la télécommande s’ouvre', async () => {
+    let lectures = 0
+    monter({ [LIRE]: () => (++lectures === 1 ? json(DEUX) : refus(500, 'Le service est indisponible.')), [CHERCHER('the')]: () => page(RESULTATS), [AJOUTER]: () => json({ created: true, media: { ...AJOUT.media, id: WIRE_ID } }, 201) }, 'ajouter')
+    await taper('the')
+
+    fireEvent.click(within(await resultat('The Wire')).getByRole('button'))
+
+    await vi.waitFor(() => expect(adresse()).toBe(`/feuilleton/maison?telecommande=serie-${WIRE_ID}`))
+    expect(screen.queryByText(/Déjà finie/)).toBeNull()
+    expect(ecran()).toHaveTextContent('Dark')
   })
 
   // Mutations, dans `VueAjouter.tsx` : le `catch` ôté (la touche resterait sur « Ajout… », sans message) ;
