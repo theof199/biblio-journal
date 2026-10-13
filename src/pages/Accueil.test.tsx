@@ -102,6 +102,7 @@ describe('la pagination infinie de l’accueil', () => {
   it('s’arrête au dernier curseur : deux pages, jamais une troisième requête', async () => {
     const AUTRE = { ...ITEM, entry: { ...ITEM.entry, id: 'autre' } }
     const requetes = servir({
+      ...ROUTES_ACCUEIL,
       'GET /api/me/journal?limit=20': () => json(page([ITEM], 'page-2')),
       'GET /api/me/journal?limit=20&cursor=page-2': () => json(page([AUTRE], null)),
       'GET /api/stats': () => json(STATS_VIDES),
@@ -113,7 +114,7 @@ describe('la pagination infinie de l’accueil', () => {
     monter()
 
     await screen.findByTestId('sentinelle-journal')
-    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toHaveLength(1)
+    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal?limit=20'))).toHaveLength(1)
 
     // La sentinelle entre dans l'écran : la page suivante se charge.
     FauxObservateur.dernier!.declencher()
@@ -122,7 +123,7 @@ describe('la pagination infinie de l’accueil', () => {
     // autre chose que `null`/`undefined` sur la dernière page (une chaîne vide, par exemple),
     // laisseraient la sentinelle dans le DOM.
     await vi.waitFor(() => expect(screen.queryByTestId('sentinelle-journal')).not.toBeInTheDocument())
-    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toEqual([
+    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal?limit=20'))).toEqual([
       'GET /api/me/journal?limit=20',
       'GET /api/me/journal?limit=20&cursor=page-2',
     ])
@@ -130,13 +131,14 @@ describe('la pagination infinie de l’accueil', () => {
     // Sans sentinelle, plus rien n'observe le bas de la page : une intersection tardive ne peut
     // plus déclencher de nouvelle page.
     await new Promise((r) => setTimeout(r, 20))
-    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toHaveLength(2)
+    expect(requetes.filter((r) => r.startsWith('GET /api/me/journal?limit=20'))).toHaveLength(2)
   })
 
   it('une page en échec ne relance pas la sentinelle en boucle, et « Réessayer » la reprend', async () => {
     vi.stubGlobal('IntersectionObserver', ObservateurVisible)
     let enPanne = true
     const requetes = servir({
+      ...ROUTES_ACCUEIL,
       'GET /api/me/journal?limit=20': () => json(page([ITEM], 'page-2')),
       'GET /api/me/journal?limit=20&cursor=page-2': () => (enPanne ? pannePassagere() : json(page([], null))),
       'GET /api/stats': () => json(STATS_VIDES),
@@ -185,6 +187,7 @@ describe('les filmographies du réalisateur en cours', () => {
   })
   const pageDe = (id: number, films: ReturnType<typeof filmA>[]): RealisateurPage => ({ ...PAGE_NOLAN, tmdb_id: id, films })
   const base = {
+    ...ROUTES_ACCUEIL,
     'GET /api/me/journal?limit=20': () => json(page([ITEM], null)),
     'GET /api/stats': () => json(STATS_VIDES),
     'GET /api/me/voyage': () => json(VOYAGE_VIDE),
@@ -461,7 +464,9 @@ describe('l’accueil qui attend son journal', () => {
     journalRetenu()
     monter()
 
-    expect(await screen.findAllByRole('status')).toHaveLength(1)
+    // La section « Au ciné » a ses propres attentes, qui s'en vont dès ses réponses : il ne reste que
+    // celle du journal.
+    await vi.waitFor(() => expect(screen.getAllByRole('status')).toHaveLength(1))
     expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
   })
 
@@ -525,5 +530,83 @@ describe('l’accueil qui attend son journal', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByTestId('pellicule-en-attente')).not.toBeInTheDocument()
     expect(screen.getByAltText(ITEM.media.title)).toBeInTheDocument()
+  })
+})
+
+describe('la section « Au ciné » de l’accueil', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('IntersectionObserver', FauxObservateur)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const PANNE = { code: 'INTERNAL', message: 'Le service a eu un problème.', retryable: false }
+  const auCine = () => screen.getByRole('region', { name: 'Au ciné' })
+
+  // Mutation : `<SectionAuCine />` rendue après le journal, ou dans l'entrée : l'ordre change.
+  it('se tient entre l’entrée et le journal', async () => {
+    servir({ ...ROUTES_ACCUEIL, 'GET /api/me/journal?limit=20': () => json(page([ITEM], null)) })
+    monter()
+
+    const fronton = await screen.findByRole('heading', { level: 1 })
+    const journal = screen.getByRole('region', { name: 'Le journal' })
+    expect(fronton.compareDocumentPosition(auCine()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(auCine().compareDocumentPosition(journal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(auCine()).toHaveAttribute('id', 'au-cine')
+  })
+
+  // Mutation : la porte d'attente remise en tête d'`Accueil` (`if (journal.isPending) return …`) :
+  // la section ne se monterait qu'une fois le journal arrivé.
+  it('n’attend pas le journal : elle est là, avec ses réponses, pendant qu’il charge', async () => {
+    servir({ ...ROUTES_ACCUEIL, 'GET /api/me/journal?limit=20': () => new Promise<Response>(() => {}) })
+    monter()
+
+    expect(await within(await screen.findByRole('region', { name: 'Au ciné' })).findByText('0 séance cette année')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+    expect(screen.getByRole('heading', { level: 2, name: 'Le journal' })).toBeInTheDocument()
+  })
+
+  // Mutation : la porte de panne remise en tête d'`Accueil` (`if (!journal.data) return <Panne … />`) :
+  // la panne du journal effacerait la section.
+  it('une panne du journal ne l’efface pas, et se dit hors d’elle', async () => {
+    let enPanne = true
+    servir({
+      ...ROUTES_ACCUEIL,
+      'GET /api/me/journal?limit=20': () => (enPanne ? json(PANNE, 500) : json(page([ITEM], null))),
+    })
+    monter()
+
+    const alerte = await screen.findByRole('alert')
+    expect(alerte).toHaveTextContent('Le service a eu un problème.')
+    expect(auCine()).not.toContainElement(alerte)
+    expect(within(auCine()).getByText('0 séance cette année')).toBeInTheDocument()
+    expect(within(auCine()).getByText('Rien cette semaine.')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /J’ai vu un film/ })).not.toBeInTheDocument()
+
+    // « Réessayer » ne relit que le journal, qui revient à sa place.
+    enPanne = false
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }))
+    expect(await screen.findByAltText(ITEM.media.title)).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  // Mutation, dans `SectionAuCine.tsx` : la panne des sorties levée au rendu (`throw sorties.error`) au
+  // lieu d'être dite sur place : elle emporterait toute la page.
+  it('une panne des sorties, des séances du jour et de mes séances n’efface ni le journal ni l’entrée', async () => {
+    servir({
+      ...ROUTES_ACCUEIL,
+      'GET /api/me/journal?limit=20': () => json(page([ITEM], null)),
+      'GET /api/reference/sorties': () => json(PANNE, 500),
+      'GET /api/me/cinema/seances': () => json(PANNE, 500),
+      'GET /api/me/journal?limit=40&reaction=en_salle': () => json(PANNE, 500),
+    })
+    monter()
+
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+    await vi.waitFor(() => expect(within(auCine()).getAllByRole('alert')).toHaveLength(3))
+    expect(screen.getAllByRole('alert')).toHaveLength(3)
+    expect(screen.getByRole('region', { name: 'Le journal' })).toBeInTheDocument()
+    expect(screen.getByAltText(ITEM.media.title)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /J’ai vu un film/ })).toBeInTheDocument()
   })
 })

@@ -9,7 +9,7 @@ import { exemple } from '../test/contrat'
 import { json, servir } from '../test/serveur'
 import { ROUTES_ACCUEIL } from '../test/routesAccueil'
 import { visionnage } from '../test/journal'
-import { DELAI_RESTAURATION, restaurer } from './defilement'
+import { DELAI_RESTAURATION, restaurer, sauter } from './defilement'
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 const FILMS = Array.from({ length: 20 }, (_, i) =>
@@ -51,11 +51,11 @@ function Historique() {
   return null
 }
 
-function monter() {
+function monter(depart = '/') {
   const client = createQueryClient()
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={[depart]}>
         <Historique />
         <App />
       </MemoryRouter>
@@ -128,8 +128,10 @@ describe('le défilement de la coque', () => {
 
     act(() => historique(-1))
 
-    // D'abord « Chargement… » : la zone est trop courte, la position tombe à son plus bas.
-    expect(await screen.findByRole('status')).toHaveTextContent('Chargement')
+    // D'abord « Chargement… » : la zone est trop courte, la position tombe à son plus bas. Lu sans
+    // attendre : « Tes séances » de la section Au ciné, sous le préfixe `journal`, attend elle aussi,
+    // et un `findByRole` ne rendrait la main qu'une des deux attentes partie.
+    for (const statut of screen.getAllByRole('status')) expect(statut).toHaveTextContent('Chargement')
     expect(zone.scrollTop).toBe(0)
     await waitFor(() => expect(zone.scrollTop).toBe(1200))
   })
@@ -157,6 +159,156 @@ describe('le défilement de la coque', () => {
 
     await waitFor(() => expect(zone.querySelector('a[href="/journal/e19"]')).not.toBeNull())
     expect(zone.scrollTop).toBe(0)
+  })
+})
+
+/**
+ * jsdom ne met rien en page : tout rectangle y est nul. Ici la section « Au ciné » se tient à `haut`
+ * pixels du début du contenu, où que la zone en soit de son défilement, comme dans un navigateur.
+ */
+function poserLaSection(haut: { valeur: number }) {
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    const zone = document.querySelector('main')
+    const top = this.id === 'au-cine' ? haut.valeur - (zone?.scrollTop ?? 0) : 0
+    return { top, bottom: top, left: 0, right: 0, width: 0, height: 0, x: 0, y: top, toJSON: () => ({}) }
+  })
+}
+
+describe('l’arrivée sur la section Au ciné', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  const servirAccueil = () =>
+    servir({
+      'GET /api/auth/me': () => json(SESSION),
+      ...ROUTES_ACCUEIL,
+      [JOURNAL]: () => json({ items: FILMS, next_cursor: null }),
+      'GET /api/reference/reactions': () => json(exemple('/reference/reactions', 'get', 200)),
+    })
+  const accueilArrive = (zone: HTMLElement) => waitFor(() => expect(zone.querySelector('a[href="/journal/e19"]')).not.toBeNull())
+
+  // Mutation, dans `useDefilementMemorise` : la branche de l'ancre retirée (la page s'ouvre en haut).
+  it.each(['/#au-cine', '/au-cine'])('%s ouvre l’accueil sur la section, pas en haut', async (depart) => {
+    poserLaSection({ valeur: 700 })
+    servirAccueil()
+    monter(depart)
+
+    const zone = await screen.findByRole('main')
+    await accueilArrive(zone)
+    expect(zone.scrollTop).toBe(700)
+  })
+
+  // Mutation : `sauter` appelé sans regarder l'ancre (toute arrivée sur l'accueil sauterait).
+  it('sans l’ancre, l’accueil s’ouvre en haut : l’exception ne vaut que pour cette arrivée', async () => {
+    poserLaSection({ valeur: 700 })
+    servirAccueil()
+    monter('/')
+
+    const zone = await screen.findByRole('main')
+    await accueilArrive(zone)
+    expect(zone.scrollTop).toBe(0)
+  })
+
+  // Mutation : `ancre !== ''` au lieu de l'ancre d'Au ciné : n'importe quelle ancre ferait sauter.
+  it('une autre ancre ne fait rien sauter', async () => {
+    poserLaSection({ valeur: 700 })
+    servirAccueil()
+    monter('/#titre-journal')
+
+    const zone = await screen.findByRole('main')
+    await accueilArrive(zone)
+    expect(zone.scrollTop).toBe(0)
+  })
+
+  // Mutation : la position mémorisée lue après l'ancre : au retour, la page resauterait à la section
+  // au lieu de rendre la place quittée.
+  it('au retour sur cette entrée, c’est la place quittée qui revient, pas la section', async () => {
+    poserLaSection({ valeur: 700 })
+    servirAccueil()
+    monter('/#au-cine')
+    const zone = await screen.findByRole('main')
+    await accueilArrive(zone)
+    fireEvent.wheel(zone)
+    defiler(zone, 1500)
+    await ouvrirFilm(zone, 14)
+    expect(zone.scrollTop).toBe(0)
+
+    act(() => historique(-1))
+
+    await accueilArrive(zone)
+    expect(zone.scrollTop).toBe(1500)
+  })
+})
+
+describe('sauter', () => {
+  let zone: HTMLElement
+  const haut = { valeur: 400 }
+  const pousser = async (de: number) => {
+    haut.valeur += de
+    await act(async () => {
+      zone.append(document.createElement('p'))
+      await Promise.resolve()
+    })
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    haut.valeur = 400
+    zone = document.createElement('main')
+    const section = document.createElement('section')
+    section.id = 'au-cine'
+    zone.append(section)
+    document.body.append(zone)
+    poserLaSection(haut)
+  })
+  afterEach(() => {
+    zone.remove()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  // Mutation : l'observateur retiré de `sauter` : la section poussée par ce qui arrive au-dessus d'elle
+  // sortirait de l'écran.
+  it('la section poussée par ce qui arrive au-dessus d’elle est reprise', async () => {
+    sauter(zone, 'au-cine')
+    expect(zone.scrollTop).toBe(400)
+
+    await pousser(250)
+
+    expect(zone.scrollTop).toBe(650)
+  })
+
+  // Mutation : les gestes non écoutés : la page reprendrait la main au membre qui défile.
+  it('un geste du membre y met fin', async () => {
+    sauter(zone, 'au-cine')
+    fireEvent.touchStart(zone)
+
+    await pousser(250)
+
+    expect(zone.scrollTop).toBe(400)
+  })
+
+  // Mutation : la minuterie retirée : une donnée tardive ferait sauter la page des secondes après.
+  it('passé le délai, un contenu qui arrive ne fait plus sauter la page', async () => {
+    sauter(zone, 'au-cine')
+    vi.advanceTimersByTime(DELAI_RESTAURATION)
+
+    await pousser(250)
+
+    expect(zone.scrollTop).toBe(400)
+  })
+
+  // Mutation : sans élément, la zone remise en haut (`zone.scrollTop = element ? hautDe(zone, element) : 0`).
+  it('sans la section dans la page, rien ne bouge', () => {
+    zone.querySelector('section')!.remove()
+    zone.scrollTop = 120
+
+    sauter(zone, 'au-cine')
+
+    expect(zone.scrollTop).toBe(120)
   })
 })
 

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { IconCheck, IconMovie, IconUser } from '@tabler/icons-react'
@@ -28,6 +28,7 @@ import { useMaintenant } from './useMaintenant'
 import { usePosition } from './usePosition'
 import { useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useChargementInfini } from '../accueil/useChargementInfini'
+import { ANCRE_AU_CINE } from '../coque/defilement'
 import Affiche from '../ui/Affiche'
 import Attente, { Barre } from '../ui/Attente'
 import Sceau from '../ui/Sceau'
@@ -40,16 +41,19 @@ import type { EtatFiche } from '../pages/FicheFilm'
 
 /** Deux rangées de la grille des sorties, trois tuiles chacune. */
 const TUILES_EN_ATTENTE = 6
-const LIGNES_EN_ATTENTE = 3
 
 /** Même page que côté back par défaut, et que `JournalApi.seances()` (Android). */
 const LIMITE = 40
 
-/** L'identifiant de la section : celui que porte une adresse qui y mène (`#au-cine`). */
-export const ANCRE_AU_CINE = 'au-cine'
-
 /**
- * « Au ciné » (reprise de `AuCineScreen.kt`) : mes séances (`GET /me/journal?reaction=en_salle`),
+ * « Au ciné », une section de l'accueil depuis le 13 octobre 2026 (elle était un onglet) : elle porte
+ * l'ancre `au-cine`, où mènent son ancienne adresse et le retour de la fiche d'un film
+ * (`coque/defilement.ts`). Elle ne dépend de rien d'autre sur la page : ses requêtes, ses attentes et
+ * ses pannes sont les siennes. « Tes séances » y est repliée derrière « Tout voir » (décision D5) :
+ * les séances se lisent quand même, le compte de l'année, la coche des tuiles et l'état de la fiche
+ * d'un film en viennent ; leur suite ne se demande qu'une fois la liste dépliée.
+ *
+ * (Reprise de `AuCineScreen.kt`) : mes séances (`GET /me/journal?reaction=en_salle`),
  * et les sorties en salle de la semaine en cours et de la semaine prochaine (`GET
  * /reference/sorties`) — rien de plus, pas de recommandation. Le sceau des Suivis (« le guichet »,
  * 25 septembre 2026) marque une tuile dont le réalisateur ou la saga est suivi (`cinema/etats.ts`).
@@ -64,7 +68,7 @@ export const ANCRE_AU_CINE = 'au-cine'
  * prochaine séance. Les séances commencées s'en vont d'elles-mêmes (`useMaintenant`, une horloge qui
  * refiltre, jamais un nouvel appel). La position du membre, qui ne sert qu'à classer les salles par
  * distance, ne se demande qu'au toucher de « Autoriser » (`cinema/usePosition.ts`). Toucher un film
- * ouvre sa fiche sous `au-cine/films/:tmdbId`, l'onglet restant marqué.
+ * ouvre sa fiche sous `au-cine/films/:tmdbId`, l'onglet Accueil restant marqué.
  *
  * Trois appels indépendants, chacun avec son chargement et son erreur (même règle que
  * `AuCineViewModel` : une panne TMDB n'a aucune raison d'effacer « Tes séances », qui vient d'une
@@ -100,7 +104,10 @@ export default function SectionAuCine() {
   const chargerLaSuite = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage()
   }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
-  const sentinelle = useChargementInfini(chargerLaSuite, !!hasNextPage)
+  // Repliée, la liste n'a pas de sentinelle : rien ne demande la suite de ce qu'on ne regarde pas.
+  const [deplie, setDeplie] = useState(false)
+  const idListe = useId()
+  const sentinelle = useChargementInfini(chargerLaSuite, deplie && !!hasNextPage)
 
   const items = useMemo(() => seances.data?.pages.flatMap((page) => page.items) ?? [], [seances.data])
   const chargementComplet = !hasNextPage
@@ -215,14 +222,20 @@ export default function SectionAuCine() {
       </section>
 
       <section className={styles.section}>
-        <p className={styles.titreSection}>Tes séances</p>
+        <div className={styles.enteteSection}>
+          <p className={styles.titreSection}>Tes séances</p>
+          {items.length > 0 ? (
+            <button type="button" className={styles.toutVoir} aria-expanded={deplie} aria-controls={idListe} onClick={() => setDeplie(!deplie)}>
+              {deplie ? 'Réduire' : 'Tout voir'}
+            </button>
+          ) : null}
+        </div>
 
         {seances.isPending ? (
+          // Une seule ligne en blanc : la liste arrive repliée, elle ne prendra pas plus de place.
           <Attente>
-            <div className={styles.liste}>
-              {Array.from({ length: LIGNES_EN_ATTENTE }, (_, ligne) => (
-                <LigneEnAttente key={ligne} />
-              ))}
+            <div data-testid="seances-en-attente">
+              <Barre largeur="moyenne" />
             </div>
           </Attente>
         ) : !seances.data ? (
@@ -232,10 +245,8 @@ export default function SectionAuCine() {
             {items.length === 0 && chargementComplet ? (
               <p className={styles.videGrille}>Aucune séance pour l’instant.</p>
             ) : (
-              <div className={styles.liste}>
-                {items.map((item) => (
-                  <LigneSeance key={item.entry.id} item={item} />
-                ))}
+              <div id={idListe} className={styles.liste} hidden={!deplie}>
+                {deplie ? items.map((item) => <LigneSeance key={item.entry.id} item={item} />) : null}
               </div>
             )}
 
@@ -257,7 +268,7 @@ export default function SectionAuCine() {
                 Chargement…
               </p>
             ) : null}
-            {hasNextPage ? <div ref={sentinelle} data-testid="sentinelle-au-cine" /> : null}
+            {deplie && hasNextPage ? <div ref={sentinelle} data-testid="sentinelle-au-cine" /> : null}
           </>
         )}
       </section>
@@ -448,27 +459,10 @@ function GrilleEnAttente({ muet = false, avecSousTitre = false }: { muet?: boole
   )
 }
 
-/** Une ligne de « Tes séances » laissée en blanc : l'affiche et deux lignes de texte. */
-function LigneEnAttente() {
-  return (
-    <div className={styles.ligne} data-testid="ligne-en-attente">
-      <Affiche src={null} titre="" taille="ligne" />
-      <div className={styles.infosLigne}>
-        <div className={styles.titreLigne}>
-          <Barre largeur="longue" />
-        </div>
-        <div className={styles.sousTitreLigne}>
-          <Barre largeur="moyenne" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /** Une ligne de « Tes séances » — jumelle de `LigneFilm` (`MesFilms.tsx`), sans filtre ni réaction. */
 function LigneSeance({ item }: { item: JournalItem }) {
   return (
-    <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: '/au-cine' }} className={styles.ligne}>
+    <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: `/#${ANCRE_AU_CINE}` }} className={styles.ligne}>
       <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} taille="ligne" chargement="lazy" />
       <div className={styles.infosLigne}>
         <p className={styles.titreLigne}>{item.media.title}</p>

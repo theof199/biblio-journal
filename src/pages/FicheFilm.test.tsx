@@ -590,7 +590,8 @@ describe('la fiche d’un film : « Séances aujourd’hui »', () => {
     monter(null, 27000, createQueryClient(), '/au-cine/films')
 
     expect(screen.getByText('Ce film n’est plus disponible. Repars d’Au ciné.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Retour à Au ciné' })).toHaveAttribute('href', '/au-cine')
+    // Mutation : `to="/"` : le lien ouvrirait l'accueil en haut, pas sur la section.
+    expect(screen.getByRole('link', { name: 'Retour à Au ciné' })).toHaveAttribute('href', '/#au-cine')
     expect(screen.queryByText(/Suivis/)).not.toBeInTheDocument()
     await avancer(50)
     expect(requetes).toEqual([])

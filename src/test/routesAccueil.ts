@@ -9,6 +9,11 @@ import { json } from './serveur'
  * de voir la page réessayer une route « inattendue » plutôt que de se stabiliser. Toutes vides ou
  * non configurées : de quoi n'afficher que la vitrine vide, sans « Ce soir » ni « Ensuite », qui
  * ont leurs propres tests.
+ *
+ * Depuis le 13 octobre 2026, la section « Au ciné » vit sur l'accueil (`cinema/SectionAuCine.tsx`) :
+ * `/` appelle aussi les sorties, les séances du jour et mes séances, vides ici elles aussi. Les deux
+ * listes suivies qu'elle lit pour ses sceaux sont celles de l'accueil, sous les mêmes clés : une
+ * seule requête chacune.
  */
 const COMPTES_VIDES = {
   finished: 0,
@@ -81,4 +86,11 @@ export const ROUTES_ACCUEIL: Record<string, () => Response> = {
   'GET /api/reference/plex': () => json({ configure: false, calcule_le: null, films: [], demandes: [] }),
   'GET /api/me/realisateurs': () => json([]),
   'GET /api/me/sagas': () => json([]),
+  'GET /api/reference/sorties': () =>
+    json({
+      en_cours: { du: '2026-10-13', au: '2026-10-13', calcule_le: null, cinemas_configures: false, films: [] },
+      prochaine: { du: '2026-10-14', au: '2026-10-20', films: [] },
+    }),
+  'GET /api/me/cinema/seances': () => json({ jour: '2026-10-13', calcule_le: null, cinemas: [], seances: [] }),
+  'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items: [], next_cursor: null }),
 }

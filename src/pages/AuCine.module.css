@@ -1,7 +1,0 @@
-/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
-
-.page {
-  max-width: var(--largeur-page);
-  margin: 0 auto;
-  padding: var(--espace-2) var(--espace-4) var(--espace-6);
-}

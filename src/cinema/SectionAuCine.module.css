@@ -14,8 +14,12 @@
   min-height: var(--cible-tactile);
 }
 
+/* Le titre de la section, de la taille de « Le journal » qui la suit sur l'accueil. */
 .titre {
   margin: 0;
+  font-size: var(--taille-titre-section);
+  font-weight: var(--graisse-noire);
+  line-height: var(--interligne-serre);
 }
 
 .compte {
@@ -45,6 +49,21 @@
   color: var(--couleur-texte-doux);
   text-transform: uppercase;
   letter-spacing: var(--interlettre-capitales);
+}
+
+/* « Tout voir » : la lettre de « Mes films » et de « Dérouler », un lien de plus sur l'accueil. */
+.toutVoir {
+  min-height: var(--cible-tactile);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--couleur-accent);
+  font-family: var(--police-fronton);
+  font-size: var(--taille-meta);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .cinemaUnique {

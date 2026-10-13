@@ -33,13 +33,18 @@ const ATTENDUS = [
   { libelle: 'Accueil', chemin: '/', icone: 'building-pavilion', titre: /^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche) /u },
   { libelle: 'Voyage', chemin: '/voyage', icone: 'route', titre: `Le Voyage de ${SESSION.user.pseudo}` },
   { libelle: 'Suivis', chemin: '/suivis', icone: 'chair-director', titre: 'Suivis' },
-  { libelle: 'Au ciné', chemin: '/au-cine', icone: 'ticket', titre: 'Au ciné' },
   { libelle: 'Profil', chemin: '/profil', icone: 'armchair', titre: `Profil de ${SESSION.user.pseudo}` },
 ] as const
 
 /** Le chemin courant, lu par le test : une redirection se constate, elle ne se devine pas. */
 function Ou() {
-  return <output data-testid="chemin">{useLocation().pathname}</output>
+  const { pathname, hash } = useLocation()
+  return (
+    <>
+      <output data-testid="chemin">{pathname}</output>
+      <output data-testid="adresse">{pathname + hash}</output>
+    </>
+  )
 }
 
 function monter(chemin: string) {
@@ -76,7 +81,7 @@ describe('la coque à onglets', () => {
     vi.unstubAllGlobals()
   })
 
-  it.each(ATTENDUS)('sur $chemin, la barre montre les cinq onglets et marque $libelle seul', async (courant) => {
+  it.each(ATTENDUS)('sur $chemin, la barre montre ses onglets et marque $libelle seul', async (courant) => {
     servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
     monter(courant.chemin)
 
@@ -207,9 +212,10 @@ describe('la coque à onglets', () => {
     expect(marques).toEqual(['Voyage'])
   })
 
-  // Mutation : la route `au-cine/films/:tmdbId` déclarée à côté de `<Coque />`, ou sous un autre
-  // préfixe (`films/:tmdbId`) : la barre disparaîtrait, ou ce serait un autre onglet qui serait marqué.
-  it('la fiche d’un film ouverte depuis Au ciné garde la barre, l’onglet Au ciné seul marqué', async () => {
+  // Mutations : la route `au-cine/films/:tmdbId` déclarée à côté de `<Coque />` (la barre
+  // disparaîtrait) ; `aussi: ['/au-cine']` retiré de l'onglet Accueil dans `ONGLETS` (plus aucun onglet
+  // ne serait marqué : la page n'est sous le chemin d'aucun).
+  it('la fiche d’un film ouverte depuis la section Au ciné garde son adresse et la barre, l’onglet Accueil seul marqué', async () => {
     servir({
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/reference/films/27205': () => json(exemple('/reference/films/{tmdbId}', 'get', 200)),
@@ -224,8 +230,20 @@ describe('la coque à onglets', () => {
       .getAllByRole('link')
       .filter((lien) => lien.getAttribute('aria-current') === 'page')
       .map((lien) => lien.textContent)
-    expect(marques).toEqual(['Au ciné'])
+    expect(marques).toEqual(['Accueil'])
     expect(chemin()).toBe('/au-cine/films/27205')
+  })
+
+  // Mutations, dans `App.tsx` : la route `au-cine` retirée (l'adresse tomberait sur `*`, sans ancre) ;
+  // `to="/"` (la redirection perdrait l'ancre, et l'accueil s'ouvrirait en haut).
+  it('l’ancienne adresse d’Au ciné mène à l’accueil, sur l’ancre de la section', async () => {
+    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
+    monter('/au-cine')
+
+    expect(await screen.findByRole('heading', { level: 1, name: ATTENDUS[0].titre })).toBeInTheDocument()
+    expect(screen.getByTestId('adresse')).toHaveTextContent(/^\/#au-cine$/)
+    expect(screen.getByRole('region', { name: 'Au ciné' })).toHaveAttribute('id', 'au-cine')
+    expect(within(barre()).getByRole('link', { name: 'Accueil' })).toHaveAttribute('aria-current', 'page')
   })
 
   it.each(['/nulle-part', '/voyage/1898/salles', '/profil/inconnu'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {

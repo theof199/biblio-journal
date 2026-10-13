@@ -24,6 +24,13 @@
   min-width: 0;
 }
 
+/* La section « Au ciné », puis le journal, dans l'écart des sections de la page. */
+.colonneJournal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-5);
+}
+
 /* Sur grand écran, l'entrée reste sous les yeux pendant que le journal défile. La position vient d'un jeton :
    `sticky` forme un contexte d'empilement, que le téléphone n'a pas à recevoir pour rien. */
 .entree {

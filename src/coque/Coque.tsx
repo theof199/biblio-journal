@@ -1,11 +1,10 @@
 import { Suspense, useLayoutEffect, useRef } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
   IconArmchair,
   IconBuildingPavilion,
   IconChairDirector,
   IconRoute,
-  IconTicket,
   type TablerIcon,
 } from '@tabler/icons-react'
 import PageEnAttente from '../session/PageEnAttente'
@@ -18,19 +17,33 @@ export interface Onglet {
   chemin: string
   libelle: string
   Icone: TablerIcon
+  /** Les préfixes qui, sans être sous `chemin`, marquent aussi cet onglet. */
+  aussi?: readonly string[]
 }
 
 /**
- * Les cinq onglets, dans l'ordre de la barre de l'appli Android (`Navigation.kt`, `BottomTab`).
+ * Les onglets, dans l'ordre de la barre. « Au ciné » n'en est plus un : il est une section de
+ * l'accueil (`cinema/SectionAuCine.tsx`), et sa place revient au Feuilleton.
  * Ajouter un onglet ici ne suffit pas : sa route se déclare aussi dans `App.tsx`, sous `<Coque />`.
  */
 export const ONGLETS: readonly Onglet[] = [
-  { chemin: '/', libelle: 'Accueil', Icone: IconBuildingPavilion },
+  // La fiche d'un film ouverte depuis la section « Au ciné » de l'accueil garde son adresse d'avant
+  // (`au-cine/films/:tmdbId`) : elle est une page de l'accueil.
+  { chemin: '/', libelle: 'Accueil', Icone: IconBuildingPavilion, aussi: ['/au-cine'] },
   { chemin: '/voyage', libelle: 'Voyage', Icone: IconRoute },
   { chemin: '/suivis', libelle: 'Suivis', Icone: IconChairDirector },
-  { chemin: '/au-cine', libelle: 'Au ciné', Icone: IconTicket },
   { chemin: '/profil', libelle: 'Profil', Icone: IconArmchair },
 ]
+
+const sous = (pathname: string, prefixe: string) => pathname === prefixe || pathname.startsWith(`${prefixe}/`)
+
+/**
+ * Un onglet est marqué sur sa page et sur ses sous-pages (`/voyage/…`), et sur celles de ses préfixes
+ * `aussi`. `/` n'a pas de sous-page : tout chemin en serait une.
+ */
+export function estMarque({ chemin, aussi = [] }: Onglet, pathname: string): boolean {
+  return (chemin === '/' ? pathname === '/' : sous(pathname, chemin)) || aussi.some((prefixe) => sous(pathname, prefixe))
+}
 
 /**
  * La coque de l'app connectée : la page de l'onglet courant (`<Outlet />`), et la barre d'onglets
@@ -39,8 +52,8 @@ export const ONGLETS: readonly Onglet[] = [
  */
 export default function Coque() {
   const contenu = useRef<HTMLElement>(null)
-  const { key, pathname } = useLocation()
-  useDefilementMemorise(contenu, key)
+  const { key, pathname, hash } = useLocation()
+  useDefilementMemorise(contenu, key, hash)
 
   // Le Voyage a son propre fond : sans cet attribut sur `<html>`, `theme.css` peint le ciel du bâtiment.
   const auVoyage = pathname === '/voyage' || pathname.startsWith('/voyage/')
@@ -65,14 +78,14 @@ export default function Coque() {
 
       <nav className={styles.barre} aria-label="Onglets">
         <ul className={styles.liste}>
-          {ONGLETS.map(({ chemin, libelle, Icone }) => (
-            <li key={chemin} className={styles.element}>
-              {/* Sans `end` : un onglet reste marqué sur ses sous-pages (`/voyage/…`). `/` n'en
-                  a pas besoin, React Router ne le marque que sur `/` même (6.30). */}
-              <NavLink to={chemin} className={styles.onglet}>
-                <Icone aria-hidden="true" className={styles.icone} />
-                <span className={styles.libelle}>{libelle}</span>
-              </NavLink>
+          {ONGLETS.map((onglet) => (
+            <li key={onglet.chemin} className={styles.element}>
+              {/* Un `Link` et non un `NavLink` : c'est `estMarque` qui dit l'onglet courant, pour qu'une
+                  page puisse appartenir à un onglet sans vivre sous son chemin. */}
+              <Link to={onglet.chemin} className={styles.onglet} aria-current={estMarque(onglet, pathname) ? 'page' : undefined}>
+                <onglet.Icone aria-hidden="true" className={styles.icone} />
+                <span className={styles.libelle}>{onglet.libelle}</span>
+              </Link>
             </li>
           ))}
         </ul>

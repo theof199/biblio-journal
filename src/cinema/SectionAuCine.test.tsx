@@ -122,6 +122,9 @@ function monter(client = createQueryClient()) {
   )
 }
 
+/** « Tes séances » arrive repliée : la liste, sa sentinelle et sa suite ne viennent qu'après ce geste. */
+const deplier = async () => fireEvent.click(await screen.findByRole('button', { name: 'Tout voir' }))
+
 const routeSeances = (items: JournalItem[], next_cursor: string | null = null) => ({
   'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items, next_cursor }),
 })
@@ -268,10 +271,13 @@ describe('Au ciné', () => {
       ...routeSeances([seance({ id: 's1', finished_at: '2026-09-10', title: 'Une séance' })]),
     })
     monter()
+    await deplier()
 
     fireEvent.click(await screen.findByText('Une séance'))
 
-    expect(await screen.findByText('Fiche de Une séance, depuis /au-cine')).toBeInTheDocument()
+    // Mutation : `depuis: '/'` dans `LigneSeance` : le retour de la fiche ouvrirait l'accueil en haut,
+    // loin de la section d'où l'on vient.
+    expect(await screen.findByText('Fiche de Une séance, depuis /#au-cine')).toBeInTheDocument()
   })
 
   it('l’erreur des sorties s’affiche telle quelle, avec Réessayer, sans se redire sous « La semaine prochaine »', async () => {
@@ -321,6 +327,7 @@ describe('Au ciné', () => {
       'GET /api/me/journal?limit=40&cursor=page-2&reaction=en_salle': () => json({ items: [s2], next_cursor: null }),
     })
     monter()
+    await deplier()
 
     await screen.findByTestId('sentinelle-au-cine')
     expect(requetes.filter((r) => r.startsWith('GET /api/me/journal'))).toHaveLength(1)
@@ -346,6 +353,7 @@ describe('Au ciné', () => {
       'GET /api/me/journal?limit=40&cursor=page-2&reaction=en_salle': () => (enPanne ? pannePassagere() : json({ items: [s2], next_cursor: null })),
     })
     monter()
+    await deplier()
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Le journal n’a pas pu être lu.')
     // Mutation : sans `isFetchNextPageError` dans la garde, l'observateur recréé après l'échec
@@ -358,6 +366,62 @@ describe('Au ciné', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
     expect(await screen.findByText('Seconde')).toBeInTheDocument()
     expect(pagesDe(requetes)).toBe(2)
+  })
+
+  describe('« Tes séances », repliée derrière « Tout voir »', () => {
+    const s1 = seance({ id: 's1', finished_at: '2026-09-10', title: 'Premiere' })
+    const s2 = seance({ id: 's2', finished_at: '2026-09-01', title: 'Seconde' })
+
+    // Mutations, dans `SectionAuCine.tsx` : `useState(true)` (la liste arrive dépliée) ; la sentinelle
+    // rendue ou observée sans `deplie` (la suite se demande sans que personne ne regarde la liste).
+    it('arrive repliée : aucune ligne, aucune sentinelle, et la suite ne se demande pas, même le bas de la page en vue', async () => {
+      vi.stubGlobal('IntersectionObserver', ObservateurVisible)
+      const requetes = servir({
+        'GET /api/reference/sorties': () => json(SORTIES_VIDES),
+        'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items: [s1], next_cursor: 'page-2' }),
+        'GET /api/me/journal?limit=40&cursor=page-2&reaction=en_salle': () => json({ items: [s2], next_cursor: null }),
+      })
+      monter()
+
+      const bouton = await screen.findByRole('button', { name: 'Tout voir' })
+      expect(bouton).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByText('Premiere')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('sentinelle-au-cine')).not.toBeInTheDocument()
+      await patienter(50)
+      expect(pagesDe(requetes)).toBe(0)
+    })
+
+    // Mutation : `onClick` du bouton retiré, ou `deplie` jamais remis à faux.
+    it('« Tout voir » la déplie et demande sa suite, « Réduire » la replie', async () => {
+      vi.stubGlobal('IntersectionObserver', ObservateurVisible)
+      const requetes = servir({
+        'GET /api/reference/sorties': () => json(SORTIES_VIDES),
+        'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items: [s1], next_cursor: 'page-2' }),
+        'GET /api/me/journal?limit=40&cursor=page-2&reaction=en_salle': () => json({ items: [s2], next_cursor: null }),
+      })
+      monter()
+      await deplier()
+
+      expect(screen.getByText('Premiere')).toBeInTheDocument()
+      expect(await screen.findByText('Seconde')).toBeInTheDocument()
+      expect(pagesDe(requetes)).toBe(1)
+      const bouton = screen.getByRole('button', { name: 'Réduire' })
+      expect(bouton).toHaveAttribute('aria-expanded', 'true')
+
+      fireEvent.click(bouton)
+
+      expect(screen.queryByText('Premiere')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Tout voir' })).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    // Mutation : le bouton rendu sans condition : il ouvrirait sur rien.
+    it('sans aucune séance, rien à déplier : le message seul', async () => {
+      servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances([]) })
+      monter()
+
+      expect(await screen.findByText('Aucune séance pour l’instant.')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Tout voir' })).not.toBeInTheDocument()
+    })
   })
 
   it('une séance passée d’une autre année ne compte jamais dans l’en-tête', async () => {
@@ -489,20 +553,20 @@ describe('Au ciné qui attend ses données', () => {
     expect(screen.getByText('Tes séances')).toBeInTheDocument()
   })
 
-  it('dessine deux grilles de six tuiles en blanc et trois lignes de séance', async () => {
+  it('dessine deux grilles de six tuiles en blanc et, pour les séances repliées, une seule ligne', async () => {
     servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
     monter()
 
     expect(await screen.findAllByTestId('tuile-en-attente')).toHaveLength(12)
-    expect(screen.getAllByTestId('ligne-en-attente')).toHaveLength(3)
+    expect(screen.getAllByTestId('seances-en-attente')).toHaveLength(1)
   })
 
-  it('les séances arrivées, ses lignes en blanc et son statut s’en vont, les sorties attendent encore', async () => {
+  it('les séances arrivées, sa ligne en blanc et son statut s’en vont, les sorties attendent encore', async () => {
     servir({ 'GET /api/reference/sorties': jamais, ...routeSeances([seance({ id: 'e1', finished_at: '2026-09-10', title: 'Alien' })]) })
     monter()
 
-    expect(await screen.findByText('Alien')).toBeInTheDocument()
-    expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Tout voir' })).toBeInTheDocument()
+    expect(screen.queryByTestId('seances-en-attente')).not.toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
     expect(screen.getAllByTestId('tuile-en-attente')).toHaveLength(12)
   })
@@ -514,14 +578,14 @@ describe('Au ciné qui attend ses données', () => {
     expect(await screen.findByText('Rien cette semaine.')).toBeInTheDocument()
     expect(screen.queryByTestId('tuile-en-attente')).not.toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getAllByTestId('ligne-en-attente')).toHaveLength(3)
+    expect(screen.getAllByTestId('seances-en-attente')).toHaveLength(1)
   })
 
   it('ne dit pas « 0 séance cette année » tant que les séances ne sont pas là', async () => {
     servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
     monter()
 
-    await screen.findAllByTestId('ligne-en-attente')
+    await screen.findByTestId('seances-en-attente')
     expect(screen.queryByText(/séances? cette année/)).not.toBeInTheDocument()
   })
 
@@ -537,10 +601,10 @@ describe('Au ciné qui attend ses données', () => {
     monter()
 
     expect(await screen.findByText('Rien cette semaine.')).toBeInTheDocument()
-    expect(await screen.findByText('Alien')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Tout voir' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByTestId('tuile-en-attente')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('ligne-en-attente')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('seances-en-attente')).not.toBeInTheDocument()
   })
 
   it('ne lance que les cinq requêtes de la page, chacune une fois — les séances du jour en une seule', async () => {
