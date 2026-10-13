@@ -27,6 +27,9 @@ export type VuADeux = Json<paths['/me/feuilleton/vus-a-deux']['post']['responses
 /** `{ invitation, serie }` : la carte de la série chez l'invité, après la coche. */
 export type Confirmation = Json<paths['/me/feuilleton/vus-a-deux/{id}/confirmer']['post']['responses'][200]>
 
+/** `{ serie }` : la carte de la série reprise (`en_pause` faux, `repere` à `reprise`). */
+export type Reprise = Json<paths['/me/feuilleton/series/{id}/reprendre']['post']['responses'][200]>
+
 /** La réponse de la coche du suivi : elle ne porte pas la carte, la télécommande se relit. */
 export type Coche = Json<paths['/episodes/{id}/watched']['put']['responses'][200]>
 type Fiche = Json<paths['/media/{id}']['get']['responses'][200]>
@@ -56,6 +59,12 @@ export const inviterAVoirADeux = (corps: CorpsDInvitation) => api.post<VuADeux>(
 export const confirmerLeVuADeux = (id: string) => api.post<Confirmation>(`/me/feuilleton/vus-a-deux/${id}/confirmer`)
 export const refuserLeVuADeux = (id: string) => api.post<VuADeux>(`/me/feuilleton/vus-a-deux/${id}/refuser`)
 
+/**
+ * « Reprendre » : la série sort de la pause **sans qu'aucun épisode soit coché**. Idempotente ; `404` quand
+ * la série n'est plus sur la télécommande (finie, ou plus suivie). Sans corps.
+ */
+export const reprendreLaSerie = (serieId: string) => api.post<Reprise>(`/me/feuilleton/series/${serieId}/reprendre`)
+
 const PAS_UNE_SERIE = 'Cette fiche n’est pas celle d’une série.'
 
 /** La fiche d'une série (`GET /media/{id}`). Rien à voir avec une fiche d'année du Voyage : cette lecture est anodine. */
@@ -64,6 +73,16 @@ export const lireLaFiche = async (serieId: string, signal?: AbortSignal): Promis
   if (fiche.type !== 'tv') throw new Error(PAS_UNE_SERIE)
   return fiche
 }
+
+/** Le rafraîchissement interroge la source, une requête par saison : il peut durer bien plus qu'une écriture ordinaire. */
+const DELAI_DU_RAFRAICHISSEMENT = 60_000
+
+/**
+ * Reprendre la fiche à sa source (`POST /media/{id}/refresh`, sans corps) : saisons et épisodes neufs,
+ * métadonnées, jamais le suivi. La réponse (`changes`, `divergences`, `media` au format des listes) n'est
+ * pas lue : la fiche se relit. `429` (la source limite), `503` (source non configurée ou en panne).
+ */
+export const rafraichirLaFiche = (serieId: string) => api.post<unknown>(`/media/${serieId}/refresh`, undefined, DELAI_DU_RAFRAICHISSEMENT)
 
 /** Le plus que le serveur accepte par page (le défaut est 40). */
 const EPISODES_PAR_PAGE = 100

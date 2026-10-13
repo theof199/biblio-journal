@@ -38,6 +38,15 @@ describe('« Regardée … » : le pied de l’écran, en jours de Paris', () =>
   })
 
   // Mutation : `repere` ignoré dans `direQuandLaSerie` (une série jamais vue se dirait « Regardée »).
+  // Mutations, dans `donnees.ts` : `reprise: 'Regardée'` dans `VERBES` ; `activiteLe(carte)` remplacé par
+  // `carte.dernier_visionnage_le` dans `direQuandLaSerie` (« Reprise il y a 45 jours ») ; `&& carte.reprise_le`
+  // devenu `|| carte.reprise_le` dans `activiteLe` (un visionnage plus récent se daterait de la vieille reprise).
+  it('`repere: reprise` : la série est « Reprise », à la date de `reprise_le` ; une reprise qui ne compte plus ne date rien', () => {
+    expect(direQuandLaSerie(carte('a', '2026-08-30T20:05:00Z', { repere: 'reprise', reprise_le: '2026-10-13T19:41:00Z' }), MAINTENANT)).toBe('Reprise hier soir')
+    expect(direQuandLaSerie(carte('a', '2026-10-13T19:41:00Z', { repere: 'visionnage', reprise_le: '2026-10-01T08:00:00Z' }), MAINTENANT)).toBe('Regardée hier soir')
+    expect(direQuandLaSerie(carte('a', '2026-10-10T07:00:00Z', { repere: 'suivi', reprise_le: null }), MAINTENANT)).toBe('Ajoutée il y a 4 jours')
+  })
+
   it('`repere: suivi` : rien n’a été vu, la série est « Ajoutée »', () => {
     expect(direQuandLaSerie(carte('a', '2026-10-14T07:00:00Z', { repere: 'suivi' }), MAINTENANT)).toBe('Ajoutée aujourd’hui')
     expect(direQuandLaSerie(carte('a', '2026-10-10T07:00:00Z', { repere: 'suivi' }), MAINTENANT)).toBe('Ajoutée il y a 4 jours')
@@ -103,6 +112,14 @@ describe('la réponse de la télécommande, lue et réécrite', () => {
     expect(ids(poserLaCarte(T, carte('e', '2026-01-01T10:00:00Z')))).toEqual(['a', 'b', 'c', 'e'])
     expect(ids(poserLaCarte(T, { ...A, finie: true }))).toEqual(['b', 'c'])
     expect(poserLaCarte(T, { ...A, finie: true }).a_confirmer).toBe(T.a_confirmer)
+  })
+
+  // Mutation, dans `donnees.ts` : `instant` lu sur `dernier_visionnage_le` (la série reprise resterait en queue).
+  it('une carte reprise se place à la date de sa reprise, pas de son dernier visionnage', () => {
+    const reprise = { ...C, en_pause: false, repere: 'reprise' as const, reprise_le: '2026-10-14T18:00:00Z' }
+    expect(ids(poserLaCarte(T, reprise))).toEqual(['c', 'a', 'b'])
+    // Parmi des cartes dont l'une est déjà reprise : elle aussi se compare à sa reprise.
+    expect(ids(poserLaCarte({ ...T, series: [reprise, A, B] }, carte('d', '2026-10-14T12:00:00Z')))).toEqual(['c', 'd', 'a', 'b'])
   })
 
   // Mutation : le filtre de `retirerLInvitation` inversé, ou posé sur `serie.id`.

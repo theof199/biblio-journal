@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { IconCheck, IconChevronDown, IconChevronUp, IconDots, IconPlus } from '@tabler/icons-react'
+import { IconCheck, IconChevronDown, IconChevronUp, IconDots, IconPlayerPlay, IconPlus } from '@tabler/icons-react'
 import Affiche from '../../ui/Affiche'
 import Attente, { Barre } from '../../ui/Attente'
 import Monogramme from '../Monogramme'
@@ -23,6 +23,8 @@ export interface PropsVueListe {
   /** Les écritures : celles du petit écran (`vivante.ts`), carte par carte. */
   onVu?: (coche: EpisodeCoche) => boolean | void
   onAnnulerLeVu?: (coche: EpisodeCoche) => void
+  /** « Reprendre », la touche d'une carte en pause : la série sort de la pause, rien n'est coché. `false` : le geste est refusé. */
+  onReprendre?: (serie: SerieALEcran) => boolean | void
   onConfirmer?: (invitation: InvitationALEcran) => void
   onRefuser?: (invitation: InvitationALEcran) => void
   /** « ⋯ » règle la télécommande sur la série ; « Ajouter une série » mène à l'ajout. */
@@ -48,6 +50,10 @@ const FANTOMES = 3
  * touche ailleurs, l'ordre attend encore la fin de ce geste : ce qu'on est en train de toucher ne bouge
  * pas, et si c'est un autre « Vu », son message tient l'ordre à son tour. Un avis sans carte (« Vu à deux
  * noté », ou l'avis d'une carte de « En pause » repliée) qui chasse ce message rend l'ordre à son départ.
+ *
+ * **« Reprendre » suit la même règle, d'une section à l'autre.** L'ordre se fige au toucher : la carte
+ * reprise reste où elle est, dans « En pause », le temps de la réponse puis de son message (« Reprise », ou
+ * l'échec), à la place de ses touches ; au départ du message elle paraît en tête d'« En cours », avec « Vu ».
  */
 export default function VueListe(props: PropsVueListe) {
   const { lecture, invitations, enCours, enPause, avis, allerA } = props
@@ -115,6 +121,12 @@ export default function VueListe(props: PropsVueListe) {
     setRetour({ texte: lireLeRetourDuVu(coche), coche })
   }
 
+  const reprendre = (serie: SerieALEcran) => {
+    if (!props.onReprendre || props.onReprendre(serie) === false) return
+    // Figé dès le toucher : la réponse, qui porte la carte en tête d'« En cours », ne la déplace pas sous le doigt.
+    setFige({ enCours: montre.enCours.map((carte) => carte.id), enPause: montre.enPause.map((carte) => carte.id) })
+  }
+
   /** Ce qui prend la place des touches d'une carte, à hauteur égale : l'avis qui parle d'elle, ou le retour de son « Vu ». */
   const messageDe = (id: string): ReactNode => {
     if (avisSurCarte?.sujet === id) {
@@ -166,7 +178,12 @@ export default function VueListe(props: PropsVueListe) {
       <div className={styles.rangee}>
         {messageDe(serie.id) ?? (
           <>
-            {serie.episode ? (
+            {serie.enPause ? (
+              <button type="button" className={`${styles.touche} ${styles.large}`} data-piece="touche" aria-label={`Reprendre : ${serie.titre}`} disabled={!props.onReprendre} onClick={() => reprendre(serie)}>
+                <IconPlayerPlay aria-hidden="true" className={styles.icone} />
+                Reprendre
+              </button>
+            ) : serie.episode ? (
               <button
                 type="button"
                 className={`${styles.touche} ${styles.principale} ${styles.large}`}

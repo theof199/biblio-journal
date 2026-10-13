@@ -6,6 +6,7 @@ import {
   IconChevronRight,
   IconFileText,
   IconList,
+  IconPlayerPlay,
   IconPlus,
   IconStack2,
   IconUsers,
@@ -101,6 +102,8 @@ export interface PropsVueTelecommande {
   onSuivante?: () => void
   /** « Vu » : cocher le prochain épisode de la série à l'écran. `false` : le geste est refusé (une écriture est en cours), aucun message. */
   onVu?: (coche: EpisodeCoche) => boolean | void
+  /** « Reprendre » : la touche principale d'une série en pause, à la place de « Vu ». Elle sort la série de la pause, sans rien cocher. */
+  onReprendre?: (serie: SerieALEcran) => boolean | void
   /** « Annuler », dans le message qui suit « Vu ». */
   onAnnulerLeVu?: (coche: EpisodeCoche) => void
   /** Les trois touches de « Cet épisode ». */
@@ -150,7 +153,7 @@ function Pave({ Icone, onClick, children }: { Icone: TablerIcon; onClick?: () =>
 
 /**
  * La vue d'ouverture du panneau : le petit écran (la série regardée en dernier, ou l'invitation qui
- * attend), la rangée principale (précédente, « Vu », suivante), les trois touches de « Cet épisode »,
+ * attend), la rangée principale (précédente, « Vu », ou « Reprendre » pour une série en pause, suivante), les trois touches de « Cet épisode »,
  * les trois d'« Aller à », le pied. Elle ne lit rien : tout lui vient de ses propriétés.
  */
 export default function VueTelecommande(props: PropsVueTelecommande) {
@@ -206,17 +209,24 @@ export default function VueTelecommande(props: PropsVueTelecommande) {
             <button type="button" className={`${styles.touche} ${styles.carree}`} data-piece="touche" aria-label="Série précédente" disabled={!serie || !props.onPrecedente} onClick={props.onPrecedente}>
               <IconChevronLeft aria-hidden="true" className={styles.icone} />
             </button>
-            <button
-              type="button"
-              className={`${styles.touche} ${styles.principale} ${styles.large}`}
-              data-piece="touche-principale"
-              aria-label={serie && episode ? `Vu : ${serie.titre}, ${codeDe(episode)}` : undefined}
-              disabled={!serie || !episode || !props.onVu}
-              onClick={vu}
-            >
-              <IconCheck aria-hidden="true" className={styles.icone} />
-              Vu
-            </button>
+            {serie?.enPause ? (
+              <button type="button" className={`${styles.touche} ${styles.principale} ${styles.large}`} data-piece="touche-principale" aria-label={`Reprendre : ${serie.titre}`} disabled={!props.onReprendre} onClick={() => props.onReprendre?.(serie)}>
+                <IconPlayerPlay aria-hidden="true" className={styles.icone} />
+                Reprendre
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={`${styles.touche} ${styles.principale} ${styles.large}`}
+                data-piece="touche-principale"
+                aria-label={serie && episode ? `Vu : ${serie.titre}, ${codeDe(episode)}` : undefined}
+                disabled={!serie || !episode || !props.onVu}
+                onClick={vu}
+              >
+                <IconCheck aria-hidden="true" className={styles.icone} />
+                Vu
+              </button>
+            )}
             <button type="button" className={`${styles.touche} ${styles.carree}`} data-piece="touche" aria-label="Série suivante" disabled={!serie || !props.onSuivante} onClick={props.onSuivante}>
               <IconChevronRight aria-hidden="true" className={styles.icone} />
             </button>

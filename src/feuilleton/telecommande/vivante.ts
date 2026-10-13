@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
-import { cocherLEpisode, cocherUnePortee, confirmerLeVuADeux, inviterAVoirADeux, refuserLeVuADeux, type CarteDeSerie, type InvitationAConfirmer, type Membre, type Telecommande } from '../../api/feuilleton'
+import { cocherLEpisode, cocherUnePortee, confirmerLeVuADeux, inviterAVoirADeux, refuserLeVuADeux, reprendreLaSerie, type CarteDeSerie, type InvitationAConfirmer, type Membre, type Telecommande } from '../../api/feuilleton'
 import type { EpisodeCoche } from '../retourDuVu'
 import { avancer, direQuand, direQuandLaSerie, jourEnLettres, poserLaCarte, retirerLInvitation, seriesEnCours, seriesEnPause, useLaTelecommande } from './donnees'
 import type { PropsVueADeux } from './VueADeux'
@@ -38,22 +38,40 @@ export const FILE = { id: 'feuilleton-telecommande' }
 /** Les fiches que des écritures de la file ont périmées, par cache : elles se relisent à la fin de la file. */
 const A_PERIMER = new WeakMap<QueryClient, Set<string>>()
 
+/** Les caches dont la télécommande aussi est à relire à la fin de la file (`relireALaFin`). */
+const TELECOMMANDE_A_RELIRE = new WeakSet<QueryClient>()
+
 /**
  * Une fiche déjà ouverte reflète ce qu'on vient d'écrire : la fiche de la série et ses saisons dépliées
  * sont périmées (relues si elles sont à l'écran, à leur retour sinon), **quand plus aucune écriture de la
- * file n'attend**. S'appelle dans `onSettled` (l'écriture qui finit compte encore pour une) ; `serieId`
- * absent : rien de plus à périmer, seulement la fin de la file à constater. Rend la fin des relectures.
+ * file n'attend**. S'appelle dans `onSettled` (l'écriture qui finit compte encore pour une : `enVol`) ;
+ * `serieId` absent : rien de plus à périmer, seulement la fin de la file à constater. Rend la fin des relectures.
  */
-export async function perimerALaFin(client: QueryClient, serieId?: string): Promise<void> {
+export async function perimerALaFin(client: QueryClient, serieId?: string, enVol = 1): Promise<void> {
   const series = A_PERIMER.get(client) ?? new Set<string>()
   A_PERIMER.set(client, series)
   if (serieId) series.add(serieId)
-  if (client.isMutating({ mutationKey: ECRITURE }) > 1) return
+  if (client.isMutating({ mutationKey: ECRITURE }) > enVol) return
   const aRelire = [...series]
   series.clear()
-  await Promise.all(aRelire.map((id) => client.invalidateQueries({ queryKey: cles.ficheDeSerie(id) })))
+  const fiches = aRelire.map((id) => client.invalidateQueries({ queryKey: cles.ficheDeSerie(id) }))
+  // Un tour plus tard, et sans doubler une lecture en vol : l'écriture qui finit a pu relire elle-même la télécommande.
+  const telecommande = TELECOMMANDE_A_RELIRE.delete(client) ? Promise.resolve().then(() => client.invalidateQueries({ queryKey: cles.telecommande }, { cancelRefetch: false })) : null
+  await Promise.all([...fiches, telecommande])
 }
 
+/**
+ * Ce qui vient de changer **hors de la file** (le rafraîchissement d'une fiche à sa source, `fiche.ts`) : la
+ * fiche, ses saisons dépliées et la télécommande se relisent, tout de suite si aucune écriture n'attend,
+ * sinon à la fin de la file (une relecture partie pendant une écriture d'avance repasserait dessus).
+ */
+export function relireALaFin(client: QueryClient, serieId: string): Promise<void> {
+  TELECOMMANDE_A_RELIRE.add(client)
+  return perimerALaFin(client, serieId, 0)
+}
+
+/** « Reprendre » sur une série qui n'est plus sur la télécommande (`404` : finie entre-temps, ou plus suivie). */
+const PLUS_SUR_LA_TELECOMMANDE = 'Cette série n’est plus sur la télécommande.'
 const SAISON_INTROUVABLE = 'Cette saison est introuvable. Réessaie depuis la fiche.'
 export const messageDe = (erreur: unknown) => (erreur instanceof Error ? erreur.message : 'Une erreur inattendue est survenue. Réessaie.')
 /** L'invitation n'est plus : retirée par son inviteur (`404`), déjà traitée ou expirée (`409`). */
@@ -262,6 +280,31 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     },
   })
 
+  /**
+   * « Reprendre » : la série sort de la pause, rien n'est coché. Pas optimiste : la réponse porte la carte
+   * (hors pause, en tête d'« En cours » par la date de sa reprise), qui entre au cache sans relecture. `404` :
+   * la série n'est plus sur la télécommande, qui se relit ; tout autre échec la laisse en pause. Rien de ce
+   * que lit la fiche ne change : elle n'est pas périmée.
+   */
+  const reprise = useMutation({
+    mutationKey: ECRITURE,
+    scope: FILE,
+    mutationFn: ({ carte }: { carte: CarteDeSerie }) => reprendreLaSerie(carte.id),
+    onSuccess: async (reponse, { carte }) => {
+      await poser((telecommande) => poserLaCarte(telecommande, reponse.serie))
+      dire('Reprise', false, { sujet: carte.id })
+    },
+    onError: async (erreur, { carte }) => {
+      const partie = erreur instanceof ApiError && erreur.status === 404
+      dire(partie ? PLUS_SUR_LA_TELECOMMANDE : messageDe(erreur), true, { sujet: carte.id })
+      if (partie) await relire()
+    },
+    onSettled: (_reponse, _erreur, { carte }) => {
+      void perimerALaFin(client)
+      verrous.current.delete(carte.id)
+    },
+  })
+
   /** Prend le verrou d'une carte, ou dit non : le second toucher d'un double toucher. */
   const prendre = (cle: string) => {
     if (verrous.current.has(cle)) return false
@@ -327,6 +370,13 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     if (suivre) setChoix({ id: dernier.carte.id, rang })
     coche.mutate({ carte: dernier.carte, episodeId: dernier.episodeId, vu: false })
   }
+  const onReprendre = (serie: SerieALEcran) => {
+    const cible = carteDe(serie.id)
+    if (!cible || !prendre(cible.id)) return false
+    setAvis(null)
+    reprise.mutate({ carte: cible })
+    return true
+  }
   const onConfirmer = repondre(true)
   const onRefuser = repondre(false)
 
@@ -344,6 +394,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
       onPrecedente: horsParcours ? undefined : allerAuRang(rang - 1),
       onSuivante: horsParcours ? allerAuRang(0) : allerAuRang(rang + 1),
       onVu,
+      onReprendre,
       onAnnulerLeVu: annulerLeVu(true),
       onToutJusquIci: cocherUnLot('jusqu_ici'),
       onTouteLaSaison: cocherUnLot('saison'),
@@ -359,6 +410,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
       onAvisParti,
       onReessayer,
       onVu,
+      onReprendre,
       onAnnulerLeVu: annulerLeVu(false),
       onConfirmer,
       onRefuser,

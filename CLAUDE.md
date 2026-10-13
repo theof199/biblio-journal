@@ -159,7 +159,7 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   relecture seule. Les fiches à périmer attendent aussi la fin de la file (`perimerALaFin`).
   Ces rappels sont ceux de `useMutation`, pas de `mutate` : ils survivent au démontage. Des écritures
   qui touchent la même clé partagent une file (`scope`) : elles partent une à une. Une écriture dont la
-  réponse porte l'état à jour (une portée, une confirmation) n'est pas optimiste : elle pose sa réponse
+  réponse porte l'état à jour (une portée, une confirmation, une reprise) n'est pas optimiste : elle pose sa réponse
   (`cancelQueries`, puis `setQueryData`) et ne relit pas. Le double toucher se retient par une
   référence, pas par un état : deux touchers d'un même geste voient le même rendu. Le verrou est **par
   carte** (`verrous`, l'identifiant de la série ou de l'invitation). `useTelecommandeVivante` n'est appelé
@@ -170,7 +170,7 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   dans `onSettled` : chaque verrou a son test qui refait le geste après la fin du premier.
 - **La fiche et la télécommande se tiennent à jour, dans les deux sens.** Toute écriture de
   `vivante.ts` périme `cles.ficheDeSerie(id)`, préfixe de tout ce que la fiche lit (ses saisons dépliées
-  sont dessous) ; toute écriture de `fiche.ts` relit la télécommande, ou y pose la carte que sa réponse
+  sont dessous), sauf « Reprendre », qui ne change rien de ce que la fiche lit ; toute écriture de `fiche.ts` relit la télécommande, ou y pose la carte que sa réponse
   rend. Une écriture de plus, d'un côté ou de l'autre, garde les deux (`Fiche.test.tsx`).
 - **La fiche et l'ajout lisent à l'ouverture de leur vue**, jamais au montage du Feuilleton : la fiche
   (`GET /media/{id}`), les épisodes d'une saison à son dépliage, la recherche à la frappe retardée
@@ -188,6 +188,17 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   `VueListe.tsx` fige l'ordre montré tant qu'un message tient une carte, et ne le rend aux données qu'à
   la fin du geste en cours ; un avis sans carte qui chasse ce message rend l'ordre à son départ
   (`Liste.test.tsx`).
+- **Une carte en pause porte « Reprendre », jamais « Vu »** (liste et télécommande réglée) :
+  `POST /me/feuilleton/series/{id}/reprendre` ne coche rien, et sa réponse porte la carte, posée par
+  `poserLaCarte` à la date de son activité (`activiteLe`, `donnees.ts` : la reprise quand `repere` le dit).
+  La liste fige l'ordre **au toucher** : la carte ne change de section qu'au départ de son message. Le
+  libellé de date suit `repere` (`direQuandLaSerie`), jamais `reprise_le` seul.
+- **Une fiche de plus de sept jours se reprend à sa source** (`useLeRafraichissement`, `fiche.ts` ;
+  `FRAICHEUR_DE_LA_FICHE`, `donnees.ts`, seul endroit de la durée) : `POST /media/{id}/refresh`, une fois
+  par ouverture, **hors de la file des écritures** et sans retenir l'affichage ; réussi, tout se relit par
+  `relireALaFin` (`vivante.ts`), jamais par un `invalidateQueries` direct, qui repasserait sur une écriture
+  d'avance ; raté, rien ne se dit. Ce rafraîchissement interroge TMDB : aucune autre vue ne l'appelle sans
+  décision du propriétaire.
 - **Les membres du « vu à deux » se lisent à l'ouverture de sa vue** (`useLesMembres`), pas au montage du
   Feuilleton ni à l'ouverture du panneau (`ADeux.test.tsx` compte les requêtes). Le dernier membre choisi
   est la seule chose que la télécommande garde sur l'appareil (`telecommande/memoire.ts`).

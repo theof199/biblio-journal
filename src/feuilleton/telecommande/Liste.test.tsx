@@ -49,6 +49,7 @@ const LIRE = 'GET /api/me/feuilleton/telecommande'
 const vuDe = (carte: CarteDeSerie) => `PUT /api/episodes/${carte.prochain!.id}/watched`
 const CONFIRMER = `POST /api/me/feuilleton/vus-a-deux/${INVITATION.id}/confirmer`
 const REFUSER = `POST /api/me/feuilleton/vus-a-deux/${INVITATION.id}/refuser`
+const reprendreDe = (carte: CarteDeSerie) => `POST /api/me/feuilleton/series/${carte.id}/reprendre`
 const refus = (status: number, message: string) => json({ code: status === 404 ? 'NOT_FOUND' : status === 409 ? 'CONFLICT' : 'INTERNAL', message, retryable: false }, status)
 
 /** L'adresse affichée, et le geste « retour » du téléphone, que la page ne dessine pas. */
@@ -182,7 +183,8 @@ describe('la liste : ses sections', () => {
 
   // Mutations, dans `VueListe.tsx` : `useState(true)` pour `deplie` ; `aria-expanded` figé ; `hidden={!deplie}`
   // ôté (les cartes se verraient, repliées) ; `setDeplie(true)` (elle ne se replierait plus).
-  it('« En pause » est repliée, se déplie sur les mêmes cartes, et se replie', async () => {
+  // Mutation, dans `VueListe.tsx` : `serie.enPause ?` ôté de la carte (une carte en pause porterait « Vu »).
+  it('« En pause » est repliée, se déplie sur les mêmes cartes, qui portent « Reprendre », et se replie', async () => {
     monter({ [LIRE]: () => json(TOUT) })
     await section('En cours')
 
@@ -193,8 +195,12 @@ describe('la liste : ses sections', () => {
     expect(repli()).toHaveAttribute('aria-expanded', 'true')
     expect(titres('En pause')).toEqual(['Le Bureau des légendes', 'Severance'])
     expect(document.getElementById(repli().getAttribute('aria-controls')!)).toBe(screen.getByRole('list', { name: 'En pause' }))
-    expect(within(carte('Le Bureau des légendes')).getByRole('button', { name: 'Vu : Le Bureau des légendes, S1 E3' })).toBeEnabled()
+    // La touche d'une carte en pause est « Reprendre », jamais « Vu » ; à jour ou non.
+    expect(within(carte('Le Bureau des légendes')).getByRole('button', { name: 'Reprendre : Le Bureau des légendes' })).toBeEnabled()
+    expect(within(carte('Le Bureau des légendes')).queryByRole('button', { name: /^Vu/ })).toBeNull()
+    expect(within(carte('Severance')).getByRole('button', { name: 'Reprendre : Severance' })).toBeEnabled()
     expect(within(carte('Severance')).getByRole('button', { name: 'Régler la télécommande sur Severance' })).toBeEnabled()
+    expect(within(carte('Dark')).queryByRole('button', { name: /^Reprendre/ })).toBeNull()
     expect(titres('En cours')).toEqual(['Dark', 'Andor', 'Slow Horses', 'The Bear'])
 
     fireEvent.click(repli())
@@ -489,14 +495,15 @@ describe('« Vu » sur une carte de la liste', () => {
   it('l’échec d’une carte de « En pause » repliée se dit en tête de liste : à son départ, l’ordre suit les données', async () => {
     const reponse = retenue()
     let lectures = 0
-    monter({ [LIRE]: () => json(++lectures === 1 ? SANS_INVITATION : APRES), [vuDe(LEGENDES)]: () => reponse.promesse })
+    const { ecritures } = monter({ [LIRE]: () => json(++lectures === 1 ? SANS_INVITATION : APRES), [reprendreDe(LEGENDES)]: () => reponse.promesse })
     await section('En cours')
     fireEvent.click(repli())
-    fireEvent.click(within(carte('Le Bureau des légendes')).getByRole('button', { name: /^Vu : Le Bureau des légendes/ }))
-    await vi.waitFor(() => expect(within(carte('Le Bureau des légendes')).getByRole('status')).toHaveTextContent('Épisode noté'))
+    fireEvent.click(within(carte('Le Bureau des légendes')).getByRole('button', { name: 'Reprendre : Le Bureau des légendes' }))
+    await vi.waitFor(() => expect(ecritures()).toEqual([reprendreDe(LEGENDES)]))
     fireEvent.click(repli())
 
-    reponse.rendre(refus(500, 'Le service est indisponible. Réessaie plus tard.'))
+    // `404` : la télécommande se relit, et rend ici un autre ordre.
+    reponse.rendre(refus(404, 'Cette série n’est pas sur ta télécommande.'))
     const alerte = await screen.findByRole('alert')
     expect(alerte.closest('li')).toBeNull()
     await vi.waitFor(() => expect(lectures).toBe(2))
@@ -570,31 +577,153 @@ describe('« Vu » sur une carte de la liste', () => {
     expect(corps).toEqual([{ watched: true }, { watched: false }])
     decoche.rendre(json(COCHE))
   })
+})
 
-  // Mutations, dans `donnees.ts` : `en_pause: false` ôté d'`avancer` (elle resterait en pause, hors du
-  // parcours) ; `[avancee, ...]` remplacé par `[..., avancee]` (elle reviendrait en queue).
-  it('cocher un épisode d’une série en pause la ramène dans « En cours », en tête de la liste et du parcours de la télécommande', async () => {
+describe('« Reprendre » sort une série de la pause, sans rien cocher', () => {
+  const LE_BUREAU = 'Le Bureau des légendes'
+  /** Ce que l'API rend : hors pause, reprise à l'instant ; son dernier visionnage ne bouge pas. */
+  const REPRISE: CarteDeSerie = { ...LEGENDES, en_pause: false, repere: 'reprise', reprise_le: SOIR.toISOString() }
+  const reprendre = () => within(carte(LE_BUREAU)).getByRole('button', { name: `Reprendre : ${LE_BUREAU}` })
+
+  // Mutations, dans `VueListe.tsx` : `setFige` ôté de `reprendre` (la carte sauterait en tête d'« En cours »
+  // à la réponse, sous le doigt) ; dans `vivante.ts` : `dire('Reprise', …)` sans `sujet` (le message irait en
+  // tête de liste) ; `poser(poserLaCarte…)` remplacé par `relire()` (une relecture partirait, et la carte
+  // resterait en pause) ; dans `donnees.ts` : `instant` lu sur `dernier_visionnage_le` (elle paraîtrait en
+  // queue d'« En cours ») ; dans `api/feuilleton.ts` : la route de « Reprendre » remplacée par la coche.
+  it('la bonne requête, sans corps, aucun épisode coché ; la carte garde sa place tant que « Reprise » est là, puis paraît en tête d’« En cours » avec « Vu », sans relecture', async () => {
     const reponse = retenue()
-    monter({ [LIRE]: () => json(SANS_INVITATION), [vuDe(LEGENDES)]: () => reponse.promesse })
+    const { requetes, corps, ecritures } = monter({ [LIRE]: () => json(SANS_INVITATION), [reprendreDe(LEGENDES)]: () => reponse.promesse })
     await section('En cours')
     fireEvent.click(repli())
 
-    fireEvent.click(within(carte('Le Bureau des légendes')).getByRole('button', { name: 'Vu : Le Bureau des légendes, S1 E3' }))
-    await vi.waitFor(() => expect(carte('Le Bureau des légendes')).toHaveTextContent('S1 E4'))
-    // Tant que son message est là, elle ne quitte pas sa section.
-    expect(titres('En pause')).toEqual(['Le Bureau des légendes', 'Severance'])
+    fireEvent.click(reprendre())
+    await vi.waitFor(() => expect(ecritures()).toEqual([reprendreDe(LEGENDES)]))
+    // Rien d'avance : elle attend la réponse, en pause, ses touches en place.
+    expect(titres('En pause')).toEqual([LE_BUREAU, 'Severance'])
+    expect(screen.queryByRole('status')).toBeNull()
+
+    reponse.rendre(json({ serie: REPRISE }))
+    await vi.waitFor(() => expect(within(carte(LE_BUREAU)).getByRole('status')).toHaveTextContent('Reprise'))
+    // Le message a pris la place de ses touches, et elle n'a pas quitté sa section.
+    expect(within(carte(LE_BUREAU)).queryByRole('button')).toBeNull()
+    expect(titres('En pause')).toEqual([LE_BUREAU, 'Severance'])
+    expect(titres('En cours')).toEqual(['Dark', 'Andor', 'Slow Horses', 'The Bear'])
 
     toucherAilleurs()
-    await vi.waitFor(() => expect(titres('En cours')).toEqual(['Le Bureau des légendes', 'Dark', 'Andor', 'Slow Horses', 'The Bear']))
+    await vi.waitFor(() => expect(titres('En cours')).toEqual([LE_BUREAU, 'Dark', 'Andor', 'Slow Horses', 'The Bear']))
     expect(titres('En pause')).toEqual(['Severance'])
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('En cours 5')
     expect(repli()).toHaveTextContent('En pause 1')
+    expect(within(carte(LE_BUREAU)).getByRole('button', { name: `Vu : ${LE_BUREAU}, S1 E3` })).toBeEnabled()
+    expect(within(carte(LE_BUREAU)).queryByRole('button', { name: /^Reprendre/ })).toBeNull()
+
+    // Une seule écriture, sans corps ; la carte de la réponse est entrée au cache, sans relecture.
+    expect(ecritures()).toEqual([reprendreDe(LEGENDES)])
+    expect(corps).toEqual([])
+    expect(requetes.filter((requete) => requete === LIRE)).toHaveLength(1)
 
     fireEvent.click(screen.getByRole('button', { name: 'Retour : Télécommande' }))
     await vi.waitFor(() => expect(ecran()).toHaveAttribute('data-etat', 'serie'))
-    expect(ecran()).toHaveTextContent('Le Bureau des légendes')
+    expect(ecran()).toHaveTextContent(LE_BUREAU)
     expect(ecran()).toHaveTextContent('1 sur 5')
+    expect(ecran()).toHaveTextContent('Reprise à l’instant')
     expect(screen.getByRole('button', { name: 'Série précédente' })).toBeDisabled()
+  })
+
+  // Mutations, dans `vivante.ts` : `prendre(cible.id)` ôté d'`onReprendre` (le second toucher partirait à la
+  // fin du premier) ; `verrous.current.delete` ôté du `onSettled` de la reprise (la touche ne repartirait
+  // plus) ; `if (partie)` ôté (un `500` relirait la télécommande) ; `messageDe(erreur)` remplacé par un mot fixe.
+  it('le verrou : un second « Reprendre » ne part pas ; sur un `500` la carte reste en pause, le message de l’API à la place de ses touches, sans relecture, et la touche repart', async () => {
+    const reponse = retenue()
+    let essais = 0
+    const { requetes, ecritures } = monter({ [LIRE]: () => json(SANS_INVITATION), [reprendreDe(LEGENDES)]: () => (++essais === 1 ? reponse.promesse : json({ serie: REPRISE })) })
+    await section('En cours')
+    fireEvent.click(repli())
+
+    fireEvent.click(reprendre())
+    fireEvent.click(reprendre())
+    await vi.waitFor(() => expect(ecritures()).toEqual([reprendreDe(LEGENDES)]))
+
+    reponse.rendre(refus(500, 'Le service est indisponible. Réessaie plus tard.'))
+    expect(await within(carte(LE_BUREAU)).findByRole('alert')).toHaveTextContent('Le service est indisponible. Réessaie plus tard.')
+    await unInstant()
+    // Le second toucher n'attendait pas dans la file ; rien n'est relu.
+    expect(ecritures()).toEqual([reprendreDe(LEGENDES)])
+    expect(requetes.filter((requete) => requete === LIRE)).toHaveLength(1)
+
+    toucherAilleurs()
+    await vi.waitFor(() => expect(within(carte(LE_BUREAU)).queryByRole('alert')).toBeNull())
+    expect(titres('En pause')).toEqual([LE_BUREAU, 'Severance'])
+
+    fireEvent.click(reprendre())
+    await vi.waitFor(() => expect(ecritures()).toEqual([reprendreDe(LEGENDES), reprendreDe(LEGENDES)]))
+    await vi.waitFor(() => expect(within(carte(LE_BUREAU)).getByRole('status')).toHaveTextContent('Reprise'))
+  })
+
+  // Mutation, dans `vivante.ts` : `dire(…)` ôté du `onError` de la reprise (aucun message ne dirait la panne).
+  it('le réseau tombe : le message du client sur la carte, qui reste en pause', async () => {
+    monter({
+      [LIRE]: () => json(SANS_INVITATION),
+      [reprendreDe(LEGENDES)]: () => {
+        throw new TypeError('Failed to fetch')
+      },
+    })
+    await section('En cours')
+    fireEvent.click(repli())
+
+    fireEvent.click(reprendre())
+
+    expect(await within(carte(LE_BUREAU)).findByRole('alert')).toHaveTextContent('L’API est injoignable. Vérifie ta connexion, puis réessaie.')
+    toucherAilleurs()
+    await vi.waitFor(() => expect(reprendre()).toBeEnabled())
+    expect(titres('En pause')).toEqual([LE_BUREAU, 'Severance'])
+  })
+
+  // Mutations, dans `vivante.ts` : `partie ? PLUS_SUR_LA_TELECOMMANDE :` ôté (le message de l'API, tel quel) ;
+  // `if (partie) await relire()` ôté (la carte resterait, en pause, pour toujours).
+  it('`404`, la série est finie ou plus suivie : un message court sur la carte, la télécommande se relit, et la carte disparaît au départ du message', async () => {
+    let lectures = 0
+    const sans: Telecommande = { ...SANS_INVITATION, series: SANS_INVITATION.series.filter((serie) => serie.id !== LEGENDES.id) }
+    monter({ [LIRE]: () => json(++lectures === 1 ? SANS_INVITATION : sans), [reprendreDe(LEGENDES)]: () => refus(404, 'Cette série n’est pas sur ta télécommande : œuvre inconnue, non suivie ou terminée.') })
+    await section('En cours')
+    fireEvent.click(repli())
+
+    fireEvent.click(reprendre())
+
+    expect(await within(carte(LE_BUREAU)).findByRole('alert')).toHaveTextContent(/^Cette série n’est plus sur la télécommande\.$/)
+    await vi.waitFor(() => expect(lectures).toBe(2))
+    await unInstant()
+    // Tant que son message est là, elle ne se dérobe pas.
+    expect(titres('En pause')).toEqual([LE_BUREAU, 'Severance'])
+
+    toucherAilleurs()
+    await vi.waitFor(() => expect(screen.queryByRole('heading', { level: 3, name: LE_BUREAU })).toBeNull())
+    expect(repli()).toHaveTextContent('En pause 1')
+  })
+
+  // Mutations, dans `VueTelecommande.tsx` : `serie?.enPause ?` ôté (la touche principale resterait « Vu ») ;
+  // dans `vivante.ts` : `onReprendre` ôté des propriétés de la télécommande (la touche serait éteinte) ; dans
+  // `donnees.ts` : `reprise: 'Regardée'` dans `VERBES`.
+  it('sur la télécommande réglée sur une série en pause : « Reprendre » et non « Vu » ; après, l’écran la montre en cours, « 1 sur 5 », « Reprise à l’instant », puis « Vu »', async () => {
+    const { corps, ecritures } = monter({ [LIRE]: () => json(SANS_INVITATION), [reprendreDe(LEGENDES)]: () => json({ serie: REPRISE }) }, `serie-${LEGENDES.id}`)
+    await vi.waitFor(() => expect(ecran()).toHaveTextContent(LE_BUREAU))
+    expect(ecran()).toHaveTextContent('En pause')
+    expect(screen.queryByRole('button', { name: /^Vu :/ })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: `Reprendre : ${LE_BUREAU}` }))
+
+    await vi.waitFor(() => expect(ecran()).toHaveTextContent('1 sur 5'))
+    expect(ecran()).toHaveTextContent(LE_BUREAU)
+    expect(ecran()).toHaveTextContent('En cours')
+    expect(ecran()).not.toHaveTextContent('En pause')
+    expect(ecran()).toHaveTextContent('Reprise à l’instant')
+    expect(screen.getByRole('status')).toHaveTextContent('Reprise')
+    expect(ecritures()).toEqual([reprendreDe(LEGENDES)])
+    expect(corps).toEqual([])
+
+    toucherAilleurs()
+    expect(await screen.findByRole('button', { name: `Vu : ${LE_BUREAU}, S1 E3` })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: /^Reprendre/ })).toBeNull()
   })
 })
 
@@ -641,7 +770,7 @@ describe('« ⋯ » règle la télécommande sur la série', () => {
     await vi.waitFor(() => expect(ecran()).toHaveTextContent('Le Bureau des légendes'))
     expect(ecran()).toHaveTextContent('En pause')
     expect(ecran()).not.toHaveTextContent(/\d sur \d/)
-    expect(screen.getByRole('button', { name: 'Vu : Le Bureau des légendes, S1 E3' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Reprendre : Le Bureau des légendes' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Série précédente' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Série suivante' }))

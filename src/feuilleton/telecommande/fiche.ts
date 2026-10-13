@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
-import { cocherLEpisode, cocherUnePortee, type EpisodeDeSaison, type FicheDeSerie, type Telecommande } from '../../api/feuilleton'
-import { poserLaCarte } from './donnees'
-import { ECRITURE, FILE, direLeLot, messageDe, perimerALaFin } from './vivante'
+import { cocherLEpisode, cocherUnePortee, rafraichirLaFiche, type EpisodeDeSaison, type FicheDeSerie, type Telecommande } from '../../api/feuilleton'
+import { ficheARafraichir, poserLaCarte } from './donnees'
+import { ECRITURE, FILE, direLeLot, messageDe, perimerALaFin, relireALaFin } from './vivante'
 
 /** Un message de la fiche, sur la saison dont il parle : un lot noté, ou son échec. */
 export interface AvisDeSaison {
@@ -122,3 +122,31 @@ export function useEcrituresDeLaFiche(serieId: string) {
 }
 
 export type EcrituresDeLaFiche = ReturnType<typeof useEcrituresDeLaFiche>
+
+/**
+ * **Une fiche dont les données ont plus de sept jours se reprend à sa source** (`ficheARafraichir`,
+ * `donnees.ts`), à son ouverture : `POST /media/{id}/refresh`, **une fois par ouverture**, sans rien
+ * retenir de l'affichage (la fiche est déjà là, avec ce qu'elle a).
+ *
+ * Réussi, la fiche, ses saisons dépliées et la télécommande se relisent (`relireALaFin` : après la file
+ * des écritures, s'il y en a). **Un échec est silencieux** (`429`, `503`, le réseau) : ni message, ni
+ * nouvelle tentative avant la prochaine ouverture. Hors de la file des écritures : il interroge la source,
+ * une coche n'attend pas derrière lui. Ses rappels sont ceux de `useMutation` : ils survivent à la fermeture.
+ */
+export function useLeRafraichissement(serieId: string, fiche: Pick<FicheDeSerie, 'refreshed_at'> | undefined): void {
+  const client = useQueryClient()
+  /** La série pour laquelle cette ouverture a déjà tranché : une fois, quel qu'en soit le sort. */
+  const tranche = useRef<string | null>(null)
+  const { mutate } = useMutation({
+    mutationFn: (id: string) => rafraichirLaFiche(id),
+    onSuccess: (_reponse, id) => relireALaFin(client, id),
+    // Silencieux : la fiche reste telle quelle.
+    onError: () => undefined,
+  })
+
+  useEffect(() => {
+    if (!fiche || tranche.current === serieId) return
+    tranche.current = serieId
+    if (ficheARafraichir(fiche, new Date())) mutate(serieId)
+  }, [serieId, fiche, mutate])
+}

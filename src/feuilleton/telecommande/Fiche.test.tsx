@@ -31,6 +31,8 @@ const FICHE: FicheDeSerie = {
   title: 'Dark',
   year: 2017,
   summary: 'Quatre familles, une grotte, et le temps qui se referme.',
+  // Reprise à sa source l'avant-veille : fraîche, elle ne se rafraîchit pas (voir « une fiche de plus de sept jours »).
+  refreshed_at: '2026-10-12T09:00:00.000Z',
   metadata: { ...MODELE.metadata, status: 'Ended' },
   seasons: [S0, S1, S2],
   next_up: { kind: 'episode', id: E4.id, season_id: S2.id, season_number: 2, number: 4, title: E4.title },
@@ -441,5 +443,123 @@ describe('la fiche : le retour', () => {
     await vi.waitFor(() => expect(adresse()).toBe(`/feuilleton/maison?telecommande=serie-${DARK.id}`))
     fireEvent.click(touche('Retour : En cours'))
     await vi.waitFor(() => expect(adresse()).toBe('/feuilleton/maison?telecommande=en-cours'))
+  })
+})
+
+describe('une fiche de plus de sept jours se reprend à sa source', () => {
+  const RAFRAICHIR = `POST /api/media/${DARK.id}/refresh`
+  const RAFRAICHIE = exemple<unknown>('/media/{id}/refresh', 'post', 200)
+  const SEPT_JOURS = 7 * 24 * 60 * 60 * 1000
+  /** Rafraîchie il y a sept jours, à `ecart` millisecondes près (positif : plus vieille). */
+  const ilYASeptJours = (ecart: number) => new Date(SOIR.getTime() - SEPT_JOURS - ecart).toISOString()
+  const unInstant = () => new Promise((resolve) => setTimeout(resolve, 30))
+  const REPRISE_A_LA_SOURCE: FicheDeSerie = { ...FICHE, refreshed_at: SOIR.toISOString(), summary: 'Un résumé repris à la source.' }
+
+  // Mutation, dans `donnees.ts` : `FRAICHEUR_DE_LA_FICHE` à six jours (le `POST` partirait).
+  it('fraîche, à une minute des sept jours : aucun rafraîchissement', async () => {
+    const { ecritures, combien } = monter({ ...lectures(), [LA_FICHE]: () => json({ ...FICHE, refreshed_at: ilYASeptJours(-60_000) }) }, VUE)
+    await caseDe(/E4/)
+    await unInstant()
+
+    expect(ecritures()).toEqual([])
+    expect(combien(LA_FICHE)).toBe(1)
+  })
+
+  // Mutations, dans `donnees.ts` : `FRAICHEUR_DE_LA_FICHE` à huit jours ; `refreshed_at == null ||` ôté (une
+  // fiche jamais rafraîchie ne le serait jamais) ; dans `fiche.ts` : `relireALaFin` remplacé par la seule
+  // péremption de la fiche (la télécommande ne se relirait pas) ; dans `vivante.ts` : `TELECOMMANDE_A_RELIRE.add`
+  // ôté (de même).
+  it.each([
+    ['vieille de sept jours et une minute', ilYASeptJours(60_000)],
+    ['jamais rafraîchie', null],
+  ])('%s : un seul `POST`, la fiche déjà affichée avant sa réponse, puis relue avec ses épisodes dépliés et la télécommande', async (_nom, refreshed_at) => {
+    const reponse = retenue()
+    let fiches = 0
+    const { ecritures, combien } = monter({ ...lectures(), [LA_FICHE]: () => json(++fiches === 1 ? { ...FICHE, refreshed_at } : REPRISE_A_LA_SOURCE), [RAFRAICHIR]: () => reponse.promesse }, VUE)
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([RAFRAICHIR]))
+    // Rien n'attend sa réponse : la fiche et ses épisodes sont là, lus une fois.
+    expect(screen.getByRole('heading', { level: 2, name: 'Dark' })).toBeInTheDocument()
+    expect(screen.getByText('Quatre familles, une grotte, et le temps qui se referme.')).toBeInTheDocument()
+    await caseDe(/E4/)
+    expect(combien(LA_FICHE)).toBe(1)
+    expect(combien(EPISODES(S2.id))).toBe(1)
+    expect(combien(LIRE)).toBe(1)
+
+    reponse.rendre(json(RAFRAICHIE))
+
+    expect(await screen.findByText('Un résumé repris à la source.')).toBeInTheDocument()
+    await vi.waitFor(() => {
+      expect(combien(EPISODES(S2.id))).toBe(2)
+      expect(combien(LIRE)).toBe(2)
+    })
+    await unInstant()
+    expect(combien(LA_FICHE)).toBe(2)
+    expect(ecritures()).toEqual([RAFRAICHIR])
+  })
+
+  // Mutation, dans `fiche.ts` : la garde `tranche.current === serieId` ôtée (chaque relecture d'une fiche
+  // restée vieille relancerait le rafraîchissement, sans fin).
+  it('pas de second appel au re-rendu : la fiche relue a changé mais est encore vieille, rien ne repart', async () => {
+    const vieille = { ...FICHE, refreshed_at: ilYASeptJours(60_000) }
+    let fiches = 0
+    const { ecritures, combien } = monter({ ...lectures(), [LA_FICHE]: () => json(++fiches === 1 ? vieille : { ...vieille, summary: 'Un autre résumé.' }), [RAFRAICHIR]: () => json(RAFRAICHIE) }, VUE)
+
+    await vi.waitFor(() => expect(combien(LA_FICHE)).toBe(2))
+    await caseDe(/E4/)
+    // Un re-rendu de plus : replier, déplier.
+    fireEvent.click(await repli(/^Saison 2/))
+    fireEvent.click(await repli(/^Saison 2/))
+    await unInstant()
+
+    expect(ecritures()).toEqual([RAFRAICHIR])
+    expect(combien(LA_FICHE)).toBe(2)
+  })
+
+  // Mutation, dans `fiche.ts` : `onSuccess` devenu `onSettled` (un échec relirait la fiche et la télécommande).
+  it.each([
+    ['`429`, la source limite', () => refus(429, 'Trop de requêtes. Réessaie dans un instant.', 'RATE_LIMITED')],
+    ['`503`, la source est en panne', () => refus(503, 'La source est indisponible.', 'SERVICE_UNAVAILABLE')],
+    [
+      'le réseau tombe',
+      () => {
+        throw new TypeError('Failed to fetch')
+      },
+    ],
+  ])('un échec est silencieux (%s) : la fiche reste telle quelle, sans message, sans relecture ni nouvelle tentative', async (_nom, echec) => {
+    const { ecritures, combien } = monter({ ...lectures(), [LA_FICHE]: () => json({ ...FICHE, refreshed_at: null }), [RAFRAICHIR]: echec }, VUE)
+
+    await vi.waitFor(() => expect(ecritures()).toEqual([RAFRAICHIR]))
+    await caseDe(/E4/)
+    await unInstant()
+
+    expect(screen.getByText('Quatre familles, une grotte, et le temps qui se referme.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(message()).toBeNull()
+    expect(ecritures()).toEqual([RAFRAICHIR])
+    expect(combien(LA_FICHE)).toBe(1)
+    expect(combien(LIRE)).toBe(1)
+  })
+
+  // Mutation, dans `vivante.ts` : `relireALaFin` qui compte une écriture en vol comme la sienne (`enVol` à 1 :
+  // la fiche relue pendant qu'une case attend sa réponse la décocherait un instant).
+  it('réussi pendant qu’une case attend : la fiche et la télécommande ne se relisent qu’à la fin de l’écriture', async () => {
+    const rafraichie = retenue()
+    const coche = retenue()
+    const { combien } = monter({ ...lectures(), [LA_FICHE]: () => json({ ...FICHE, refreshed_at: null }), [RAFRAICHIR]: () => rafraichie.promesse, [COCHER(E4.id)]: () => coche.promesse }, VUE)
+    fireEvent.click(await caseDe(/E4/))
+    await vi.waitFor(() => expect(combien(COCHER(E4.id))).toBe(1))
+
+    rafraichie.rendre(json(RAFRAICHIE))
+    await unInstant()
+    expect(combien(LA_FICHE)).toBe(1)
+    expect(combien(LIRE)).toBe(1)
+    expect(await caseDe(/E4/)).toHaveAttribute('aria-checked', 'true')
+
+    coche.rendre(json(COCHE))
+    await vi.waitFor(() => {
+      expect(combien(LA_FICHE)).toBe(2)
+      expect(combien(LIRE)).toBe(2)
+    })
   })
 })

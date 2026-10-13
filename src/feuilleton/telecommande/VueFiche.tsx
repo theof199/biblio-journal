@@ -4,7 +4,7 @@ import type { EpisodeDeSaison, FicheDeSerie, SaisonDeFiche } from '../../api/feu
 import Affiche from '../../ui/Affiche'
 import Attente, { Barre } from '../../ui/Attente'
 import { jourAParis, jourEnLettres, useLaFiche, useLesEpisodes } from './donnees'
-import { useEcrituresDeLaFiche, type EcrituresDeLaFiche } from './fiche'
+import { useEcrituresDeLaFiche, useLeRafraichissement, type EcrituresDeLaFiche } from './fiche'
 import MessageDuVu from './MessageDuVu'
 import { Panne } from './VueTelecommande'
 import { messageDe } from './vivante'
@@ -36,11 +36,13 @@ const aVenir = (episode: EpisodeDeSaison, aujourdHui: string) => episode.air_dat
 /**
  * La fiche d'une série (`?telecommande=fiche-<identifiant>`) : l'en-tête, le synopsis, les saisons
  * dépliables et leurs épisodes, cochables et décochables un par un. Elle lit `GET /media/{id}` à son
- * ouverture, et les épisodes d'une saison à son dépliage ; ses écritures sont dans `fiche.ts`.
+ * ouverture, et les épisodes d'une saison à son dépliage ; ses écritures sont dans `fiche.ts`. Des données de
+ * plus de sept jours se reprennent à leur source, sans qu'elle attende (`useLeRafraichissement`).
  */
 export default function VueFiche({ serieId }: { serieId: string }) {
   const fiche = useLaFiche(serieId)
   const ecritures = useEcrituresDeLaFiche(serieId)
+  useLeRafraichissement(serieId, fiche.data)
   const [bascules, setBascules] = useState<Record<string, boolean>>({})
   // La saison du prochain épisode est dépliée d'abord : celle de la première lecture. Une relecture qui
   // change de prochain ne replie pas la saison qu'on est en train de cocher.

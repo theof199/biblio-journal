@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
-import { chercherDesSeries, lireLaFiche, lireLaTelecommande, lireLesEpisodes, lireLesMembres, type CarteDeSerie, type Telecommande } from '../../api/feuilleton'
+import { chercherDesSeries, lireLaFiche, lireLaTelecommande, lireLesEpisodes, lireLesMembres, type CarteDeSerie, type FicheDeSerie, type Telecommande } from '../../api/feuilleton'
 
 /**
  * Ce que la télécommande sait : une lecture, `GET /me/feuilleton/telecommande`, faite **au montage du
@@ -54,11 +54,27 @@ export const seriesEnCours = (telecommande: Telecommande): CarteDeSerie[] => tel
 /** « En pause » : le reste, dans le même ordre. */
 export const seriesEnPause = (telecommande: Telecommande): CarteDeSerie[] => telecommande.series.filter((serie) => serie.en_pause)
 
-const instant = (carte: CarteDeSerie) => Date.parse(carte.dernier_visionnage_le)
+/**
+ * La date de l'activité d'une série, celle qui trie la liste : celle que désigne `repere`. Une reprise
+ * (`reprise_le`) quand elle compte encore, sinon `dernier_visionnage_le` (le dernier visionnage, ou l'ajout).
+ */
+export const activiteLe = (carte: CarteDeSerie): string => (carte.repere === 'reprise' && carte.reprise_le ? carte.reprise_le : carte.dernier_visionnage_le)
+
+const instant = (carte: CarteDeSerie) => Date.parse(activiteLe(carte))
+
+/**
+ * Au-delà de cet âge (`refreshed_at`), ou sans date, les données d'une fiche sont reprises à leur source à
+ * son ouverture. **Le seul endroit de cette durée** (décision du propriétaire : sept jours).
+ */
+export const FRAICHEUR_DE_LA_FICHE = 7 * 24 * 60 * 60 * 1000
+
+/** La fiche est-elle à reprendre à sa source ? Jamais rafraîchie, ou il y a plus de sept jours. */
+export const ficheARafraichir = (fiche: Pick<FicheDeSerie, 'refreshed_at'>, maintenant: Date): boolean =>
+  fiche.refreshed_at == null || maintenant.getTime() - Date.parse(fiche.refreshed_at) > FRAICHEUR_DE_LA_FICHE
 
 /**
  * Pose une carte que l'API vient de rendre (une portée, une confirmation) : elle remplace celle de la
- * série, à la place que lui donne sa date parmi des cartes déjà triées (aucun tri n'est refait) ; une
+ * série, à la place que lui donne la date de son activité (`activiteLe`) parmi des cartes déjà triées (aucun tri n'est refait) ; une
  * série inconnue entre de même. **Une carte `finie` sort** : la série a quitté « En cours ».
  */
 export function poserLaCarte(telecommande: Telecommande, carte: CarteDeSerie): Telecommande {
@@ -124,9 +140,14 @@ export function direQuand(verbe: string, iso: string, maintenant: Date): string 
   return `${verbe} il y a ${jours} jours`
 }
 
-/** Le pied de l'écran d'une série. `repere: suivi` : rien n'a été vu, la date est celle de l'ajout au suivi. */
-export const direQuandLaSerie = (carte: CarteDeSerie, maintenant: Date): string =>
-  direQuand(carte.repere === 'suivi' ? 'Ajoutée' : 'Regardée', carte.dernier_visionnage_le, maintenant)
+const VERBES: Record<CarteDeSerie['repere'], string> = { visionnage: 'Regardée', reprise: 'Reprise', suivi: 'Ajoutée' }
+
+/**
+ * Le pied de l'écran d'une série, d'après `repere` : `visionnage`, « Regardée … » ; `reprise`, « Reprise … »
+ * (à la date de `reprise_le` : `dernier_visionnage_le` y reste celle du dernier épisode vu) ; `suivi`, rien
+ * n'a été vu ni repris, « Ajoutée … » à la date de l'ajout au suivi.
+ */
+export const direQuandLaSerie = (carte: CarteDeSerie, maintenant: Date): string => direQuand(VERBES[carte.repere], activiteLe(carte), maintenant)
 
 /** « 21 octobre », d'un jour `AAAA-MM-JJ` (une date de diffusion : un jour, sans heure ni fuseau). */
 export const jourEnLettres = (jour: string): string => JOUR_EN_LETTRES.format(new Date(`${jour}T00:00:00Z`))

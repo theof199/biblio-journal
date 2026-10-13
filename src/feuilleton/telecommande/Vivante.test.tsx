@@ -534,9 +534,9 @@ describe('confirmer et refuser une invitation depuis l’écran', () => {
 
     await enSerie('Dark')
     expect(ecran()).toHaveAttribute('data-etat', 'serie')
-    // La carte de la confirmation : Dark en est à S2 E6, regardée à l'heure de l'invitation.
+    // La carte de la confirmation : Dark en est à S2 E6, regardée à l'heure de la confirmation (le 14 au matin, dans l'exemple du contrat).
     expect(ecran()).toHaveTextContent('S2 E6')
-    expect(ecran()).toHaveTextContent('Regardée hier soir')
+    expect(ecran()).toHaveTextContent('Regardée aujourd’hui')
     expect(message()).toHaveTextContent('Vu à deux noté')
     expect(point()).toBeNull()
     expect(document.querySelector('[data-piece="voyant"]')).toBeNull()
