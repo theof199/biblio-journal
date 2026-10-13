@@ -22043,7 +22043,7 @@
         "tags": [
           "suivi"
         ],
-        "description": "Deux portées : `season` pour une saison entière, `until` pour tout jusqu’à un épisode inclus — saisons précédentes comprises, dans l’ordre de diffusion.\n\n**Une seule transaction, une seule écriture, un seul recalcul.** Les épisodes sont posés par un unique `INSERT … ON CONFLICT`, et l’agrégat n’est dérivé qu’à la fin. Cocher une saison de 24 épisodes coûte donc le même nombre d’allers-retours qu’en cocher un seul, et ne peut pas laisser la série dans un état intermédiaire si quelque chose échoue en route.\n\n`season` est nul dans la réponse quand le lot traverse plusieurs saisons : il n’y aurait pas de saison unique à désigner.",
+        "description": "Deux portées : `season` pour une saison entière, `until` pour tout jusqu’à un épisode inclus — saisons précédentes comprises, dans l’ordre de diffusion.\n\n**Une seule transaction, un seul recalcul, et un nombre d’écritures qui ne dépend pas de la taille du lot.** Les épisodes sont posés par un unique `INSERT … ON CONFLICT`, leur trace au journal des visionnages par une seconde requête ensembliste, et l’agrégat n’est dérivé qu’à la fin. Cocher une saison de 24 épisodes coûte donc le même nombre d’allers-retours qu’en cocher un seul, et ne peut pas laisser la série dans un état intermédiaire si quelque chose échoue en route.\n\n`season` est nul dans la réponse quand le lot traverse plusieurs saisons : il n’y aurait pas de saison unique à désigner.",
         "requestBody": {
           "required": true,
           "content": {
@@ -53823,6 +53823,14 @@
     {
       "name": "tableau de bord",
       "description": "Statistiques personnelles, avec la couverture de chaque chiffre"
+    },
+    {
+      "name": "studio",
+      "description": "Le Feuilleton, côté Studio : regarder une série, c’est la produire. Ses routes vivront sous `/me/studio/…` et ne parleront que de l’utilisateur de la session. Aucune opération encore."
+    },
+    {
+      "name": "maison",
+      "description": "Le Feuilleton, côté Maison : un appartement de couple qu’on meuble. Ses routes vivront sous `/me/maison/…` et ne parleront que de l’utilisateur de la session. Aucune opération encore."
     }
   ]
 }

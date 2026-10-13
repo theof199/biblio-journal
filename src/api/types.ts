@@ -1850,7 +1850,7 @@ export interface paths {
      * Cocher ou décocher un lot d’épisodes
      * @description Deux portées : `season` pour une saison entière, `until` pour tout jusqu’à un épisode inclus — saisons précédentes comprises, dans l’ordre de diffusion.
      *
-     * **Une seule transaction, une seule écriture, un seul recalcul.** Les épisodes sont posés par un unique `INSERT … ON CONFLICT`, et l’agrégat n’est dérivé qu’à la fin. Cocher une saison de 24 épisodes coûte donc le même nombre d’allers-retours qu’en cocher un seul, et ne peut pas laisser la série dans un état intermédiaire si quelque chose échoue en route.
+     * **Une seule transaction, un seul recalcul, et un nombre d’écritures qui ne dépend pas de la taille du lot.** Les épisodes sont posés par un unique `INSERT … ON CONFLICT`, leur trace au journal des visionnages par une seconde requête ensembliste, et l’agrégat n’est dérivé qu’à la fin. Cocher une saison de 24 épisodes coûte donc le même nombre d’allers-retours qu’en cocher un seul, et ne peut pas laisser la série dans un état intermédiaire si quelque chose échoue en route.
      *
      * `season` est nul dans la réponse quand le lot traverse plusieurs saisons : il n’y aurait pas de saison unique à désigner.
      */
