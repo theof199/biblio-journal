@@ -12296,6 +12296,744 @@ export interface paths {
       };
     };
   };
+  "/me/feuilleton/telecommande": {
+    /**
+     * La télécommande : les séries en cours et l’épisode à voir
+     * @description Ce que le Journal affiche pour cocher ses épisodes, en un appel.
+     *
+     * `series` : toute série suivie « En cours », de la plus récemment regardée à la plus anciennement. Une série en sort quand elle est **finie au sens du jeu** : tous ses épisodes déjà diffusés hors saison 0 sont vus **et** TMDB la dit terminée (`Ended` ou `Canceled`), même si la fiche la dit encore `doing` (des épisodes spéciaux non vus, un épisode annoncé d’une série annulée). Une série que le suivi dit `done` n’y est pas non plus. Une série à jour que TMDB ne dit pas terminée reste, `a_jour`. Le statut du suivi, lui, ne change pas. `dernier_visionnage_le` est le plus récent visionnage actif au journal du Feuilleton ; sans aucun visionnage, c’est la date de l’ajout de la série au suivi, et `repere` vaut `suivi` (un rafraîchissement ou une note ne la changent pas). Une série sans rien depuis plus de trente jours est `en_pause` : elle reste dans la liste, c’est au client de la replier.
+     *
+     * **Le prochain épisode** est le premier non vu **après le dernier vu**, dans l’ordre saison puis épisode : un épisode sauté ne se repropose pas. Rien de vu : S1E1. Jamais la saison 0, jamais un épisode non diffusé (`air_date` après aujourd’hui à Paris ; une date inconnue vaut diffusé). Quand il ne reste rien de diffusé à voir, `prochain` est nul et `a_jour` vrai. « Vu » se lit sur le suivi, comme partout ailleurs. Ce n’est pas le `next_up` des autres routes, qui ne change pas.
+     *
+     * `a_confirmer` : les invitations à un « vu à deux » qui attendent la réponse du membre, non expirées. Une invitation que son inviteur a retirée en décochant l’épisode n’y est plus.
+     */
+    get: {
+      responses: {
+        /** @description La télécommande du membre */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Les invitations en attente et non expirées, de la plus ancienne à la plus récente */
+              a_confirmer: ({
+                  /**
+                   * Format: uuid
+                   * @description L’invitation
+                   */
+                  id: string;
+                  /** @description Le membre qui invite */
+                  de: {
+                    /** Format: uuid */
+                    id: string;
+                    pseudo: string;
+                    avatar_url: string | null;
+                    /** @description Couleur d'identité au format #RRGGBB */
+                    identity_color: string;
+                    /**
+                     * @description Rôle du membre
+                     * @enum {string}
+                     */
+                    role: "user" | "admin";
+                    /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                    deactivated: boolean;
+                  };
+                  serie: {
+                    /** Format: uuid */
+                    id: string;
+                    titre: string;
+                  };
+                  episode: {
+                    /** Format: uuid */
+                    id: string;
+                    saison: number;
+                    numero: number;
+                    titre: string | null;
+                  };
+                  /**
+                   * Format: date-time
+                   * @description L’instant de l’invitation : la soirée
+                   */
+                  invite_le: string;
+                  /**
+                   * Format: date-time
+                   * @description Le dernier instant où l’invitation se confirme ou se refuse encore
+                   */
+                  expire_le: string;
+                })[];
+              /** @description Toute série suivie « En cours » (`todo` ou `doing` au suivi, et pas finie au sens du jeu), de la plus récemment regardée à la plus anciennement */
+              series: ({
+                  /**
+                   * Format: uuid
+                   * @description L’œuvre, dans la médiathèque
+                   */
+                  id: string;
+                  titre: string;
+                  /** @description L’année de première diffusion */
+                  annee: number | null;
+                  /** @description La jaquette en petite taille, URL absolue */
+                  vignette: string | null;
+                  /**
+                   * @description Le statut du suivi, dérivé des épisodes : `todo` ou `doing` dans la liste, `done` possible dans la réponse d’une écriture
+                   * @enum {string}
+                   */
+                  statut: "todo" | "doing" | "done";
+                  /** @description Le premier achèvement de la série, jamais effacé */
+                  completed_at: string | null;
+                  /** @description Épisodes cochés sur épisodes connus, saison 0 et épisodes à venir compris : la même mesure que la fiche */
+                  progression: {
+                    /** @description Éléments cochés par l’utilisateur */
+                    checked: number;
+                    /** @description Éléments connus en base */
+                    total: number;
+                  };
+                  /**
+                   * Format: date-time
+                   * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi
+                   */
+                  dernier_visionnage_le: string;
+                  /**
+                   * @description D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)
+                   * @enum {string}
+                   */
+                  repere: "visionnage" | "suivi";
+                  /** @description Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures */
+                  en_pause: boolean;
+                  /** @description Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir */
+                  prochain: ({
+                    /** Format: uuid */
+                    id: string;
+                    /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                    saison: number;
+                    /** @description Le numéro de l’épisode dans sa saison */
+                    numero: number;
+                    titre: string | null;
+                    /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                    runtime_min: number | null;
+                    /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                    air_date: string | null;
+                  }) | null;
+                  /** @description L’épisode d’après `prochain`, par la même règle : de quoi avancer la carte sans attendre */
+                  ensuite: ({
+                    /** Format: uuid */
+                    id: string;
+                    /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                    saison: number;
+                    /** @description Le numéro de l’épisode dans sa saison */
+                    numero: number;
+                    titre: string | null;
+                    /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                    runtime_min: number | null;
+                    /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                    air_date: string | null;
+                  }) | null;
+                  /** @description Plus rien de diffusé à voir : `prochain` est nul */
+                  a_jour: boolean;
+                  /** @description La date du prochain épisode à venir après le dernier vu, hors saison 0, quand elle est connue */
+                  prochaine_diffusion_le: string | null;
+                  /** @description La série n’est plus « En cours » : finie au sens du jeu (tous les épisodes déjà diffusés hors saison 0 sont vus et TMDB la dit `Ended` ou `Canceled`), ou `done` au suivi. Toujours faux dans la liste de la télécommande, qui écarte ces séries ; vrai dans la réponse de l’écriture qui vient de la finir */
+                  finie: boolean;
+                })[];
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/feuilleton/episodes": {
+    /**
+     * Cocher « toute la saison » ou « jusqu’ici »
+     * @description Les deux portées de la télécommande : `saison` (la saison entière) et `jusqu_ici` (tout ce qui précède l’épisode dans la série, lui compris).
+     *
+     * **Elles ne cochent que les épisodes déjà diffusés et hors saison 0**, par la définition de `GET /me/feuilleton/telecommande`. Elles cochent seulement : décocher reste à `PUT /episodes/{id}/watched` et à `PUT /episodes/batch`. Un épisode déjà vu n’est pas touché : il garde sa date et ne sort pas de `episode_ids`.
+     *
+     * Le suivi est écrit par la même logique que `PUT /episodes/batch` (une transaction, un recalcul, l’entrée de journal automatique au passage à `done`, le constat des quêtes) : une série finie d’ici est finie partout. Au journal du Feuilleton, la source est `lot`.
+     *
+     * `serie` est la carte après l’écriture, de quoi mettre l’écran à jour sans relire la télécommande. `serie.finie` dit que la série vient de sortir d’« En cours ».
+     */
+    put: {
+      /** @description Cocher « toute la saison » ou « jusqu’ici » depuis la télécommande */
+      requestBody: {
+        content: {
+          "application/json": OneOf<[{
+            /**
+             * Format: uuid
+             * @description Facultatif. S’il est fourni, il doit être celui de la session : sinon 403
+             */
+            user_id?: string;
+            /** @enum {string} */
+            portee: "saison";
+            /**
+             * Format: uuid
+             * @description La saison à cocher en entier
+             */
+            season_id: string;
+          }, {
+            /**
+             * Format: uuid
+             * @description Facultatif. S’il est fourni, il doit être celui de la session : sinon 403
+             */
+            user_id?: string;
+            /** @enum {string} */
+            portee: "jusqu_ici";
+            /**
+             * Format: uuid
+             * @description Le dernier épisode inclus : tout ce qui le précède dans la série est coché avec lui
+             */
+            episode_id: string;
+          }]>;
+        };
+      };
+      responses: {
+        /** @description Ce que la portée a coché, et la carte à jour */
+        200: {
+          content: {
+            "application/json": {
+              /** @description Les épisodes que cet appel a cochés : ceux qui étaient déjà vus n’y sont pas */
+              episode_ids: string[];
+              /** @description La carte de la série après l’écriture, telle que la télécommande la rendrait ; `finie` est vrai si le lot vient de la sortir d’« En cours » */
+              serie: {
+                /**
+                 * Format: uuid
+                 * @description L’œuvre, dans la médiathèque
+                 */
+                id: string;
+                titre: string;
+                /** @description L’année de première diffusion */
+                annee: number | null;
+                /** @description La jaquette en petite taille, URL absolue */
+                vignette: string | null;
+                /**
+                 * @description Le statut du suivi, dérivé des épisodes : `todo` ou `doing` dans la liste, `done` possible dans la réponse d’une écriture
+                 * @enum {string}
+                 */
+                statut: "todo" | "doing" | "done";
+                /** @description Le premier achèvement de la série, jamais effacé */
+                completed_at: string | null;
+                /** @description Épisodes cochés sur épisodes connus, saison 0 et épisodes à venir compris : la même mesure que la fiche */
+                progression: {
+                  /** @description Éléments cochés par l’utilisateur */
+                  checked: number;
+                  /** @description Éléments connus en base */
+                  total: number;
+                };
+                /**
+                 * Format: date-time
+                 * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi
+                 */
+                dernier_visionnage_le: string;
+                /**
+                 * @description D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)
+                 * @enum {string}
+                 */
+                repere: "visionnage" | "suivi";
+                /** @description Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures */
+                en_pause: boolean;
+                /** @description Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir */
+                prochain: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                  saison: number;
+                  /** @description Le numéro de l’épisode dans sa saison */
+                  numero: number;
+                  titre: string | null;
+                  /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                  runtime_min: number | null;
+                  /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                  air_date: string | null;
+                }) | null;
+                /** @description L’épisode d’après `prochain`, par la même règle : de quoi avancer la carte sans attendre */
+                ensuite: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                  saison: number;
+                  /** @description Le numéro de l’épisode dans sa saison */
+                  numero: number;
+                  titre: string | null;
+                  /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                  runtime_min: number | null;
+                  /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                  air_date: string | null;
+                }) | null;
+                /** @description Plus rien de diffusé à voir : `prochain` est nul */
+                a_jour: boolean;
+                /** @description La date du prochain épisode à venir après le dernier vu, hors saison 0, quand elle est connue */
+                prochaine_diffusion_le: string | null;
+                /** @description La série n’est plus « En cours » : finie au sens du jeu (tous les épisodes déjà diffusés hors saison 0 sont vus et TMDB la dit `Ended` ou `Canceled`), ou `done` au suivi. Toujours faux dans la liste de la télécommande, qui écarte ces séries ; vrai dans la réponse de l’écriture qui vient de la finir */
+                finie: boolean;
+              };
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/feuilleton/vus-a-deux": {
+    /**
+     * Inviter un membre à un « vu à deux »
+     * @description Le membre de la session dit avoir vu l’épisode avec `pour`, et l’invite à le confirmer. **Rien n’est écrit chez l’invité** : ni suivi, ni épisode coché. L’invitation paraît dans `a_confirmer` de sa télécommande pendant sept jours.
+     *
+     * L’appelant doit **avoir déjà coché l’épisode** (par `PUT /episodes/{id}/watched` ou une portée) : sinon `409`. On ne s’invite pas soi-même (`400`) ; un invité inconnu ou désactivé, comme un épisode inconnu, répond `404`.
+     *
+     * **Une invitation par (appelant, invité, épisode)** : tant qu’elle attend, ou une fois confirmée ou **refusée**, une seconde répond `409` ; le refus est définitif. Une invitation **expirée**, elle, ne bloque pas : réinviter la réarme pour sept jours, sous le même identifiant, datée de la réinvitation.
+     *
+     * **Décocher l’épisode retire l’invitation en attente** (`PUT /episodes/{id}/watched`, `PUT /episodes/batch`, `DELETE /media/{id}/tracking`) : elle disparaît chez l’invité, et l’appelant peut réinviter après avoir recoché. Une invitation déjà confirmée n’est pas défaite.
+     *
+     * Une invitation n’est lue que par ses deux membres : aucune route ne la sert à un tiers.
+     */
+    post: {
+      /** @description Inviter un membre à dire qu’on a vu cet épisode ensemble */
+      requestBody: {
+        content: {
+          "application/json": {
+            /**
+             * Format: uuid
+             * @description L’épisode vu ensemble : l’appelant doit l’avoir déjà coché
+             */
+            episode_id: string;
+            /**
+             * Format: uuid
+             * @description Le membre invité à confirmer
+             */
+            pour: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Une invitation à un « vu à deux » */
+        201: {
+          content: {
+            "application/json": {
+              /**
+               * Format: uuid
+               * @description L’invitation
+               */
+              id: string;
+              /** @description Le membre qui invite */
+              de: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description Le membre invité */
+              pour: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              serie: {
+                /** Format: uuid */
+                id: string;
+                titre: string;
+              };
+              episode: {
+                /** Format: uuid */
+                id: string;
+                saison: number;
+                numero: number;
+                titre: string | null;
+              };
+              /**
+               * @description Le statut d’une invitation à un « vu à deux » : `en_attente`, `confirme` ou `refuse`
+               * @enum {string}
+               */
+              statut: "en_attente" | "confirme" | "refuse";
+              /**
+               * Format: date-time
+               * @description L’instant de l’invitation : la soirée. Celui de la réinvitation, après une expiration
+               */
+              invite_le: string;
+              /**
+               * Format: date-time
+               * @description Le dernier instant où l’invitation se confirme ou se refuse encore : sept jours après `invite_le`
+               */
+              expire_le: string;
+              /** @description L’instant de la réponse de l’invité, nul tant que l’invitation attend */
+              traite_le: string | null;
+            };
+          };
+        };
+        /** @description Default Response */
+        400: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/feuilleton/vus-a-deux/{id}/confirmer": {
+    /**
+     * Confirmer un « vu à deux »
+     * @description Par **l’invité seul** : l’inviteur, un tiers ou une administratrice reçoivent `403`. `404` si l’invitation n’existe pas ou a été retirée ; `409` si elle a déjà reçu sa réponse, ou si elle a expiré (plus de sept jours).
+     *
+     * En une transaction : l’invitation passe à `confirme`, l’épisode est **coché chez l’invité à l’heure de l’invitation** (`watched_at` du suivi), et chacun des deux visionnages retient l’autre membre. Le suivi est écrit par la même logique que `PUT /episodes/{id}/watched` : recalcul de la série, entrée de journal automatique au passage à `done`, constat des quêtes.
+     *
+     * **L’invité qui avait déjà coché l’épisode seul** n’est ni redaté, ni recompté : il gagne seulement son compagnon. Le premier compagnon posé sur un visionnage reste.
+     *
+     * Au journal du Feuilleton, le visionnage prend l’heure de l’invitation si son jour (à Paris, clos à 6 h le lendemain) n’est pas encore clos, sinon l’heure de la confirmation : il compte une fois pour le cachet.
+     *
+     * `serie` est la carte de la série chez l’invité après la coche, comme `PUT /me/feuilleton/episodes` la rend ; `serie.finie` dit que cet épisode l’a sortie d’« En cours ».
+     */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description L’invitation confirmée, et la carte de la série à jour */
+        200: {
+          content: {
+            "application/json": {
+              /** @description L’invitation, passée à `confirme` */
+              invitation: {
+                /**
+                 * Format: uuid
+                 * @description L’invitation
+                 */
+                id: string;
+                /** @description Le membre qui invite */
+                de: {
+                  /** Format: uuid */
+                  id: string;
+                  pseudo: string;
+                  avatar_url: string | null;
+                  /** @description Couleur d'identité au format #RRGGBB */
+                  identity_color: string;
+                  /**
+                   * @description Rôle du membre
+                   * @enum {string}
+                   */
+                  role: "user" | "admin";
+                  /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                  deactivated: boolean;
+                };
+                /** @description Le membre invité */
+                pour: {
+                  /** Format: uuid */
+                  id: string;
+                  pseudo: string;
+                  avatar_url: string | null;
+                  /** @description Couleur d'identité au format #RRGGBB */
+                  identity_color: string;
+                  /**
+                   * @description Rôle du membre
+                   * @enum {string}
+                   */
+                  role: "user" | "admin";
+                  /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                  deactivated: boolean;
+                };
+                serie: {
+                  /** Format: uuid */
+                  id: string;
+                  titre: string;
+                };
+                episode: {
+                  /** Format: uuid */
+                  id: string;
+                  saison: number;
+                  numero: number;
+                  titre: string | null;
+                };
+                /**
+                 * @description Le statut d’une invitation à un « vu à deux » : `en_attente`, `confirme` ou `refuse`
+                 * @enum {string}
+                 */
+                statut: "en_attente" | "confirme" | "refuse";
+                /**
+                 * Format: date-time
+                 * @description L’instant de l’invitation : la soirée. Celui de la réinvitation, après une expiration
+                 */
+                invite_le: string;
+                /**
+                 * Format: date-time
+                 * @description Le dernier instant où l’invitation se confirme ou se refuse encore : sept jours après `invite_le`
+                 */
+                expire_le: string;
+                /** @description L’instant de la réponse de l’invité, nul tant que l’invitation attend */
+                traite_le: string | null;
+              };
+              /** @description La carte de la série chez l’invité après la coche, telle que la télécommande la rendrait ; `finie` est vrai si cet épisode vient de la sortir d’« En cours » */
+              serie: {
+                /**
+                 * Format: uuid
+                 * @description L’œuvre, dans la médiathèque
+                 */
+                id: string;
+                titre: string;
+                /** @description L’année de première diffusion */
+                annee: number | null;
+                /** @description La jaquette en petite taille, URL absolue */
+                vignette: string | null;
+                /**
+                 * @description Le statut du suivi, dérivé des épisodes : `todo` ou `doing` dans la liste, `done` possible dans la réponse d’une écriture
+                 * @enum {string}
+                 */
+                statut: "todo" | "doing" | "done";
+                /** @description Le premier achèvement de la série, jamais effacé */
+                completed_at: string | null;
+                /** @description Épisodes cochés sur épisodes connus, saison 0 et épisodes à venir compris : la même mesure que la fiche */
+                progression: {
+                  /** @description Éléments cochés par l’utilisateur */
+                  checked: number;
+                  /** @description Éléments connus en base */
+                  total: number;
+                };
+                /**
+                 * Format: date-time
+                 * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi
+                 */
+                dernier_visionnage_le: string;
+                /**
+                 * @description D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)
+                 * @enum {string}
+                 */
+                repere: "visionnage" | "suivi";
+                /** @description Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures */
+                en_pause: boolean;
+                /** @description Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir */
+                prochain: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                  saison: number;
+                  /** @description Le numéro de l’épisode dans sa saison */
+                  numero: number;
+                  titre: string | null;
+                  /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                  runtime_min: number | null;
+                  /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                  air_date: string | null;
+                }) | null;
+                /** @description L’épisode d’après `prochain`, par la même règle : de quoi avancer la carte sans attendre */
+                ensuite: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                  saison: number;
+                  /** @description Le numéro de l’épisode dans sa saison */
+                  numero: number;
+                  titre: string | null;
+                  /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                  runtime_min: number | null;
+                  /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                  air_date: string | null;
+                }) | null;
+                /** @description Plus rien de diffusé à voir : `prochain` est nul */
+                a_jour: boolean;
+                /** @description La date du prochain épisode à venir après le dernier vu, hors saison 0, quand elle est connue */
+                prochaine_diffusion_le: string | null;
+                /** @description La série n’est plus « En cours » : finie au sens du jeu (tous les épisodes déjà diffusés hors saison 0 sont vus et TMDB la dit `Ended` ou `Canceled`), ou `done` au suivi. Toujours faux dans la liste de la télécommande, qui écarte ces séries ; vrai dans la réponse de l’écriture qui vient de la finir */
+                finie: boolean;
+              };
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/feuilleton/vus-a-deux/{id}/refuser": {
+    /**
+     * Refuser un « vu à deux »
+     * @description Par **l’invité seul** : l’inviteur, un tiers ou une administratrice reçoivent `403`. `404` si l’invitation n’existe pas ou a été retirée ; `409` si elle a déjà reçu sa réponse, ou si elle a expiré.
+     *
+     * L’invitation passe à `refuse`, et **rien d’autre ne bouge** : aucun épisode coché, aucun visionnage touché. Le refus est définitif : ce membre ne peut plus inviter celui-ci pour cet épisode.
+     */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Une invitation à un « vu à deux » */
+        200: {
+          content: {
+            "application/json": {
+              /**
+               * Format: uuid
+               * @description L’invitation
+               */
+              id: string;
+              /** @description Le membre qui invite */
+              de: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              /** @description Le membre invité */
+              pour: {
+                /** Format: uuid */
+                id: string;
+                pseudo: string;
+                avatar_url: string | null;
+                /** @description Couleur d'identité au format #RRGGBB */
+                identity_color: string;
+                /**
+                 * @description Rôle du membre
+                 * @enum {string}
+                 */
+                role: "user" | "admin";
+                /** @description Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué */
+                deactivated: boolean;
+              };
+              serie: {
+                /** Format: uuid */
+                id: string;
+                titre: string;
+              };
+              episode: {
+                /** Format: uuid */
+                id: string;
+                saison: number;
+                numero: number;
+                titre: string | null;
+              };
+              /**
+               * @description Le statut d’une invitation à un « vu à deux » : `en_attente`, `confirme` ou `refuse`
+               * @enum {string}
+               */
+              statut: "en_attente" | "confirme" | "refuse";
+              /**
+               * Format: date-time
+               * @description L’instant de l’invitation : la soirée. Celui de la réinvitation, après une expiration
+               */
+              invite_le: string;
+              /**
+               * Format: date-time
+               * @description Le dernier instant où l’invitation se confirme ou se refuse encore : sept jours après `invite_le`
+               */
+              expire_le: string;
+              /** @description L’instant de la réponse de l’invité, nul tant que l’invitation attend */
+              traite_le: string | null;
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
 }
 
 export type webhooks = Record<string, never>;

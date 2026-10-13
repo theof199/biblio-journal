@@ -53755,6 +53755,2364 @@
           }
         }
       }
+    },
+    "/me/feuilleton/telecommande": {
+      "get": {
+        "summary": "La télécommande : les séries en cours et l’épisode à voir",
+        "tags": [
+          "feuilleton"
+        ],
+        "description": "Ce que le Journal affiche pour cocher ses épisodes, en un appel.\n\n`series` : toute série suivie « En cours », de la plus récemment regardée à la plus anciennement. Une série en sort quand elle est **finie au sens du jeu** : tous ses épisodes déjà diffusés hors saison 0 sont vus **et** TMDB la dit terminée (`Ended` ou `Canceled`), même si la fiche la dit encore `doing` (des épisodes spéciaux non vus, un épisode annoncé d’une série annulée). Une série que le suivi dit `done` n’y est pas non plus. Une série à jour que TMDB ne dit pas terminée reste, `a_jour`. Le statut du suivi, lui, ne change pas. `dernier_visionnage_le` est le plus récent visionnage actif au journal du Feuilleton ; sans aucun visionnage, c’est la date de l’ajout de la série au suivi, et `repere` vaut `suivi` (un rafraîchissement ou une note ne la changent pas). Une série sans rien depuis plus de trente jours est `en_pause` : elle reste dans la liste, c’est au client de la replier.\n\n**Le prochain épisode** est le premier non vu **après le dernier vu**, dans l’ordre saison puis épisode : un épisode sauté ne se repropose pas. Rien de vu : S1E1. Jamais la saison 0, jamais un épisode non diffusé (`air_date` après aujourd’hui à Paris ; une date inconnue vaut diffusé). Quand il ne reste rien de diffusé à voir, `prochain` est nul et `a_jour` vrai. « Vu » se lit sur le suivi, comme partout ailleurs. Ce n’est pas le `next_up` des autres routes, qui ne change pas.\n\n`a_confirmer` : les invitations à un « vu à deux » qui attendent la réponse du membre, non expirées. Une invitation que son inviteur a retirée en décochant l’épisode n’y est plus.",
+        "responses": {
+          "200": {
+            "description": "La télécommande du membre",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "a_confirmer": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’invitation"
+                          },
+                          "de": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pseudo": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "identity_color": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$",
+                                "description": "Couleur d'identité au format #RRGGBB"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "user",
+                                  "admin"
+                                ],
+                                "description": "Rôle du membre"
+                              },
+                              "deactivated": {
+                                "type": "boolean",
+                                "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "pseudo",
+                              "avatar_url",
+                              "identity_color",
+                              "role",
+                              "deactivated"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Le membre qui invite"
+                          },
+                          "serie": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "titre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "titre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "episode": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "saison": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "numero": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "titre": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "saison",
+                              "numero",
+                              "titre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "invite_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "L’instant de l’invitation : la soirée"
+                          },
+                          "expire_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "Le dernier instant où l’invitation se confirme ou se refuse encore"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "de",
+                          "serie",
+                          "episode",
+                          "invite_le",
+                          "expire_le"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une invitation à confirmer : « Alycia a vu Dark S2 E5 avec toi »"
+                      },
+                      "description": "Les invitations en attente et non expirées, de la plus ancienne à la plus récente"
+                    },
+                    "series": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "L’œuvre, dans la médiathèque"
+                          },
+                          "titre": {
+                            "type": "string"
+                          },
+                          "annee": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "L’année de première diffusion"
+                          },
+                          "vignette": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "La jaquette en petite taille, URL absolue"
+                          },
+                          "statut": {
+                            "type": "string",
+                            "enum": [
+                              "todo",
+                              "doing",
+                              "done"
+                            ],
+                            "description": "Le statut du suivi, dérivé des épisodes : `todo` ou `doing` dans la liste, `done` possible dans la réponse d’une écriture"
+                          },
+                          "completed_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Le premier achèvement de la série, jamais effacé"
+                          },
+                          "progression": {
+                            "type": "object",
+                            "properties": {
+                              "checked": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "Éléments cochés par l’utilisateur"
+                              },
+                              "total": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "Éléments connus en base"
+                              }
+                            },
+                            "required": [
+                              "checked",
+                              "total"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Épisodes cochés sur épisodes connus, saison 0 et épisodes à venir compris : la même mesure que la fiche"
+                          },
+                          "dernier_visionnage_le": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                            "description": "Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi"
+                          },
+                          "repere": {
+                            "type": "string",
+                            "enum": [
+                              "visionnage",
+                              "suivi"
+                            ],
+                            "description": "D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)"
+                          },
+                          "en_pause": {
+                            "type": "boolean",
+                            "description": "Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures"
+                          },
+                          "prochain": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "saison": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
+                                  },
+                                  "numero": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Le numéro de l’épisode dans sa saison"
+                                  },
+                                  "titre": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "runtime_min": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Durée en minutes, nulle si la fiche ne la connaît pas"
+                                  },
+                                  "air_date": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "saison",
+                                  "numero",
+                                  "titre",
+                                  "runtime_min",
+                                  "air_date"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Un épisode à voir"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir"
+                          },
+                          "ensuite": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "saison": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
+                                  },
+                                  "numero": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Le numéro de l’épisode dans sa saison"
+                                  },
+                                  "titre": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "runtime_min": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Durée en minutes, nulle si la fiche ne la connaît pas"
+                                  },
+                                  "air_date": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "saison",
+                                  "numero",
+                                  "titre",
+                                  "runtime_min",
+                                  "air_date"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Un épisode à voir"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "L’épisode d’après `prochain`, par la même règle : de quoi avancer la carte sans attendre"
+                          },
+                          "a_jour": {
+                            "type": "boolean",
+                            "description": "Plus rien de diffusé à voir : `prochain` est nul"
+                          },
+                          "prochaine_diffusion_le": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "La date du prochain épisode à venir après le dernier vu, hors saison 0, quand elle est connue"
+                          },
+                          "finie": {
+                            "type": "boolean",
+                            "description": "La série n’est plus « En cours » : finie au sens du jeu (tous les épisodes déjà diffusés hors saison 0 sont vus et TMDB la dit `Ended` ou `Canceled`), ou `done` au suivi. Toujours faux dans la liste de la télécommande, qui écarte ces séries ; vrai dans la réponse de l’écriture qui vient de la finir"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "titre",
+                          "annee",
+                          "vignette",
+                          "statut",
+                          "completed_at",
+                          "progression",
+                          "dernier_visionnage_le",
+                          "repere",
+                          "en_pause",
+                          "prochain",
+                          "ensuite",
+                          "a_jour",
+                          "prochaine_diffusion_le",
+                          "finie"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Une série sur la télécommande"
+                      },
+                      "description": "Toute série suivie « En cours » (`todo` ou `doing` au suivi, et pas finie au sens du jeu), de la plus récemment regardée à la plus anciennement"
+                    }
+                  },
+                  "required": [
+                    "a_confirmer",
+                    "series"
+                  ],
+                  "additionalProperties": false,
+                  "description": "La télécommande du membre"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "a_confirmer": [
+                        {
+                          "id": "eeeeeeee-0000-4000-8000-000000000001",
+                          "de": {
+                            "id": "22222222-2222-4222-8222-222222222222",
+                            "pseudo": "bob",
+                            "avatar_url": null,
+                            "identity_color": "#3A7CA5",
+                            "role": "user",
+                            "deactivated": false
+                          },
+                          "serie": {
+                            "id": "d0000000-0000-4000-8000-000000000001",
+                            "titre": "Dark"
+                          },
+                          "episode": {
+                            "id": "aaaaaaaa-0000-4000-8000-000000000015",
+                            "saison": 2,
+                            "numero": 5,
+                            "titre": "Perdus et trouvés"
+                          },
+                          "invite_le": "2026-10-13T20:30:00.000Z",
+                          "expire_le": "2026-10-20T20:30:00.000Z"
+                        }
+                      ],
+                      "series": [
+                        {
+                          "id": "d0000000-0000-4000-8000-000000000001",
+                          "titre": "Dark",
+                          "annee": 2017,
+                          "vignette": "http://localhost:3000/covers/9f2c1ab4d7e08c3b6512-thumb.webp",
+                          "statut": "doing",
+                          "completed_at": null,
+                          "progression": {
+                            "checked": 14,
+                            "total": 26
+                          },
+                          "dernier_visionnage_le": "2026-10-12T19:41:00.000Z",
+                          "repere": "visionnage",
+                          "en_pause": false,
+                          "prochain": {
+                            "id": "aaaaaaaa-0000-4000-8000-000000000015",
+                            "saison": 2,
+                            "numero": 5,
+                            "titre": "Perdus et trouvés",
+                            "runtime_min": 53,
+                            "air_date": "2019-06-21"
+                          },
+                          "ensuite": {
+                            "id": "aaaaaaaa-0000-4000-8000-000000000016",
+                            "saison": 2,
+                            "numero": 6,
+                            "titre": "Un cycle sans fin",
+                            "runtime_min": 56,
+                            "air_date": "2019-06-21"
+                          },
+                          "a_jour": false,
+                          "prochaine_diffusion_le": null,
+                          "finie": false
+                        },
+                        {
+                          "id": "d0000000-0000-4000-8000-000000000002",
+                          "titre": "Severance",
+                          "annee": 2022,
+                          "vignette": null,
+                          "statut": "doing",
+                          "completed_at": null,
+                          "progression": {
+                            "checked": 19,
+                            "total": 20
+                          },
+                          "dernier_visionnage_le": "2026-08-30T20:05:00.000Z",
+                          "repere": "visionnage",
+                          "en_pause": true,
+                          "prochain": null,
+                          "ensuite": null,
+                          "a_jour": true,
+                          "prochaine_diffusion_le": "2026-11-06",
+                          "finie": false
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/feuilleton/episodes": {
+      "put": {
+        "summary": "Cocher « toute la saison » ou « jusqu’ici »",
+        "tags": [
+          "feuilleton"
+        ],
+        "description": "Les deux portées de la télécommande : `saison` (la saison entière) et `jusqu_ici` (tout ce qui précède l’épisode dans la série, lui compris).\n\n**Elles ne cochent que les épisodes déjà diffusés et hors saison 0**, par la définition de `GET /me/feuilleton/telecommande`. Elles cochent seulement : décocher reste à `PUT /episodes/{id}/watched` et à `PUT /episodes/batch`. Un épisode déjà vu n’est pas touché : il garde sa date et ne sort pas de `episode_ids`.\n\nLe suivi est écrit par la même logique que `PUT /episodes/batch` (une transaction, un recalcul, l’entrée de journal automatique au passage à `done`, le constat des quêtes) : une série finie d’ici est finie partout. Au journal du Feuilleton, la source est `lot`.\n\n`serie` est la carte après l’écriture, de quoi mettre l’écran à jour sans relire la télécommande. `serie.finie` dit que la série vient de sortir d’« En cours ».",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "description": "Facultatif. S’il est fourni, il doit être celui de la session : sinon 403",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "portee": {
+                        "type": "string",
+                        "enum": [
+                          "saison"
+                        ]
+                      },
+                      "season_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La saison à cocher en entier"
+                      }
+                    },
+                    "required": [
+                      "portee",
+                      "season_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "description": "Facultatif. S’il est fourni, il doit être celui de la session : sinon 403",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "portee": {
+                        "type": "string",
+                        "enum": [
+                          "jusqu_ici"
+                        ]
+                      },
+                      "episode_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "Le dernier épisode inclus : tout ce qui le précède dans la série est coché avec lui"
+                      }
+                    },
+                    "required": [
+                      "portee",
+                      "episode_id"
+                    ],
+                    "additionalProperties": false
+                  }
+                ],
+                "description": "Cocher « toute la saison » ou « jusqu’ici » depuis la télécommande"
+              }
+            }
+          },
+          "description": "Cocher « toute la saison » ou « jusqu’ici » depuis la télécommande"
+        },
+        "responses": {
+          "200": {
+            "description": "Ce que la portée a coché, et la carte à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "episode_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "description": "Les épisodes que cet appel a cochés : ceux qui étaient déjà vus n’y sont pas"
+                    },
+                    "serie": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "L’œuvre, dans la médiathèque"
+                        },
+                        "titre": {
+                          "type": "string"
+                        },
+                        "annee": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "L’année de première diffusion"
+                        },
+                        "vignette": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "La jaquette en petite taille, URL absolue"
+                        },
+                        "statut": {
+                          "type": "string",
+                          "enum": [
+                            "todo",
+                            "doing",
+                            "done"
+                          ],
+                          "description": "Le statut du suivi, dérivé des épisodes : `todo` ou `doing` dans la liste, `done` possible dans la réponse d’une écriture"
+                        },
+                        "completed_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Le premier achèvement de la série, jamais effacé"
+                        },
+                        "progression": {
+                          "type": "object",
+                          "properties": {
+                            "checked": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "Éléments cochés par l’utilisateur"
+                            },
+                            "total": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "Éléments connus en base"
+                            }
+                          },
+                          "required": [
+                            "checked",
+                            "total"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Épisodes cochés sur épisodes connus, saison 0 et épisodes à venir compris : la même mesure que la fiche"
+                        },
+                        "dernier_visionnage_le": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "description": "Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi"
+                        },
+                        "repere": {
+                          "type": "string",
+                          "enum": [
+                            "visionnage",
+                            "suivi"
+                          ],
+                          "description": "D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)"
+                        },
+                        "en_pause": {
+                          "type": "boolean",
+                          "description": "Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures"
+                        },
+                        "prochain": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "saison": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
+                                },
+                                "numero": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de l’épisode dans sa saison"
+                                },
+                                "titre": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "runtime_min": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Durée en minutes, nulle si la fiche ne la connaît pas"
+                                },
+                                "air_date": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "saison",
+                                "numero",
+                                "titre",
+                                "runtime_min",
+                                "air_date"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Un épisode à voir"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir"
+                        },
+                        "ensuite": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "saison": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
+                                },
+                                "numero": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de l’épisode dans sa saison"
+                                },
+                                "titre": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "runtime_min": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Durée en minutes, nulle si la fiche ne la connaît pas"
+                                },
+                                "air_date": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "saison",
+                                "numero",
+                                "titre",
+                                "runtime_min",
+                                "air_date"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Un épisode à voir"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "L’épisode d’après `prochain`, par la même règle : de quoi avancer la carte sans attendre"
+                        },
+                        "a_jour": {
+                          "type": "boolean",
+                          "description": "Plus rien de diffusé à voir : `prochain` est nul"
+                        },
+                        "prochaine_diffusion_le": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "La date du prochain épisode à venir après le dernier vu, hors saison 0, quand elle est connue"
+                        },
+                        "finie": {
+                          "type": "boolean",
+                          "description": "La série n’est plus « En cours » : finie au sens du jeu (tous les épisodes déjà diffusés hors saison 0 sont vus et TMDB la dit `Ended` ou `Canceled`), ou `done` au suivi. Toujours faux dans la liste de la télécommande, qui écarte ces séries ; vrai dans la réponse de l’écriture qui vient de la finir"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "titre",
+                        "annee",
+                        "vignette",
+                        "statut",
+                        "completed_at",
+                        "progression",
+                        "dernier_visionnage_le",
+                        "repere",
+                        "en_pause",
+                        "prochain",
+                        "ensuite",
+                        "a_jour",
+                        "prochaine_diffusion_le",
+                        "finie"
+                      ],
+                      "additionalProperties": false,
+                      "description": "La carte de la série après l’écriture, telle que la télécommande la rendrait ; `finie` est vrai si le lot vient de la sortir d’« En cours »"
+                    }
+                  },
+                  "required": [
+                    "episode_ids",
+                    "serie"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Ce que la portée a coché, et la carte à jour"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "episode_ids": [
+                        "aaaaaaaa-0000-4000-8000-000000000015",
+                        "aaaaaaaa-0000-4000-8000-000000000016"
+                      ],
+                      "serie": {
+                        "id": "d0000000-0000-4000-8000-000000000001",
+                        "titre": "Dark",
+                        "annee": 2017,
+                        "vignette": "http://localhost:3000/covers/9f2c1ab4d7e08c3b6512-thumb.webp",
+                        "statut": "doing",
+                        "completed_at": null,
+                        "progression": {
+                          "checked": 16,
+                          "total": 26
+                        },
+                        "dernier_visionnage_le": "2026-10-14T18:02:00.000Z",
+                        "repere": "visionnage",
+                        "en_pause": false,
+                        "prochain": {
+                          "id": "aaaaaaaa-0000-4000-8000-000000000017",
+                          "saison": 2,
+                          "numero": 7,
+                          "titre": "Le diable blanc",
+                          "runtime_min": 57,
+                          "air_date": "2019-06-21"
+                        },
+                        "ensuite": {
+                          "id": "aaaaaaaa-0000-4000-8000-000000000018",
+                          "saison": 2,
+                          "numero": 8,
+                          "titre": "Fins et débuts",
+                          "runtime_min": 60,
+                          "air_date": "2019-06-21"
+                        },
+                        "a_jour": false,
+                        "prochaine_diffusion_le": null,
+                        "finie": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/feuilleton/vus-a-deux": {
+      "post": {
+        "summary": "Inviter un membre à un « vu à deux »",
+        "tags": [
+          "feuilleton"
+        ],
+        "description": "Le membre de la session dit avoir vu l’épisode avec `pour`, et l’invite à le confirmer. **Rien n’est écrit chez l’invité** : ni suivi, ni épisode coché. L’invitation paraît dans `a_confirmer` de sa télécommande pendant sept jours.\n\nL’appelant doit **avoir déjà coché l’épisode** (par `PUT /episodes/{id}/watched` ou une portée) : sinon `409`. On ne s’invite pas soi-même (`400`) ; un invité inconnu ou désactivé, comme un épisode inconnu, répond `404`.\n\n**Une invitation par (appelant, invité, épisode)** : tant qu’elle attend, ou une fois confirmée ou **refusée**, une seconde répond `409` ; le refus est définitif. Une invitation **expirée**, elle, ne bloque pas : réinviter la réarme pour sept jours, sous le même identifiant, datée de la réinvitation.\n\n**Décocher l’épisode retire l’invitation en attente** (`PUT /episodes/{id}/watched`, `PUT /episodes/batch`, `DELETE /media/{id}/tracking`) : elle disparaît chez l’invité, et l’appelant peut réinviter après avoir recoché. Une invitation déjà confirmée n’est pas défaite.\n\nUne invitation n’est lue que par ses deux membres : aucune route ne la sert à un tiers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "episode_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "L’épisode vu ensemble : l’appelant doit l’avoir déjà coché"
+                  },
+                  "pour": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "Le membre invité à confirmer"
+                  }
+                },
+                "required": [
+                  "episode_id",
+                  "pour"
+                ],
+                "additionalProperties": false,
+                "description": "Inviter un membre à dire qu’on a vu cet épisode ensemble"
+              }
+            }
+          },
+          "description": "Inviter un membre à dire qu’on a vu cet épisode ensemble"
+        },
+        "responses": {
+          "201": {
+            "description": "Une invitation à un « vu à deux »",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "L’invitation"
+                    },
+                    "de": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le membre qui invite"
+                    },
+                    "pour": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le membre invité"
+                    },
+                    "serie": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "titre": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "titre"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "episode": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "saison": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "numero": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "titre": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "saison",
+                        "numero",
+                        "titre"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "statut": {
+                      "type": "string",
+                      "enum": [
+                        "en_attente",
+                        "confirme",
+                        "refuse"
+                      ],
+                      "description": "Le statut d’une invitation à un « vu à deux » : `en_attente`, `confirme` ou `refuse`"
+                    },
+                    "invite_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant de l’invitation : la soirée. Celui de la réinvitation, après une expiration"
+                    },
+                    "expire_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "Le dernier instant où l’invitation se confirme ou se refuse encore : sept jours après `invite_le`"
+                    },
+                    "traite_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "L’instant de la réponse de l’invité, nul tant que l’invitation attend"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "de",
+                    "pour",
+                    "serie",
+                    "episode",
+                    "statut",
+                    "invite_le",
+                    "expire_le",
+                    "traite_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une invitation à un « vu à deux »"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "eeeeeeee-0000-4000-8000-000000000002",
+                      "de": {
+                        "id": "11111111-1111-4111-8111-111111111111",
+                        "pseudo": "alice",
+                        "avatar_url": null,
+                        "identity_color": "#E4572E",
+                        "role": "admin",
+                        "deactivated": false
+                      },
+                      "pour": {
+                        "id": "22222222-2222-4222-8222-222222222222",
+                        "pseudo": "bob",
+                        "avatar_url": null,
+                        "identity_color": "#3A7CA5",
+                        "role": "user",
+                        "deactivated": false
+                      },
+                      "serie": {
+                        "id": "d0000000-0000-4000-8000-000000000001",
+                        "titre": "Dark"
+                      },
+                      "episode": {
+                        "id": "aaaaaaaa-0000-4000-8000-000000000014",
+                        "saison": 2,
+                        "numero": 4,
+                        "titre": "Les voyageurs"
+                      },
+                      "statut": "en_attente",
+                      "invite_le": "2026-10-12T19:41:00.000Z",
+                      "expire_le": "2026-10-19T19:41:00.000Z",
+                      "traite_le": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/feuilleton/vus-a-deux/{id}/confirmer": {
+      "post": {
+        "summary": "Confirmer un « vu à deux »",
+        "tags": [
+          "feuilleton"
+        ],
+        "description": "Par **l’invité seul** : l’inviteur, un tiers ou une administratrice reçoivent `403`. `404` si l’invitation n’existe pas ou a été retirée ; `409` si elle a déjà reçu sa réponse, ou si elle a expiré (plus de sept jours).\n\nEn une transaction : l’invitation passe à `confirme`, l’épisode est **coché chez l’invité à l’heure de l’invitation** (`watched_at` du suivi), et chacun des deux visionnages retient l’autre membre. Le suivi est écrit par la même logique que `PUT /episodes/{id}/watched` : recalcul de la série, entrée de journal automatique au passage à `done`, constat des quêtes.\n\n**L’invité qui avait déjà coché l’épisode seul** n’est ni redaté, ni recompté : il gagne seulement son compagnon. Le premier compagnon posé sur un visionnage reste.\n\nAu journal du Feuilleton, le visionnage prend l’heure de l’invitation si son jour (à Paris, clos à 6 h le lendemain) n’est pas encore clos, sinon l’heure de la confirmation : il compte une fois pour le cachet.\n\n`serie` est la carte de la série chez l’invité après la coche, comme `PUT /me/feuilleton/episodes` la rend ; `serie.finie` dit que cet épisode l’a sortie d’« En cours ».",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "L’invitation confirmée, et la carte de la série à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invitation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "L’invitation"
+                        },
+                        "de": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "pseudo": {
+                              "type": "string"
+                            },
+                            "avatar_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "identity_color": {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}$",
+                              "description": "Couleur d'identité au format #RRGGBB"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": [
+                                "user",
+                                "admin"
+                              ],
+                              "description": "Rôle du membre"
+                            },
+                            "deactivated": {
+                              "type": "boolean",
+                              "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "pseudo",
+                            "avatar_url",
+                            "identity_color",
+                            "role",
+                            "deactivated"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Le membre qui invite"
+                        },
+                        "pour": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "pseudo": {
+                              "type": "string"
+                            },
+                            "avatar_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "identity_color": {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}$",
+                              "description": "Couleur d'identité au format #RRGGBB"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": [
+                                "user",
+                                "admin"
+                              ],
+                              "description": "Rôle du membre"
+                            },
+                            "deactivated": {
+                              "type": "boolean",
+                              "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "pseudo",
+                            "avatar_url",
+                            "identity_color",
+                            "role",
+                            "deactivated"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Le membre invité"
+                        },
+                        "serie": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "titre": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "titre"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "episode": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "saison": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "numero": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "titre": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "saison",
+                            "numero",
+                            "titre"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "statut": {
+                          "type": "string",
+                          "enum": [
+                            "en_attente",
+                            "confirme",
+                            "refuse"
+                          ],
+                          "description": "Le statut d’une invitation à un « vu à deux » : `en_attente`, `confirme` ou `refuse`"
+                        },
+                        "invite_le": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "description": "L’instant de l’invitation : la soirée. Celui de la réinvitation, après une expiration"
+                        },
+                        "expire_le": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "description": "Le dernier instant où l’invitation se confirme ou se refuse encore : sept jours après `invite_le`"
+                        },
+                        "traite_le": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "L’instant de la réponse de l’invité, nul tant que l’invitation attend"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "de",
+                        "pour",
+                        "serie",
+                        "episode",
+                        "statut",
+                        "invite_le",
+                        "expire_le",
+                        "traite_le"
+                      ],
+                      "additionalProperties": false,
+                      "description": "L’invitation, passée à `confirme`"
+                    },
+                    "serie": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "L’œuvre, dans la médiathèque"
+                        },
+                        "titre": {
+                          "type": "string"
+                        },
+                        "annee": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "L’année de première diffusion"
+                        },
+                        "vignette": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "La jaquette en petite taille, URL absolue"
+                        },
+                        "statut": {
+                          "type": "string",
+                          "enum": [
+                            "todo",
+                            "doing",
+                            "done"
+                          ],
+                          "description": "Le statut du suivi, dérivé des épisodes : `todo` ou `doing` dans la liste, `done` possible dans la réponse d’une écriture"
+                        },
+                        "completed_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Le premier achèvement de la série, jamais effacé"
+                        },
+                        "progression": {
+                          "type": "object",
+                          "properties": {
+                            "checked": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "Éléments cochés par l’utilisateur"
+                            },
+                            "total": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "Éléments connus en base"
+                            }
+                          },
+                          "required": [
+                            "checked",
+                            "total"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Épisodes cochés sur épisodes connus, saison 0 et épisodes à venir compris : la même mesure que la fiche"
+                        },
+                        "dernier_visionnage_le": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "description": "Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi"
+                        },
+                        "repere": {
+                          "type": "string",
+                          "enum": [
+                            "visionnage",
+                            "suivi"
+                          ],
+                          "description": "D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)"
+                        },
+                        "en_pause": {
+                          "type": "boolean",
+                          "description": "Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures"
+                        },
+                        "prochain": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "saison": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
+                                },
+                                "numero": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de l’épisode dans sa saison"
+                                },
+                                "titre": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "runtime_min": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Durée en minutes, nulle si la fiche ne la connaît pas"
+                                },
+                                "air_date": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "saison",
+                                "numero",
+                                "titre",
+                                "runtime_min",
+                                "air_date"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Un épisode à voir"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir"
+                        },
+                        "ensuite": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "saison": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas"
+                                },
+                                "numero": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Le numéro de l’épisode dans sa saison"
+                                },
+                                "titre": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "runtime_min": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Durée en minutes, nulle si la fiche ne la connaît pas"
+                                },
+                                "air_date": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "saison",
+                                "numero",
+                                "titre",
+                                "runtime_min",
+                                "air_date"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Un épisode à voir"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "L’épisode d’après `prochain`, par la même règle : de quoi avancer la carte sans attendre"
+                        },
+                        "a_jour": {
+                          "type": "boolean",
+                          "description": "Plus rien de diffusé à voir : `prochain` est nul"
+                        },
+                        "prochaine_diffusion_le": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "La date du prochain épisode à venir après le dernier vu, hors saison 0, quand elle est connue"
+                        },
+                        "finie": {
+                          "type": "boolean",
+                          "description": "La série n’est plus « En cours » : finie au sens du jeu (tous les épisodes déjà diffusés hors saison 0 sont vus et TMDB la dit `Ended` ou `Canceled`), ou `done` au suivi. Toujours faux dans la liste de la télécommande, qui écarte ces séries ; vrai dans la réponse de l’écriture qui vient de la finir"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "titre",
+                        "annee",
+                        "vignette",
+                        "statut",
+                        "completed_at",
+                        "progression",
+                        "dernier_visionnage_le",
+                        "repere",
+                        "en_pause",
+                        "prochain",
+                        "ensuite",
+                        "a_jour",
+                        "prochaine_diffusion_le",
+                        "finie"
+                      ],
+                      "additionalProperties": false,
+                      "description": "La carte de la série chez l’invité après la coche, telle que la télécommande la rendrait ; `finie` est vrai si cet épisode vient de la sortir d’« En cours »"
+                    }
+                  },
+                  "required": [
+                    "invitation",
+                    "serie"
+                  ],
+                  "additionalProperties": false,
+                  "description": "L’invitation confirmée, et la carte de la série à jour"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "invitation": {
+                        "id": "eeeeeeee-0000-4000-8000-000000000001",
+                        "de": {
+                          "id": "22222222-2222-4222-8222-222222222222",
+                          "pseudo": "bob",
+                          "avatar_url": null,
+                          "identity_color": "#3A7CA5",
+                          "role": "user",
+                          "deactivated": false
+                        },
+                        "pour": {
+                          "id": "11111111-1111-4111-8111-111111111111",
+                          "pseudo": "alice",
+                          "avatar_url": null,
+                          "identity_color": "#E4572E",
+                          "role": "admin",
+                          "deactivated": false
+                        },
+                        "serie": {
+                          "id": "d0000000-0000-4000-8000-000000000001",
+                          "titre": "Dark"
+                        },
+                        "episode": {
+                          "id": "aaaaaaaa-0000-4000-8000-000000000015",
+                          "saison": 2,
+                          "numero": 5,
+                          "titre": "Perdus et trouvés"
+                        },
+                        "statut": "confirme",
+                        "invite_le": "2026-10-13T20:30:00.000Z",
+                        "expire_le": "2026-10-20T20:30:00.000Z",
+                        "traite_le": "2026-10-14T07:12:00.000Z"
+                      },
+                      "serie": {
+                        "id": "d0000000-0000-4000-8000-000000000001",
+                        "titre": "Dark",
+                        "annee": 2017,
+                        "vignette": "http://localhost:3000/covers/9f2c1ab4d7e08c3b6512-thumb.webp",
+                        "statut": "doing",
+                        "completed_at": null,
+                        "progression": {
+                          "checked": 15,
+                          "total": 26
+                        },
+                        "dernier_visionnage_le": "2026-10-13T20:30:00.000Z",
+                        "repere": "visionnage",
+                        "en_pause": false,
+                        "prochain": {
+                          "id": "aaaaaaaa-0000-4000-8000-000000000016",
+                          "saison": 2,
+                          "numero": 6,
+                          "titre": "Un cycle sans fin",
+                          "runtime_min": 56,
+                          "air_date": "2019-06-21"
+                        },
+                        "ensuite": {
+                          "id": "aaaaaaaa-0000-4000-8000-000000000017",
+                          "saison": 2,
+                          "numero": 7,
+                          "titre": "Le diable blanc",
+                          "runtime_min": 57,
+                          "air_date": "2019-06-21"
+                        },
+                        "a_jour": false,
+                        "prochaine_diffusion_le": null,
+                        "finie": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/feuilleton/vus-a-deux/{id}/refuser": {
+      "post": {
+        "summary": "Refuser un « vu à deux »",
+        "tags": [
+          "feuilleton"
+        ],
+        "description": "Par **l’invité seul** : l’inviteur, un tiers ou une administratrice reçoivent `403`. `404` si l’invitation n’existe pas ou a été retirée ; `409` si elle a déjà reçu sa réponse, ou si elle a expiré.\n\nL’invitation passe à `refuse`, et **rien d’autre ne bouge** : aucun épisode coché, aucun visionnage touché. Le refus est définitif : ce membre ne peut plus inviter celui-ci pour cet épisode.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Une invitation à un « vu à deux »",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "L’invitation"
+                    },
+                    "de": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le membre qui invite"
+                    },
+                    "pour": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pseudo": {
+                          "type": "string"
+                        },
+                        "avatar_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "identity_color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "description": "Couleur d'identité au format #RRGGBB"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "admin"
+                          ],
+                          "description": "Rôle du membre"
+                        },
+                        "deactivated": {
+                          "type": "boolean",
+                          "description": "Compte désactivé : il ne peut plus se connecter et n’apparaît plus dans les fils ni les suggestions, mais tout ce qu’il a écrit reste en place et lui reste attribué"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pseudo",
+                        "avatar_url",
+                        "identity_color",
+                        "role",
+                        "deactivated"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Le membre invité"
+                    },
+                    "serie": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "titre": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "titre"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "episode": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "saison": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "numero": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "titre": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "saison",
+                        "numero",
+                        "titre"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "statut": {
+                      "type": "string",
+                      "enum": [
+                        "en_attente",
+                        "confirme",
+                        "refuse"
+                      ],
+                      "description": "Le statut d’une invitation à un « vu à deux » : `en_attente`, `confirme` ou `refuse`"
+                    },
+                    "invite_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "L’instant de l’invitation : la soirée. Celui de la réinvitation, après une expiration"
+                    },
+                    "expire_le": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "Le dernier instant où l’invitation se confirme ou se refuse encore : sept jours après `invite_le`"
+                    },
+                    "traite_le": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "L’instant de la réponse de l’invité, nul tant que l’invitation attend"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "de",
+                    "pour",
+                    "serie",
+                    "episode",
+                    "statut",
+                    "invite_le",
+                    "expire_le",
+                    "traite_le"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Une invitation à un « vu à deux »"
+                },
+                "examples": {
+                  "Réponse type": {
+                    "value": {
+                      "id": "eeeeeeee-0000-4000-8000-000000000001",
+                      "de": {
+                        "id": "22222222-2222-4222-8222-222222222222",
+                        "pseudo": "bob",
+                        "avatar_url": null,
+                        "identity_color": "#3A7CA5",
+                        "role": "user",
+                        "deactivated": false
+                      },
+                      "pour": {
+                        "id": "11111111-1111-4111-8111-111111111111",
+                        "pseudo": "alice",
+                        "avatar_url": null,
+                        "identity_color": "#E4572E",
+                        "role": "admin",
+                        "deactivated": false
+                      },
+                      "serie": {
+                        "id": "d0000000-0000-4000-8000-000000000001",
+                        "titre": "Dark"
+                      },
+                      "episode": {
+                        "id": "aaaaaaaa-0000-4000-8000-000000000015",
+                        "saison": 2,
+                        "numero": 5,
+                        "titre": "Perdus et trouvés"
+                      },
+                      "statut": "refuse",
+                      "invite_le": "2026-10-13T20:30:00.000Z",
+                      "expire_le": "2026-10-20T20:30:00.000Z",
+                      "traite_le": "2026-10-14T07:12:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -53831,6 +56189,10 @@
     {
       "name": "maison",
       "description": "Le Feuilleton, côté Maison : un appartement de couple qu’on meuble. Ses routes vivront sous `/me/maison/…` et ne parleront que de l’utilisateur de la session. Aucune opération encore."
+    },
+    {
+      "name": "feuilleton",
+      "description": "Le Feuilleton, côté socle : la télécommande, par laquelle le Journal coche ses épisodes, et le « vu à deux ». Ses routes vivent sous `/me/feuilleton/…` et ne parlent que de l’utilisateur de la session. Le suivi qu’elles écrivent est celui de l’étiquette `suivi`."
     }
   ]
 }
