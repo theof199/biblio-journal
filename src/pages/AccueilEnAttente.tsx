@@ -1,4 +1,5 @@
 import Attente from '../ui/Attente'
+import BilletAuCine from '../accueil/BilletAuCine'
 import FrontonEnAttente from '../accueil/FrontonEnAttente'
 import PelliculeEnAttente from '../accueil/PelliculeEnAttente'
 import EnteteDuJournal from './EnteteDuJournal'
@@ -10,7 +11,8 @@ const MOIS = 2
 /**
  * L'accueil avant son journal : le cadre de la page, un fronton éteint, l'en-tête réel du journal
  * (son titre et son lien ne dépendent d'aucune donnée) et deux pellicules en blanc. Ni éventail ni
- * bande du Voyage, qui n'apparaissent que si leurs données le permettent, ni bouton flottant. Le
+ * bande du Voyage, qui n'apparaissent que si leurs données le permettent, ni bouton flottant. Le billet
+ * d'« Au ciné » est déjà à sa place, au-dessus du journal : il ne lit rien et n'attend personne. Le
  * fronton porte le seul `role="status"` ; les pellicules, muettes, respirent en même temps que lui.
  */
 export default function AccueilEnAttente({ compte = null }: { compte?: string | null }) {
@@ -23,6 +25,7 @@ export default function AccueilEnAttente({ compte = null }: { compte?: string | 
           </Attente>
         </div>
         <div className={styles.colonneJournal}>
+          <BilletAuCine />
           <section className={styles.journal} aria-labelledby="titre-journal">
             <EnteteDuJournal compte={compte} />
             <Attente muet className={styles.pellicules}>

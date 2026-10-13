@@ -103,7 +103,20 @@ export default function Accueil() {
   // `!journal.data`, pas `journal.error` (jumeau de `MesFilms.tsx`) : une fois la première page
   // arrivée, l'échec d'une page suivante ne doit pas effacer la grille déjà affichée derrière la
   // panne plein écran — il se dit en ligne, avec « Réessayer ».
-  if (!journal.data) return <Panne erreur={journal.error} onReessayer={() => void journal.refetch()} />
+  // Le billet d'« Au ciné » reste sous la panne, à sa place de colonne : il ne lit rien du journal.
+  if (!journal.data)
+    return (
+      <div className={styles.fond}>
+        <div className={styles.page}>
+          <div className={styles.entree}>
+            <Panne erreur={journal.error} onReessayer={() => void journal.refetch()} />
+          </div>
+          <div className={styles.colonneJournal}>
+            <BilletAuCine />
+          </div>
+        </div>
+      </div>
+    )
 
   const items = journal.data.pages.flatMap((page) => page.items)
   const vide = items.length === 0 && !journal.hasNextPage

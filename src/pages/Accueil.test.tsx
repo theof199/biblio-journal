@@ -557,8 +557,56 @@ describe('le billet d’entrée d’« Au ciné » sur l’accueil', () => {
     servir(ROUTES_ACCUEIL)
     monter()
 
-    expect(await screen.findByRole('link', { name: /^Au ciné/ })).toHaveAttribute('href', '/au-cine')
+    // Le billet est déjà là pendant l'attente : on attend la vitrine vide, pas lui.
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(billet()).toHaveAttribute('href', '/au-cine')
     expect(screen.queryByRole('region', { name: 'Le journal' })).not.toBeInTheDocument()
+  })
+
+  // Mutations : `<BilletAuCine />` retiré d'`AccueilEnAttente.tsx` (plus de lien pendant l'attente) ; posé
+  // deux fois (dans l'entrée et dans la colonne du journal) : `getByRole` refuse le doublon.
+  it('est déjà là pendant l’attente du journal, une seule fois, avant le journal', async () => {
+    servir({ ...ROUTES_ACCUEIL, 'GET /api/me/journal?limit=20': () => new Promise<Response>(() => {}) })
+    monter()
+
+    await screen.findByRole('status')
+    expect(screen.getAllByRole('link', { name: /^Au ciné/ })).toHaveLength(1)
+    expect(billet()).toHaveAttribute('href', '/au-cine')
+    const journal = screen.getByRole('region', { name: 'Le journal' })
+    expect(billet().compareDocumentPosition(journal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  // Mutations : la panne rendue seule, comme avant (`return <Panne … />`) : plus de lien ; le billet
+  // posé deux fois dans la branche de la panne.
+  it('reste là quand le journal répond en erreur, à côté de l’alerte, une seule fois', async () => {
+    servir({
+      ...ROUTES_ACCUEIL,
+      'GET /api/me/journal?limit=20': () =>
+        json({ code: 'INTERNAL', message: 'Le journal n’a pas pu être lu.', retryable: false }, 500),
+    })
+    monter()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le journal n’a pas pu être lu.')
+    expect(screen.getAllByRole('link', { name: /^Au ciné/ })).toHaveLength(1)
+    expect(billet()).toHaveAttribute('href', '/au-cine')
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+
+  // Mutation : le billet posé une seconde fois dans `Accueil.tsx` (journal rempli ou vide).
+  it('n’est rendu qu’une fois, journal rempli comme journal vide', async () => {
+    servir({ ...ROUTES_ACCUEIL, 'GET /api/me/journal?limit=20': () => json(page([ITEM], null)) })
+    const { unmount } = monter()
+    await screen.findByAltText(ITEM.media.title)
+    expect(screen.getAllByRole('link', { name: /^Au ciné/ })).toHaveLength(1)
+    unmount()
+
+    servir(ROUTES_ACCUEIL)
+    monter()
+    await screen.findByRole('link', { name: /^Au ciné/ })
+    await vi.waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
+    expect(screen.queryByRole('region', { name: 'Le journal' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /^Au ciné/ })).toHaveLength(1)
   })
 
   // Mutation : `<AuCine />` (ou une de ses lectures : `lireSorties`, `lireProchainesSeances`,
