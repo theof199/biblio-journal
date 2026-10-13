@@ -1980,7 +1980,7 @@ export interface paths {
      * Rafraîchir la fiche depuis sa source
      * @description Reprend l’instantané chez la source d’origine — métadonnées, jaquette, saisons, épisodes, tomes — **sans jamais toucher au suivi**. Ni possession, ni note, ni critique, ni dates, ni épisode coché.
      *
-     * **Les métadonnées suivent les règles de fusion de l’ajout** : on n’efface jamais une information avec une absence. Le résumé le plus long l’emporte, les listes s’unissent, un champ que la source ne renseigne plus reste en place.
+     * **Les métadonnées suivent les règles de fusion de l’ajout** : on n’efface jamais une information avec une absence. Le résumé le plus long l’emporte, les listes s’unissent, un champ que la source ne renseigne plus reste en place. Une exception : le statut de diffusion d’une série (`metadata.status`) suit la source, dans les deux sens.
      *
      * **Le traitement des saisons, épisodes et tomes est strictement additif.** Ce que la source livre de neuf est créé ; ce qu’elle ne mentionne plus est **conservé** et signalé dans `divergences`. Un épisode retiré du catalogue ou renuméroté a peut-être été coché par quelqu’un — le supprimer emporterait son suivi. La décision lui revient, pas au rafraîchissement.
      *
