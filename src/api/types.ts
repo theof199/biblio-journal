@@ -12364,7 +12364,7 @@ export interface paths {
                    */
                   expire_le: string;
                 })[];
-              /** @description Toute série suivie « En cours » (`todo` ou `doing` au suivi, et pas finie au sens du jeu), de la plus récemment regardée à la plus anciennement */
+              /** @description Toute série suivie « En cours » (`todo` ou `doing` au suivi, et pas finie au sens du jeu), de la plus récemment active (un visionnage ou une reprise) à la plus anciennement */
               series: ({
                   /**
                    * Format: uuid
@@ -12392,15 +12392,17 @@ export interface paths {
                   };
                   /**
                    * Format: date-time
-                   * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi
+                   * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi. Jamais la reprise : c’est la date de « Regardée hier soir », à ne dire ainsi que si `repere` vaut `visionnage`
                    */
                   dernier_visionnage_le: string;
+                  /** @description L’instant où le membre a dit « Reprendre » pour la dernière fois (`POST /me/feuilleton/series/{id}/reprendre`), nul s’il ne l’a jamais dit. Il reste après un visionnage plus récent : c’est `repere` qui dit s’il compte encore */
+                  reprise_le: string | null;
                   /**
-                   * @description D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)
+                   * @description Ce qui date l’activité de la série, celle qui trie la liste et décide de la pause : `visionnage` (son dernier visionnage, `dernier_visionnage_le`), `reprise` (une reprise plus récente que tout visionnage, `reprise_le`) ou `suivi` (ni visionnage ni reprise : l’ajout au suivi, `dernier_visionnage_le`)
                    * @enum {string}
                    */
-                  repere: "visionnage" | "suivi";
-                  /** @description Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures */
+                  repere: "visionnage" | "reprise" | "suivi";
+                  /** @description Aucune activité depuis plus de trente jours de vingt-quatre heures : ni visionnage, ni reprise (la date que désigne `repere`) */
                   en_pause: boolean;
                   /** @description Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir */
                   prochain: ({
@@ -12538,15 +12540,17 @@ export interface paths {
                 };
                 /**
                  * Format: date-time
-                 * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi
+                 * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi. Jamais la reprise : c’est la date de « Regardée hier soir », à ne dire ainsi que si `repere` vaut `visionnage`
                  */
                 dernier_visionnage_le: string;
+                /** @description L’instant où le membre a dit « Reprendre » pour la dernière fois (`POST /me/feuilleton/series/{id}/reprendre`), nul s’il ne l’a jamais dit. Il reste après un visionnage plus récent : c’est `repere` qui dit s’il compte encore */
+                reprise_le: string | null;
                 /**
-                 * @description D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)
+                 * @description Ce qui date l’activité de la série, celle qui trie la liste et décide de la pause : `visionnage` (son dernier visionnage, `dernier_visionnage_le`), `reprise` (une reprise plus récente que tout visionnage, `reprise_le`) ou `suivi` (ni visionnage ni reprise : l’ajout au suivi, `dernier_visionnage_le`)
                  * @enum {string}
                  */
-                repere: "visionnage" | "suivi";
-                /** @description Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures */
+                repere: "visionnage" | "reprise" | "suivi";
+                /** @description Aucune activité depuis plus de trente jours de vingt-quatre heures : ni visionnage, ni reprise (la date que désigne `repere`) */
                 en_pause: boolean;
                 /** @description Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir */
                 prochain: ({
@@ -12880,15 +12884,17 @@ export interface paths {
                 };
                 /**
                  * Format: date-time
-                 * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi
+                 * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi. Jamais la reprise : c’est la date de « Regardée hier soir », à ne dire ainsi que si `repere` vaut `visionnage`
                  */
                 dernier_visionnage_le: string;
+                /** @description L’instant où le membre a dit « Reprendre » pour la dernière fois (`POST /me/feuilleton/series/{id}/reprendre`), nul s’il ne l’a jamais dit. Il reste après un visionnage plus récent : c’est `repere` qui dit s’il compte encore */
+                reprise_le: string | null;
                 /**
-                 * @description D’où vient `dernier_visionnage_le` : `visionnage` (le journal du Feuilleton) ou `suivi` (aucun visionnage actif, la date est celle de l’ajout au suivi)
+                 * @description Ce qui date l’activité de la série, celle qui trie la liste et décide de la pause : `visionnage` (son dernier visionnage, `dernier_visionnage_le`), `reprise` (une reprise plus récente que tout visionnage, `reprise_le`) ou `suivi` (ni visionnage ni reprise : l’ajout au suivi, `dernier_visionnage_le`)
                  * @enum {string}
                  */
-                repere: "visionnage" | "suivi";
-                /** @description Rien depuis plus de trente jours : `dernier_visionnage_le` est à plus de trente jours de vingt-quatre heures */
+                repere: "visionnage" | "reprise" | "suivi";
+                /** @description Aucune activité depuis plus de trente jours de vingt-quatre heures : ni visionnage, ni reprise (la date que désigne `repere`) */
                 en_pause: boolean;
                 /** @description Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir */
                 prochain: ({
@@ -13077,6 +13083,148 @@ export interface paths {
         };
         /** @description Default Response */
         409: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+  };
+  "/me/feuilleton/series/{id}/reprendre": {
+    /**
+     * Reprendre une série en pause, sans rien cocher
+     * @description « Reprendre », dans « En pause » : la série sort de la pause **sans qu’aucun épisode soit coché**. `id` est l’œuvre. La reprise compte comme dernière activité de la série : elle revient en tête de `series`, `en_pause` faux, `repere` à `reprise`. **Si rien n’y est vu dans les trente jours qui suivent, elle redevient `en_pause`.** Un épisode coché ensuite compte à sa date, et `repere` redevient `visionnage`.
+     *
+     * Rien d’autre ne bouge : ni le suivi, ni le statut, ni le journal du Feuilleton, ni le cachet. `dernier_visionnage_le` garde le dernier visionnage ; la reprise se lit dans `reprise_le`.
+     *
+     * **Idempotente** : reprendre une série déjà reprise, ou qui n’était pas en pause, répond `200` et ne garde que la date de ce dernier appel.
+     *
+     * `404` si la série n’est pas sur la télécommande du membre : une œuvre inconnue, qui n’est pas une série, qu’il ne suit pas, ou qui n’est plus « En cours » (finie au sens du jeu, ou `done` au suivi). Le corps est facultatif ; un `user_id` qui n’est pas celui de la session répond `403`. `DELETE /media/{id}/tracking` emporte la reprise.
+     */
+    post: {
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": {
+            /**
+             * Format: uuid
+             * @description Facultatif. S’il est fourni, il doit être celui de la session : sinon 403
+             */
+            user_id?: string;
+          } | null;
+        };
+      };
+      responses: {
+        /** @description La carte de la série reprise */
+        200: {
+          content: {
+            "application/json": {
+              /** @description La carte de la série après la reprise, telle que la télécommande la rendrait : `repere` vaut `reprise`, `en_pause` est faux */
+              serie: {
+                /**
+                 * Format: uuid
+                 * @description L’œuvre, dans la médiathèque
+                 */
+                id: string;
+                titre: string;
+                /** @description L’année de première diffusion */
+                annee: number | null;
+                /** @description La jaquette en petite taille, URL absolue */
+                vignette: string | null;
+                /**
+                 * @description Le statut du suivi, dérivé des épisodes : `todo` ou `doing` dans la liste, `done` possible dans la réponse d’une écriture
+                 * @enum {string}
+                 */
+                statut: "todo" | "doing" | "done";
+                /** @description Le premier achèvement de la série, jamais effacé */
+                completed_at: string | null;
+                /** @description Épisodes cochés sur épisodes connus, saison 0 et épisodes à venir compris : la même mesure que la fiche */
+                progression: {
+                  /** @description Éléments cochés par l’utilisateur */
+                  checked: number;
+                  /** @description Éléments connus en base */
+                  total: number;
+                };
+                /**
+                 * Format: date-time
+                 * @description Le plus récent visionnage actif de la série au journal du Feuilleton ; à défaut, la date à laquelle le membre a ajouté la série à son suivi. Jamais la reprise : c’est la date de « Regardée hier soir », à ne dire ainsi que si `repere` vaut `visionnage`
+                 */
+                dernier_visionnage_le: string;
+                /** @description L’instant où le membre a dit « Reprendre » pour la dernière fois (`POST /me/feuilleton/series/{id}/reprendre`), nul s’il ne l’a jamais dit. Il reste après un visionnage plus récent : c’est `repere` qui dit s’il compte encore */
+                reprise_le: string | null;
+                /**
+                 * @description Ce qui date l’activité de la série, celle qui trie la liste et décide de la pause : `visionnage` (son dernier visionnage, `dernier_visionnage_le`), `reprise` (une reprise plus récente que tout visionnage, `reprise_le`) ou `suivi` (ni visionnage ni reprise : l’ajout au suivi, `dernier_visionnage_le`)
+                 * @enum {string}
+                 */
+                repere: "visionnage" | "reprise" | "suivi";
+                /** @description Aucune activité depuis plus de trente jours de vingt-quatre heures : ni visionnage, ni reprise (la date que désigne `repere`) */
+                en_pause: boolean;
+                /** @description Le premier épisode non vu après le dernier vu, dans l’ordre saison puis épisode, hors saison 0 et déjà diffusé ; S1E1 si rien n’est vu ; nul quand il ne reste rien de diffusé à voir */
+                prochain: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                  saison: number;
+                  /**
+                   * Format: uuid
+                   * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                   */
+                  saison_id: string;
+                  /** @description Le numéro de l’épisode dans sa saison */
+                  numero: number;
+                  titre: string | null;
+                  /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                  runtime_min: number | null;
+                  /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                  air_date: string | null;
+                }) | null;
+                /** @description L’épisode d’après `prochain`, par la même règle : de quoi avancer la carte sans attendre */
+                ensuite: ({
+                  /** Format: uuid */
+                  id: string;
+                  /** @description Le numéro de la saison, jamais 0 : les épisodes spéciaux ne se proposent pas */
+                  saison: number;
+                  /**
+                   * Format: uuid
+                   * @description L’identifiant de la saison de l’épisode : le `season_id` de la portée `saison` de `PUT /me/feuilleton/episodes`
+                   */
+                  saison_id: string;
+                  /** @description Le numéro de l’épisode dans sa saison */
+                  numero: number;
+                  titre: string | null;
+                  /** @description Durée en minutes, nulle si la fiche ne la connaît pas */
+                  runtime_min: number | null;
+                  /** @description Date de première diffusion, AAAA-MM-JJ ; nulle si inconnue, et l’épisode vaut alors diffusé */
+                  air_date: string | null;
+                }) | null;
+                /** @description Plus rien de diffusé à voir : `prochain` est nul */
+                a_jour: boolean;
+                /** @description La date du prochain épisode à venir après le dernier vu, hors saison 0, quand elle est connue */
+                prochaine_diffusion_le: string | null;
+                /** @description La série n’est plus « En cours » : finie au sens du jeu (tous les épisodes déjà diffusés hors saison 0 sont vus et TMDB la dit `Ended` ou `Canceled`), ou `done` au suivi. Toujours faux dans la liste de la télécommande, qui écarte ces séries ; vrai dans la réponse de l’écriture qui vient de la finir */
+                finie: boolean;
+              };
+            };
+          };
+        };
+        /** @description Default Response */
+        401: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Default Response */
+        404: {
           content: {
             "application/json": components["schemas"]["ApiError"];
           };
