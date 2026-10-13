@@ -3,10 +3,12 @@
  * l'adresse de l'espace ouvert. Rien d'autre ne dit que le panneau est ouvert, ni sur quelle vue.
  */
 export type Vue =
-  | { nom: 'telecommande' }
+  /** La télécommande ; `serie` : **réglée sur cette série** (`media_id`), par la touche « ⋯ » d'une carte de la liste. */
+  | { nom: 'telecommande'; serie?: string }
   | { nom: 'en-cours' }
   | { nom: 'ajouter' }
-  | { nom: 'a-deux' }
+  /** Le « vu à deux » ; `serie` : pour le prochain épisode de cette série (sans elle, celle regardée en dernier). */
+  | { nom: 'a-deux'; serie?: string }
   /** La fiche d'une série, par son identifiant (`media_id`). */
   | { nom: 'fiche'; serie: string }
 
@@ -16,11 +18,17 @@ export const VUE_D_OUVERTURE: Vue = { nom: 'telecommande' }
 
 const SIMPLES = ['telecommande', 'en-cours', 'ajouter', 'a-deux'] as const
 const PREFIXE_DE_FICHE = 'fiche-'
+/** `serie-<identifiant>` : la télécommande réglée sur une série. Le retour du téléphone revient d'où l'on vient. */
+const PREFIXE_DE_SERIE = 'serie-'
+const PREFIXE_A_DEUX = 'a-deux-'
 const IDENTIFIANT = /^[\w-]+$/
 
-/** `telecommande`, `en-cours`, `ajouter`, `a-deux`, `fiche-<identifiant>`. */
+/** `telecommande`, `serie-<identifiant>`, `en-cours`, `ajouter`, `a-deux`, `a-deux-<identifiant>`, `fiche-<identifiant>`. */
 export function ecrireLaVue(vue: Vue): string {
-  return vue.nom === 'fiche' ? `${PREFIXE_DE_FICHE}${vue.serie}` : vue.nom
+  if (vue.nom === 'fiche') return `${PREFIXE_DE_FICHE}${vue.serie}`
+  if (vue.nom === 'telecommande' && vue.serie) return `${PREFIXE_DE_SERIE}${vue.serie}`
+  if (vue.nom === 'a-deux' && vue.serie) return `${PREFIXE_A_DEUX}${vue.serie}`
+  return vue.nom
 }
 
 /**
@@ -32,8 +40,13 @@ export function lireLaVue(search: string): Vue | null {
   if (valeur === null) return null
   const simple = SIMPLES.find((nom) => nom === valeur)
   if (simple) return { nom: simple }
-  const serie = valeur.startsWith(PREFIXE_DE_FICHE) ? valeur.slice(PREFIXE_DE_FICHE.length) : ''
-  return IDENTIFIANT.test(serie) ? { nom: 'fiche', serie } : VUE_D_OUVERTURE
+  const apres = (prefixe: string) => (valeur.startsWith(prefixe) && IDENTIFIANT.test(valeur.slice(prefixe.length)) ? valeur.slice(prefixe.length) : null)
+  const fiche = apres(PREFIXE_DE_FICHE)
+  if (fiche) return { nom: 'fiche', serie: fiche }
+  const reglee = apres(PREFIXE_DE_SERIE)
+  if (reglee) return { nom: 'telecommande', serie: reglee }
+  const aDeux = apres(PREFIXE_A_DEUX)
+  return aDeux ? { nom: 'a-deux', serie: aDeux } : VUE_D_OUVERTURE
 }
 
 /** La recherche d'adresse qui porte cette vue (ou aucune : `null`), les autres paramètres gardés. */

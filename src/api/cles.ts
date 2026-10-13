@@ -101,6 +101,8 @@ export const cles = {
   feuilleton: ['feuilleton'] as const,
   telecommande: ['feuilleton', 'telecommande'] as const,
   saisonsDeSerie: (serieId: string) => ['feuilleton', 'saisons', serieId] as const,
+  /** Les membres à qui proposer un « vu à deux » (`GET /users`, toutes pages lues) : lus à l'ouverture de la vue, jamais au montage du Feuilleton. */
+  membresDuFeuilleton: ['feuilleton', 'membres'] as const,
 
   /**
    * Le journal entier, à plat (bilan et graphiques du profil) : sous le préfixe `journal`, pour

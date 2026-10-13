@@ -460,3 +460,89 @@
   line-height: var(--interligne-titre);
   white-space: normal;
 }
+
+/* La liste et le « vu à deux ». */
+
+.pile {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pile[hidden] {
+  display: none;
+}
+
+.pile.serree {
+  gap: var(--espace-2);
+}
+
+/* Une phrase seule : une liste vide, personne à qui proposer. */
+.phrase {
+  margin: 0;
+  color: var(--h-boitier-texte-doux);
+  font-size: var(--taille-m);
+  line-height: var(--interligne-titre);
+}
+
+/* À la place de « Vu » sur une carte à jour : le jour du prochain épisode. */
+.note {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--espace-2);
+  border: var(--h-trait) dashed var(--h-touche-contour);
+  border-radius: var(--h-rayon-touche);
+  color: var(--h-ecran-texte-doux);
+  font-size: var(--taille-s);
+  line-height: var(--interligne-titre);
+  text-align: center;
+}
+
+.creux {
+  flex: 1;
+}
+
+/* L'en-tête d'une section qui se replie : toute la ligne se touche. */
+.repli {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-2);
+  width: 100%;
+  min-height: var(--cible-tactile);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--h-boitier-texte-doux);
+  text-align: left;
+  cursor: pointer;
+}
+
+.touche.ligneEntiere {
+  width: 100%;
+  min-height: var(--bouton-hauteur);
+}
+
+/* Un membre à choisir : son monogramme, son pseudo, et à droite « La dernière fois ». */
+.touche.membre {
+  justify-content: flex-start;
+  gap: var(--espace-3);
+  width: 100%;
+  min-height: var(--telecommande-touche-grande);
+  padding: 0 var(--espace-3);
+}
+
+.pseudo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dernier {
+  flex: none;
+  margin-left: auto;
+}

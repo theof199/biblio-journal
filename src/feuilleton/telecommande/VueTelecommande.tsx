@@ -39,6 +39,10 @@ export interface SerieALEcran {
   quand: string | null
   /** D'une série à jour, le jour de son prochain épisode, déjà dit (« 21 octobre »), s'il est connu. */
   diffusion?: string | null
+  /** Rien n'en a été vu : `quand` dit son ajout (« Ajoutée aujourd'hui »), que la liste montre sur sa carte. */
+  nouvelle?: boolean
+  /** Elle est en pause : hors du parcours des flèches, elle ne vient à l'écran que choisie dans la liste. */
+  enPause?: boolean
 }
 
 /** Une invitation « vu à deux » qui m'attend. */
@@ -65,14 +69,21 @@ export type EtatDeLEcran =
   | { etat: 'serie'; serie: SerieALEcran; rang: number; sur: number }
   | { etat: 'invitation'; invitation: InvitationALEcran; sur: number }
 
-/** Un avis : un message seul dans la rangée principale (un lot noté, un échec), sans « Annuler ». */
+/** Un avis : un message dans une rangée de touches (un lot noté, un échec, « Proposé à Alycia »), seul sauf s'il se défait. */
 export interface Avis {
   /** Change à chaque avis : deux avis de même texte sont deux messages, chacun son temps. */
   cle: number
   texte: string
   /** Un échec. */
   alerte: boolean
+  /** De quoi il parle (l'identifiant d'une série ou d'une invitation) : dans la liste, il se pose sur cette carte. */
+  sujet?: string
+  /** Ce qu'« Annuler » décoche : seul le « vu à deux » qu'on vient de proposer en porte un. */
+  annuler?: EpisodeCoche
 }
+
+/** Où en est la lecture de la télécommande, pour une vue qui n'est pas le petit écran. */
+export type Lecture = { etat: 'attente' } | { etat: 'panne'; message: string } | { etat: 'prete' }
 
 export interface PropsVueTelecommande {
   ecran: EtatDeLEcran
@@ -101,7 +112,32 @@ export interface PropsVueTelecommande {
   onRefuser?: (invitation: InvitationALEcran) => void
 }
 
-export const codeDe = (episode: EpisodeAVoir) => `S${episode.saison} E${episode.numero}`
+export const codeDe = (episode: Pick<EpisodeAVoir, 'saison' | 'numero'>) => `S${episode.saison} E${episode.numero}`
+
+/** L'« Annuler » d'un avis qui se défait (« Proposé à Alycia ») : il décoche, et l'avis s'en va. Sinon rien : le message est seul. */
+export function annulerLAvis(avis: Avis, { onAnnulerLeVu, onAvisParti }: { onAnnulerLeVu?: (coche: EpisodeCoche) => void; onAvisParti?: () => void }) {
+  const coche = avis.annuler
+  if (!coche || !onAnnulerLeVu) return undefined
+  return () => {
+    onAnnulerLeVu(coche)
+    onAvisParti?.()
+  }
+}
+
+/** Une lecture en panne : le message de l'API, tel quel, et « Réessayer », dans un écran du boîtier. */
+export function Panne({ message, onReessayer }: { message: string; onReessayer?: () => void }) {
+  return (
+    <div className={styles.ecran} data-piece="ecran" data-etat="panne" role="alert">
+      <p className={styles.etat}>
+        <span className={styles.libelle}>Sans signal</span>
+      </p>
+      <p className={styles.panne}>{message}</p>
+      <button type="button" className={styles.touche} data-piece="touche" disabled={!onReessayer} onClick={onReessayer}>
+        Réessayer
+      </button>
+    </div>
+  )
+}
 
 function Pave({ Icone, onClick, children }: { Icone: TablerIcon; onClick?: () => void; children: ReactNode }) {
   return (
@@ -145,7 +181,7 @@ export default function VueTelecommande(props: PropsVueTelecommande) {
       {/* La rangée principale : sa hauteur est fixe, le message y prend la place des touches. */}
       <div className={`${styles.rangee} ${styles.grande}`} data-piece="rangee-principale">
         {avis ? (
-          <MessageDuVu key={avis.cle} texte={avis.texte} alerte={avis.alerte} onPartir={() => props.onAvisParti?.()} />
+          <MessageDuVu key={avis.cle} texte={avis.texte} alerte={avis.alerte} onAnnuler={annulerLAvis(avis, props)} onPartir={() => props.onAvisParti?.()} />
         ) : retour ? (
           <MessageDuVu
             texte={retour.texte}
@@ -245,19 +281,7 @@ function Ecran({ ecran, onReessayer }: { ecran: EtatDeLEcran; onReessayer?: () =
     )
   }
 
-  if (ecran.etat === 'panne') {
-    return (
-      <div className={styles.ecran} data-piece="ecran" data-etat="panne" role="alert">
-        <p className={styles.etat}>
-          <span className={styles.libelle}>Sans signal</span>
-        </p>
-        <p className={styles.panne}>{ecran.message}</p>
-        <button type="button" className={styles.touche} data-piece="touche" disabled={!onReessayer} onClick={onReessayer}>
-          Réessayer
-        </button>
-      </div>
-    )
-  }
+  if (ecran.etat === 'panne') return <Panne message={ecran.message} onReessayer={onReessayer} />
 
   if (ecran.etat === 'vide') {
     return (
@@ -310,12 +334,14 @@ function Ecran({ ecran, onReessayer }: { ecran: EtatDeLEcran; onReessayer?: () =
   return (
     <div className={styles.ecran} data-piece="ecran" data-etat="serie">
       <p className={styles.etat}>
-        <span className={styles.libelle}>En cours</span>
-        <span className={styles.libelle}>
-          <b>
-            {rang} sur {sur}
-          </b>
-        </span>
+        <span className={styles.libelle}>{serie.enPause ? 'En pause' : 'En cours'}</span>
+        {serie.enPause ? null : (
+          <span className={styles.libelle}>
+            <b>
+              {rang} sur {sur}
+            </b>
+          </span>
+        )}
       </p>
       <div className={styles.sujet}>
         <Affiche src={serie.affiche} titre={serie.titre} taille="ligne" />

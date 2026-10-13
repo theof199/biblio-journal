@@ -54,3 +54,27 @@ export const lireLesSaisons = async (serieId: string, signal?: AbortSignal): Pro
   const fiche = await api.get<Fiche>(`/media/${serieId}`, undefined, signal)
   return ('seasons' in fiche ? fiche.seasons : null) ?? []
 }
+
+type PageDeMembres = Json<paths['/users']['get']['responses'][200]>
+/** Un membre, au format `PublicUser` : son identifiant, son pseudo, sa couleur d'identité. */
+export type Membre = PageDeMembres['items'][number]['user']
+
+/** Le plus que le serveur accepte par page (le défaut est 40). */
+const MEMBRES_PAR_PAGE = 100
+
+/**
+ * Tous les membres (`GET /users`), dans l'ordre servi. La route est paginée : les pages se suivent par
+ * leur curseur, renvoyé tel quel, jusqu'à ce que `next_cursor` soit nul. Les comptes désactivés sont
+ * exclus par le serveur (on ne demande pas `include_deactivated`) et écartés ici s'il en passait un :
+ * l'inviter répond `404`. L'appelant y figure : c'est à qui s'en sert de le retirer.
+ */
+export async function lireLesMembres(signal?: AbortSignal): Promise<Membre[]> {
+  const membres: Membre[] = []
+  let cursor: string | null = null
+  do {
+    const page: PageDeMembres = await api.get<PageDeMembres>('/users', { limit: MEMBRES_PAR_PAGE, cursor }, signal)
+    membres.push(...page.items.map((item) => item.user).filter((membre) => !membre.deactivated))
+    cursor = page.next_cursor
+  } while (cursor !== null)
+  return membres
+}

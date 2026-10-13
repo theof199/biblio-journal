@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
-import { lireLaTelecommande, type CarteDeSerie, type Telecommande } from '../../api/feuilleton'
+import { lireLaTelecommande, lireLesMembres, type CarteDeSerie, type Telecommande } from '../../api/feuilleton'
 
 /**
  * Ce que la télécommande sait : une lecture, `GET /me/feuilleton/telecommande`, faite **au montage du
@@ -13,6 +13,14 @@ import { lireLaTelecommande, type CarteDeSerie, type Telecommande } from '../../
 /** La lecture de la télécommande : un seul cache, quel que soit le nombre de ses lecteurs. */
 export function useLaTelecommande() {
   return useQuery({ queryKey: cles.telecommande, queryFn: ({ signal }) => lireLaTelecommande(signal) })
+}
+
+/**
+ * Les membres, pour le « vu à deux » : lus **à l'ouverture de la vue** (c'est elle qui appelle ce crochet),
+ * jamais au montage du Feuilleton. Qui s'en sert retire l'appelant.
+ */
+export function useLesMembres() {
+  return useQuery({ queryKey: cles.membresDuFeuilleton, queryFn: ({ signal }) => lireLesMembres(signal) })
 }
 
 /** Une invitation « vu à deux » m'attend-elle ? Le point rouge du bouton rond et le voyant du panneau. */

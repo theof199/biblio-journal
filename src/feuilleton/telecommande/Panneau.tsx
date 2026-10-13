@@ -4,6 +4,8 @@ import type { Habillage } from '../habillages'
 import { useTelecommande } from './adresse'
 import Coquille, { NOMS, PARENTES } from './Coquille'
 import { useDialogue } from './dialogue'
+import VueADeux from './VueADeux'
+import VueListe from './VueListe'
 import VueTelecommande from './VueTelecommande'
 import { useTelecommandeVivante } from './vivante'
 import { ecrireLaVue } from './vues'
@@ -27,10 +29,11 @@ interface Props {
 export default function Panneau({ habillage, chapitre, boutonRond, invitation }: Props) {
   const { vue, precedente, allerA, revenir, fermer } = useTelecommande()
   const boite = useDialogue<HTMLElement>(fermer, boutonRond, vue ? ecrireLaVue(vue) : '')
-  const vivante = useTelecommandeVivante()
+  const vivante = useTelecommandeVivante(vue)
   if (!vue) return null
 
-  const retour = vue.nom === 'telecommande' ? null : (precedente ?? PARENTES[vue.nom])
+  // Réglée sur une série depuis la liste, la télécommande y ramène ; à son ouverture, elle n'a pas de retour.
+  const retour = vue.nom === 'telecommande' ? (vue.serie && precedente?.nom === 'en-cours' ? precedente : null) : (precedente ?? PARENTES[vue.nom])
 
   return (
     <div className={`${styles.dialogue} ${habillage.classe}`} data-chapitre={chapitre}>
@@ -55,7 +58,11 @@ export default function Panneau({ habillage, chapitre, boutonRond, invitation }:
 
         <div className={styles.vue}>
           {vue.nom === 'telecommande' ? (
-            <VueTelecommande {...vivante} allerA={allerA} onVuADeux={() => allerA({ nom: 'a-deux' })} />
+            <VueTelecommande {...vivante.telecommande} allerA={allerA} onVuADeux={(serie) => allerA({ nom: 'a-deux', serie: serie.id })} />
+          ) : vue.nom === 'en-cours' ? (
+            <VueListe {...vivante.liste} allerA={allerA} />
+          ) : vue.nom === 'a-deux' ? (
+            <VueADeux {...vivante.aDeux} onFait={() => revenir(retour ?? undefined)} />
           ) : (
             <Coquille vue={vue} />
           )}

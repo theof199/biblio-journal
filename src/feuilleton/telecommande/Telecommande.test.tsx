@@ -188,9 +188,9 @@ describe('la télécommande du Feuilleton', () => {
   // Mutations, dans `VueTelecommande.tsx` : une touche « Aller à » menée à une autre vue ; dans
   // `adresse.ts` : `allerA` en `replace` (le retour du téléphone fermerait au lieu de revenir).
   it.each([
-    [/^En cours/, 'en-cours', 'En cours'],
+    [/^En cours/, 'en-cours', /^En cours/],
     ['Ajouter', 'ajouter', 'Ajouter une série'],
-  ] as [string | RegExp, string, string][])('« Aller à » %s ouvre la vue `%s` dans le même boîtier ; le retour du téléphone revient à la télécommande', async (touche, vue, titre) => {
+  ] as [string | RegExp, string, string | RegExp][])('« Aller à » %s ouvre la vue `%s` dans le même boîtier ; le retour du téléphone revient à la télécommande', async (touche, vue, titre) => {
     monter('/feuilleton/maison')
     const panneau = await ouvrir()
 

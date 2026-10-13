@@ -141,7 +141,7 @@ describe('le Feuilleton', () => {
     const panneau = await screen.findByRole('dialog', { name: 'Télécommande' })
     expect(await within(panneau).findByText(/a vu/)).toBeInTheDocument()
     fireEvent.click(within(panneau).getByRole('button', { name: /^En cours/ }))
-    await within(panneau).findByRole('heading', { level: 2, name: 'En cours' })
+    await within(panneau).findByRole('heading', { level: 2, name: /^En cours/ })
 
     expect(requetes).toEqual(['GET /api/auth/me', 'GET /api/me/feuilleton/telecommande'])
   })

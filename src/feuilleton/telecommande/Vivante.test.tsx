@@ -178,9 +178,9 @@ describe('le petit écran à l’ouverture', () => {
     expect(screen.getByTestId('adresse')).toHaveTextContent('/feuilleton/maison?telecommande=ajouter')
   })
 
-  // Mutations, dans `Panneau.tsx` : `onVuADeux` mené à `en-cours` ; dans la vue, « Fiche » sans identifiant.
-  it('« Vu à deux » mène à la vue `a-deux`, « Fiche » à la fiche de la série à l’écran', async () => {
-    monter({ [LIRE]: () => json(TROIS) })
+  // Mutations, dans `Panneau.tsx` : `onVuADeux` mené à `en-cours`, ou sans la série de l'écran ; dans la vue, « Fiche » sans identifiant.
+  it('« Vu à deux » mène à la vue `a-deux` de la série à l’écran, « Fiche » à sa fiche', async () => {
+    monter({ [LIRE]: () => json(TROIS), 'GET /api/users?limit=100': () => json({ items: [], next_cursor: null }) })
     await enSerie('Dark')
     fireEvent.click(touche('Série suivante'))
 
@@ -190,7 +190,7 @@ describe('le petit écran à l’ouverture', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Vu à deux' }))
     expect(await screen.findByRole('heading', { level: 2, name: 'Vu à deux' })).toBeInTheDocument()
-    expect(screen.getByTestId('adresse')).toHaveTextContent('/feuilleton/maison?telecommande=a-deux')
+    expect(screen.getByTestId('adresse').textContent).toBe(`/feuilleton/maison?telecommande=a-deux-${ANDOR.id}`)
   })
 })
 

@@ -6,11 +6,13 @@ const VUES: [string, Vue][] = [
   ['en-cours', { nom: 'en-cours' }],
   ['ajouter', { nom: 'ajouter' }],
   ['a-deux', { nom: 'a-deux' }],
+  ['serie-0b1f6a52-9d0c-4f8e-8a53-2f6c1f0e7a11', { nom: 'telecommande', serie: '0b1f6a52-9d0c-4f8e-8a53-2f6c1f0e7a11' }],
+  ['a-deux-0b1f6a52-9d0c-4f8e-8a53-2f6c1f0e7a11', { nom: 'a-deux', serie: '0b1f6a52-9d0c-4f8e-8a53-2f6c1f0e7a11' }],
   ['fiche-0b1f6a52-9d0c-4f8e-8a53-2f6c1f0e7a11', { nom: 'fiche', serie: '0b1f6a52-9d0c-4f8e-8a53-2f6c1f0e7a11' }],
 ]
 
 describe('les vues de la télécommande dans l’adresse', () => {
-  // Mutations : une vue ôtée de `SIMPLES` ; le préfixe de la fiche changé d'un seul côté.
+  // Mutations : une vue ôtée de `SIMPLES` ; le préfixe de la fiche, de la série réglée ou du « vu à deux » changé d'un seul côté.
   it.each(VUES)('`?telecommande=%s` se lit et se réécrit', (valeur, vue) => {
     expect(lireLaVue(`?telecommande=${valeur}`)).toEqual(vue)
     expect(ecrireLaVue(vue)).toBe(valeur)
@@ -23,7 +25,7 @@ describe('les vues de la télécommande dans l’adresse', () => {
   })
 
   // Mutation : `: VUE_D_OUVERTURE` devenu `: null`, ou le filtre `IDENTIFIANT` ôté.
-  it.each(['', 'grenier', 'fiche-', 'fiche-a/b'])('une valeur inconnue (%j) ouvre la télécommande, pas une vue inventée', (valeur) => {
+  it.each(['', 'grenier', 'fiche-', 'fiche-a/b', 'serie-', 'serie-a/b', 'a-deux-', 'a-deux-a/b'])('une valeur inconnue (%j) ouvre la télécommande, pas une vue inventée', (valeur) => {
     expect(lireLaVue(`?telecommande=${encodeURIComponent(valeur)}`)).toEqual({ nom: 'telecommande' })
   })
 

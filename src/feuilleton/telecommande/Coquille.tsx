@@ -23,10 +23,9 @@ export const PARENTES: Record<Exclude<Vue['nom'], 'telecommande'>, Vue> = {
 const CARTES = 3
 
 /**
- * Une vue du panneau qui n'a pas encore son contenu (la liste « En cours », l'ajout, le « vu à deux »,
- * la fiche) : son titre, et des cartes laissées en blanc, à la forme des vraies. Le même boîtier.
+ * Une vue du panneau qui n'a pas encore son contenu (l'ajout, la fiche) : son titre, et des cartes laissées en blanc, à la forme des vraies. Le même boîtier.
  */
-export default function Coquille({ vue }: { vue: Exclude<Vue, { nom: 'telecommande' }> }) {
+export default function Coquille({ vue }: { vue: Extract<Vue, { nom: 'ajouter' | 'fiche' }> }) {
   return (
     <>
       <h2 className={styles.titreVue}>{NOMS[vue.nom]}</h2>

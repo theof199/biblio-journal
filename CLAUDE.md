@@ -158,7 +158,17 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   qui touchent la même clé partagent une file (`scope`) : elles partent une à une. Une écriture dont la
   réponse porte l'état à jour (une portée, une confirmation) n'est pas optimiste : elle pose sa réponse
   (`cancelQueries`, puis `setQueryData`) et ne relit pas. Le double toucher se retient par une
-  référence, pas par un état : deux touchers d'un même geste voient le même rendu.
+  référence, pas par un état : deux touchers d'un même geste voient le même rendu. Le verrou est **par
+  carte** (`verrous`, l'identifiant de la série ou de l'invitation). `useTelecommandeVivante` n'est appelé
+  qu'une fois, par `Panneau.tsx`, et sert le petit écran, la liste et le « vu à deux » : une vue de plus
+  y prend ses écritures, elle n'en refait pas.
+- **Une liste ne bouge pas sous le doigt.** Une écriture optimiste qui réordonne (un « Vu » fait de la
+  série la plus récente, et la sort de « En pause ») ne déplace pas la carte qu'on vient de toucher :
+  `VueListe.tsx` fige l'ordre montré tant qu'un message tient une carte, et ne le rend aux données qu'à
+  la fin du geste en cours. Deux tests le gardent (`Liste.test.tsx`).
+- **Les membres du « vu à deux » se lisent à l'ouverture de sa vue** (`useLesMembres`), pas au montage du
+  Feuilleton ni à l'ouverture du panneau (`ADeux.test.tsx` compte les requêtes). Le dernier membre choisi
+  est la seule chose que la télécommande garde sur l'appareil (`telecommande/memoire.ts`).
 - **Un panneau ouvert par l'adresse navigue « sur place »** (`state: { surPlace: true }`,
   `src/coque/defilement.ts`) : sans cet état, la coque remonte la page dessous comme pour toute
   navigation nouvelle.
