@@ -4,7 +4,7 @@ import voyage from './voyage.css?raw'
 import coque from '../coque/Coque.module.css?raw'
 import affiche from './Affiche.module.css?raw'
 import attente from './Attente.module.css?raw'
-import auCine from '../pages/AuCine.module.css?raw'
+import auCine from '../cinema/SectionAuCine.module.css?raw'
 import suivis from '../pages/Suivis.module.css?raw'
 import mesFilms from '../pages/MesFilms.module.css?raw'
 import pageRealisateur from '../pages/PageRealisateur.module.css?raw'
@@ -267,8 +267,8 @@ describe('les grilles', () => {
 
   /** Chaque grille de l'app et la classe de ses éléments, qui doivent pouvoir rétrécir sous leur contenu. */
   const ELEMENTS_DE_GRILLE = [
-    ['/src/pages/AuCine.module.css', auCine, '.tuile'],
-    ['/src/pages/AuCine.module.css', auCine, '.ligne'],
+    ['/src/cinema/SectionAuCine.module.css', auCine, '.tuile'],
+    ['/src/cinema/SectionAuCine.module.css', auCine, '.ligne'],
     ['/src/pages/Suivis.module.css', suivis, '.mur > *'],
     ['/src/pages/Suivis.module.css', suivis, '.planches > *'],
     ['/src/pages/MesFilms.module.css', mesFilms, '.ligne'],

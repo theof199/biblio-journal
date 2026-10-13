@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
-import AuCine from './AuCine'
+import SectionAuCine from './SectionAuCine'
 import { createQueryClient } from '../api/queryClient'
 import { json, servir as servirBrut } from '../test/serveur'
 import { exemple } from '../test/contrat'
@@ -12,8 +12,8 @@ import type { CinemaDuJour, SeanceDuJour, SeancesDuJour } from '../api/seances'
 import type { Sorties } from '../api/sorties'
 import type { Realisateur } from '../api/realisateurs'
 import type { FilmsSaga, Saga } from '../api/sagas'
-import type { EtatFiche } from './FicheFilm'
-import { FournisseurPosition } from '../cinema/FournisseurPosition'
+import type { EtatFiche } from '../pages/FicheFilm'
+import { FournisseurPosition } from './FournisseurPosition'
 import { simulerNavigateur } from '../test/navigateur'
 
 /**
@@ -112,7 +112,7 @@ function monter(client = createQueryClient()) {
       <FournisseurPosition>
         <MemoryRouter initialEntries={['/au-cine']}>
           <Routes>
-            <Route path="/au-cine" element={<AuCine />} />
+            <Route path="/au-cine" element={<SectionAuCine />} />
             <Route path="/au-cine/films/:tmdbId" element={<StubFicheFilm />} />
             <Route path="/journal/:id" element={<StubFiche />} />
           </Routes>
@@ -140,7 +140,7 @@ describe('Au ciné', () => {
     servir({ 'GET /api/reference/sorties': () => json(SORTIES_VIDES), ...routeSeances([]) })
     monter()
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Au ciné' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: 'Au ciné' })).toBeInTheDocument()
     expect(await screen.findByText('0 séance cette année')).toBeInTheDocument()
   })
 
@@ -482,7 +482,7 @@ describe('Au ciné qui attend ses données', () => {
     servir({ 'GET /api/reference/sorties': jamais, 'GET /api/me/journal?limit=40&reaction=en_salle': jamais })
     monter()
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Au ciné' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: 'Au ciné' })).toBeInTheDocument()
     expect(screen.getByText('Prochaines séances')).toBeInTheDocument()
     expect(screen.getByText('Sorti cette semaine dans mes cinémas')).toBeInTheDocument()
     expect(screen.getByText('La semaine prochaine')).toBeInTheDocument()
