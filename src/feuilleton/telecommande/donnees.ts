@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
-import { lireLaTelecommande, lireLesMembres, type CarteDeSerie, type Telecommande } from '../../api/feuilleton'
+import { chercherDesSeries, lireLaFiche, lireLaTelecommande, lireLesEpisodes, lireLesMembres, type CarteDeSerie, type Telecommande } from '../../api/feuilleton'
 
 /**
  * Ce que la télécommande sait : une lecture, `GET /me/feuilleton/telecommande`, faite **au montage du
@@ -21,6 +21,21 @@ export function useLaTelecommande() {
  */
 export function useLesMembres() {
   return useQuery({ queryKey: cles.membresDuFeuilleton, queryFn: ({ signal }) => lireLesMembres(signal) })
+}
+
+/** La recherche d'une série à ajouter : rien ne part sans terme. */
+export function useLaRecherche(terme: string) {
+  return useQuery({ queryKey: cles.rechercheDeSeries(terme), queryFn: ({ signal }) => chercherDesSeries(terme, signal), enabled: terme.length > 0 })
+}
+
+/** La fiche d'une série, lue **à l'ouverture de sa vue**. */
+export function useLaFiche(serieId: string) {
+  return useQuery({ queryKey: cles.ficheDeSerie(serieId), queryFn: ({ signal }) => lireLaFiche(serieId, signal) })
+}
+
+/** Les épisodes d'une saison, toutes pages lues, **au dépliage** (`depliee`). */
+export function useLesEpisodes(serieId: string, saisonId: string, depliee: boolean) {
+  return useQuery({ queryKey: cles.episodesDeSaison(serieId, saisonId), queryFn: ({ signal }) => lireLesEpisodes(saisonId, signal), enabled: depliee })
 }
 
 /** Une invitation « vu à deux » m'attend-elle ? Le point rouge du bouton rond et le voyant du panneau. */
@@ -78,6 +93,9 @@ export function retirerLInvitation(telecommande: Telecommande, id: string): Tele
 const JOUR_A_PARIS = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' })
 const HEURE_A_PARIS = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', hourCycle: 'h23' })
 const JOUR_EN_LETTRES = new Intl.DateTimeFormat('fr-FR', { timeZone: 'UTC', day: 'numeric', month: 'long' })
+
+/** Le jour de Paris d'un instant, `AAAA-MM-JJ` : ce à quoi se compare une date de diffusion. */
+export const jourAParis = (date: Date): string => JOUR_A_PARIS.format(date)
 
 /** Le rang du jour de Paris d'un instant (un jour civil, pas vingt-quatre heures). */
 const jourDeParis = (date: Date) => Date.parse(`${JOUR_A_PARIS.format(date)}T00:00:00Z`) / 86_400_000

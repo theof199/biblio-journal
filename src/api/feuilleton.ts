@@ -30,8 +30,18 @@ export type Confirmation = Json<paths['/me/feuilleton/vus-a-deux/{id}/confirmer'
 /** La réponse de la coche du suivi : elle ne porte pas la carte, la télécommande se relit. */
 export type Coche = Json<paths['/episodes/{id}/watched']['put']['responses'][200]>
 type Fiche = Json<paths['/media/{id}']['get']['responses'][200]>
-/** Une saison telle que la fiche d'une série la résume : son identifiant et son numéro. */
-export type SaisonDeFiche = NonNullable<Extract<Fiche, { seasons?: unknown }>['seasons']>[number]
+/** La fiche d'une série : l'en-tête, `next_up` (le prochain épisode du suivi) et ses saisons, chacune avec ma progression. */
+export type FicheDeSerie = Extract<Fiche, { type: 'tv' }>
+export type SaisonDeFiche = NonNullable<FicheDeSerie['seasons']>[number]
+type PageDEpisodes = Json<paths['/seasons/{id}/episodes']['get']['responses'][200]>
+/** Un épisode d'une saison : `watched.me`, et `air_date` (`AAAA-MM-JJ`, ou `null` : date inconnue, tenu pour diffusé comme côté API). */
+export type EpisodeDeSaison = PageDEpisodes['items'][number]
+type PageDeRecherche = Json<paths['/search']['get']['responses'][200]>
+/** Une série trouvée par la recherche ; `media_id` : son identifiant ici, si quelqu'un l'a déjà ajoutée. */
+export type SerieTrouvee = Extract<PageDeRecherche['items'][number], { type: 'tv' }>
+export type CorpsDAjout = Corps<paths['/media']['post']>
+/** `{ created, media }` : `201` ou `200`, la série y était déjà. Les deux se traitent de même. */
+export type Ajout = Json<paths['/media']['post']['responses'][201]>
 
 export const lireLaTelecommande = (signal?: AbortSignal) => api.get<Telecommande>('/me/feuilleton/telecommande', undefined, signal)
 
@@ -46,14 +56,45 @@ export const inviterAVoirADeux = (corps: CorpsDInvitation) => api.post<VuADeux>(
 export const confirmerLeVuADeux = (id: string) => api.post<Confirmation>(`/me/feuilleton/vus-a-deux/${id}/confirmer`)
 export const refuserLeVuADeux = (id: string) => api.post<VuADeux>(`/me/feuilleton/vus-a-deux/${id}/refuser`)
 
-/**
- * Les saisons d'une série, par sa fiche (`GET /media/{id}`). La carte de la télécommande porte le numéro
- * de la saison d'un épisode, pas son identifiant, que « Toute la saison » exige : il se lit ici, au geste.
- */
-export const lireLesSaisons = async (serieId: string, signal?: AbortSignal): Promise<SaisonDeFiche[]> => {
+const PAS_UNE_SERIE = 'Cette fiche n’est pas celle d’une série.'
+
+/** La fiche d'une série (`GET /media/{id}`). Rien à voir avec une fiche d'année du Voyage : cette lecture est anodine. */
+export const lireLaFiche = async (serieId: string, signal?: AbortSignal): Promise<FicheDeSerie> => {
   const fiche = await api.get<Fiche>(`/media/${serieId}`, undefined, signal)
-  return ('seasons' in fiche ? fiche.seasons : null) ?? []
+  if (fiche.type !== 'tv') throw new Error(PAS_UNE_SERIE)
+  return fiche
 }
+
+/** Le plus que le serveur accepte par page (le défaut est 40). */
+const EPISODES_PAR_PAGE = 100
+
+/** Tous les épisodes d'une saison (`GET /seasons/{id}/episodes`), dans l'ordre servi : la route est paginée, les pages se suivent par leur curseur. */
+export async function lireLesEpisodes(saisonId: string, signal?: AbortSignal): Promise<EpisodeDeSaison[]> {
+  const episodes: EpisodeDeSaison[] = []
+  let cursor: string | null = null
+  do {
+    const page: PageDEpisodes = await api.get<PageDEpisodes>(`/seasons/${saisonId}/episodes`, { limit: EPISODES_PAR_PAGE, cursor }, signal)
+    episodes.push(...page.items)
+    cursor = page.next_cursor
+  } while (cursor !== null)
+  return episodes
+}
+
+/** `GET /search?type=tv&q=…` : la première page suffit à choisir. */
+export const chercherDesSeries = async (q: string, signal?: AbortSignal): Promise<SerieTrouvee[]> => {
+  const page = await api.get<PageDeRecherche>('/search', { type: 'tv', q }, signal)
+  return page.items.filter((resultat): resultat is SerieTrouvee => resultat.type === 'tv')
+}
+
+/** L'import d'une série fait une requête TMDB par saison : il peut durer bien plus qu'une écriture ordinaire. */
+const DELAI_DE_L_AJOUT = 60_000
+
+/**
+ * Ajouter une série : un seul appel crée la fiche, ses saisons, ses épisodes, et rattache mon suivi.
+ * **Idempotent** : ajouter une série déjà là répond `200` sans rien écraser d'un suivi commencé.
+ */
+export const ajouterUneSerie = (externalId: string) =>
+  api.post<Ajout>('/media', { source: 'tmdb', external_id: externalId, type: 'tv' } satisfies CorpsDAjout, DELAI_DE_L_AJOUT)
 
 type PageDeMembres = Json<paths['/users']['get']['responses'][200]>
 /** Un membre, au format `PublicUser` : son identifiant, son pseudo, sa couleur d'identité. */

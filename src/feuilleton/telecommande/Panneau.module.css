@@ -546,3 +546,279 @@
   flex: none;
   margin-left: auto;
 }
+
+/* Le petit écran de la télécommande : la même hauteur dans tous ses états. Son sujet a la hauteur d'une
+   affiche, qu'il en montre une (une série) ou non (le monogramme d'une invitation). */
+.ecran.petit .sujet {
+  min-height: var(--telecommande-sujet-hauteur);
+}
+
+/* L'ajout : le champ, les résultats. */
+
+.champ {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  height: var(--bouton-hauteur);
+  padding: 0 0 0 var(--espace-3);
+  border: var(--h-trait-fort) solid var(--h-ecran-contour);
+  border-radius: var(--h-rayon-ecran);
+  background: var(--h-ecran-fond);
+  color: var(--h-ecran-texte);
+}
+
+.champ > .icone {
+  color: var(--h-ecran-texte-doux);
+}
+
+.saisie {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--espace-2) 0 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: inherit;
+  font-family: var(--h-police-touche);
+  font-size: var(--taille-m);
+}
+
+/* La croix du navigateur ferait doublon avec « Effacer ». */
+.saisie::-webkit-search-cancel-button {
+  display: none;
+}
+
+.champ:focus-within {
+  border-color: var(--h-ecran-texte);
+}
+
+.resultat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-2);
+  border: var(--h-trait) solid var(--h-ecran-contour);
+  border-radius: var(--h-rayon-ecran);
+  background: var(--h-ecran-fond);
+  color: var(--h-ecran-texte);
+}
+
+.resultat > * {
+  flex: none;
+}
+
+.resultat > .infos {
+  flex: 1;
+}
+
+/* Un titre de résultat se lit en entier, sur plusieurs lignes s'il le faut, plutôt que coupé à 320 px. */
+.resultat .titre {
+  font-size: var(--taille-l);
+  line-height: var(--interligne-titre);
+  white-space: normal;
+}
+
+.meta,
+.deja,
+.avance,
+.date {
+  margin: 0;
+  color: var(--h-ecran-texte-doux);
+  font-size: var(--taille-s);
+}
+
+.deja {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-1);
+  padding-right: var(--espace-1);
+  white-space: nowrap;
+}
+
+/* L'échec d'un ajout : sous son résultat, sur toute la largeur. */
+.echec {
+  width: 100%;
+  margin: 0;
+  font-size: var(--taille-s);
+  line-height: var(--interligne-titre);
+}
+
+.rien {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-2);
+  padding: var(--espace-6) var(--espace-4);
+  border: var(--h-trait) dashed var(--h-ecran-contour);
+  border-radius: var(--h-rayon-ecran);
+  text-align: center;
+}
+
+.rien .doux {
+  color: var(--h-boitier-texte-doux);
+  white-space: normal;
+}
+
+/* La fiche : l'en-tête, le synopsis, les saisons et leurs épisodes. */
+
+.sujet.grand {
+  align-items: flex-end;
+}
+
+.afficheDeFiche {
+  width: var(--largeur-affiche-fiche);
+}
+
+/* Le titre de la fiche se lit en entier : un mot plus large que sa colonne se coupe plutôt que de se perdre. */
+.titre.deFiche {
+  font-size: var(--taille-xl);
+  overflow-wrap: anywhere;
+}
+
+.synopsis {
+  margin: 0;
+  font-size: var(--taille-s);
+}
+
+.saison {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 var(--espace-3);
+  border: var(--h-trait) solid var(--h-ecran-contour);
+  border-radius: var(--h-rayon-ecran);
+  background: var(--h-ecran-fond);
+  color: var(--h-ecran-texte);
+}
+
+.saison .repli {
+  justify-content: flex-start;
+  min-height: var(--bouton-hauteur);
+  color: inherit;
+}
+
+.nomDeSaison {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+}
+
+.avance {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.corpsDeSaison[hidden] {
+  display: none;
+}
+
+.corpsDeSaison > .rangee {
+  margin-bottom: var(--espace-2);
+}
+
+.episodes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ep {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  min-height: var(--bouton-hauteur);
+  border-top: var(--h-trait) solid var(--h-boitier-contour);
+}
+
+.ep > * {
+  flex: none;
+}
+
+.ep > .code {
+  width: var(--espace-6);
+}
+
+.ep > .nomDEpisode {
+  flex: 1;
+}
+
+.nomDEpisode {
+  min-width: 0;
+  font-size: var(--taille-s);
+  line-height: var(--interligne-titre);
+}
+
+.ep[data-prochain] .nomDEpisode {
+  font-weight: var(--graisse-forte);
+}
+
+.nomDEpisode small {
+  display: block;
+  color: var(--h-ecran-texte-doux);
+  font-size: var(--taille-meta);
+  font-weight: var(--graisse-normale);
+}
+
+.nomDEpisode small[role='alert'] {
+  color: inherit;
+}
+
+.date {
+  padding-right: var(--espace-1);
+  white-space: nowrap;
+}
+
+/* Une case : une cible de 44 px, et dedans le carré qui se coche. Aussi la croix du champ. */
+.case {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cible-tactile);
+  height: var(--cible-tactile);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.coche {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--espace-5);
+  height: var(--espace-5);
+  border: var(--h-trait-fort) solid var(--h-touche-contour);
+  border-radius: var(--h-rayon-ecran);
+}
+
+.case[aria-checked='true'] .coche {
+  background: var(--h-principale-fond);
+  color: var(--h-principale-texte);
+}
+
+.coche .icone {
+  width: var(--taille-m);
+  height: var(--taille-m);
+  stroke-width: var(--h-icone-trait-fort);
+}
+
+/* Les épisodes d'une saison n'ont pas pu se lire : le message et « Réessayer », dans la saison. */
+.rate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-2);
+  padding-bottom: var(--espace-3);
+}
+
+/* Un écran bas (320 × 568, un téléphone couché) : les espacements se resserrent d'un cran, pour que la
+   télécommande montre ses trois rangées, « Aller à » comprise, sans défilement. Seul le pied, qui n'est
+   qu'une gravure, passe sous le bord. */
+@media (max-height: 40rem) {
+  .boitier,
+  .vue {
+    gap: var(--espace-2);
+  }
+}

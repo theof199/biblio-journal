@@ -2,9 +2,11 @@ import type { RefObject } from 'react'
 import { IconChevronDown, IconChevronLeft } from '@tabler/icons-react'
 import type { Habillage } from '../habillages'
 import { useTelecommande } from './adresse'
-import Coquille, { NOMS, PARENTES } from './Coquille'
+import { NOMS, PARENTES } from './Coquille'
 import { useDialogue } from './dialogue'
 import VueADeux from './VueADeux'
+import VueAjouter from './VueAjouter'
+import VueFiche from './VueFiche'
 import VueListe from './VueListe'
 import VueTelecommande from './VueTelecommande'
 import { useTelecommandeVivante } from './vivante'
@@ -27,7 +29,7 @@ interface Props {
  * Tout ce qui s'en voit vient de l'habillage du chapitre, par ses variables `--h-*`.
  */
 export default function Panneau({ habillage, chapitre, boutonRond, invitation }: Props) {
-  const { vue, precedente, allerA, revenir, fermer } = useTelecommande()
+  const { vue, precedente, allerA, remplacer, revenir, fermer } = useTelecommande()
   const boite = useDialogue<HTMLElement>(fermer, boutonRond, vue ? ecrireLaVue(vue) : '')
   const vivante = useTelecommandeVivante(vue)
   if (!vue) return null
@@ -63,8 +65,11 @@ export default function Panneau({ habillage, chapitre, boutonRond, invitation }:
             <VueListe {...vivante.liste} allerA={allerA} />
           ) : vue.nom === 'a-deux' ? (
             <VueADeux {...vivante.aDeux} onFait={() => revenir(retour ?? undefined)} />
+          ) : vue.nom === 'ajouter' ? (
+            // La télécommande réglée sur la série ajoutée prend la place de l'ajout : le retour du téléphone ne ramène pas à la recherche.
+            <VueAjouter suivies={vivante.suivies} onAjoutee={(serie) => remplacer({ nom: 'telecommande', serie })} />
           ) : (
-            <Coquille vue={vue} />
+            <VueFiche key={vue.serie} serieId={vue.serie} />
           )}
           <p className={styles.pied} aria-hidden="true" data-piece="pied">
             <span className={styles.piedMarque}>{habillage.marque}</span>

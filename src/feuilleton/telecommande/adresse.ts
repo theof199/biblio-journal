@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { PARAMETRE, VUE_D_OUVERTURE, ecrireLaVue, lireLaVue, rechercheAvec, type Vue } from './vues'
 
@@ -36,9 +37,20 @@ function traceDe(state: unknown): Trace {
  */
 export function useTelecommande() {
   const naviguer = useNavigate()
-  const { search, state } = useLocation()
+  const { search, state, key } = useLocation()
   const vue = lireLaVue(search)
   const trace = traceDe(state)
+
+  // La fermeture d'un panneau ouvert par son adresse, depuis une vue poussée : on recule jusqu'à l'entrée
+  // de l'adresse, **puis** on lui ôte le paramètre. Sans ce second temps, le retour du téléphone
+  // retrouverait cette entrée et rouvrirait le panneau.
+  const aOter = useRef(false)
+  useEffect(() => {
+    if (!aOter.current) return
+    aOter.current = false
+    if (lireLaVue(search)) naviguer({ search: rechercheAvec(search, null) }, { replace: true, state: { surPlace: true } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- à chaque entrée d'historique atteinte, pas à chaque rendu
+  }, [key])
 
   return {
     /** La vue ouverte, ou `null` : le panneau est fermé. */
@@ -53,10 +65,18 @@ export function useTelecommande() {
       if (trace.pas > 0) naviguer(-1)
       else naviguer({ search: rechercheAvec(search, parente) }, { replace: true, state: etat(trace) })
     },
-    /** Fermer : retrouver la page d'où le bouton a ouvert, sinon ôter le paramètre de l'adresse. */
+    /** Prendre la place de la vue ouverte, sans entrée de plus : la télécommande réglée sur la série qu'on vient d'ajouter remplace l'ajout. */
+    remplacer: (suivante: Vue) => naviguer({ search: rechercheAvec(search, suivante) }, { replace: true, state: etat(trace) }),
+    /**
+     * Fermer **quitte toutes les entrées du panneau** : retrouver la page d'où le bouton a ouvert ;
+     * sinon (une adresse ouverte telle quelle) reculer des vues poussées puis ôter le paramètre.
+     */
     fermer: () => {
       if (trace.sous) naviguer(-(trace.pas + 1))
-      else naviguer({ search: rechercheAvec(search, null) }, { replace: true, state: { surPlace: true } })
+      else if (trace.pas > 0) {
+        aOter.current = true
+        naviguer(-trace.pas)
+      } else naviguer({ search: rechercheAvec(search, null) }, { replace: true, state: { surPlace: true } })
     },
   }
 }

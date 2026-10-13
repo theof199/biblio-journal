@@ -125,11 +125,11 @@ export function annulerLAvis(avis: Avis, { onAnnulerLeVu, onAvisParti }: { onAnn
 }
 
 /** Une lecture en panne : le message de l'API, tel quel, et « Réessayer », dans un écran du boîtier. */
-export function Panne({ message, onReessayer }: { message: string; onReessayer?: () => void }) {
+export function Panne({ message, onReessayer, titre = 'Sans signal' }: { message: string; onReessayer?: () => void; titre?: string }) {
   return (
     <div className={styles.ecran} data-piece="ecran" data-etat="panne" role="alert">
       <p className={styles.etat}>
-        <span className={styles.libelle}>Sans signal</span>
+        <span className={styles.libelle}>{titre}</span>
       </p>
       <p className={styles.panne}>{message}</p>
       <button type="button" className={styles.touche} data-piece="touche" disabled={!onReessayer} onClick={onReessayer}>
@@ -257,11 +257,15 @@ export default function VueTelecommande(props: PropsVueTelecommande) {
   )
 }
 
-/** Le petit écran. En attente, il garde sa forme : une affiche et deux lignes laissées en blanc. */
+/**
+ * Le petit écran. En attente, il garde sa forme : une affiche et deux lignes laissées en blanc. **Il a la
+ * même hauteur dans tous ses états** (`.petit` : son sujet a la hauteur d'une affiche, monogramme compris) :
+ * une invitation traitée laisse la place à la série sans que les rangées du dessous ne bougent.
+ */
 function Ecran({ ecran, onReessayer }: { ecran: EtatDeLEcran; onReessayer?: () => void }) {
   if (ecran.etat === 'attente') {
     return (
-      <div className={styles.ecran} data-piece="ecran" data-etat="attente">
+      <div className={`${styles.ecran} ${styles.petit}`} data-piece="ecran" data-etat="attente">
         <Attente libelle="La télécommande s’allume…" className={styles.fantome}>
           <div className={styles.etat}>
             <Barre largeur="courte" />
@@ -285,7 +289,7 @@ function Ecran({ ecran, onReessayer }: { ecran: EtatDeLEcran; onReessayer?: () =
 
   if (ecran.etat === 'vide') {
     return (
-      <div className={styles.ecran} data-piece="ecran" data-etat="vide">
+      <div className={`${styles.ecran} ${styles.petit}`} data-piece="ecran" data-etat="vide">
         <p className={styles.etat}>
           <span className={styles.libelle}>En cours</span>
         </p>
@@ -303,7 +307,7 @@ function Ecran({ ecran, onReessayer }: { ecran: EtatDeLEcran; onReessayer?: () =
   if (ecran.etat === 'invitation') {
     const { invitation, sur } = ecran
     return (
-      <div className={`${styles.ecran} ${styles.invitation}`} data-piece="ecran" data-etat="invitation">
+      <div className={`${styles.ecran} ${styles.petit} ${styles.invitation}`} data-piece="ecran" data-etat="invitation">
         <p className={styles.etat}>
           <span className={styles.libelle}>
             <span className={styles.pastille} />
@@ -332,7 +336,7 @@ function Ecran({ ecran, onReessayer }: { ecran: EtatDeLEcran; onReessayer?: () =
 
   const { serie, rang, sur } = ecran
   return (
-    <div className={styles.ecran} data-piece="ecran" data-etat="serie">
+    <div className={`${styles.ecran} ${styles.petit}`} data-piece="ecran" data-etat="serie">
       <p className={styles.etat}>
         <span className={styles.libelle}>{serie.enPause ? 'En pause' : 'En cours'}</span>
         {serie.enPause ? null : (

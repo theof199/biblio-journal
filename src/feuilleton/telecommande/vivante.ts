@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cles } from '../../api/cles'
 import { ApiError } from '../../api/client'
-import { cocherLEpisode, cocherUnePortee, confirmerLeVuADeux, inviterAVoirADeux, lireLesSaisons, refuserLeVuADeux, type CarteDeSerie, type InvitationAConfirmer, type Membre, type Telecommande } from '../../api/feuilleton'
+import { cocherLEpisode, cocherUnePortee, confirmerLeVuADeux, inviterAVoirADeux, refuserLeVuADeux, type CarteDeSerie, type InvitationAConfirmer, type Membre, type Telecommande } from '../../api/feuilleton'
 import type { EpisodeCoche } from '../retourDuVu'
 import { avancer, direQuand, direQuandLaSerie, jourEnLettres, poserLaCarte, retirerLInvitation, seriesEnCours, seriesEnPause, useLaTelecommande } from './donnees'
 import type { PropsVueADeux } from './VueADeux'
@@ -24,18 +24,20 @@ import type { Vue } from './vues'
  * Les écritures de la télécommande partagent une file (`scope`) : elles partent une à une, dans l'ordre
  * des gestes ; « Annuler » touché avant la réponse du « Vu » part après elle. Rien de cela ne tient au
  * composant : ces rappels sont ceux de `useMutation`, qui survivent à la fermeture du panneau.
+ *
+ * La fiche (`fiche.ts`) écrit dans la même file, sous la même clé d'écriture : elle les prend ici.
  */
-const ECRITURE = [...cles.telecommande, 'ecriture'] as const
-const FILE = { id: 'feuilleton-telecommande' }
+export const ECRITURE = [...cles.telecommande, 'ecriture'] as const
+export const FILE = { id: 'feuilleton-telecommande' }
 
 const SAISON_INTROUVABLE = 'Cette saison est introuvable. Réessaie depuis la fiche.'
-const messageDe = (erreur: unknown) => (erreur instanceof Error ? erreur.message : 'Une erreur inattendue est survenue. Réessaie.')
+export const messageDe = (erreur: unknown) => (erreur instanceof Error ? erreur.message : 'Une erreur inattendue est survenue. Réessaie.')
 /** L'invitation n'est plus : retirée par son inviteur (`404`), déjà traitée ou expirée (`409`). */
 const nEstPlus = (erreur: unknown) => erreur instanceof ApiError && (erreur.status === 404 || erreur.status === 409)
 /** Le trio est déjà pris : une invitation attend, a été confirmée, ou refusée (un refus est définitif). */
 const dejaRecu = (erreur: unknown) => erreur instanceof ApiError && erreur.status === 409
 
-const direLeLot = (combien: number) => (combien === 0 ? 'Rien de plus à noter' : combien === 1 ? '1 épisode noté' : `${combien} épisodes notés`)
+export const direLeLot = (combien: number) => (combien === 0 ? 'Rien de plus à noter' : combien === 1 ? '1 épisode noté' : `${combien} épisodes notés`)
 
 interface Coche {
   /** Pour « Vu » : la carte à avancer. Pour « Annuler » : la carte d'avant le « Vu », à reposer. */
@@ -70,6 +72,8 @@ function invitationALEcran(invitation: InvitationAConfirmer, maintenant: Date): 
 
 /** Ce que le panneau donne à chacune de ses vues vivantes ; ce qui manque (les passages d'une vue à l'autre) vient de l'adresse. */
 export interface TelecommandeVivante {
+  /** Les séries que la télécommande porte, en cours ou en pause (`media_id`) : « déjà suivie », dans l'ajout. */
+  suivies: ReadonlySet<string>
   telecommande: Omit<PropsVueTelecommande, 'allerA' | 'onVuADeux'>
   liste: Omit<PropsVueListe, 'allerA'>
   aDeux: Omit<PropsVueADeux, 'onFait'>
@@ -92,6 +96,14 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     if (reglee) setChoix({ id: reglee, rang: 0 })
   }
   const [avis, setAvis] = useState<Avis | null>(null)
+  // Un avis part avec la vue où il s'est dit. Seule exception : le « vu à deux », qui dit « Proposé à… »
+  // en rendant la main à la télécommande, où ce message se lit.
+  const nomDeLaVue = vue?.nom ?? null
+  const [vueDAvant, setVueDAvant] = useState(nomDeLaVue)
+  if (nomDeLaVue !== vueDAvant) {
+    setVueDAvant(nomDeLaVue)
+    if (vueDAvant !== 'a-deux') setAvis(null)
+  }
   const numero = useRef(0)
   /**
    * Les verrous : une écriture à la fois **par carte** (l'identifiant de la série, ou de l'invitation). Un
@@ -100,10 +112,14 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
   const verrous = useRef(new Set<string>())
   /** Le dernier « Vu » : ce qu'« Annuler » défait. */
   const dernierVu = useRef<{ carte: CarteDeSerie; episodeId: string } | null>(null)
+  /** Les épisodes qu'« Annuler » a déjà repris pendant que leur « vu à deux » partait : l'échec de l'invitation ne se dit plus. */
+  const annules = useRef(new Set<string>())
 
   const dire = (texte: string, alerte = false, autres: Pick<Avis, 'sujet' | 'annuler'> = {}) => setAvis({ cle: ++numero.current, texte, alerte, ...autres })
   const ecrire = (maj: (telecommande: Telecommande) => Telecommande) => client.setQueryData<Telecommande>(cles.telecommande, (telecommande) => (telecommande ? maj(telecommande) : telecommande))
   const relire = () => client.invalidateQueries({ queryKey: cles.telecommande })
+  /** Une fiche déjà ouverte reflète ce qu'on vient d'écrire : la fiche de la série et ses saisons dépliées sont périmées (relues si elles sont à l'écran, à leur retour sinon). */
+  const perimerLaFiche = (serieId: string) => void client.invalidateQueries({ queryKey: cles.ficheDeSerie(serieId) })
   /** Poser ce qu'une réponse rend : une lecture en vol, partie avant l'écriture, ne doit pas repasser dessus. */
   const poser = async (maj: (telecommande: Telecommande) => Telecommande) => {
     await client.cancelQueries({ queryKey: cles.telecommande })
@@ -125,6 +141,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
       dire(messageDe(erreur), true, { sujet: carte.id })
     },
     onSettled: async (_reponse, _erreur, { carte, vu }) => {
+      perimerLaFiche(carte.id)
       try {
         if (client.isMutating({ mutationKey: ECRITURE }) === 1) await relire()
       } finally {
@@ -158,14 +175,17 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
       ecrire((telecommande) => avancer(telecommande, carte.id, new Date()))
       return { avant }
     },
-    onSuccess: (refus, { carte, pour }) => {
-      if (refus) dire(dejaRecu(refus) ? `Épisode noté, mais ${pour.pseudo} l’a déjà reçu` : messageDe(refus), true, { sujet: carte.id })
+    onSuccess: (refus, { carte, episodeId, pour }) => {
+      // « Annuler » est déjà passé : l'épisode va être décoché, dire « noté, mais… » serait faux.
+      if (refus && !annules.current.has(episodeId)) dire(dejaRecu(refus) ? `Épisode noté, mais ${pour.pseudo} l’a déjà reçu` : messageDe(refus), true, { sujet: carte.id })
     },
     onError: (erreur, { carte }, contexte) => {
       if (contexte?.avant) client.setQueryData(cles.telecommande, contexte.avant)
       dire(messageDe(erreur), true, { sujet: carte.id })
     },
-    onSettled: async (_reponse, _erreur, { carte }) => {
+    onSettled: async (_reponse, _erreur, { carte, episodeId }) => {
+      annules.current.delete(episodeId)
+      perimerLaFiche(carte.id)
       try {
         if (client.isMutating({ mutationKey: ECRITURE }) === 1) await relire()
       } finally {
@@ -180,12 +200,8 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     mutationFn: async ({ carte, portee }: { carte: CarteDeSerie; portee: 'jusqu_ici' | 'saison' }) => {
       const episode = carte.prochain
       if (!episode) throw new Error(SAISON_INTROUVABLE)
-      if (portee === 'jusqu_ici') return cocherUnePortee({ portee, episode_id: episode.id })
-      // La carte dit le numéro de la saison, la route veut son identifiant : il se lit sur la fiche, au geste.
-      const saisons = await client.fetchQuery({ queryKey: cles.saisonsDeSerie(carte.id), queryFn: ({ signal }) => lireLesSaisons(carte.id, signal) })
-      const saison = saisons.find((candidate) => candidate.number === episode.saison)
-      if (!saison) throw new Error(SAISON_INTROUVABLE)
-      return cocherUnePortee({ portee, season_id: saison.id })
+      // L'épisode de la carte porte l'identifiant de sa saison (`saison_id`) : aucune lecture de la fiche.
+      return portee === 'jusqu_ici' ? cocherUnePortee({ portee, episode_id: episode.id }) : cocherUnePortee({ portee, season_id: episode.saison_id })
     },
     // La réponse porte la carte à jour : elle remplace celle du cache, sans relecture ; finie, elle sort.
     onSuccess: async (reponse) => {
@@ -194,6 +210,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     },
     onError: (erreur, { carte }) => dire(messageDe(erreur), true, { sujet: carte.id }),
     onSettled: (_reponse, _erreur, { carte }) => {
+      perimerLaFiche(carte.id)
       verrous.current.delete(carte.id)
     },
   })
@@ -207,6 +224,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
         const sans = retirerLInvitation(telecommande, id)
         return carte ? poserLaCarte(sans, carte) : sans
       })
+      if (carte) perimerLaFiche(carte.id)
       dire(confirmer ? 'Vu à deux noté' : 'Invitation refusée')
     },
     onError: async (erreur, { id }) => {
@@ -272,11 +290,17 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
     coche.mutate({ carte: cible, episodeId: cible.prochain.id, vu: true })
     return true
   }
-  const onAnnulerLeVu = (vu: EpisodeCoche) => {
+  /**
+   * « Annuler » décoche, et rien d'autre. `suivre` : sur le petit écran seulement, le choix suit la série
+   * (décochée, elle quitte la tête : sans cela l'écran passerait à une autre). Dans la liste, le réglage
+   * de la télécommande ne change pas.
+   */
+  const annulerLeVu = (suivre: boolean) => (vu: EpisodeCoche) => {
     const dernier = dernierVu.current
     if (!dernier || dernier.carte.id !== vu.serieId) return
     dernierVu.current = null
-    setChoix({ id: dernier.carte.id, rang })
+    if (aDeux.isPending) annules.current.add(dernier.episodeId)
+    if (suivre) setChoix({ id: dernier.carte.id, rang })
     coche.mutate({ carte: dernier.carte, episodeId: dernier.episodeId, vu: false })
   }
   const onConfirmer = repondre(true)
@@ -286,6 +310,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
   const aProposer = vue?.nom === 'a-deux' && vue.serie ? carteDe(vue.serie) : enCours[0]
 
   return {
+    suivies: new Set((telecommande?.series ?? []).map((serie) => serie.id)),
     telecommande: {
       ecran,
       enCours: telecommande ? enCours.length : null,
@@ -295,7 +320,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
       onPrecedente: horsParcours ? undefined : allerAuRang(rang - 1),
       onSuivante: horsParcours ? allerAuRang(0) : allerAuRang(rang + 1),
       onVu,
-      onAnnulerLeVu,
+      onAnnulerLeVu: annulerLeVu(true),
       onToutJusquIci: cocherUnLot('jusqu_ici'),
       onTouteLaSaison: cocherUnLot('saison'),
       onConfirmer,
@@ -310,7 +335,7 @@ export function useTelecommandeVivante(vue: Vue | null): TelecommandeVivante {
       onAvisParti,
       onReessayer,
       onVu,
-      onAnnulerLeVu,
+      onAnnulerLeVu: annulerLeVu(false),
       onConfirmer,
       onRefuser,
     },

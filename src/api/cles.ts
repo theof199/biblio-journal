@@ -95,12 +95,16 @@ export const cles = {
    * de `maison`. Une écriture au journal ne le périme pas, périmer un espace non plus. `telecommande`
    * (`GET /me/feuilleton/telecommande`) est lue au montage du Feuilleton et tenue par ses écritures :
    * « Vu » et « Annuler » y écrivent d'avance puis la relisent, une portée et une confirmation y posent
-   * la carte que leur réponse rend (`feuilleton/telecommande/`). `saisonsDeSerie` : les saisons d'une
-   * série (`GET /media/{id}`), lues au geste « Toute la saison ».
+   * la carte que leur réponse rend (`feuilleton/telecommande/`). `ficheDeSerie` (`GET /media/{id}`) est
+   * le **préfixe** de tout ce que la fiche d'une série lit : `episodesDeSaison` est dessous, et périmer
+   * la fiche d'une série périme ses saisons dépliées (une écriture de la télécommande le fait, pour
+   * qu'une fiche déjà ouverte la reflète). `rechercheDeSeries` : `GET /search?type=tv`, par terme.
    */
   feuilleton: ['feuilleton'] as const,
   telecommande: ['feuilleton', 'telecommande'] as const,
-  saisonsDeSerie: (serieId: string) => ['feuilleton', 'saisons', serieId] as const,
+  ficheDeSerie: (serieId: string) => ['feuilleton', 'fiche', serieId] as const,
+  episodesDeSaison: (serieId: string, saisonId: string) => ['feuilleton', 'fiche', serieId, 'saison', saisonId] as const,
+  rechercheDeSeries: (terme: string) => ['feuilleton', 'recherche', terme] as const,
   /** Les membres à qui proposer un « vu à deux » (`GET /users`, toutes pages lues) : lus à l'ouverture de la vue, jamais au montage du Feuilleton. */
   membresDuFeuilleton: ['feuilleton', 'membres'] as const,
 

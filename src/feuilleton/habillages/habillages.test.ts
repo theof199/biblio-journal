@@ -16,7 +16,7 @@ const definies = (css: string) => [...new Set([...sansCommentaires(css).matchAll
  * Ce qu'une feuille de composant a le droit de lire au thème : des mesures et des graisses, jamais une
  * couleur, une police, un rayon, une ombre ni un trait. Tout le reste passe par une variable `--h-*`.
  */
-const MESURES = /^--(espace-\d|taille-(xs|s|m|l|xl)|graisse-(normale|moyenne|forte)|interligne(-serre|-titre)?|interlettre-capitales|cible-tactile|bouton-hauteur|largeur-affiche-ligne|largeur-page|gouttiere-page|coque-bas|opacite-inactif|z-telecommande|telecommande-(bouton|hauteur|largeur|duree|touche-grande|interlettre-marque|interlettre-code))$/
+const MESURES = /^--(espace-\d|taille-(xs|s|m|l|xl)|graisse-(normale|moyenne|forte)|interligne(-serre|-titre)?|interlettre-capitales|cible-tactile|bouton-hauteur|largeur-affiche-(ligne|fiche)|taille-meta|largeur-page|gouttiere-page|coque-bas|opacite-inactif|z-telecommande|telecommande-(bouton|hauteur|largeur|duree|touche-grande|sujet-hauteur|interlettre-marque|interlettre-code))$/
 
 /** Les variables `--h-*` que les composants lisent : le contrat d'un chapitre. */
 const CONTRAT = [...new Set(Object.values(FEUILLES).flatMap(lues))].filter((nom) => nom.startsWith('--h-')).sort()

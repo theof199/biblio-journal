@@ -18,7 +18,6 @@ const PORTEE = exemple<ReponseDePortee>('/me/feuilleton/episodes', 'put', 200)
 const CONFIRMATION = exemple<Confirmation>('/me/feuilleton/vus-a-deux/{id}/confirmer', 'post', 200)
 const REFUS = exemple<VuADeux>('/me/feuilleton/vus-a-deux/{id}/refuser', 'post', 200)
 const COCHE = exemple<unknown>('/episodes/{id}/watched', 'put', 200)
-const FICHE = exemple<{ seasons: { id: string; number: number }[] }>('/media/{id}', 'get', 200)
 
 /** Mercredi 14 octobre 2026, 21 h à Paris. */
 const SOIR = new Date('2026-10-14T19:00:00Z')
@@ -387,19 +386,17 @@ describe('« Tout jusqu’ici » et « Toute la saison »', () => {
     expect(requetes).toEqual(['GET /api/auth/me', LIRE, LOT])
   })
 
-  // Mutations : `season_id` pris sur la première saison de la fiche ; la lecture de la fiche ôtée.
-  it('« Toute la saison » lit l’identifiant de la saison de l’épisode sur la fiche, puis envoie la portée', async () => {
-    const saisons = FICHE.seasons
-    expect(saisons.map((saison) => saison.number)).toContain(DARK.prochain!.saison)
-    const { requetes, corps } = monter({ [LIRE]: () => json(TROIS), [`GET /api/media/${DARK.id}`]: () => json(FICHE), [LOT]: () => json(PORTEE) })
+  // Mutations, dans `vivante.ts` : `season_id: episode.id` ; une lecture de la fiche remise avant la portée.
+  it('« Toute la saison » envoie `saison_id` de l’épisode de la carte, sans lire la fiche', async () => {
+    const { requetes, corps } = monter({ [LIRE]: () => json(TROIS), [LOT]: () => json(PORTEE) })
     await enSerie('Dark')
 
     fireEvent.click(touche('Toute la saison'))
 
     await vi.waitFor(() => expect(ecran()).toHaveTextContent('S2 E7'))
-    expect(corps).toEqual([{ portee: 'saison', season_id: saisons.find((saison) => saison.number === DARK.prochain!.saison)!.id }])
-    expect(saisons[0]!.number).not.toBe(DARK.prochain!.saison)
-    expect(requetes).toEqual(['GET /api/auth/me', LIRE, `GET /api/media/${DARK.id}`, LOT])
+    expect(corps).toEqual([{ portee: 'saison', season_id: DARK.prochain!.saison_id }])
+    expect(DARK.prochain!.saison_id).not.toBe(DARK.prochain!.id)
+    expect(requetes).toEqual(['GET /api/auth/me', LIRE, LOT])
   })
 
   // Mutations : `finie` ignoré par `poserLaCarte` ; le rang d'alors oublié (`trouve === -1 ? 0`) : l'écran reviendrait à la première.

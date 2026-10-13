@@ -45,7 +45,8 @@ elle change entre le jour et la nuit.
 Un chapitre qui veut plus qu'une valeur (une touche d'une autre forme) ajoute ses règles dans son
 fichier, sous sa classe, en visant les pièces par leur attribut : `.habillage [data-piece='touche']`.
 Les pièces : `boitier`, `voile`, `ecran`, `touche`, `touche-principale`, `rangee-principale`,
-`message`, `voyant`, `pied`, `point`, `monogramme`.
+`message`, `voyant`, `pied`, `point`, `monogramme`, `champ` (la recherche de l'ajout). Un résultat de
+recherche et une saison de la fiche sont des `ecran` (`data-etat` : `resultat`, `saison`, `fiche`).
 
 **Le monogramme d'un membre** porte une couleur qui n'est pas de l'app : sa couleur d'identité, une
 donnée (`identity_color`). `src/feuilleton/Monogramme.tsx`, hors de `telecommande/`, la pose en
@@ -76,4 +77,5 @@ composant ; un seul importeur des chapitres ; un seul appel de `habillageActif()
 chaque chapitre ; `chapitreDEssai.test.tsx` déclare un chapitre dans le test et constate qu'il
 s'applique au bouton et au panneau sans toucher à un composant. Puis regarder : le bouton rond sur
 les deux espaces et le panneau ouvert (`/feuilleton/maison?telecommande=telecommande`), en jour et
-en nuit, à 390 et à 320 px.
+en nuit, à 390 et à 320 px ; l'ajout (`?telecommande=ajouter`) et une fiche (`?telecommande=fiche-<identifiant>`)
+de même, et le boîtier centré sur grand écran.

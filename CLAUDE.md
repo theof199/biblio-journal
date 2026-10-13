@@ -161,7 +161,20 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   référence, pas par un état : deux touchers d'un même geste voient le même rendu. Le verrou est **par
   carte** (`verrous`, l'identifiant de la série ou de l'invitation). `useTelecommandeVivante` n'est appelé
   qu'une fois, par `Panneau.tsx`, et sert le petit écran, la liste et le « vu à deux » : une vue de plus
-  y prend ses écritures, elle n'en refait pas.
+  y prend ses écritures, elle n'en refait pas. La fiche a les siennes (`telecommande/fiche.ts`), **dans la
+  même file** (`FILE`, `ECRITURE`, exportées de `vivante.ts`) ; son retour arrière défait la seule case
+  en échec au lieu de reposer une photo, parce que plusieurs cases peuvent attendre leur tour.
+- **La fiche et la télécommande se tiennent à jour, dans les deux sens.** Toute écriture de
+  `vivante.ts` périme `cles.ficheDeSerie(id)`, préfixe de tout ce que la fiche lit (ses saisons dépliées
+  sont dessous) ; toute écriture de `fiche.ts` relit la télécommande, ou y pose la carte que sa réponse
+  rend. Une écriture de plus, d'un côté ou de l'autre, garde les deux (`Fiche.test.tsx`).
+- **La fiche et l'ajout lisent à l'ouverture de leur vue**, jamais au montage du Feuilleton : la fiche
+  (`GET /media/{id}`), les épisodes d'une saison à son dépliage, la recherche à la frappe retardée
+  (`donnees.ts`). L'ajout est idempotent côté API : « Ajouter » s'offre à toute série que la
+  télécommande ne porte pas, sans autre garde.
+- **Fermer quitte toutes les entrées du panneau** (`adresse.ts`) : une vue de plus se pousse par
+  `allerA`, ou prend la place de la vue ouverte par `remplacer` ; aucune ne navigue elle-même.
+- **Un avis part avec sa vue** (`vivante.ts`), sauf celui que le « vu à deux » dit en rendant la main.
 - **Une liste ne bouge pas sous le doigt.** Une écriture optimiste qui réordonne (un « Vu » fait de la
   série la plus récente, et la sort de « En pause ») ne déplace pas la carte qu'on vient de toucher :
   `VueListe.tsx` fige l'ordre montré tant qu'un message tient une carte, et ne le rend aux données qu'à

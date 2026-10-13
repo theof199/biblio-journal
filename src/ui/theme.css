@@ -816,6 +816,7 @@
   --telecommande-trait-fort: 2px; /* le pied d'une touche, le contour d'une invitation, le cerne du bouton et du point */
   --telecommande-pied-de-touche: calc(-1 * var(--telecommande-trait-fort)); /* le même, vers le bas, en ombre intérieure */
   --telecommande-touche-grande: 4rem; /* la hauteur de la rangée principale et des touches à pictogramme */
+  --telecommande-sujet-hauteur: calc(var(--largeur-affiche-ligne) * 3 / 2); /* le sujet du petit écran : la hauteur d'une affiche en ligne (`--ratio-affiche`), invitation comprise */
   --telecommande-icone-trait-fort: 3; /* le trait d'une icône sur la touche principale */
   --telecommande-interlettre-marque: 0.3em; /* la marque gravée au pied du boîtier */
   --telecommande-interlettre-code: 0.04em; /* « S2 E5 » */
