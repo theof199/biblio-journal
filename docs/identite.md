@@ -13,15 +13,22 @@ couleurs ni ses polices, `README.md`, « Le thème »), et le bâtiment ne cherc
 au rêve. Les valeurs (couleurs, tailles, géométries) vivent dans `src/ui/theme.css` ; ce
 fichier-ci ne porte que les intentions.
 
+Le Feuilleton est une exception (décision du 13 octobre 2026) : il n'a pas de lieu dans le
+bâtiment. Il est hors du cinéma, comme le Voyage est hors du bâtiment, et aura son propre univers,
+que ses deux espaces, le Travail et la Maison, définiront plus tard. D'ici là il ne s'invente pas
+d'endroit : ses pages vides restent sobres, sur les jetons de `theme.css`, sans objet du cinéma. Du
+bâtiment il n'a que son billet dans la barre.
+
 ## Le lieu
 
 | Page | L'endroit | Ce qu'on y voit |
 |---|---|---|
 | Voyage | L'écran | Le rêve : hors de ce fichier, voir `design.md` ; le bâtiment n'en montre que le programme (la bande du Voyage de l'accueil) |
-| Accueil | La façade, vue du trottoir | L'enseigne du fronton (le film de ce soir, ou le prochain, ou le dernier), les affiches sous verre en éventail, le programme du Voyage, puis le journal : une bobine de pellicule par mois |
+| Accueil | La façade, vue du trottoir, puis le hall | L'enseigne du fronton (le film de ce soir, ou le prochain, ou le dernier), les affiches sous verre en éventail, le programme du Voyage, puis le hall (la section « Au ciné », ligne suivante), puis le journal : une bobine de pellicule par mois |
 | Profil | Le portefeuille | Ma carte d'adhérent (mon monogramme, ma couleur, mon pseudo, mes chiffres) ; dessous, mes graphiques dessinés comme des objets (notes, réactions, décennies, mois) ; en bas, le ticket de caisse |
 | Réglages (`profil/reglages`) | La caisse | Un ticket de caisse : jour ou nuit, mes films, l'import Letterboxd, le rattrapage, les doublons, la déconnexion, la mention TMDB et la version en pied de ticket |
-| Au ciné | Le hall et la caisse | Mes billets de séance, les affiches « prochainement » des sorties en salle |
+| Au ciné (une section de l'accueil, non plus une page) | Le hall et la caisse | Le tableau des prochaines séances, les affiches « prochainement » des sorties en salle, mes billets de séance, rangés derrière « Tout voir » |
+| Feuilleton | Hors du cinéma | Aucun endroit du bâtiment : son univers viendra de ses espaces (plus haut) |
 | Suivis | Le bureau de la programmation | Un mur d'affichettes punaisées : une par réalisateur que je suis (son portrait imprimé à l'encre bleue, un trou poinçonné par film vu), une planche par saga ; au-dessus, le prochain film de chacun ; les suivis bouclés rangés aux archives |
 | Fiche d'un film (`journal/:id`) | La boîte de la bobine | L'étiquette du film : l'affiche, la date, la note, ce que j'en ai écrit |
 | Recherche, nouveau film | Le guichet | On demande un titre sur du papier crème, on choisit à l'affiche (trois par rangée) ; un film déjà vu y porte une étiquette de papier, ses étoiles ou « vu » au crayon. Puis le billet du critique : un billet de presse, coins mordus, bande rouge ; dix trous poinçonnés pour la note, des tampons pour les réactions, la page de notes d'un carnet à spirale dessous ; enfin le papier rendu, sa critique imprimée comme une coupure de presse |
@@ -81,7 +88,10 @@ Un seul allumage par page, une fois, à l'arrivée (les lettres du fronton, les 
 boucle, rien ne clignote, à une exception : une page qui attend ses données laisse ses objets en
 blanc, et ils respirent lentement, tous ensemble, jusqu'à l'arrivée des données (`src/ui/Attente.tsx`).
 Sous `prefers-reduced-motion`, tout est allumé d'emblée (`src/ui/mouvement.ts`) et les objets en blanc
-restent immobiles. Un défilement est toujours celui du doigt, jamais automatique.
+restent immobiles. Un défilement est toujours celui du doigt, jamais automatique, à une exception
+(décision du 13 octobre 2026) : l'arrivée sur `/#au-cine`, où mènent l'ancienne adresse d'« Au ciné »
+et le retour de la fiche d'un film, ouvre l'accueil sur la section, d'un coup, sans animation
+(`src/coque/defilement.ts`). Ce n'est pas un défilement qu'on regarde : la page s'ouvre là.
 
 ## Les mots
 
