@@ -123,6 +123,23 @@ décennie »). Trois règles, que les plans 2b et 2c ont payées :
   ouvrir une page passe par `Toile.onChoisir` (le `click`, que le navigateur ne donne pas après un
   défilement), jamais par `onToucher`, qui ne sert qu'à animer (le manège qui s'emballe).
 
+## Le Feuilleton
+
+Le quatrième onglet, un jeu en deux espaces que deux personnes construisent côte à côte. Ce dépôt
+n'en porte que le socle (`README.md`, « Le Feuilleton »).
+
+- `src/feuilleton/` est commun : la mise en page (`Feuilleton.tsx`, il n'y a pas de
+  `src/pages/Feuilleton.tsx`) et `espaces.ts`. `src/studio/` est le Travail, à Alycia ; `src/maison/`
+  est la Maison, à Théo. Chacun chez soi : un espace n'importe pas l'autre, et le commun ne change
+  que d'un commun accord. Les règles du cloisonnement, qui valent ici comme côté API, sont dans
+  `../biblio-back/docs/feuilleton/socle.md`, « Le cloisonnement » (sur la branche du socle de
+  `biblio-back` tant qu'elle n'est pas fusionnée).
+- **La règle de l'heure** : `/feuilleton` seul n'a pas de page, il mène à l'espace de l'heure de Paris
+  (`espaceDeLHeure`, `src/feuilleton/espaces.ts` : du lundi au vendredi, de 6 h incluse à 18 h exclue,
+  le Travail ; sinon la Maison). Rien n'est mémorisé : le bouton ne vaut que pour la visite en cours.
+- **Le Feuilleton est hors du bâtiment** (`docs/identite.md`) : il ne s'invente pas d'endroit du
+  cinéma, ses pages restent sur les jetons de `theme.css`, et jamais de palette du Voyage.
+
 ## Les fiches
 
 Une fiche de `docs/cerveau/` dit, pour un sujet, où ça vit, ce qu'on casse sans le voir et les
