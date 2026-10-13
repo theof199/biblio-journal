@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RouteProtegee from './session/RouteProtegee'
 import Coque from './coque/Coque'
-import { ANCRE_AU_CINE } from './coque/defilement'
 import Connexion from './pages/Connexion'
 import Accueil from './pages/Accueil'
 import Recherche from './pages/Recherche'
@@ -13,6 +12,7 @@ import Suivis from './pages/Suivis'
 import PageRealisateur from './pages/PageRealisateur'
 import PageSaga from './pages/PageSaga'
 import FicheFilm from './pages/FicheFilm'
+import AuCine from './pages/AuCine'
 import Profil from './pages/Profil'
 import Caisse from './pages/Caisse'
 import ImportLetterboxd from './pages/ImportLetterboxd'
@@ -77,11 +77,10 @@ export default function App() {
             <Route path="suivis/realisateurs/:tmdbId" element={<PageRealisateur />} />
             <Route path="suivis/sagas/:tmdbId" element={<PageSaga />} />
             <Route path="suivis/films/:tmdbId" element={<FicheFilm />} />
-            {/* « Au ciné » est une section de l'accueil : son ancienne adresse y mène, et la coque
-                saute à la section (`coque/defilement.ts`, `ANCRE_AU_CINE`). */}
-            <Route path="au-cine" element={<Navigate to={`/#${ANCRE_AU_CINE}`} replace />} />
-            {/* La fiche d'un film ouverte depuis une séance ou une tuile garde son adresse : l'onglet
-                Accueil reste marqué (`ONGLETS`, `aussi`). */}
+            {/* « Au ciné » n'a pas d'onglet : on y entre par le billet de l'accueil
+                (`accueil/BilletAuCine.tsx`), et l'onglet Accueil y reste marqué, comme sur la fiche
+                d'un film ouverte d'une séance ou d'une tuile (`ONGLETS`, `aussi`). */}
+            <Route path="au-cine" element={<AuCine />} />
             <Route path="au-cine/films/:tmdbId" element={<FicheFilm />} />
             {/* Le Feuilleton : `/feuilleton` seul mène à l'espace de l'heure (`feuilleton/espaces.ts`),
                 ses deux espaces s'ouvrent aussi par leur adresse. */}

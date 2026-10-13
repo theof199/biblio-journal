@@ -20,12 +20,12 @@ import { useChargementInfini } from '../accueil/useChargementInfini'
 import { useMoisDeroules } from '../accueil/useMoisDeroules'
 import Panne from '../ui/Panne'
 import BandeVoyage from '../accueil/BandeVoyage'
+import BilletAuCine from '../accueil/BilletAuCine'
 import Eventail from '../accueil/Eventail'
 import Pellicule from '../accueil/Pellicule'
 import Fronton from '../accueil/Fronton'
 import VitrineVide from '../accueil/VitrineVide'
-import SectionAuCine from '../cinema/SectionAuCine'
-import { EntreeEnAttente, JournalEnAttente } from './AccueilEnAttente'
+import AccueilEnAttente from './AccueilEnAttente'
 import EnteteDuJournal from './EnteteDuJournal'
 import styles from './Accueil.module.css'
 import type { FilmRealisateur, Realisateur } from '../api/realisateurs'
@@ -45,13 +45,9 @@ function filmsPrets<F>(etats: ReadonlyMap<number, EtatFilmographie<F>>): Map<num
 /**
  * « Accueil · la porte d'entrée » (reprise de `HomeScreen.kt`) : la façade d'un cinéma. Le fronton
  * annonce la séance du soir, à défaut le prochain film à voir, à défaut la dernière entrée ; sous lui
- * l'éventail des affiches à voir, la bande du Voyage, puis la section « Au ciné » (le hall :
- * `cinema/SectionAuCine.tsx`), puis le journal : une pellicule par mois, en pagination infinie.
- *
- * **La section « Au ciné » est hors des deux portes du journal** (décision D5 du 13 octobre 2026) :
- * tant que le journal attend, puis s'il est en panne, seuls l'entrée et le journal cèdent la place ;
- * la section, elle, reste montée, avec ses requêtes à elle. Une panne du journal ne l'efface pas, et
- * aucune des siennes n'efface le journal. « Ensuite » vient de Plex et, en plus ou à défaut, du réalisateur et de la saga
+ * l'éventail des affiches à voir, la bande du Voyage, puis le billet d'entrée d'« Au ciné »
+ * (`accueil/BilletAuCine.tsx`, un lien vers `/au-cine` : l'accueil ne lit rien de cette page), puis le
+ * journal : une pellicule par mois, en pagination infinie. « Ensuite » vient de Plex et, en plus ou à défaut, du réalisateur et de la saga
  * suivis dont il reste le plus à voir (`accueil/ensuite.ts`, reprise de `HomeRoute.kt`). « Ce soir » et la bande du Voyage renvoient vers l'onglet Voyage.
  */
 export default function Accueil() {
@@ -103,12 +99,14 @@ export default function Accueil() {
 
   const compte = compteAccueil(stats.data?.dashboard.periods.year.counts.finished_by_type.movie)
 
+  if (journal.isPending) return <AccueilEnAttente compte={compte} />
   // `!journal.data`, pas `journal.error` (jumeau de `MesFilms.tsx`) : une fois la première page
   // arrivée, l'échec d'une page suivante ne doit pas effacer la grille déjà affichée derrière la
-  // panne — il se dit en ligne, avec « Réessayer ».
-  const pret = !!journal.data
-  const items = journal.data?.pages.flatMap((page) => page.items) ?? []
-  const vide = pret && items.length === 0 && !journal.hasNextPage
+  // panne plein écran — il se dit en ligne, avec « Réessayer ».
+  if (!journal.data) return <Panne erreur={journal.error} onReessayer={() => void journal.refetch()} />
+
+  const items = journal.data.pages.flatMap((page) => page.items)
+  const vide = items.length === 0 && !journal.hasNextPage
 
   const maintenant = new Date()
   const seance = voyage.data?.seance_prise
@@ -119,27 +117,15 @@ export default function Accueil() {
     <div className={styles.fond}>
       <div className={styles.page}>
         <div className={styles.entree}>
-          {journal.isPending ? (
-            <EntreeEnAttente />
-          ) : !pret ? (
-            // La panne du journal se dit à l'entrée, qui ne se dessine pas sans lui : en haut de la
-            // page, là où on la voit, et non sous la section « Au ciné ».
-            <Panne erreur={journal.error} onReessayer={() => void journal.refetch()} />
-          ) : (
-            <>
-              <Fronton etat={etatFronton(maintenant, seance, cartes, items[0])} />
-              <Eventail cartes={cartesEventail(seance, cartes)} />
-              {voyage.data ? <BandeVoyage voyage={voyage.data} /> : null}
-            </>
-          )}
+          <Fronton etat={etatFronton(maintenant, seance, cartes, items[0])} />
+          <Eventail cartes={cartesEventail(seance, cartes)} />
+          {voyage.data ? <BandeVoyage voyage={voyage.data} /> : null}
         </div>
 
         <div className={styles.colonneJournal}>
-          <SectionAuCine />
+          <BilletAuCine />
 
-          {journal.isPending ? (
-            <JournalEnAttente compte={compte} />
-          ) : !pret ? null : vide ? (
+          {vide ? (
             <VitrineVide onAjouter={() => naviguer('/recherche')} />
           ) : (
             <section className={styles.journal} aria-labelledby="titre-journal">
@@ -167,7 +153,7 @@ export default function Accueil() {
           )}
         </div>
 
-        {pret && !vide ? (
+        {!vide ? (
           <Link to="/recherche" className={styles.boutonAjouter}>
             <IconPlus aria-hidden="true" className={styles.icone} />
             <span>J’ai vu un film</span>

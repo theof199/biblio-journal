@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { IconCheck, IconMovie, IconUser } from '@tabler/icons-react'
@@ -21,43 +21,39 @@ import {
   seancesCetteAnnee,
   sousTitreCinemas,
   type MarqueSuivi,
-} from './etats'
-import { entreesDuTableau, heureAffichee, prochaineSeanceParFilm } from './seances'
-import { TableauDuHall, TableauEnAttente } from './TableauDuHall'
-import { useDepliMemorise } from './depli'
-import { toutesLesSeances } from './toutesLesSeances'
-import { useMaintenant } from './useMaintenant'
-import { usePosition } from './usePosition'
+} from '../cinema/etats'
+import { entreesDuTableau, heureAffichee, prochaineSeanceParFilm } from '../cinema/seances'
+import { TableauDuHall, TableauEnAttente } from '../cinema/TableauDuHall'
+import { toutesLesSeances } from '../cinema/toutesLesSeances'
+import { useMaintenant } from '../cinema/useMaintenant'
+import { usePosition } from '../cinema/usePosition'
 import { useFilmographiesSagas } from '../suivis/useFilmographies'
 import { useChargementInfini } from '../accueil/useChargementInfini'
-import { ANCRE_AU_CINE } from '../coque/defilement'
 import Affiche from '../ui/Affiche'
 import Attente, { Barre } from '../ui/Attente'
+import BoutonRetour from '../ui/BoutonRetour'
 import Sceau from '../ui/Sceau'
 import Panne from '../ui/Panne'
 import { formatDateVisionnage, sousTitre } from '../ui/format'
-import styles from './SectionAuCine.module.css'
+import styles from './AuCine.module.css'
 import type { JournalItem } from '../api/journal'
 import type { SortieEnCoursFilm, SortieProchaineFilm } from '../api/sorties'
-import type { EtatFiche } from '../pages/FicheFilm'
+import type { EtatFiche } from './FicheFilm'
 
 /** Deux rangées de la grille des sorties, trois tuiles chacune. */
 const TUILES_EN_ATTENTE = 6
+const LIGNES_EN_ATTENTE = 3
 
 /** Même page que côté back par défaut, et que `JournalApi.seances()` (Android). */
 const LIMITE = 40
 
 /**
- * « Au ciné », une section de l'accueil depuis le 13 octobre 2026 (elle était un onglet) : elle porte
- * l'ancre `au-cine`, où mènent son ancienne adresse et le repli d'une fiche ouverte d'un lien
- * (`coque/defilement.ts`). Elle ne dépend de rien d'autre sur la page : ses requêtes, ses attentes et
- * ses pannes sont les siennes. « Tes séances » y arrive repliée derrière « Tout voir » (décision D5 ;
- * dépliée, elle le reste pour cette entrée d'historique, `cinema/depli.ts`) :
- * la première page se lit quand même, et la suite de la liste ne se demande qu'une fois dépliée. Le
- * compte de l'année, la coche des tuiles et l'état de la fiche d'un film, eux, ne dépendent pas de ce
- * que la liste a chargé (décision du 13 octobre 2026) : dès que la première page annonce une suite,
- * toutes les séances se lisent à part, par pages de cent (`cinema/toutesLesSeances.ts`), repliée ou
- * non. Sans suite, la première page est déjà tout : aucun appel de plus.
+ * « Au ciné », une page à `/au-cine` (le hall et la caisse), où mène le billet d'entrée de l'accueil
+ * (`accueil/BilletAuCine.tsx`) : elle n'a pas d'onglet à elle, l'onglet Accueil y reste marqué et son
+ * bouton « Retour » ramène à l'accueil. Le compte de l'année, la coche des tuiles et l'état de la
+ * fiche d'un film ne dépendent pas de ce que « Tes séances » a chargé (décision du 13 octobre 2026) :
+ * dès que la première page annonce une suite, toutes les séances se lisent à part, par pages de cent
+ * (`cinema/toutesLesSeances.ts`). Sans suite, la première page est déjà tout : aucun appel de plus.
  *
  * (Reprise de `AuCineScreen.kt`) : mes séances (`GET /me/journal?reaction=en_salle`),
  * et les sorties en salle de la semaine en cours et de la semaine prochaine (`GET
@@ -80,7 +76,7 @@ const LIMITE = 40
  * `AuCineViewModel` : une panne TMDB n'a aucune raison d'effacer « Tes séances », qui vient d'une
  * route différente).
  */
-export default function SectionAuCine() {
+export default function AuCine() {
   const sorties = useQuery({ queryKey: cles.sorties, queryFn: ({ signal }) => lireSorties(signal) })
 
   // Le sceau des Suivis : de quoi le poser, jamais de quoi le charger (voir plus haut).
@@ -110,12 +106,7 @@ export default function SectionAuCine() {
   const chargerLaSuite = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage()
   }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage])
-  // Repliée, la liste n'a pas de sentinelle : rien ne demande la suite de ce qu'on ne regarde pas.
-  // L'état se garde par entrée d'historique (`cinema/depli.ts`) : au retour d'une fiche, la liste
-  // quittée dépliée l'est encore, et la position que la coque restaure retrouve sa ligne.
-  const [deplie, setDeplie] = useDepliMemorise()
-  const idListe = useId()
-  const sentinelle = useChargementInfini(chargerLaSuite, deplie && !!hasNextPage)
+  const sentinelle = useChargementInfini(chargerLaSuite, !!hasNextPage)
 
   const items = useMemo(() => seances.data?.pages.flatMap((page) => page.items) ?? [], [seances.data])
   const chargementComplet = !hasNextPage
@@ -154,11 +145,12 @@ export default function SectionAuCine() {
   const prochaine = sorties.data?.prochaine
 
   return (
-    <section id={ANCRE_AU_CINE} aria-labelledby="titre-au-cine" className={styles.auCine}>
+    <div className={styles.page}>
       <div className={styles.entete}>
-        <h2 id="titre-au-cine" className={styles.titre}>
-          Au ciné
-        </h2>
+        <div className={styles.retourEtTitre}>
+          <BoutonRetour vers="/" />
+          <h1 className={styles.titre}>Au ciné</h1>
+        </div>
         {/* Absent tant que les séances ne sont pas là : « 0 séance » à côté d'un squelette se lirait comme un fait. */}
         {!compteConnu ? null : (
           <p className={styles.compte}>
@@ -242,21 +234,14 @@ export default function SectionAuCine() {
       </section>
 
       <section className={styles.section}>
-        <div className={styles.enteteSection}>
-          <p className={styles.titreSection}>Tes séances</p>
-          {/* Une première page vide qui a une suite s'offre aussi : sans le bouton, la suite ne se demanderait jamais. */}
-          {items.length > 0 || hasNextPage ? (
-            <button type="button" className={styles.toutVoir} aria-expanded={deplie} aria-controls={idListe} onClick={() => setDeplie(!deplie)}>
-              {deplie ? 'Réduire' : 'Tout voir'}
-            </button>
-          ) : null}
-        </div>
+        <p className={styles.titreSection}>Tes séances</p>
 
         {seances.isPending ? (
-          // Une seule ligne en blanc : la liste arrive repliée, elle ne prendra pas plus de place.
           <Attente>
-            <div data-testid="seances-en-attente">
-              <Barre largeur="moyenne" />
+            <div className={styles.liste}>
+              {Array.from({ length: LIGNES_EN_ATTENTE }, (_, ligne) => (
+                <LigneEnAttente key={ligne} />
+              ))}
             </div>
           </Attente>
         ) : !seances.data ? (
@@ -266,14 +251,14 @@ export default function SectionAuCine() {
             {items.length === 0 && chargementComplet ? (
               <p className={styles.videGrille}>Aucune séance pour l’instant.</p>
             ) : (
-              <div id={idListe} className={styles.liste} hidden={!deplie}>
-                {deplie ? items.map((item) => <LigneSeance key={item.entry.id} item={item} />) : null}
+              <div className={styles.liste}>
+                {items.map((item) => (
+                  <LigneSeance key={item.entry.id} item={item} />
+                ))}
               </div>
             )}
 
-            {/* L'échec et le chargement d'une page suivante sont ceux de la liste : repliée, ils se taisent
-                avec elle. L'échec d'une relecture, lui, touche le compte de l'en-tête : il se dit toujours. */}
-            {seances.error && (deplie || !isFetchNextPageError) ? (
+            {seances.error ? (
               <div className={styles.erreur} role="alert">
                 <p className={styles.erreurTexte}>{seances.error.message}</p>
                 <button
@@ -286,16 +271,16 @@ export default function SectionAuCine() {
               </div>
             ) : null}
 
-            {deplie && isFetchingNextPage ? (
+            {isFetchingNextPage ? (
               <p role="status" className={styles.chargement}>
                 Chargement…
               </p>
             ) : null}
-            {deplie && hasNextPage ? <div ref={sentinelle} data-testid="sentinelle-au-cine" /> : null}
+            {hasNextPage ? <div ref={sentinelle} data-testid="sentinelle-au-cine" /> : null}
           </>
         )}
       </section>
-    </section>
+    </div>
   )
 }
 
@@ -482,10 +467,27 @@ function GrilleEnAttente({ muet = false, avecSousTitre = false }: { muet?: boole
   )
 }
 
+/** Une ligne de « Tes séances » laissée en blanc : l'affiche et deux lignes de texte. */
+function LigneEnAttente() {
+  return (
+    <div className={styles.ligne} data-testid="ligne-en-attente">
+      <Affiche src={null} titre="" taille="ligne" />
+      <div className={styles.infosLigne}>
+        <div className={styles.titreLigne}>
+          <Barre largeur="longue" />
+        </div>
+        <div className={styles.sousTitreLigne}>
+          <Barre largeur="moyenne" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** Une ligne de « Tes séances » — jumelle de `LigneFilm` (`MesFilms.tsx`), sans filtre ni réaction. */
 function LigneSeance({ item }: { item: JournalItem }) {
   return (
-    <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: `/#${ANCRE_AU_CINE}` }} className={styles.ligne}>
+    <Link to={`/journal/${item.entry.id}`} state={{ item, depuis: '/au-cine' }} className={styles.ligne}>
       <Affiche src={item.media.cover_url} titre={item.media.title} note={item.entry.rating} taille="ligne" chargement="lazy" />
       <div className={styles.infosLigne}>
         <p className={styles.titreLigne}>{item.media.title}</p>

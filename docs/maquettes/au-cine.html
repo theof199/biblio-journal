@@ -381,7 +381,7 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 </defs></svg>
 <header class="tete"><p class="sur">Journal · maquette</p><h1>Au ciné : prochaines séances</h1>
 <p>Trois façons de poser la bande « Prochaines séances » en haut de l’onglet, puis les cas limites et la fiche film. Les couleurs sont celles de <code>theme.css</code>, clair et sombre.</p>
-<p><b>Depuis le 13 octobre 2026, « Au ciné » n’est plus un onglet</b> : c’est une section de l’accueil, entre l’entrée et le journal (<code>cinema/SectionAuCine.tsx</code>). Ce qui est dessiné ici vaut pour elle, à trois écarts près : son titre est un titre de section, de la taille de « Le journal » ; « Tes séances » arrive repliée derrière « Tout voir » ; la barre marque « Accueil », et son quatrième billet est « Feuilleton » (<code>docs/maquettes/feuilleton.html</code>).</p>
+<p><b>Depuis le 13 octobre 2026, « Au ciné » n’est plus un onglet</b> : c’est une page sans onglet, à <code>/au-cine</code> (<code>pages/AuCine.tsx</code>), où mène le billet d’entrée de l’accueil (<code>accueil/BilletAuCine.tsx</code>). Ce qui est dessiné ici vaut pour elle, à deux écarts près : un bouton « Retour » précède son titre et ramène à l’accueil ; la barre marque « Accueil », et son quatrième billet est « Feuilleton » (<code>docs/maquettes/feuilleton.html</code>).</p>
 <button class="bascule" id="bascule" type="button">Passer en sombre</button></header>
 <section class="regles"><h2>Règles de la bande « Prochaines séances »</h2><ul>
 <li><b>Aujourd’hui seulement</b>, les séances à venir, la plus proche dans le temps d’abord. À égalité d’heure, le cinéma le plus proche passe devant.</li>

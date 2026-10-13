@@ -1,0 +1,89 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. Le billet est celui du profil (`--ticket-*`). */
+
+/* L'ombre est portée par le billet entier ; le papier, lui, est découpé (plus bas). */
+.billet {
+  display: block;
+  min-width: 0;
+  color: var(--ticket-encre);
+  filter: var(--ticket-ombre);
+  text-decoration: none;
+  transform: rotate(var(--ticket-inclinaison));
+}
+
+/* Le masque couperait un anneau tracé au-dehors : il se trace dans le papier, comme sur les billets de la barre. */
+.billet:focus-visible {
+  outline: none;
+}
+
+.billet:focus-visible .papier {
+  outline: var(--trait) solid var(--ticket-encre);
+  outline-offset: var(--billet-onglet-focus-retrait);
+}
+
+.papier {
+  position: relative;
+  display: flex;
+  min-height: calc(var(--ticket-hauteur) + var(--espace-3));
+  background: var(--ticket-papier);
+  mask-image: var(--ticket-masque);
+  -webkit-mask-image: var(--ticket-masque);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+
+.papier::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ticket-bande-largeur);
+  background: var(--ticket-bande-vive);
+}
+
+/* `min-width: 0` : le corps rétrécit au lieu de pousser la souche hors du billet. */
+.corps {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--espace-1);
+  min-width: 0;
+  padding: var(--espace-2) var(--espace-2) var(--espace-2) var(--espace-5);
+}
+
+.titre {
+  font-family: var(--police-fronton);
+  font-size: var(--ticket-compte-taille);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.aide {
+  color: var(--ticket-encre-douce);
+  font-size: var(--taille-meta);
+  line-height: var(--interligne-serre);
+}
+
+.souche {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--ticket-souche);
+  border-left: var(--ticket-pointille-trait) dotted var(--ticket-pointille);
+  background: var(--ticket-souche-fond);
+}
+
+.mot {
+  font-family: var(--police-fronton);
+  font-size: var(--taille-meta);
+  letter-spacing: var(--interlettre-capitales);
+  line-height: var(--interligne-serre);
+  text-transform: uppercase;
+}
+
+.fleche {
+  font-size: var(--taille-m);
+  line-height: var(--interligne-serre);
+}

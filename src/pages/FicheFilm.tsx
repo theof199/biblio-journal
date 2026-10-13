@@ -13,7 +13,6 @@ import { cinemasDuFilmAVenir } from '../cinema/seances'
 import { SeancesDuFilm } from '../cinema/SeancesDuFilm'
 import { useMaintenant } from '../cinema/useMaintenant'
 import { usePosition } from '../cinema/usePosition'
-import { ANCRE_AU_CINE } from '../coque/defilement'
 import Affiche from '../ui/Affiche'
 import BoutonRetour from '../ui/BoutonRetour'
 import { formatDuree } from '../ui/format'
@@ -189,12 +188,12 @@ export default function FicheFilm() {
     return (
       <div className={styles.page}>
         <div className={styles.entete}>
-          <BoutonRetour vers={depuisAuCine ? `/#${ANCRE_AU_CINE}` : '/suivis'} />
+          <BoutonRetour vers={depuisAuCine ? '/au-cine' : '/suivis'} />
         </div>
         {depuisAuCine ? (
           <>
             <p>Ce film n’est plus disponible. Repars d’Au ciné.</p>
-            <Link to={`/#${ANCRE_AU_CINE}`}>Retour à Au ciné</Link>
+            <Link to="/au-cine">Retour à Au ciné</Link>
           </>
         ) : (
           <>

@@ -50,13 +50,7 @@ const ATTENDUS = [
 
 /** Le chemin courant, lu par le test : une redirection se constate, elle ne se devine pas. */
 function Ou() {
-  const { pathname, hash } = useLocation()
-  return (
-    <>
-      <output data-testid="chemin">{pathname}</output>
-      <output data-testid="adresse">{pathname + hash}</output>
-    </>
-  )
+  return <output data-testid="chemin">{useLocation().pathname}</output>
 }
 
 function monter(chemin: string) {
@@ -232,7 +226,7 @@ describe('la coque à onglets', () => {
   // Mutations : la route `au-cine/films/:tmdbId` déclarée à côté de `<Coque />` (la barre
   // disparaîtrait) ; `aussi: ['/au-cine']` retiré de l'onglet Accueil dans `ONGLETS` (plus aucun onglet
   // ne serait marqué : la page n'est sous le chemin d'aucun).
-  it('la fiche d’un film ouverte depuis la section Au ciné garde son adresse et la barre, l’onglet Accueil seul marqué', async () => {
+  it('la fiche d’un film ouverte depuis Au ciné garde son adresse et la barre, l’onglet Accueil seul marqué', async () => {
     servir({
       'GET /api/auth/me': () => json(SESSION),
       'GET /api/reference/films/27205': () => json(exemple('/reference/films/{tmdbId}', 'get', 200)),
@@ -251,16 +245,28 @@ describe('la coque à onglets', () => {
     expect(chemin()).toBe('/au-cine/films/27205')
   })
 
-  // Mutations, dans `App.tsx` : la route `au-cine` retirée (l'adresse tomberait sur `*`, sans ancre) ;
-  // `to="/"` (la redirection perdrait l'ancre, et l'accueil s'ouvrirait en haut).
-  it('l’ancienne adresse d’Au ciné mène à l’accueil, sur l’ancre de la section', async () => {
-    servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
+  // Mutations : dans `App.tsx`, la route `au-cine` retirée (l'adresse tomberait sur `*`, donc sur
+  // l'accueil) ou rendue en redirection vers `/` ; dans `ONGLETS`, `aussi: ['/au-cine']` retiré de
+  // l'onglet Accueil (aucun onglet marqué), ou un onglet « Au ciné » remis dans la barre (six billets).
+  it('/au-cine est une page, sans onglet à elle : la barre garde ses cinq billets, l’onglet Accueil seul marqué', async () => {
+    const requetes = servir({
+      'GET /api/auth/me': () => json(SESSION),
+      'GET /api/reference/sorties': () => json(exemple('/reference/sorties', 'get', 200)),
+      'GET /api/me/cinema/seances': () => json({ jour: '2026-10-13', calcule_le: null, cinemas: [], seances: [] }),
+      'GET /api/me/journal?limit=40&reaction=en_salle': () => json({ items: [], next_cursor: null }),
+      'GET /api/me/realisateurs': () => json([]),
+      'GET /api/me/sagas': () => json([]),
+    })
     monter('/au-cine')
 
-    expect(await screen.findByRole('heading', { level: 1, name: ATTENDUS[0].titre })).toBeInTheDocument()
-    expect(screen.getByTestId('adresse')).toHaveTextContent(/^\/#au-cine$/)
-    expect(screen.getByRole('region', { name: 'Au ciné' })).toHaveAttribute('id', 'au-cine')
-    expect(within(barre()).getByRole('link', { name: 'Accueil' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Au ciné' })).toBeInTheDocument()
+    expect(chemin()).toBe('/au-cine')
+    expect(await screen.findByText('Sorti cette semaine dans mes cinémas')).toBeInTheDocument()
+    const liens = within(barre()).getAllByRole('link')
+    expect(liens.map((lien) => lien.textContent)).toEqual(['Accueil', 'Voyage', 'Suivis', 'Feuilleton', 'Profil'])
+    expect(liens.filter((lien) => lien.getAttribute('aria-current') === 'page').map((lien) => lien.textContent)).toEqual(['Accueil'])
+    // La page lit ce qui est à elle, pas le journal de l'accueil.
+    expect(requetes).not.toContain('GET /api/me/journal?limit=20')
   })
 
   it.each(['/nulle-part', '/voyage/1898/salles', '/profil/inconnu'])('une route inconnue (%s) ramène à l’accueil', async (inconnue) => {

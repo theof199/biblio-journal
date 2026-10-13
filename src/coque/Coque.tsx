@@ -23,13 +23,13 @@ export interface Onglet {
 }
 
 /**
- * Les cinq onglets, dans l'ordre de la barre. « Au ciné » n'en est plus un : il est une section de
- * l'accueil (`cinema/SectionAuCine.tsx`), et sa place revient au Feuilleton.
+ * Les cinq onglets, dans l'ordre de la barre. « Au ciné » n'en est plus un : sa page (`/au-cine`)
+ * s'ouvre du billet de l'accueil (`accueil/BilletAuCine.tsx`), et sa place revient au Feuilleton.
  * Ajouter un onglet ici ne suffit pas : sa route se déclare aussi dans `App.tsx`, sous `<Coque />`.
  */
 export const ONGLETS: readonly Onglet[] = [
-  // La fiche d'un film ouverte depuis la section « Au ciné » de l'accueil garde son adresse d'avant
-  // (`au-cine/films/:tmdbId`) : elle est une page de l'accueil.
+  // « Au ciné » (`au-cine`) et la fiche d'un film qu'on y ouvre (`au-cine/films/:tmdbId`) sont des
+  // pages de l'accueil : on y entre par lui, et son onglet y reste marqué.
   { chemin: '/', libelle: 'Accueil', Icone: IconBuildingPavilion, aussi: ['/au-cine'] },
   { chemin: '/voyage', libelle: 'Voyage', Icone: IconRoute },
   { chemin: '/suivis', libelle: 'Suivis', Icone: IconChairDirector },
@@ -54,8 +54,8 @@ export function estMarque({ chemin, aussi = [] }: Onglet, pathname: string): boo
  */
 export default function Coque() {
   const contenu = useRef<HTMLElement>(null)
-  const { key, pathname, hash } = useLocation()
-  useDefilementMemorise(contenu, key, hash)
+  const { key, pathname } = useLocation()
+  useDefilementMemorise(contenu, key)
 
   // Le Voyage a son propre fond : sans cet attribut sur `<html>`, `theme.css` peint le ciel du bâtiment.
   const auVoyage = pathname === '/voyage' || pathname.startsWith('/voyage/')

@@ -24,7 +24,7 @@
   min-width: 0;
 }
 
-/* La section « Au ciné », puis le journal, dans l'écart des sections de la page. */
+/* Le billet d'entrée d'« Au ciné », puis le journal, dans l'écart des sections de la page. */
 .colonneJournal {
   display: flex;
   flex-direction: column;

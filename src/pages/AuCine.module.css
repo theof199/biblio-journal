@@ -1,25 +1,34 @@
 /* Aucune valeur en dur : tout vient de `ui/theme.css`. */
 
-.auCine {
+.page {
   display: flex;
   flex-direction: column;
   gap: var(--espace-5);
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--espace-4) var(--espace-6);
 }
 
+/* `wrap` : à 320 px, le compte passe sous le titre plutôt que de pousser la page. */
 .entete {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--espace-3);
+  gap: 0 var(--espace-3);
   min-height: var(--cible-tactile);
 }
 
-/* Le titre de la section, de la taille de « Le journal » qui la suit sur l'accueil. */
+/* Le retour vers l'accueil, puis le titre : la page n'a pas d'onglet à elle. */
+.retourEtTitre {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
 .titre {
   margin: 0;
-  font-size: var(--taille-titre-section);
-  font-weight: var(--graisse-noire);
-  line-height: var(--interligne-serre);
 }
 
 .compte {
@@ -49,21 +58,6 @@
   color: var(--couleur-texte-doux);
   text-transform: uppercase;
   letter-spacing: var(--interlettre-capitales);
-}
-
-/* « Tout voir » : la lettre de « Mes films » et de « Dérouler », un lien de plus sur l'accueil. */
-.toutVoir {
-  min-height: var(--cible-tactile);
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--couleur-accent);
-  font-family: var(--police-fronton);
-  font-size: var(--taille-meta);
-  letter-spacing: var(--interlettre-capitales);
-  line-height: var(--interligne-serre);
-  text-transform: uppercase;
-  cursor: pointer;
 }
 
 .cinemaUnique {
