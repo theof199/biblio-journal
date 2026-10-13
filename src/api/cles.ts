@@ -91,6 +91,18 @@ export const cles = {
   maison: ['maison'] as const,
 
   /**
+   * Le socle du Feuilleton, commun aux deux espaces : **hors** de `journal`, de `voyage`, de `studio` et
+   * de `maison`. Une écriture au journal ne le périme pas, périmer un espace non plus. `telecommande`
+   * (`GET /me/feuilleton/telecommande`) est lue au montage du Feuilleton et tenue par ses écritures :
+   * « Vu » et « Annuler » y écrivent d'avance puis la relisent, une portée et une confirmation y posent
+   * la carte que leur réponse rend (`feuilleton/telecommande/`). `saisonsDeSerie` : les saisons d'une
+   * série (`GET /media/{id}`), lues au geste « Toute la saison ».
+   */
+  feuilleton: ['feuilleton'] as const,
+  telecommande: ['feuilleton', 'telecommande'] as const,
+  saisonsDeSerie: (serieId: string) => ['feuilleton', 'saisons', serieId] as const,
+
+  /**
    * Le journal entier, à plat (bilan et graphiques du profil) : sous le préfixe `journal`, pour
    * que l'invalidation qui suit une écriture le périme aussi.
    */

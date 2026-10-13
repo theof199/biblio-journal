@@ -290,8 +290,8 @@
   width: var(--espace-6);
   height: var(--espace-6);
   border-radius: var(--h-rayon-ronde);
-  background: var(--h-touche-fond);
-  color: var(--h-touche-texte);
+  background: var(--h-mono-fond);
+  color: var(--h-mono-texte);
   font-family: var(--h-police-titre);
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
@@ -434,4 +434,29 @@
   padding: 0 var(--espace-3);
   border-radius: var(--h-rayon-principale);
   font-size: var(--taille-s);
+}
+
+/* Un avis : le message seul, sans « Annuler ». Il passe à la ligne, dans la rangée qui garde sa hauteur :
+   ce qui dépasserait est coupé, rien ne pousse. */
+.message.seul {
+  padding-right: var(--espace-4);
+}
+
+.seul .texte {
+  max-height: 100%;
+  line-height: var(--interligne-serre);
+  white-space: normal;
+}
+
+/* L'écran en panne : le message de l'API, tel quel, et « Réessayer ». */
+.panne {
+  margin: 0;
+  font-size: var(--taille-m);
+}
+
+/* Un titre qui est une phrase (« Aucune série en cours ») : il se lit en entier, sur deux lignes s'il le faut. */
+.titre.entier {
+  font-size: var(--taille-l);
+  line-height: var(--interligne-titre);
+  white-space: normal;
 }

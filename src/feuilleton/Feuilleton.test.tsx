@@ -15,6 +15,7 @@ await import('../maison/Maison')
 await import('./telecommande/Panneau')
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
+const TELECOMMANDE = exemple<unknown>('/me/feuilleton/telecommande', 'get', 200)
 
 /** Octobre 2026, heure d'été : mercredi 14 à 10 h de Paris, et le même jour à 21 h. */
 const HEURE_DE_TRAVAIL = new Date('2026-10-14T08:00:00Z')
@@ -45,7 +46,7 @@ describe('le Feuilleton', () => {
     vi.stubGlobal('fetch', vi.fn())
     // Seule l'horloge est fausse : les délais du réseau doublé restent réels.
     vi.useFakeTimers({ toFake: ['Date'] })
-    requetes = servir({ 'GET /api/auth/me': () => json(SESSION) })
+    requetes = servir({ 'GET /api/auth/me': () => json(SESSION), 'GET /api/me/feuilleton/telecommande': () => json(TELECOMMANDE) })
   })
   afterEach(() => {
     vi.useRealTimers()
@@ -123,20 +124,26 @@ describe('le Feuilleton', () => {
     ecrit.mockRestore()
   })
 
-  // Les pages vides ne lisent rien, la télécommande non plus tant que son contrat n'est pas tiré : une
-  // requête de plus doit passer par ici (ce test change au lot qui branche l'API).
-  it('aucune requête au-delà de la session, télécommande ouverte comprise', async () => {
+  // Les pages vides ne lisent rien ; la télécommande se lit une fois, au montage du Feuilleton (le point du
+  // bouton rond en dépend), et le panneau qui s'ouvre se sert de cette lecture. Une requête de plus doit
+  // passer par ici. Mutations : `useInvitationEnAttente()` ôté de `Feuilleton.tsx` (rien ne part avant
+  // l'ouverture du panneau) ; une clé propre au panneau dans `useLaTelecommande` (deux lectures).
+  it('une seule requête au-delà de la session : la télécommande, lue au montage, panneau fermé ; l’ouvrir et changer d’espace n’en ajoutent aucune', async () => {
     vi.setSystemTime(HEURE_DE_TRAVAIL)
     monter('/feuilleton')
     await screen.findByRole('heading', { level: 1, name: 'Travail' })
+    await vi.waitFor(() => expect(requetes).toEqual(['GET /api/auth/me', 'GET /api/me/feuilleton/telecommande']))
+    expect(screen.queryByRole('dialog')).toBeNull()
+
     fireEvent.click(within(espaces()).getByRole('link', { name: /Passer à la Maison/ }))
     await screen.findByRole('heading', { level: 1, name: 'Maison' })
     fireEvent.click(screen.getByRole('button', { name: 'Télécommande' }))
     const panneau = await screen.findByRole('dialog', { name: 'Télécommande' })
+    expect(await within(panneau).findByText(/a vu/)).toBeInTheDocument()
     fireEvent.click(within(panneau).getByRole('button', { name: /^En cours/ }))
     await within(panneau).findByRole('heading', { level: 2, name: 'En cours' })
 
-    expect(requetes).toEqual(['GET /api/auth/me'])
+    expect(requetes).toEqual(['GET /api/auth/me', 'GET /api/me/feuilleton/telecommande'])
   })
 
   // Mutation, dans `App.tsx` : une route `feuilleton/*` qui prendrait tout.

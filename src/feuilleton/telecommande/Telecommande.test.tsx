@@ -4,6 +4,7 @@ import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'r
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createRef } from 'react'
 import App from '../../App'
+import type { Telecommande } from '../../api/feuilleton'
 import { createQueryClient } from '../../api/queryClient'
 import { exemple } from '../../test/contrat'
 import { json, servir } from '../../test/serveur'
@@ -19,6 +20,9 @@ await import('../../maison/Maison')
 await import('./Panneau')
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
+const TELECOMMANDE = exemple<Telecommande>('/me/feuilleton/telecommande', 'get', 200)
+/** Rien ne m'attend, aucune série : la télécommande au repos. */
+const AU_REPOS: Telecommande = { a_confirmer: [], series: [] }
 const HEURE_DE_TRAVAIL = new Date('2026-10-14T08:00:00Z')
 const SOIR = new Date('2026-10-14T19:00:00Z')
 
@@ -55,7 +59,7 @@ describe('la télécommande du Feuilleton', () => {
     vi.stubGlobal('fetch', vi.fn())
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(SOIR)
-    servir({ 'GET /api/auth/me': () => json(SESSION) })
+    servir({ 'GET /api/auth/me': () => json(SESSION), 'GET /api/me/feuilleton/telecommande': () => json(AU_REPOS) })
   })
   afterEach(() => {
     vi.useRealTimers()
@@ -266,12 +270,20 @@ describe('la télécommande du Feuilleton', () => {
 describe('ce qui attend : le point du bouton, le voyant du panneau', () => {
   const HABILLAGE = HABILLAGES['chapitre-1']
   const bouton = (invitation: boolean) => render(<Bouton habillage={HABILLAGE} chapitre="chapitre-1" invitation={invitation} ouvert={false} onOuvrir={() => {}} />)
+  // Le panneau lit désormais la télécommande : il lui faut un cache, et un `fetch` doublé.
   const panneau = (invitation: boolean) =>
     render(
-      <MemoryRouter initialEntries={['/feuilleton/maison?telecommande=telecommande']}>
-        <Panneau habillage={HABILLAGE} chapitre="chapitre-1" boutonRond={createRef()} invitation={invitation} />
-      </MemoryRouter>,
+      <QueryClientProvider client={createQueryClient()}>
+        <MemoryRouter initialEntries={['/feuilleton/maison?telecommande=telecommande']}>
+          <Panneau habillage={HABILLAGE} chapitre="chapitre-1" boutonRond={createRef()} invitation={invitation} />
+        </MemoryRouter>
+      </QueryClientProvider>,
     )
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+    servir({ 'GET /api/me/feuilleton/telecommande': () => json(AU_REPOS) })
+  })
+  afterEach(() => vi.unstubAllGlobals())
 
   // Mutation, dans `Bouton.tsx` : le point rendu sans condition.
   it('sans invitation, le bouton n’a pas de point', () => {
@@ -303,18 +315,28 @@ describe('ce qui attend : le point du bouton, le voyant du panneau', () => {
   })
 })
 
-describe('le bouton et le panneau, par défaut', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
-    servir({ 'GET /api/auth/me': () => json(SESSION) })
-  })
+describe('le point et le voyant viennent de la lecture de la télécommande', () => {
+  const servirAvec = (telecommande: Telecommande) => servir({ 'GET /api/auth/me': () => json(SESSION), 'GET /api/me/feuilleton/telecommande': () => json(telecommande) })
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()))
   afterEach(() => vi.unstubAllGlobals())
 
   // Mutation, dans `donnees.ts` : `useInvitationEnAttente` qui rend vrai.
-  it('tant que rien n’est lu de l’API, ni point ni voyant', async () => {
+  it('`a_confirmer` vide : ni point ni voyant, panneau fermé comme ouvert', async () => {
+    const requetes = servirAvec({ ...TELECOMMANDE, a_confirmer: [] })
     monter('/feuilleton/maison?telecommande=telecommande')
     await dialogue()
+    await vi.waitFor(() => expect(requetes).toContain('GET /api/me/feuilleton/telecommande'))
+    await screen.findByRole('heading', { level: 3, name: 'Dark' })
     expect(document.querySelector('[data-piece="point"]')).toBeNull()
     expect(document.querySelector('[data-piece="voyant"]')).toBeNull()
+  })
+
+  // Mutation, dans `donnees.ts` : `useInvitationEnAttente` qui rend faux (ou qui lit `series`).
+  it('une invitation dans `a_confirmer` pose le point sur le bouton, panneau fermé, sans aucune série', async () => {
+    servirAvec({ a_confirmer: TELECOMMANDE.a_confirmer, series: [] })
+    monter('/feuilleton/maison')
+    await vi.waitFor(() => expect(document.querySelector('[data-piece="point"]')).not.toBeNull())
+    expect(await boutonRond()).toHaveAccessibleDescription('Une invitation attend')
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })

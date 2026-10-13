@@ -4,8 +4,8 @@ import type { Habillage } from '../habillages'
 import { useTelecommande } from './adresse'
 import Coquille, { NOMS, PARENTES } from './Coquille'
 import { useDialogue } from './dialogue'
-import { useEcranDeLaTelecommande } from './donnees'
 import VueTelecommande from './VueTelecommande'
+import { useTelecommandeVivante } from './vivante'
 import { ecrireLaVue } from './vues'
 import styles from './Panneau.module.css'
 
@@ -27,7 +27,7 @@ interface Props {
 export default function Panneau({ habillage, chapitre, boutonRond, invitation }: Props) {
   const { vue, precedente, allerA, revenir, fermer } = useTelecommande()
   const boite = useDialogue<HTMLElement>(fermer, boutonRond, vue ? ecrireLaVue(vue) : '')
-  const { ecran, enCours } = useEcranDeLaTelecommande()
+  const vivante = useTelecommandeVivante()
   if (!vue) return null
 
   const retour = vue.nom === 'telecommande' ? null : (precedente ?? PARENTES[vue.nom])
@@ -55,7 +55,7 @@ export default function Panneau({ habillage, chapitre, boutonRond, invitation }:
 
         <div className={styles.vue}>
           {vue.nom === 'telecommande' ? (
-            <VueTelecommande ecran={ecran} enCours={enCours} allerA={allerA} onVuADeux={() => allerA({ nom: 'a-deux' })} />
+            <VueTelecommande {...vivante} allerA={allerA} onVuADeux={() => allerA({ nom: 'a-deux' })} />
           ) : (
             <Coquille vue={vue} />
           )}

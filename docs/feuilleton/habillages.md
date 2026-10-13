@@ -31,7 +31,8 @@ elles-mêmes et refuse un chapitre qui en oublie une, ou qui en définit une que
 
 - **Couleurs** : `--h-voile` ; `--h-boitier-fond`, `-contour`, `-texte`, `-texte-doux` ;
   `--h-ecran-fond`, `-contour`, `-texte`, `-texte-doux` ; `--h-touche-fond`, `-texte`, `-contour` ;
-  `--h-principale-fond`, `-texte`, `-contour` ; `--h-alerte` ; `--h-bouton-fond`, `-icone`, `-cerne`.
+  `--h-principale-fond`, `-texte`, `-contour` ; `--h-alerte` ; `--h-bouton-fond`, `-icone`, `-cerne` ;
+  `--h-mono-fond`, `-texte` (le monogramme d'un membre, plus bas).
 - **Formes** : `--h-rayon-boitier`, `-ecran`, `-touche`, `-principale`, `-ronde` ; `--h-trait`,
   `--h-trait-fort` ; `--h-pied-touche` (l'ombre intérieure qui fait le pied d'une touche) ;
   `--h-ombre-boitier`, `--h-ombre-bouton` ; `--h-icone-trait-fort`.
@@ -44,7 +45,14 @@ elle change entre le jour et la nuit.
 Un chapitre qui veut plus qu'une valeur (une touche d'une autre forme) ajoute ses règles dans son
 fichier, sous sa classe, en visant les pièces par leur attribut : `.habillage [data-piece='touche']`.
 Les pièces : `boitier`, `voile`, `ecran`, `touche`, `touche-principale`, `rangee-principale`,
-`message`, `voyant`, `pied`, `point`.
+`message`, `voyant`, `pied`, `point`, `monogramme`.
+
+**Le monogramme d'un membre** porte une couleur qui n'est pas de l'app : sa couleur d'identité, une
+donnée (`identity_color`). `src/feuilleton/Monogramme.tsx`, hors de `telecommande/`, la pose en
+`--identite` sur la pièce, et rien d'autre ; c'est le chapitre qui décide d'en faire le fond
+(`--h-mono-fond: var(--identite)`) et de quelle encre écrire dessus (`--h-mono-texte`). Une variable se
+résout là où elle est déclarée : le chapitre redéclare donc `--h-mono-fond` sur
+`[data-piece='monogramme']`, sans quoi `--identite` serait celle de la page.
 
 ## Ce qu'un chapitre ne change jamais
 

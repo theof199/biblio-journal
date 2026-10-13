@@ -8,7 +8,7 @@ const DARK = { id: 'm-dark', titre: 'Dark', affiche: null, episode: { saison: 2,
 const SERIE: EtatDeLEcran = { etat: 'serie', serie: DARK, rang: 1, sur: 4 }
 const INVITATION: EtatDeLEcran = {
   etat: 'invitation',
-  invitation: { id: 'i1', de: 'Alycia', serie: 'Dark', episode: { saison: 2, numero: 5, titre: null }, quand: 'Proposé hier soir' },
+  invitation: { id: 'i1', de: 'Alycia', couleur: '#c2571a', serie: 'Dark', episode: { saison: 2, numero: 5, titre: null }, quand: 'Proposé hier soir' },
   sur: 4,
 }
 const COCHE: EpisodeCoche = { serieId: 'm-dark', serie: 'Dark', saison: 2, numero: 5, titre: 'Perdus et retrouvés' }

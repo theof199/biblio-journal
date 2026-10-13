@@ -3,9 +3,12 @@ import { DUREE_DU_RETOUR } from '../retourDuVu'
 import styles from './Panneau.module.css'
 
 interface Props {
-  /** Le message de l'espace, ou le neutre (`lireLeRetourDuVu`). */
+  /** Le message de l'espace, ou le neutre (`lireLeRetourDuVu`) ; ou un avis (un lot noté, un échec). */
   texte: string
-  onAnnuler: () => void
+  /** « Annuler » : sans fonction, le message est seul (on ne défait pas un lot d'un geste, ni un échec). */
+  onAnnuler?: () => void
+  /** Un échec : il s'annonce tout de suite (`alert`), là où un retour attend son tour (`status`). */
+  alerte?: boolean
   /** Le message s'en va : son temps est passé, ou l'on a touché ailleurs. */
   onPartir: () => void
 }
@@ -13,8 +16,9 @@ interface Props {
 /**
  * Le retour du « Vu » : il REMPLACE les touches de la rangée principale, dans la même rangée (à hauteur
  * fixe : rien ne saute), quelques secondes, avec « Annuler ». Toucher ailleurs le fait partir plus tôt.
+ * Un avis (« 7 épisodes notés », le message d'un échec) prend la même place, sans « Annuler ».
  */
-export default function MessageDuVu({ texte, onAnnuler, onPartir }: Props) {
+export default function MessageDuVu({ texte, onAnnuler, alerte = false, onPartir }: Props) {
   const boite = useRef<HTMLParagraphElement>(null)
   const partir = useRef(onPartir)
   partir.current = onPartir
@@ -33,11 +37,13 @@ export default function MessageDuVu({ texte, onAnnuler, onPartir }: Props) {
   }, [])
 
   return (
-    <p ref={boite} role="status" className={styles.message} data-piece="message">
+    <p ref={boite} role={alerte ? 'alert' : 'status'} className={onAnnuler ? styles.message : `${styles.message} ${styles.seul}`} data-piece="message">
       <span className={styles.texte}>{texte}</span>
-      <button type="button" className={`${styles.touche} ${styles.deMessage}`} onClick={onAnnuler}>
-        Annuler
-      </button>
+      {onAnnuler ? (
+        <button type="button" className={`${styles.touche} ${styles.deMessage}`} onClick={onAnnuler}>
+          Annuler
+        </button>
+      ) : null}
     </p>
   )
 }

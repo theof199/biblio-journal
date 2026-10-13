@@ -145,6 +145,20 @@ n'en porte que le socle (`README.md`, « Le Feuilleton »).
   chapitre de plus ne touche aucun composant (`docs/feuilleton/habillages.md`,
   `habillages/habillages.test.ts`). Un espace ne modifie pas la télécommande : il lui parle par
   `fournirLeRetourDuVu` (`src/feuilleton/retourDuVu.ts`), inscrit à son montage, retiré à son démontage.
+- **La télécommande lit une fois, au montage du Feuilleton** (`GET /me/feuilleton/telecommande`,
+  `useLaTelecommande`, `src/feuilleton/telecommande/donnees.ts`, clé `cles.telecommande`) : le point du
+  bouton rond et le panneau partagent cette lecture. Une vue de plus lit `donnees.ts`, pas l'API ; une
+  requête de plus au montage passe par le test qui les compte (`Feuilleton.test.tsx`). Les écritures
+  sont dans `telecommande/vivante.ts`, les appels dans `src/api/feuilleton.ts`.
+- **Une mutation optimiste suit trois temps**, et « Vu » en est le modèle (`vivante.ts`) : `onMutate`
+  fait `cancelQueries` sur la clé, photographie le cache, écrit d'avance et rend la photo en contexte ;
+  `onError` repose la photo et dit l'échec (le message d'`ApiError`, tel quel) ; `onSettled` relit la
+  clé, réussite ou non, sauf si une autre écriture de la même file attend (`isMutating`), qui relira.
+  Ces rappels sont ceux de `useMutation`, pas de `mutate` : ils survivent au démontage. Des écritures
+  qui touchent la même clé partagent une file (`scope`) : elles partent une à une. Une écriture dont la
+  réponse porte l'état à jour (une portée, une confirmation) n'est pas optimiste : elle pose sa réponse
+  (`cancelQueries`, puis `setQueryData`) et ne relit pas. Le double toucher se retient par une
+  référence, pas par un état : deux touchers d'un même geste voient le même rendu.
 - **Un panneau ouvert par l'adresse navigue « sur place »** (`state: { surPlace: true }`,
   `src/coque/defilement.ts`) : sans cet état, la coque remonte la page dessous comme pour toute
   navigation nouvelle.
