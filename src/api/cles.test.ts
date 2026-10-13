@@ -60,3 +60,31 @@ describe('les clés de l’état du voyageur et de la malle', () => {
     expect(new Set(toutes).size).toBe(toutes.length)
   })
 })
+
+describe('les clés du Feuilleton', () => {
+  // Mutations, dans `cles.ts` : `maison` rangée sous `studio` (`['studio', 'maison']`) ; l'une des deux
+  // rangée sous `journal` ou sous `voyage` (une écriture au journal la relirait).
+  it('périmer un espace ne relit que lui, et une écriture au journal ne relit ni l’un ni l’autre', async () => {
+    const client = createQueryClient()
+    const lus: string[] = []
+    const montees = [
+      new QueryObserver(client, { queryKey: [...cles.studio, 'plateau'], queryFn: () => lus.push('studio') }),
+      new QueryObserver(client, { queryKey: [...cles.maison, 'salon'], queryFn: () => lus.push('maison') }),
+    ]
+    const demonter = montees.map((o) => o.subscribe(() => {}))
+    await vi.waitFor(() => expect(client.isFetching()).toBe(0))
+    expect([...lus].sort()).toEqual(['maison', 'studio'])
+
+    await client.invalidateQueries({ queryKey: cles.studio })
+    expect([...lus].sort()).toEqual(['maison', 'studio', 'studio'])
+
+    await client.invalidateQueries({ queryKey: cles.maison })
+    expect([...lus].sort()).toEqual(['maison', 'maison', 'studio', 'studio'])
+
+    // Ce que fait toute écriture au journal.
+    await client.invalidateQueries({ queryKey: cles.journal })
+    await client.invalidateQueries({ queryKey: cles.voyage })
+    expect(lus).toHaveLength(4)
+    for (const d of demonter) d()
+  })
+})

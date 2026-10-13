@@ -25,3 +25,23 @@ describe('le découpage du Voyage', () => {
     expect(paresseuses).toHaveLength(9)
   })
 })
+
+/**
+ * Le Feuilleton et ses deux espaces se chargent chacun à la demande : le Studio et la Maison
+ * grossiront sans peser sur le morceau d'entrée, ni l'un sur l'autre.
+ */
+describe('le découpage du Feuilleton', () => {
+  const [texte] = Object.values(sources)
+
+  // Mutation : `import Studio from './studio/Studio'` dans `App.tsx`.
+  it('App.tsx n’importe statiquement rien du Feuilleton, du Studio ni de la Maison', () => {
+    const statiques = [...texte!.matchAll(/^import\s[^\n]*from\s+'\.\/(feuilleton|studio|maison)\/[^']*'/gm)].map((trouve) => trouve[0])
+    expect(statiques).toEqual([])
+  })
+
+  // Mutation : la même, `import Studio from './studio/Studio'` : il manque un morceau à la liste.
+  it('la mise en page et chaque espace ont leur morceau', () => {
+    const paresseuses = [...texte!.matchAll(/paresseux\(\(\) => import\('\.\/((?:feuilleton|studio|maison)\/\w+)'\)\)/g)].map((trouve) => trouve[1])
+    expect(paresseuses).toEqual(['feuilleton/Feuilleton', 'studio/Studio', 'maison/Maison'])
+  })
+})

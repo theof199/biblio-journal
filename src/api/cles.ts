@@ -76,6 +76,14 @@ export const cles = {
   filmsSaga: (tmdbId: number) => ['sagas', tmdbId, 'films'] as const,
 
   /**
+   * Les deux espaces du Feuilleton, un préfixe chacun : toute clé du Studio commence par `studio`,
+   * toute clé de la Maison par `maison`. Hors de `journal` et de `voyage` : une écriture au journal ne
+   * les périme pas, et périmer l'un ne relit jamais l'autre.
+   */
+  studio: ['studio'] as const,
+  maison: ['maison'] as const,
+
+  /**
    * Le journal entier, à plat (bilan et graphiques du profil) : sous le préfixe `journal`, pour
    * que l'invalidation qui suit une écriture le périme aussi.
    */

@@ -45,7 +45,7 @@ describe('le filet de la coque', () => {
     monter()
 
     expect(screen.getByRole('alert')).toHaveTextContent('Une erreur inattendue est survenue.')
-    expect(within(barre()).getAllByRole('link')).toHaveLength(4)
+    expect(within(barre()).getAllByRole('link')).toHaveLength(5)
   })
 
   it('« Réessayer » recharge la page', () => {

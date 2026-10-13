@@ -4,6 +4,7 @@ import {
   IconArmchair,
   IconBuildingPavilion,
   IconChairDirector,
+  IconDeviceTvOld,
   IconRoute,
   type TablerIcon,
 } from '@tabler/icons-react'
@@ -22,7 +23,7 @@ export interface Onglet {
 }
 
 /**
- * Les onglets, dans l'ordre de la barre. « Au ciné » n'en est plus un : il est une section de
+ * Les cinq onglets, dans l'ordre de la barre. « Au ciné » n'en est plus un : il est une section de
  * l'accueil (`cinema/SectionAuCine.tsx`), et sa place revient au Feuilleton.
  * Ajouter un onglet ici ne suffit pas : sa route se déclare aussi dans `App.tsx`, sous `<Coque />`.
  */
@@ -32,6 +33,7 @@ export const ONGLETS: readonly Onglet[] = [
   { chemin: '/', libelle: 'Accueil', Icone: IconBuildingPavilion, aussi: ['/au-cine'] },
   { chemin: '/voyage', libelle: 'Voyage', Icone: IconRoute },
   { chemin: '/suivis', libelle: 'Suivis', Icone: IconChairDirector },
+  { chemin: '/feuilleton', libelle: 'Feuilleton', Icone: IconDeviceTvOld },
   { chemin: '/profil', libelle: 'Profil', Icone: IconArmchair },
 ]
 

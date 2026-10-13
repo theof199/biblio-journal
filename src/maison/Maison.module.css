@@ -1,0 +1,16 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.titre {
+  margin: 0;
+}
+
+.chantier {
+  margin: 0;
+  color: var(--couleur-texte-doux);
+}

@@ -14,6 +14,10 @@ import { voyage1890 } from '../test/voyage'
 // test qui ouvre `/voyage` paierait sa compilation dans le délai d'un `findByRole` (le remède de
 // `test/pageVoyage.tsx`).
 await import('../pages/Carte')
+// Le Feuilleton et ses deux espaces aussi : trois morceaux.
+await import('../feuilleton/Feuilleton')
+await import('../studio/Studio')
+await import('../maison/Maison')
 
 const SESSION = exemple<{ user: { pseudo: string } }>('/auth/me', 'get', 200)
 /** La carte, l'onglet Voyage, lit son Voyage et ses tickets. */
@@ -25,15 +29,23 @@ const CARTE = {
 const NON_CONNECTE = { code: 'UNAUTHENTICATED', message: 'Tu dois être connecté pour faire ça.', retryable: false }
 
 /**
- * Les onglets de l'appli Android (`Navigation.kt`, `BottomTab`), leur chemin, l'icône Tabler
- * choisie par le propriétaire, et le titre de la page qu'ils ouvrent. Le fronton de l'accueil porte
- * le jour du calendrier (`formatJour`, `accueil/fronton.ts`) : un motif plutôt qu'un texte fixe.
+ * Mercredi 14 octobre 2026, 10 h à Paris : une heure de travail. `/feuilleton` mène à l'espace de
+ * l'heure (`feuilleton/espaces.ts`), que ces tests fixent pour savoir où l'onglet arrive.
+ */
+const HEURE_DE_TRAVAIL = new Date('2026-10-14T08:00:00Z')
+
+/**
+ * Les onglets, leur chemin, leur icône Tabler, et le titre de la page qu'ils ouvrent. Le fronton de
+ * l'accueil porte le jour du calendrier (`formatJour`, `accueil/fronton.ts`) : un motif plutôt qu'un
+ * texte fixe. `arrivee` : l'adresse où mène l'onglet quand ce n'est pas son chemin (le Feuilleton
+ * n'a pas de page à lui, il ouvre un de ses deux espaces).
  */
 const ATTENDUS = [
-  { libelle: 'Accueil', chemin: '/', icone: 'building-pavilion', titre: /^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche) /u },
-  { libelle: 'Voyage', chemin: '/voyage', icone: 'route', titre: `Le Voyage de ${SESSION.user.pseudo}` },
-  { libelle: 'Suivis', chemin: '/suivis', icone: 'chair-director', titre: 'Suivis' },
-  { libelle: 'Profil', chemin: '/profil', icone: 'armchair', titre: `Profil de ${SESSION.user.pseudo}` },
+  { libelle: 'Accueil', chemin: '/', arrivee: '/', icone: 'building-pavilion', titre: /^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche) /u },
+  { libelle: 'Voyage', chemin: '/voyage', arrivee: '/voyage', icone: 'route', titre: `Le Voyage de ${SESSION.user.pseudo}` },
+  { libelle: 'Suivis', chemin: '/suivis', arrivee: '/suivis', icone: 'chair-director', titre: 'Suivis' },
+  { libelle: 'Feuilleton', chemin: '/feuilleton', arrivee: '/feuilleton/studio', icone: 'device-tv-old', titre: 'Travail' },
+  { libelle: 'Profil', chemin: '/profil', arrivee: '/profil', icone: 'armchair', titre: `Profil de ${SESSION.user.pseudo}` },
 ] as const
 
 /** Le chemin courant, lu par le test : une redirection se constate, elle ne se devine pas. */
@@ -76,12 +88,17 @@ const chemin = () => screen.getByTestId('chemin').textContent
 describe('la coque à onglets', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
+    // Seule l'horloge est fausse : les délais du réseau doublé et des requêtes restent réels.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(HEURE_DE_TRAVAIL)
   })
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
-  it.each(ATTENDUS)('sur $chemin, la barre montre ses onglets et marque $libelle seul', async (courant) => {
+  // Mutations, dans `ONGLETS` : l'onglet Feuilleton retiré, déplacé, ou gardé sous `/au-cine`.
+  it.each(ATTENDUS)('sur $chemin, la barre montre les cinq onglets et marque $libelle seul', async (courant) => {
     servir({ 'GET /api/auth/me': () => json(SESSION), ...ROUTES_ACCUEIL, ...CARTE })
     monter(courant.chemin)
 
@@ -140,7 +157,7 @@ describe('la coque à onglets', () => {
     fireEvent.click(within(barre()).getByRole('link', { name: cible.libelle }))
 
     expect(await screen.findByRole('heading', { level: 1, name: cible.titre })).toBeInTheDocument()
-    expect(chemin()).toBe(cible.chemin)
+    expect(chemin()).toBe(cible.arrivee)
     expect(within(barre()).getByRole('link', { name: cible.libelle })).toHaveAttribute('aria-current', 'page')
   })
 

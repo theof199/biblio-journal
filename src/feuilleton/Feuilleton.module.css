@@ -1,0 +1,30 @@
+/* Aucune valeur en dur : tout vient de `ui/theme.css`. */
+
+.feuilleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: var(--espace-4) var(--gouttiere-page) var(--espace-6);
+}
+
+.passage {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Le bouton qui passe de l'autre côté : plein, de la couleur d'accent, pour qu'on ne le cherche pas. */
+.autreCote {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  min-height: var(--cible-tactile);
+  padding: 0 var(--espace-4);
+  border-radius: var(--rayon-m);
+  background: var(--couleur-accent);
+  color: var(--couleur-sur-accent);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  text-decoration: none;
+}

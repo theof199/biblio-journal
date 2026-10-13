@@ -32,6 +32,12 @@ const VoyageBillet = paresseux(() => import('./pages/VoyageBillet'))
 const VoyageSacoche = paresseux(() => import('./pages/VoyageSacoche'))
 const VoyageWagonRestaurant = paresseux(() => import('./pages/VoyageWagonRestaurant'))
 
+// Le Feuilleton et ses deux espaces : un morceau chacun, que le Studio et la Maison grossiront sans
+// peser sur l'entrée ni l'un sur l'autre (`test/decoupage.test.ts`).
+const Feuilleton = paresseux(() => import('./feuilleton/Feuilleton'))
+const Studio = paresseux(() => import('./studio/Studio'))
+const Maison = paresseux(() => import('./maison/Maison'))
+
 export default function App() {
   return (
     <FournisseurPosition>
@@ -77,6 +83,12 @@ export default function App() {
             {/* La fiche d'un film ouverte depuis une séance ou une tuile garde son adresse : l'onglet
                 Accueil reste marqué (`ONGLETS`, `aussi`). */}
             <Route path="au-cine/films/:tmdbId" element={<FicheFilm />} />
+            {/* Le Feuilleton : `/feuilleton` seul mène à l'espace de l'heure (`feuilleton/espaces.ts`),
+                ses deux espaces s'ouvrent aussi par leur adresse. */}
+            <Route path="feuilleton" element={<Feuilleton />}>
+              <Route path="studio" element={<Studio />} />
+              <Route path="maison" element={<Maison />} />
+            </Route>
             <Route path="profil" element={<Profil />} />
             {/* Sous-page du profil (README, « La coque à onglets ») : l'onglet Profil reste marqué,
                 comme sur l'appli Android où « Mes films » ne se pousse que depuis lui. */}
