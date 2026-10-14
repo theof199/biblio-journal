@@ -5,7 +5,7 @@ import Attente, { Barre } from '../../ui/Attente'
 import Monogramme from '../Monogramme'
 import { lireLeRetourDuVu, type EpisodeCoche } from '../retourDuVu'
 import MessageDuVu from './MessageDuVu'
-import { annulerLAvis, codeDe, Panne, type Avis, type InvitationALEcran, type Lecture, type SerieALEcran } from './VueTelecommande'
+import { annulerLAvis, codeDe, NoteAJour, Panne, type Avis, type InvitationALEcran, type Lecture, type SerieALEcran } from './VueTelecommande'
 import type { Vue } from './vues'
 import styles from './Panneau.module.css'
 
@@ -196,7 +196,7 @@ export default function VueListe(props: PropsVueListe) {
                 Vu
               </button>
             ) : serie.diffusion ? (
-              <p className={styles.note}>Prochain épisode le {serie.diffusion}</p>
+              <NoteAJour diffusion={serie.diffusion} />
             ) : (
               <span className={styles.creux} />
             )}

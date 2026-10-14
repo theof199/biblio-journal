@@ -117,6 +117,23 @@ export interface PropsVueTelecommande {
 
 export const codeDe = (episode: Pick<EpisodeAVoir, 'saison' | 'numero'>) => `S${episode.saison} E${episode.numero}`
 
+/** Le jour du prochain épisode d'une série à jour, déjà dit (`SerieALEcran.diffusion`) : « Prochain épisode le 21 octobre ». */
+export const prochainEpisodeLe = (diffusion: string) => `Prochain épisode le ${diffusion}`
+
+/**
+ * À la place des touches d'une série à jour, qui n'a rien à cocher : le jour de son prochain épisode
+ * quand il est connu. Sur la carte de la liste, « À jour » est déjà dans la ligne de l'épisode ; sur la
+ * rangée principale (`aJour`), la note le dit elle-même, seule quand la date n'est pas connue.
+ */
+export function NoteAJour({ diffusion, aJour = false }: { diffusion?: string | null; aJour?: boolean }) {
+  return (
+    <p className={aJour ? `${styles.note} ${styles.aJour}` : styles.note}>
+      {aJour ? <b>À jour</b> : null}
+      {diffusion ? <span>{prochainEpisodeLe(diffusion)}</span> : null}
+    </p>
+  )
+}
+
 /** L'« Annuler » d'un avis qui se défait (« Proposé à Alycia ») : il décoche, et l'avis s'en va. Sinon rien : le message est seul. */
 export function annulerLAvis(avis: Avis, { onAnnulerLeVu, onAvisParti }: { onAnnulerLeVu?: (coche: EpisodeCoche) => void; onAvisParti?: () => void }) {
   const coche = avis.annuler
@@ -168,6 +185,8 @@ export default function VueTelecommande(props: PropsVueTelecommande) {
   const serie = ecran.etat === 'serie' ? ecran.serie : null
   const invitation = ecran.etat === 'invitation' ? ecran.invitation : null
   const episode = serie?.episode ?? null
+  /** Une série à jour n'a rien à cocher : ni « Vu », ni les trois touches de « Cet épisode ». */
+  const aJour = serie !== null && episode === null
   const surSerie = <T,>(action?: (serie: SerieALEcran) => T) => (serie && episode && action ? () => action(serie) : undefined)
 
   const vu = () => {
@@ -214,6 +233,8 @@ export default function VueTelecommande(props: PropsVueTelecommande) {
                 <IconPlayerPlay aria-hidden="true" className={styles.icone} />
                 Reprendre
               </button>
+            ) : aJour ? (
+              <NoteAJour diffusion={serie.diffusion} aJour />
             ) : (
               <button
                 type="button"
@@ -234,20 +255,24 @@ export default function VueTelecommande(props: PropsVueTelecommande) {
         )}
       </div>
 
-      <p className={styles.libelle} id="telecommande-cet-episode">
-        Cet épisode
-      </p>
-      <div className={`${styles.rangee} ${styles.trois}`} role="group" aria-labelledby="telecommande-cet-episode">
-        <Pave Icone={IconUsers} onClick={surSerie(props.onVuADeux)}>
-          Vu à deux
-        </Pave>
-        <Pave Icone={IconArrowBarToUp} onClick={surSerie(props.onToutJusquIci)}>
-          Tout jusqu’ici
-        </Pave>
-        <Pave Icone={IconStack2} onClick={surSerie(props.onTouteLaSaison)}>
-          Toute la saison
-        </Pave>
-      </div>
+      {aJour ? null : (
+        <>
+          <p className={styles.libelle} id="telecommande-cet-episode">
+            Cet épisode
+          </p>
+          <div className={`${styles.rangee} ${styles.trois}`} role="group" aria-labelledby="telecommande-cet-episode">
+            <Pave Icone={IconUsers} onClick={surSerie(props.onVuADeux)}>
+              Vu à deux
+            </Pave>
+            <Pave Icone={IconArrowBarToUp} onClick={surSerie(props.onToutJusquIci)}>
+              Tout jusqu’ici
+            </Pave>
+            <Pave Icone={IconStack2} onClick={surSerie(props.onTouteLaSaison)}>
+              Toute la saison
+            </Pave>
+          </div>
+        </>
+      )}
 
       <p className={styles.libelle} id="telecommande-aller-a">
         Aller à
@@ -369,7 +394,7 @@ function Ecran({ ecran, onReessayer }: { ecran: EtatDeLEcran; onReessayer?: () =
           ) : (
             <p className={styles.episode}>
               <span className={styles.code}>À jour</span>
-              {serie.diffusion ? <span className={styles.nomEp}>Prochain épisode le {serie.diffusion}</span> : null}
+              {serie.diffusion ? <span className={styles.nomEp}>{prochainEpisodeLe(serie.diffusion)}</span> : null}
             </p>
           )}
         </div>

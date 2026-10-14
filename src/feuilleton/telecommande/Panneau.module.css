@@ -502,6 +502,20 @@
   text-align: center;
 }
 
+/* Sur la rangée principale, à la place de « Vu » d'une série à jour : « À jour », et dessous le jour du
+   prochain épisode. Elle est posée sur le boîtier, pas sur un écran : elle en prend les encres. */
+.note.aJour {
+  flex-direction: column;
+  gap: var(--espace-1);
+  color: var(--h-boitier-texte-doux);
+}
+
+.note.aJour b {
+  color: var(--h-boitier-texte);
+  font-size: var(--taille-m);
+  font-weight: var(--h-graisse-forte);
+}
+
 .creux {
   flex: 1;
 }

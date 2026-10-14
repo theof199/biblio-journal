@@ -73,6 +73,7 @@ const ecran = () => document.querySelector<HTMLElement>('[data-piece="ecran"]')!
 const enSerie = (titre: string) => screen.findByRole('heading', { level: 3, name: titre })
 const touche = (name: string | RegExp) => screen.getByRole('button', { name })
 const message = () => document.querySelector<HTMLElement>('[data-piece="message"]')
+const rangeePrincipale = () => document.querySelector<HTMLElement>('[data-piece="rangee-principale"]')!
 /** Une réponse retenue : la requête est partie, rien n'est revenu. */
 function retenue() {
   let rendre!: (reponse: Response) => void
@@ -146,20 +147,45 @@ describe('le petit écran à l’ouverture', () => {
     expect(ecran()).not.toHaveTextContent('Severance')
   })
 
-  // Mutations : `diffusion` non passé par `aLEcran` ; « Vu » laissé allumé sans `prochain` (`VueTelecommande.tsx`).
-  it('une série à jour : pas de « Vu », « Prochain épisode le 21 octobre » quand la date est connue, rien sinon', async () => {
+  // Mutations, dans `VueTelecommande.tsx` : `aJour` à `false` (les quatre touches reviennent, éteintes) ;
+  // `aJour ? null :` ôté de « Cet épisode » seul ; `diffusion` non passé à `NoteAJour` ; « À jour » ôté de
+  // la note ; dans `vivante.ts` : `diffusion` non passé par `aLEcran`.
+  it('une série à jour : ni « Vu » ni « Cet épisode », mais « À jour » et « Prochain épisode le 21 octobre » à leur place', async () => {
     monter({ [LIRE]: () => json({ a_confirmer: [], series: [SLOW, { ...ANDOR, prochain: null, ensuite: null, a_jour: true, prochaine_diffusion_le: null }] }) })
     await enSerie('Slow Horses')
 
     expect(ecran()).toHaveTextContent('À jour')
     expect(ecran()).toHaveTextContent('Prochain épisode le 21 octobre')
-    expect(touche('Vu')).toBeDisabled()
-    for (const b of within(screen.getByRole('group', { name: 'Cet épisode' })).getAllByRole('button')) expect(b).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /^Vu/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Tout jusqu/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Toute la saison/ })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Cet épisode' })).toBeNull()
+    expect(screen.queryByText('Cet épisode')).toBeNull()
+    expect(rangeePrincipale()).toHaveTextContent(/^À jourProchain épisode le 21 octobre$/)
 
-    fireEvent.click(touche('Série suivante'))
-    expect(ecran()).toHaveTextContent('Andor')
+    // Le reste du boîtier ne bouge pas : les flèches, « Aller à ».
+    expect(touche('Série suivante')).toBeEnabled()
+    expect(touche('Fiche')).toBeEnabled()
+    expect(touche(/^En cours/)).toHaveTextContent('En cours 2')
+  })
+
+  // Mutations, dans `VueTelecommande.tsx` : `aJour` à `false` ; la date rendue sans regarder `diffusion`
+  // (« Prochain épisode le undefined ») ; « À jour » ôté de la note.
+  it('une série à jour sans prochain épisode connu : « À jour » seul, à la place des quatre touches', async () => {
+    monter({ [LIRE]: () => json({ a_confirmer: [], series: [{ ...ANDOR, prochain: null, ensuite: null, a_jour: true, prochaine_diffusion_le: null }, SLOW] }) })
+    await enSerie('Andor')
+
     expect(ecran()).toHaveTextContent('À jour')
     expect(ecran()).not.toHaveTextContent('Prochain épisode')
+    expect(screen.queryByRole('button', { name: /^Vu/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Tout jusqu/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Toute la saison/ })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Cet épisode' })).toBeNull()
+    expect(rangeePrincipale()).toHaveTextContent(/^À jour$/)
+
+    fireEvent.click(touche('Série suivante'))
+    expect(ecran()).toHaveTextContent('Slow Horses')
+    expect(rangeePrincipale()).toHaveTextContent(/^À jourProchain épisode le 21 octobre$/)
   })
 
   // Mutations : l'état `vide` rendu pour `telecommande.series` vide seulement (une série en pause
